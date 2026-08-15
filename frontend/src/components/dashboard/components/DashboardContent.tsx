@@ -718,6 +718,7 @@ export default function DashboardContent({
     t,
     ownerUserIdForOffersCache: user?.id,
     onCreatedSkillSaved: handleOnboardingSkillCreated,
+    setSelectedSkillsCategory,
   });
 
   const handleEditOwnProfileOffer = useCallback(

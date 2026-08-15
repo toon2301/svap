@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.db import IntegrityError, transaction
 from django.db.models import Q, F, Avg, Count
 from django.core.cache import cache
 
@@ -23,6 +24,7 @@ from ..models import (
 )
 from ..serializers import OfferedSkillSerializer
 from ..services.offer_visibility import offer_hidden_from_user
+from ..services.user_blocks import lock_users_for_update
 from django.core.exceptions import ValidationError
 
 from .skill_helpers import (
@@ -32,6 +34,11 @@ from .skill_helpers import (
     _skills_list_cache_key,
     _skills_list_context,
     _skills_list_queryset,
+)
+from .skill_errors import (
+    duplicate_offer_response,
+    offer_limit_reached_response,
+    serializer_validation_error_response,
 )
 # Re-export image upload views (presunuté do skills_upload) pre spätnú kompatibilitu
 # (views/__init__ ich importuje z .skills).
@@ -137,33 +144,44 @@ def skills_list_view(request):
                     logger.warning(f"Serializer validation errors: {serializer.errors}")
             except Exception:
                 pass
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return serializer_validation_error_response(serializer.errors)
 
         category = serializer.validated_data.get("category")
         subcategory = serializer.validated_data.get("subcategory")
         is_seeking = serializer.validated_data.get("is_seeking", False)
 
-        # Kontrola limitu 3 karty pre každý typ samostatne (Ponúkam vs Hľadám)
-        count_by_type = OfferedSkill.objects.filter(
-            user=request.user, is_seeking=is_seeking
-        ).count()
+        try:
+            with transaction.atomic():
+                # Zámok na riadku používateľa serializuje jeho súbežné POSTy.
+                # Bez neho obidva requesty prečítajú count() naraz, obidva
+                # uvidia 2 a obidva uložia – vznikne štvrtá karta. Duplicitu
+                # ešte podchytí UniqueConstraint, limit troch kariet však
+                # žiadny DB constraint nekryje, takže musí platiť pod zámkom.
+                # Rovnaký helper ako pri blokovaní používateľov.
+                lock_users_for_update(user_ids=(request.user.id,))
 
-        if count_by_type >= 3:
-            skill_type = "Hľadám" if is_seeking else "Ponúkam"
-            return Response(
-                {"error": f'Môžeš mať maximálne 3 karty v sekcii "{skill_type}".'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                if OfferedSkill.objects.filter(
+                    user=request.user, category=category, subcategory=subcategory
+                ).exists():
+                    return duplicate_offer_response()
 
-        if OfferedSkill.objects.filter(
-            user=request.user, category=category, subcategory=subcategory
-        ).exists():
-            return Response(
-                {"error": "Táto zručnosť už existuje"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                # Limit 3 karty pre každý typ samostatne (Ponúkam vs Hľadám)
+                count_by_type = OfferedSkill.objects.filter(
+                    user=request.user, is_seeking=is_seeking
+                ).count()
 
-        serializer.save(user=request.user)
+                if count_by_type >= 3:
+                    skill_type = "Hľadám" if is_seeking else "Ponúkam"
+                    return offer_limit_reached_response(skill_type=skill_type)
+
+                serializer.save(user=request.user)
+        except IntegrityError:
+            # The unique constraint remains authoritative when POST requests race.
+            if OfferedSkill.objects.filter(
+                user=request.user, category=category, subcategory=subcategory
+            ).exists():
+                return duplicate_offer_response()
+            raise
         _skills_list_cache_invalidate(request.user.id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -223,16 +241,25 @@ def skills_detail_view(request, skill_id):
                     .exclude(id=skill_id)
                     .exists()
                 ):
-                    return Response(
-                        {"error": "Táto zručnosť už existuje"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    return duplicate_offer_response()
 
-            serializer.save()
+            try:
+                with transaction.atomic():
+                    serializer.save()
+            except IntegrityError:
+                if (
+                    OfferedSkill.objects.filter(
+                        user=request.user, category=category, subcategory=subcategory
+                    )
+                    .exclude(id=skill_id)
+                    .exists()
+                ):
+                    return duplicate_offer_response()
+                raise
             _skills_list_cache_invalidate(request.user.id)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return serializer_validation_error_response(serializer.errors)
 
     elif request.method == "DELETE":
         skill.delete()

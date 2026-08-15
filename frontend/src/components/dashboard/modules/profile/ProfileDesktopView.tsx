@@ -5,6 +5,7 @@ import type { User } from '../../../../types';
 import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import ProfileEditFormDesktop from '../ProfileEditFormDesktop';
 import ProfileOffersSection from './ProfileOffersSection';
+import ProfileFeedSection from './ProfileFeedSection';
 import ProfilePortfolioSection from './ProfilePortfolioSection';
 import type { Offer } from './profileOffersTypes';
 import type { ProfileTab } from './profileTypes';
@@ -161,6 +162,21 @@ export default function ProfileDesktopView({
                 ownerSlug={ownerSlug ?? displayUser.slug}
                 isOtherUserProfile={isOtherUserProfile}
               />
+
+              <div className="w-full">
+                <ProfileFeedSection
+                  activeTab={activeTab}
+                  tab="posts"
+                  ownerUserId={offersOwnerId ?? displayUser.id}
+                  isOtherUserProfile={isOtherUserProfile}
+                />
+                <ProfileFeedSection
+                  activeTab={activeTab}
+                  tab="tagged"
+                  ownerUserId={offersOwnerId ?? displayUser.id}
+                  isOtherUserProfile={isOtherUserProfile}
+                />
+              </div>
 
               <div className="w-full">
                 <UserInfo user={displayUser} />

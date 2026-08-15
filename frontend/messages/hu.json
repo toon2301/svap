@@ -561,6 +561,7 @@
     "closePanel": "Keresopanel bezarasa"
   },
   "skills": {
+    "savedButRefreshFailed": "A kártya mentve, de a listát nem sikerült frissíteni. Töltsd újra az oldalt.",
     "offer": "Kínálok",
     "offerCta": "Készséget kínál? Kattintson, hogy hozzáadja a Svaply-hoz.",
     "search": "Keresek",
@@ -674,7 +675,9 @@
     "detailedDescriptionHint": "Írja le a szolgáltatás részleteit – folyamat, mit tartalmaz, elvárások és eredmény.",
     "detailedDescriptionHintSeeking": "Írd le részletesen, mit keresel – folyamat, mit tartalmaz, elvárások és eredmény.",
     "descriptionRequired": "A készség leírása kötelező",
-    "descriptionTooLong": "A készség leírása legfeljebb 100 karakter lehet",
+    "descriptionTooLong": "A rövid leírás legfeljebb 150 karaktert tartalmazhat.",
+    "duplicateCard": "Már létrehoztál ilyen ajánlatot vagy keresést.",
+    "validationFailed": "Ellenőrizd a megadott adatokat, és próbáld újra.",
     "experiencePositive": "A tapasztalatnak pozitív számnak kell lennie",
     "experienceTooLarge": "A tapasztalat nem lehet nagyobb, mint 100",
     "priceNonNegative": "Az árnak nem negatív számnak kell lennie",
@@ -1122,6 +1125,12 @@
     "hungarian": "Magyar"
   },
   "profile": {
+    "portfolioTab": "Portfólió",
+    "postsTab": "Bejegyzések",
+    "taggedTab": "Megjelölve",
+    "postsEmpty": "Még nincsenek bejegyzések.",
+    "taggedEmptyOwn": "Még senki nem jelölt meg téged bejegyzésben.",
+    "taggedEmptyOther": "Még senki nem jelölte meg ezt a felhasználót bejegyzésben.",
     "editProfile": "Profil szerkesztése",
     "verifyProfile": "Profil ellenőrzés",
     "skills": "Kínálok/Keresek",
@@ -4341,6 +4350,9 @@
     "viewOwnerResponse": "Válasz megtekintése"
   },
   "feed": {
+    "newCommentsOne": "új hozzászólás",
+    "newCommentsFew": "új hozzászólás",
+    "newCommentsMany": "új hozzászólás",
     "alreadyReported": "Már jelentve",
     "commentCreateError": "A hozzászólást nem sikerült hozzáadni.",
     "commentDelete": "Hozzászólás törlése",

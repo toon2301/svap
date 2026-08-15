@@ -13,6 +13,11 @@ type Props = {
 export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Props) {
   const { t } = useLanguage();
   const offersTabLabel = t('profile.skills', 'Ponúkam/Hľadám').replace('/', ' / ');
+  // Popisky boli natvrdo po slovensky – nemecký či maďarský divák videl
+  // slovenské názvy tabov aj s prepnutým jazykom.
+  const portfolioTabLabel = t('profile.portfolioTab', 'Portfólio');
+  const postsTabLabel = t('profile.postsTab', 'Príspevky');
+  const taggedTabLabel = t('profile.taggedTab', 'Označený');
 
   return (
     <div className="mt-[clamp(0.75rem,2vw,1.5rem)] w-full lg:pb-[clamp(0.5rem,1.5vw,1rem)]">
@@ -60,8 +65,8 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
             role="tab"
             aria-selected={activeTab === 'portfolio'}
             onClick={() => onChangeTab('portfolio')}
-            aria-label="Portfólio"
-            title="Portfólio"
+            aria-label={portfolioTabLabel}
+            title={portfolioTabLabel}
             className={[
               'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
               'border-l border-gray-200 dark:border-gray-800',
@@ -87,7 +92,7 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
               />
             </svg>
             <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              Portfólio
+              {portfolioTabLabel}
             </div>
           </button>
 
@@ -97,8 +102,8 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
             role="tab"
             aria-selected={activeTab === 'posts'}
             onClick={() => onChangeTab('posts')}
-            aria-label="Príspevky"
-            title="Príspevky"
+            aria-label={postsTabLabel}
+            title={postsTabLabel}
             className={[
               'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
               'border-l border-gray-200 dark:border-gray-800',
@@ -120,7 +125,7 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h7.5v7.5h-7.5zM12.75 3.75h7.5v7.5h-7.5zM3.75 12.75h7.5v7.5h-7.5zM12.75 12.75h7.5v7.5h-7.5z" />
             </svg>
             <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              Príspevky
+              {postsTabLabel}
             </div>
           </button>
 
@@ -130,8 +135,8 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
             role="tab"
             aria-selected={activeTab === 'tagged'}
             onClick={() => onChangeTab('tagged')}
-            aria-label="Označený"
-            title="Označený"
+            aria-label={taggedTabLabel}
+            title={taggedTabLabel}
             className={[
               'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
               'border-l border-gray-200 dark:border-gray-800',
@@ -157,7 +162,7 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
               />
             </svg>
             <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              Označený
+              {taggedTabLabel}
             </div>
           </button>
         </div>

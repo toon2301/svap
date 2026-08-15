@@ -15,6 +15,8 @@ import { dispatchProfileOffersRefresh } from './modules/profile/profileOfferEven
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/lib/apiError';
+import toast from 'react-hot-toast';
+import { getOfferSaveErrorMessage } from './modules/skills/offerSaveErrors';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -312,9 +314,10 @@ export default function DashboardModals({
         onCreatedSkillSaved?.();
       }
     } catch (e: unknown) {
-      const msg = getApiErrorMessage(e, 'Ukladanie zručnosti zlyhalo');
-      alert(msg);
-      return;
+      const message = getOfferSaveErrorMessage(e, t);
+      toast.error(message);
+      // The modal needs a rejected promise to reset loading and remain usable.
+      throw new Error(message);
     }
   };
 

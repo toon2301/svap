@@ -58,8 +58,10 @@ function PortfolioShareButton({
   className?: string;
 }) {
   return (
-    // Rovnaký fialový štýl ako ikony na OfferCardFront – jeden vizuálny jazyk
-    // pre akcie na kartách naprieč appkou.
+    // Vizuálne zhodné s PortfolioLikeButton v compact variante (rovnaká výška,
+    // rám, podklad aj hover) – obe akcie stoja vedľa seba v jednom rohu karty,
+    // takže musia pôsobiť ako jedna rodina. Predtým bola ikona natrvalo fialovo
+    // vyplnená, čím vedľa neutrálneho lajku vyzerala ako aktívny stav.
     <button
       type="button"
       data-testid="portfolio-share-button"
@@ -71,7 +73,11 @@ function PortfolioShareButton({
       }}
       aria-label={label}
       title={label}
-      className={`p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors ${className}`}
+      className={[
+        'inline-flex h-8 w-8 items-center justify-center rounded-full border font-semibold shadow-sm transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-400/60',
+        'border-gray-200 bg-white/90 text-gray-700 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 dark:border-gray-800 dark:bg-[#101011]/90 dark:text-gray-200 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/30 dark:hover:text-purple-200',
+        className,
+      ].filter(Boolean).join(' ')}
     >
       <ShareIcon />
     </button>
@@ -118,6 +124,9 @@ export function PortfolioCard({
           <PortfolioShareButton
             label={t('feed.shareToBoard', 'Zdieľať na Nástenku')}
             onShare={() => onShareToBoard(item)}
+            // Rovnako ako lajk vedľa – nad fotkou karty musia obe pôsobiť
+            // rovnako „sklene".
+            className="backdrop-blur"
           />
         ) : null}
         {onToggleLike ? (

@@ -15,7 +15,7 @@ class OfferedSkill(models.Model):
     )
     category = models.CharField(_("Kategória"), max_length=100)
     subcategory = models.CharField(_("Podkategória"), max_length=100)
-    description = models.TextField(_("Popis"), max_length=100, blank=True)
+    description = models.TextField(_("Popis"), max_length=150, blank=True)
     detailed_description = models.TextField(
         _("Podrobný popis"), max_length=1000, blank=True
     )
@@ -226,5 +226,4 @@ class OfferedSkillImage(models.Model):
 
     def __str__(self):
         return f"Obrázok #{self.id} pre {self.skill}"
-
 

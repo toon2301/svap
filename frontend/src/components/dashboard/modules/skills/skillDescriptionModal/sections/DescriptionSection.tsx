@@ -4,6 +4,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  countSkillDescriptionLength,
+  limitSkillDescription,
+  SKILL_DESCRIPTION_MAX_LENGTH,
+} from '../skillDescriptionLimits';
 
 interface DescriptionSectionProps {
   description: string;
@@ -15,12 +20,16 @@ interface DescriptionSectionProps {
   showEmojiButton?: boolean;
 }
 
+interface EmojiSelection {
+  native?: string;
+  skins?: Array<{ native?: string }>;
+}
+
 export default function DescriptionSection({
   description,
   onChange,
   error,
   onErrorChange,
-  isOpen,
   isSeeking = false,
   showEmojiButton = true,
 }: DescriptionSectionProps) {
@@ -30,10 +39,8 @@ export default function DescriptionSection({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleChange = (value: string) => {
-    if (value.length <= 100) {
-      onChange(value);
-      onErrorChange('');
-    }
+    onChange(limitSkillDescription(value));
+    onErrorChange('');
   };
 
   const insertAtCursor = (text: string) => {
@@ -47,10 +54,17 @@ export default function DescriptionSection({
     const before = current.slice(0, start);
     const after = current.slice(end);
 
-    const maxExtra = 100 - current.length + (end - start);
+    // Offsety zo selection API su v UTF-16 jednotkach a take musia ostat
+    // (before/after aj setSelectionRange nizsie). Limit sa ale pocita v
+    // code-pointoch, aby sedel s backendom – preto sa prevadza len rozpocet.
+    const selectedLength = countSkillDescriptionLength(current.slice(start, end));
+    const maxExtra =
+      SKILL_DESCRIPTION_MAX_LENGTH -
+      countSkillDescriptionLength(current) +
+      selectedLength;
     if (maxExtra <= 0) return;
 
-    const toInsert = text.slice(0, maxExtra);
+    const toInsert = [...text].slice(0, maxExtra).join('');
     const newValue = before + toInsert + after;
 
     handleChange(newValue);
@@ -62,7 +76,7 @@ export default function DescriptionSection({
     });
   };
 
-  const handleEmojiSelect = (emoji: any) => {
+  const handleEmojiSelect = (emoji: EmojiSelection) => {
     const native = (emoji && (emoji.native || (emoji.skins && emoji.skins[0] && emoji.skins[0].native))) || '';
     if (!native) return;
     insertAtCursor(native);
@@ -81,7 +95,8 @@ export default function DescriptionSection({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showEmojiPicker]);
 
-  const remainingChars = 100 - description.length;
+  const descriptionLength = countSkillDescriptionLength(description);
+  const remainingChars = SKILL_DESCRIPTION_MAX_LENGTH - descriptionLength;
 
   return (
     <div className="mb-2 relative">
@@ -95,7 +110,6 @@ export default function DescriptionSection({
             showEmojiButton ? 'pr-16' : 'pr-3'
           }`}
           rows={2}
-          maxLength={100}
           autoFocus
         />
         {showEmojiButton ? (
@@ -124,7 +138,7 @@ export default function DescriptionSection({
             aria-atomic="true"
             title={t('skills.charsSuffix', 'znakov')}
           >
-            {remainingChars}
+            {descriptionLength} / {SKILL_DESCRIPTION_MAX_LENGTH}
           </span>
         </div>
 
@@ -159,5 +173,3 @@ export default function DescriptionSection({
     </div>
   );
 }
-
- 

@@ -114,6 +114,55 @@ function installFiringObserver() {
   };
 }
 
+/**
+ * Falošný server, ktorý REŠPEKTUJE parametre dopytu.
+ *
+ * Doterajšie mocky vracali pevnú odpoveď bez ohľadu na `pageSize`/`cursorUrl`,
+ * takže cez ne prešla chyba G3: polling sa pýtal cez uložený kurzor a ten o
+ * ničom pred sebou nevypovedá. Tvary odpovedí sú odpísané zo skutočného behu
+ * endpointu (viď accounts/test/test_feed_comment_polling_window.py):
+ *  - kurzor nesie POZÍCIU vo vlákne, nie číslo stránky – zmazanie skoršieho
+ *    komentára ním teda nepohne,
+ *  - `count` sa vracia LEN pri dopyte bez kurzora,
+ *  - `page_size` je zhora orezaný na max_page_size = 50.
+ */
+function createFakeCommentServer(initial: FeedPostComment[]) {
+  const store = [...initial];
+  const impl = async (
+    _postId: number,
+    params: { pageSize?: number; cursorUrl?: string | null } = {},
+  ) => {
+    const query = params.cursorUrl ? new URL(params.cursorUrl).searchParams : null;
+    const after = query ? Number(query.get('after')) : null;
+    const size = Math.min(
+      Number(query?.get('page_size') ?? params.pageSize ?? 20),
+      50,
+    );
+    const from = after === null ? 0 : store.findIndex((item) => item.id > after);
+    const slice = from < 0 ? [] : store.slice(from, from + size);
+    const last = slice[slice.length - 1];
+    const hasNext = last ? store.indexOf(last) < store.length - 1 : false;
+    return {
+      results: slice,
+      next: hasNext
+        ? `http://api.test/comments/?after=${last.id}&page_size=${size}`
+        : null,
+      previous: null,
+      count: params.cursorUrl ? undefined : store.length,
+    };
+  };
+  return {
+    impl,
+    remove: (id: number) => {
+      // Bez kontroly by findIndex === -1 poslal splice(-1, 1), čo odstráni
+      // POSLEDNÝ prvok – neznáme id by ticho zmazalo niečo iné.
+      const index = store.findIndex((comment) => comment.id === id);
+      if (index >= 0) store.splice(index, 1);
+    },
+    add: (item: FeedPostComment) => store.push(item),
+  };
+}
+
 /** Posunie čas o jeden pollovací tik a nechá dobehnúť promise reťaz. */
 async function tick(times = 1) {
   for (let i = 0; i < times; i += 1) {
@@ -273,54 +322,134 @@ describe('FeedPostComments – polling', () => {
     expect(polledIds).toEqual([5, 9]);
   });
 
-  it('follows a fresh next cursor instead of re-polling a full page', async () => {
-    // Prvá stránka je PLNÁ – komentár pridaný za ňou sa v nej nikdy neobjaví,
-    // takže polling musí prevziať nový `next` a dotiahnuť ďalšiu stránku.
+  it('brings in a comment added beyond a full first page', async () => {
+    // Prvá stránka je PLNÁ – 11. komentár je za jej hranicou. Keďže sa polling
+    // pýta od začiatku na celé okno + rezervu, príde priamo v odpovedi;
+    // sentinel ani donačítavanie na to netreba.
     const fullPage = Array.from({ length: 10 }, (_, i) => comment(i + 1, `K${i + 1}`));
-    const observer = installFiringObserver();
-    try {
-      mockedList
-        .mockResolvedValueOnce({
-          results: fullPage,
-          next: null,
-          previous: null,
-          count: 10,
-        })
-        // Poll: tá istá plná stránka, ale server už hlási ďalšiu.
-        .mockResolvedValueOnce({
-          results: fullPage,
-          next: 'http://api.test/comments/?cursor=b',
-          previous: null,
-          count: 11,
-        })
-        // Donačítanie cez sentinel prinesie 11. komentár.
-        .mockResolvedValue({
-          results: [comment(11, 'Jedenásty')],
-          next: null,
-          previous: null,
-          count: 11,
-        });
-
-      render(<FeedPostComments postId={5} />);
-      await screen.findByText('K1');
-      expect(screen.queryByTestId('feed-comments-sentinel')).toBeInTheDocument();
-
-      await tick();
-
-      // Poll prevzal nový kurzor → sentinel sa zapol a donačítal.
-      await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
-      await act(async () => {
-        observer.registry.forEach((fire) => fire());
+    mockedList
+      .mockResolvedValueOnce({
+        results: fullPage,
+        next: null,
+        previous: null,
+        count: 10,
+      })
+      .mockResolvedValue({
+        results: [...fullPage, comment(11, 'Jedenásty')],
+        next: null,
+        previous: null,
+        count: 11,
       });
 
-      expect(await screen.findByText('Jedenásty')).toBeInTheDocument();
-      const cursors = mockedList.mock.calls
-        .map((call) => call[1]?.cursorUrl)
-        .filter(Boolean);
-      expect(cursors).toContain('http://api.test/comments/?cursor=b');
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('K1');
+
+    await tick();
+
+    expect(await screen.findByText('Jedenásty')).toBeInTheDocument();
+    // Žiadny dopyt pollingu nesmie ísť cez uložený kurzor.
+    expect(
+      mockedList.mock.calls.slice(1).every((call) => !call[1]?.cursorUrl),
+    ).toBe(true);
+  });
+
+  /** Vlákno s 15 komentármi, používateľ si doscrolloval poslednú stránku. */
+  async function renderLongThread(onTotalChange: jest.Mock = jest.fn()) {
+    const server = createFakeCommentServer(
+      Array.from({ length: 15 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    mockedList.mockImplementation(server.impl);
+    const observer = installFiringObserver();
+    render(<FeedPostComments postId={5} onTotalChange={onTotalChange} />);
+    await screen.findByText('K1');
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((fire) => fire());
+    });
+    await screen.findByText('K15');
+    return { server, observer };
+  }
+
+  it('drops a comment deleted on an EARLIER page than the last one loaded', async () => {
+    // REGRESIA G3 z manuálneho testu na produkcii: 15 komentárov, používateľ
+    // si donačítal druhú stránku, niekto zmazal komentár z PRVEJ.
+    // Polling cez uložený kurzor videl len [11..15] a o ničom pred tým
+    // nevedel, takže zmazaný komentár ostal na obrazovke až do reloadu.
+    const { server, observer } = await renderLongThread();
+    try {
+      expect(screen.getByText('K7')).toBeInTheDocument();
+
+      server.remove(7);
+      await tick();
+
+      await waitFor(() => expect(screen.queryByText('K7')).not.toBeInTheDocument());
+      // Zvyšok okna ostáva – odstránil sa presne ten jeden.
+      expect(screen.getByText('K1')).toBeInTheDocument();
+      expect(screen.getByText('K15')).toBeInTheDocument();
     } finally {
       observer.restore();
     }
+  });
+
+  it('drops a comment deleted at the very start of the thread', async () => {
+    // Hraničný prípad k predošlému: zmazanie na SAMOM začiatku okna.
+    const { server, observer } = await renderLongThread();
+    try {
+      server.remove(1);
+      await tick();
+
+      await waitFor(() => expect(screen.queryByText('K1')).not.toBeInTheDocument());
+      expect(screen.getByText('K2')).toBeInTheDocument();
+      expect(screen.getByText('K15')).toBeInTheDocument();
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('asks for the whole loaded window, not just the last page', async () => {
+    const { observer } = await renderLongThread();
+    try {
+      mockedList.mockClear();
+      await tick();
+
+      // 15 načítaných + rezerva jednej stránky pre nové komentáre, bez kurzora.
+      expect(mockedList).toHaveBeenCalledWith(5, { pageSize: 25 });
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('adds a new comment to a long thread the user has fully scrolled', async () => {
+    const { server, observer } = await renderLongThread();
+    try {
+      server.add(comment(16, 'K16'));
+      await tick();
+
+      expect(await screen.findByText('K16')).toBeInTheDocument();
+      expect(screen.getByText('K1')).toBeInTheDocument();
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('never asks for more than the page size the backend allows', async () => {
+    // Väčšiu hodnotu BE ticho oreže; potom by odpoveď nepokryla, čo si FE
+    // myslí, že si vypýtal.
+    const many = Array.from({ length: 45 }, (_, i) => comment(i + 1, `K${i + 1}`));
+    mockedList.mockResolvedValue({
+      results: many,
+      next: 'http://api.test/comments/?cursor=z',
+      previous: null,
+      count: 200,
+    });
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('K1');
+
+    mockedList.mockClear();
+    await tick();
+
+    expect(mockedList).toHaveBeenCalledWith(5, { pageSize: 50 });
   });
 
   it('drops a comment that someone else deleted', async () => {
@@ -340,9 +469,9 @@ describe('FeedPostComments – polling', () => {
     expect(screen.getByText('Ostáva')).toBeInTheDocument();
   });
 
-  it('does not treat content beyond a full page as deleted', async () => {
-    // Plná stránka znamená, že za ňou MÔŽU byť ďalšie komentáre, ktoré táto
-    // odpoveď nepokrýva – odstraňovanie zmazaných sa tam nesmie siahať.
+  it('does not treat content beyond the polled range as deleted', async () => {
+    // Odpoveď s `next` znamená, že za ňou MÔŽU byť ďalšie komentáre, ktoré
+    // nepokrýva – odstraňovanie zmazaných tam nesmie siahať.
     const fullPage = Array.from({ length: 10 }, (_, i) => comment(i + 1, `K${i + 1}`));
     mockedList
       .mockResolvedValueOnce({
@@ -367,6 +496,296 @@ describe('FeedPostComments – polling', () => {
     expect(screen.getByText('Za stránkou')).toBeInTheDocument();
   });
 
+  /**
+   * jsdom nemá layout – rozmery scrollovacieho boxu nastavíme ručne, aby sa
+   * dalo rozlíšiť „číta pri spodku" od „číta vyššie".
+   */
+  function setScrollPosition({
+    scrollTop,
+    scrollHeight = 1000,
+    clientHeight = 400,
+  }: {
+    scrollTop: number;
+    scrollHeight?: number;
+    clientHeight?: number;
+  }) {
+    const node = screen.getByTestId('feed-comments-scroll');
+    Object.defineProperty(node, 'scrollHeight', {
+      value: scrollHeight,
+      configurable: true,
+    });
+    Object.defineProperty(node, 'clientHeight', {
+      value: clientHeight,
+      configurable: true,
+    });
+    node.scrollTop = scrollTop;
+    node.scrollTo = jest.fn() as unknown as typeof node.scrollTo;
+    return node;
+  }
+
+  it('scrolls to a new comment when the user is already at the bottom', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
+      .mockResolvedValue(page([comment(1, 'Prvý'), comment(2, 'Nový')], 2));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+    // 1000 - 600 - 400 = 0 px od spodku.
+    const node = setScrollPosition({ scrollTop: 600 });
+
+    await tick();
+    await screen.findByText('Nový');
+
+    expect(node.scrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' }),
+    );
+    // Pri spodku indikátor nemá čo hlásiť.
+    expect(
+      screen.queryByTestId('feed-comments-new-indicator'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows an indicator instead of moving the view when reading higher up', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
+      .mockResolvedValue(page([comment(1, 'Prvý'), comment(2, 'Nový')], 2));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+    // 1000 - 0 - 400 = 600 px od spodku → používateľ číta vyššie.
+    const node = setScrollPosition({ scrollTop: 0 });
+
+    await tick();
+    await screen.findByText('Nový');
+
+    const indicator = await screen.findByTestId('feed-comments-new-indicator');
+    expect(indicator).toHaveTextContent('1 nový komentár');
+    // Pohľad sa NEPOSUNUL.
+    expect(node.scrollTo).not.toHaveBeenCalled();
+
+    // Klik na indikátor doscrolluje a upozornenie zmizne.
+    await act(async () => {
+      indicator.click();
+    });
+    expect(node.scrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('feed-comments-new-indicator'),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('counts several comments that arrived across polls', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
+      .mockResolvedValueOnce(page([comment(1, 'Prvý'), comment(2, 'A')], 2))
+      .mockResolvedValueOnce(
+        page([comment(1, 'Prvý'), comment(2, 'A'), comment(3, 'B')], 3),
+      )
+      .mockResolvedValue(
+        page(
+          [comment(1, 'Prvý'), comment(2, 'A'), comment(3, 'B'), comment(4, 'C')],
+          4,
+        ),
+      );
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+    setScrollPosition({ scrollTop: 0 });
+
+    await tick(3);
+    await screen.findByText('C');
+
+    // 3 → tvar pre 2–4.
+    expect(
+      await screen.findByTestId('feed-comments-new-indicator'),
+    ).toHaveTextContent('3 nové komentáre');
+  });
+
+  it('clears the indicator once the user scrolls to the bottom', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
+      .mockResolvedValue(page([comment(1, 'Prvý'), comment(2, 'Nový')], 2));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+    const node = setScrollPosition({ scrollTop: 0 });
+
+    await tick();
+    await screen.findByTestId('feed-comments-new-indicator');
+
+    await act(async () => {
+      node.scrollTop = 600;
+      node.dispatchEvent(new Event('scroll', { bubbles: true }));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('feed-comments-new-indicator'),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('keeps the live region mounted so screen readers can hear the update', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
+      .mockResolvedValue(page([comment(1, 'Prvý'), comment(2, 'Nový')], 2));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+    setScrollPosition({ scrollTop: 0 });
+
+    // Región musí existovať UŽ PRED zmenou – aria-live na uzle, ktorý sa
+    // objaví až s oznámením, čítačka spoľahlivo neohlási.
+    const announcer = screen.getByTestId('feed-comments-new-announcer');
+    expect(announcer).toHaveAttribute('aria-live', 'polite');
+    expect(announcer).toBeEmptyDOMElement();
+
+    await tick();
+
+    await waitFor(() => expect(announcer).toHaveTextContent('1 nový komentár'));
+    // Ten istý uzol, nie novo vložený.
+    expect(screen.getByTestId('feed-comments-new-announcer')).toBe(announcer);
+  });
+
+  it('does not rewind pagination when loadMore finished during a poll', async () => {
+    // Kým poll čaká na odpoveď, používateľ si donačíta ďalšie dve stránky.
+    // Odpoveď pollu je postavená na kratšom okne, takže jej `next` ukazuje
+    // dozadu – prevziať ho by znamenalo stiahnuť už načítanú stránku znova.
+    const server = createFakeCommentServer(
+      Array.from({ length: 40 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    const releasePoll: Array<() => void> = [];
+    let requestsWithoutCursor = 0;
+    mockedList.mockImplementation((postId: number, params = {}) => {
+      const response = server.impl(postId, params);
+      if (!params.cursorUrl) {
+        requestsWithoutCursor += 1;
+        // 1. = počiatočné načítanie, 2. = poll → ten podržíme.
+        if (requestsWithoutCursor === 2) {
+          return new Promise((resolve) => releasePoll.push(() => resolve(response)));
+        }
+      }
+      return response;
+    });
+
+    const observer = installFiringObserver();
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+
+      await tick();
+      expect(releasePoll).toHaveLength(1);
+
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K20');
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K30');
+
+      await act(async () => {
+        releasePoll[0]();
+      });
+
+      mockedList.mockClear();
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+
+      const cursors = mockedList.mock.calls
+        .map((call) => call[1]?.cursorUrl)
+        .filter(Boolean) as string[];
+      expect(cursors[0]).toContain('after=30');
+      expect(cursors[0]).not.toContain('after=20');
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('does not announce comments the user scrolled in during the poll', async () => {
+    // Kým poll čaká na odpoveď, používateľ si sám doscrolluje ďalšiu stránku.
+    // Tie isté komentáre potom prídu aj v odpovedi pollu – ale videl ich už
+    // na obrazovke, takže sa nesmú ohlásiť ako nové.
+    const server = createFakeCommentServer(
+      Array.from({ length: 20 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    const releasePoll: Array<() => void> = [];
+    let requestsWithoutCursor = 0;
+    mockedList.mockImplementation((postId: number, params = {}) => {
+      const response = server.impl(postId, params);
+      if (!params.cursorUrl) {
+        requestsWithoutCursor += 1;
+        if (requestsWithoutCursor === 2) {
+          return new Promise((resolve) => releasePoll.push(() => resolve(response)));
+        }
+      }
+      return response;
+    });
+
+    const observer = installFiringObserver();
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+      // Číta hore – keby čokoľvek pribudlo ako „nové", indikátor by sa ukázal.
+      setScrollPosition({ scrollTop: 0 });
+
+      await tick();
+      expect(releasePoll).toHaveLength(1);
+
+      // Používateľ si K11–K20 dotiahne sám.
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K20');
+
+      await act(async () => {
+        releasePoll[0]();
+      });
+
+      // Odpoveď pollu obsahuje K11–K20, ale tie už používateľ videl.
+      expect(
+        screen.queryByTestId('feed-comments-new-indicator'),
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('feed-comments-new-announcer')).toBeEmptyDOMElement();
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('still announces a genuinely new comment after a loadMore', async () => {
+    // Náprotivok predošlého testu: watermark nesmie umlčať skutočnú novinku.
+    const server = createFakeCommentServer(
+      Array.from({ length: 20 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    mockedList.mockImplementation(server.impl);
+
+    const observer = installFiringObserver();
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+      setScrollPosition({ scrollTop: 0 });
+
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K20');
+
+      server.add(comment(21, 'K21'));
+      await tick();
+
+      expect(
+        await screen.findByTestId('feed-comments-new-indicator'),
+      ).toHaveTextContent('1 nový komentár');
+    } finally {
+      observer.restore();
+    }
+  });
+
   it('stops polling once the section is closed', async () => {
     mockedList.mockResolvedValue(page([comment(1, 'Prvý')]));
 
@@ -381,9 +800,9 @@ describe('FeedPostComments – polling', () => {
     expect(mockedList.mock.calls.length).toBe(afterUnmount);
   });
 
-  it('keeps the newest page in view for a long thread', async () => {
-    // Vlákno má viac stránok – používateľ si donačítal poslednú, takže
-    // polling musí sledovať JU, nie prvú (kde nové komentáre nikdy nie sú).
+  it('keeps a long thread whole while adding what is new at the end', async () => {
+    // Viac stránok: používateľ si donačítal poslednú. Nový komentár musí
+    // pribudnúť a zároveň nesmie zmiznúť nič z už načítaného okna.
     mockedList
       .mockResolvedValueOnce({
         results: [comment(1, 'Starý')],
@@ -395,10 +814,10 @@ describe('FeedPostComments – polling', () => {
         results: [comment(2, 'Novší')],
         next: null,
         previous: null,
-        count: 2,
+        count: undefined,
       })
       .mockResolvedValue({
-        results: [comment(2, 'Novší'), comment(3, 'Najnovší')],
+        results: [comment(1, 'Starý'), comment(2, 'Novší'), comment(3, 'Najnovší')],
         next: null,
         previous: null,
         count: 3,
@@ -419,11 +838,27 @@ describe('FeedPostComments – polling', () => {
       mockedList.mockClear();
       await tick();
 
-      // Polling musí ísť na KURZOR poslednej stránky – prvá stránka nesie
-      // najstaršie komentáre, nové by tam nikdy nepribudli.
-      const [, params] = mockedList.mock.calls[0];
-      expect(params?.cursorUrl).toBe('http://api.test/comments/?cursor=a');
       expect(await screen.findByText('Najnovší')).toBeInTheDocument();
+      expect(screen.getByText('Starý')).toBeInTheDocument();
+      expect(screen.getByText('Novší')).toBeInTheDocument();
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('keeps the counter fresh even after the user loaded more pages', async () => {
+    // `count` vracia BE LEN pri dopyte bez kurzora. Kým polling chodil cez
+    // uložený kurzor, číslo pri ikone sa každému, kto si donačítal ďalšiu
+    // stránku, prestalo aktualizovať – falošný server to isté pravidlo drží.
+    const onTotalChange = jest.fn();
+    const { server, observer } = await renderLongThread(onTotalChange);
+    try {
+      expect(onTotalChange).toHaveBeenLastCalledWith(15);
+
+      server.remove(3);
+      await tick();
+
+      await waitFor(() => expect(onTotalChange).toHaveBeenLastCalledWith(14));
     } finally {
       observer.restore();
     }
