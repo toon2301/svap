@@ -81,6 +81,14 @@ function mergeComments(
 
 /** Ako dlho ostane komentár z notifikácie zvýraznený. */
 const HIGHLIGHT_MS = 3000;
+/**
+ * Strop donačítavania pri hľadaní komentára z notifikácie.
+ *
+ * Pri COMMENTS_PAGE_SIZE = 10 to je 200 komentárov – hlbšie vlákno je
+ * v praxi výnimka a nekonečné stránkovanie by pri zlom odkaze bolo horšie
+ * než sa zastaviť.
+ */
+const HIGHLIGHT_MAX_PAGES = 20;
 
 type FeedPostCommentsProps = {
   postId: number;
@@ -123,9 +131,15 @@ export default function FeedPostComments({
   /** Počet komentárov, ktoré prišli, kým používateľ čítal vyššie v zozname. */
   const [newCommentsCount, setNewCommentsCount] = useState(0);
   const [highlighted, setHighlighted] = useState<number | null>(null);
-  // Doscrolluje sa RAZ – ďalší poll alebo donačítanie nesmie pohľad strhnúť
-  // späť, keď si medzitým používateľ odscrolloval inam.
-  const highlightDoneRef = useRef(false);
+  // Ktorý cieľ už bol vybavený – doscrolluje sa RAZ, aby ďalší poll alebo
+  // donačítanie nestrhlo pohľad späť, keď si používateľ odscrolloval inam.
+  const highlightHandledRef = useRef<number | null>(null);
+  // Časovač zvýraznenia drží ref, nie cleanup efektu závislého od `comments`:
+  // ten by ho rušil pri KAŽDOM polle, takže by zvýraznenie buď zmizlo
+  // predčasne, alebo (po zmeškanom vyčistení) ostalo visieť.
+  const highlightTimerRef = useRef<number | null>(null);
+  /** Koľko stránok sa už donačítalo pri hľadaní cieľa – strop proti slučke. */
+  const highlightPagesRef = useRef(0);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -350,27 +364,76 @@ export default function FeedPostComments({
     setNewCommentsCount((current) => (current === 0 ? current : 0));
   }, [comments, scrollListToBottom]);
 
-  // Komentár z notifikácie: doscrolluj naň a krátko ho zvýrazni.
-  //
-  // ZNÁME OBMEDZENIE: hľadá sa len medzi AKTUÁLNE načítanými komentármi.
-  // Keď je hlbšie v dlhom vlákne (mimo prvej stránky), nestane sa nič –
-  // zobrazí sa normálna prvá stránka bez skoku, nič sa nerozbije.
+  // Nový cieľ = nové hľadanie. Časovač sa ruší LEN tu (zmena cieľa) a pri
+  // odmountovaní – nie pri každej zmene zoznamu.
   useEffect(() => {
-    if (!highlightCommentId || highlightDoneRef.current) return;
-    const target = comments.find((comment) => comment.id === highlightCommentId);
-    if (!target) return;
+    highlightHandledRef.current = null;
+    highlightPagesRef.current = 0;
+    return () => {
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
+    };
+  }, [highlightCommentId]);
 
-    highlightDoneRef.current = true;
-    setHighlighted(highlightCommentId);
-    const node = document.querySelector(
-      `[data-comment-id="${highlightCommentId}"]`,
-    );
-    if (node && typeof node.scrollIntoView === 'function') {
-      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  /**
+   * Komentár z notifikácie: nájdi ho, doscrolluj naň a krátko ho zvýrazni.
+   *
+   * Keď v načítanom okne nie je, DONAČÍTAVA sa ďalej – a to je bežný prípad,
+   * nie okrajový: komentáre sú zoradené vzostupne, takže čerstvý komentár
+   * (o akom notifikácia takmer vždy je) leží na POSLEDNEJ stránke, nie na
+   * prvej.
+   *
+   * Prečo stránkovať a nepýtať si komentár priamo: aby sa dalo NA komentár
+   * doscrollovať, musí byť v zozname aj všetko pred ním – zoznam je súvislé
+   * okno od začiatku vlákna. Samostatný „daj mi tento komentár" endpoint by
+   * vrátil objekt, ale nie jeho pozíciu, takže stránky by sa aj tak museli
+   * donačítať. Preto sa znovupoužije `loadMore`, bez zásahu do backendu.
+   */
+  useEffect(() => {
+    if (!highlightCommentId || loading) return;
+    if (highlightHandledRef.current === highlightCommentId) return;
+
+    const found = comments.some((comment) => comment.id === highlightCommentId);
+    if (found) {
+      highlightHandledRef.current = highlightCommentId;
+      setHighlighted(highlightCommentId);
+      const node = document.querySelector(
+        `[data-comment-id="${highlightCommentId}"]`,
+      );
+      if (node && typeof node.scrollIntoView === 'function') {
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      highlightTimerRef.current = window.setTimeout(
+        () => setHighlighted(null),
+        HIGHLIGHT_MS,
+      );
+      return;
     }
-    const timer = window.setTimeout(() => setHighlighted(null), HIGHLIGHT_MS);
-    return () => window.clearTimeout(timer);
-  }, [comments, highlightCommentId]);
+
+    // Zoznam je vzostupný: keď už je načítané id VYŠŠIE než hľadané, prešli
+    // sme okolo neho – komentár medzitým zanikol. Ďalšie stránkovanie by
+    // nepomohlo.
+    const highestLoaded = comments.length ? comments[comments.length - 1].id : 0;
+    const passedIt = highestLoaded > highlightCommentId;
+    if (
+      passedIt ||
+      !hasMore ||
+      loadingMore ||
+      highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES
+    ) {
+      // Vzdaj to ticho – zoznam ostáva normálne použiteľný, len bez skoku.
+      if (passedIt || !hasMore || highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
+        highlightHandledRef.current = highlightCommentId;
+      }
+      return;
+    }
+
+    highlightPagesRef.current += 1;
+    // Po dobehnutí narastie `comments` a tento efekt sa spustí znova.
+    void loadMore();
+  }, [comments, highlightCommentId, loading, loadingMore, hasMore, loadMore]);
 
   // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
   const handleListScroll = useCallback(() => {

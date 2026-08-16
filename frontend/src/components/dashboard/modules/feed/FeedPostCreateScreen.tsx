@@ -33,13 +33,19 @@ export default function FeedPostCreateScreen({
     >
       {/* Rovnaká hlavička ako ostatné mobilné celoobrazovkové obrazovky
           (Súkromie a spol.) – zdieľaný SettingsDetailHeader, nie vlastná
-          kópia štýlov, aby sa šípka a nadpis nemohli rozísť. */}
-      <SettingsDetailHeader
-        title={t('feed.composerTitle', 'Nový príspevok')}
-        backLabel={t('common.back', 'Späť')}
-        onBack={onClose}
-        className="mb-6"
-      />
+          kópia štýlov, aby sa šípka a nadpis nemohli rozísť.
+          Obal je sticky: pri dlhom formulári (fotky, tagovanie) by inak
+          cesta späť odscrollovala preč. Pozadie musí byť NEPRIEHĽADNÉ, inak
+          by pod ňou presvital obsah; záporné okraje ho roztiahnu cez
+          horizontálny padding stránky. */}
+      <div className="sticky top-0 z-20 -mx-4 mb-6 bg-white px-4 pt-1 pb-3 dark:bg-[#0f0f10]">
+        <SettingsDetailHeader
+          title={t('feed.composerTitle', 'Nový príspevok')}
+          backLabel={t('common.back', 'Späť')}
+          onBack={onClose}
+          className=""
+        />
+      </div>
 
       <FeedPostComposerForm onClose={onClose} onCreated={onCreated} />
     </div>

@@ -262,7 +262,7 @@ describe('FeedPostDetailModule – komentár z notifikácie', () => {
     jest.useRealTimers();
   });
 
-  it('does nothing when the notified comment is outside the loaded window', async () => {
+  it('gives up after a bounded number of pages when the comment never shows', async () => {
     const scrollIntoView = jest.fn();
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       value: scrollIntoView,
@@ -272,6 +272,8 @@ describe('FeedPostDetailModule – komentár z notifikácie', () => {
     mockSearchParams.get.mockImplementation((key: string) =>
       key === 'comment' ? '999' : null,
     );
+    // Server stále hlási ďalšiu stránku, ale cieľ sa neobjaví – bez stropu by
+    // sa stránkovalo donekonečna.
     mockedListComments.mockResolvedValue({
       results: [comment(41, 'Starší')],
       next: 'http://api.test/next',
@@ -282,8 +284,126 @@ describe('FeedPostDetailModule – komentár z notifikácie', () => {
     render(<FeedPostDetailModule postId={9} />);
     await screen.findByText('Starší');
 
-    // Známe obmedzenie: hlbšie vo vlákne sa neskáče, ale nič sa nerozbije.
+    await waitFor(() =>
+      expect(mockedListComments.mock.calls.length).toBeGreaterThan(1),
+    );
+    await waitFor(() =>
+      expect(mockedListComments.mock.calls.length).toBeLessThanOrEqual(21),
+    );
+    // Nič sa nerozbije – zoznam ostáva použiteľný, len bez skoku.
     expect(scrollIntoView).not.toHaveBeenCalled();
     expect(screen.getByText('Starší')).toBeInTheDocument();
   });
+});
+
+describe('FeedPostDetailModule – komentár mimo prvej stránky', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSearchParams.get.mockReturnValue(null);
+    mockedGetPost.mockResolvedValue(post);
+  });
+
+  it('pages forward until it finds a freshly created comment', async () => {
+    // NAJBEŽNEJŠÍ prípad notifikácie: komentáre sú zoradené vzostupne, takže
+    // ten čerstvý leží na POSLEDNEJ stránke – nie na prvej.
+    const scrollIntoView = jest.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: scrollIntoView,
+      configurable: true,
+      writable: true,
+    });
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '25' : null,
+    );
+
+    const pageOf = (from: number, count: number) =>
+      Array.from({ length: count }, (_, i) => comment(from + i, `K${from + i}`));
+    mockedListComments
+      .mockResolvedValueOnce({
+        results: pageOf(1, 10),
+        next: 'http://api.test/c?after=10',
+        previous: null,
+        count: 25,
+      })
+      .mockResolvedValueOnce({
+        results: pageOf(11, 10),
+        next: 'http://api.test/c?after=20',
+        previous: null,
+        count: undefined,
+      })
+      .mockResolvedValue({
+        results: pageOf(21, 5),
+        next: null,
+        previous: null,
+        count: undefined,
+      });
+
+    render(<FeedPostDetailModule postId={9} />);
+
+    // Bez donačítavania by sa zobrazila len prvá desiatka a nič by sa nestalo.
+    expect(await screen.findByText('K25')).toBeInTheDocument();
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    expect(
+      document.querySelector('[data-comment-id="25"]')?.className,
+    ).toContain('bg-purple-100/80');
+  });
+
+  it('stops paging when it has passed the target id', async () => {
+    const scrollIntoView = jest.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: scrollIntoView,
+      configurable: true,
+      writable: true,
+    });
+    // Cieľ 7 medzitým zanikol – prvá stránka už siaha za neho.
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '7' : null,
+    );
+    mockedListComments.mockResolvedValue({
+      results: [comment(5, 'Piaty'), comment(9, 'Deviaty')],
+      next: 'http://api.test/c?after=9',
+      previous: null,
+      count: 20,
+    });
+
+    render(<FeedPostDetailModule postId={9} />);
+    await screen.findByText('Deviaty');
+
+    // Ďalšie stránky by nepomohli – zoznam je vzostupný, cieľ sme prešli.
+    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(1));
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+});
+
+it('does not keep re-scrolling to the comment on every later poll', async () => {
+  jest.useFakeTimers();
+  const scrollIntoView = jest.fn();
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    value: scrollIntoView,
+    configurable: true,
+    writable: true,
+  });
+  mockSearchParams.get.mockImplementation((key: string) =>
+    key === 'comment' ? '42' : null,
+  );
+  mockedGetPost.mockResolvedValue(post);
+  mockedListComments.mockResolvedValue({
+    results: [comment(41, 'Starší'), comment(42, 'Ten z notifikácie')],
+    next: null,
+    previous: null,
+    count: 2,
+  });
+
+  render(<FeedPostDetailModule postId={9} />);
+  await screen.findByText('Ten z notifikácie');
+  await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+
+  // Polling prinesie novú verziu zoznamu – pohľad sa už nesmie strhnúť späť,
+  // keď si používateľ medzitým odscrolloval inam.
+  await act(async () => {
+    jest.advanceTimersByTime(30000);
+  });
+
+  expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  jest.useRealTimers();
 });

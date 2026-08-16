@@ -1,9 +1,11 @@
 /**
- * Priebežné počty lajkov na karte.
+ * Pokrytie priebežných počtov lajkov na karte.
  *
- * Rovnaký hook ako pri komentároch (`useFeedCommentsPolling`), ale zapnutý
- * LEN keď je karta v zornom poli – inak by pri feede s desiatkami kariet
- * bežal request za každú z nich.
+ * Overuje sa:
+ *  - počet sa aktualizuje bez zásahu používateľa, kým je karta na obrazovke,
+ *  - karta MIMO zorného poľa nepošle ani jeden request (výkonová brzda),
+ *  - vlastný optimistický lajk poll neprepíše – ani keď lajk ešte beží, ani
+ *    keď stihol celý dobehnúť počas requestu.
  */
 
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -171,7 +173,7 @@ it('does not let a poll overwrite the like the user just made', async () => {
   const restore = installViewportObserver(true);
   try {
     // Lajk visí – poll medzitým vráti stav SPRED neho.
-    let releaseLike: ((value: unknown) => void) | null = null;
+    let releaseLike: (value: unknown) => void = () => {};
     mockedLike.mockImplementation(
       () => new Promise((resolve) => {
         releaseLike = resolve;
@@ -192,7 +194,7 @@ it('does not let a poll overwrite the like the user just made', async () => {
     expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
 
     await act(async () => {
-      releaseLike?.({ likes_count: 4, is_liked_by_me: true });
+      releaseLike({ likes_count: 4, is_liked_by_me: true });
     });
     expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
   } finally {
@@ -205,7 +207,7 @@ it('discards a poll response that landed after the user liked mid-flight', async
   try {
     // Poll odíde PRVÝ a visí; lajk sa stihne až počas jeho behu. Odpoveď je
     // teda spred lajku a nesmie sa premietnuť.
-    let releasePoll: ((value: FeedPost) => void) | null = null;
+    let releasePoll: (value: FeedPost) => void = () => {};
     mockedGet.mockImplementation(
       () => new Promise<FeedPost>((resolve) => {
         releasePoll = resolve;
@@ -227,7 +229,7 @@ it('discards a poll response that landed after the user liked mid-flight', async
     expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
 
     await act(async () => {
-      releasePoll?.(post({ likes_count: 3, is_liked_by_me: false }));
+      releasePoll(post({ likes_count: 3, is_liked_by_me: false }));
     });
 
     // Zastaraná odpoveď by vrátila 3 a odlajkovala – to sa stať nesmie.
