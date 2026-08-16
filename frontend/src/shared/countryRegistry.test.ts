@@ -99,6 +99,145 @@ describe('offer country registry', () => {
     });
   });
 
+  it('exposes current Hungarian districts and keeps legacy values inactive', () => {
+    const activeEntries = getDistrictOptions('HU');
+    const allEntries = getDistrictOptions('HU', { includeInactive: true });
+
+    expect(activeEntries).toHaveLength(197);
+    expect(allEntries).toHaveLength(206);
+    expect(new Set(allEntries.map((entry) => entry.code)).size).toBe(206);
+    expect(new Set(activeEntries.map((entry) => entry.officialCode)).size).toBe(197);
+    expect(activeEntries.every((entry) => Boolean(entry.officialCode))).toBe(true);
+    expect(activeEntries.map((entry) => entry.code)).toEqual(
+      expect.arrayContaining([
+        'boly',
+        'budakeszi',
+        'budapest-01-ker',
+        'budapest-23-ker',
+        'sasd',
+        'tolna',
+      ]),
+    );
+
+    expect(activeEntries.some((entry) => entry.code === 'budapest')).toBe(false);
+    expect(isInactiveOfferDistrictCode('HU', 'budapest')).toBe(true);
+    expect(getOfferDistrictLabel('HU', 'budapest')).toBe('Budapest');
+    expect(findDistrictByLabel('HU', 'Boly')).toMatchObject({
+      code: 'boly',
+      label: 'Bóly',
+      officialCode: '024',
+    });
+  });
+
+  it('restores an existing inactive Hungarian district without making it selectable', () => {
+    expect(
+      resolveInitialOfferDistrictSelection({
+        countryCode: 'HU',
+        districtCode: 'budapest',
+        districtLabel: 'Budapest',
+      }),
+    ).toEqual({
+      countryCode: 'HU',
+      districtCode: 'budapest',
+      districtLabel: 'Budapest',
+    });
+  });
+
+  it('exposes current Austrian districts without Vienna municipal districts', () => {
+    const activeEntries = getDistrictOptions('AT');
+    const allEntries = getDistrictOptions('AT', { includeInactive: true });
+
+    expect(activeEntries).toHaveLength(94);
+    expect(allEntries).toHaveLength(96);
+    expect(new Set(allEntries.map((entry) => entry.code)).size).toBe(96);
+    expect(new Set(activeEntries.map((entry) => entry.officialCode)).size).toBe(94);
+    expect(activeEntries.every((entry) => Boolean(entry.officialCode))).toBe(true);
+    expect(findDistrictByLabel('AT', 'Wien')).toMatchObject({
+      code: 'wien',
+      officialCode: '900',
+    });
+    expect(findDistrictByLabel('AT', 'Klagenfurt am Worthersee')).toMatchObject({
+      code: 'klagenfurt-am-worthersee',
+      label: 'Klagenfurt am Wörthersee',
+      officialCode: '201',
+    });
+    expect(
+      activeEntries.some(
+        (entry) => entry.officialCode >= '901' && entry.officialCode <= '923',
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps historical Austrian districts visible but not selectable', () => {
+    expect(getDistrictOptions('AT').map((entry) => entry.code)).not.toEqual(
+      expect.arrayContaining(['schwechat', 'wien-umgebung']),
+    );
+    expect(isInactiveOfferDistrictCode('AT', 'schwechat')).toBe(true);
+    expect(isInactiveOfferDistrictCode('AT', 'wien-umgebung')).toBe(true);
+    expect(getOfferDistrictLabel('AT', 'schwechat')).toBe('Schwechat');
+    expect(
+      resolveInitialOfferDistrictSelection({
+        countryCode: 'AT',
+        districtCode: 'schwechat',
+        districtLabel: 'Schwechat',
+      }),
+    ).toEqual({
+      countryCode: 'AT',
+      districtCode: 'schwechat',
+      districtLabel: 'Schwechat',
+    });
+  });
+
+  it('exposes current German districts and preserves legacy values', () => {
+    const activeEntries = getDistrictOptions('DE');
+    const allEntries = getDistrictOptions('DE', { includeInactive: true });
+
+    expect(activeEntries).toHaveLength(401);
+    expect(allEntries).toHaveLength(444);
+    expect(new Set(allEntries.map((entry) => entry.code)).size).toBe(444);
+    expect(new Set(activeEntries.map((entry) => entry.label)).size).toBe(401);
+    expect(new Set(activeEntries.map((entry) => entry.officialCode)).size).toBe(401);
+    expect(activeEntries.every((entry) => Boolean(entry.officialCode))).toBe(true);
+
+    expect(findDistrictByLabel('DE', 'Munchen (Stadt)')).toMatchObject({
+      code: 'munchen-stadt',
+      label: 'M\u00fcnchen (Stadt)',
+      officialCode: '09162',
+    });
+    expect(findDistrictByLabel('DE', 'Osnabruck (Landkreis)')).toMatchObject({
+      code: 'osnabruck-landkreis',
+      label: 'Osnabr\u00fcck (Landkreis)',
+      officialCode: '03459',
+    });
+    expect(findDistrictByLabel('DE', 'Hassberge')).toMatchObject({
+      code: 'hassberge',
+      label: 'Ha\u00dfberge',
+      officialCode: '09674',
+    });
+  });
+
+  it('restores inactive German values and prefers active duplicate labels', () => {
+    expect(getDistrictOptions('DE').some((entry) => entry.code === 'munchen')).toBe(false);
+    expect(isInactiveOfferDistrictCode('DE', 'munchen')).toBe(true);
+    expect(isInactiveOfferDistrictCode('DE', 'wesel-2')).toBe(true);
+    expect(findDistrictByLabel('DE', 'Wesel', { includeInactive: true })).toMatchObject({
+      code: 'wesel',
+      active: true,
+      officialCode: '05170',
+    });
+    expect(
+      resolveInitialOfferDistrictSelection({
+        countryCode: 'DE',
+        districtCode: 'munchen',
+        districtLabel: 'M\u00fcnchen',
+      }),
+    ).toEqual({
+      countryCode: 'DE',
+      districtCode: 'munchen',
+      districtLabel: 'M\u00fcnchen',
+    });
+  });
+
   it('hides an inactive legacy district but still resolves existing data', () => {
     expect(getDistrictOptions('CZ')).toHaveLength(77);
     expect(getDistrictOptions('CZ', { includeInactive: true })).toHaveLength(78);

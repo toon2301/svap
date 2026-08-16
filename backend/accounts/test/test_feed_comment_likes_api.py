@@ -343,7 +343,14 @@ class FeedCommentLikeNotificationTests(APITestCase):
             for item in results
             if item["type"] == NotificationType.FEED_POST_COMMENT_LIKED
         )
-        self.assertEqual(payload["target_url"], f"/dashboard/feed/{self.post.id}")
+        # Notifikácia nesie aj `comment_id`, takže cieľ vedie priamo k
+        # lajknutému komentáru – FE naň doscrolluje a krátko ho zvýrazní.
+        # Predtým smerovala len na príspevok a používateľ si komentár musel
+        # nájsť sám.
+        self.assertEqual(
+            payload["target_url"],
+            f"/dashboard/feed/{self.post.id}?comment={self.comment.id}",
+        )
 
 
 class FeedCommentLikeAccountDeletionTests(APITestCase):

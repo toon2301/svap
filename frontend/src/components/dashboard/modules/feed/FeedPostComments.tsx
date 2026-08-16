@@ -79,8 +79,13 @@ function mergeComments(
   return [...byId.values()].sort((a, b) => a.id - b.id);
 }
 
+/** Ako dlho ostane komentár z notifikácie zvýraznený. */
+const HIGHLIGHT_MS = 3000;
+
 type FeedPostCommentsProps = {
   postId: number;
+  /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
+  highlightCommentId?: number | null;
   onCountChange?: (delta: number) => void;
   /** Skutočný počet zo servera – drží číslo pri ikone v súlade so zoznamom. */
   onTotalChange?: (total: number) => void;
@@ -88,6 +93,7 @@ type FeedPostCommentsProps = {
 
 export default function FeedPostComments({
   postId,
+  highlightCommentId,
   onCountChange,
   onTotalChange,
 }: FeedPostCommentsProps) {
@@ -116,6 +122,10 @@ export default function FeedPostComments({
   const scrollToBottomRef = useRef<ScrollBehavior | null>(null);
   /** Počet komentárov, ktoré prišli, kým používateľ čítal vyššie v zozname. */
   const [newCommentsCount, setNewCommentsCount] = useState(0);
+  const [highlighted, setHighlighted] = useState<number | null>(null);
+  // Doscrolluje sa RAZ – ďalší poll alebo donačítanie nesmie pohľad strhnúť
+  // späť, keď si medzitým používateľ odscrolloval inam.
+  const highlightDoneRef = useRef(false);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -340,6 +350,28 @@ export default function FeedPostComments({
     setNewCommentsCount((current) => (current === 0 ? current : 0));
   }, [comments, scrollListToBottom]);
 
+  // Komentár z notifikácie: doscrolluj naň a krátko ho zvýrazni.
+  //
+  // ZNÁME OBMEDZENIE: hľadá sa len medzi AKTUÁLNE načítanými komentármi.
+  // Keď je hlbšie v dlhom vlákne (mimo prvej stránky), nestane sa nič –
+  // zobrazí sa normálna prvá stránka bez skoku, nič sa nerozbije.
+  useEffect(() => {
+    if (!highlightCommentId || highlightDoneRef.current) return;
+    const target = comments.find((comment) => comment.id === highlightCommentId);
+    if (!target) return;
+
+    highlightDoneRef.current = true;
+    setHighlighted(highlightCommentId);
+    const node = document.querySelector(
+      `[data-comment-id="${highlightCommentId}"]`,
+    );
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    const timer = window.setTimeout(() => setHighlighted(null), HIGHLIGHT_MS);
+    return () => window.clearTimeout(timer);
+  }, [comments, highlightCommentId]);
+
   // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
   const handleListScroll = useCallback(() => {
     const node = scrollRef.current;
@@ -454,7 +486,15 @@ export default function FeedPostComments({
           ) : (
             <ul className="space-y-3">
               {comments.map((comment) => (
-                <li key={comment.id} className="flex items-start gap-2.5">
+                <li
+                key={comment.id}
+                data-comment-id={comment.id}
+                className={`flex items-start gap-2.5 rounded-xl transition-colors duration-700 ${
+                  highlighted === comment.id
+                    ? 'bg-purple-100/80 dark:bg-purple-900/30'
+                    : ''
+                }`}
+              >
                   <InitialsAvatar
                     name={comment.author?.display_name}
                     avatarUrl={comment.author?.avatar_url}

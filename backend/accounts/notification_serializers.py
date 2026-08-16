@@ -154,6 +154,14 @@ class NotificationSerializer(serializers.ModelSerializer):
             except (TypeError, ValueError):
                 post_id = 0
             if post_id > 0:
+                # Pri komentári doveď príjemcu rovno k nemu – FE podľa toho
+                # doscrolluje a krátko ho zvýrazní.
+                try:
+                    comment_id = int(data.get("comment_id") or 0)
+                except (TypeError, ValueError):
+                    comment_id = 0
+                if comment_id > 0:
+                    return f"/dashboard/feed/{post_id}?comment={comment_id}"
                 return f"/dashboard/feed/{post_id}"
         if obj.type in (
             NotificationType.REVIEW_CREATED,

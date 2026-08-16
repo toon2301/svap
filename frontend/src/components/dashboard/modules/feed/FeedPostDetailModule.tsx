@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -30,6 +30,13 @@ export default function FeedPostDetailModule({
 }: FeedPostDetailModuleProps) {
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Notifikácia o komentári vedie na `?comment=<id>` – viď target_url v
+  // notification_serializers.py.
+  const highlightCommentId = (() => {
+    const raw = Number(searchParams?.get('comment'));
+    return Number.isSafeInteger(raw) && raw > 0 ? raw : null;
+  })();
   const [post, setPost] = useState<FeedPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -119,6 +126,7 @@ export default function FeedPostDetailModule({
       <FeedPostCard
         post={post}
         initialCommentsOpen
+        highlightCommentId={highlightCommentId}
         // Po zmazaní nemá permalink čo zobraziť – rovnaká cesta späť ako pri
         // „obsah už nie je dostupný", len bez chybovej hlášky (zmazanie
         // potvrdil vlastný toast na karte).

@@ -121,8 +121,8 @@ export function GroupUserPicker({
         <div
           className={
             isMobile
-              ? 'flex max-h-[4.25rem] flex-wrap gap-1.5 overflow-y-auto pr-1'
-              : 'flex max-h-[5.5rem] flex-wrap gap-2 overflow-y-auto pr-1'
+              ? 'flex max-h-[4.25rem] flex-wrap gap-1.5 overflow-y-auto subtle-scrollbar pr-1'
+              : 'flex max-h-[5.5rem] flex-wrap gap-2 overflow-y-auto subtle-scrollbar pr-1'
           }
         >
           {selectedUsers.map((user) => (
@@ -174,7 +174,7 @@ export function GroupUserPicker({
 
       {error ? <div className="text-sm text-red-600 dark:text-red-400">{error}</div> : null}
 
-      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+      <div className="max-h-64 space-y-2 overflow-y-auto subtle-scrollbar pr-1">
         {loading ? (
           <div className="rounded-2xl border border-gray-200 p-3 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-400">
             {t('messages.groupCandidatesLoading', 'Načítavam používateľov...')}

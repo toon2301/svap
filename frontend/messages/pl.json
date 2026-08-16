@@ -4363,6 +4363,7 @@
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
   },
   "feed": {
+    "originalPost": "Oryginalny post",
     "postDeleteHint": "Tej akcji nie można cofnąć.",
     "deletePost": "Usuń post",
     "postDeleteConfirm": "Na pewno chcesz usunąć ten post?",

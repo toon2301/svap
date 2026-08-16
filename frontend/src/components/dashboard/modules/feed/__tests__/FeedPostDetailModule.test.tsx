@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostDetailModule from '../FeedPostDetailModule';
@@ -25,8 +25,10 @@ jest.mock('@/lib/feedApi', () => ({
 }));
 
 const mockRouterPush = jest.fn();
+const mockSearchParams = { get: jest.fn(() => null) };
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush }),
+  useSearchParams: () => mockSearchParams,
 }));
 
 jest.mock('react-hot-toast', () => ({
@@ -215,4 +217,73 @@ it('leaves the permalink for the feed after the author deletes the post', async 
   // pri „obsah už nie je dostupný".
   await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/home'));
   expect(onNavigateToFeed).toHaveBeenCalled();
+});
+
+describe('FeedPostDetailModule – komentár z notifikácie', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSearchParams.get.mockReturnValue(null);
+    mockedGetPost.mockResolvedValue(post);
+  });
+
+  it('scrolls to the notified comment and highlights it briefly', async () => {
+    jest.useFakeTimers();
+    const scrollIntoView = jest.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: scrollIntoView,
+      configurable: true,
+      writable: true,
+    });
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '42' : null,
+    );
+    mockedListComments.mockResolvedValue({
+      results: [comment(41, 'Starší'), comment(42, 'Ten z notifikácie')],
+      next: null,
+      previous: null,
+      count: 2,
+    });
+
+    render(<FeedPostDetailModule postId={9} />);
+    await screen.findByText('Ten z notifikácie');
+
+    const target = document.querySelector('[data-comment-id="42"]');
+    expect(target).not.toBeNull();
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    expect(target?.className).toContain('bg-purple-100/80');
+
+    // Zvýraznenie je len dočasné.
+    await act(async () => {
+      jest.advanceTimersByTime(4000);
+    });
+    expect(
+      document.querySelector('[data-comment-id="42"]')?.className,
+    ).not.toContain('bg-purple-100/80');
+    jest.useRealTimers();
+  });
+
+  it('does nothing when the notified comment is outside the loaded window', async () => {
+    const scrollIntoView = jest.fn();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: scrollIntoView,
+      configurable: true,
+      writable: true,
+    });
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '999' : null,
+    );
+    mockedListComments.mockResolvedValue({
+      results: [comment(41, 'Starší')],
+      next: 'http://api.test/next',
+      previous: null,
+      count: 50,
+    });
+
+    render(<FeedPostDetailModule postId={9} />);
+    await screen.findByText('Starší');
+
+    // Známe obmedzenie: hlbšie vo vlákne sa neskáče, ale nič sa nerozbije.
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.getByText('Starší')).toBeInTheDocument();
+  });
 });

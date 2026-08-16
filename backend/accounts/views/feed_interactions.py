@@ -302,7 +302,9 @@ def _create_comment(request, post: FeedPost) -> Response:
 
     def notify_author_about_comment():
         try:
-            create_feed_post_commented_notification(post=post, actor=request.user)
+            create_feed_post_commented_notification(
+                post=post, actor=request.user, comment=comment
+            )
         except Exception:
             logger.exception(
                 "Feed post comment notification dispatch failed",

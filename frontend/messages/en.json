@@ -4363,6 +4363,7 @@
     "viewOwnerResponse": "View owner response"
   },
   "feed": {
+    "originalPost": "Original post",
     "postDeleteHint": "This action cannot be undone.",
     "deletePost": "Delete post",
     "postDeleteConfirm": "Delete this post?",

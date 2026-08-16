@@ -80,7 +80,7 @@ it('goes back to the feed from the back button', async () => {
   const onClose = jest.fn();
   render(<FeedPostCreateScreen onClose={onClose} />);
 
-  await userEvent.click(screen.getByTestId('feed-post-create-back'));
+  await userEvent.click(screen.getByLabelText('Späť'));
 
   expect(onClose).toHaveBeenCalled();
 });

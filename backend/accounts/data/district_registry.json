@@ -21,6 +21,16 @@
         "active_count": 197,
         "as_of": "2025-01-01",
         "url": "https://www.ksh.hu/teruletiatlasz_jarasok"
+      },
+      "AT": {
+        "active_count": 94,
+        "as_of": "2026-01-01",
+        "url": "https://data.statistik.gv.at/web/meta.jsp?dataset=OGDEXT_POLBEZ_1"
+      },
+      "DE": {
+        "active_count": 401,
+        "as_of": "2026-06-30",
+        "url": "https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/Administrativ/Archiv/GVAuszugQ/AuszugGV2QAktuell.html"
       }
     }
   },
@@ -3613,1893 +3623,2708 @@
   "AT": [
     {
       "code": "amstetten",
-      "label": "Amstetten"
+      "label": "Amstetten",
+      "official_code": "305"
     },
     {
       "code": "baden",
-      "label": "Baden"
+      "label": "Baden",
+      "official_code": "306"
     },
     {
       "code": "bludenz",
-      "label": "Bludenz"
+      "label": "Bludenz",
+      "official_code": "801"
     },
     {
       "code": "braunau-am-inn",
-      "label": "Braunau am Inn"
+      "label": "Braunau am Inn",
+      "official_code": "404"
     },
     {
       "code": "bregenz",
-      "label": "Bregenz"
+      "label": "Bregenz",
+      "official_code": "802"
     },
     {
       "code": "bruck-an-der-leitha",
-      "label": "Bruck an der Leitha"
+      "label": "Bruck an der Leitha",
+      "official_code": "307"
     },
     {
       "code": "bruck-murzzuschlag",
-      "label": "Bruck-Mürzzuschlag"
+      "label": "Bruck-Mürzzuschlag",
+      "official_code": "621"
     },
     {
       "code": "deutschlandsberg",
-      "label": "Deutschlandsberg"
+      "label": "Deutschlandsberg",
+      "official_code": "603"
     },
     {
       "code": "dornbirn",
-      "label": "Dornbirn"
+      "label": "Dornbirn",
+      "official_code": "803"
     },
     {
       "code": "eferding",
-      "label": "Eferding"
+      "label": "Eferding",
+      "official_code": "405"
     },
     {
       "code": "eisenstadt",
-      "label": "Eisenstadt"
+      "label": "Eisenstadt",
+      "official_code": "101"
     },
     {
       "code": "eisenstadt-umgebung",
-      "label": "Eisenstadt-Umgebung"
+      "label": "Eisenstadt-Umgebung",
+      "official_code": "103"
     },
     {
       "code": "feldkirch",
-      "label": "Feldkirch"
+      "label": "Feldkirch",
+      "official_code": "804"
     },
     {
       "code": "feldkirchen",
-      "label": "Feldkirchen"
+      "label": "Feldkirchen",
+      "official_code": "210"
     },
     {
       "code": "freistadt",
-      "label": "Freistadt"
+      "label": "Freistadt",
+      "official_code": "406"
     },
     {
       "code": "gmunden",
-      "label": "Gmunden"
+      "label": "Gmunden",
+      "official_code": "407"
     },
     {
       "code": "gmund",
-      "label": "Gmünd"
+      "label": "Gmünd",
+      "official_code": "309"
     },
     {
       "code": "graz",
-      "label": "Graz"
+      "label": "Graz",
+      "official_code": "601"
     },
     {
       "code": "graz-umgebung",
-      "label": "Graz-Umgebung"
+      "label": "Graz-Umgebung",
+      "official_code": "606"
     },
     {
       "code": "grieskirchen",
-      "label": "Grieskirchen"
+      "label": "Grieskirchen",
+      "official_code": "408"
     },
     {
       "code": "ganserndorf",
-      "label": "Gänserndorf"
+      "label": "Gänserndorf",
+      "official_code": "308"
     },
     {
       "code": "gussing",
-      "label": "Güssing"
+      "label": "Güssing",
+      "official_code": "104"
     },
     {
       "code": "hallein",
-      "label": "Hallein"
+      "label": "Hallein",
+      "official_code": "502"
     },
     {
       "code": "hartberg-furstenfeld",
-      "label": "Hartberg-Fürstenfeld"
+      "label": "Hartberg-Fürstenfeld",
+      "official_code": "622"
     },
     {
       "code": "hermagor",
-      "label": "Hermagor"
+      "label": "Hermagor",
+      "official_code": "203"
     },
     {
       "code": "hollabrunn",
-      "label": "Hollabrunn"
+      "label": "Hollabrunn",
+      "official_code": "310"
     },
     {
       "code": "horn",
-      "label": "Horn"
+      "label": "Horn",
+      "official_code": "311"
     },
     {
       "code": "imst",
-      "label": "Imst"
+      "label": "Imst",
+      "official_code": "702"
     },
     {
       "code": "innsbruck",
-      "label": "Innsbruck"
+      "label": "Innsbruck",
+      "official_code": "701"
     },
     {
       "code": "innsbruck-land",
-      "label": "Innsbruck-Land"
+      "label": "Innsbruck-Land",
+      "official_code": "703"
     },
     {
       "code": "jennersdorf",
-      "label": "Jennersdorf"
+      "label": "Jennersdorf",
+      "official_code": "105"
     },
     {
       "code": "kirchdorf-an-der-krems",
-      "label": "Kirchdorf an der Krems"
+      "label": "Kirchdorf an der Krems",
+      "official_code": "409"
     },
     {
       "code": "kitzbuhel",
-      "label": "Kitzbühel"
+      "label": "Kitzbühel",
+      "official_code": "704"
     },
     {
       "code": "klagenfurt-am-worthersee",
-      "label": "Klagenfurt am Wörthersee"
+      "label": "Klagenfurt am Wörthersee",
+      "official_code": "201"
     },
     {
       "code": "klagenfurt-land",
-      "label": "Klagenfurt-Land"
+      "label": "Klagenfurt-Land",
+      "official_code": "204"
     },
     {
       "code": "korneuburg",
-      "label": "Korneuburg"
+      "label": "Korneuburg",
+      "official_code": "312"
     },
     {
       "code": "krems",
-      "label": "Krems"
+      "label": "Krems",
+      "official_code": "313"
     },
     {
       "code": "krems-an-der-donau",
-      "label": "Krems an der Donau"
+      "label": "Krems an der Donau",
+      "official_code": "301"
     },
     {
       "code": "kufstein",
-      "label": "Kufstein"
+      "label": "Kufstein",
+      "official_code": "705"
     },
     {
       "code": "landeck",
-      "label": "Landeck"
+      "label": "Landeck",
+      "official_code": "706"
     },
     {
       "code": "leibnitz",
-      "label": "Leibnitz"
+      "label": "Leibnitz",
+      "official_code": "610"
     },
     {
       "code": "leoben",
-      "label": "Leoben"
+      "label": "Leoben",
+      "official_code": "611"
     },
     {
       "code": "lienz",
-      "label": "Lienz"
+      "label": "Lienz",
+      "official_code": "707"
     },
     {
       "code": "liezen",
-      "label": "Liezen"
+      "label": "Liezen",
+      "official_code": "612"
     },
     {
       "code": "lilienfeld",
-      "label": "Lilienfeld"
+      "label": "Lilienfeld",
+      "official_code": "314"
     },
     {
       "code": "linz",
-      "label": "Linz"
+      "label": "Linz",
+      "official_code": "401"
     },
     {
       "code": "linz-land",
-      "label": "Linz-Land"
+      "label": "Linz-Land",
+      "official_code": "410"
     },
     {
       "code": "mattersburg",
-      "label": "Mattersburg"
+      "label": "Mattersburg",
+      "official_code": "106"
     },
     {
       "code": "melk",
-      "label": "Melk"
+      "label": "Melk",
+      "official_code": "315"
     },
     {
       "code": "mistelbach",
-      "label": "Mistelbach"
+      "label": "Mistelbach",
+      "official_code": "316"
     },
     {
       "code": "murau",
-      "label": "Murau"
+      "label": "Murau",
+      "official_code": "614"
     },
     {
       "code": "murtal",
-      "label": "Murtal"
+      "label": "Murtal",
+      "official_code": "620"
     },
     {
       "code": "modling",
-      "label": "Mödling"
+      "label": "Mödling",
+      "official_code": "317"
     },
     {
       "code": "neunkirchen",
-      "label": "Neunkirchen"
+      "label": "Neunkirchen",
+      "official_code": "318"
     },
     {
       "code": "neusiedl-am-see",
-      "label": "Neusiedl am See"
+      "label": "Neusiedl am See",
+      "official_code": "107"
     },
     {
       "code": "oberpullendorf",
-      "label": "Oberpullendorf"
+      "label": "Oberpullendorf",
+      "official_code": "108"
     },
     {
       "code": "oberwart",
-      "label": "Oberwart"
+      "label": "Oberwart",
+      "official_code": "109"
     },
     {
       "code": "perg",
-      "label": "Perg"
+      "label": "Perg",
+      "official_code": "411"
     },
     {
       "code": "reutte",
-      "label": "Reutte"
+      "label": "Reutte",
+      "official_code": "708"
     },
     {
       "code": "ried-im-innkreis",
-      "label": "Ried im Innkreis"
+      "label": "Ried im Innkreis",
+      "official_code": "412"
     },
     {
       "code": "rohrbach",
-      "label": "Rohrbach"
+      "label": "Rohrbach",
+      "official_code": "413"
     },
     {
       "code": "rust",
-      "label": "Rust"
+      "label": "Rust",
+      "official_code": "102"
     },
     {
       "code": "salzburg",
-      "label": "Salzburg"
+      "label": "Salzburg",
+      "official_code": "501"
     },
     {
       "code": "salzburg-umgebung",
-      "label": "Salzburg-Umgebung"
+      "label": "Salzburg-Umgebung",
+      "official_code": "503"
     },
     {
       "code": "sankt-johann-im-pongau",
-      "label": "Sankt Johann im Pongau"
+      "label": "Sankt Johann im Pongau",
+      "official_code": "504"
     },
     {
       "code": "sankt-polten",
-      "label": "Sankt Pölten"
+      "label": "Sankt Pölten",
+      "official_code": "302"
     },
     {
       "code": "sankt-polten-land",
-      "label": "Sankt Pölten-Land"
+      "label": "Sankt Pölten-Land",
+      "official_code": "319"
     },
     {
       "code": "sankt-veit-an-der-glan",
-      "label": "Sankt Veit an der Glan"
+      "label": "Sankt Veit an der Glan",
+      "official_code": "205"
     },
     {
       "code": "scheibbs",
-      "label": "Scheibbs"
+      "label": "Scheibbs",
+      "official_code": "320"
     },
     {
       "code": "schwaz",
-      "label": "Schwaz"
+      "label": "Schwaz",
+      "official_code": "709"
     },
     {
       "code": "schwechat",
-      "label": "Schwechat"
+      "label": "Schwechat",
+      "active": false
     },
     {
       "code": "scharding",
-      "label": "Schärding"
+      "label": "Schärding",
+      "official_code": "414"
     },
     {
       "code": "spittal-an-der-drau",
-      "label": "Spittal an der Drau"
+      "label": "Spittal an der Drau",
+      "official_code": "206"
     },
     {
       "code": "steyr",
-      "label": "Steyr"
+      "label": "Steyr",
+      "official_code": "402"
     },
     {
       "code": "steyr-land",
-      "label": "Steyr-Land"
+      "label": "Steyr-Land",
+      "official_code": "415"
     },
     {
       "code": "sudoststeiermark",
-      "label": "Südoststeiermark"
+      "label": "Südoststeiermark",
+      "official_code": "623"
     },
     {
       "code": "tamsweg",
-      "label": "Tamsweg"
+      "label": "Tamsweg",
+      "official_code": "505"
     },
     {
       "code": "tulln",
-      "label": "Tulln"
+      "label": "Tulln",
+      "official_code": "321"
     },
     {
       "code": "urfahr-umgebung",
-      "label": "Urfahr-Umgebung"
+      "label": "Urfahr-Umgebung",
+      "official_code": "416"
     },
     {
       "code": "villach",
-      "label": "Villach"
+      "label": "Villach",
+      "official_code": "202"
     },
     {
       "code": "villach-land",
-      "label": "Villach-Land"
+      "label": "Villach-Land",
+      "official_code": "207"
     },
     {
       "code": "voitsberg",
-      "label": "Voitsberg"
+      "label": "Voitsberg",
+      "official_code": "616"
     },
     {
       "code": "vocklabruck",
-      "label": "Vöcklabruck"
+      "label": "Vöcklabruck",
+      "official_code": "417"
     },
     {
       "code": "volkermarkt",
-      "label": "Völkermarkt"
+      "label": "Völkermarkt",
+      "official_code": "208"
     },
     {
       "code": "waidhofen-an-der-thaya",
-      "label": "Waidhofen an der Thaya"
+      "label": "Waidhofen an der Thaya",
+      "official_code": "322"
     },
     {
       "code": "waidhofen-an-der-ybbs",
-      "label": "Waidhofen an der Ybbs"
+      "label": "Waidhofen an der Ybbs",
+      "official_code": "303"
     },
     {
       "code": "weiz",
-      "label": "Weiz"
+      "label": "Weiz",
+      "official_code": "617"
     },
     {
       "code": "wels",
-      "label": "Wels"
+      "label": "Wels",
+      "official_code": "403"
     },
     {
       "code": "wels-land",
-      "label": "Wels-Land"
+      "label": "Wels-Land",
+      "official_code": "418"
     },
     {
       "code": "wien",
-      "label": "Wien"
+      "label": "Wien",
+      "official_code": "900"
     },
     {
       "code": "wien-umgebung",
-      "label": "Wien-Umgebung"
+      "label": "Wien-Umgebung",
+      "active": false
     },
     {
       "code": "wiener-neustadt",
-      "label": "Wiener Neustadt"
+      "label": "Wiener Neustadt",
+      "official_code": "304"
     },
     {
       "code": "wiener-neustadt-land",
-      "label": "Wiener Neustadt-Land"
+      "label": "Wiener Neustadt-Land",
+      "official_code": "323"
     },
     {
       "code": "wolfsberg",
-      "label": "Wolfsberg"
+      "label": "Wolfsberg",
+      "official_code": "209"
     },
     {
       "code": "zell-am-see",
-      "label": "Zell am See"
+      "label": "Zell am See",
+      "official_code": "506"
     },
     {
       "code": "zwettl",
-      "label": "Zwettl"
+      "label": "Zwettl",
+      "official_code": "325"
     }
   ],
   "DE": [
     {
       "code": "aachen",
-      "label": "Aachen"
+      "label": "Aachen",
+      "official_code": "05334"
     },
     {
       "code": "ahrweiler",
-      "label": "Ahrweiler"
+      "label": "Ahrweiler",
+      "official_code": "07131"
     },
     {
       "code": "aichach-friedberg",
-      "label": "Aichach-Friedberg"
+      "label": "Aichach-Friedberg",
+      "official_code": "09771"
     },
     {
       "code": "alb-donau-kreis",
-      "label": "Alb-Donau-Kreis"
+      "label": "Alb-Donau-Kreis",
+      "official_code": "08425"
     },
     {
       "code": "altenburger-land",
-      "label": "Altenburger Land"
+      "label": "Altenburger Land",
+      "official_code": "16077"
     },
     {
       "code": "altenkirchen",
-      "label": "Altenkirchen"
+      "label": "Altenkirchen",
+      "official_code": "07132"
     },
     {
       "code": "altmarkkreis-salzwedel",
-      "label": "Altmarkkreis Salzwedel"
+      "label": "Altmarkkreis Salzwedel",
+      "official_code": "15081"
     },
     {
       "code": "altotting",
-      "label": "Altötting"
+      "label": "Altötting",
+      "official_code": "09171"
     },
     {
       "code": "alzey-worms",
-      "label": "Alzey-Worms"
+      "label": "Alzey-Worms",
+      "official_code": "07331"
     },
     {
       "code": "amberg",
-      "label": "Amberg"
+      "label": "Amberg",
+      "official_code": "09361"
     },
     {
       "code": "amberg-sulzbach",
-      "label": "Amberg-Sulzbach"
+      "label": "Amberg-Sulzbach",
+      "official_code": "09371"
     },
     {
       "code": "ammerland",
-      "label": "Ammerland"
-    },
-    {
-      "code": "annaberg",
-      "label": "Annaberg"
+      "label": "Ammerland",
+      "official_code": "03451"
     },
     {
       "code": "anhalt-bitterfeld",
-      "label": "Anhalt-Bitterfeld"
+      "label": "Anhalt-Bitterfeld",
+      "official_code": "15082"
+    },
+    {
+      "code": "annaberg",
+      "label": "Annaberg",
+      "active": false
     },
     {
       "code": "ansbach",
-      "label": "Ansbach"
+      "label": "Ansbach",
+      "active": false
+    },
+    {
+      "code": "ansbach-landkreis",
+      "label": "Ansbach (Landkreis)",
+      "official_code": "09571"
+    },
+    {
+      "code": "ansbach-stadt",
+      "label": "Ansbach (Stadt)",
+      "official_code": "09561"
     },
     {
       "code": "aschaffenburg",
-      "label": "Aschaffenburg"
+      "label": "Aschaffenburg",
+      "active": false
     },
     {
-      "code": "augsburg",
-      "label": "Augsburg"
+      "code": "aschaffenburg-landkreis",
+      "label": "Aschaffenburg (Landkreis)",
+      "official_code": "09671"
+    },
+    {
+      "code": "aschaffenburg-stadt",
+      "label": "Aschaffenburg (Stadt)",
+      "official_code": "09661"
     },
     {
       "code": "aue-schwarzenberg",
-      "label": "Aue-Schwarzenberg"
+      "label": "Aue-Schwarzenberg",
+      "active": false
+    },
+    {
+      "code": "augsburg",
+      "label": "Augsburg",
+      "active": false
+    },
+    {
+      "code": "augsburg-landkreis",
+      "label": "Augsburg (Landkreis)",
+      "official_code": "09772"
+    },
+    {
+      "code": "augsburg-stadt",
+      "label": "Augsburg (Stadt)",
+      "official_code": "09761"
     },
     {
       "code": "aurich",
-      "label": "Aurich"
+      "label": "Aurich",
+      "official_code": "03452"
     },
     {
       "code": "bad-doberan",
-      "label": "Bad Doberan"
+      "label": "Bad Doberan",
+      "active": false
     },
     {
       "code": "bad-durkheim",
-      "label": "Bad Dürkheim"
+      "label": "Bad Dürkheim",
+      "official_code": "07332"
     },
     {
       "code": "bad-kissingen",
-      "label": "Bad Kissingen"
+      "label": "Bad Kissingen",
+      "official_code": "09672"
     },
     {
       "code": "bad-kreuznach",
-      "label": "Bad Kreuznach"
+      "label": "Bad Kreuznach",
+      "official_code": "07133"
     },
     {
       "code": "bad-tolz-wolfratshausen",
-      "label": "Bad Tölz-Wolfratshausen"
+      "label": "Bad Tölz-Wolfratshausen",
+      "official_code": "09173"
     },
     {
       "code": "baden-baden",
-      "label": "Baden-Baden"
+      "label": "Baden-Baden",
+      "official_code": "08211"
     },
     {
       "code": "bamberg",
-      "label": "Bamberg"
+      "label": "Bamberg",
+      "active": false
+    },
+    {
+      "code": "bamberg-landkreis",
+      "label": "Bamberg (Landkreis)",
+      "official_code": "09471"
+    },
+    {
+      "code": "bamberg-stadt",
+      "label": "Bamberg (Stadt)",
+      "official_code": "09461"
     },
     {
       "code": "barnim",
-      "label": "Barnim"
+      "label": "Barnim",
+      "official_code": "12060"
     },
     {
       "code": "bautzen",
-      "label": "Bautzen"
+      "label": "Bautzen",
+      "official_code": "14625"
     },
     {
       "code": "bayreuth",
-      "label": "Bayreuth"
+      "label": "Bayreuth",
+      "active": false
+    },
+    {
+      "code": "bayreuth-landkreis",
+      "label": "Bayreuth (Landkreis)",
+      "official_code": "09472"
+    },
+    {
+      "code": "bayreuth-stadt",
+      "label": "Bayreuth (Stadt)",
+      "official_code": "09462"
     },
     {
       "code": "berchtesgadener-land",
-      "label": "Berchtesgadener Land"
+      "label": "Berchtesgadener Land",
+      "official_code": "09172"
     },
     {
       "code": "bergstra-e",
-      "label": "Bergstraße"
+      "label": "Bergstraße",
+      "official_code": "06431"
+    },
+    {
+      "code": "berlin",
+      "label": "Berlin",
+      "official_code": "11000"
     },
     {
       "code": "bernkastel-wittlich",
-      "label": "Bernkastel-Wittlich"
+      "label": "Bernkastel-Wittlich",
+      "official_code": "07231"
     },
     {
       "code": "biberach",
-      "label": "Biberach"
+      "label": "Biberach",
+      "official_code": "08426"
     },
     {
       "code": "bielefeld",
-      "label": "Bielefeld"
+      "label": "Bielefeld",
+      "official_code": "05711"
     },
     {
       "code": "birkenfeld",
-      "label": "Birkenfeld"
+      "label": "Birkenfeld",
+      "official_code": "07134"
     },
     {
       "code": "bitburg-prum",
-      "label": "Bitburg-Prüm"
-    },
-    {
-      "code": "bochum",
-      "label": "Bochum"
+      "label": "Bitburg-Prüm",
+      "official_code": "07232"
     },
     {
       "code": "boblingen",
-      "label": "Böblingen"
+      "label": "Böblingen",
+      "official_code": "08115"
+    },
+    {
+      "code": "bochum",
+      "label": "Bochum",
+      "official_code": "05911"
     },
     {
       "code": "bodenseekreis",
-      "label": "Bodenseekreis"
+      "label": "Bodenseekreis",
+      "official_code": "08435"
     },
     {
       "code": "bonn",
-      "label": "Bonn"
+      "label": "Bonn",
+      "official_code": "05314"
     },
     {
       "code": "borde",
-      "label": "Börde"
+      "label": "Börde",
+      "official_code": "15083"
     },
     {
       "code": "borken",
-      "label": "Borken"
+      "label": "Borken",
+      "official_code": "05554"
     },
     {
       "code": "bottrop",
-      "label": "Bottrop"
+      "label": "Bottrop",
+      "official_code": "05512"
     },
     {
       "code": "brandenburg-an-der-havel",
-      "label": "Brandenburg an der Havel"
+      "label": "Brandenburg an der Havel",
+      "official_code": "12051"
     },
     {
       "code": "braunschweig",
-      "label": "Braunschweig"
+      "label": "Braunschweig",
+      "official_code": "03101"
     },
     {
       "code": "breisgau-hochschwarzwald",
-      "label": "Breisgau-Hochschwarzwald"
+      "label": "Breisgau-Hochschwarzwald",
+      "official_code": "08315"
     },
     {
       "code": "bremen",
-      "label": "Bremen"
+      "label": "Bremen",
+      "official_code": "04011"
     },
     {
       "code": "bremerhaven",
-      "label": "Bremerhaven"
+      "label": "Bremerhaven",
+      "official_code": "04012"
     },
     {
       "code": "burgenlandkreis",
-      "label": "Burgenlandkreis"
+      "label": "Burgenlandkreis",
+      "official_code": "15084"
     },
     {
       "code": "calw",
-      "label": "Calw"
+      "label": "Calw",
+      "official_code": "08235"
     },
     {
       "code": "celle",
-      "label": "Celle"
+      "label": "Celle",
+      "official_code": "03351"
     },
     {
       "code": "cham",
-      "label": "Cham"
+      "label": "Cham",
+      "official_code": "09372"
     },
     {
       "code": "chemnitz",
-      "label": "Chemnitz"
+      "label": "Chemnitz",
+      "official_code": "14511"
     },
     {
       "code": "cloppenburg",
-      "label": "Cloppenburg"
+      "label": "Cloppenburg",
+      "official_code": "03453"
     },
     {
       "code": "coburg",
-      "label": "Coburg"
+      "label": "Coburg",
+      "active": false
     },
     {
-      "code": "coesfeld",
-      "label": "Coesfeld"
+      "code": "coburg-landkreis",
+      "label": "Coburg (Landkreis)",
+      "official_code": "09473"
+    },
+    {
+      "code": "coburg-stadt",
+      "label": "Coburg (Stadt)",
+      "official_code": "09463"
     },
     {
       "code": "cochem-zell",
-      "label": "Cochem-Zell"
+      "label": "Cochem-Zell",
+      "official_code": "07135"
+    },
+    {
+      "code": "coesfeld",
+      "label": "Coesfeld",
+      "official_code": "05558"
     },
     {
       "code": "cottbus",
-      "label": "Cottbus"
+      "label": "Cottbus",
+      "official_code": "12052"
     },
     {
       "code": "cuxhaven",
-      "label": "Cuxhaven"
+      "label": "Cuxhaven",
+      "official_code": "03352"
     },
     {
       "code": "dachau",
-      "label": "Dachau"
+      "label": "Dachau",
+      "official_code": "09174"
     },
     {
       "code": "dahme-spreewald",
-      "label": "Dahme-Spreewald"
+      "label": "Dahme-Spreewald",
+      "official_code": "12061"
     },
     {
       "code": "darmstadt",
-      "label": "Darmstadt"
+      "label": "Darmstadt",
+      "official_code": "06411"
     },
     {
       "code": "darmstadt-dieburg",
-      "label": "Darmstadt-Dieburg"
+      "label": "Darmstadt-Dieburg",
+      "official_code": "06432"
     },
     {
       "code": "deggendorf",
-      "label": "Deggendorf"
+      "label": "Deggendorf",
+      "official_code": "09271"
     },
     {
       "code": "delitzsch",
-      "label": "Delitzsch"
+      "label": "Delitzsch",
+      "active": false
     },
     {
       "code": "delmenhorst",
-      "label": "Delmenhorst"
+      "label": "Delmenhorst",
+      "official_code": "03401"
     },
     {
       "code": "demmin",
-      "label": "Demmin"
+      "label": "Demmin",
+      "active": false
     },
     {
       "code": "dessau-ro-lau",
-      "label": "Dessau-Roßlau"
+      "label": "Dessau-Roßlau",
+      "official_code": "15001"
     },
     {
       "code": "diepholz",
-      "label": "Diepholz"
+      "label": "Diepholz",
+      "official_code": "03251"
     },
     {
       "code": "dillingen-an-der-donau",
-      "label": "Dillingen an der Donau"
+      "label": "Dillingen an der Donau",
+      "official_code": "09773"
     },
     {
       "code": "dingolfing-landau",
-      "label": "Dingolfing-Landau"
+      "label": "Dingolfing-Landau",
+      "official_code": "09279"
     },
     {
       "code": "dithmarschen",
-      "label": "Dithmarschen"
+      "label": "Dithmarschen",
+      "official_code": "01051"
     },
     {
       "code": "dobeln",
-      "label": "Döbeln"
+      "label": "Döbeln",
+      "active": false
     },
     {
       "code": "donau-ries",
-      "label": "Donau-Ries"
+      "label": "Donau-Ries",
+      "official_code": "09779"
     },
     {
       "code": "donnersbergkreis",
-      "label": "Donnersbergkreis"
+      "label": "Donnersbergkreis",
+      "official_code": "07333"
     },
     {
       "code": "dortmund",
-      "label": "Dortmund"
+      "label": "Dortmund",
+      "official_code": "05913"
     },
     {
       "code": "dresden",
-      "label": "Dresden"
+      "label": "Dresden",
+      "official_code": "14612"
     },
     {
       "code": "duisburg",
-      "label": "Duisburg"
+      "label": "Duisburg",
+      "official_code": "05112"
     },
     {
       "code": "duren",
-      "label": "Düren"
+      "label": "Düren",
+      "official_code": "05358"
     },
     {
       "code": "dusseldorf",
-      "label": "Düsseldorf"
+      "label": "Düsseldorf",
+      "official_code": "05111"
     },
     {
       "code": "ebersberg",
-      "label": "Ebersberg"
+      "label": "Ebersberg",
+      "official_code": "09175"
     },
     {
       "code": "eichsfeld",
-      "label": "Eichsfeld"
+      "label": "Eichsfeld",
+      "official_code": "16061"
     },
     {
       "code": "eichstatt",
-      "label": "Eichstätt"
+      "label": "Eichstätt",
+      "official_code": "09176"
     },
     {
       "code": "eisenach",
-      "label": "Eisenach"
+      "label": "Eisenach",
+      "active": false
     },
     {
       "code": "elbe-elster",
-      "label": "Elbe-Elster"
-    },
-    {
-      "code": "emmendingen",
-      "label": "Emmendingen"
+      "label": "Elbe-Elster",
+      "official_code": "12062"
     },
     {
       "code": "emden",
-      "label": "Emden"
+      "label": "Emden",
+      "official_code": "03402"
+    },
+    {
+      "code": "emmendingen",
+      "label": "Emmendingen",
+      "official_code": "08316"
     },
     {
       "code": "emsland",
-      "label": "Emsland"
+      "label": "Emsland",
+      "official_code": "03454"
     },
     {
       "code": "ennepe-ruhr-kreis",
-      "label": "Ennepe-Ruhr-Kreis"
+      "label": "Ennepe-Ruhr-Kreis",
+      "official_code": "05954"
     },
     {
       "code": "enzkreis",
-      "label": "Enzkreis"
+      "label": "Enzkreis",
+      "official_code": "08236"
     },
     {
       "code": "erding",
-      "label": "Erding"
+      "label": "Erding",
+      "official_code": "09177"
     },
     {
       "code": "erfurt",
-      "label": "Erfurt"
+      "label": "Erfurt",
+      "official_code": "16051"
     },
     {
       "code": "erlangen",
-      "label": "Erlangen"
+      "label": "Erlangen",
+      "official_code": "09562"
     },
     {
       "code": "erlangen-hochstadt",
-      "label": "Erlangen-Höchstadt"
+      "label": "Erlangen-Höchstadt",
+      "official_code": "09572"
+    },
+    {
+      "code": "erzgebirgskreis",
+      "label": "Erzgebirgskreis",
+      "official_code": "14521"
     },
     {
       "code": "essen",
-      "label": "Essen"
+      "label": "Essen",
+      "official_code": "05113"
     },
     {
       "code": "esslingen",
-      "label": "Esslingen"
+      "label": "Esslingen",
+      "official_code": "08116"
     },
     {
       "code": "euskirchen",
-      "label": "Euskirchen"
+      "label": "Euskirchen",
+      "official_code": "05366"
     },
     {
       "code": "flensburg",
-      "label": "Flensburg"
+      "label": "Flensburg",
+      "official_code": "01001"
     },
     {
       "code": "forchheim",
-      "label": "Forchheim"
+      "label": "Forchheim",
+      "official_code": "09474"
     },
     {
       "code": "frankenthal",
-      "label": "Frankenthal"
+      "label": "Frankenthal",
+      "official_code": "07311"
     },
     {
       "code": "frankfurt-oder",
-      "label": "Frankfurt (Oder)"
+      "label": "Frankfurt (Oder)",
+      "official_code": "12053"
     },
     {
       "code": "frankfurt-am-main",
-      "label": "Frankfurt am Main"
-    },
-    {
-      "code": "freiburg-im-breisgau",
-      "label": "Freiburg im Breisgau"
+      "label": "Frankfurt am Main",
+      "official_code": "06412"
     },
     {
       "code": "freiberg",
-      "label": "Freiberg"
+      "label": "Freiberg",
+      "active": false
+    },
+    {
+      "code": "freiburg-im-breisgau",
+      "label": "Freiburg im Breisgau",
+      "official_code": "08311"
     },
     {
       "code": "freising",
-      "label": "Freising"
+      "label": "Freising",
+      "official_code": "09178"
     },
     {
       "code": "freudenstadt",
-      "label": "Freudenstadt"
+      "label": "Freudenstadt",
+      "official_code": "08237"
     },
     {
       "code": "freyung-grafenau",
-      "label": "Freyung-Grafenau"
+      "label": "Freyung-Grafenau",
+      "official_code": "09272"
     },
     {
       "code": "friesland",
-      "label": "Friesland"
+      "label": "Friesland",
+      "official_code": "03455"
     },
     {
       "code": "fulda",
-      "label": "Fulda"
+      "label": "Fulda",
+      "official_code": "06631"
     },
     {
       "code": "furstenfeldbruck",
-      "label": "Fürstenfeldbruck"
+      "label": "Fürstenfeldbruck",
+      "official_code": "09179"
     },
     {
       "code": "furth",
-      "label": "Fürth"
+      "label": "Fürth",
+      "active": false
+    },
+    {
+      "code": "furth-landkreis",
+      "label": "Fürth (Landkreis)",
+      "official_code": "09573"
+    },
+    {
+      "code": "furth-stadt",
+      "label": "Fürth (Stadt)",
+      "official_code": "09563"
     },
     {
       "code": "garmisch-partenkirchen",
-      "label": "Garmisch-Partenkirchen"
+      "label": "Garmisch-Partenkirchen",
+      "official_code": "09180"
     },
     {
       "code": "gelsenkirchen",
-      "label": "Gelsenkirchen"
+      "label": "Gelsenkirchen",
+      "official_code": "05513"
     },
     {
       "code": "gera",
-      "label": "Gera"
+      "label": "Gera",
+      "official_code": "16052"
     },
     {
       "code": "germersheim",
-      "label": "Germersheim"
+      "label": "Germersheim",
+      "official_code": "07334"
     },
     {
       "code": "gie-en",
-      "label": "Gießen"
+      "label": "Gießen",
+      "official_code": "06531"
     },
     {
       "code": "gifhorn",
-      "label": "Gifhorn"
+      "label": "Gifhorn",
+      "official_code": "03151"
     },
     {
       "code": "goppingen",
-      "label": "Göppingen"
+      "label": "Göppingen",
+      "official_code": "08117"
     },
     {
       "code": "gorlitz",
-      "label": "Görlitz"
+      "label": "Görlitz",
+      "official_code": "14626"
     },
     {
       "code": "goslar",
-      "label": "Goslar"
+      "label": "Goslar",
+      "official_code": "03153"
     },
     {
       "code": "gotha",
-      "label": "Gotha"
+      "label": "Gotha",
+      "official_code": "16067"
     },
     {
       "code": "gottingen",
-      "label": "Göttingen"
+      "label": "Göttingen",
+      "official_code": "03159"
     },
     {
       "code": "grafschaft-bentheim",
-      "label": "Grafschaft Bentheim"
+      "label": "Grafschaft Bentheim",
+      "official_code": "03456"
     },
     {
       "code": "greiz",
-      "label": "Greiz"
+      "label": "Greiz",
+      "official_code": "16076"
     },
     {
       "code": "gro-gerau",
-      "label": "Groß-Gerau"
-    },
-    {
-      "code": "gustrow",
-      "label": "Güstrow"
-    },
-    {
-      "code": "gutersloh",
-      "label": "Gütersloh"
+      "label": "Groß-Gerau",
+      "official_code": "06433"
     },
     {
       "code": "gunzburg",
-      "label": "Günzburg"
+      "label": "Günzburg",
+      "official_code": "09774"
+    },
+    {
+      "code": "gustrow",
+      "label": "Güstrow",
+      "active": false
+    },
+    {
+      "code": "gutersloh",
+      "label": "Gütersloh",
+      "official_code": "05754"
     },
     {
       "code": "hagen",
-      "label": "Hagen"
+      "label": "Hagen",
+      "official_code": "05914"
     },
     {
       "code": "halle-saale",
-      "label": "Halle (Saale)"
+      "label": "Halle (Saale)",
+      "official_code": "15002"
     },
     {
       "code": "hamburg",
-      "label": "Hamburg"
+      "label": "Hamburg",
+      "official_code": "02000"
     },
     {
       "code": "hameln-pyrmont",
-      "label": "Hameln-Pyrmont"
+      "label": "Hameln-Pyrmont",
+      "official_code": "03252"
+    },
+    {
+      "code": "hamm",
+      "label": "Hamm",
+      "official_code": "05915"
+    },
+    {
+      "code": "hanau",
+      "label": "Hanau",
+      "official_code": "06415"
     },
     {
       "code": "hannover",
-      "label": "Hannover"
+      "label": "Hannover",
+      "official_code": "03241"
     },
     {
       "code": "harburg",
-      "label": "Harburg"
+      "label": "Harburg",
+      "official_code": "03353"
     },
     {
       "code": "harz",
-      "label": "Harz"
+      "label": "Harz",
+      "official_code": "15085"
     },
     {
       "code": "hassberge",
-      "label": "Hassberge"
+      "label": "Haßberge",
+      "official_code": "09674",
+      "aliases": [
+        "Hassberge"
+      ]
+    },
+    {
+      "code": "havelland",
+      "label": "Havelland",
+      "official_code": "12063"
     },
     {
       "code": "heidekreis",
-      "label": "Heidekreis"
+      "label": "Heidekreis",
+      "official_code": "03358"
     },
     {
       "code": "heidelberg",
-      "label": "Heidelberg"
+      "label": "Heidelberg",
+      "official_code": "08221"
     },
     {
       "code": "heidenheim",
-      "label": "Heidenheim"
+      "label": "Heidenheim",
+      "official_code": "08135"
     },
     {
       "code": "heilbronn",
-      "label": "Heilbronn"
+      "label": "Heilbronn",
+      "active": false
+    },
+    {
+      "code": "heilbronn-landkreis",
+      "label": "Heilbronn (Landkreis)",
+      "official_code": "08125"
+    },
+    {
+      "code": "heilbronn-stadt",
+      "label": "Heilbronn (Stadt)",
+      "official_code": "08121"
     },
     {
       "code": "heinsberg",
-      "label": "Heinsberg"
+      "label": "Heinsberg",
+      "official_code": "05370"
     },
     {
       "code": "helmstedt",
-      "label": "Helmstedt"
+      "label": "Helmstedt",
+      "official_code": "03154"
     },
     {
       "code": "herford",
-      "label": "Herford"
+      "label": "Herford",
+      "official_code": "05758"
     },
     {
       "code": "herne",
-      "label": "Herne"
+      "label": "Herne",
+      "official_code": "05916"
     },
     {
       "code": "hersfeld-rotenburg",
-      "label": "Hersfeld-Rotenburg"
+      "label": "Hersfeld-Rotenburg",
+      "official_code": "06632"
     },
     {
       "code": "herzogtum-lauenburg",
-      "label": "Herzogtum Lauenburg"
+      "label": "Herzogtum Lauenburg",
+      "official_code": "01053"
     },
     {
       "code": "hildburghausen",
-      "label": "Hildburghausen"
+      "label": "Hildburghausen",
+      "official_code": "16069"
     },
     {
       "code": "hildesheim",
-      "label": "Hildesheim"
+      "label": "Hildesheim",
+      "official_code": "03254"
     },
     {
       "code": "hochsauerlandkreis",
-      "label": "Hochsauerlandkreis"
+      "label": "Hochsauerlandkreis",
+      "official_code": "05958"
     },
     {
       "code": "hochtaunuskreis",
-      "label": "Hochtaunuskreis"
+      "label": "Hochtaunuskreis",
+      "official_code": "06434"
     },
     {
       "code": "hof",
-      "label": "Hof"
+      "label": "Hof",
+      "active": false
+    },
+    {
+      "code": "hof-landkreis",
+      "label": "Hof (Landkreis)",
+      "official_code": "09475"
+    },
+    {
+      "code": "hof-stadt",
+      "label": "Hof (Stadt)",
+      "official_code": "09464"
     },
     {
       "code": "hohenlohekreis",
-      "label": "Hohenlohekreis"
+      "label": "Hohenlohekreis",
+      "official_code": "08126"
     },
     {
       "code": "holzminden",
-      "label": "Holzminden"
+      "label": "Holzminden",
+      "official_code": "03255"
+    },
+    {
+      "code": "hoxter",
+      "label": "Höxter",
+      "official_code": "05762"
     },
     {
       "code": "ilm-kreis",
-      "label": "Ilm-Kreis"
+      "label": "Ilm-Kreis",
+      "official_code": "16070"
+    },
+    {
+      "code": "ingolstadt",
+      "label": "Ingolstadt",
+      "official_code": "09161"
     },
     {
       "code": "jena",
-      "label": "Jena"
+      "label": "Jena",
+      "official_code": "16053"
     },
     {
       "code": "jerichower-land",
-      "label": "Jerichower Land"
+      "label": "Jerichower Land",
+      "official_code": "15086"
+    },
+    {
+      "code": "kaiserslautern-landkreis",
+      "label": "Kaiserslautern (Landkreis)",
+      "official_code": "07335"
+    },
+    {
+      "code": "kaiserslautern-stadt",
+      "label": "Kaiserslautern (Stadt)",
+      "official_code": "07312"
     },
     {
       "code": "kamenz",
-      "label": "Kamenz"
+      "label": "Kamenz",
+      "active": false
     },
     {
       "code": "karlsruhe",
-      "label": "Karlsruhe"
+      "label": "Karlsruhe",
+      "active": false
+    },
+    {
+      "code": "karlsruhe-landkreis",
+      "label": "Karlsruhe (Landkreis)",
+      "official_code": "08215"
+    },
+    {
+      "code": "karlsruhe-stadt",
+      "label": "Karlsruhe (Stadt)",
+      "official_code": "08212"
     },
     {
       "code": "kassel",
-      "label": "Kassel"
+      "label": "Kassel",
+      "active": false
+    },
+    {
+      "code": "kassel-landkreis",
+      "label": "Kassel (Landkreis)",
+      "official_code": "06633"
+    },
+    {
+      "code": "kassel-stadt",
+      "label": "Kassel (Stadt)",
+      "official_code": "06611"
+    },
+    {
+      "code": "kaufbeuren",
+      "label": "Kaufbeuren",
+      "official_code": "09762"
     },
     {
       "code": "kelheim",
-      "label": "Kelheim"
+      "label": "Kelheim",
+      "official_code": "09273"
+    },
+    {
+      "code": "kempten-allgau",
+      "label": "Kempten (Allgäu)",
+      "official_code": "09763"
     },
     {
       "code": "kiel",
-      "label": "Kiel"
+      "label": "Kiel",
+      "official_code": "01002"
     },
     {
       "code": "kitzingen",
-      "label": "Kitzingen"
+      "label": "Kitzingen",
+      "official_code": "09675"
     },
     {
       "code": "kleve",
-      "label": "Kleve"
+      "label": "Kleve",
+      "official_code": "05154"
+    },
+    {
+      "code": "koblenz",
+      "label": "Koblenz",
+      "official_code": "07111"
     },
     {
       "code": "koln",
-      "label": "Köln"
+      "label": "Köln",
+      "official_code": "05315"
     },
     {
       "code": "konstanz",
-      "label": "Konstanz"
+      "label": "Konstanz",
+      "official_code": "08335"
     },
     {
       "code": "krefeld",
-      "label": "Krefeld"
+      "label": "Krefeld",
+      "official_code": "05114"
     },
     {
       "code": "kronach",
-      "label": "Kronach"
+      "label": "Kronach",
+      "official_code": "09476"
     },
     {
       "code": "kulmbach",
-      "label": "Kulmbach"
+      "label": "Kulmbach",
+      "official_code": "09477"
     },
     {
       "code": "kusel",
-      "label": "Kusel"
+      "label": "Kusel",
+      "official_code": "07336"
     },
     {
       "code": "kyffhauserkreis",
-      "label": "Kyffhäuserkreis"
+      "label": "Kyffhäuserkreis",
+      "official_code": "16065"
     },
     {
       "code": "lahn-dill-kreis",
-      "label": "Lahn-Dill-Kreis"
+      "label": "Lahn-Dill-Kreis",
+      "official_code": "06532"
     },
     {
       "code": "landau-in-der-pfalz",
-      "label": "Landau in der Pfalz"
+      "label": "Landau in der Pfalz",
+      "official_code": "07313"
+    },
+    {
+      "code": "landkreis-rostock",
+      "label": "Landkreis Rostock",
+      "official_code": "13072"
     },
     {
       "code": "landsberg-am-lech",
-      "label": "Landsberg am Lech"
+      "label": "Landsberg am Lech",
+      "official_code": "09181"
     },
     {
       "code": "landshut",
-      "label": "Landshut"
+      "label": "Landshut",
+      "active": false
+    },
+    {
+      "code": "landshut-landkreis",
+      "label": "Landshut (Landkreis)",
+      "official_code": "09274"
+    },
+    {
+      "code": "landshut-stadt",
+      "label": "Landshut (Stadt)",
+      "official_code": "09261"
+    },
+    {
+      "code": "leer",
+      "label": "Leer",
+      "official_code": "03457"
+    },
+    {
+      "code": "leipzig-landkreis",
+      "label": "Leipzig (Landkreis)",
+      "official_code": "14729"
+    },
+    {
+      "code": "leipzig-stadt",
+      "label": "Leipzig (Stadt)",
+      "official_code": "14713"
     },
     {
       "code": "leverkusen",
-      "label": "Leverkusen"
+      "label": "Leverkusen",
+      "official_code": "05316"
     },
     {
       "code": "lichtenfels",
-      "label": "Lichtenfels"
+      "label": "Lichtenfels",
+      "official_code": "09478"
     },
     {
       "code": "limburg-weilburg",
-      "label": "Limburg-Weilburg"
+      "label": "Limburg-Weilburg",
+      "official_code": "06533"
     },
     {
       "code": "lindau",
-      "label": "Lindau"
+      "label": "Lindau",
+      "official_code": "09776"
     },
     {
       "code": "lippe",
-      "label": "Lippe"
+      "label": "Lippe",
+      "official_code": "05766"
     },
     {
       "code": "lobau-zittau",
-      "label": "Löbau-Zittau"
+      "label": "Löbau-Zittau",
+      "active": false
     },
     {
       "code": "lorrach",
-      "label": "Lörrach"
+      "label": "Lörrach",
+      "official_code": "08336"
     },
     {
       "code": "lubeck",
-      "label": "Lübeck"
+      "label": "Lübeck",
+      "official_code": "01003"
     },
     {
       "code": "luchow-dannenberg",
-      "label": "Lüchow-Dannenberg"
-    },
-    {
-      "code": "ludwigshafen-am-rhein",
-      "label": "Ludwigshafen am Rhein"
-    },
-    {
-      "code": "ludwigslust",
-      "label": "Ludwigslust"
+      "label": "Lüchow-Dannenberg",
+      "official_code": "03354"
     },
     {
       "code": "ludwigsburg",
-      "label": "Ludwigsburg"
+      "label": "Ludwigsburg",
+      "official_code": "08118"
+    },
+    {
+      "code": "ludwigshafen-am-rhein",
+      "label": "Ludwigshafen am Rhein",
+      "official_code": "07314"
+    },
+    {
+      "code": "ludwigslust",
+      "label": "Ludwigslust",
+      "active": false
+    },
+    {
+      "code": "ludwigslust-parchim",
+      "label": "Ludwigslust-Parchim",
+      "official_code": "13076"
     },
     {
       "code": "luneburg",
-      "label": "Lüneburg"
+      "label": "Lüneburg",
+      "official_code": "03355"
     },
     {
       "code": "magdeburg",
-      "label": "Magdeburg"
+      "label": "Magdeburg",
+      "official_code": "15003"
     },
     {
       "code": "main-kinzig-kreis",
-      "label": "Main-Kinzig-Kreis"
+      "label": "Main-Kinzig-Kreis",
+      "official_code": "06435"
     },
     {
       "code": "main-spessart",
-      "label": "Main-Spessart"
-    },
-    {
-      "code": "main-taunus-kreis",
-      "label": "Main-Taunus-Kreis"
+      "label": "Main-Spessart",
+      "official_code": "09677"
     },
     {
       "code": "main-tauber-kreis",
-      "label": "Main-Tauber-Kreis"
+      "label": "Main-Tauber-Kreis",
+      "official_code": "08128"
+    },
+    {
+      "code": "main-taunus-kreis",
+      "label": "Main-Taunus-Kreis",
+      "official_code": "06436"
     },
     {
       "code": "mainz",
-      "label": "Mainz"
+      "label": "Mainz",
+      "official_code": "07315"
     },
     {
       "code": "mainz-bingen",
-      "label": "Mainz-Bingen"
+      "label": "Mainz-Bingen",
+      "official_code": "07339"
     },
     {
       "code": "mannheim",
-      "label": "Mannheim"
+      "label": "Mannheim",
+      "official_code": "08222"
     },
     {
       "code": "mansfeld-sudharz",
-      "label": "Mansfeld-Südharz"
+      "label": "Mansfeld-Südharz",
+      "official_code": "15087"
     },
     {
       "code": "marburg-biedenkopf",
-      "label": "Marburg-Biedenkopf"
+      "label": "Marburg-Biedenkopf",
+      "official_code": "06534"
     },
     {
       "code": "markisch-oderland",
-      "label": "Märkisch-Oderland"
+      "label": "Märkisch-Oderland",
+      "official_code": "12064"
     },
     {
       "code": "markischer-kreis",
-      "label": "Märkischer Kreis"
+      "label": "Märkischer Kreis",
+      "official_code": "05962"
     },
     {
       "code": "mayen-koblenz",
-      "label": "Mayen-Koblenz"
+      "label": "Mayen-Koblenz",
+      "official_code": "07137"
     },
     {
       "code": "mecklenburgische-seenplatte",
-      "label": "Mecklenburgische Seenplatte"
+      "label": "Mecklenburgische Seenplatte",
+      "official_code": "13071"
     },
     {
       "code": "mei-en",
-      "label": "Meißen"
+      "label": "Meißen",
+      "official_code": "14627"
     },
     {
       "code": "memmingen",
-      "label": "Memmingen"
+      "label": "Memmingen",
+      "official_code": "09764"
     },
     {
       "code": "merzig-wadern",
-      "label": "Merzig-Wadern"
+      "label": "Merzig-Wadern",
+      "official_code": "10042"
     },
     {
       "code": "mettmann",
-      "label": "Mettmann"
+      "label": "Mettmann",
+      "official_code": "05158"
     },
     {
       "code": "miesbach",
-      "label": "Miesbach"
+      "label": "Miesbach",
+      "official_code": "09182"
     },
     {
       "code": "miltenberg",
-      "label": "Miltenberg"
+      "label": "Miltenberg",
+      "official_code": "09676"
     },
     {
       "code": "minden-lubbecke",
-      "label": "Minden-Lübbecke"
+      "label": "Minden-Lübbecke",
+      "official_code": "05770"
+    },
+    {
+      "code": "mittelsachsen",
+      "label": "Mittelsachsen",
+      "official_code": "14522"
     },
     {
       "code": "mittweida",
-      "label": "Mittweida"
+      "label": "Mittweida",
+      "active": false
     },
     {
       "code": "monchengladbach",
-      "label": "Mönchengladbach"
+      "label": "Mönchengladbach",
+      "official_code": "05116"
     },
     {
       "code": "muhldorf-am-inn",
-      "label": "Mühldorf am Inn"
+      "label": "Mühldorf am Inn",
+      "official_code": "09183"
     },
     {
       "code": "muldentalkreis",
-      "label": "Muldentalkreis"
+      "label": "Muldentalkreis",
+      "active": false
     },
     {
       "code": "mulheim-an-der-ruhr",
-      "label": "Mülheim an der Ruhr"
+      "label": "Mülheim an der Ruhr",
+      "official_code": "05117"
     },
     {
       "code": "munchen",
-      "label": "München"
+      "label": "München",
+      "active": false
+    },
+    {
+      "code": "munchen-landkreis",
+      "label": "München (Landkreis)",
+      "official_code": "09184"
+    },
+    {
+      "code": "munchen-stadt",
+      "label": "München (Stadt)",
+      "official_code": "09162"
     },
     {
       "code": "munster",
-      "label": "Münster"
+      "label": "Münster",
+      "official_code": "05515"
     },
     {
       "code": "neckar-odenwald-kreis",
-      "label": "Neckar-Odenwald-Kreis"
+      "label": "Neckar-Odenwald-Kreis",
+      "official_code": "08225"
+    },
+    {
+      "code": "neu-ulm",
+      "label": "Neu-Ulm",
+      "official_code": "09775"
     },
     {
       "code": "neuburg-schrobenhausen",
-      "label": "Neuburg-Schrobenhausen"
+      "label": "Neuburg-Schrobenhausen",
+      "official_code": "09185"
     },
     {
       "code": "neumarkt-in-der-oberpfalz",
-      "label": "Neumarkt in der Oberpfalz"
+      "label": "Neumarkt in der Oberpfalz",
+      "official_code": "09373"
     },
     {
       "code": "neumunster",
-      "label": "Neumünster"
+      "label": "Neumünster",
+      "official_code": "01004"
     },
     {
       "code": "neunkirchen",
-      "label": "Neunkirchen"
+      "label": "Neunkirchen",
+      "official_code": "10043"
     },
     {
       "code": "neustadt-an-der-aisch-bad-windsheim",
-      "label": "Neustadt an der Aisch-Bad Windsheim"
+      "label": "Neustadt an der Aisch-Bad Windsheim",
+      "official_code": "09575"
     },
     {
       "code": "neustadt-an-der-waldnaab",
-      "label": "Neustadt an der Waldnaab"
+      "label": "Neustadt an der Waldnaab",
+      "official_code": "09374"
     },
     {
       "code": "neustadt-an-der-weinstra-e",
-      "label": "Neustadt an der Weinstraße"
+      "label": "Neustadt an der Weinstraße",
+      "official_code": "07316"
     },
     {
       "code": "neuwied",
-      "label": "Neuwied"
+      "label": "Neuwied",
+      "official_code": "07138"
     },
     {
       "code": "nienburg",
-      "label": "Nienburg"
+      "label": "Nienburg",
+      "official_code": "03256"
     },
     {
       "code": "nordfriesland",
-      "label": "Nordfriesland"
+      "label": "Nordfriesland",
+      "official_code": "01054"
     },
     {
       "code": "nordhausen",
-      "label": "Nordhausen"
-    },
-    {
-      "code": "nordvorpommern",
-      "label": "Nordvorpommern"
-    },
-    {
-      "code": "nordwestmecklenburg",
-      "label": "Nordwestmecklenburg"
+      "label": "Nordhausen",
+      "official_code": "16062"
     },
     {
       "code": "nordsachsen",
-      "label": "Nordsachsen"
+      "label": "Nordsachsen",
+      "official_code": "14730"
+    },
+    {
+      "code": "nordvorpommern",
+      "label": "Nordvorpommern",
+      "active": false
+    },
+    {
+      "code": "nordwestmecklenburg",
+      "label": "Nordwestmecklenburg",
+      "official_code": "13074"
     },
     {
       "code": "northeim",
-      "label": "Northeim"
+      "label": "Northeim",
+      "official_code": "03155"
     },
     {
       "code": "nurnberg",
-      "label": "Nürnberg"
+      "label": "Nürnberg",
+      "official_code": "09564"
     },
     {
       "code": "nurnberger-land",
-      "label": "Nürnberger Land"
+      "label": "Nürnberger Land",
+      "official_code": "09574"
     },
     {
       "code": "oberallgau",
-      "label": "Oberallgäu"
+      "label": "Oberallgäu",
+      "official_code": "09780"
     },
     {
       "code": "oberbergischer-kreis",
-      "label": "Oberbergischer Kreis"
+      "label": "Oberbergischer Kreis",
+      "official_code": "05374"
     },
     {
       "code": "oberhausen",
-      "label": "Oberhausen"
+      "label": "Oberhausen",
+      "official_code": "05119"
     },
     {
       "code": "oberhavel",
-      "label": "Oberhavel"
+      "label": "Oberhavel",
+      "official_code": "12065"
     },
     {
       "code": "oberspreewald-lausitz",
-      "label": "Oberspreewald-Lausitz"
+      "label": "Oberspreewald-Lausitz",
+      "official_code": "12066"
     },
     {
       "code": "odenwaldkreis",
-      "label": "Odenwaldkreis"
+      "label": "Odenwaldkreis",
+      "official_code": "06437"
     },
     {
       "code": "oder-spree",
-      "label": "Oder-Spree"
+      "label": "Oder-Spree",
+      "official_code": "12067"
     },
     {
       "code": "offenbach",
-      "label": "Offenbach"
+      "label": "Offenbach",
+      "official_code": "06438"
+    },
+    {
+      "code": "offenbach-am-main",
+      "label": "Offenbach am Main",
+      "official_code": "06413"
     },
     {
       "code": "oldenburg",
-      "label": "Oldenburg"
+      "label": "Oldenburg",
+      "official_code": "03458"
+    },
+    {
+      "code": "oldenburg-stadt",
+      "label": "Oldenburg (Stadt)",
+      "official_code": "03403"
     },
     {
       "code": "olpe",
-      "label": "Olpe"
+      "label": "Olpe",
+      "official_code": "05966"
     },
     {
       "code": "ortenaukreis",
-      "label": "Ortenaukreis"
+      "label": "Ortenaukreis",
+      "official_code": "08317"
+    },
+    {
+      "code": "osnabruck-landkreis",
+      "label": "Osnabrück (Landkreis)",
+      "official_code": "03459"
+    },
+    {
+      "code": "osnabruck-stadt",
+      "label": "Osnabrück (Stadt)",
+      "official_code": "03404"
     },
     {
       "code": "ostalbkreis",
-      "label": "Ostalbkreis"
+      "label": "Ostalbkreis",
+      "official_code": "08136"
     },
     {
       "code": "ostallgau",
-      "label": "Ostallgäu"
+      "label": "Ostallgäu",
+      "official_code": "09777"
+    },
+    {
+      "code": "osterholz",
+      "label": "Osterholz",
+      "official_code": "03356"
     },
     {
       "code": "ostholstein",
-      "label": "Ostholstein"
+      "label": "Ostholstein",
+      "official_code": "01055"
     },
     {
       "code": "ostprignitz-ruppin",
-      "label": "Ostprignitz-Ruppin"
+      "label": "Ostprignitz-Ruppin",
+      "official_code": "12068"
     },
     {
       "code": "ostvorpommern",
-      "label": "Ostvorpommern"
+      "label": "Ostvorpommern",
+      "active": false
     },
     {
       "code": "paderborn",
-      "label": "Paderborn"
+      "label": "Paderborn",
+      "official_code": "05774"
     },
     {
       "code": "parchim",
-      "label": "Parchim"
+      "label": "Parchim",
+      "active": false
     },
     {
       "code": "passau",
-      "label": "Passau"
+      "label": "Passau",
+      "active": false
+    },
+    {
+      "code": "passau-landkreis",
+      "label": "Passau (Landkreis)",
+      "official_code": "09275"
+    },
+    {
+      "code": "passau-stadt",
+      "label": "Passau (Stadt)",
+      "official_code": "09262"
     },
     {
       "code": "peine",
-      "label": "Peine"
+      "label": "Peine",
+      "official_code": "03157"
     },
     {
       "code": "pfaffenhofen-an-der-ilm",
-      "label": "Pfaffenhofen an der Ilm"
+      "label": "Pfaffenhofen an der Ilm",
+      "official_code": "09186"
+    },
+    {
+      "code": "pforzheim",
+      "label": "Pforzheim",
+      "official_code": "08231"
     },
     {
       "code": "pinneberg",
-      "label": "Pinneberg"
+      "label": "Pinneberg",
+      "official_code": "01056"
     },
     {
       "code": "pirmasens",
-      "label": "Pirmasens"
+      "label": "Pirmasens",
+      "official_code": "07317"
     },
     {
       "code": "plauen",
-      "label": "Plauen"
+      "label": "Plauen",
+      "active": false
     },
     {
       "code": "plon",
-      "label": "Plön"
+      "label": "Plön",
+      "official_code": "01057"
     },
     {
       "code": "potsdam",
-      "label": "Potsdam"
+      "label": "Potsdam",
+      "official_code": "12054"
+    },
+    {
+      "code": "potsdam-mittelmark",
+      "label": "Potsdam-Mittelmark",
+      "official_code": "12069"
     },
     {
       "code": "prignitz",
-      "label": "Prignitz"
+      "label": "Prignitz",
+      "official_code": "12070"
     },
     {
       "code": "rastatt",
-      "label": "Rastatt"
+      "label": "Rastatt",
+      "official_code": "08216"
     },
     {
       "code": "ravensburg",
-      "label": "Ravensburg"
+      "label": "Ravensburg",
+      "official_code": "08436"
     },
     {
       "code": "recklinghausen",
-      "label": "Recklinghausen"
+      "label": "Recklinghausen",
+      "official_code": "05562"
     },
     {
       "code": "regen",
-      "label": "Regen"
+      "label": "Regen",
+      "official_code": "09276"
     },
     {
       "code": "regensburg",
-      "label": "Regensburg"
+      "label": "Regensburg",
+      "active": false
+    },
+    {
+      "code": "regensburg-landkreis",
+      "label": "Regensburg (Landkreis)",
+      "official_code": "09375"
+    },
+    {
+      "code": "regensburg-stadt",
+      "label": "Regensburg (Stadt)",
+      "official_code": "09362"
     },
     {
       "code": "rems-murr-kreis",
-      "label": "Rems-Murr-Kreis"
+      "label": "Rems-Murr-Kreis",
+      "official_code": "08119"
     },
     {
       "code": "remscheid",
-      "label": "Remscheid"
+      "label": "Remscheid",
+      "official_code": "05120"
     },
     {
       "code": "rendsburg-eckernforde",
-      "label": "Rendsburg-Eckernförde"
+      "label": "Rendsburg-Eckernförde",
+      "official_code": "01058"
     },
     {
       "code": "reutlingen",
-      "label": "Reutlingen"
-    },
-    {
-      "code": "rheingau-taunus-kreis",
-      "label": "Rheingau-Taunus-Kreis"
-    },
-    {
-      "code": "rhein-hunsruck-kreis",
-      "label": "Rhein-Hunsrück-Kreis"
-    },
-    {
-      "code": "rhein-kreis-neuss",
-      "label": "Rhein-Kreis Neuss"
-    },
-    {
-      "code": "rhein-lahn-kreis",
-      "label": "Rhein-Lahn-Kreis"
-    },
-    {
-      "code": "rhein-neckar-kreis",
-      "label": "Rhein-Neckar-Kreis"
-    },
-    {
-      "code": "rhein-pfalz-kreis",
-      "label": "Rhein-Pfalz-Kreis"
-    },
-    {
-      "code": "rhein-sieg-kreis",
-      "label": "Rhein-Sieg-Kreis"
+      "label": "Reutlingen",
+      "official_code": "08415"
     },
     {
       "code": "rhein-erft-kreis",
-      "label": "Rhein-Erft-Kreis"
+      "label": "Rhein-Erft-Kreis",
+      "official_code": "05362"
+    },
+    {
+      "code": "rhein-hunsruck-kreis",
+      "label": "Rhein-Hunsrück-Kreis",
+      "official_code": "07140"
+    },
+    {
+      "code": "rhein-kreis-neuss",
+      "label": "Rhein-Kreis Neuss",
+      "official_code": "05162"
+    },
+    {
+      "code": "rhein-lahn-kreis",
+      "label": "Rhein-Lahn-Kreis",
+      "official_code": "07141"
+    },
+    {
+      "code": "rhein-neckar-kreis",
+      "label": "Rhein-Neckar-Kreis",
+      "official_code": "08226"
+    },
+    {
+      "code": "rhein-pfalz-kreis",
+      "label": "Rhein-Pfalz-Kreis",
+      "official_code": "07338"
+    },
+    {
+      "code": "rhein-sieg-kreis",
+      "label": "Rhein-Sieg-Kreis",
+      "official_code": "05382"
+    },
+    {
+      "code": "rheingau-taunus-kreis",
+      "label": "Rheingau-Taunus-Kreis",
+      "official_code": "06439"
+    },
+    {
+      "code": "rheinisch-bergischer-kreis",
+      "label": "Rheinisch-Bergischer Kreis",
+      "official_code": "05378"
     },
     {
       "code": "rhon-grabfeld",
-      "label": "Rhön-Grabfeld"
+      "label": "Rhön-Grabfeld",
+      "official_code": "09673"
     },
     {
       "code": "riesa-gro-enhain",
-      "label": "Riesa-Großenhain"
+      "label": "Riesa-Großenhain",
+      "active": false
     },
     {
       "code": "rosenheim",
-      "label": "Rosenheim"
+      "label": "Rosenheim",
+      "active": false
+    },
+    {
+      "code": "rosenheim-landkreis",
+      "label": "Rosenheim (Landkreis)",
+      "official_code": "09187"
+    },
+    {
+      "code": "rosenheim-stadt",
+      "label": "Rosenheim (Stadt)",
+      "official_code": "09163"
     },
     {
       "code": "rostock",
-      "label": "Rostock"
-    },
-    {
-      "code": "roth",
-      "label": "Roth"
+      "label": "Rostock",
+      "official_code": "13003"
     },
     {
       "code": "rotenburg-wumme",
-      "label": "Rotenburg (Wümme)"
+      "label": "Rotenburg (Wümme)",
+      "official_code": "03357"
+    },
+    {
+      "code": "roth",
+      "label": "Roth",
+      "official_code": "09576"
     },
     {
       "code": "rottal-inn",
-      "label": "Rottal-Inn"
+      "label": "Rottal-Inn",
+      "official_code": "09277"
     },
     {
       "code": "rottweil",
-      "label": "Rottweil"
+      "label": "Rottweil",
+      "official_code": "08325"
     },
     {
       "code": "rugen",
-      "label": "Rügen"
-    },
-    {
-      "code": "saalekreis",
-      "label": "Saalekreis"
-    },
-    {
-      "code": "saarbrucken",
-      "label": "Saarbrücken"
-    },
-    {
-      "code": "saarlouis",
-      "label": "Saarlouis"
-    },
-    {
-      "code": "saarpfalz-kreis",
-      "label": "Saarpfalz-Kreis"
-    },
-    {
-      "code": "saalfeld-rudolstadt",
-      "label": "Saalfeld-Rudolstadt"
+      "label": "Rügen",
+      "active": false
     },
     {
       "code": "saale-holzland-kreis",
-      "label": "Saale-Holzland-Kreis"
+      "label": "Saale-Holzland-Kreis",
+      "official_code": "16074"
     },
     {
       "code": "saale-orla-kreis",
-      "label": "Saale-Orla-Kreis"
+      "label": "Saale-Orla-Kreis",
+      "official_code": "16075"
+    },
+    {
+      "code": "saalekreis",
+      "label": "Saalekreis",
+      "official_code": "15088"
+    },
+    {
+      "code": "saalfeld-rudolstadt",
+      "label": "Saalfeld-Rudolstadt",
+      "official_code": "16073"
+    },
+    {
+      "code": "saarbrucken",
+      "label": "Saarbrücken",
+      "official_code": "10041"
+    },
+    {
+      "code": "saarlouis",
+      "label": "Saarlouis",
+      "official_code": "10044"
+    },
+    {
+      "code": "saarpfalz-kreis",
+      "label": "Saarpfalz-Kreis",
+      "official_code": "10045"
     },
     {
       "code": "sachsische-schweiz-osterzgebirge",
-      "label": "Sächsische Schweiz-Osterzgebirge"
-    },
-    {
-      "code": "salzlandkreis",
-      "label": "Salzlandkreis"
+      "label": "Sächsische Schweiz-Osterzgebirge",
+      "official_code": "14628"
     },
     {
       "code": "salzgitter",
-      "label": "Salzgitter"
+      "label": "Salzgitter",
+      "official_code": "03102"
+    },
+    {
+      "code": "salzlandkreis",
+      "label": "Salzlandkreis",
+      "official_code": "15089"
     },
     {
       "code": "schaumburg",
-      "label": "Schaumburg"
+      "label": "Schaumburg",
+      "official_code": "03257"
     },
     {
       "code": "schleswig-flensburg",
-      "label": "Schleswig-Flensburg"
+      "label": "Schleswig-Flensburg",
+      "official_code": "01059"
     },
     {
       "code": "schmalkalden-meiningen",
-      "label": "Schmalkalden-Meiningen"
+      "label": "Schmalkalden-Meiningen",
+      "official_code": "16066"
+    },
+    {
+      "code": "schwabach",
+      "label": "Schwabach",
+      "official_code": "09565"
     },
     {
       "code": "schwabisch-hall",
-      "label": "Schwäbisch Hall"
+      "label": "Schwäbisch Hall",
+      "official_code": "08127"
     },
     {
       "code": "schwalm-eder-kreis",
-      "label": "Schwalm-Eder-Kreis"
+      "label": "Schwalm-Eder-Kreis",
+      "official_code": "06634"
     },
     {
       "code": "schwandorf",
-      "label": "Schwandorf"
+      "label": "Schwandorf",
+      "official_code": "09376"
     },
     {
       "code": "schwarzwald-baar-kreis",
-      "label": "Schwarzwald-Baar-Kreis"
+      "label": "Schwarzwald-Baar-Kreis",
+      "official_code": "08326"
     },
     {
       "code": "schweinfurt",
-      "label": "Schweinfurt"
+      "label": "Schweinfurt",
+      "active": false
+    },
+    {
+      "code": "schweinfurt-landkreis",
+      "label": "Schweinfurt (Landkreis)",
+      "official_code": "09678"
+    },
+    {
+      "code": "schweinfurt-stadt",
+      "label": "Schweinfurt (Stadt)",
+      "official_code": "09662"
     },
     {
       "code": "schwerin",
-      "label": "Schwerin"
+      "label": "Schwerin",
+      "official_code": "13004"
     },
     {
       "code": "segeberg",
-      "label": "Segeberg"
+      "label": "Segeberg",
+      "official_code": "01060"
     },
     {
       "code": "siegen-wittgenstein",
-      "label": "Siegen-Wittgenstein"
+      "label": "Siegen-Wittgenstein",
+      "official_code": "05970"
     },
     {
       "code": "sigmaringen",
-      "label": "Sigmaringen"
+      "label": "Sigmaringen",
+      "official_code": "08437"
     },
     {
       "code": "soest",
-      "label": "Soest"
+      "label": "Soest",
+      "official_code": "05974"
     },
     {
       "code": "solingen",
-      "label": "Solingen"
+      "label": "Solingen",
+      "official_code": "05122"
     },
     {
       "code": "soltau-fallingbostel",
-      "label": "Soltau-Fallingbostel"
+      "label": "Soltau-Fallingbostel",
+      "active": false
     },
     {
       "code": "sommerda",
-      "label": "Sömmerda"
+      "label": "Sömmerda",
+      "official_code": "16068"
     },
     {
       "code": "sonneberg",
-      "label": "Sonneberg"
-    },
-    {
-      "code": "spree-nei-e",
-      "label": "Spree-Neiße"
+      "label": "Sonneberg",
+      "official_code": "16072"
     },
     {
       "code": "speyer",
-      "label": "Speyer"
+      "label": "Speyer",
+      "official_code": "07318"
+    },
+    {
+      "code": "spree-nei-e",
+      "label": "Spree-Neiße",
+      "official_code": "12071"
+    },
+    {
+      "code": "st-wendel",
+      "label": "St. Wendel",
+      "official_code": "10046"
     },
     {
       "code": "stade",
-      "label": "Stade"
+      "label": "Stade",
+      "official_code": "03359"
     },
     {
       "code": "starnberg",
-      "label": "Starnberg"
-    },
-    {
-      "code": "steinfurt",
-      "label": "Steinfurt"
+      "label": "Starnberg",
+      "official_code": "09188"
     },
     {
       "code": "steinburg",
-      "label": "Steinburg"
+      "label": "Steinburg",
+      "official_code": "01061"
+    },
+    {
+      "code": "steinfurt",
+      "label": "Steinfurt",
+      "official_code": "05566"
     },
     {
       "code": "stendal",
-      "label": "Stendal"
+      "label": "Stendal",
+      "official_code": "15090"
     },
     {
       "code": "stollberg",
-      "label": "Stollberg"
+      "label": "Stollberg",
+      "active": false
     },
     {
       "code": "stormarn",
-      "label": "Stormarn"
+      "label": "Stormarn",
+      "official_code": "01062"
+    },
+    {
+      "code": "straubing",
+      "label": "Straubing",
+      "official_code": "09263"
     },
     {
       "code": "straubing-bogen",
-      "label": "Straubing-Bogen"
+      "label": "Straubing-Bogen",
+      "official_code": "09278"
     },
     {
       "code": "stuttgart",
-      "label": "Stuttgart"
+      "label": "Stuttgart",
+      "official_code": "08111"
     },
     {
       "code": "sudliche-weinstra-e",
-      "label": "Südliche Weinstraße"
+      "label": "Südliche Weinstraße",
+      "official_code": "07337"
     },
     {
       "code": "sudwestpfalz",
-      "label": "Südwestpfalz"
+      "label": "Südwestpfalz",
+      "official_code": "07340"
     },
     {
       "code": "suhl",
-      "label": "Suhl"
+      "label": "Suhl",
+      "official_code": "16054"
     },
     {
       "code": "teltow-flaming",
-      "label": "Teltow-Fläming"
+      "label": "Teltow-Fläming",
+      "official_code": "12072"
     },
     {
       "code": "tirschenreuth",
-      "label": "Tirschenreuth"
+      "label": "Tirschenreuth",
+      "official_code": "09377"
     },
     {
       "code": "torgau-oschatz",
-      "label": "Torgau-Oschatz"
+      "label": "Torgau-Oschatz",
+      "active": false
     },
     {
       "code": "traunstein",
-      "label": "Traunstein"
+      "label": "Traunstein",
+      "official_code": "09189"
     },
     {
       "code": "trier",
-      "label": "Trier"
+      "label": "Trier",
+      "official_code": "07211"
     },
     {
       "code": "trier-saarburg",
-      "label": "Trier-Saarburg"
+      "label": "Trier-Saarburg",
+      "official_code": "07235"
     },
     {
       "code": "tubingen",
-      "label": "Tübingen"
+      "label": "Tübingen",
+      "official_code": "08416"
     },
     {
       "code": "tuttlingen",
-      "label": "Tuttlingen"
+      "label": "Tuttlingen",
+      "official_code": "08327"
     },
     {
       "code": "uckermark",
-      "label": "Uckermark"
+      "label": "Uckermark",
+      "official_code": "12073"
     },
     {
       "code": "uecker-randow",
-      "label": "Uecker-Randow"
+      "label": "Uecker-Randow",
+      "active": false
     },
     {
       "code": "uelzen",
-      "label": "Uelzen"
+      "label": "Uelzen",
+      "official_code": "03360"
     },
     {
       "code": "ulm",
-      "label": "Ulm"
+      "label": "Ulm",
+      "official_code": "08421"
     },
     {
       "code": "unna",
-      "label": "Unna"
+      "label": "Unna",
+      "official_code": "05978"
     },
     {
       "code": "unstrut-hainich-kreis",
-      "label": "Unstrut-Hainich-Kreis"
+      "label": "Unstrut-Hainich-Kreis",
+      "official_code": "16064"
     },
     {
       "code": "unterallgau",
-      "label": "Unterallgäu"
+      "label": "Unterallgäu",
+      "official_code": "09778"
     },
     {
       "code": "vechta",
-      "label": "Vechta"
+      "label": "Vechta",
+      "official_code": "03460"
     },
     {
       "code": "verden",
-      "label": "Verden"
+      "label": "Verden",
+      "official_code": "03361"
     },
     {
       "code": "viersen",
-      "label": "Viersen"
-    },
-    {
-      "code": "vogtlandkreis",
-      "label": "Vogtlandkreis"
+      "label": "Viersen",
+      "official_code": "05166"
     },
     {
       "code": "vogelsbergkreis",
-      "label": "Vogelsbergkreis"
+      "label": "Vogelsbergkreis",
+      "official_code": "06535"
+    },
+    {
+      "code": "vogtlandkreis",
+      "label": "Vogtlandkreis",
+      "official_code": "14523"
     },
     {
       "code": "vorpommern-greifswald",
-      "label": "Vorpommern-Greifswald"
+      "label": "Vorpommern-Greifswald",
+      "official_code": "13075"
     },
     {
       "code": "vorpommern-rugen",
-      "label": "Vorpommern-Rügen"
+      "label": "Vorpommern-Rügen",
+      "official_code": "13073"
     },
     {
       "code": "vulkaneifel",
-      "label": "Vulkaneifel"
+      "label": "Vulkaneifel",
+      "official_code": "07233"
+    },
+    {
+      "code": "waldeck-frankenberg",
+      "label": "Waldeck-Frankenberg",
+      "official_code": "06635"
     },
     {
       "code": "waldshut",
-      "label": "Waldshut"
+      "label": "Waldshut",
+      "official_code": "08337"
     },
     {
       "code": "warendorf",
-      "label": "Warendorf"
+      "label": "Warendorf",
+      "official_code": "05570"
     },
     {
       "code": "wartburgkreis",
-      "label": "Wartburgkreis"
+      "label": "Wartburgkreis",
+      "official_code": "16063"
     },
     {
-      "code": "wesel",
-      "label": "Wesel"
-    },
-    {
-      "code": "wesermarsch",
-      "label": "Wesermarsch"
-    },
-    {
-      "code": "westerwaldkreis",
-      "label": "Westerwaldkreis"
-    },
-    {
-      "code": "wetteraukreis",
-      "label": "Wetteraukreis"
+      "code": "weiden-in-der-oberpfalz",
+      "label": "Weiden in der Oberpfalz",
+      "official_code": "09363"
     },
     {
       "code": "weilheim-schongau",
-      "label": "Weilheim-Schongau"
+      "label": "Weilheim-Schongau",
+      "official_code": "09190"
     },
     {
       "code": "weimar",
-      "label": "Weimar"
+      "label": "Weimar",
+      "official_code": "16055"
     },
     {
       "code": "weimarer-land",
-      "label": "Weimarer Land"
+      "label": "Weimarer Land",
+      "official_code": "16071"
     },
     {
       "code": "wei-enburg-gunzenhausen",
-      "label": "Weißenburg-Gunzenhausen"
+      "label": "Weißenburg-Gunzenhausen",
+      "official_code": "09577"
     },
     {
       "code": "werra-mei-ner-kreis",
-      "label": "Werra-Meißner-Kreis"
+      "label": "Werra-Meißner-Kreis",
+      "official_code": "06636"
+    },
+    {
+      "code": "wesel",
+      "label": "Wesel",
+      "official_code": "05170"
     },
     {
       "code": "wesel-2",
-      "label": "Wesel"
+      "label": "Wesel",
+      "active": false
+    },
+    {
+      "code": "wesermarsch",
+      "label": "Wesermarsch",
+      "official_code": "03461"
+    },
+    {
+      "code": "westerwaldkreis",
+      "label": "Westerwaldkreis",
+      "official_code": "07143"
+    },
+    {
+      "code": "wetteraukreis",
+      "label": "Wetteraukreis",
+      "official_code": "06440"
     },
     {
       "code": "wiesbaden",
-      "label": "Wiesbaden"
+      "label": "Wiesbaden",
+      "official_code": "06414"
     },
     {
       "code": "wilhelmshaven",
-      "label": "Wilhelmshaven"
+      "label": "Wilhelmshaven",
+      "official_code": "03405"
     },
     {
       "code": "wittenberg",
-      "label": "Wittenberg"
+      "label": "Wittenberg",
+      "official_code": "15091"
     },
     {
       "code": "wittmund",
-      "label": "Wittmund"
+      "label": "Wittmund",
+      "official_code": "03462"
     },
     {
       "code": "wolfenbuttel",
-      "label": "Wolfenbüttel"
+      "label": "Wolfenbüttel",
+      "official_code": "03158"
     },
     {
       "code": "wolfsburg",
-      "label": "Wolfsburg"
+      "label": "Wolfsburg",
+      "official_code": "03103"
     },
     {
       "code": "worms",
-      "label": "Worms"
+      "label": "Worms",
+      "official_code": "07319"
     },
     {
       "code": "wunsiedel-im-fichtelgebirge",
-      "label": "Wunsiedel im Fichtelgebirge"
+      "label": "Wunsiedel im Fichtelgebirge",
+      "official_code": "09479"
     },
     {
       "code": "wuppertal",
-      "label": "Wuppertal"
+      "label": "Wuppertal",
+      "official_code": "05124"
     },
     {
       "code": "wurzburg",
-      "label": "Würzburg"
+      "label": "Würzburg",
+      "active": false
+    },
+    {
+      "code": "wurzburg-landkreis",
+      "label": "Würzburg (Landkreis)",
+      "official_code": "09679"
+    },
+    {
+      "code": "wurzburg-stadt",
+      "label": "Würzburg (Stadt)",
+      "official_code": "09663"
     },
     {
       "code": "zollernalbkreis",
-      "label": "Zollernalbkreis"
+      "label": "Zollernalbkreis",
+      "official_code": "08417"
     },
     {
       "code": "zweibrucken",
-      "label": "Zweibrücken"
+      "label": "Zweibrücken",
+      "official_code": "07320"
     },
     {
       "code": "zwickau",
-      "label": "Zwickau"
+      "label": "Zwickau",
+      "official_code": "14524"
     }
   ]
 }

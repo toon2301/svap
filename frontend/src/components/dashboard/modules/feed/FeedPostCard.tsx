@@ -12,7 +12,7 @@
  * optimisticky a pri zlyhaní sa vráti do pôvodného stavu.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
 import {
   deleteFeedPost,
+  getFeedPost,
   likeFeedPost,
   removeOwnFeedPostTag,
   unlikeFeedPost,
@@ -40,6 +41,8 @@ import FeedPostShareModal from './FeedPostShareModal';
 import ShareIcon from './ShareIcon';
 import { formatOfferPriceLabel } from './offerPriceLabel';
 import { usePendingFeedImages } from './usePendingFeedImages';
+import { useCardInViewport } from './useCardInViewport';
+import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 
 /**
  * Pozadie zdieľanej karty. Svetlý odtieň je presne #EEEDFE zo zadania (preto
@@ -181,10 +184,17 @@ function SharedContentPreview({
   // nie „mini ponuka" (náhľad + názov + kategória).
   if (shared.type === 'feed_post') {
     return (
+      // Výraznejší rám než pri ponuke/portfóliu: tu sú „hore" aj „dole"
+      // PRÍSPEVKY OD ĽUDÍ, takže bez zreteľného predelu to môže vyzerať,
+      // akoby pôvodný autor zdieľal sám seba. Ponuka ani portfólio túto
+      // zámenu nevyvolávajú – náhľad je tam očividne iný typ obsahu.
       <div
         data-testid="feed-shared-post-preview"
-        className="rounded-xl border border-purple-200/70 bg-white/80 p-3 dark:border-purple-800/40 dark:bg-black/20"
+        className="rounded-xl border-2 border-purple-300 bg-white/90 p-3 shadow-sm dark:border-purple-700/70 dark:bg-black/30"
       >
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80">
+          {t('feed.originalPost', 'Pôvodný príspevok')}
+        </p>
         {hideOwner ? null : (
           <div className="flex items-center gap-2">
             <InitialsAvatar
@@ -269,6 +279,7 @@ function SharedContentPreview({
 export default function FeedPostCard({
   post,
   initialCommentsOpen = false,
+  highlightCommentId,
   onShared,
   onSelfTagRemoved,
   onDeleted,
@@ -276,6 +287,8 @@ export default function FeedPostCard({
   post: FeedPost;
   /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
   initialCommentsOpen?: boolean;
+  /** Komentár z notifikácie – sekcia naň doscrolluje a zvýrazní ho. */
+  highlightCommentId?: number | null;
   /** Zdieľanie ďalej vloží nový príspevok na vrch feedu (ako composer). */
   onShared?: (created: FeedPost) => void;
   /**
@@ -353,6 +366,13 @@ export default function FeedPostCard({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const likePendingRef = useRef(false);
+  // Poradové číslo lajkov. `likePendingRef` sám nestačí: lajk, ktorý sa počas
+  // pollu stihne CELÝ (aj s odpoveďou), príznak zase vynuluje, takže by
+  // zastaraná odpoveď pollu prepísala čerstvý počet späť. Rovnaký vzor ako
+  // loadSeqRef vo FeedPostComments.
+  const likeSeqRef = useRef(0);
+  // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
+  const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -399,6 +419,7 @@ export default function FeedPostCard({
   const handleToggleLike = async () => {
     if (likePendingRef.current) return;
     likePendingRef.current = true;
+    likeSeqRef.current += 1;
 
     // Optimisticky prepni hneď, request beží na pozadí.
     const previousLiked = isLiked;
@@ -422,6 +443,32 @@ export default function FeedPostCard({
       likePendingRef.current = false;
     }
   };
+
+  /**
+   * Priebežné počty lajkov od iných používateľov.
+   *
+   * Rovnaký hook ako pri komentároch, takže interval, pauza pri skrytej
+   * záložke, timeout nečinnosti aj ochrana proti prekrývajúcim sa requestom
+   * sú zdieľané, nie skopírované.
+   *
+   * Počty lajkov KOMENTÁROV nič nové nepotrebujú: pollovanie komentárov
+   * vracia celé objekty vrátane `likes_count` a merge ich nahradí čerstvou
+   * verziou.
+   */
+  const refreshCounts = useCallback(async () => {
+    // Vlastný lajk práve beží – serverová odpoveď je spred neho a prebliklo
+    // by to späť. Rovnaká zásada ako v prop-sync efekte vyššie.
+    if (likePendingRef.current) return;
+    const seq = likeSeqRef.current;
+    const fresh = await getFeedPost(post.id);
+    // Medzitým používateľ lajkol (aj keď už dobehol) → odpoveď je spred toho.
+    if (seq !== likeSeqRef.current || likePendingRef.current) return;
+    setLikesCount(fresh.likes_count);
+    setIsLiked(fresh.is_liked_by_me);
+    setCommentsCount(fresh.comments_count);
+  }, [post.id]);
+
+  useFeedCommentsPolling({ enabled: inViewport, onPoll: refreshCounts });
 
   // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
   // zobrazí dvakrát pod sebou (hlavička + vnorený náhľad), čo pôsobí ako chyba.
@@ -478,6 +525,7 @@ export default function FeedPostCard({
 
   return (
     <motion.article
+      ref={viewportRef}
       data-testid="feed-post-card"
       data-post-type={post.post_type}
       initial={{ opacity: 0, scale: 0.98 }}
@@ -696,6 +744,7 @@ export default function FeedPostCard({
 
       {commentsOpen ? (
         <FeedPostComments
+          highlightCommentId={highlightCommentId}
           postId={post.id}
           onCountChange={(delta) =>
             setCommentsCount((count) => Math.max(0, count + delta))
