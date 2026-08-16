@@ -9,7 +9,11 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostCard from '../FeedPostCard';
-import { removeOwnFeedPostTag, type FeedPost } from '@/lib/feedApi';
+import {
+  deleteFeedPost,
+  removeOwnFeedPostTag,
+  type FeedPost,
+} from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
   FEED_COMMENT_MAX_LENGTH: 500,
@@ -27,6 +31,7 @@ jest.mock('@/lib/feedApi', () => ({
   likeFeedPostComment: jest.fn(),
   unlikeFeedPostComment: jest.fn(),
   getFeedPost: jest.fn(),
+  deleteFeedPost: jest.fn(),
   removeOwnFeedPostTag: jest.fn(),
 }));
 
@@ -60,6 +65,7 @@ jest.mock('framer-motion', () => ({
 const mockedRemove = removeOwnFeedPostTag as jest.MockedFunction<
   typeof removeOwnFeedPostTag
 >;
+const mockedDelete = deleteFeedPost as jest.MockedFunction<typeof deleteFeedPost>;
 
 function user(id: number, name: string, canRemove = false) {
   return {
@@ -183,4 +189,63 @@ it('notifies the parent so filtered lists can drop the post', async () => {
   });
 
   await waitFor(() => expect(onSelfTagRemoved).toHaveBeenCalledWith(500));
+});
+
+// --- Zmazanie vlastného príspevku -----------------------------------------
+
+it('offers deleting only when the backend says the viewer manages the post', async () => {
+  render(<FeedPostCard post={post({ can_manage: false } as Partial<FeedPost>)} />);
+
+  await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+
+  expect(screen.queryByTestId('feed-post-delete')).not.toBeInTheDocument();
+  // Nahlásenie ostáva dostupné – skryla sa iba položka mazania.
+  expect(screen.getByTestId('feed-post-menu')).toHaveTextContent(
+    'Nahlásiť príspevok',
+  );
+});
+
+it('deletes the post after confirmation and tells the list', async () => {
+  mockedDelete.mockResolvedValue(undefined);
+  const onDeleted = jest.fn();
+  render(
+    <FeedPostCard
+      post={post({ can_manage: true } as Partial<FeedPost>)}
+      onDeleted={onDeleted}
+    />,
+  );
+
+  await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+  await userEvent.click(screen.getByTestId('feed-post-delete'));
+
+  const dialog = await screen.findByTestId('feed-post-delete-confirm');
+  expect(dialog).toHaveTextContent('Naozaj chceš zmazať tento príspevok?');
+  await userEvent.click(
+    within(dialog).getByTestId('feed-post-delete-confirm-action'),
+  );
+
+  await waitFor(() => expect(mockedDelete).toHaveBeenCalledWith(500));
+  await waitFor(() => expect(onDeleted).toHaveBeenCalledWith(500));
+  expect(toastSuccess).toHaveBeenCalledWith('Príspevok bol zmazaný.');
+});
+
+it('keeps the post and reports the error when deleting fails', async () => {
+  mockedDelete.mockRejectedValue(new Error('boom'));
+  const onDeleted = jest.fn();
+  render(
+    <FeedPostCard
+      post={post({ can_manage: true } as Partial<FeedPost>)}
+      onDeleted={onDeleted}
+    />,
+  );
+
+  await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+  await userEvent.click(screen.getByTestId('feed-post-delete'));
+  const dialog = await screen.findByTestId('feed-post-delete-confirm');
+  await userEvent.click(
+    within(dialog).getByTestId('feed-post-delete-confirm-action'),
+  );
+
+  await waitFor(() => expect(toastError).toHaveBeenCalled());
+  expect(onDeleted).not.toHaveBeenCalled();
 });

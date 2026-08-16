@@ -27,9 +27,11 @@ jest.mock('../feed/FeedPostCard', () => ({
   default: ({
     post,
     onSelfTagRemoved,
+    onDeleted,
   }: {
     post: { id: number; caption?: string };
     onSelfTagRemoved?: (postId: number) => void;
+    onDeleted?: (postId: number) => void;
   }) => (
     <article data-testid={`post-${post.id}`}>
       {post.caption}
@@ -40,6 +42,14 @@ jest.mock('../feed/FeedPostCard', () => ({
         onClick={() => onSelfTagRemoved?.(post.id)}
       >
         remove tag
+      </button>
+      <button
+        type="button"
+        data-testid={`delete-post-${post.id}`}
+        disabled={!onDeleted}
+        onClick={() => onDeleted?.(post.id)}
+      >
+        delete post
       </button>
     </article>
   ),
@@ -199,4 +209,52 @@ it('leaves the post in place in the posts tab', async () => {
   // Tab „Príspevky" nefiltruje podľa označenia, takže tam callback nechodí –
   // zmizne iba chip na karte.
   expect(screen.getByTestId('remove-tag-1')).toBeDisabled();
+});
+
+it('keeps the post on someone else profile when only my own tag goes', async () => {
+  // Príspevok nesie tagy pre vlastníka profilu AJ pre mňa. Zoznam je
+  // filtrovaný na vlastníkove označenia – to moje odstránenie neruší.
+  mockedTagged.mockResolvedValue(page([post(1, 'Prvý'), post(2, 'Druhý')]));
+
+  render(
+    <ProfileFeedSection
+      activeTab="tagged"
+      tab="tagged"
+      ownerUserId={7}
+      isOtherUserProfile
+    />,
+  );
+  await screen.findByTestId('post-1');
+
+  // Callback sa na cudzí profil vôbec neposiela – karta si odstráni len chip.
+  expect(screen.getByTestId('remove-tag-1')).toBeDisabled();
+  expect(screen.getByTestId('post-1')).toBeInTheDocument();
+});
+
+it('drops the post from my own tagged tab, as before', async () => {
+  mockedTagged.mockResolvedValue(page([post(1, 'Prvý'), post(2, 'Druhý')]));
+
+  render(<ProfileFeedSection activeTab="tagged" tab="tagged" ownerUserId={7} />);
+  await screen.findByTestId('post-1');
+
+  await userEvent.click(screen.getByTestId('remove-tag-1'));
+
+  await waitFor(() =>
+    expect(screen.queryByTestId('post-1')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByTestId('post-2')).toBeInTheDocument();
+});
+
+it('drops a deleted post from the list in both tabs', async () => {
+  mockedPosts.mockResolvedValue(page([post(1, 'Prvý'), post(2, 'Druhý')]));
+
+  render(<ProfileFeedSection activeTab="posts" tab="posts" ownerUserId={7} />);
+  await screen.findByTestId('post-1');
+
+  await userEvent.click(screen.getByTestId('delete-post-1'));
+
+  await waitFor(() =>
+    expect(screen.queryByTestId('post-1')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByTestId('post-2')).toBeInTheDocument();
 });

@@ -16,12 +16,17 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { EllipsisHorizontalIcon, FlagIcon } from '@heroicons/react/24/outline';
+import {
+  EllipsisHorizontalIcon,
+  FlagIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translateFeedActionError } from './feedActionErrors';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
 import {
+  deleteFeedPost,
   likeFeedPost,
   removeOwnFeedPostTag,
   unlikeFeedPost,
@@ -266,6 +271,7 @@ export default function FeedPostCard({
   initialCommentsOpen = false,
   onShared,
   onSelfTagRemoved,
+  onDeleted,
 }: {
   post: FeedPost;
   /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
@@ -277,6 +283,8 @@ export default function FeedPostCard({
    * označený" (profilový tab) tam príspevok už nemajú prečo držať.
    */
   onSelfTagRemoved?: (postId: number) => void;
+  /** Autor zmazal príspevok – zoznamy ho majú okamžite vyhodiť. */
+  onDeleted?: (postId: number) => void;
 }) {
   const { t, locale } = useLanguage();
   const router = useRouter();
@@ -305,6 +313,26 @@ export default function FeedPostCard({
     }
   };
 
+  const handleDeletePost = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await deleteFeedPost(post.id);
+      setDeleteOpen(false);
+      toast.success(t('feed.postDeleted', 'Príspevok bol zmazaný.'));
+      // Zoznam si kartu odstráni sám; na detaile to znamená odchod na Nástenku.
+      onDeleted?.(post.id);
+    } catch (error) {
+      toast.error(
+        translateFeedActionError(t, error, () =>
+          t('feed.postDeleteError', 'Príspevok sa nepodarilo zmazať.'),
+        ),
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
   // pending/rejected – hook ich dosleduje, kým sa spracovanie nedokončí.
   const images = usePendingFeedImages(post);
@@ -322,6 +350,8 @@ export default function FeedPostCard({
   const [taggedUsers, setTaggedUsers] = useState(post.tagged_users ?? []);
   const [tagRemoveOpen, setTagRemoveOpen] = useState(false);
   const [removingTag, setRemovingTag] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const likePendingRef = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -529,6 +559,23 @@ export default function FeedPostCard({
                   ? t('feed.alreadyReported', 'Už nahlásené')
                   : t('feed.reportPost', 'Nahlásiť príspevok')}
               </button>
+              {/* Mazať smie iba autor – o tom rozhoduje backend cez
+                  `can_manage`, FE si to neodvodzuje sám. */}
+              {post.can_manage ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setDeleteOpen(true);
+                  }}
+                  data-testid="feed-post-delete"
+                  className="flex w-full items-center gap-2 border-t border-gray-200 px-4 py-3 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-gray-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  {t('feed.deletePost', 'Zmazať príspevok')}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -658,6 +705,16 @@ export default function FeedPostCard({
           onTotalChange={setCommentsCount}
         />
       ) : null}
+
+      <FeedDestructiveConfirm
+        open={deleteOpen}
+        isDeleting={deleting}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDeletePost}
+        testId="feed-post-delete-confirm"
+        title={t('feed.postDeleteConfirm', 'Naozaj chceš zmazať tento príspevok?')}
+        hint={t('feed.postDeleteHint', 'Túto akciu už nie je možné vrátiť späť.')}
+      />
 
       <FeedDestructiveConfirm
         open={tagRemoveOpen}

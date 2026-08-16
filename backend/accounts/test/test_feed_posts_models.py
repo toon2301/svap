@@ -54,14 +54,36 @@ def _free_post(author, caption="Ahoj feed!"):
 
 @pytest.mark.django_db
 class TestFeedPostModel:
-    def test_free_post_requires_caption(self):
+    def test_free_post_may_start_without_caption(self):
+        """Príspevok bez textu je platný riadok – fotka pribúda až po ňom.
+
+        DB constraint „caption povinný" bol zámerne uvoľnený: príspevok musí
+        existovať skôr, než sa naň dá naviazať fotka (S3 kľúč obsahuje
+        post_id), takže pri INSERTe je fotiek vždy nula a podmienku „text
+        ALEBO fotka" nemá ako overiť. Pravidlo drží ``_create_feed_post``
+        (príznak ``will_attach_photo``) – viď test_feed_api.py.
+        """
         u = _user(1)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="",
+        )
+
+        assert post.pk is not None
+        assert post.caption == ""
+
+    def test_free_post_still_cannot_carry_a_shared_source(self):
+        """Zvyšok constraintu ostáva – uvoľnil sa iba text."""
+        u = _user(1)
+        offer = _offer(u)
         with pytest.raises(IntegrityError):
             with transaction.atomic():
                 FeedPost.objects.create(
                     author=u,
                     post_type=FeedPost.PostType.FREE_POST,
-                    caption="",
+                    caption="Text",
+                    shared_offer=offer,
                 )
 
     def test_shared_offer_snapshot_survives_offer_deletion(self):

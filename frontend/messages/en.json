@@ -4363,6 +4363,11 @@
     "viewOwnerResponse": "View owner response"
   },
   "feed": {
+    "postDeleteHint": "This action cannot be undone.",
+    "deletePost": "Delete post",
+    "postDeleteConfirm": "Delete this post?",
+    "postDeleted": "The post was deleted.",
+    "postDeleteError": "The post could not be deleted.",
     "tagRemoveAction": "Remove tag",
     "tagRemoveConfirm": "Remove your tag from this post?",
     "tagRemoveHint": "The post stays published, only your tag disappears.",

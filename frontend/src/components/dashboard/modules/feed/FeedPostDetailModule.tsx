@@ -116,7 +116,17 @@ export default function FeedPostDetailModule({
     >
       {/* Komentáre sú na permalinku rozbalené rovno – používateľ sem prišiel
           z notifikácie o komentári/lajku, takže ich chce vidieť bez ďalšieho kliku. */}
-      <FeedPostCard post={post} initialCommentsOpen />
+      <FeedPostCard
+        post={post}
+        initialCommentsOpen
+        // Po zmazaní nemá permalink čo zobraziť – rovnaká cesta späť ako pri
+        // „obsah už nie je dostupný", len bez chybovej hlášky (zmazanie
+        // potvrdil vlastný toast na karte).
+        onDeleted={() => {
+          onNavigateToFeed?.();
+          router.push(FEED_PATH);
+        }}
+      />
     </motion.section>
   );
 }

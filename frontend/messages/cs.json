@@ -4363,6 +4363,11 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "postDeleteHint": "Tuto akci už nelze vrátit zpět.",
+    "deletePost": "Smazat příspěvek",
+    "postDeleteConfirm": "Opravdu chceš smazat tento příspěvek?",
+    "postDeleted": "Příspěvek byl smazán.",
+    "postDeleteError": "Příspěvek se nepodařilo smazat.",
     "tagRemoveAction": "Odstranit označení",
     "tagRemoveConfirm": "Opravdu chceš odstranit své označení z tohoto příspěvku?",
     "tagRemoveHint": "Příspěvek zůstane zveřejněný, zmizí jen tvoje označení.",

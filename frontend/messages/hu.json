@@ -4363,6 +4363,11 @@
     "viewOwnerResponse": "Válasz megtekintése"
   },
   "feed": {
+    "postDeleteHint": "Ez a művelet nem vonható vissza.",
+    "deletePost": "Bejegyzés törlése",
+    "postDeleteConfirm": "Biztosan törlöd ezt a bejegyzést?",
+    "postDeleted": "A bejegyzés törölve.",
+    "postDeleteError": "A bejegyzést nem sikerült törölni.",
     "tagRemoveAction": "Megjelölés eltávolítása",
     "tagRemoveConfirm": "Biztosan eltávolítod a saját megjelölésedet erről a bejegyzésről?",
     "tagRemoveHint": "A bejegyzés közzétéve marad, csak a te megjelölésed tűnik el.",

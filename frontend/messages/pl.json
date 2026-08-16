@@ -4363,6 +4363,11 @@
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
   },
   "feed": {
+    "postDeleteHint": "Tej akcji nie można cofnąć.",
+    "deletePost": "Usuń post",
+    "postDeleteConfirm": "Na pewno chcesz usunąć ten post?",
+    "postDeleted": "Post został usunięty.",
+    "postDeleteError": "Nie udało się usunąć posta.",
     "tagRemoveAction": "Usuń oznaczenie",
     "tagRemoveConfirm": "Na pewno chcesz usunąć swoje oznaczenie z tego posta?",
     "tagRemoveHint": "Post pozostanie opublikowany, zniknie tylko Twoje oznaczenie.",

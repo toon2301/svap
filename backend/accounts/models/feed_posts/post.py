@@ -144,7 +144,7 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         verbose_name_plural = _("Príspevky na nástenke")
         ordering = ["-created_at", "-id"]
         constraints = [
-            # FREE_POST: caption povinný, žiadne zdieľanie, fotky voliteľné.
+            # FREE_POST: žiadne zdieľanie. Text ani fotka tu vynútené NIE SÚ.
             # SHARED_*: snapshot title povinný (FK je nullable kvôli SET_NULL
             # survival vzoru – NEsmie byť v constraints!), druhé zdieľanie NULL.
             #
@@ -152,6 +152,12 @@ class FeedPost(FeedPostSharingMixin, models.Model):
             # v ``FeedPostImage``, a počet riadkov v child tabuľke CheckConstraint
             # vyjadriť nevie. Vynucuje sa pri upload-init (``_get_own_free_post``
             # prepustí len FREE_POST) – rovnako ako limit MAX_FEED_POST_IMAGES.
+            #
+            # Z ROVNAKÉHO dôvodu tu už nie je ani „caption povinný": príspevok
+            # VZNIKÁ PRED fotkou (S3 kľúč potrebuje post_id), takže v okamihu
+            # INSERTu je fotiek vždy nula – podmienka „text ALEBO fotka" sa na
+            # úrovni riadku vyjadriť nedá. Presunula sa do ``_create_feed_post``,
+            # kde klient posiela ``will_attach_photo``.
             models.CheckConstraint(
                 check=(
                     models.Q(
@@ -160,7 +166,6 @@ class FeedPost(FeedPostSharingMixin, models.Model):
                         shared_portfolio_item__isnull=True,
                         shared_feed_post__isnull=True,
                     )
-                    & ~models.Q(caption="")
                 )
                 | (
                     models.Q(

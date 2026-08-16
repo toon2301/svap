@@ -10,7 +10,12 @@ import FeedList from './feed/FeedList';
  * predtým – je to cieľ onboardingu. Feed sa preto pridáva POD nadpis vnútri
  * rovnakej sekcie, nie vedľa nej, aby onboarding ukazoval na nezmenený prvok.
  */
-export default function HomeModule() {
+type HomeModuleProps = {
+  /** Na mobile otvára composer ako samostatnú routu, nie modal. */
+  onOpenComposerPage?: () => void;
+};
+
+export default function HomeModule({ onOpenComposerPage }: HomeModuleProps) {
   const { t } = useLanguage();
 
   return (
@@ -28,7 +33,7 @@ export default function HomeModule() {
       </h1>
 
       <div className="mx-auto mt-5 max-w-2xl pb-10">
-        <FeedList />
+        <FeedList onOpenComposerPage={onOpenComposerPage} />
       </div>
     </section>
   );

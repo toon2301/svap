@@ -13,7 +13,8 @@ from .country_registry import normalize_offer_country_code
 # Backend-owned data shipped with the accounts app (see accounts/data/).
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 DISTRICT_REGISTRY_PATH = _DATA_DIR / "district_registry.json"
-STRICT_DISTRICT_REGISTRY_COUNTRIES = frozenset({"SK", "CZ"})
+STRICT_DISTRICT_REGISTRY_COUNTRIES = frozenset({"SK", "CZ", "PL", "HU"})
+_NON_DECOMPOSING_CHARACTERS = str.maketrans({"ł": "l", "Ł": "L"})
 
 
 class DistrictEntry(TypedDict):
@@ -26,7 +27,7 @@ class DistrictEntry(TypedDict):
 
 def _normalize_text(value: str) -> str:
     return (
-        unicodedata.normalize("NFD", value)
+        unicodedata.normalize("NFD", value.translate(_NON_DECOMPOSING_CHARACTERS))
         .encode("ascii", "ignore")
         .decode("ascii")
         .lower()

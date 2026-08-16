@@ -38,9 +38,10 @@ describe('offer country registry', () => {
     expect(getDistrictOptions('SK')).not.toEqual([]);
   });
 
-  it('exposes exactly the current Slovak and Czech district counts', () => {
+  it('exposes exactly the current Slovak, Czech, and Polish district counts', () => {
     expect(getDistrictOptions('SK')).toHaveLength(79);
     expect(getDistrictOptions('CZ')).toHaveLength(77);
+    expect(getDistrictOptions('PL')).toHaveLength(380);
     expect(getDistrictOptions('CZ').map((entry) => entry.code)).toEqual(
       expect.arrayContaining([
         'praha',
@@ -52,6 +53,50 @@ describe('offer country registry', () => {
         'uherske-hradiste',
       ]),
     );
+    expect(getDistrictOptions('PL').map((entry) => entry.code)).toEqual(
+      expect.arrayContaining([
+        'boleslawiecki',
+        'brzeski-malopolskie',
+        'brzeski-opolskie',
+        'katovice',
+        'walbrzyski',
+        'walbrzych',
+      ]),
+    );
+  });
+
+  it('keeps legacy Polish names while exposing corrected canonical labels', () => {
+    expect(findDistrictByLabel('PL', 'Katovice')).toMatchObject({
+      code: 'katovice',
+      label: 'Katowice',
+      officialCode: '2469',
+    });
+    expect(findDistrictByLabel('PL', 'Lodž')).toMatchObject({
+      code: 'lodz',
+      label: 'Łódź',
+      officialCode: '1061',
+    });
+    expect(findDistrictByLabel('PL', 'Lodz')).toMatchObject({
+      code: 'lodz',
+      label: 'Łódź',
+      officialCode: '1061',
+    });
+    expect(findDistrictByLabel('PL', 'Jastrzębie Zdrój')).toMatchObject({
+      code: 'jastrzebie-zdroj',
+      label: 'Jastrzębie-Zdrój',
+      officialCode: '2467',
+    });
+  });
+
+  it('disambiguates same-named Polish districts by voivodeship', () => {
+    expect(findDistrictByLabel('PL', 'Brzeski (Małopolskie)')).toMatchObject({
+      code: 'brzeski-malopolskie',
+      officialCode: '1202',
+    });
+    expect(findDistrictByLabel('PL', 'Brzeski (Opolskie)')).toMatchObject({
+      code: 'brzeski-opolskie',
+      officialCode: '1601',
+    });
   });
 
   it('hides an inactive legacy district but still resolves existing data', () => {

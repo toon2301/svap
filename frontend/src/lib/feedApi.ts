@@ -288,11 +288,18 @@ export async function reportFeedPost(
 export async function createFeedPost(payload: {
   caption: string;
   taggedUserIds?: number[];
+  /**
+   * Zámer pripojiť fotku hneď po vytvorení. Backend bez neho odmietne
+   * príspevok bez textu ako prázdny – fotka v tom momente ešte neexistuje,
+   * lebo jej S3 kľúč potrebuje post_id.
+   */
+  willAttachPhoto?: boolean;
 }): Promise<FeedPost> {
   const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
     post_type: 'free_post',
     caption: payload.caption,
     tagged_user_ids: payload.taggedUserIds ?? [],
+    will_attach_photo: payload.willAttachPhoto ?? false,
   });
   return data;
 }
@@ -363,6 +370,11 @@ export async function getFeedPost(postId: number): Promise<FeedPost> {
   }
   const { data } = await api.get<FeedPost>(endpoints.feed.postDetail(postId));
   return data;
+}
+
+/** Zmaže vlastný príspevok. Právo overuje backend podľa `can_manage`. */
+export async function deleteFeedPost(postId: number): Promise<void> {
+  await api.delete(endpoints.feed.postDetail(postId));
 }
 
 /**

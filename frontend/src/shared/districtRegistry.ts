@@ -62,6 +62,7 @@ export function getDistrictOptions(
 
 export function removeDistrictDiacritics(value: string): string {
   return value
+    .replace(/[Łł]/g, 'l')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()

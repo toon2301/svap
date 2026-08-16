@@ -147,10 +147,14 @@ function ProfileFeedList({
         <FeedPostCard
           key={post.id}
           post={post}
-          // Len v tabe „Označený": zoznam je filtrovaný na „kde som označený",
-          // takže po odstránení vlastného označenia tam príspevok už nepatrí.
-          // V tabe „Príspevky" zmizne iba chip – príspevok je stále môj.
-          onSelfTagRemoved={tab === 'tagged' ? removePost : undefined}
+          // Zoznam je filtrovaný na „kde je označený VLASTNÍK profilu".
+          // Odstránenie MÔJHO označenia teda vyhadzuje príspevok len na
+          // mojom vlastnom profile. Na cudzom profile vlastníkov tag ďalej
+          // existuje, takže príspevok tam patrí – zmizne iba môj chip.
+          onSelfTagRemoved={
+            tab === 'tagged' && !isOtherUserProfile ? removePost : undefined
+          }
+          onDeleted={removePost}
         />
       ))}
 
