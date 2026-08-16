@@ -1137,3 +1137,75 @@ class FeedProfileListsApiTests(APITestCase):
 
         # Počet dotazov nesmie rásť s počtom príspevkov/tagov (prefetch, nie N+1).
         self.assertEqual(len(small.captured_queries), len(large.captured_queries))
+
+
+class FeedPostCaptionOrPhotoTests(APITestCase):
+    """Text a fotka sú alternatívy – zakázaný je len úplne prázdny príspevok.
+
+    Fotka pri vytváraní ešte neexistuje (S3 kľúč potrebuje post_id), takže
+    klient posiela ZÁMER cez ``will_attach_photo``.
+    """
+
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username="caption-or-photo",
+            email="caption-or-photo@example.com",
+            password="StrongPass123",
+            is_public=True,
+        )
+        self.client.force_authenticate(user=self.author)
+        self.url = reverse("accounts:feed_posts")
+
+    def _create(self, payload):
+        return self.client.post(self.url, {"post_type": "free_post", **payload},
+                                format="json")
+
+    def test_photo_only_post_is_created(self):
+        response = self._create({"will_attach_photo": True})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["caption"], "")
+        self.assertTrue(
+            FeedPost.objects.filter(author=self.author, caption="").exists()
+        )
+
+    def test_text_only_post_still_works(self):
+        response = self._create({"caption": "Len text"})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["caption"], "Len text")
+
+    def test_text_and_photo_post_works(self):
+        response = self._create({"caption": "Text aj fotka", "will_attach_photo": True})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_completely_empty_post_is_rejected(self):
+        response = self._create({})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "caption_required")
+        self.assertFalse(FeedPost.objects.filter(author=self.author).exists())
+
+    def test_whitespace_caption_without_photo_is_rejected(self):
+        response = self._create({"caption": "   "})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "caption_required")
+
+    def test_flag_is_read_from_a_string_too(self):
+        """Multipart klient pošle 'true' ako reťazec, nie bool."""
+        response = self._create({"will_attach_photo": "true"})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_flag_alone_does_not_unlock_a_shared_post(self):
+        """Príznak platí len pre voľný príspevok – zdieľanie má vlastné pravidlá."""
+        response = self.client.post(
+            self.url,
+            {"post_type": "shared_offer", "will_attach_photo": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "shared_source_required")

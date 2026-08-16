@@ -25,7 +25,10 @@ jest.mock('@/contexts/LanguageContext', () => ({
 }));
 
 describe('LanguageModule extra', () => {
-  beforeEach(() => setLocaleMock.mockClear());
+  beforeEach(() => {
+    setLocaleMock.mockClear();
+    setCountryMock.mockClear();
+  });
 
   const clickRow = (label: string) => {
     const node = screen.getAllByText(label)[0];
@@ -50,6 +53,7 @@ describe('LanguageModule extra', () => {
     expect(setLocaleMock).toHaveBeenCalledWith('de');
     expect(setLocaleMock).toHaveBeenCalledWith('hu');
     expect(setLocaleMock).toHaveBeenCalledWith('sk');
+    expect(setCountryMock).not.toHaveBeenCalled();
   });
 });
 

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -8,8 +9,11 @@ from rest_framework.test import APITestCase
 from accounts.district_registry import (
     DISTRICT_REGISTRY_PATH,
     _load_registry,
+    get_offer_district_entries,
     get_offer_district_label,
+    is_inactive_offer_district_code,
     is_valid_offer_district_code,
+    resolve_offer_district_code,
 )
 from accounts.models import UserType
 
@@ -31,6 +35,116 @@ class DistrictRegistryDataTests(APITestCase):
         self.assertIn("SK", registry)
         self.assertTrue(is_valid_offer_district_code("SK", "nitra"))
         self.assertEqual(get_offer_district_label("SK", "nitra"), "Nitra")
+
+    def test_slovakia_czechia_and_poland_have_current_active_district_counts(self):
+        slovak_districts = get_offer_district_entries("SK")
+        czech_districts = get_offer_district_entries("CZ")
+        polish_districts = get_offer_district_entries("PL")
+
+        self.assertEqual(len(slovak_districts), 79)
+        self.assertEqual(len(czech_districts), 77)
+        self.assertEqual(len(polish_districts), 380)
+        self.assertEqual(len({entry["code"] for entry in slovak_districts}), 79)
+        self.assertEqual(len({entry["code"] for entry in czech_districts}), 77)
+        self.assertEqual(len({entry["code"] for entry in polish_districts}), 380)
+        self.assertEqual(len({entry["label"] for entry in czech_districts}), 77)
+        self.assertEqual(len({entry["label"] for entry in polish_districts}), 380)
+        self.assertEqual(
+            len({entry["official_code"] for entry in polish_districts}),
+            380,
+        )
+        self.assertTrue(
+            all(entry["official_code"] for entry in polish_districts)
+        )
+
+        czech_codes = {entry["code"] for entry in czech_districts}
+        self.assertTrue(
+            {
+                "praha",
+                "prachatice",
+                "most",
+                "teplice",
+                "semily",
+                "rychnov-nad-kneznou",
+                "uherske-hradiste",
+            }.issubset(czech_codes)
+        )
+
+        polish_codes = {entry["code"] for entry in polish_districts}
+        self.assertTrue(
+            {
+                "boleslawiecki",
+                "brzeski-malopolskie",
+                "brzeski-opolskie",
+                "katovice",
+                "walbrzyski",
+                "walbrzych",
+            }.issubset(polish_codes)
+        )
+
+    def test_polish_legacy_names_resolve_to_corrected_canonical_districts(self):
+        self.assertEqual(
+            resolve_offer_district_code("PL", "Katovice"),
+            ("katovice", "Katowice"),
+        )
+        self.assertEqual(
+            resolve_offer_district_code("PL", "Lodž"),
+            ("lodz", "Łódź"),
+        )
+        self.assertEqual(
+            resolve_offer_district_code("PL", "Lodz"),
+            ("lodz", "Łódź"),
+        )
+        self.assertEqual(
+            resolve_offer_district_code("PL", "Jastrzębie Zdrój"),
+            ("jastrzebie-zdroj", "Jastrzębie-Zdrój"),
+        )
+
+    def test_same_named_polish_districts_are_disambiguated_by_voivodeship(self):
+        self.assertEqual(
+            resolve_offer_district_code("PL", "Brzeski (Małopolskie)"),
+            ("brzeski-malopolskie", "Brzeski (Małopolskie)"),
+        )
+        self.assertEqual(
+            resolve_offer_district_code("PL", "Brzeski (Opolskie)"),
+            ("brzeski-opolskie", "Brzeski (Opolskie)"),
+        )
+
+    def test_inactive_czech_legacy_value_is_resolvable_but_not_selectable(self):
+        active_codes = {
+            entry["code"] for entry in get_offer_district_entries("CZ")
+        }
+        all_entries = get_offer_district_entries("CZ", include_inactive=True)
+
+        self.assertEqual(len(all_entries), 78)
+        self.assertNotIn("valasske-mezirici", active_codes)
+        self.assertFalse(is_valid_offer_district_code("CZ", "valasske-mezirici"))
+        self.assertTrue(
+            is_inactive_offer_district_code("CZ", "valasske-mezirici")
+        )
+        self.assertEqual(
+            get_offer_district_label(
+                "CZ",
+                "valasske-mezirici",
+                include_inactive=True,
+            ),
+            "Valašské Meziříčí",
+        )
+
+    def test_active_alias_resolves_to_canonical_czech_district(self):
+        self.assertEqual(
+            resolve_offer_district_code("CZ", "Hlavní město Praha"),
+            ("praha", "Praha"),
+        )
+
+    def test_registry_metadata_records_authoritative_active_counts(self):
+        with DISTRICT_REGISTRY_PATH.open("r", encoding="utf-8") as file_handle:
+            raw = json.load(file_handle)
+
+        self.assertEqual(raw["_meta"]["schema_version"], 2)
+        self.assertEqual(raw["_meta"]["sources"]["SK"]["active_count"], 79)
+        self.assertEqual(raw["_meta"]["sources"]["CZ"]["active_count"], 77)
+        self.assertEqual(raw["_meta"]["sources"]["PL"]["active_count"], 380)
 
     def test_registry_path_does_not_escape_accounts_package(self):
         accounts_root = Path(__file__).resolve().parents[1]
@@ -72,3 +186,20 @@ class PostApiAuthSkillsDistrictRegistryRegressionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["district_code"], "nitra")
         self.assertEqual(response.data["district_label"], "Nitra")
+
+    def test_post_api_auth_skills_accepts_new_polish_district(self):
+        response = self.client.post(
+            self.url,
+            {
+                "category": "Remeslá",
+                "subcategory": "Maliar",
+                "description": "Maľovanie stien",
+                "country_code": "PL",
+                "district_code": "boleslawiecki",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["district_code"], "boleslawiecki")
+        self.assertEqual(response.data["district_label"], "Bolesławiecki")

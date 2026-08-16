@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import SkillsDesktopSection from './SkillsDesktopSection';
 import SkillsMobileSection from './SkillsMobileSection';
 import type { SkillsScreenProps } from './SkillsScreen.types';
+
+const MAX_SKILLS_PER_TYPE = 3;
 
 export default function SkillsScreen(props: SkillsScreenProps) {
   const { t } = useLanguage();
@@ -29,6 +32,29 @@ export default function SkillsScreen(props: SkillsScreenProps) {
     isSeeking = false,
     onModeSwitch,
   } = props;
+
+  const cardLimitReached =
+    standardCategories.length + customCategories.length >= MAX_SKILLS_PER_TYPE;
+
+  const withCardLimitGuard = (action?: () => void) => {
+    if (!action) return undefined;
+    return () => {
+      if (cardLimitReached) {
+        toast.error(
+          t(
+            'skills.maxCardsPerTypeAlert',
+            'Môžeš mať maximálne 3 karty v tejto sekcii.',
+          ),
+        );
+        return;
+      }
+      action();
+    };
+  };
+
+  const guardedFirstOptionClick = withCardLimitGuard(onFirstOptionClick);
+  const guardedSecondOptionClick = withCardLimitGuard(onSecondOptionClick);
+  const guardedAddCategory = withCardLimitGuard(onAddCategory);
 
   useEffect(() => {
     const clearHideTimer = () => {
@@ -121,11 +147,11 @@ export default function SkillsScreen(props: SkillsScreenProps) {
           isSeeking={isSeeking}
           firstOptionText={firstOptionText}
           firstOptionHint={firstOptionHint}
-          onFirstOptionClick={onFirstOptionClick}
+          onFirstOptionClick={guardedFirstOptionClick}
           secondOptionText={secondOptionText}
           secondOptionHint={secondOptionHint}
-          onSecondOptionClick={onSecondOptionClick}
-          onAddCategory={onAddCategory}
+          onSecondOptionClick={guardedSecondOptionClick}
+          onAddCategory={guardedAddCategory}
           standardCategories={standardCategories}
           customCategories={customCategories}
           onRemoveStandardCategory={onRemoveStandardCategory}
@@ -142,9 +168,9 @@ export default function SkillsScreen(props: SkillsScreenProps) {
           isSeeking={isSeeking}
           firstOptionText={firstOptionText}
           secondOptionText={secondOptionText}
-          onFirstOptionClick={onFirstOptionClick}
-          onSecondOptionClick={onSecondOptionClick}
-          onAddCategory={onAddCategory}
+          onFirstOptionClick={guardedFirstOptionClick}
+          onSecondOptionClick={guardedSecondOptionClick}
+          onAddCategory={guardedAddCategory}
           standardCategories={standardCategories}
           customCategories={customCategories}
           onRemoveStandardCategory={onRemoveStandardCategory}

@@ -1,4 +1,29 @@
 {
+  "_meta": {
+    "schema_version": 2,
+    "sources": {
+      "SK": {
+        "active_count": 79,
+        "as_of": "2026-01-01",
+        "url": "https://susr.statistics.sk/PortalTraffic/fileServlet?Dokument=7c06b60f-f085-4845-a36d-562356589f13"
+      },
+      "CZ": {
+        "active_count": 77,
+        "as_of": "2026-01-01",
+        "url": "https://csu.gov.cz/ciselnik_okresu_-okres_lau-"
+      },
+      "PL": {
+        "active_count": 380,
+        "as_of": "2026-01-01",
+        "url": "https://eteryt.stat.gov.pl/eTeryt/rejestr_teryt/teryt_rejestr.aspx"
+      },
+      "HU": {
+        "active_count": 197,
+        "as_of": "2025-01-01",
+        "url": "https://www.ksh.hu/teruletiatlasz_jarasok"
+      }
+    }
+  },
   "SK": [
     {
       "code": "banovce-nad-bebravou",
@@ -463,6 +488,11 @@
       "label": "Mladá Boleslav"
     },
     {
+      "code": "most",
+      "label": "Most",
+      "official_code": "CZ0425"
+    },
+    {
       "code": "nachod",
       "label": "Náchod"
     },
@@ -511,12 +541,25 @@
       "label": "Plzeň-sever"
     },
     {
+      "code": "praha",
+      "label": "Praha",
+      "official_code": "CZ0100",
+      "aliases": [
+        "Hlavní město Praha"
+      ]
+    },
+    {
       "code": "praha-zapad",
       "label": "Praha-západ"
     },
     {
       "code": "praha-vychod",
       "label": "Praha-východ"
+    },
+    {
+      "code": "prachatice",
+      "label": "Prachatice",
+      "official_code": "CZ0315"
     },
     {
       "code": "pribram",
@@ -537,6 +580,16 @@
     {
       "code": "rokycany",
       "label": "Rokycany"
+    },
+    {
+      "code": "rychnov-nad-kneznou",
+      "label": "Rychnov nad Kněžnou",
+      "official_code": "CZ0524"
+    },
+    {
+      "code": "semily",
+      "label": "Semily",
+      "official_code": "CZ0514"
     },
     {
       "code": "sokolov",
@@ -563,12 +616,22 @@
       "label": "Tábor"
     },
     {
+      "code": "teplice",
+      "label": "Teplice",
+      "official_code": "CZ0426"
+    },
+    {
       "code": "trutnov",
       "label": "Trutnov"
     },
     {
       "code": "trebic",
       "label": "Třebíč"
+    },
+    {
+      "code": "uherske-hradiste",
+      "label": "Uherské Hradiště",
+      "official_code": "CZ0722"
     },
     {
       "code": "usti-nad-labem",
@@ -580,7 +643,8 @@
     },
     {
       "code": "valasske-mezirici",
-      "label": "Valašské Meziříčí"
+      "label": "Valašské Meziříčí",
+      "active": false
     },
     {
       "code": "vsetin",
@@ -605,950 +669,2945 @@
   ],
   "PL": [
     {
+      "code": "aleksandrowski",
+      "label": "Aleksandrowski",
+      "official_code": "0401"
+    },
+    {
+      "code": "augustowski",
+      "label": "Augustowski",
+      "official_code": "2001"
+    },
+    {
+      "code": "bartoszycki",
+      "label": "Bartoszycki",
+      "official_code": "2801"
+    },
+    {
+      "code": "bedzinski",
+      "label": "Będziński",
+      "official_code": "2401"
+    },
+    {
+      "code": "belchatowski",
+      "label": "Bełchatowski",
+      "official_code": "1001"
+    },
+    {
       "code": "bia-a-podlaska",
-      "label": "Biała Podlaska"
+      "label": "Biała Podlaska",
+      "official_code": "0661"
+    },
+    {
+      "code": "bialobrzeski",
+      "label": "Białobrzeski",
+      "official_code": "1401"
+    },
+    {
+      "code": "bialogardzki",
+      "label": "Białogardzki",
+      "official_code": "3201"
+    },
+    {
+      "code": "bialostocki",
+      "label": "Białostocki",
+      "official_code": "2002"
+    },
+    {
+      "code": "bialski",
+      "label": "Bialski",
+      "official_code": "0601"
     },
     {
       "code": "bia-ystok",
-      "label": "Białystok"
+      "label": "Białystok",
+      "official_code": "2061"
+    },
+    {
+      "code": "bielski-podlaskie",
+      "label": "Bielski (Podlaskie)",
+      "official_code": "2003"
+    },
+    {
+      "code": "bielski-slaskie",
+      "label": "Bielski (Śląskie)",
+      "official_code": "2402"
     },
     {
       "code": "bielsko-bia-a",
-      "label": "Bielsko-Biała"
+      "label": "Bielsko-Biała",
+      "official_code": "2461"
+    },
+    {
+      "code": "bierunsko-ledzinski",
+      "label": "Bieruńsko-lędziński",
+      "official_code": "2414"
+    },
+    {
+      "code": "bieszczadzki",
+      "label": "Bieszczadzki",
+      "official_code": "1801"
+    },
+    {
+      "code": "bilgorajski",
+      "label": "Biłgorajski",
+      "official_code": "0602"
+    },
+    {
+      "code": "bochenski",
+      "label": "Bocheński",
+      "official_code": "1201"
+    },
+    {
+      "code": "boleslawiecki",
+      "label": "Bolesławiecki",
+      "official_code": "0201"
+    },
+    {
+      "code": "braniewski",
+      "label": "Braniewski",
+      "official_code": "2802"
+    },
+    {
+      "code": "brodnicki",
+      "label": "Brodnicki",
+      "official_code": "0402"
+    },
+    {
+      "code": "brzeski-malopolskie",
+      "label": "Brzeski (Małopolskie)",
+      "official_code": "1202"
+    },
+    {
+      "code": "brzeski-opolskie",
+      "label": "Brzeski (Opolskie)",
+      "official_code": "1601"
+    },
+    {
+      "code": "brzezinski",
+      "label": "Brzeziński",
+      "official_code": "1021"
+    },
+    {
+      "code": "brzozowski",
+      "label": "Brzozowski",
+      "official_code": "1802"
+    },
+    {
+      "code": "buski",
+      "label": "Buski",
+      "official_code": "2601"
+    },
+    {
+      "code": "bydgoski",
+      "label": "Bydgoski",
+      "official_code": "0403"
     },
     {
       "code": "bydgoszcz",
-      "label": "Bydgoszcz"
+      "label": "Bydgoszcz",
+      "official_code": "0461"
     },
     {
       "code": "bytom",
-      "label": "Bytom"
+      "label": "Bytom",
+      "official_code": "2462"
+    },
+    {
+      "code": "bytowski",
+      "label": "Bytowski",
+      "official_code": "2201"
     },
     {
       "code": "che-m",
-      "label": "Chełm"
+      "label": "Chełm",
+      "official_code": "0662"
+    },
+    {
+      "code": "chelminski",
+      "label": "Chełmiński",
+      "official_code": "0404"
+    },
+    {
+      "code": "chelmski",
+      "label": "Chełmski",
+      "official_code": "0603"
+    },
+    {
+      "code": "chodzieski",
+      "label": "Chodzieski",
+      "official_code": "3001"
+    },
+    {
+      "code": "chojnicki",
+      "label": "Chojnicki",
+      "official_code": "2202"
     },
     {
       "code": "chorzow",
-      "label": "Chorzów"
+      "label": "Chorzów",
+      "official_code": "2463"
+    },
+    {
+      "code": "choszczenski",
+      "label": "Choszczeński",
+      "official_code": "3202"
+    },
+    {
+      "code": "chrzanowski",
+      "label": "Chrzanowski",
+      "official_code": "1203"
+    },
+    {
+      "code": "ciechanowski",
+      "label": "Ciechanowski",
+      "official_code": "1402"
+    },
+    {
+      "code": "cieszynski",
+      "label": "Cieszyński",
+      "official_code": "2403"
+    },
+    {
+      "code": "czarnkowsko-trzcianecki",
+      "label": "Czarnkowsko-trzcianecki",
+      "official_code": "3002"
     },
     {
       "code": "czestochowa",
-      "label": "Częstochowa"
+      "label": "Częstochowa",
+      "official_code": "2464"
+    },
+    {
+      "code": "czestochowski",
+      "label": "Częstochowski",
+      "official_code": "2404"
+    },
+    {
+      "code": "czluchowski",
+      "label": "Człuchowski",
+      "official_code": "2203"
     },
     {
       "code": "dabrowa-gornicza",
-      "label": "Dąbrowa Górnicza"
+      "label": "Dąbrowa Górnicza",
+      "official_code": "2465"
+    },
+    {
+      "code": "dabrowski",
+      "label": "Dąbrowski",
+      "official_code": "1204"
+    },
+    {
+      "code": "debicki",
+      "label": "Dębicki",
+      "official_code": "1803"
+    },
+    {
+      "code": "drawski",
+      "label": "Drawski",
+      "official_code": "3203"
+    },
+    {
+      "code": "dzialdowski",
+      "label": "Działdowski",
+      "official_code": "2803"
+    },
+    {
+      "code": "dzierzoniowski",
+      "label": "Dzierżoniowski",
+      "official_code": "0202"
     },
     {
       "code": "elblag",
-      "label": "Elbląg"
+      "label": "Elbląg",
+      "official_code": "2861"
+    },
+    {
+      "code": "elblaski",
+      "label": "Elbląski",
+      "official_code": "2804"
+    },
+    {
+      "code": "elcki",
+      "label": "Ełcki",
+      "official_code": "2805"
+    },
+    {
+      "code": "garwolinski",
+      "label": "Garwoliński",
+      "official_code": "1403"
     },
     {
       "code": "gdansk",
-      "label": "Gdańsk"
+      "label": "Gdańsk",
+      "official_code": "2261"
+    },
+    {
+      "code": "gdanski",
+      "label": "Gdański",
+      "official_code": "2204"
     },
     {
       "code": "gdynia",
-      "label": "Gdynia"
+      "label": "Gdynia",
+      "official_code": "2262"
+    },
+    {
+      "code": "gizycki",
+      "label": "Giżycki",
+      "official_code": "2806"
     },
     {
       "code": "gliwice",
-      "label": "Gliwice"
+      "label": "Gliwice",
+      "official_code": "2466"
+    },
+    {
+      "code": "gliwicki",
+      "label": "Gliwicki",
+      "official_code": "2405"
+    },
+    {
+      "code": "glogowski",
+      "label": "Głogowski",
+      "official_code": "0203"
+    },
+    {
+      "code": "glubczycki",
+      "label": "Głubczycki",
+      "official_code": "1602"
+    },
+    {
+      "code": "gnieznienski",
+      "label": "Gnieźnieński",
+      "official_code": "3003"
+    },
+    {
+      "code": "goldapski",
+      "label": "Gołdapski",
+      "official_code": "2818"
+    },
+    {
+      "code": "goleniowski",
+      "label": "Goleniowski",
+      "official_code": "3204"
+    },
+    {
+      "code": "golubsko-dobrzynski",
+      "label": "Golubsko-dobrzyński",
+      "official_code": "0405"
+    },
+    {
+      "code": "gorlicki",
+      "label": "Gorlicki",
+      "official_code": "1205"
+    },
+    {
+      "code": "gorowski",
+      "label": "Górowski",
+      "official_code": "0204"
+    },
+    {
+      "code": "gorzowski",
+      "label": "Gorzowski",
+      "official_code": "0801"
     },
     {
       "code": "gorzow-wielkopolski",
-      "label": "Gorzów Wielkopolski"
+      "label": "Gorzów Wielkopolski",
+      "official_code": "0861"
+    },
+    {
+      "code": "gostyninski",
+      "label": "Gostyniński",
+      "official_code": "1404"
+    },
+    {
+      "code": "gostynski",
+      "label": "Gostyński",
+      "official_code": "3004"
+    },
+    {
+      "code": "grajewski",
+      "label": "Grajewski",
+      "official_code": "2004"
+    },
+    {
+      "code": "grodziski-mazowieckie",
+      "label": "Grodziski (Mazowieckie)",
+      "official_code": "1405"
+    },
+    {
+      "code": "grodziski-wielkopolskie",
+      "label": "Grodziski (Wielkopolskie)",
+      "official_code": "3005"
+    },
+    {
+      "code": "grojecki",
+      "label": "Grójecki",
+      "official_code": "1406"
     },
     {
       "code": "grudziadz",
-      "label": "Grudziądz"
+      "label": "Grudziądz",
+      "official_code": "0462"
+    },
+    {
+      "code": "grudziadzki",
+      "label": "Grudziądzki",
+      "official_code": "0406"
+    },
+    {
+      "code": "gryficki",
+      "label": "Gryficki",
+      "official_code": "3205"
+    },
+    {
+      "code": "gryfinski",
+      "label": "Gryfiński",
+      "official_code": "3206"
+    },
+    {
+      "code": "hajnowski",
+      "label": "Hajnowski",
+      "official_code": "2005"
+    },
+    {
+      "code": "hrubieszowski",
+      "label": "Hrubieszowski",
+      "official_code": "0604"
+    },
+    {
+      "code": "ilawski",
+      "label": "Iławski",
+      "official_code": "2807"
+    },
+    {
+      "code": "inowroclawski",
+      "label": "Inowrocławski",
+      "official_code": "0407"
+    },
+    {
+      "code": "janowski",
+      "label": "Janowski",
+      "official_code": "0605"
+    },
+    {
+      "code": "jarocinski",
+      "label": "Jarociński",
+      "official_code": "3006"
+    },
+    {
+      "code": "jaroslawski",
+      "label": "Jarosławski",
+      "official_code": "1804"
+    },
+    {
+      "code": "jasielski",
+      "label": "Jasielski",
+      "official_code": "1805"
     },
     {
       "code": "jastrzebie-zdroj",
-      "label": "Jastrzębie Zdrój"
+      "label": "Jastrzębie-Zdrój",
+      "official_code": "2467",
+      "aliases": [
+        "Jastrzębie Zdrój"
+      ]
+    },
+    {
+      "code": "jaworski",
+      "label": "Jaworski",
+      "official_code": "0205"
     },
     {
       "code": "jaworzno",
-      "label": "Jaworzno"
+      "label": "Jaworzno",
+      "official_code": "2468"
+    },
+    {
+      "code": "jedrzejowski",
+      "label": "Jędrzejowski",
+      "official_code": "2602"
     },
     {
       "code": "jelenia-gora",
-      "label": "Jelenia Góra"
+      "label": "Jelenia Góra",
+      "official_code": "0261"
+    },
+    {
+      "code": "kaliski",
+      "label": "Kaliski",
+      "official_code": "3007"
     },
     {
       "code": "kalisz",
-      "label": "Kalisz"
+      "label": "Kalisz",
+      "official_code": "3061"
+    },
+    {
+      "code": "kamiennogorski",
+      "label": "Kamiennogórski",
+      "official_code": "0207"
+    },
+    {
+      "code": "kamienski",
+      "label": "Kamieński",
+      "official_code": "3207"
+    },
+    {
+      "code": "karkonoski",
+      "label": "Karkonoski",
+      "official_code": "0206"
+    },
+    {
+      "code": "kartuski",
+      "label": "Kartuski",
+      "official_code": "2205"
     },
     {
       "code": "katovice",
-      "label": "Katovice"
+      "label": "Katowice",
+      "official_code": "2469",
+      "aliases": [
+        "Katovice"
+      ]
+    },
+    {
+      "code": "kazimierski",
+      "label": "Kazimierski",
+      "official_code": "2603"
+    },
+    {
+      "code": "kedzierzynsko-kozielski",
+      "label": "Kędzierzyńsko-kozielski",
+      "official_code": "1603"
+    },
+    {
+      "code": "kepinski",
+      "label": "Kępiński",
+      "official_code": "3008"
+    },
+    {
+      "code": "ketrzynski",
+      "label": "Kętrzyński",
+      "official_code": "2808"
     },
     {
       "code": "kielce",
-      "label": "Kielce"
+      "label": "Kielce",
+      "official_code": "2661"
+    },
+    {
+      "code": "kielecki",
+      "label": "Kielecki",
+      "official_code": "2604"
+    },
+    {
+      "code": "klobucki",
+      "label": "Kłobucki",
+      "official_code": "2406"
+    },
+    {
+      "code": "klodzki",
+      "label": "Kłodzki",
+      "official_code": "0208"
+    },
+    {
+      "code": "kluczborski",
+      "label": "Kluczborski",
+      "official_code": "1604"
+    },
+    {
+      "code": "kolbuszowski",
+      "label": "Kolbuszowski",
+      "official_code": "1806"
+    },
+    {
+      "code": "kolnenski",
+      "label": "Kolneński",
+      "official_code": "2006"
+    },
+    {
+      "code": "kolobrzeski",
+      "label": "Kołobrzeski",
+      "official_code": "3208"
+    },
+    {
+      "code": "kolski",
+      "label": "Kolski",
+      "official_code": "3009"
+    },
+    {
+      "code": "konecki",
+      "label": "Konecki",
+      "official_code": "2605"
     },
     {
       "code": "konin",
-      "label": "Konin"
+      "label": "Konin",
+      "official_code": "3062"
+    },
+    {
+      "code": "koninski",
+      "label": "Koniński",
+      "official_code": "3010"
+    },
+    {
+      "code": "koscianski",
+      "label": "Kościański",
+      "official_code": "3011"
+    },
+    {
+      "code": "koscierski",
+      "label": "Kościerski",
+      "official_code": "2206"
     },
     {
       "code": "koszalin",
-      "label": "Koszalin"
+      "label": "Koszalin",
+      "official_code": "3261"
+    },
+    {
+      "code": "koszalinski",
+      "label": "Koszaliński",
+      "official_code": "3209"
+    },
+    {
+      "code": "kozienicki",
+      "label": "Kozienicki",
+      "official_code": "1407"
     },
     {
       "code": "krakow",
-      "label": "Kraków"
+      "label": "Kraków",
+      "official_code": "1261"
+    },
+    {
+      "code": "krakowski",
+      "label": "Krakowski",
+      "official_code": "1206"
+    },
+    {
+      "code": "krapkowicki",
+      "label": "Krapkowicki",
+      "official_code": "1605"
+    },
+    {
+      "code": "krasnicki",
+      "label": "Kraśnicki",
+      "official_code": "0607"
+    },
+    {
+      "code": "krasnostawski",
+      "label": "Krasnostawski",
+      "official_code": "0606"
+    },
+    {
+      "code": "krosnienski-lubuskie",
+      "label": "Krośnieński (Lubuskie)",
+      "official_code": "0802"
+    },
+    {
+      "code": "krosnienski-podkarpackie",
+      "label": "Krośnieński (Podkarpackie)",
+      "official_code": "1807"
     },
     {
       "code": "krosno",
-      "label": "Krosno"
+      "label": "Krosno",
+      "official_code": "1861"
+    },
+    {
+      "code": "krotoszynski",
+      "label": "Krotoszyński",
+      "official_code": "3012"
+    },
+    {
+      "code": "kutnowski",
+      "label": "Kutnowski",
+      "official_code": "1002"
+    },
+    {
+      "code": "kwidzynski",
+      "label": "Kwidzyński",
+      "official_code": "2207"
+    },
+    {
+      "code": "lancucki",
+      "label": "Łańcucki",
+      "official_code": "1810"
+    },
+    {
+      "code": "laski",
+      "label": "Łaski",
+      "official_code": "1003"
+    },
+    {
+      "code": "leborski",
+      "label": "Lęborski",
+      "official_code": "2208"
+    },
+    {
+      "code": "leczycki",
+      "label": "Łęczycki",
+      "official_code": "1004"
+    },
+    {
+      "code": "leczynski",
+      "label": "Łęczyński",
+      "official_code": "0610"
+    },
+    {
+      "code": "legionowski",
+      "label": "Legionowski",
+      "official_code": "1408"
     },
     {
       "code": "legnica",
-      "label": "Legnica"
+      "label": "Legnica",
+      "official_code": "0262"
+    },
+    {
+      "code": "legnicki",
+      "label": "Legnicki",
+      "official_code": "0209"
+    },
+    {
+      "code": "leski",
+      "label": "Leski",
+      "official_code": "1821"
+    },
+    {
+      "code": "leszczynski",
+      "label": "Leszczyński",
+      "official_code": "3013"
     },
     {
       "code": "leszno",
-      "label": "Leszno"
+      "label": "Leszno",
+      "official_code": "3063"
     },
     {
-      "code": "lublin",
-      "label": "Lublin"
+      "code": "lezajski",
+      "label": "Leżajski",
+      "official_code": "1808"
     },
     {
-      "code": "omza",
-      "label": "Łomża"
+      "code": "lidzbarski",
+      "label": "Lidzbarski",
+      "official_code": "2809"
+    },
+    {
+      "code": "limanowski",
+      "label": "Limanowski",
+      "official_code": "1207"
+    },
+    {
+      "code": "lipnowski",
+      "label": "Lipnowski",
+      "official_code": "0408"
+    },
+    {
+      "code": "lipski",
+      "label": "Lipski",
+      "official_code": "1409"
+    },
+    {
+      "code": "lobeski",
+      "label": "Łobeski",
+      "official_code": "3218"
     },
     {
       "code": "lodz",
-      "label": "Lodž"
+      "label": "Łódź",
+      "official_code": "1061",
+      "aliases": [
+        "Lodž"
+      ]
+    },
+    {
+      "code": "lodzki-wschodni",
+      "label": "Łódzki wschodni",
+      "official_code": "1006"
+    },
+    {
+      "code": "omza",
+      "label": "Łomża",
+      "official_code": "2062"
+    },
+    {
+      "code": "lomzynski",
+      "label": "Łomżyński",
+      "official_code": "2007"
+    },
+    {
+      "code": "losicki",
+      "label": "Łosicki",
+      "official_code": "1410"
+    },
+    {
+      "code": "lowicki",
+      "label": "Łowicki",
+      "official_code": "1005"
+    },
+    {
+      "code": "lubaczowski",
+      "label": "Lubaczowski",
+      "official_code": "1809"
+    },
+    {
+      "code": "lubanski",
+      "label": "Lubański",
+      "official_code": "0210"
+    },
+    {
+      "code": "lubartowski",
+      "label": "Lubartowski",
+      "official_code": "0608"
+    },
+    {
+      "code": "lubelski",
+      "label": "Lubelski",
+      "official_code": "0609"
+    },
+    {
+      "code": "lubinski",
+      "label": "Lubiński",
+      "official_code": "0211"
+    },
+    {
+      "code": "lublin",
+      "label": "Lublin",
+      "official_code": "0663"
+    },
+    {
+      "code": "lubliniecki",
+      "label": "Lubliniecki",
+      "official_code": "2407"
+    },
+    {
+      "code": "lukowski",
+      "label": "Łukowski",
+      "official_code": "0611"
+    },
+    {
+      "code": "lwowecki",
+      "label": "Lwówecki",
+      "official_code": "0212"
+    },
+    {
+      "code": "makowski",
+      "label": "Makowski",
+      "official_code": "1411"
+    },
+    {
+      "code": "malborski",
+      "label": "Malborski",
+      "official_code": "2209"
+    },
+    {
+      "code": "miechowski",
+      "label": "Miechowski",
+      "official_code": "1208"
+    },
+    {
+      "code": "miedzychodzki",
+      "label": "Międzychodzki",
+      "official_code": "3014"
+    },
+    {
+      "code": "miedzyrzecki",
+      "label": "Międzyrzecki",
+      "official_code": "0803"
+    },
+    {
+      "code": "mielecki",
+      "label": "Mielecki",
+      "official_code": "1811"
+    },
+    {
+      "code": "mikolowski",
+      "label": "Mikołowski",
+      "official_code": "2408"
+    },
+    {
+      "code": "milicki",
+      "label": "Milicki",
+      "official_code": "0213"
+    },
+    {
+      "code": "minski",
+      "label": "Miński",
+      "official_code": "1412"
+    },
+    {
+      "code": "mlawski",
+      "label": "Mławski",
+      "official_code": "1413"
+    },
+    {
+      "code": "mogilenski",
+      "label": "Mogileński",
+      "official_code": "0409"
+    },
+    {
+      "code": "moniecki",
+      "label": "Moniecki",
+      "official_code": "2008"
+    },
+    {
+      "code": "mragowski",
+      "label": "Mrągowski",
+      "official_code": "2810"
+    },
+    {
+      "code": "myslenicki",
+      "label": "Myślenicki",
+      "official_code": "1209"
+    },
+    {
+      "code": "mysliborski",
+      "label": "Myśliborski",
+      "official_code": "3210"
     },
     {
       "code": "mys-owice",
-      "label": "Mysłowice"
+      "label": "Mysłowice",
+      "official_code": "2470"
+    },
+    {
+      "code": "myszkowski",
+      "label": "Myszkowski",
+      "official_code": "2409"
+    },
+    {
+      "code": "nakielski",
+      "label": "Nakielski",
+      "official_code": "0410"
+    },
+    {
+      "code": "namyslowski",
+      "label": "Namysłowski",
+      "official_code": "1606"
+    },
+    {
+      "code": "nidzicki",
+      "label": "Nidzicki",
+      "official_code": "2811"
+    },
+    {
+      "code": "nizanski",
+      "label": "Niżański",
+      "official_code": "1812"
+    },
+    {
+      "code": "nowodworski-mazowieckie",
+      "label": "Nowodworski (Mazowieckie)",
+      "official_code": "1414"
+    },
+    {
+      "code": "nowodworski-pomorskie",
+      "label": "Nowodworski (Pomorskie)",
+      "official_code": "2210"
+    },
+    {
+      "code": "nowomiejski",
+      "label": "Nowomiejski",
+      "official_code": "2812"
+    },
+    {
+      "code": "nowosadecki",
+      "label": "Nowosądecki",
+      "official_code": "1210"
+    },
+    {
+      "code": "nowosolski",
+      "label": "Nowosolski",
+      "official_code": "0804"
+    },
+    {
+      "code": "nowotarski",
+      "label": "Nowotarski",
+      "official_code": "1211"
+    },
+    {
+      "code": "nowotomyski",
+      "label": "Nowotomyski",
+      "official_code": "3015"
     },
     {
       "code": "nowy-sacz",
-      "label": "Nowy Sącz"
+      "label": "Nowy Sącz",
+      "official_code": "1262"
+    },
+    {
+      "code": "nyski",
+      "label": "Nyski",
+      "official_code": "1607"
+    },
+    {
+      "code": "obornicki",
+      "label": "Obornicki",
+      "official_code": "3016"
+    },
+    {
+      "code": "olawski",
+      "label": "Oławski",
+      "official_code": "0215"
+    },
+    {
+      "code": "olecki",
+      "label": "Olecki",
+      "official_code": "2813"
+    },
+    {
+      "code": "oleski",
+      "label": "Oleski",
+      "official_code": "1608"
+    },
+    {
+      "code": "olesnicki",
+      "label": "Oleśnicki",
+      "official_code": "0214"
+    },
+    {
+      "code": "olkuski",
+      "label": "Olkuski",
+      "official_code": "1212"
     },
     {
       "code": "olsztyn",
-      "label": "Olsztyn"
+      "label": "Olsztyn",
+      "official_code": "2862"
+    },
+    {
+      "code": "olsztynski",
+      "label": "Olsztyński",
+      "official_code": "2814"
+    },
+    {
+      "code": "opatowski",
+      "label": "Opatowski",
+      "official_code": "2606"
+    },
+    {
+      "code": "opoczynski",
+      "label": "Opoczyński",
+      "official_code": "1007"
     },
     {
       "code": "opole",
-      "label": "Opole"
+      "label": "Opole",
+      "official_code": "1661"
+    },
+    {
+      "code": "opolski-lubelskie",
+      "label": "Opolski (Lubelskie)",
+      "official_code": "0612"
+    },
+    {
+      "code": "opolski-opolskie",
+      "label": "Opolski (Opolskie)",
+      "official_code": "1609"
+    },
+    {
+      "code": "ostrodzki",
+      "label": "Ostródzki",
+      "official_code": "2815"
+    },
+    {
+      "code": "ostrolecki",
+      "label": "Ostrołęcki",
+      "official_code": "1415"
     },
     {
       "code": "ostro-eka",
-      "label": "Ostrołęka"
+      "label": "Ostrołęka",
+      "official_code": "1461"
+    },
+    {
+      "code": "ostrowiecki",
+      "label": "Ostrowiecki",
+      "official_code": "2607"
+    },
+    {
+      "code": "ostrowski-mazowieckie",
+      "label": "Ostrowski (Mazowieckie)",
+      "official_code": "1416"
+    },
+    {
+      "code": "ostrowski-wielkopolskie",
+      "label": "Ostrowski (Wielkopolskie)",
+      "official_code": "3017"
+    },
+    {
+      "code": "ostrzeszowski",
+      "label": "Ostrzeszowski",
+      "official_code": "3018"
+    },
+    {
+      "code": "oswiecimski",
+      "label": "Oświęcimski",
+      "official_code": "1213"
+    },
+    {
+      "code": "otwocki",
+      "label": "Otwocki",
+      "official_code": "1417"
+    },
+    {
+      "code": "pabianicki",
+      "label": "Pabianicki",
+      "official_code": "1008"
+    },
+    {
+      "code": "pajeczanski",
+      "label": "Pajęczański",
+      "official_code": "1009"
+    },
+    {
+      "code": "parczewski",
+      "label": "Parczewski",
+      "official_code": "0613"
+    },
+    {
+      "code": "piaseczynski",
+      "label": "Piaseczyński",
+      "official_code": "1418"
     },
     {
       "code": "piekary-slaskie",
-      "label": "Piekary Śląskie"
+      "label": "Piekary Śląskie",
+      "official_code": "2471"
+    },
+    {
+      "code": "pilski",
+      "label": "Pilski",
+      "official_code": "3019"
+    },
+    {
+      "code": "pinczowski",
+      "label": "Pińczowski",
+      "official_code": "2608"
+    },
+    {
+      "code": "piotrkowski",
+      "label": "Piotrkowski",
+      "official_code": "1010"
     },
     {
       "code": "piotrkow-trybunalski",
-      "label": "Piotrków Trybunalski"
+      "label": "Piotrków Trybunalski",
+      "official_code": "1062"
+    },
+    {
+      "code": "piski",
+      "label": "Piski",
+      "official_code": "2816"
+    },
+    {
+      "code": "pleszewski",
+      "label": "Pleszewski",
+      "official_code": "3020"
     },
     {
       "code": "p-ock",
-      "label": "Płock"
+      "label": "Płock",
+      "official_code": "1462"
+    },
+    {
+      "code": "plocki",
+      "label": "Płocki",
+      "official_code": "1419"
+    },
+    {
+      "code": "plonski",
+      "label": "Płoński",
+      "official_code": "1420"
+    },
+    {
+      "code": "poddebicki",
+      "label": "Poddębicki",
+      "official_code": "1011"
+    },
+    {
+      "code": "policki",
+      "label": "Policki",
+      "official_code": "3211"
+    },
+    {
+      "code": "polkowicki",
+      "label": "Polkowicki",
+      "official_code": "0216"
     },
     {
       "code": "poznan",
-      "label": "Poznań"
+      "label": "Poznań",
+      "official_code": "3064"
+    },
+    {
+      "code": "poznanski",
+      "label": "Poznański",
+      "official_code": "3021"
+    },
+    {
+      "code": "proszowicki",
+      "label": "Proszowicki",
+      "official_code": "1214"
+    },
+    {
+      "code": "prudnicki",
+      "label": "Prudnicki",
+      "official_code": "1610"
+    },
+    {
+      "code": "pruszkowski",
+      "label": "Pruszkowski",
+      "official_code": "1421"
+    },
+    {
+      "code": "przasnyski",
+      "label": "Przasnyski",
+      "official_code": "1422"
+    },
+    {
+      "code": "przemyski",
+      "label": "Przemyski",
+      "official_code": "1813"
     },
     {
       "code": "przemysl",
-      "label": "Przemyśl"
+      "label": "Przemyśl",
+      "official_code": "1862"
+    },
+    {
+      "code": "przeworski",
+      "label": "Przeworski",
+      "official_code": "1814"
+    },
+    {
+      "code": "przysuski",
+      "label": "Przysuski",
+      "official_code": "1423"
+    },
+    {
+      "code": "pszczynski",
+      "label": "Pszczyński",
+      "official_code": "2410"
+    },
+    {
+      "code": "pucki",
+      "label": "Pucki",
+      "official_code": "2211"
+    },
+    {
+      "code": "pulawski",
+      "label": "Puławski",
+      "official_code": "0614"
+    },
+    {
+      "code": "pultuski",
+      "label": "Pułtuski",
+      "official_code": "1424"
+    },
+    {
+      "code": "pyrzycki",
+      "label": "Pyrzycki",
+      "official_code": "3212"
+    },
+    {
+      "code": "raciborski",
+      "label": "Raciborski",
+      "official_code": "2411"
     },
     {
       "code": "radom",
-      "label": "Radom"
+      "label": "Radom",
+      "official_code": "1463"
+    },
+    {
+      "code": "radomski",
+      "label": "Radomski",
+      "official_code": "1425"
+    },
+    {
+      "code": "radomszczanski",
+      "label": "Radomszczański",
+      "official_code": "1012"
+    },
+    {
+      "code": "radziejowski",
+      "label": "Radziejowski",
+      "official_code": "0411"
+    },
+    {
+      "code": "radzynski",
+      "label": "Radzyński",
+      "official_code": "0615"
+    },
+    {
+      "code": "rawicki",
+      "label": "Rawicki",
+      "official_code": "3022"
+    },
+    {
+      "code": "rawski",
+      "label": "Rawski",
+      "official_code": "1013"
+    },
+    {
+      "code": "ropczycko-sedziszowski",
+      "label": "Ropczycko-sędziszowski",
+      "official_code": "1815"
     },
     {
       "code": "ruda-slaska",
-      "label": "Ruda Śląska"
+      "label": "Ruda Śląska",
+      "official_code": "2472"
+    },
+    {
+      "code": "rybnicki",
+      "label": "Rybnicki",
+      "official_code": "2412"
     },
     {
       "code": "rybnik",
-      "label": "Rybnik"
+      "label": "Rybnik",
+      "official_code": "2473"
+    },
+    {
+      "code": "rycki",
+      "label": "Rycki",
+      "official_code": "0616"
+    },
+    {
+      "code": "rypinski",
+      "label": "Rypiński",
+      "official_code": "0412"
     },
     {
       "code": "rzeszow",
-      "label": "Rzeszów"
+      "label": "Rzeszów",
+      "official_code": "1863"
+    },
+    {
+      "code": "rzeszowski",
+      "label": "Rzeszowski",
+      "official_code": "1816"
+    },
+    {
+      "code": "sandomierski",
+      "label": "Sandomierski",
+      "official_code": "2609"
+    },
+    {
+      "code": "sanocki",
+      "label": "Sanocki",
+      "official_code": "1817"
+    },
+    {
+      "code": "sejnenski",
+      "label": "Sejneński",
+      "official_code": "2009"
+    },
+    {
+      "code": "sepolenski",
+      "label": "Sępoleński",
+      "official_code": "0413"
     },
     {
       "code": "siedlce",
-      "label": "Siedlce"
+      "label": "Siedlce",
+      "official_code": "1464"
+    },
+    {
+      "code": "siedlecki",
+      "label": "Siedlecki",
+      "official_code": "1426"
     },
     {
       "code": "siemianowice-slaskie",
-      "label": "Siemianowice Śląskie"
+      "label": "Siemianowice Śląskie",
+      "official_code": "2474"
+    },
+    {
+      "code": "siemiatycki",
+      "label": "Siemiatycki",
+      "official_code": "2010"
+    },
+    {
+      "code": "sieradzki",
+      "label": "Sieradzki",
+      "official_code": "1014"
+    },
+    {
+      "code": "sierpecki",
+      "label": "Sierpecki",
+      "official_code": "1427"
+    },
+    {
+      "code": "skarzyski",
+      "label": "Skarżyski",
+      "official_code": "2610"
     },
     {
       "code": "skierniewice",
-      "label": "Skierniewice"
+      "label": "Skierniewice",
+      "official_code": "1063"
+    },
+    {
+      "code": "skierniewicki",
+      "label": "Skierniewicki",
+      "official_code": "1015"
+    },
+    {
+      "code": "slawienski",
+      "label": "Sławieński",
+      "official_code": "3213"
+    },
+    {
+      "code": "slubicki",
+      "label": "Słubicki",
+      "official_code": "0805"
+    },
+    {
+      "code": "slupecki",
+      "label": "Słupecki",
+      "official_code": "3023"
     },
     {
       "code": "s-upsk",
-      "label": "Słupsk"
+      "label": "Słupsk",
+      "official_code": "2263"
+    },
+    {
+      "code": "slupski",
+      "label": "Słupski",
+      "official_code": "2212"
+    },
+    {
+      "code": "sochaczewski",
+      "label": "Sochaczewski",
+      "official_code": "1428"
+    },
+    {
+      "code": "sokolowski",
+      "label": "Sokołowski",
+      "official_code": "1429"
+    },
+    {
+      "code": "sokolski",
+      "label": "Sokólski",
+      "official_code": "2011"
     },
     {
       "code": "sopot",
-      "label": "Sopot"
+      "label": "Sopot",
+      "official_code": "2264"
     },
     {
       "code": "sosnowiec",
-      "label": "Sosnowiec"
+      "label": "Sosnowiec",
+      "official_code": "2475"
+    },
+    {
+      "code": "sredzki-dolnoslaskie",
+      "label": "Średzki (Dolnośląskie)",
+      "official_code": "0218"
+    },
+    {
+      "code": "sredzki-wielkopolskie",
+      "label": "Średzki (Wielkopolskie)",
+      "official_code": "3025"
+    },
+    {
+      "code": "sremski",
+      "label": "Śremski",
+      "official_code": "3026"
+    },
+    {
+      "code": "stalowowolski",
+      "label": "Stalowowolski",
+      "official_code": "1818"
+    },
+    {
+      "code": "starachowicki",
+      "label": "Starachowicki",
+      "official_code": "2611"
+    },
+    {
+      "code": "stargardzki",
+      "label": "Stargardzki",
+      "official_code": "3214"
+    },
+    {
+      "code": "starogardzki",
+      "label": "Starogardzki",
+      "official_code": "2213"
+    },
+    {
+      "code": "staszowski",
+      "label": "Staszowski",
+      "official_code": "2612"
+    },
+    {
+      "code": "strzelecki",
+      "label": "Strzelecki",
+      "official_code": "1611"
+    },
+    {
+      "code": "strzelecko-drezdenecki",
+      "label": "Strzelecko-drezdenecki",
+      "official_code": "0806"
+    },
+    {
+      "code": "strzelinski",
+      "label": "Strzeliński",
+      "official_code": "0217"
+    },
+    {
+      "code": "strzyzowski",
+      "label": "Strzyżowski",
+      "official_code": "1819"
+    },
+    {
+      "code": "sulecinski",
+      "label": "Sulęciński",
+      "official_code": "0807"
+    },
+    {
+      "code": "suski",
+      "label": "Suski",
+      "official_code": "1215"
     },
     {
       "code": "suwa-ki",
-      "label": "Suwałki"
+      "label": "Suwałki",
+      "official_code": "2063"
     },
     {
-      "code": "szczecin",
-      "label": "Szczecin"
+      "code": "suwalski",
+      "label": "Suwalski",
+      "official_code": "2012"
+    },
+    {
+      "code": "swidnicki-dolnoslaskie",
+      "label": "Świdnicki (Dolnośląskie)",
+      "official_code": "0219"
+    },
+    {
+      "code": "swidnicki-lubelskie",
+      "label": "Świdnicki (Lubelskie)",
+      "official_code": "0617"
+    },
+    {
+      "code": "swidwinski",
+      "label": "Świdwiński",
+      "official_code": "3216"
+    },
+    {
+      "code": "swiebodzinski",
+      "label": "Świebodziński",
+      "official_code": "0808"
+    },
+    {
+      "code": "swiecki",
+      "label": "Świecki",
+      "official_code": "0414"
     },
     {
       "code": "swietoch-owice",
-      "label": "Świętochłowice"
+      "label": "Świętochłowice",
+      "official_code": "2476"
     },
     {
       "code": "swinoujscie",
-      "label": "Świnoujście"
+      "label": "Świnoujście",
+      "official_code": "3263"
+    },
+    {
+      "code": "szamotulski",
+      "label": "Szamotulski",
+      "official_code": "3024"
+    },
+    {
+      "code": "szczecin",
+      "label": "Szczecin",
+      "official_code": "3262"
+    },
+    {
+      "code": "szczecinecki",
+      "label": "Szczecinecki",
+      "official_code": "3215"
+    },
+    {
+      "code": "szczycienski",
+      "label": "Szczycieński",
+      "official_code": "2817"
+    },
+    {
+      "code": "sztumski",
+      "label": "Sztumski",
+      "official_code": "2216"
+    },
+    {
+      "code": "szydlowiecki",
+      "label": "Szydłowiecki",
+      "official_code": "1430"
     },
     {
       "code": "tarnobrzeg",
-      "label": "Tarnobrzeg"
+      "label": "Tarnobrzeg",
+      "official_code": "1864"
+    },
+    {
+      "code": "tarnobrzeski",
+      "label": "Tarnobrzeski",
+      "official_code": "1820"
+    },
+    {
+      "code": "tarnogorski",
+      "label": "Tarnogórski",
+      "official_code": "2413"
     },
     {
       "code": "tarnow",
-      "label": "Tarnów"
+      "label": "Tarnów",
+      "official_code": "1263"
+    },
+    {
+      "code": "tarnowski",
+      "label": "Tarnowski",
+      "official_code": "1216"
+    },
+    {
+      "code": "tatrzanski",
+      "label": "Tatrzański",
+      "official_code": "1217"
+    },
+    {
+      "code": "tczewski",
+      "label": "Tczewski",
+      "official_code": "2214"
+    },
+    {
+      "code": "tomaszowski-lodzkie",
+      "label": "Tomaszowski (Łódzkie)",
+      "official_code": "1016"
+    },
+    {
+      "code": "tomaszowski-lubelskie",
+      "label": "Tomaszowski (Lubelskie)",
+      "official_code": "0618"
     },
     {
       "code": "torun",
-      "label": "Toruń"
+      "label": "Toruń",
+      "official_code": "0463"
+    },
+    {
+      "code": "torunski",
+      "label": "Toruński",
+      "official_code": "0415"
+    },
+    {
+      "code": "trzebnicki",
+      "label": "Trzebnicki",
+      "official_code": "0220"
+    },
+    {
+      "code": "tucholski",
+      "label": "Tucholski",
+      "official_code": "0416"
+    },
+    {
+      "code": "turecki",
+      "label": "Turecki",
+      "official_code": "3027"
     },
     {
       "code": "tychy",
-      "label": "Tychy"
+      "label": "Tychy",
+      "official_code": "2477"
+    },
+    {
+      "code": "wabrzeski",
+      "label": "Wąbrzeski",
+      "official_code": "0417"
+    },
+    {
+      "code": "wadowicki",
+      "label": "Wadowicki",
+      "official_code": "1218"
+    },
+    {
+      "code": "wagrowiecki",
+      "label": "Wągrowiecki",
+      "official_code": "3028"
+    },
+    {
+      "code": "walbrzych",
+      "label": "Wałbrzych",
+      "official_code": "0265"
+    },
+    {
+      "code": "walbrzyski",
+      "label": "Wałbrzyski",
+      "official_code": "0221"
+    },
+    {
+      "code": "walecki",
+      "label": "Wałecki",
+      "official_code": "3217"
     },
     {
       "code": "warszawa",
-      "label": "Warszawa"
+      "label": "Warszawa",
+      "official_code": "1465"
+    },
+    {
+      "code": "warszawski-zachodni",
+      "label": "Warszawski zachodni",
+      "official_code": "1432"
+    },
+    {
+      "code": "wegorzewski",
+      "label": "Węgorzewski",
+      "official_code": "2819"
+    },
+    {
+      "code": "wegrowski",
+      "label": "Węgrowski",
+      "official_code": "1433"
+    },
+    {
+      "code": "wejherowski",
+      "label": "Wejherowski",
+      "official_code": "2215"
+    },
+    {
+      "code": "wielicki",
+      "label": "Wielicki",
+      "official_code": "1219"
+    },
+    {
+      "code": "wielunski",
+      "label": "Wieluński",
+      "official_code": "1017"
+    },
+    {
+      "code": "wieruszowski",
+      "label": "Wieruszowski",
+      "official_code": "1018"
     },
     {
       "code": "w-oc-awek",
-      "label": "Włocławek"
+      "label": "Włocławek",
+      "official_code": "0464"
+    },
+    {
+      "code": "wloclawski",
+      "label": "Włocławski",
+      "official_code": "0418"
+    },
+    {
+      "code": "wlodawski",
+      "label": "Włodawski",
+      "official_code": "0619"
+    },
+    {
+      "code": "wloszczowski",
+      "label": "Włoszczowski",
+      "official_code": "2613"
+    },
+    {
+      "code": "wodzislawski",
+      "label": "Wodzisławski",
+      "official_code": "2415"
+    },
+    {
+      "code": "wolominski",
+      "label": "Wołomiński",
+      "official_code": "1434"
+    },
+    {
+      "code": "wolowski",
+      "label": "Wołowski",
+      "official_code": "0222"
+    },
+    {
+      "code": "wolsztynski",
+      "label": "Wolsztyński",
+      "official_code": "3029"
     },
     {
       "code": "wroc-aw",
-      "label": "Wrocław"
+      "label": "Wrocław",
+      "official_code": "0264"
+    },
+    {
+      "code": "wroclawski",
+      "label": "Wrocławski",
+      "official_code": "0223"
+    },
+    {
+      "code": "wrzesinski",
+      "label": "Wrzesiński",
+      "official_code": "3030"
+    },
+    {
+      "code": "wschowski",
+      "label": "Wschowski",
+      "official_code": "0812"
+    },
+    {
+      "code": "wysokomazowiecki",
+      "label": "Wysokomazowiecki",
+      "official_code": "2013"
+    },
+    {
+      "code": "wyszkowski",
+      "label": "Wyszkowski",
+      "official_code": "1435"
+    },
+    {
+      "code": "zabkowicki",
+      "label": "Ząbkowicki",
+      "official_code": "0224"
     },
     {
       "code": "zabrze",
-      "label": "Zabrze"
+      "label": "Zabrze",
+      "official_code": "2478"
+    },
+    {
+      "code": "zaganski",
+      "label": "Żagański",
+      "official_code": "0810"
+    },
+    {
+      "code": "zambrowski",
+      "label": "Zambrowski",
+      "official_code": "2014"
+    },
+    {
+      "code": "zamojski",
+      "label": "Zamojski",
+      "official_code": "0620"
     },
     {
       "code": "zamosc",
-      "label": "Zamość"
+      "label": "Zamość",
+      "official_code": "0664"
+    },
+    {
+      "code": "zarski",
+      "label": "Żarski",
+      "official_code": "0811"
+    },
+    {
+      "code": "zawiercianski",
+      "label": "Zawierciański",
+      "official_code": "2416"
+    },
+    {
+      "code": "zdunskowolski",
+      "label": "Zduńskowolski",
+      "official_code": "1019"
+    },
+    {
+      "code": "zgierski",
+      "label": "Zgierski",
+      "official_code": "1020"
+    },
+    {
+      "code": "zgorzelecki",
+      "label": "Zgorzelecki",
+      "official_code": "0225"
     },
     {
       "code": "zielona-gora",
-      "label": "Zielona Góra"
+      "label": "Zielona Góra",
+      "official_code": "0862"
+    },
+    {
+      "code": "zielonogorski",
+      "label": "Zielonogórski",
+      "official_code": "0809"
+    },
+    {
+      "code": "zlotoryjski",
+      "label": "Złotoryjski",
+      "official_code": "0226"
+    },
+    {
+      "code": "zlotowski",
+      "label": "Złotowski",
+      "official_code": "3031"
+    },
+    {
+      "code": "zninski",
+      "label": "Żniński",
+      "official_code": "0419"
     },
     {
       "code": "zory",
-      "label": "Żory"
+      "label": "Żory",
+      "official_code": "2479"
+    },
+    {
+      "code": "zurominski",
+      "label": "Żuromiński",
+      "official_code": "1437"
+    },
+    {
+      "code": "zwolenski",
+      "label": "Zwoleński",
+      "official_code": "1436"
+    },
+    {
+      "code": "zyrardowski",
+      "label": "Żyrardowski",
+      "official_code": "1438"
+    },
+    {
+      "code": "zywiecki",
+      "label": "Żywiecki",
+      "official_code": "2417"
     }
   ],
   "HU": [
     {
       "code": "abadszalok",
-      "label": "Abádszalók"
+      "label": "Abádszalók",
+      "active": false
     },
     {
       "code": "ajka",
-      "label": "Ajka"
+      "label": "Ajka",
+      "official_code": "183"
     },
     {
       "code": "aszod",
-      "label": "Aszód"
-    },
-    {
-      "code": "baja",
-      "label": "Baja"
-    },
-    {
-      "code": "baktaloranthaza",
-      "label": "Baktalórántháza"
-    },
-    {
-      "code": "balassagyarmat",
-      "label": "Balassagyarmat"
-    },
-    {
-      "code": "balatonalmadi",
-      "label": "Balatonalmádi"
-    },
-    {
-      "code": "balatonfured",
-      "label": "Balatonfüred"
-    },
-    {
-      "code": "balmazujvaros",
-      "label": "Balmazújváros"
-    },
-    {
-      "code": "barcs",
-      "label": "Barcs"
-    },
-    {
-      "code": "berettyoujfalu",
-      "label": "Berettyóújfalu"
-    },
-    {
-      "code": "bicske",
-      "label": "Bicske"
-    },
-    {
-      "code": "bonyhad",
-      "label": "Bonyhád"
-    },
-    {
-      "code": "budapest",
-      "label": "Budapest"
-    },
-    {
-      "code": "budaors",
-      "label": "Budaörs"
+      "label": "Aszód",
+      "official_code": "122"
     },
     {
       "code": "bacsalmas",
-      "label": "Bácsalmás"
+      "label": "Bácsalmás",
+      "official_code": "034"
+    },
+    {
+      "code": "baja",
+      "label": "Baja",
+      "official_code": "035"
+    },
+    {
+      "code": "baktaloranthaza",
+      "label": "Baktalórántháza",
+      "official_code": "148"
+    },
+    {
+      "code": "balassagyarmat",
+      "label": "Balassagyarmat",
+      "official_code": "116"
+    },
+    {
+      "code": "balatonalmadi",
+      "label": "Balatonalmádi",
+      "official_code": "184"
+    },
+    {
+      "code": "balatonfured",
+      "label": "Balatonfüred",
+      "official_code": "185"
+    },
+    {
+      "code": "balmazujvaros",
+      "label": "Balmazújváros",
+      "official_code": "093"
+    },
+    {
+      "code": "barcs",
+      "label": "Barcs",
+      "official_code": "140"
     },
     {
       "code": "batonyterenye",
-      "label": "Bátonyterenye"
+      "label": "Bátonyterenye",
+      "official_code": "117"
     },
     {
       "code": "bekes",
-      "label": "Békés"
+      "label": "Békés",
+      "official_code": "045"
     },
     {
       "code": "bekescsaba",
-      "label": "Békéscsaba"
+      "label": "Békéscsaba",
+      "official_code": "046"
     },
     {
       "code": "belapatfalva",
-      "label": "Bélapátfalva"
+      "label": "Bélapátfalva",
+      "official_code": "103"
+    },
+    {
+      "code": "berettyoujfalu",
+      "label": "Berettyóújfalu",
+      "official_code": "094"
+    },
+    {
+      "code": "bicske",
+      "label": "Bicske",
+      "official_code": "077"
+    },
+    {
+      "code": "boly",
+      "label": "Bóly",
+      "official_code": "024"
+    },
+    {
+      "code": "bonyhad",
+      "label": "Bonyhád",
+      "official_code": "170"
+    },
+    {
+      "code": "budakeszi",
+      "label": "Budakeszi",
+      "official_code": "123"
+    },
+    {
+      "code": "budaors",
+      "label": "Budaörs",
+      "active": false
+    },
+    {
+      "code": "budapest",
+      "label": "Budapest",
+      "active": false
+    },
+    {
+      "code": "budapest-01-ker",
+      "label": "Budapest 01. ker.",
+      "official_code": "001"
+    },
+    {
+      "code": "budapest-02-ker",
+      "label": "Budapest 02. ker.",
+      "official_code": "002"
+    },
+    {
+      "code": "budapest-03-ker",
+      "label": "Budapest 03. ker.",
+      "official_code": "003"
+    },
+    {
+      "code": "budapest-04-ker",
+      "label": "Budapest 04. ker.",
+      "official_code": "004"
+    },
+    {
+      "code": "budapest-05-ker",
+      "label": "Budapest 05. ker.",
+      "official_code": "005"
+    },
+    {
+      "code": "budapest-06-ker",
+      "label": "Budapest 06. ker.",
+      "official_code": "006"
+    },
+    {
+      "code": "budapest-07-ker",
+      "label": "Budapest 07. ker.",
+      "official_code": "007"
+    },
+    {
+      "code": "budapest-08-ker",
+      "label": "Budapest 08. ker.",
+      "official_code": "008"
+    },
+    {
+      "code": "budapest-09-ker",
+      "label": "Budapest 09. ker.",
+      "official_code": "009"
+    },
+    {
+      "code": "budapest-10-ker",
+      "label": "Budapest 10. ker.",
+      "official_code": "010"
+    },
+    {
+      "code": "budapest-11-ker",
+      "label": "Budapest 11. ker.",
+      "official_code": "011"
+    },
+    {
+      "code": "budapest-12-ker",
+      "label": "Budapest 12. ker.",
+      "official_code": "012"
+    },
+    {
+      "code": "budapest-13-ker",
+      "label": "Budapest 13. ker.",
+      "official_code": "013"
+    },
+    {
+      "code": "budapest-14-ker",
+      "label": "Budapest 14. ker.",
+      "official_code": "014"
+    },
+    {
+      "code": "budapest-15-ker",
+      "label": "Budapest 15. ker.",
+      "official_code": "015"
+    },
+    {
+      "code": "budapest-16-ker",
+      "label": "Budapest 16. ker.",
+      "official_code": "016"
+    },
+    {
+      "code": "budapest-17-ker",
+      "label": "Budapest 17. ker.",
+      "official_code": "017"
+    },
+    {
+      "code": "budapest-18-ker",
+      "label": "Budapest 18. ker.",
+      "official_code": "018"
+    },
+    {
+      "code": "budapest-19-ker",
+      "label": "Budapest 19. ker.",
+      "official_code": "019"
+    },
+    {
+      "code": "budapest-20-ker",
+      "label": "Budapest 20. ker.",
+      "official_code": "020"
+    },
+    {
+      "code": "budapest-21-ker",
+      "label": "Budapest 21. ker.",
+      "official_code": "021"
+    },
+    {
+      "code": "budapest-22-ker",
+      "label": "Budapest 22. ker.",
+      "official_code": "022"
+    },
+    {
+      "code": "budapest-23-ker",
+      "label": "Budapest 23. ker.",
+      "official_code": "023"
     },
     {
       "code": "cegled",
-      "label": "Cegléd"
+      "label": "Cegléd",
+      "official_code": "124"
     },
     {
       "code": "celldomolk",
-      "label": "Celldömölk"
+      "label": "Celldömölk",
+      "official_code": "176"
     },
     {
       "code": "cigand",
-      "label": "Cigánd"
+      "label": "Cigánd",
+      "official_code": "054"
     },
     {
       "code": "csenger",
-      "label": "Csenger"
+      "label": "Csenger",
+      "official_code": "149"
     },
     {
       "code": "csepreg",
-      "label": "Csepreg"
+      "label": "Csepreg",
+      "active": false
     },
     {
       "code": "csongrad",
-      "label": "Csongrád"
+      "label": "Csongrád",
+      "official_code": "070"
     },
     {
       "code": "csorna",
-      "label": "Csorna"
+      "label": "Csorna",
+      "official_code": "086"
     },
     {
       "code": "csurgo",
-      "label": "Csurgó"
+      "label": "Csurgó",
+      "official_code": "141"
     },
     {
       "code": "dabas",
-      "label": "Dabas"
+      "label": "Dabas",
+      "official_code": "125"
     },
     {
       "code": "debrecen",
-      "label": "Debrecen"
+      "label": "Debrecen",
+      "official_code": "095"
     },
     {
       "code": "derecske",
-      "label": "Derecske"
+      "label": "Derecske",
+      "official_code": "096"
     },
     {
       "code": "devecser",
-      "label": "Devecser"
+      "label": "Devecser",
+      "official_code": "186"
     },
     {
       "code": "dombovar",
-      "label": "Dombóvár"
+      "label": "Dombóvár",
+      "official_code": "171"
     },
     {
       "code": "dorog",
-      "label": "Dorog"
+      "label": "Dorog",
+      "active": false
     },
     {
       "code": "dunakeszi",
-      "label": "Dunakeszi"
+      "label": "Dunakeszi",
+      "official_code": "126"
     },
     {
       "code": "dunaujvaros",
-      "label": "Dunaújváros"
+      "label": "Dunaújváros",
+      "official_code": "078"
     },
     {
       "code": "edeleny",
-      "label": "Edelény"
+      "label": "Edelény",
+      "official_code": "055"
     },
     {
       "code": "eger",
-      "label": "Eger"
+      "label": "Eger",
+      "official_code": "104"
     },
     {
       "code": "encs",
-      "label": "Encs"
+      "label": "Encs",
+      "official_code": "056"
     },
     {
       "code": "enying",
-      "label": "Enying"
-    },
-    {
-      "code": "esztergom",
-      "label": "Esztergom"
-    },
-    {
-      "code": "fehergyarmat",
-      "label": "Fehérgyarmat"
-    },
-    {
-      "code": "fonyod",
-      "label": "Fonyód"
-    },
-    {
-      "code": "fuzesabony",
-      "label": "Füzesabony"
-    },
-    {
-      "code": "gyula",
-      "label": "Gyula"
-    },
-    {
-      "code": "gyal",
-      "label": "Gyál"
-    },
-    {
-      "code": "gyongyos",
-      "label": "Gyöngyös"
-    },
-    {
-      "code": "gyor",
-      "label": "Győr"
-    },
-    {
-      "code": "gardony",
-      "label": "Gárdony"
-    },
-    {
-      "code": "godollo",
-      "label": "Gödöllő"
-    },
-    {
-      "code": "gonc",
-      "label": "Gönc"
-    },
-    {
-      "code": "hajduboszormeny",
-      "label": "Hajdúböszörmény"
-    },
-    {
-      "code": "hajduhadhaz",
-      "label": "Hajdúhadház"
-    },
-    {
-      "code": "hajdunanas",
-      "label": "Hajdúnánás"
-    },
-    {
-      "code": "hajduszoboszlo",
-      "label": "Hajdúszoboszló"
-    },
-    {
-      "code": "hatvan",
-      "label": "Hatvan"
-    },
-    {
-      "code": "heves",
-      "label": "Heves"
-    },
-    {
-      "code": "hodmezovasarhely",
-      "label": "Hódmezővásárhely"
-    },
-    {
-      "code": "ibrany",
-      "label": "Ibrány"
-    },
-    {
-      "code": "janoshalma",
-      "label": "Jánoshalma"
-    },
-    {
-      "code": "jaszapati",
-      "label": "Jászapáti"
-    },
-    {
-      "code": "jaszbereny",
-      "label": "Jászberény"
-    },
-    {
-      "code": "kalocsa",
-      "label": "Kalocsa"
-    },
-    {
-      "code": "kaposvar",
-      "label": "Kaposvár"
-    },
-    {
-      "code": "kapuvar",
-      "label": "Kapuvár"
-    },
-    {
-      "code": "karcag",
-      "label": "Karcag"
-    },
-    {
-      "code": "kazincbarcika",
-      "label": "Kazincbarcika"
-    },
-    {
-      "code": "kecskemet",
-      "label": "Kecskemét"
-    },
-    {
-      "code": "kemecse",
-      "label": "Kemecse"
-    },
-    {
-      "code": "keszthely",
-      "label": "Keszthely"
-    },
-    {
-      "code": "kisber",
-      "label": "Kisbér"
-    },
-    {
-      "code": "kiskunfelegyhaza",
-      "label": "Kiskunfélegyháza"
-    },
-    {
-      "code": "kiskunhalas",
-      "label": "Kiskunhalas"
-    },
-    {
-      "code": "kiskoros",
-      "label": "Kiskőrös"
-    },
-    {
-      "code": "kistelek",
-      "label": "Kistelek"
-    },
-    {
-      "code": "kisvarda",
-      "label": "Kisvárda"
-    },
-    {
-      "code": "kisujszallas",
-      "label": "Kisújszállás"
-    },
-    {
-      "code": "komlo",
-      "label": "Komló"
-    },
-    {
-      "code": "komarom",
-      "label": "Komárom"
-    },
-    {
-      "code": "kunhegyes",
-      "label": "Kunhegyes"
-    },
-    {
-      "code": "kunszentmiklos",
-      "label": "Kunszentmiklós"
-    },
-    {
-      "code": "kunszentmarton",
-      "label": "Kunszentmárton"
-    },
-    {
-      "code": "kormend",
-      "label": "Körmend"
-    },
-    {
-      "code": "koszeg",
-      "label": "Kőszeg"
-    },
-    {
-      "code": "lenti",
-      "label": "Lenti"
-    },
-    {
-      "code": "letenye",
-      "label": "Letenye"
-    },
-    {
-      "code": "mako",
-      "label": "Makó"
-    },
-    {
-      "code": "marcali",
-      "label": "Marcali"
-    },
-    {
-      "code": "martonvasar",
-      "label": "Martonvásár"
-    },
-    {
-      "code": "mezocsat",
-      "label": "Mezőcsát"
-    },
-    {
-      "code": "mezokovacshaza",
-      "label": "Mezőkovácsháza"
-    },
-    {
-      "code": "mezokovesd",
-      "label": "Mezőkövesd"
-    },
-    {
-      "code": "mezotur",
-      "label": "Mezőtúr"
-    },
-    {
-      "code": "miskolc",
-      "label": "Miskolc"
-    },
-    {
-      "code": "monor",
-      "label": "Monor"
-    },
-    {
-      "code": "mosonmagyarovar",
-      "label": "Mosonmagyaróvár"
-    },
-    {
-      "code": "mateszalka",
-      "label": "Mátészalka"
-    },
-    {
-      "code": "mor",
-      "label": "Mór"
-    },
-    {
-      "code": "morahalom",
-      "label": "Mórahalom"
-    },
-    {
-      "code": "nagyatad",
-      "label": "Nagyatád"
-    },
-    {
-      "code": "nagyecsed",
-      "label": "Nagyecsed"
-    },
-    {
-      "code": "nagykanizsa",
-      "label": "Nagykanizsa"
-    },
-    {
-      "code": "nagykallo",
-      "label": "Nagykálló"
-    },
-    {
-      "code": "nagykata",
-      "label": "Nagykáta"
-    },
-    {
-      "code": "nyiradony",
-      "label": "Nyíradony"
-    },
-    {
-      "code": "nyirbator",
-      "label": "Nyírbátor"
-    },
-    {
-      "code": "nyiregyhaza",
-      "label": "Nyíregyháza"
-    },
-    {
-      "code": "oroshaza",
-      "label": "Orosháza"
-    },
-    {
-      "code": "oroszlany",
-      "label": "Oroszlány"
-    },
-    {
-      "code": "pacsa",
-      "label": "Pacsa"
-    },
-    {
-      "code": "paks",
-      "label": "Paks"
-    },
-    {
-      "code": "pannonhalma",
-      "label": "Pannonhalma"
-    },
-    {
-      "code": "pilisvorosvar",
-      "label": "Pilisvörösvár"
-    },
-    {
-      "code": "polgardi",
-      "label": "Polgárdi"
-    },
-    {
-      "code": "papa",
-      "label": "Pápa"
-    },
-    {
-      "code": "paszto",
-      "label": "Pásztó"
-    },
-    {
-      "code": "pecs",
-      "label": "Pécs"
-    },
-    {
-      "code": "pecsvarad",
-      "label": "Pécsvárad"
-    },
-    {
-      "code": "petervasara",
-      "label": "Pétervására"
-    },
-    {
-      "code": "puspokladany",
-      "label": "Püspökladány"
-    },
-    {
-      "code": "rackeve",
-      "label": "Ráckeve"
-    },
-    {
-      "code": "retsag",
-      "label": "Rétság"
-    },
-    {
-      "code": "salgotarjan",
-      "label": "Salgótarján"
-    },
-    {
-      "code": "sarkad",
-      "label": "Sarkad"
-    },
-    {
-      "code": "sellye",
-      "label": "Sellye"
-    },
-    {
-      "code": "siofok",
-      "label": "Siófok"
-    },
-    {
-      "code": "sopron",
-      "label": "Sopron"
-    },
-    {
-      "code": "szarvas",
-      "label": "Szarvas"
-    },
-    {
-      "code": "szeged",
-      "label": "Szeged"
-    },
-    {
-      "code": "szekszard",
-      "label": "Szekszárd"
-    },
-    {
-      "code": "szentendre",
-      "label": "Szentendre"
-    },
-    {
-      "code": "szentes",
-      "label": "Szentes"
-    },
-    {
-      "code": "szentgotthard",
-      "label": "Szentgotthárd"
-    },
-    {
-      "code": "szentlorinc",
-      "label": "Szentlőrinc"
-    },
-    {
-      "code": "szerencs",
-      "label": "Szerencs"
-    },
-    {
-      "code": "szigetszentmiklos",
-      "label": "Szigetszentmiklós"
-    },
-    {
-      "code": "szigetvar",
-      "label": "Szigetvár"
-    },
-    {
-      "code": "szikszo",
-      "label": "Szikszó"
-    },
-    {
-      "code": "szolnok",
-      "label": "Szolnok"
-    },
-    {
-      "code": "szombathely",
-      "label": "Szombathely"
-    },
-    {
-      "code": "szecseny",
-      "label": "Szécsény"
-    },
-    {
-      "code": "szekesfehervar",
-      "label": "Székesfehérvár"
-    },
-    {
-      "code": "sarbogard",
-      "label": "Sárbogárd"
-    },
-    {
-      "code": "sarospatak",
-      "label": "Sárospatak"
-    },
-    {
-      "code": "sarvar",
-      "label": "Sárvár"
-    },
-    {
-      "code": "sasd",
-      "label": "Sásd"
-    },
-    {
-      "code": "satoraljaujhely",
-      "label": "Sátoraljaújhely"
-    },
-    {
-      "code": "sumeg",
-      "label": "Sümeg"
-    },
-    {
-      "code": "tab",
-      "label": "Tab"
-    },
-    {
-      "code": "tamasi",
-      "label": "Tamási"
-    },
-    {
-      "code": "tapolca",
-      "label": "Tapolca"
-    },
-    {
-      "code": "tata",
-      "label": "Tata"
-    },
-    {
-      "code": "tatabanya",
-      "label": "Tatabánya"
-    },
-    {
-      "code": "tiszafured",
-      "label": "Tiszafüred"
-    },
-    {
-      "code": "tiszavasvari",
-      "label": "Tiszavasvári"
-    },
-    {
-      "code": "tiszaujvaros",
-      "label": "Tiszaújváros"
-    },
-    {
-      "code": "tokaj",
-      "label": "Tokaj"
-    },
-    {
-      "code": "tet",
-      "label": "Tét"
-    },
-    {
-      "code": "torokszentmiklos",
-      "label": "Törökszentmiklós"
-    },
-    {
-      "code": "vasvar",
-      "label": "Vasvár"
-    },
-    {
-      "code": "vecses",
-      "label": "Vecsés"
-    },
-    {
-      "code": "veszprem",
-      "label": "Veszprém"
-    },
-    {
-      "code": "vac",
-      "label": "Vác"
-    },
-    {
-      "code": "varpalota",
-      "label": "Várpalota"
-    },
-    {
-      "code": "vasarosnameny",
-      "label": "Vásárosnamény"
-    },
-    {
-      "code": "zalaegerszeg",
-      "label": "Zalaegerszeg"
-    },
-    {
-      "code": "zalaszentgrot",
-      "label": "Zalaszentgrót"
-    },
-    {
-      "code": "zirc",
-      "label": "Zirc"
-    },
-    {
-      "code": "zahony",
-      "label": "Záhony"
+      "label": "Enying",
+      "official_code": "079"
     },
     {
       "code": "erd",
-      "label": "Érd"
+      "label": "Érd",
+      "official_code": "127"
+    },
+    {
+      "code": "esztergom",
+      "label": "Esztergom",
+      "official_code": "110"
+    },
+    {
+      "code": "fehergyarmat",
+      "label": "Fehérgyarmat",
+      "official_code": "150"
+    },
+    {
+      "code": "fonyod",
+      "label": "Fonyód",
+      "official_code": "142"
+    },
+    {
+      "code": "fuzesabony",
+      "label": "Füzesabony",
+      "official_code": "105"
+    },
+    {
+      "code": "gardony",
+      "label": "Gárdony",
+      "official_code": "080"
+    },
+    {
+      "code": "godollo",
+      "label": "Gödöllő",
+      "official_code": "128"
+    },
+    {
+      "code": "gonc",
+      "label": "Gönc",
+      "official_code": "057"
+    },
+    {
+      "code": "gyal",
+      "label": "Gyál",
+      "official_code": "129"
+    },
+    {
+      "code": "gyomaendrod",
+      "label": "Gyomaendrőd",
+      "official_code": "047"
+    },
+    {
+      "code": "gyongyos",
+      "label": "Gyöngyös",
+      "official_code": "106"
+    },
+    {
+      "code": "gyor",
+      "label": "Győr",
+      "official_code": "087"
+    },
+    {
+      "code": "gyula",
+      "label": "Gyula",
+      "official_code": "048"
+    },
+    {
+      "code": "hajduboszormeny",
+      "label": "Hajdúböszörmény",
+      "official_code": "097"
+    },
+    {
+      "code": "hajduhadhaz",
+      "label": "Hajdúhadház",
+      "official_code": "098"
+    },
+    {
+      "code": "hajdunanas",
+      "label": "Hajdúnánás",
+      "official_code": "099"
+    },
+    {
+      "code": "hajduszoboszlo",
+      "label": "Hajdúszoboszló",
+      "official_code": "100"
+    },
+    {
+      "code": "hatvan",
+      "label": "Hatvan",
+      "official_code": "107"
+    },
+    {
+      "code": "heves",
+      "label": "Heves",
+      "official_code": "108"
+    },
+    {
+      "code": "hodmezovasarhely",
+      "label": "Hódmezővásárhely",
+      "official_code": "071"
+    },
+    {
+      "code": "ibrany",
+      "label": "Ibrány",
+      "official_code": "151"
+    },
+    {
+      "code": "janoshalma",
+      "label": "Jánoshalma",
+      "official_code": "036"
+    },
+    {
+      "code": "jaszapati",
+      "label": "Jászapáti",
+      "official_code": "161"
+    },
+    {
+      "code": "jaszbereny",
+      "label": "Jászberény",
+      "official_code": "162"
+    },
+    {
+      "code": "kalocsa",
+      "label": "Kalocsa",
+      "official_code": "037"
+    },
+    {
+      "code": "kaposvar",
+      "label": "Kaposvár",
+      "official_code": "143"
+    },
+    {
+      "code": "kapuvar",
+      "label": "Kapuvár",
+      "official_code": "088"
+    },
+    {
+      "code": "karcag",
+      "label": "Karcag",
+      "official_code": "163"
+    },
+    {
+      "code": "kazincbarcika",
+      "label": "Kazincbarcika",
+      "official_code": "058"
+    },
+    {
+      "code": "kecskemet",
+      "label": "Kecskemét",
+      "official_code": "038"
+    },
+    {
+      "code": "kemecse",
+      "label": "Kemecse",
+      "official_code": "152"
+    },
+    {
+      "code": "keszthely",
+      "label": "Keszthely",
+      "official_code": "193"
+    },
+    {
+      "code": "kisber",
+      "label": "Kisbér",
+      "official_code": "111"
+    },
+    {
+      "code": "kiskoros",
+      "label": "Kiskőrös",
+      "official_code": "039"
+    },
+    {
+      "code": "kiskunfelegyhaza",
+      "label": "Kiskunfélegyháza",
+      "official_code": "040"
+    },
+    {
+      "code": "kiskunhalas",
+      "label": "Kiskunhalas",
+      "official_code": "041"
+    },
+    {
+      "code": "kiskunmajsa",
+      "label": "Kiskunmajsa",
+      "official_code": "042"
+    },
+    {
+      "code": "kistelek",
+      "label": "Kistelek",
+      "official_code": "072"
+    },
+    {
+      "code": "kisujszallas",
+      "label": "Kisújszállás",
+      "active": false
+    },
+    {
+      "code": "kisvarda",
+      "label": "Kisvárda",
+      "official_code": "153"
+    },
+    {
+      "code": "komarom",
+      "label": "Komárom",
+      "official_code": "112"
+    },
+    {
+      "code": "komlo",
+      "label": "Komló",
+      "official_code": "026"
+    },
+    {
+      "code": "kormend",
+      "label": "Körmend",
+      "official_code": "177"
+    },
+    {
+      "code": "koszeg",
+      "label": "Kőszeg",
+      "official_code": "178"
+    },
+    {
+      "code": "kunhegyes",
+      "label": "Kunhegyes",
+      "official_code": "164"
+    },
+    {
+      "code": "kunszentmarton",
+      "label": "Kunszentmárton",
+      "official_code": "165"
+    },
+    {
+      "code": "kunszentmiklos",
+      "label": "Kunszentmiklós",
+      "official_code": "043"
+    },
+    {
+      "code": "lenti",
+      "label": "Lenti",
+      "official_code": "194"
+    },
+    {
+      "code": "letenye",
+      "label": "Letenye",
+      "official_code": "195"
+    },
+    {
+      "code": "mako",
+      "label": "Makó",
+      "official_code": "073"
+    },
+    {
+      "code": "marcali",
+      "label": "Marcali",
+      "official_code": "144"
+    },
+    {
+      "code": "martonvasar",
+      "label": "Martonvásár",
+      "official_code": "081"
+    },
+    {
+      "code": "mateszalka",
+      "label": "Mátészalka",
+      "official_code": "154"
+    },
+    {
+      "code": "mezocsat",
+      "label": "Mezőcsát",
+      "official_code": "059"
+    },
+    {
+      "code": "mezokovacshaza",
+      "label": "Mezőkovácsháza",
+      "official_code": "049"
+    },
+    {
+      "code": "mezokovesd",
+      "label": "Mezőkövesd",
+      "official_code": "060"
+    },
+    {
+      "code": "mezotur",
+      "label": "Mezőtúr",
+      "official_code": "166"
+    },
+    {
+      "code": "miskolc",
+      "label": "Miskolc",
+      "official_code": "061"
+    },
+    {
+      "code": "mohacs",
+      "label": "Mohács",
+      "official_code": "027"
+    },
+    {
+      "code": "monor",
+      "label": "Monor",
+      "official_code": "130"
+    },
+    {
+      "code": "mor",
+      "label": "Mór",
+      "official_code": "082"
+    },
+    {
+      "code": "morahalom",
+      "label": "Mórahalom",
+      "official_code": "074"
+    },
+    {
+      "code": "mosonmagyarovar",
+      "label": "Mosonmagyaróvár",
+      "official_code": "089"
+    },
+    {
+      "code": "nagyatad",
+      "label": "Nagyatád",
+      "official_code": "145"
+    },
+    {
+      "code": "nagyecsed",
+      "label": "Nagyecsed",
+      "active": false
+    },
+    {
+      "code": "nagykallo",
+      "label": "Nagykálló",
+      "official_code": "155"
+    },
+    {
+      "code": "nagykanizsa",
+      "label": "Nagykanizsa",
+      "official_code": "196"
+    },
+    {
+      "code": "nagykata",
+      "label": "Nagykáta",
+      "official_code": "131"
+    },
+    {
+      "code": "nagykoros",
+      "label": "Nagykőrös",
+      "official_code": "132"
+    },
+    {
+      "code": "nyiradony",
+      "label": "Nyíradony",
+      "official_code": "101"
+    },
+    {
+      "code": "nyirbator",
+      "label": "Nyírbátor",
+      "official_code": "156"
+    },
+    {
+      "code": "nyiregyhaza",
+      "label": "Nyíregyháza",
+      "official_code": "157"
+    },
+    {
+      "code": "oroshaza",
+      "label": "Orosháza",
+      "official_code": "050"
+    },
+    {
+      "code": "oroszlany",
+      "label": "Oroszlány",
+      "official_code": "113"
     },
     {
       "code": "ozd",
-      "label": "Ózd"
+      "label": "Ózd",
+      "official_code": "062"
+    },
+    {
+      "code": "pacsa",
+      "label": "Pacsa",
+      "active": false
+    },
+    {
+      "code": "paks",
+      "label": "Paks",
+      "official_code": "172"
+    },
+    {
+      "code": "pannonhalma",
+      "label": "Pannonhalma",
+      "official_code": "090"
+    },
+    {
+      "code": "papa",
+      "label": "Pápa",
+      "official_code": "187"
+    },
+    {
+      "code": "paszto",
+      "label": "Pásztó",
+      "official_code": "118"
+    },
+    {
+      "code": "pecs",
+      "label": "Pécs",
+      "official_code": "028"
+    },
+    {
+      "code": "pecsvarad",
+      "label": "Pécsvárad",
+      "official_code": "029"
+    },
+    {
+      "code": "petervasara",
+      "label": "Pétervására",
+      "official_code": "109"
+    },
+    {
+      "code": "pilisvorosvar",
+      "label": "Pilisvörösvár",
+      "official_code": "133"
+    },
+    {
+      "code": "polgardi",
+      "label": "Polgárdi",
+      "active": false
+    },
+    {
+      "code": "puspokladany",
+      "label": "Püspökladány",
+      "official_code": "102"
+    },
+    {
+      "code": "putnok",
+      "label": "Putnok",
+      "official_code": "063"
+    },
+    {
+      "code": "rackeve",
+      "label": "Ráckeve",
+      "official_code": "134"
+    },
+    {
+      "code": "retsag",
+      "label": "Rétság",
+      "official_code": "119"
+    },
+    {
+      "code": "salgotarjan",
+      "label": "Salgótarján",
+      "official_code": "120"
+    },
+    {
+      "code": "sarbogard",
+      "label": "Sárbogárd",
+      "official_code": "084"
+    },
+    {
+      "code": "sarkad",
+      "label": "Sarkad",
+      "official_code": "051"
+    },
+    {
+      "code": "sarospatak",
+      "label": "Sárospatak",
+      "official_code": "064"
+    },
+    {
+      "code": "sarvar",
+      "label": "Sárvár",
+      "official_code": "179"
+    },
+    {
+      "code": "sasd",
+      "label": "Sásd",
+      "official_code": "025"
+    },
+    {
+      "code": "satoraljaujhely",
+      "label": "Sátoraljaújhely",
+      "official_code": "065"
+    },
+    {
+      "code": "sellye",
+      "label": "Sellye",
+      "official_code": "030"
+    },
+    {
+      "code": "siklos",
+      "label": "Siklós",
+      "official_code": "031"
+    },
+    {
+      "code": "siofok",
+      "label": "Siófok",
+      "official_code": "146"
+    },
+    {
+      "code": "sopron",
+      "label": "Sopron",
+      "official_code": "091"
+    },
+    {
+      "code": "sumeg",
+      "label": "Sümeg",
+      "official_code": "188"
+    },
+    {
+      "code": "szarvas",
+      "label": "Szarvas",
+      "official_code": "052"
+    },
+    {
+      "code": "szecseny",
+      "label": "Szécsény",
+      "official_code": "121"
+    },
+    {
+      "code": "szeged",
+      "label": "Szeged",
+      "official_code": "075"
+    },
+    {
+      "code": "szeghalom",
+      "label": "Szeghalom",
+      "official_code": "053"
+    },
+    {
+      "code": "szekesfehervar",
+      "label": "Székesfehérvár",
+      "official_code": "085"
+    },
+    {
+      "code": "szekszard",
+      "label": "Szekszárd",
+      "official_code": "173"
+    },
+    {
+      "code": "szentendre",
+      "label": "Szentendre",
+      "official_code": "135"
+    },
+    {
+      "code": "szentes",
+      "label": "Szentes",
+      "official_code": "076"
+    },
+    {
+      "code": "szentgotthard",
+      "label": "Szentgotthárd",
+      "official_code": "180"
+    },
+    {
+      "code": "szentlorinc",
+      "label": "Szentlőrinc",
+      "official_code": "032"
+    },
+    {
+      "code": "szerencs",
+      "label": "Szerencs",
+      "official_code": "066"
+    },
+    {
+      "code": "szigetszentmiklos",
+      "label": "Szigetszentmiklós",
+      "official_code": "136"
+    },
+    {
+      "code": "szigetvar",
+      "label": "Szigetvár",
+      "official_code": "033"
+    },
+    {
+      "code": "szikszo",
+      "label": "Szikszó",
+      "official_code": "067"
+    },
+    {
+      "code": "szob",
+      "label": "Szob",
+      "official_code": "137"
+    },
+    {
+      "code": "szolnok",
+      "label": "Szolnok",
+      "official_code": "167"
+    },
+    {
+      "code": "szombathely",
+      "label": "Szombathely",
+      "official_code": "181"
+    },
+    {
+      "code": "tab",
+      "label": "Tab",
+      "official_code": "147"
+    },
+    {
+      "code": "tamasi",
+      "label": "Tamási",
+      "official_code": "174"
+    },
+    {
+      "code": "tapolca",
+      "label": "Tapolca",
+      "official_code": "189"
+    },
+    {
+      "code": "tata",
+      "label": "Tata",
+      "official_code": "114"
+    },
+    {
+      "code": "tatabanya",
+      "label": "Tatabánya",
+      "official_code": "115"
+    },
+    {
+      "code": "tet",
+      "label": "Tét",
+      "official_code": "092"
+    },
+    {
+      "code": "tiszafured",
+      "label": "Tiszafüred",
+      "official_code": "168"
+    },
+    {
+      "code": "tiszakecske",
+      "label": "Tiszakécske",
+      "official_code": "044"
+    },
+    {
+      "code": "tiszaujvaros",
+      "label": "Tiszaújváros",
+      "official_code": "068"
+    },
+    {
+      "code": "tiszavasvari",
+      "label": "Tiszavasvári",
+      "official_code": "158"
+    },
+    {
+      "code": "tokaj",
+      "label": "Tokaj",
+      "official_code": "069"
+    },
+    {
+      "code": "tolna",
+      "label": "Tolna",
+      "official_code": "175"
+    },
+    {
+      "code": "torokszentmiklos",
+      "label": "Törökszentmiklós",
+      "official_code": "169"
+    },
+    {
+      "code": "vac",
+      "label": "Vác",
+      "official_code": "138"
+    },
+    {
+      "code": "varpalota",
+      "label": "Várpalota",
+      "official_code": "190"
+    },
+    {
+      "code": "vasarosnameny",
+      "label": "Vásárosnamény",
+      "official_code": "159"
+    },
+    {
+      "code": "vasvar",
+      "label": "Vasvár",
+      "official_code": "182"
+    },
+    {
+      "code": "vecses",
+      "label": "Vecsés",
+      "official_code": "139"
+    },
+    {
+      "code": "veszprem",
+      "label": "Veszprém",
+      "official_code": "191"
+    },
+    {
+      "code": "zahony",
+      "label": "Záhony",
+      "official_code": "160"
+    },
+    {
+      "code": "zalaegerszeg",
+      "label": "Zalaegerszeg",
+      "official_code": "197"
+    },
+    {
+      "code": "zalaszentgrot",
+      "label": "Zalaszentgrót",
+      "official_code": "198"
+    },
+    {
+      "code": "zirc",
+      "label": "Zirc",
+      "official_code": "192"
     }
   ],
   "AT": [

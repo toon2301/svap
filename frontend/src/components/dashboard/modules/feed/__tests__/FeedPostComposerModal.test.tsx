@@ -139,6 +139,7 @@ describe('FeedPostComposerModal', () => {
     expect(mockedCreate).toHaveBeenCalledWith({
       caption: 'Ahoj',
       taggedUserIds: [],
+      willAttachPhoto: false,
     });
     expect(mockedUpload).not.toHaveBeenCalled();
     expect(mockedToastSuccess).toHaveBeenCalled();
@@ -181,6 +182,7 @@ describe('FeedPostComposerModal', () => {
     expect(mockedCreate).toHaveBeenCalledWith({
       caption: 'S označením',
       taggedUserIds: [42],
+      willAttachPhoto: false,
     });
   });
 
@@ -328,18 +330,18 @@ describe('FeedPostComposerModal', () => {
     expect(screen.getByTestId('feed-composer-submit')).toBeDisabled();
   });
 
-  it('is a bottom sheet on mobile and a centered modal on desktop', async () => {
+  it('stays a centered desktop modal', async () => {
     renderComposer();
 
     const overlay = screen.getByTestId('feed-composer-modal');
-    // Mobil: panel prisadnutý k spodku; desktop (sm:) sa centruje.
-    expect(overlay.className).toContain('items-end');
-    expect(overlay.className).toContain('sm:items-center');
+    // Spodný panel z mobilu je preč – tú rolu prevzala samostatná routa
+    // `feed-post-create`, takže modal je vždy centrovaný.
+    expect(overlay.className).toContain('items-center');
+    expect(overlay.className).not.toContain('items-end');
 
     const panel = overlay.firstElementChild as HTMLElement;
-    // Mobil má zaoblený len horný okraj (panel vychádza zdola), desktop celý.
-    expect(panel.className).toContain('rounded-t-2xl');
-    expect(panel.className).toContain('sm:rounded-2xl');
+    expect(panel.className).toContain('rounded-2xl');
+    expect(panel.className).not.toContain('rounded-t-2xl');
     expect(panel.className).toContain('w-full');
   });
 
@@ -351,5 +353,62 @@ describe('FeedPostComposerModal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pridať emoji' }));
 
     await waitFor(() => expect(textarea).toHaveValue('Ahoj🙂'));
+  });
+});
+
+describe('FeedPostComposerModal – text alebo fotka', () => {
+  beforeEach(() => {
+    mockedCreate.mockReset();
+    mockedGet.mockReset();
+    mockedUpload.mockReset();
+    mockedToastError.mockReset();
+    mockedToastSuccess.mockReset();
+    mockedCreate.mockResolvedValue(created);
+    mockedGet.mockResolvedValue(created);
+    mockedUpload.mockResolvedValue([]);
+  });
+
+  it('enables submitting once a photo is picked, even without text', async () => {
+    renderComposer();
+
+    const submit = screen.getByTestId('feed-composer-submit');
+    // Prázdny príspevok (ani text, ani fotka) odoslať nejde.
+    expect(submit).toBeDisabled();
+
+    await userEvent.upload(
+      screen.getByTestId('feed-composer-file-input'),
+      imageFile(),
+    );
+
+    await waitFor(() => expect(submit).not.toBeDisabled());
+  });
+
+  it('signals the intent to attach a photo when there is no text', async () => {
+    renderComposer();
+
+    await userEvent.upload(
+      screen.getByTestId('feed-composer-file-input'),
+      imageFile(),
+    );
+    await userEvent.click(screen.getByTestId('feed-composer-submit'));
+
+    // Fotka v čase vytvárania ešte neexistuje – backend by príspevok bez
+    // tohto príznaku odmietol ako prázdny.
+    await waitFor(() =>
+      expect(mockedCreate).toHaveBeenCalledWith({
+        caption: '',
+        taggedUserIds: [],
+        willAttachPhoto: true,
+      }),
+    );
+    await waitFor(() => expect(mockedUpload).toHaveBeenCalled());
+  });
+
+  it('still refuses a post with neither text nor photo', async () => {
+    renderComposer();
+
+    await userEvent.click(screen.getByTestId('feed-composer-submit'));
+
+    expect(mockedCreate).not.toHaveBeenCalled();
   });
 });

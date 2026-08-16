@@ -746,6 +746,11 @@
     "message": "Üzenet",
     "ratings": "Értékelések",
     "countryTitle": "Ország",
+    "countryPlaceholder": "Válassz országot",
+    "countrySearchPlaceholder": "Ország keresése",
+    "countryNoResults": "Nem található ország.",
+    "districtUnavailableForCountry": "Ehhez az országhoz még nem érhető el járáslista. Megadhatsz egy várost vagy települést.",
+    "inactiveDistrictError": "A mentett járás már nem aktuális. Válassz egy új járást a listából.",
     "offerCountries": {
       "SK": "Szlovákia",
       "CZ": "Csehország",
@@ -1125,6 +1130,10 @@
     "hungarian": "Magyar"
   },
   "profile": {
+    "reportReasonInappropriate": "Nem megfelelő viselkedés",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Hamis profil",
+    "reportReasonOther": "Egyéb",
     "portfolioTab": "Portfólió",
     "postsTab": "Bejegyzések",
     "taggedTab": "Megjelölve",
@@ -4299,6 +4308,10 @@
     "discard": "Elvetés"
   },
   "reviews": {
+    "reportReasonInappropriate": "Nem megfelelő tartalom",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Hamis értékelés",
+    "reportReasonOther": "Egyéb",
     "addReview": "Értékelés hozzáadása",
     "addOwnerResponse": "Válasz hozzáadása",
     "addedOn": "hozzáadva",
@@ -4350,6 +4363,17 @@
     "viewOwnerResponse": "Válasz megtekintése"
   },
   "feed": {
+    "postDeleteHint": "Ez a művelet nem vonható vissza.",
+    "deletePost": "Bejegyzés törlése",
+    "postDeleteConfirm": "Biztosan törlöd ezt a bejegyzést?",
+    "postDeleted": "A bejegyzés törölve.",
+    "postDeleteError": "A bejegyzést nem sikerült törölni.",
+    "tagRemoveAction": "Megjelölés eltávolítása",
+    "tagRemoveConfirm": "Biztosan eltávolítod a saját megjelölésedet erről a bejegyzésről?",
+    "tagRemoveHint": "A bejegyzés közzétéve marad, csak a te megjelölésed tűnik el.",
+    "tagRemoving": "Eltávolítás...",
+    "tagRemoved": "A megjelölés eltávolítva.",
+    "tagRemoveError": "A megjelölést nem sikerült eltávolítani.",
     "newCommentsOne": "új hozzászólás",
     "newCommentsFew": "új hozzászólás",
     "newCommentsMany": "új hozzászólás",

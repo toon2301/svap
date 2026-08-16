@@ -1,0 +1,1259 @@
+{
+  "source": {
+    "standard": "ISO 3166-1 alpha-2",
+    "url": "https://www.iso.org/iso-3166-country-codes.html",
+    "compatibility_note": "XK is accepted as a compatibility code for Kosovo because geolocation providers commonly return it."
+  },
+  "countries": [
+    {
+      "code": "AD",
+      "name": "Andorra",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AE",
+      "name": "United Arab Emirates",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AF",
+      "name": "Afghanistan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AG",
+      "name": "Antigua & Barbuda",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AI",
+      "name": "Anguilla",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AL",
+      "name": "Albania",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AM",
+      "name": "Armenia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AO",
+      "name": "Angola",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AQ",
+      "name": "Antarctica",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AR",
+      "name": "Argentina",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AS",
+      "name": "American Samoa",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AT",
+      "name": "Austria",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AU",
+      "name": "Australia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AW",
+      "name": "Aruba",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AX",
+      "name": "Åland Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "AZ",
+      "name": "Azerbaijan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BA",
+      "name": "Bosnia & Herzegovina",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BB",
+      "name": "Barbados",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BD",
+      "name": "Bangladesh",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BE",
+      "name": "Belgium",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BF",
+      "name": "Burkina Faso",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BG",
+      "name": "Bulgaria",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BH",
+      "name": "Bahrain",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BI",
+      "name": "Burundi",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BJ",
+      "name": "Benin",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BL",
+      "name": "St. Barthélemy",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BM",
+      "name": "Bermuda",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BN",
+      "name": "Brunei",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BO",
+      "name": "Bolivia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BQ",
+      "name": "Caribbean Netherlands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BR",
+      "name": "Brazil",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BS",
+      "name": "Bahamas",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BT",
+      "name": "Bhutan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BV",
+      "name": "Bouvet Island",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BW",
+      "name": "Botswana",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BY",
+      "name": "Belarus",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "BZ",
+      "name": "Belize",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CA",
+      "name": "Canada",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CC",
+      "name": "Cocos (Keeling) Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CD",
+      "name": "Congo - Kinshasa",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CF",
+      "name": "Central African Republic",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CG",
+      "name": "Congo - Brazzaville",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CH",
+      "name": "Switzerland",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CI",
+      "name": "Côte d’Ivoire",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CK",
+      "name": "Cook Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CL",
+      "name": "Chile",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CM",
+      "name": "Cameroon",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CN",
+      "name": "China",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CO",
+      "name": "Colombia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CR",
+      "name": "Costa Rica",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CU",
+      "name": "Cuba",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CV",
+      "name": "Cape Verde",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CW",
+      "name": "Curaçao",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CX",
+      "name": "Christmas Island",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CY",
+      "name": "Cyprus",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "CZ",
+      "name": "Czechia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "DE",
+      "name": "Germany",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "DJ",
+      "name": "Djibouti",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "DK",
+      "name": "Denmark",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "DM",
+      "name": "Dominica",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "DO",
+      "name": "Dominican Republic",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "DZ",
+      "name": "Algeria",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "EC",
+      "name": "Ecuador",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "EE",
+      "name": "Estonia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "EG",
+      "name": "Egypt",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "EH",
+      "name": "Western Sahara",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ER",
+      "name": "Eritrea",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ES",
+      "name": "Spain",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ET",
+      "name": "Ethiopia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "FI",
+      "name": "Finland",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "FJ",
+      "name": "Fiji",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "FK",
+      "name": "Falkland Islands (Islas Malvinas)",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "FM",
+      "name": "Micronesia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "FO",
+      "name": "Faroe Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "FR",
+      "name": "France",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GA",
+      "name": "Gabon",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GB",
+      "name": "United Kingdom",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GD",
+      "name": "Grenada",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GE",
+      "name": "Georgia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GF",
+      "name": "French Guiana",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GG",
+      "name": "Guernsey",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GH",
+      "name": "Ghana",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GI",
+      "name": "Gibraltar",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GL",
+      "name": "Greenland",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GM",
+      "name": "Gambia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GN",
+      "name": "Guinea",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GP",
+      "name": "Guadeloupe",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GQ",
+      "name": "Equatorial Guinea",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GR",
+      "name": "Greece",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GS",
+      "name": "South Georgia & South Sandwich Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GT",
+      "name": "Guatemala",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GU",
+      "name": "Guam",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GW",
+      "name": "Guinea-Bissau",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "GY",
+      "name": "Guyana",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "HK",
+      "name": "Hong Kong",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "HM",
+      "name": "Heard & McDonald Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "HN",
+      "name": "Honduras",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "HR",
+      "name": "Croatia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "HT",
+      "name": "Haiti",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "HU",
+      "name": "Hungary",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ID",
+      "name": "Indonesia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IE",
+      "name": "Ireland",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IL",
+      "name": "Israel",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IM",
+      "name": "Isle of Man",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IN",
+      "name": "India",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IO",
+      "name": "British Indian Ocean Territory",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IQ",
+      "name": "Iraq",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IR",
+      "name": "Iran",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IS",
+      "name": "Iceland",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "IT",
+      "name": "Italy",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "JE",
+      "name": "Jersey",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "JM",
+      "name": "Jamaica",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "JO",
+      "name": "Jordan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "JP",
+      "name": "Japan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KE",
+      "name": "Kenya",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KG",
+      "name": "Kyrgyzstan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KH",
+      "name": "Cambodia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KI",
+      "name": "Kiribati",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KM",
+      "name": "Comoros",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KN",
+      "name": "St. Kitts & Nevis",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KP",
+      "name": "North Korea",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KR",
+      "name": "South Korea",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KW",
+      "name": "Kuwait",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KY",
+      "name": "Cayman Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "KZ",
+      "name": "Kazakhstan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LA",
+      "name": "Laos",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LB",
+      "name": "Lebanon",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LC",
+      "name": "St. Lucia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LI",
+      "name": "Liechtenstein",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LK",
+      "name": "Sri Lanka",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LR",
+      "name": "Liberia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LS",
+      "name": "Lesotho",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LT",
+      "name": "Lithuania",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LU",
+      "name": "Luxembourg",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LV",
+      "name": "Latvia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "LY",
+      "name": "Libya",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MA",
+      "name": "Morocco",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MC",
+      "name": "Monaco",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MD",
+      "name": "Moldova",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ME",
+      "name": "Montenegro",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MF",
+      "name": "St. Martin",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MG",
+      "name": "Madagascar",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MH",
+      "name": "Marshall Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MK",
+      "name": "North Macedonia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ML",
+      "name": "Mali",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MM",
+      "name": "Myanmar (Burma)",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MN",
+      "name": "Mongolia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MO",
+      "name": "Macao",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MP",
+      "name": "Northern Mariana Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MQ",
+      "name": "Martinique",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MR",
+      "name": "Mauritania",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MS",
+      "name": "Montserrat",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MT",
+      "name": "Malta",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MU",
+      "name": "Mauritius",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MV",
+      "name": "Maldives",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MW",
+      "name": "Malawi",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MX",
+      "name": "Mexico",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MY",
+      "name": "Malaysia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "MZ",
+      "name": "Mozambique",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NA",
+      "name": "Namibia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NC",
+      "name": "New Caledonia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NE",
+      "name": "Niger",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NF",
+      "name": "Norfolk Island",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NG",
+      "name": "Nigeria",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NI",
+      "name": "Nicaragua",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NL",
+      "name": "Netherlands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NO",
+      "name": "Norway",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NP",
+      "name": "Nepal",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NR",
+      "name": "Nauru",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NU",
+      "name": "Niue",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "NZ",
+      "name": "New Zealand",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "OM",
+      "name": "Oman",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PA",
+      "name": "Panama",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PE",
+      "name": "Peru",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PF",
+      "name": "French Polynesia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PG",
+      "name": "Papua New Guinea",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PH",
+      "name": "Philippines",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PK",
+      "name": "Pakistan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PL",
+      "name": "Poland",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PM",
+      "name": "St. Pierre & Miquelon",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PN",
+      "name": "Pitcairn Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PR",
+      "name": "Puerto Rico",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PS",
+      "name": "Palestine",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PT",
+      "name": "Portugal",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PW",
+      "name": "Palau",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "PY",
+      "name": "Paraguay",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "QA",
+      "name": "Qatar",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "RE",
+      "name": "Réunion",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "RO",
+      "name": "Romania",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "RS",
+      "name": "Serbia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "RU",
+      "name": "Russia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "RW",
+      "name": "Rwanda",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SA",
+      "name": "Saudi Arabia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SB",
+      "name": "Solomon Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SC",
+      "name": "Seychelles",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SD",
+      "name": "Sudan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SE",
+      "name": "Sweden",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SG",
+      "name": "Singapore",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SH",
+      "name": "St. Helena",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SI",
+      "name": "Slovenia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SJ",
+      "name": "Svalbard & Jan Mayen",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SK",
+      "name": "Slovakia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SL",
+      "name": "Sierra Leone",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SM",
+      "name": "San Marino",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SN",
+      "name": "Senegal",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SO",
+      "name": "Somalia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SR",
+      "name": "Suriname",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SS",
+      "name": "South Sudan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ST",
+      "name": "São Tomé & Príncipe",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SV",
+      "name": "El Salvador",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SX",
+      "name": "Sint Maarten",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SY",
+      "name": "Syria",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "SZ",
+      "name": "Eswatini",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TC",
+      "name": "Turks & Caicos Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TD",
+      "name": "Chad",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TF",
+      "name": "French Southern Territories",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TG",
+      "name": "Togo",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TH",
+      "name": "Thailand",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TJ",
+      "name": "Tajikistan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TK",
+      "name": "Tokelau",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TL",
+      "name": "Timor-Leste",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TM",
+      "name": "Turkmenistan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TN",
+      "name": "Tunisia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TO",
+      "name": "Tonga",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TR",
+      "name": "Türkiye",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TT",
+      "name": "Trinidad & Tobago",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TV",
+      "name": "Tuvalu",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TW",
+      "name": "Taiwan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "TZ",
+      "name": "Tanzania",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "UA",
+      "name": "Ukraine",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "UG",
+      "name": "Uganda",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "UM",
+      "name": "U.S. Outlying Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "US",
+      "name": "United States",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "UY",
+      "name": "Uruguay",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "UZ",
+      "name": "Uzbekistan",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VA",
+      "name": "Vatican City",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VC",
+      "name": "St. Vincent & Grenadines",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VE",
+      "name": "Venezuela",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VG",
+      "name": "British Virgin Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VI",
+      "name": "U.S. Virgin Islands",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VN",
+      "name": "Vietnam",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "VU",
+      "name": "Vanuatu",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "WF",
+      "name": "Wallis & Futuna",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "WS",
+      "name": "Samoa",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "YE",
+      "name": "Yemen",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "YT",
+      "name": "Mayotte",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ZA",
+      "name": "South Africa",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ZM",
+      "name": "Zambia",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "ZW",
+      "name": "Zimbabwe",
+      "standard": "iso-3166-1"
+    },
+    {
+      "code": "XK",
+      "name": "Kosovo",
+      "standard": "compatibility"
+    }
+  ]
+}

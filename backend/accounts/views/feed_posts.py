@@ -296,6 +296,13 @@ def _notify_shared_owner(post, actor) -> None:
         )
 
 
+def _parse_bool(value) -> bool:
+    """Tolerantné čítanie príznaku – JSON pošle bool, multipart reťazec."""
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
 def _create_feed_post(request) -> Response:
     post_type = str(request.data.get("post_type") or "").strip()
     if post_type not in FeedPost.PostType.values:
@@ -318,9 +325,19 @@ def _create_feed_post(request) -> Response:
             return _bad_request(
                 "Volny prispevok nemoze zdielat obsah.", "unexpected_shared_source"
             )
-        if not caption:
+        # Text ALEBO fotka – prázdny príspevok nie.
+        #
+        # Fotku v tomto okamihu overiť NEDÁ SA: príspevok musí existovať skôr,
+        # než sa naň dá naviazať (S3 kľúč obsahuje post_id), takže pri INSERTe
+        # je fotiek vždy nula. Klient preto posiela ZÁMER – hneď po vytvorení
+        # spustí upload. Nie je to nepriestrelné (klient môže klamať a fotku
+        # nikdy nepridať), je to vedomá dôvera v rámci existujúceho flow:
+        # vynútiť to inak by znamenalo obrátiť poradie vzniku príspevku a
+        # uploadu, čo je architektonická zmena mimo tohto rozsahu. Proti
+        # objemovému zneužitiu stojí ``api_rate_limit`` nad týmto endpointom.
+        if not caption and not _parse_bool(request.data.get("will_attach_photo")):
             return _bad_request(
-                "Volny prispevok musi mat text.", "caption_required"
+                "Volny prispevok musi mat text alebo fotku.", "caption_required"
             )
     elif post_type == FeedPost.PostType.SHARED_OFFER:
         if not offer_id:
@@ -427,16 +444,44 @@ def feed_posts_view(request):
     )
 
 
-@api_view(["GET"])
+@api_view(["GET", "DELETE"])
 @permission_classes([AllowAny])
 @api_rate_limit
 def feed_post_detail_view(request, post_id: int):
-    """Permalink na príspevok – rovnaké pravidlá viditeľnosti ako zoznam."""
+    """GET: permalink na príspevok. DELETE: zmazanie vlastného príspevku.
+
+    Viditeľnosť je pre obe metódy rovnaká ako v zozname. AllowAny s ručnou
+    kontrolou prihlásenia pri zapisovacej metóde je vzor už použitý pri
+    ``feed_post_comments_view`` – GET musí ostať verejný.
+
+    Mazať smie IBA autor, presne podľa ``can_manage`` v serializeri
+    (``viewer_id == author_id``); iný vzťah k príspevku právo nedáva.
+    Súvisiace záznamy (fotky, lajky, komentáre, tagy, nahlásenia) idú
+    CASCADE-om z Fázy 1; zdieľania cudzích autorov majú ``SET_NULL``, takže
+    prežijú ako „obsah už nie je dostupný" a nezmiznú spolu s originálom.
+    """
     post = visible_feed_posts(request.user).filter(pk=post_id).first()
     if post is None:
         return Response(
             {"error": "Prispevok nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
         )
+
+    if request.method == "DELETE":
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Prihlasenie je povinne."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        if post.author_id != request.user.id:
+            # Príspevok je viditeľný, existenciu netajíme → 403, rovnako ako
+            # pri zmazaní cudzieho komentára.
+            return Response(
+                {"error": "Na zmazanie prispevku nemas opravnenie."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        post.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     serializer = FeedPostSerializer(post, context=_serializer_context(request, [post]))
     return Response(serializer.data, status=status.HTTP_200_OK)
 

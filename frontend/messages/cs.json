@@ -746,6 +746,11 @@
     "message": "Správa",
     "ratings": "Hodnotenia",
     "countryTitle": "Země",
+    "countryPlaceholder": "Vyberte zemi",
+    "countrySearchPlaceholder": "Vyhledejte zemi",
+    "countryNoResults": "Nebyla nalezena žádná země.",
+    "districtUnavailableForCountry": "Pro tuto zemi zatím okresy nenabízíme. Můžete zadat město nebo obec.",
+    "inactiveDistrictError": "Uložený okres již není aktuální. Vyberte nový okres ze seznamu.",
     "offerCountries": {
       "SK": "Slovensko",
       "CZ": "Česko",
@@ -1125,6 +1130,10 @@
     "hungarian": "Maďarština"
   },
   "profile": {
+    "reportReasonInappropriate": "Nevhodné chování",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Falešný profil",
+    "reportReasonOther": "Jiné",
     "portfolioTab": "Portfolio",
     "postsTab": "Příspěvky",
     "taggedTab": "Označeno",
@@ -4299,6 +4308,10 @@
     "discard": "Zahodit"
   },
   "reviews": {
+    "reportReasonInappropriate": "Nevhodný obsah",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Falešná recenze",
+    "reportReasonOther": "Jiné",
     "addReview": "Pridať recenziu",
     "addOwnerResponse": "Pridať odpoveď majiteľa",
     "addedOn": "pridané",
@@ -4350,6 +4363,17 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "postDeleteHint": "Tuto akci už nelze vrátit zpět.",
+    "deletePost": "Smazat příspěvek",
+    "postDeleteConfirm": "Opravdu chceš smazat tento příspěvek?",
+    "postDeleted": "Příspěvek byl smazán.",
+    "postDeleteError": "Příspěvek se nepodařilo smazat.",
+    "tagRemoveAction": "Odstranit označení",
+    "tagRemoveConfirm": "Opravdu chceš odstranit své označení z tohoto příspěvku?",
+    "tagRemoveHint": "Příspěvek zůstane zveřejněný, zmizí jen tvoje označení.",
+    "tagRemoving": "Odstraňuji...",
+    "tagRemoved": "Označení bylo odstraněno.",
+    "tagRemoveError": "Označení se nepodařilo odstranit.",
     "newCommentsOne": "nový komentář",
     "newCommentsFew": "nové komentáře",
     "newCommentsMany": "nových komentářů",

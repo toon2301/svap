@@ -7,9 +7,13 @@ import plMessages from '../../messages/pl.json';
 import csMessages from '../../messages/cs.json';
 import deMessages from '../../messages/de.json';
 import huMessages from '../../messages/hu.json';
+import {
+  normalizeOfferCountryCode,
+  type OfferCountryCode,
+} from '@/shared/countryRegistry';
 
 type SupportedLocale = 'sk' | 'en' | 'pl' | 'cs' | 'de' | 'hu';
-type CountryCode = 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE' | null;
+type CountryCode = OfferCountryCode | null;
 type StoredCountryCode = Exclude<CountryCode, null>;
 type GeoDetectionCache = {
   country: StoredCountryCode | null;
@@ -27,12 +31,12 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
-export const GEO_DETECTION_CACHE_KEY = 'appGeoDetectionCacheV1';
+export const GEO_DETECTION_CACHE_KEY = 'appGeoDetectionCacheV2';
 export const GEO_DETECTION_SUCCESS_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 export const GEO_DETECTION_FAILURE_TTL_MS = 1000 * 60 * 60 * 6;
 
 export function isSupportedCountryCode(value: unknown): value is StoredCountryCode {
-  return value === 'SK' || value === 'CZ' || value === 'PL' || value === 'HU' || value === 'AT' || value === 'DE';
+  return Boolean(normalizeOfferCountryCode(value));
 }
 
 export function localeFromCountry(country: CountryCode): SupportedLocale | null {
@@ -88,13 +92,13 @@ export function isGeoDetectionCacheFresh(entry: GeoDetectionCache): boolean {
   return Date.now() - entry.detectedAt < ttlMs;
 }
 
-function getByPath(messages: Record<string, any>, key: string): unknown {
-  return key.split('.').reduce<unknown>((obj, segment) => {
-    if (obj && typeof obj === 'object' && segment in (obj as any)) {
-      return (obj as any)[segment];
-    }
-    return undefined;
-  }, messages);
+function getByPath(messages: Record<string, unknown>, key: string): unknown {
+  let current: unknown = messages;
+  for (const segment of key.split('.')) {
+    if (!current || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return current;
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
@@ -177,16 +181,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setCountry = useCallback((next: CountryCode) => {
-    setCountryState(next);
+    setCountryState(next ? normalizeOfferCountryCode(next) || null : null);
   }, []);
 
   const messages = useMemo(() => {
-    if (locale === 'en') return enMessages as unknown as Record<string, any>;
-    if (locale === 'pl') return plMessages as unknown as Record<string, any>;
-    if (locale === 'cs') return csMessages as unknown as Record<string, any>;
-    if (locale === 'de') return deMessages as unknown as Record<string, any>;
-    if (locale === 'hu') return huMessages as unknown as Record<string, any>;
-    return skMessages as unknown as Record<string, any>;
+    if (locale === 'en') return enMessages as unknown as Record<string, unknown>;
+    if (locale === 'pl') return plMessages as unknown as Record<string, unknown>;
+    if (locale === 'cs') return csMessages as unknown as Record<string, unknown>;
+    if (locale === 'de') return deMessages as unknown as Record<string, unknown>;
+    if (locale === 'hu') return huMessages as unknown as Record<string, unknown>;
+    return skMessages as unknown as Record<string, unknown>;
   }, [locale]);
 
   const t = useCallback(

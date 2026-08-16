@@ -8,10 +8,12 @@ from django.db import models
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
-from ..district_registry import (
+from ..country_registry import (
     SUPPORTED_OFFER_COUNTRIES,
-    get_offer_district_label,
     normalize_offer_country_code,
+)
+from ..district_registry import (
+    get_offer_district_label,
     resolve_offer_district_code,
 )
 

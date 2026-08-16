@@ -1,11 +1,15 @@
 'use client';
 
 /**
- * Potvrdenie zmazania komentára.
+ * Potvrdenie nezvratnej akcie vo feede (zmazanie komentára, odstránenie
+ * vlastného označenia).
  *
  * Vizuálne aj štruktúrne kópia `DeleteMessageConfirmModal` z messages (červený
  * varovný kruh, `role="alertdialog"`, Zrušiť/Vymazať) – nahrádza natívny
  * `window.confirm`, ktorý vyzeral cudzo oproti zvyšku appky.
+ *
+ * Texty aj testId majú predvolené hodnoty pre komentáre, aby volajúci, ktorý
+ * ich nepotrebuje meniť, ostal bez zmeny.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -14,19 +18,29 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeedDialog } from './useFeedDialog';
 
-type FeedCommentDeleteConfirmProps = {
+type FeedDestructiveConfirmProps = {
   open: boolean;
   isDeleting?: boolean;
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
+  title?: string;
+  hint?: string;
+  confirmLabel?: string;
+  busyLabel?: string;
+  testId?: string;
 };
 
-export default function FeedCommentDeleteConfirm({
+export default function FeedDestructiveConfirm({
   open,
   isDeleting = false,
   onClose,
   onConfirm,
-}: FeedCommentDeleteConfirmProps) {
+  title,
+  hint,
+  confirmLabel,
+  busyLabel,
+  testId = 'feed-comment-delete-confirm',
+}: FeedDestructiveConfirmProps) {
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
@@ -44,7 +58,7 @@ export default function FeedCommentDeleteConfirm({
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="feed-comment-delete-title"
-      data-testid="feed-comment-delete-confirm"
+      data-testid={testId}
       onClick={(event) => {
         if (event.target === event.currentTarget && !isDeleting) onClose();
       }}
@@ -65,10 +79,11 @@ export default function FeedCommentDeleteConfirm({
                 id="feed-comment-delete-title"
                 className="text-lg font-semibold text-gray-900 dark:text-white"
               >
-                {t('feed.commentDeleteConfirm', 'Naozaj chcete odstrániť tento komentár?')}
+                {title ??
+                  t('feed.commentDeleteConfirm', 'Naozaj chcete odstrániť tento komentár?')}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                {t('feed.commentDeleteHint', 'Túto akciu už nie je možné vrátiť späť.')}
+                {hint ?? t('feed.commentDeleteHint', 'Túto akciu už nie je možné vrátiť späť.')}
               </p>
             </div>
           </div>
@@ -86,16 +101,16 @@ export default function FeedCommentDeleteConfirm({
               type="button"
               onClick={() => void onConfirm()}
               disabled={isDeleting}
-              data-testid="feed-comment-delete-confirm-action"
+              data-testid={`${testId}-action`}
               className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isDeleting ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  {t('common.deleting', 'Vymazávam...')}
+                  {busyLabel ?? t('common.deleting', 'Vymazávam...')}
                 </>
               ) : (
-                t('messages.deleteAction', 'Vymazať')
+                (confirmLabel ?? t('messages.deleteAction', 'Vymazať'))
               )}
             </button>
           </div>

@@ -654,6 +654,11 @@
     "maxPhotosReached": "Sie haben die maximale Anzahl von 6 Fotos erreicht.",
     "district": "Bezirk",
     "countryTitle": "Land",
+    "countryPlaceholder": "Land auswählen",
+    "countrySearchPlaceholder": "Land suchen",
+    "countryNoResults": "Kein Land gefunden.",
+    "districtUnavailableForCountry": "Für dieses Land stehen derzeit keine Bezirke zur Auswahl. Du kannst eine Stadt oder Gemeinde eingeben.",
+    "inactiveDistrictError": "Der gespeicherte Bezirk ist nicht mehr aktuell. Wähle einen neuen Bezirk aus der Liste.",
     "offerCountries": {
       "SK": "Slowakei",
       "CZ": "Tschechien",
@@ -1125,6 +1130,10 @@
     "hungarian": "Ungarisch"
   },
   "profile": {
+    "reportReasonInappropriate": "Unangemessenes Verhalten",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Gefälschtes Profil",
+    "reportReasonOther": "Sonstiges",
     "portfolioTab": "Portfolio",
     "postsTab": "Beiträge",
     "taggedTab": "Markiert",
@@ -4299,6 +4308,10 @@
     "discard": "Verwerfen"
   },
   "reviews": {
+    "reportReasonInappropriate": "Unangemessener Inhalt",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Gefälschte Bewertung",
+    "reportReasonOther": "Sonstiges",
     "addReview": "Bewertung hinzufügen",
     "addOwnerResponse": "Antwort hinzufügen",
     "addedOn": "hinzugefügt",
@@ -4350,6 +4363,17 @@
     "viewOwnerResponse": "Antwort anzeigen"
   },
   "feed": {
+    "postDeleteHint": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deletePost": "Beitrag löschen",
+    "postDeleteConfirm": "Diesen Beitrag wirklich löschen?",
+    "postDeleted": "Der Beitrag wurde gelöscht.",
+    "postDeleteError": "Der Beitrag konnte nicht gelöscht werden.",
+    "tagRemoveAction": "Markierung entfernen",
+    "tagRemoveConfirm": "Möchtest du deine Markierung aus diesem Beitrag entfernen?",
+    "tagRemoveHint": "Der Beitrag bleibt veröffentlicht, nur deine Markierung verschwindet.",
+    "tagRemoving": "Wird entfernt...",
+    "tagRemoved": "Die Markierung wurde entfernt.",
+    "tagRemoveError": "Die Markierung konnte nicht entfernt werden.",
     "newCommentsOne": "neuer Kommentar",
     "newCommentsFew": "neue Kommentare",
     "newCommentsMany": "neue Kommentare",

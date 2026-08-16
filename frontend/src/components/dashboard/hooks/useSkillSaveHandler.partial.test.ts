@@ -47,6 +47,7 @@ const draft = {
   district_code: 'nitra',
   district: 'Nitra',
   location: 'Nitra',
+  is_seeking: false,
 } as unknown as DashboardSkill;
 
 function setup(overrides: Record<string, unknown> = {}) {
@@ -210,6 +211,44 @@ it('does not hand the created id to a different card opened meanwhile', async ()
   expect(harness.getDraft()).not.toHaveProperty('id', 77);
 });
 
+it('does not hand the created id to the same category in the opposite card type', async () => {
+  let releasePost: ((value: unknown) => void) | null = null;
+  mockedPost.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        releasePost = resolve;
+      }),
+  );
+
+  const harness = setupStateful();
+  const pending = harness.start();
+  const oppositeTypeDraft = {
+    ...draft,
+    is_seeking: true,
+  } as unknown as DashboardSkill;
+  harness.switchTo(oppositeTypeDraft);
+
+  await act(async () => {
+    releasePost?.({ data: { id: 77, category: 'IT', is_seeking: false } });
+    await pending;
+  });
+
+  expect(harness.getDraft()).toBe(oppositeTypeDraft);
+  expect(harness.getDraft()).not.toHaveProperty('id', 77);
+});
+
+it('stores the derived type on an untyped draft before creating it', async () => {
+  mockedPost.mockResolvedValue({
+    data: { id: 77, category: 'IT', subcategory: 'Web', is_seeking: true },
+  });
+
+  const harness = setupStateful({ activeModule: 'skills-search' });
+  await harness.save();
+
+  expect(harness.getDraft()).toMatchObject({ id: 77, is_seeking: true });
+  expect(mockedPost.mock.calls[0][1]).toMatchObject({ is_seeking: true });
+});
+
 it('keeps the draft usable when a follow-up step fails after creation', async () => {
   mockedPost.mockResolvedValue({ data: { id: 77, category: 'IT' } });
   const loadSkills = jest.fn().mockRejectedValue(new Error('sieť spadla'));
@@ -244,4 +283,19 @@ it('still reports a real failure when the POST itself fails', async () => {
   expect(setSelectedSkillsCategory).not.toHaveBeenCalled();
   expect(mockedToastError).toHaveBeenCalled();
   expect(mockedToastError.mock.calls[0][0]).not.toContain('je uložená');
+});
+
+it('shows the translated card-limit toast when the backend rejects a stale client count', async () => {
+  mockedPost.mockRejectedValue({
+    response: { data: { code: 'offer_limit_reached' } },
+  });
+
+  const { save } = setup();
+  await act(async () => {
+    await save();
+  });
+
+  expect(mockedToastError).toHaveBeenCalledWith(
+    'Môžeš mať maximálne 3 karty v tejto sekcii.',
+  );
 });

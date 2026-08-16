@@ -11,6 +11,7 @@ import {
 } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
+  deleteFeedPost: jest.fn(),
   FEED_COMMENT_MAX_LENGTH: 500,
   getFeedPost: jest.fn(),
   listFeedPostComments: jest.fn(),
@@ -192,4 +193,26 @@ describe('FeedPostDetailModule', () => {
 
     expect(await screen.findByTestId('feed-post-detail')).toBeInTheDocument();
   });
+});
+
+it('leaves the permalink for the feed after the author deletes the post', async () => {
+  const { deleteFeedPost } = jest.requireMock('@/lib/feedApi');
+  (deleteFeedPost as jest.Mock).mockResolvedValue(undefined);
+  mockedGetPost.mockResolvedValue({ ...post, can_manage: true });
+  const onNavigateToFeed = jest.fn();
+
+  render(<FeedPostDetailModule postId={9} onNavigateToFeed={onNavigateToFeed} />);
+  await screen.findByTestId('feed-post-menu-trigger');
+
+  await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+  await userEvent.click(screen.getByTestId('feed-post-delete'));
+  const dialog = await screen.findByTestId('feed-post-delete-confirm');
+  await userEvent.click(
+    within(dialog).getByTestId('feed-post-delete-confirm-action'),
+  );
+
+  // Zmazaný príspevok nemá permalink čo zobraziť – rovnaká cesta späť ako
+  // pri „obsah už nie je dostupný".
+  await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/home'));
+  expect(onNavigateToFeed).toHaveBeenCalled();
 });

@@ -25,6 +25,17 @@ export type FeedUserSummary = {
   avatar_url: string | null;
 };
 
+/**
+ * Označený používateľ na karte príspevku.
+ *
+ * `can_remove_tag` počíta backend (vzor `can_delete` pri komentároch) – FE
+ * neporovnáva id s prihláseným používateľom sám, takže to funguje aj pre
+ * anonymného diváka, kde je to všade false.
+ */
+export type FeedTaggedUser = FeedUserSummary & {
+  can_remove_tag?: boolean;
+};
+
 export type FeedPostImage = {
   id: number;
   /** Prítomné len pri APPROVED fotke – inak ju vidí iba autor ako stav. */
@@ -64,7 +75,7 @@ export type FeedPost = {
   images: FeedPostImage[];
   shared_content: FeedSharedContent | null;
   shared_content_unavailable: boolean;
-  tagged_users: FeedUserSummary[];
+  tagged_users: FeedTaggedUser[];
   likes_count: number;
   comments_count: number;
   is_liked_by_me: boolean;
@@ -277,11 +288,18 @@ export async function reportFeedPost(
 export async function createFeedPost(payload: {
   caption: string;
   taggedUserIds?: number[];
+  /**
+   * Zámer pripojiť fotku hneď po vytvorení. Backend bez neho odmietne
+   * príspevok bez textu ako prázdny – fotka v tom momente ešte neexistuje,
+   * lebo jej S3 kľúč potrebuje post_id.
+   */
+  willAttachPhoto?: boolean;
 }): Promise<FeedPost> {
   const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
     post_type: 'free_post',
     caption: payload.caption,
     tagged_user_ids: payload.taggedUserIds ?? [],
+    will_attach_photo: payload.willAttachPhoto ?? false,
   });
   return data;
 }
@@ -352,6 +370,21 @@ export async function getFeedPost(postId: number): Promise<FeedPost> {
   }
   const { data } = await api.get<FeedPost>(endpoints.feed.postDetail(postId));
   return data;
+}
+
+/** Zmaže vlastný príspevok. Právo overuje backend podľa `can_manage`. */
+export async function deleteFeedPost(postId: number): Promise<void> {
+  await api.delete(endpoints.feed.postDetail(postId));
+}
+
+/**
+ * Odstráni VLASTNÉ označenie prihláseného používateľa v príspevku.
+ *
+ * Príspevok ostáva – mizne len tag. Backend 204 nevracia telo, takže sa
+ * úspech pozná návratom bez chyby.
+ */
+export async function removeOwnFeedPostTag(postId: number): Promise<void> {
+  await api.delete(endpoints.feed.postSelfTag(postId));
 }
 
 export async function listUserFeedPosts(

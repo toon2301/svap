@@ -25,6 +25,11 @@ jest.mock('react-hot-toast', () => ({
   default: { error: jest.fn(), success: jest.fn() },
 }));
 
+const mockIsMobile = jest.fn(() => false);
+jest.mock('@/hooks', () => ({
+  useIsMobile: () => mockIsMobile(),
+}));
+
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
@@ -404,5 +409,51 @@ describe('FeedList', () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByRole('button', { name: 'Skúsiť znova' })).toBeInTheDocument();
+  });
+});
+
+describe('FeedList – composer na mobile vs. desktope', () => {
+  beforeEach(() => {
+    mockIsMobile.mockReturnValue(false);
+    mockedListFeedPosts.mockReset();
+    mockedListFeedPosts.mockResolvedValue({
+      results: [makePost()],
+      next: null,
+      previous: null,
+    });
+  });
+
+  it('opens the composer as a route on mobile instead of a modal', async () => {
+    mockIsMobile.mockReturnValue(true);
+    const onOpenComposerPage = jest.fn();
+    render(<FeedList onOpenComposerPage={onOpenComposerPage} />);
+    await screen.findByTestId('feed-list');
+
+    await userEvent.click(screen.getByTestId('feed-composer-trigger'));
+
+    expect(onOpenComposerPage).toHaveBeenCalled();
+    expect(screen.queryByTestId('feed-composer-modal')).not.toBeInTheDocument();
+  });
+
+  it('keeps the modal on desktop', async () => {
+    const onOpenComposerPage = jest.fn();
+    render(<FeedList onOpenComposerPage={onOpenComposerPage} />);
+    await screen.findByTestId('feed-list');
+
+    await userEvent.click(screen.getByTestId('feed-composer-trigger'));
+
+    expect(onOpenComposerPage).not.toHaveBeenCalled();
+    expect(await screen.findByTestId('feed-composer-modal')).toBeInTheDocument();
+  });
+
+  it('falls back to the modal on mobile where no route is available', async () => {
+    // Napr. permalink detailu – tam sa modul prepnúť nedá.
+    mockIsMobile.mockReturnValue(true);
+    render(<FeedList />);
+    await screen.findByTestId('feed-list');
+
+    await userEvent.click(screen.getByTestId('feed-composer-trigger'));
+
+    expect(await screen.findByTestId('feed-composer-modal')).toBeInTheDocument();
   });
 });

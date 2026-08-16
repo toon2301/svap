@@ -5,6 +5,7 @@ import type { User } from '../../types';
 import type { SearchUserResult } from './modules/search/types';
 import ProfileModule from './modules/ProfileModule';
 import HomeModule from './modules/HomeModule';
+import FeedPostCreateScreen from './modules/feed/FeedPostCreateScreen';
 import StatisticsModule from './modules/StatisticsModule';
 import NotificationsModule from './modules/NotificationsModule';
 import NotificationSettingsModule from './modules/NotificationSettingsModule';
@@ -237,8 +238,14 @@ export default function ModuleRouter({
           ownerIdentifier={portfolioCreateOwnerIdentifier ?? null}
         />
       );
+    case 'feed-post-create':
+      // Mobilná celoobrazovková obrazovka composera (vzor portfolio-create).
+      // Desktop composer ostáva modalom vnútri FeedList.
+      return <FeedPostCreateScreen onClose={() => setActiveModule('home')} />;
     case 'home':
-      return <HomeModule />;
+      return (
+        <HomeModule onOpenComposerPage={() => setActiveModule('feed-post-create')} />
+      );
     case 'feed-post-detail':
       return (
         <FeedPostDetailModule

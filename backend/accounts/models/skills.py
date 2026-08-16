@@ -92,8 +92,8 @@ class OfferedSkill(models.Model):
         # Jeden používateľ môže mať maximálne 3 zručnosti
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "category", "subcategory"],
-                name="unique_user_skill_category",
+                fields=["user", "category", "subcategory", "is_seeking"],
+                name="unique_user_skill_category_type",
             )
         ]
         indexes = [
@@ -226,4 +226,3 @@ class OfferedSkillImage(models.Model):
 
     def __str__(self):
         return f"Obrázok #{self.id} pre {self.skill}"
-

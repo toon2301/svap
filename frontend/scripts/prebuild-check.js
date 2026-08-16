@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-require('./sync-district-registry');
+require('./sync-offer-registries');
 
 // Files that must exist in the repo for CI builds
 const requiredFiles = [
   path.join(__dirname, '..', 'src', 'lib', 'api.ts'),
+  path.join(__dirname, '..', 'src', 'shared', 'countryRegistry.json'),
   path.join(__dirname, '..', 'src', 'shared', 'districtRegistry.json'),
 ];
 

@@ -122,7 +122,7 @@ def test_database_slot_constraints_enforce_maximum_and_unique_position():
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"country_code": "US"},
+        {"country_code": "ZZ"},
         {"price_min": Decimal("-1.00")},
         {"price_max": Decimal("-1.00")},
         {"price_min": Decimal("101.00"), "price_max": Decimal("100.00")},
@@ -162,8 +162,12 @@ def test_duplicate_filters_are_rejected_even_when_optional_prices_are_null():
 @pytest.mark.parametrize(
     ("overrides", "error_field"),
     [
-        ({"country_code": "US"}, "country_code"),
+        ({"country_code": "ZZ"}, "country_code"),
         ({"country_code": "CZ", "district_code": "nitra"}, "district_code"),
+        (
+            {"country_code": "CZ", "district_code": "valasske-mezirici"},
+            "district_code",
+        ),
         ({"price_min": Decimal("-1.00")}, "price_min"),
         (
             {"price_min": Decimal("101.00"), "price_max": Decimal("100.00")},
@@ -179,6 +183,21 @@ def test_offer_watch_validates_country_district_and_price_range(overrides, error
         watch.full_clean()
 
     assert error_field in error.value.message_dict
+
+
+@pytest.mark.django_db
+def test_offer_watch_accepts_country_without_curated_districts():
+    user = create_user("universal-country")
+    watch = OfferWatch(
+        user=user,
+        slot=1,
+        **watch_fields(country_code=" us ", district_code=""),
+    )
+
+    watch.full_clean()
+    watch.save()
+
+    assert watch.country_code == "US"
 
 
 @pytest.mark.django_db

@@ -69,6 +69,7 @@ from .feed_interactions import (
     feed_post_comments_view,
     feed_post_like_view,
     feed_post_report_view,
+    feed_post_self_tag_view,
 )
 from .feed_posts import (
     feed_post_detail_view,
@@ -176,4 +177,5 @@ __all__ = [
     "feed_post_comment_delete_view",
     "feed_post_comment_like_view",
     "feed_post_report_view",
+    "feed_post_self_tag_view",
 ]

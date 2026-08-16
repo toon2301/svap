@@ -185,7 +185,7 @@ describe('LocationSection', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Krajina ponuky' }));
-    fireEvent.click(screen.getByRole('option', { name: 'Česko' }));
+    fireEvent.click(screen.getByRole('option', { name: /Česko/ }));
 
     expect(onCountryCodeChange).toHaveBeenCalledWith('CZ');
     expect(onDistrictChange).toHaveBeenLastCalledWith('');
@@ -205,6 +205,68 @@ describe('LocationSection', () => {
       districtCode: 'brno-mesto',
       districtLabel: 'Brno-město',
     });
+  });
+
+  it('keeps optional locality available when a country has no curated districts', () => {
+    render(
+      <LocationSection
+        value=""
+        onChange={jest.fn()}
+        onBlur={jest.fn()}
+        error=""
+        isSaving={false}
+        district=""
+        countryCode="IT"
+        districtCode=""
+        onCountryCodeChange={jest.fn()}
+        onDistrictChange={jest.fn()}
+        onDistrictCodeChange={jest.fn()}
+        showCountrySelector
+        isSeeking={false}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        'Pre túto krajinu zatiaľ okresy nevyberáme. Môžeš zadať mesto alebo obec.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByPlaceholderText('Zadaj okres')).not.toBeVisible();
+    expect(
+      screen.getByPlaceholderText('Zadaj, kde ponúkaš svoje služby'),
+    ).toBeVisible();
+  });
+
+  it('shows a clear warning for an existing inactive district', () => {
+    render(
+      <LocationSection
+        value=""
+        onChange={jest.fn()}
+        onBlur={jest.fn()}
+        error=""
+        isSaving={false}
+        district="Valašské Meziříčí"
+        countryCode="CZ"
+        districtCode="valasske-mezirici"
+        onCountryCodeChange={jest.fn()}
+        onDistrictChange={jest.fn()}
+        onDistrictCodeChange={jest.fn()}
+        showCountrySelector
+        isSeeking={false}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        'Uložený okres už nie je aktuálny. Vyber nový okres zo zoznamu.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByPlaceholderText('Zadaj okres')).toHaveValue(
+      'Valašské Meziříčí',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Valašské Meziříčí' }),
+    ).not.toBeInTheDocument();
   });
 });
 

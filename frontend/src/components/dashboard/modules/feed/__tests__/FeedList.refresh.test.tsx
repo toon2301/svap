@@ -224,15 +224,19 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
     );
   });
 
-  it('says so when the refresh finds nothing new', async () => {
+  it('stays silent when the refresh finds nothing new', async () => {
     render(<FeedList />);
     await screen.findByTestId('feed-list');
+    mockedToastSuccess.mockClear();
 
     await userEvent.click(screen.getByTestId('feed-check-new'));
 
+    // Loading stav potichu skončí – potvrdzovať „nič sa nestalo" je len šum.
     await waitFor(() =>
-      expect(mockedToastSuccess).toHaveBeenCalledWith('Žiadne nové príspevky.'),
+      expect(screen.getByTestId('feed-check-new')).not.toBeDisabled(),
     );
+    expect(mockedToastSuccess).not.toHaveBeenCalled();
+    expect(mockedToastError).not.toHaveBeenCalled();
   });
 
   it('reports a failed refresh', async () => {

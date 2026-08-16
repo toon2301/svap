@@ -2,39 +2,67 @@
 
 // Bundled copy; canonical source: backend/accounts/data/district_registry.json
 import districtRegistryJson from './districtRegistry.json';
+import {
+  normalizeOfferCountryCode,
+  type OfferCountryCode,
+} from './countryRegistry';
 
-export type OfferCountryCode = 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE';
+export { getSupportedOfferCountries, normalizeOfferCountryCode } from './countryRegistry';
+export type { OfferCountryCode } from './countryRegistry';
 
 export type DistrictOption = {
   code: string;
   label: string;
+  officialCode: string;
+  active: boolean;
+  aliases: string[];
 };
 
-const SUPPORTED_COUNTRIES: OfferCountryCode[] = ['SK', 'CZ', 'PL', 'HU', 'AT', 'DE'];
+type RawDistrictOption = {
+  code?: unknown;
+  label?: unknown;
+  official_code?: unknown;
+  active?: unknown;
+  aliases?: unknown;
+};
 
-const districtRegistry = districtRegistryJson as Record<OfferCountryCode, DistrictOption[]>;
+const districtRegistry = Object.fromEntries(
+  Object.entries(districtRegistryJson as Record<string, unknown>)
+    .filter(([countryCode, entries]) => Boolean(normalizeOfferCountryCode(countryCode)) && Array.isArray(entries))
+    .map(([countryCode, entries]) => [
+      countryCode,
+      (entries as RawDistrictOption[])
+        .map<DistrictOption>((entry) => ({
+          code: String(entry.code || '').trim().toLowerCase(),
+          label: String(entry.label || '').trim(),
+          officialCode: String(entry.official_code || '').trim(),
+          active: entry.active !== false,
+          aliases: Array.isArray(entry.aliases)
+            ? entry.aliases.map((alias) => String(alias || '').trim()).filter(Boolean)
+            : [],
+        }))
+        .filter((entry) => Boolean(entry.code && entry.label)),
+    ]),
+) as Record<string, DistrictOption[]>;
+const DISTRICT_COUNTRIES = Object.keys(districtRegistry)
+  .map(normalizeOfferCountryCode)
+  .filter((code): code is OfferCountryCode => Boolean(code));
 
-export function normalizeOfferCountryCode(value: unknown): OfferCountryCode | '' {
-  const raw = String(value || '').trim().toUpperCase();
-  return SUPPORTED_COUNTRIES.includes(raw as OfferCountryCode)
-    ? (raw as OfferCountryCode)
-    : '';
-}
-
-export function getSupportedOfferCountries(): OfferCountryCode[] {
-  return [...SUPPORTED_COUNTRIES];
-}
-
-export function getDistrictOptions(countryCode: unknown): DistrictOption[] {
+export function getDistrictOptions(
+  countryCode: unknown,
+  options: { includeInactive?: boolean } = {},
+): DistrictOption[] {
   const normalized = normalizeOfferCountryCode(countryCode);
   if (!normalized) {
     return [];
   }
-  return districtRegistry[normalized] ?? [];
+  const entries = districtRegistry[normalized] ?? [];
+  return options.includeInactive ? entries : entries.filter((entry) => entry.active);
 }
 
 export function removeDistrictDiacritics(value: string): string {
   return value
+    .replace(/[Łł]/g, 'l')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -44,13 +72,14 @@ export function removeDistrictDiacritics(value: string): string {
 export function findDistrictByCode(
   countryCode: unknown,
   districtCode: unknown,
+  options: { includeInactive?: boolean } = {},
 ): DistrictOption | null {
   const normalizedCode = String(districtCode || '').trim().toLowerCase();
   if (!normalizedCode) {
     return null;
   }
   return (
-    getDistrictOptions(countryCode).find((option) => option.code === normalizedCode) ??
+    getDistrictOptions(countryCode, options).find((option) => option.code === normalizedCode) ??
     null
   );
 }
@@ -58,14 +87,19 @@ export function findDistrictByCode(
 export function findDistrictByLabel(
   countryCode: unknown,
   districtLabel: unknown,
+  options: { includeInactive?: boolean } = {},
 ): DistrictOption | null {
   const normalizedLabel = removeDistrictDiacritics(String(districtLabel || ''));
   if (!normalizedLabel) {
     return null;
   }
   return (
-    getDistrictOptions(countryCode).find(
-      (option) => removeDistrictDiacritics(option.label) === normalizedLabel,
+    getDistrictOptions(countryCode, options).find(
+      (option) =>
+        removeDistrictDiacritics(option.label) === normalizedLabel ||
+        option.aliases.some(
+          (alias) => removeDistrictDiacritics(alias) === normalizedLabel,
+        ),
     ) ?? null
   );
 }
@@ -74,7 +108,15 @@ export function getOfferDistrictLabel(
   countryCode: unknown,
   districtCode: unknown,
 ): string {
-  return findDistrictByCode(countryCode, districtCode)?.label ?? '';
+  return findDistrictByCode(countryCode, districtCode, { includeInactive: true })?.label ?? '';
+}
+
+export function isInactiveOfferDistrictCode(
+  countryCode: unknown,
+  districtCode: unknown,
+): boolean {
+  const entry = findDistrictByCode(countryCode, districtCode, { includeInactive: true });
+  return Boolean(entry && !entry.active);
 }
 
 export function getDefaultOfferCountryCode(countryCode: unknown): OfferCountryCode {
@@ -112,8 +154,10 @@ function inferCountryFromDistrictCode(districtCode: unknown): OfferCountryCode |
     return '';
   }
 
-  const matches = SUPPORTED_COUNTRIES.filter((countryCode) =>
-    getDistrictOptions(countryCode).some((option) => option.code === normalizedCode),
+  const matches = DISTRICT_COUNTRIES.filter((countryCode) =>
+    getDistrictOptions(countryCode, { includeInactive: true }).some(
+      (option) => option.code === normalizedCode,
+    ),
   );
 
   return matches.length === 1 ? matches[0] : '';
@@ -125,9 +169,13 @@ function inferCountryFromDistrictLabel(districtLabel: unknown): OfferCountryCode
     return '';
   }
 
-  const matches = SUPPORTED_COUNTRIES.filter((countryCode) =>
-    getDistrictOptions(countryCode).some(
-      (option) => removeDistrictDiacritics(option.label) === normalizedLabel,
+  const matches = DISTRICT_COUNTRIES.filter((countryCode) =>
+    getDistrictOptions(countryCode, { includeInactive: true }).some(
+      (option) =>
+        removeDistrictDiacritics(option.label) === normalizedLabel ||
+        option.aliases.some(
+          (alias) => removeDistrictDiacritics(alias) === normalizedLabel,
+        ),
     ),
   );
 
@@ -154,7 +202,9 @@ export function resolveInitialOfferDistrictSelection(params: {
   const districtCode = String(params.districtCode || '').trim().toLowerCase();
   const districtLabel = String(params.districtLabel || '').trim();
 
-  const byCode = findDistrictByCode(inferredCountryCode, districtCode);
+  const byCode = findDistrictByCode(inferredCountryCode, districtCode, {
+    includeInactive: true,
+  });
   if (byCode) {
     return {
       countryCode: inferredCountryCode,
@@ -163,7 +213,9 @@ export function resolveInitialOfferDistrictSelection(params: {
     };
   }
 
-  const byLabel = findDistrictByLabel(inferredCountryCode, districtLabel);
+  const byLabel = findDistrictByLabel(inferredCountryCode, districtLabel, {
+    includeInactive: true,
+  });
   if (byLabel) {
     return {
       countryCode: inferredCountryCode,

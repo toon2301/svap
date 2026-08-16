@@ -18,33 +18,47 @@ describe('CountrySelect', () => {
     requestAnimationFrameSpy.mockRestore();
   });
 
-  it('moves focus to the listbox when opened from the trigger', async () => {
+  it('moves focus to the searchable combobox when opened from the trigger', async () => {
     render(<CountrySelect value="SK" onChange={jest.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: /krajina/i }));
 
-    const listbox = await screen.findByRole('listbox');
+    const combobox = await screen.findByRole('combobox');
     await waitFor(() => {
-      expect(listbox).toHaveFocus();
+      expect(combobox).toHaveFocus();
     });
   });
 
-  it('supports keyboard navigation and selection from the listbox', async () => {
+  it('filters and selects any registered country with the keyboard', async () => {
     const onChange = jest.fn();
     render(<CountrySelect value="SK" onChange={onChange} />);
 
     fireEvent.keyDown(screen.getByRole('button', { name: /krajina/i }), {
       key: 'ArrowDown',
     });
-    const listbox = await screen.findByRole('listbox');
+    const combobox = await screen.findByRole('combobox');
     await waitFor(() => {
-      expect(listbox).toHaveFocus();
+      expect(combobox).toHaveFocus();
     });
 
-    fireEvent.keyDown(listbox, { key: 'ArrowDown' });
-    fireEvent.keyDown(listbox, { key: 'Enter' });
+    fireEvent.change(combobox, { target: { value: 'IT' } });
+    fireEvent.keyDown(combobox, { key: 'Enter' });
 
-    expect(onChange).toHaveBeenCalledWith('CZ');
+    expect(onChange).toHaveBeenCalledWith('IT');
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('closes with Escape and restores focus to the trigger', async () => {
+    render(<CountrySelect value="US" onChange={jest.fn()} />);
+    const trigger = screen.getByRole('button', { name: /krajina/i });
+
+    fireEvent.click(trigger);
+    const combobox = await screen.findByRole('combobox');
+    fireEvent.keyDown(combobox, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
   });
 });

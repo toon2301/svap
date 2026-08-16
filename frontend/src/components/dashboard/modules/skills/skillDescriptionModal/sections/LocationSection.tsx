@@ -8,6 +8,7 @@ import {
   findDistrictByLabel,
   getDefaultOfferCountryCode,
   getDistrictOptions,
+  isInactiveOfferDistrictCode,
   removeDistrictDiacritics,
   type OfferCountryCode,
 } from '@/shared/districtRegistry';
@@ -73,11 +74,23 @@ export default function LocationSection({
     () => districtOptions.map((option) => option.label),
     [districtOptions],
   );
+  const hasDistrictOptions = districtOptions.length > 0;
+  const inactiveDistrictError = isInactiveOfferDistrictCode(
+    activeCountryCode,
+    districtCode,
+  )
+    ? t(
+        'skills.inactiveDistrictError',
+        'Uložený okres už nie je aktuálny. Vyber nový okres zo zoznamu.',
+      )
+    : '';
 
   useEffect(() => {
     const canonicalLabel =
       (district || '').trim() ||
-      findDistrictByCode(activeCountryCode, districtCode)?.label ||
+      findDistrictByCode(activeCountryCode, districtCode, {
+        includeInactive: true,
+      })?.label ||
       '';
     setDistrictInput(canonicalLabel);
   }, [activeCountryCode, district, districtCode]);
@@ -260,7 +273,10 @@ export default function LocationSection({
         )}
 
         <div className="flex flex-col lg:flex-row gap-3">
-          <div className="flex-1 relative">
+          <div
+            hidden={!hasDistrictOptions}
+            className={`flex-1 relative ${hasDistrictOptions ? '' : 'hidden'}`}
+          >
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               {t('skills.districtTitle', 'Okres (voliteľné)')}
             </label>
@@ -336,7 +352,19 @@ export default function LocationSection({
               )}
           </div>
 
-          {!isSeeking && districtInput.trim() !== '' && (
+          {isOfferDistrictFlow && !hasDistrictOptions && (
+            <div className="flex-1 flex items-end">
+              <p className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                {t(
+                  'skills.districtUnavailableForCountry',
+                  'Pre túto krajinu zatiaľ okresy nevyberáme. Môžeš zadať mesto alebo obec.',
+                )}
+              </p>
+            </div>
+          )}
+
+          {!isSeeking &&
+            (districtInput.trim() !== '' || (isOfferDistrictFlow && !hasDistrictOptions)) && (
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('skills.locationTitle', 'Mesto/obec (voliteľné)')}
@@ -375,9 +403,9 @@ export default function LocationSection({
           {t('skills.locationSaving', 'Ukladám miesto...')}
         </p>
       )}
-      {(districtError || error) && (
+      {(districtError || inactiveDistrictError || error) && (
         <div className="mt-2 error-alert-modern text-xs py-2 px-3">
-          {districtError || error}
+          {districtError || inactiveDistrictError || error}
         </div>
       )}
     </div>

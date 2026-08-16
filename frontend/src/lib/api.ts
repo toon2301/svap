@@ -821,6 +821,7 @@ export const endpoints = {
     postCommentDetail: (postId: number, commentId: number) =>
       `/auth/feed/posts/${postId}/comments/${commentId}/`,
     postReport: (id: number) => `/auth/feed/posts/${id}/report/`,
+    postSelfTag: (id: number) => `/auth/feed/posts/${id}/tags/me/`,
     userPosts: (userId: number) => `/auth/feed/users/${userId}/posts/`,
     userTaggedPosts: (userId: number) => `/auth/feed/users/${userId}/tagged/`,
     postImagesUploadInit: (postId: number) =>

@@ -282,11 +282,21 @@ class FeedPostSerializer(serializers.ModelSerializer):
 
     def get_tagged_users(self, obj):
         # tags sú prefetchnuté so select_related("tagged_user") – žiadne N+1.
-        return FeedUserSummarySerializer(
+        payload = FeedUserSummarySerializer(
             [tag.tagged_user for tag in obj.tags.all()],
             many=True,
             context=self.context,
         ).data
+        # Kto smie označenie odstrániť, rozhoduje BACKEND – rovnaký vzor ako
+        # `can_delete` pri komentároch. FE tak nemusí porovnávať id s
+        # prihláseným používateľom sám a anonymný divák dostane všade False
+        # bez ďalšej logiky.
+        viewer_id = self._viewer_id()
+        for entry in payload:
+            entry["can_remove_tag"] = (
+                viewer_id is not None and entry.get("id") == viewer_id
+            )
+        return payload
 
     def get_likes_count(self, obj):
         annotated = getattr(obj, "_likes_count", None)

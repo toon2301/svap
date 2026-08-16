@@ -270,6 +270,7 @@ export default function DashboardLayout({
         activeModule !== 'skills-describe' &&
         activeModule !== 'user-profile' &&
         activeModule !== 'portfolio-create' &&
+        activeModule !== 'feed-post-create' &&
         activeModule !== 'statistics' &&
         !(activeModule === 'messages' && isMobileMessageConversationOpen) &&
         !isMobileOfferDetailOpen && (

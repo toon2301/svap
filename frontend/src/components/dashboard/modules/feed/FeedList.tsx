@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import FeedCardSkeleton from './FeedCardSkeleton';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComposerModal from './FeedPostComposerModal';
@@ -133,7 +134,16 @@ function PullIndicator({
   );
 }
 
-export default function FeedList() {
+type FeedListProps = {
+  /**
+   * Na mobile sa composer otvára ako samostatná routa (vzor portfolio-create),
+   * nie ako panel. Bez tohto callbacku ostáva všade modal – tak sa správa
+   * napr. permalink detailu, kde routa k dispozícii nie je.
+   */
+  onOpenComposerPage?: () => void;
+};
+
+export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   const { t } = useLanguage();
   const {
     posts,
@@ -145,9 +155,19 @@ export default function FeedList() {
     prependPosts,
     refreshLatest,
     reload,
+    removePost,
     isEmpty,
   } = useFeedInfiniteScroll();
   const [composerOpen, setComposerOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const openComposer = () => {
+    if (isMobile && onOpenComposerPage) {
+      onOpenComposerPage();
+      return;
+    }
+    setComposerOpen(true);
+  };
   const [checking, setChecking] = useState(false);
 
   // Zdieľanie z profilu (ponuka/portfólio) beží mimo tohto stromu, takže
@@ -168,10 +188,9 @@ export default function FeedList() {
   /** Jediná cesta k obnove – volá ju gesto na mobile aj tlačidlo na desktope. */
   const runRefresh = useCallback(async () => {
     try {
-      const added = await refreshLatest();
-      if (added === 0) {
-        toast.success(t('feed.noNewPosts', 'Žiadne nové príspevky.'));
-      }
+      // Úspešná kontrola bez nových príspevkov končí ticho – potvrdzovať
+      // „nič sa nestalo" je šum. Toast ostáva len pre skutočné zlyhanie.
+      await refreshLatest();
     } catch {
       toast.error(t('feed.refreshError', 'Obnovenie sa nepodarilo.'));
     }
@@ -218,7 +237,7 @@ export default function FeedList() {
     }
 
     if (isEmpty) {
-      return <FeedEmptyState onCreate={() => setComposerOpen(true)} />;
+      return <FeedEmptyState onCreate={openComposer} />;
     }
 
     return (
@@ -241,6 +260,7 @@ export default function FeedList() {
             <FeedPostCard
               post={post}
               onShared={(created) => prependPosts([created])}
+              onDeleted={removePost}
             />
           </motion.div>
         ))}
@@ -285,7 +305,7 @@ export default function FeedList() {
       {/* Spúšťač composera – vyzerá ako pole, je to tlačidlo (otvára dialóg). */}
       <button
         type="button"
-        onClick={() => setComposerOpen(true)}
+        onClick={openComposer}
         data-testid="feed-composer-trigger"
         className="mb-4 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left text-sm text-gray-500 transition-colors hover:border-purple-300 hover:text-purple-700 dark:border-gray-700 dark:bg-[#202223] dark:text-gray-400 dark:hover:border-purple-700 dark:hover:text-purple-300"
       >
