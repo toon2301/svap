@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import toast from 'react-hot-toast';
 import FeedPostDetailModule from '../FeedPostDetailModule';
 import {
   createFeedPostComment,
@@ -406,4 +407,80 @@ it('does not keep re-scrolling to the comment on every later poll', async () => 
 
   expect(scrollIntoView).toHaveBeenCalledTimes(1);
   jest.useRealTimers();
+});
+
+it('stops seeking and stays quiet when a page request fails', async () => {
+  // Test je mimo describe s beforeEach – históriu volaní treba vyčistiť sám,
+  // inak by do počtu rátal aj requesty predošlých testov.
+  jest.clearAllMocks();
+  const scrollIntoView = jest.fn();
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    value: scrollIntoView,
+    configurable: true,
+    writable: true,
+  });
+  mockSearchParams.get.mockImplementation((key: string) =>
+    key === 'comment' ? '99' : null,
+  );
+  mockedGetPost.mockResolvedValue(post);
+  mockedListComments
+    .mockResolvedValueOnce({
+      results: [comment(1, 'Prvý')],
+      next: 'http://api.test/next',
+      previous: null,
+      count: 50,
+    })
+    // Donačítanie pri hľadaní spadne (výpadok siete).
+    .mockRejectedValue(new Error('offline'));
+
+  render(<FeedPostDetailModule postId={9} />);
+  await screen.findByText('Prvý');
+
+  // Presne JEDEN pokus o donačítanie – zlyhanie sa neopakuje dokola.
+  await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(2));
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  expect(mockedListComments).toHaveBeenCalledTimes(2);
+
+  // Hľadanie na pozadí si používateľ nevyžiadal – žiadny chybový toast.
+  expect(toast.error).not.toHaveBeenCalled();
+  expect(scrollIntoView).not.toHaveBeenCalled();
+  expect(screen.getByText('Prvý')).toBeInTheDocument();
+});
+
+it('drops the old highlight the moment the target is cleared', async () => {
+  jest.clearAllMocks();
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    value: jest.fn(),
+    configurable: true,
+    writable: true,
+  });
+  mockSearchParams.get.mockImplementation((key: string) =>
+    key === 'comment' ? '42' : null,
+  );
+  mockedGetPost.mockResolvedValue(post);
+  mockedListComments.mockResolvedValue({
+    results: [comment(41, 'Starší'), comment(42, 'Ten z notifikácie')],
+    next: null,
+    previous: null,
+    count: 2,
+  });
+
+  const { rerender } = render(<FeedPostDetailModule postId={9} />);
+  await waitFor(() =>
+    expect(document.querySelector('[data-comment-id="42"]')?.className).toContain(
+      'bg-purple-100/80',
+    ),
+  );
+
+  // Cieľ zmizol (napr. návrat na permalink bez ?comment). Staré zvýraznenie
+  // musí zhasnúť HNEĎ – nový cieľ ho tu nemá čím prepísať, takže sa spolieha
+  // výhradne na vyčistenie na začiatku efektu.
+  mockSearchParams.get.mockReturnValue(null);
+  rerender(<FeedPostDetailModule postId={9} />);
+
+  await waitFor(() =>
+    expect(
+      document.querySelector('[data-comment-id="42"]')?.className,
+    ).not.toContain('bg-purple-100/80'),
+  );
 });
