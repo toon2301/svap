@@ -147,7 +147,7 @@ describe('FeedPostDetailModule', () => {
 
     const { rerender } = render(<FeedPostDetailModule postId={5} />);
     await screen.findByTestId('feed-post-detail');
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('7');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('7');
 
     mockedGetPost.mockResolvedValueOnce({
       ...post,
@@ -483,4 +483,124 @@ it('drops the old highlight the moment the target is cleared', async () => {
       document.querySelector('[data-comment-id="42"]')?.className,
     ).not.toContain('bg-purple-100/80'),
   );
+});
+
+describe('FeedPostDetailModule – druhá a ďalšia notifikácia', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: jest.fn(),
+      configurable: true,
+      writable: true,
+    });
+    mockedGetPost.mockResolvedValue(post);
+  });
+
+  function targetComment(id: number | null) {
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' && id !== null ? String(id) : null,
+    );
+  }
+
+  function isHighlighted(id: number) {
+    return Boolean(
+      document
+        .querySelector(`[data-comment-id="${id}"]`)
+        ?.className.includes('bg-purple-100/80'),
+    );
+  }
+
+  it('handles a second notification for a comment created after the first', async () => {
+    // Jadro nálezu: po prvom hľadaní je vlákno dočítané (`hasMore` false),
+    // takže novší komentár leží ZA koncom okna a bez opätovného dotazu na
+    // server by sa hľadanie vzdalo bez jediného requestu.
+    mockedListComments.mockResolvedValue({
+      results: [comment(41, 'Prvý'), comment(42, 'Druhý')],
+      next: null,
+      previous: null,
+      count: 2,
+    });
+    targetComment(41);
+
+    const { rerender } = render(<FeedPostDetailModule postId={9} />);
+    await waitFor(() => expect(isHighlighted(41)).toBe(true));
+
+    // Medzitým pribudol komentár 43 a prišla naň druhá notifikácia.
+    mockedListComments.mockResolvedValue({
+      results: [comment(41, 'Prvý'), comment(42, 'Druhý'), comment(43, 'Tretí')],
+      next: null,
+      previous: null,
+      count: 3,
+    });
+    targetComment(43);
+    rerender(<FeedPostDetailModule postId={9} />);
+
+    expect(await screen.findByText('Tretí')).toBeInTheDocument();
+    await waitFor(() => expect(isHighlighted(43)).toBe(true));
+    expect(isHighlighted(41)).toBe(false);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(2);
+  });
+
+  it('handles a second notification for a comment already in the window', async () => {
+    mockedListComments.mockResolvedValue({
+      results: [comment(41, 'Prvý'), comment(42, 'Druhý')],
+      next: null,
+      previous: null,
+      count: 2,
+    });
+    targetComment(41);
+
+    const { rerender } = render(<FeedPostDetailModule postId={9} />);
+    await waitFor(() => expect(isHighlighted(41)).toBe(true));
+
+    targetComment(42);
+    rerender(<FeedPostDetailModule postId={9} />);
+
+    await waitFor(() => expect(isHighlighted(42)).toBe(true));
+    expect(isHighlighted(41)).toBe(false);
+  });
+
+  it('handles a second notification pointing at a different post', async () => {
+    mockedListComments.mockResolvedValueOnce({
+      results: [comment(41, 'Z prvého príspevku')],
+      next: null,
+      previous: null,
+      count: 1,
+    });
+    targetComment(41);
+
+    const { rerender } = render(<FeedPostDetailModule postId={9} />);
+    await waitFor(() => expect(isHighlighted(41)).toBe(true));
+
+    mockedGetPost.mockResolvedValue({ ...post, id: 10 });
+    mockedListComments.mockResolvedValue({
+      results: [comment(70, 'Z druhého príspevku')],
+      next: null,
+      previous: null,
+      count: 1,
+    });
+    targetComment(70);
+    rerender(<FeedPostDetailModule postId={10} />);
+
+    expect(await screen.findByText('Z druhého príspevku')).toBeInTheDocument();
+    await waitFor(() => expect(isHighlighted(70)).toBe(true));
+  });
+
+  it('asks the server only once when the comment never turns up', async () => {
+    mockedListComments.mockResolvedValue({
+      results: [comment(41, 'Prvý')],
+      next: null,
+      previous: null,
+      count: 1,
+    });
+    targetComment(999);
+
+    render(<FeedPostDetailModule postId={9} />);
+    await screen.findByText('Prvý');
+
+    // Jedno počiatočné načítanie + jedno overenie, či vlákno nenarástlo.
+    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockedListComments).toHaveBeenCalledTimes(2);
+  });
 });

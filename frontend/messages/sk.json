@@ -4363,6 +4363,9 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "likersTitle": "Páči sa im to",
+    "likersEmpty": "Zatiaľ nikto.",
+    "likersLoadError": "Zoznam sa nepodarilo načítať.",
     "originalPost": "Pôvodný príspevok",
     "postDeleteHint": "Túto akciu už nie je možné vrátiť späť.",
     "deletePost": "Zmazať príspevok",

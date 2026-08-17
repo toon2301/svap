@@ -372,6 +372,47 @@ export async function getFeedPost(postId: number): Promise<FeedPost> {
   return data;
 }
 
+export type FeedLikersPage = {
+  results: FeedUserSummary[];
+  next: string | null;
+  previous: string | null;
+};
+
+function normalizeLikersPage(data: unknown): FeedLikersPage {
+  const payload = (data ?? {}) as Partial<FeedLikersPage>;
+  return {
+    results: Array.isArray(payload.results) ? payload.results : [],
+    next: typeof payload.next === 'string' ? payload.next : null,
+    previous: typeof payload.previous === 'string' ? payload.previous : null,
+  };
+}
+
+/** Ľudia, čo dali lajk príspevku (najnovší prvý). Verejné ako príspevok sám. */
+export async function listFeedPostLikers(
+  postId: number,
+  params: ListFeedPostsParams = {},
+): Promise<FeedLikersPage> {
+  const { data } = await api.get(
+    resolveFeedRequestUrl(endpoints.feed.postLikers(postId), params),
+  );
+  return normalizeLikersPage(data);
+}
+
+/** To isté pre konkrétny komentár. */
+export async function listFeedCommentLikers(
+  postId: number,
+  commentId: number,
+  params: ListFeedPostsParams = {},
+): Promise<FeedLikersPage> {
+  const { data } = await api.get(
+    resolveFeedRequestUrl(
+      endpoints.feed.postCommentLikers(postId, commentId),
+      params,
+    ),
+  );
+  return normalizeLikersPage(data);
+}
+
 /** Zmaže vlastný príspevok. Právo overuje backend podľa `can_manage`. */
 export async function deleteFeedPost(postId: number): Promise<void> {
   await api.delete(endpoints.feed.postDetail(postId));

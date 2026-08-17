@@ -148,6 +148,15 @@ export default function FeedPostComments({
    * druhý pokus ešte pred vyhodnotením toho prvého.
    */
   const highlightSeekingRef = useRef(false);
+  /**
+   * Pre ktorý cieľ sa už raz preverilo, či vlákno medzitým nenarástlo.
+   *
+   * `hasMore` je len snímka spred posledného načítania. Komentár vzniknutý
+   * PO ňom leží za koncom okna a `nextUrlRef` je null, takže hľadanie by ho
+   * vyhodnotilo ako „koniec vlákna" a vzdalo to bez jediného dotazu na
+   * server – presne to zlyhanie pri druhej notifikácii v poradí.
+   */
+  const highlightRefreshedRef = useRef<number | null>(null);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -394,6 +403,7 @@ export default function FeedPostComments({
     highlightHandledRef.current = null;
     highlightPagesRef.current = 0;
     highlightSeekingRef.current = false;
+    highlightRefreshedRef.current = null;
     return () => {
       if (highlightTimerRef.current !== null) {
         window.clearTimeout(highlightTimerRef.current);
@@ -443,6 +453,27 @@ export default function FeedPostComments({
     // nepomohlo.
     const highestLoaded = comments.length ? comments[comments.length - 1].id : 0;
     const passedIt = highestLoaded > highlightCommentId;
+
+    // Cieľ je ZA načítaným koncom, ale server o ďalšej stránke nevie –
+    // typicky preto, že komentár vznikol až po poslednom načítaní. Raz sa
+    // spýtaj znova; `refresh` dotiahne, čo pribudlo, a vráti čerstvý `next`,
+    // takže sa stránkovanie môže rozbehnúť ďalej.
+    if (
+      !passedIt &&
+      !hasMore &&
+      !loadingMore &&
+      highlightRefreshedRef.current !== highlightCommentId
+    ) {
+      highlightRefreshedRef.current = highlightCommentId;
+      highlightSeekingRef.current = true;
+      void refresh()
+        .catch(() => undefined)
+        .finally(() => {
+          highlightSeekingRef.current = false;
+        });
+      return;
+    }
+
     if (
       passedIt ||
       !hasMore ||
@@ -472,7 +503,7 @@ export default function FeedPostComments({
       if (!ok) highlightHandledRef.current = highlightCommentId;
       // Po úspechu narastie `comments` a tento efekt sa spustí znova.
     });
-  }, [comments, highlightCommentId, loading, loadingMore, hasMore, loadMore]);
+  }, [comments, highlightCommentId, loading, loadingMore, hasMore, loadMore, refresh]);
 
   // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
   const handleListScroll = useCallback(() => {

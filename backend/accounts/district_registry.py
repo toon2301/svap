@@ -239,3 +239,58 @@ def resolve_offer_district_code(
         normalized_label,
         ("", ""),
     )
+
+
+@lru_cache(maxsize=1)
+def _country_by_district_label() -> dict[str, str]:
+    """Normalizovaný label okresu → kód krajiny.
+
+    Register je primárne country → okresy; feed potrebuje opačný smer, lebo
+    ``User`` krajinu neukladá – má len voľnotextový ``district``.
+
+    Labely, ktoré sa opakujú vo VIAC krajinách, sa zámerne vynechajú: hádať
+    z nich krajinu by znamenalo tichú chybu. Takých je v registri jednotky
+    (dnes jediný), takže cena je zanedbateľná a dotknutý používateľ len
+    nedostane krajinový bonus – okresný mu ostáva.
+    """
+    counts: dict[str, set[str]] = {}
+    for country, entries in _load_registry().items():
+        for entry in entries:
+            for candidate in (entry["label"], *entry.get("aliases", ())):
+                normalized = _normalize_text(candidate)
+                if normalized:
+                    counts.setdefault(normalized, set()).add(country)
+    return {
+        label: next(iter(countries))
+        for label, countries in counts.items()
+        if len(countries) == 1
+    }
+
+
+def resolve_country_from_district_label(district_label: Any) -> str:
+    """Kód krajiny podľa názvu okresu; prázdny reťazec pri neznámom/nejednoznačnom."""
+    normalized = _normalize_text(str(district_label or ""))
+    if not normalized:
+        return ""
+    return _country_by_district_label().get(normalized, "")
+
+
+@lru_cache(maxsize=None)
+def get_country_district_labels(country_code: Any) -> tuple[str, ...]:
+    """Všetky názvy okresov danej krajiny (vrátane aliasov).
+
+    Feed ich používa v ``author__district__in`` – ``User.district`` je label,
+    nie kód, takže porovnávať sa dá len cez zoznam labelov.
+    """
+    normalized_country = normalize_offer_country_code(country_code)
+    if not normalized_country:
+        return ()
+    labels: list[str] = []
+    seen: set[str] = set()
+    for entry in _load_registry().get(normalized_country, ()):  # type: ignore[arg-type]
+        for candidate in (entry["label"], *entry.get("aliases", ())):
+            text = str(candidate or "").strip()
+            if text and text not in seen:
+                seen.add(text)
+                labels.append(text)
+    return tuple(labels)

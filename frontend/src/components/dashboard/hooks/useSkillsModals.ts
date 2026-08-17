@@ -3,6 +3,7 @@
 import { useCallback, useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '../../../lib/api';
+import { resolveNewOfferDraftCountry } from '@/shared/offerCountryPreference';
 
 export type OpeningHours = {
   monday?: { enabled: boolean; from: string; to: string };
@@ -73,8 +74,34 @@ export interface UseSkillsModalsResult {
 }
 
 export function useSkillsModals(): UseSkillsModalsResult {
-  const { t } = useLanguage();
-  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<DashboardSkill | null>(null);
+  const { t, country: detectedCountry } = useLanguage();
+  const [selectedSkillsCategory, setSelectedSkillsCategoryState] =
+    useState<DashboardSkill | null>(null);
+  const setSelectedSkillsCategory = useCallback<
+    React.Dispatch<React.SetStateAction<DashboardSkill | null>>
+  >(
+    (nextValue) => {
+      if (typeof nextValue === 'function') {
+        setSelectedSkillsCategoryState(nextValue);
+        return;
+      }
+      if (!nextValue || nextValue.id) {
+        setSelectedSkillsCategoryState(nextValue);
+        return;
+      }
+      setSelectedSkillsCategoryState({
+        ...nextValue,
+        country_code: resolveNewOfferDraftCountry({
+          initialCountryCode: nextValue.country_code,
+          districtCode: nextValue.district_code,
+          district: nextValue.district,
+          location: nextValue.location,
+          detectedCountryCode: detectedCountry,
+        }),
+      });
+    },
+    [detectedCountry],
+  );
   const [standardCategories, setStandardCategories] = useState<DashboardSkill[]>([]);
   const [customCategories, setCustomCategories] = useState<DashboardSkill[]>([]);
   const [isSkillsCategoryModalOpen, setIsSkillsCategoryModalOpen] = useState(false);
@@ -240,7 +267,7 @@ export function useSkillsModals(): UseSkillsModalsResult {
         throw error;
       }
     },
-    [fetchSkillDetail]
+    [fetchSkillDetail, setSelectedSkillsCategory]
   );
 
   const removeStandardCategory = useCallback(

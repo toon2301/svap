@@ -140,12 +140,12 @@ it('picks up a like made by someone else while the card is on screen', async () 
   try {
     mockedGet.mockResolvedValue(post({ likes_count: 9 }));
     render(<FeedPostCard post={post()} />);
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('3');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('3');
 
     await tick();
 
     await waitFor(() =>
-      expect(screen.getByTestId('feed-like-button')).toHaveTextContent('9'),
+      expect(screen.getByTestId('feed-like-count')).toHaveTextContent('9'),
     );
   } finally {
     restore();
@@ -163,7 +163,7 @@ it('does not poll while the card is outside the viewport', async () => {
 
     // Výkonová brzda: feed s desiatkami kariet nesmie pollovať všetky naraz.
     expect(mockedGet).not.toHaveBeenCalled();
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('3');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('3');
   } finally {
     restore();
   }
@@ -186,17 +186,17 @@ it('does not let a poll overwrite the like the user just made', async () => {
       screen.getByTestId('feed-like-button').click();
     });
     // Optimisticky 4.
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('4');
 
     await tick();
 
     // Poll sa počas prebiehajúceho lajku vôbec nesmie premietnuť.
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('4');
 
     await act(async () => {
       releaseLike({ likes_count: 4, is_liked_by_me: true });
     });
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('4');
   } finally {
     restore();
   }
@@ -226,14 +226,14 @@ it('discards a poll response that landed after the user liked mid-flight', async
     await act(async () => {
       screen.getByTestId('feed-like-button').click();
     });
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('4');
 
     await act(async () => {
       releasePoll(post({ likes_count: 3, is_liked_by_me: false }));
     });
 
     // Zastaraná odpoveď by vrátila 3 a odlajkovala – to sa stať nesmie.
-    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('4');
+    expect(screen.getByTestId('feed-like-count')).toHaveTextContent('4');
   } finally {
     restore();
   }

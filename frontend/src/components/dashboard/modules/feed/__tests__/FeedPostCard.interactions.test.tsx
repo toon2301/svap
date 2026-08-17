@@ -157,13 +157,16 @@ describe('FeedPostCard – lajk', () => {
 
     render(<FeedPostCard post={makePost()} />);
     const button = screen.getByTestId('feed-like-button');
+    // Počet je od zavedenia zoznamu lajkujúcich samostatné tlačidlo vedľa
+    // prepínača (vnorené tlačidlo by bolo neplatné HTML).
+    const count = () => screen.queryByTestId('feed-like-count');
 
     await act(async () => {
       await userEvent.click(button);
     });
 
     // Počet vyskočil hneď, request ešte beží.
-    expect(button).toHaveTextContent('3');
+    expect(count()).toHaveTextContent('3');
 
     await act(async () => {
       resolveLike({ post_id: 1, is_liked_by_me: true, likes_count: 3 });
@@ -176,13 +179,16 @@ describe('FeedPostCard – lajk', () => {
 
     render(<FeedPostCard post={makePost()} />);
     const button = screen.getByTestId('feed-like-button');
+    // Počet je od zavedenia zoznamu lajkujúcich samostatné tlačidlo vedľa
+    // prepínača (vnorené tlačidlo by bolo neplatné HTML).
+    const count = () => screen.queryByTestId('feed-like-count');
 
     await act(async () => {
       await userEvent.click(button);
     });
 
     await waitFor(() => {
-      expect(button).toHaveTextContent('2');
+      expect(count()).toHaveTextContent('2');
     });
     expect(toastError).toHaveBeenCalled();
   });

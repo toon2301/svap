@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import FeedLikersDialog from './FeedLikersDialog';
 import { translateFeedActionError } from './feedActionErrors';
 import {
   likeFeedPostComment,
@@ -32,6 +33,7 @@ export default function FeedCommentLikeButton({
   const { t } = useLanguage();
   const [isLiked, setIsLiked] = useState(Boolean(comment.is_liked_by_me));
   const [likesCount, setLikesCount] = useState(comment.likes_count ?? 0);
+  const [likersOpen, setLikersOpen] = useState(false);
   const pendingRef = useRef(false);
 
   // Zoznam môže komentár nahradiť čerstvejšou verziou (obnovenie feedu) –
@@ -71,7 +73,7 @@ export default function FeedCommentLikeButton({
 
   const label = t('feed.commentLike', 'Páči sa mi komentár');
 
-  return (
+  const toggle = (
     // Menšie než lajk príspevku (h-3.5 vs h-4), ale p-1.5 + záporný margin
     // držia dotykový cieľ použiteľný aj na mobile.
     <button
@@ -81,7 +83,7 @@ export default function FeedCommentLikeButton({
       aria-label={`${label}: ${likesCount}`}
       aria-pressed={isLiked}
       title={label}
-      className={`-m-1 inline-flex shrink-0 items-center gap-1 rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+      className={`inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
         isLiked
           ? 'text-purple-600 dark:text-purple-300'
           : 'text-gray-400 dark:text-gray-500'
@@ -97,9 +99,38 @@ export default function FeedCommentLikeButton({
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
-      {likesCount > 0 ? (
-        <span className="tabular-nums">{likesCount}</span>
-      ) : null}
     </button>
+  );
+
+  // Počet je SAMOSTATNÉ tlačidlo (otvára zoznam) – vnorené tlačidlo v tlačidle
+  // by bolo neplatné HTML. Pri nule ostáva úplne skrytý, takže nie je čo
+  // otvárať a prázdny dialóg nevznikne.
+  return (
+    <span className="-m-1 inline-flex items-center">
+      {toggle}
+      {likesCount > 0 ? (
+        <button
+          type="button"
+          onClick={() => setLikersOpen(true)}
+          data-testid={`feed-comment-like-count-${comment.id}`}
+          aria-label={t('feed.likersTitle', 'Páči sa im to')}
+          title={t('feed.likersTitle', 'Páči sa im to')}
+          className={`rounded-full px-1 py-1.5 text-xs tabular-nums transition-colors hover:bg-black/5 hover:underline dark:hover:bg-white/10 ${
+            isLiked
+              ? 'text-purple-600 dark:text-purple-300'
+              : 'text-gray-400 dark:text-gray-500'
+          }`}
+        >
+          {likesCount}
+        </button>
+      ) : null}
+
+      <FeedLikersDialog
+        open={likersOpen}
+        onClose={() => setLikersOpen(false)}
+        postId={postId}
+        commentId={comment.id}
+      />
+    </span>
   );
 }

@@ -4363,6 +4363,9 @@
     "viewOwnerResponse": "Válasz megtekintése"
   },
   "feed": {
+    "likersTitle": "Kedvelték",
+    "likersEmpty": "Még senki.",
+    "likersLoadError": "A listát nem sikerült betölteni.",
     "originalPost": "Eredeti bejegyzés",
     "postDeleteHint": "Ez a művelet nem vonható vissza.",
     "deletePost": "Bejegyzés törlése",

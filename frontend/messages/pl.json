@@ -4363,6 +4363,9 @@
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
   },
   "feed": {
+    "likersTitle": "Polubili to",
+    "likersEmpty": "Jeszcze nikt.",
+    "likersLoadError": "Nie udało się wczytać listy.",
     "originalPost": "Oryginalny post",
     "postDeleteHint": "Tej akcji nie można cofnąć.",
     "deletePost": "Usuń post",

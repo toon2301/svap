@@ -29,7 +29,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..feed_serializers import FeedPostCommentSerializer
+from ..feed_serializers import FeedPostCommentSerializer, FeedUserSummarySerializer
 from ..models import (
     FeedPost,
     FeedPostComment,
@@ -45,6 +45,7 @@ from ..services.notifications import (
 )
 from ..services.user_blocks import (
     BlockedUserInteractionError,
+    exclude_blocked_users,
     lock_user_pair_for_update,
     lock_users_and_ensure_interaction_allowed,
 )
@@ -429,6 +430,63 @@ def feed_post_self_tag_view(request, post_id: int):
 
     # 204 ako feed_post_comment_delete_view – zhodný vzor pre jednoduché DELETE.
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FeedLikersCursorPagination(CursorPagination):
+    """Najnovší lajk prvý – rovnaký cursor vzor ako zvyšok feedu."""
+
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 50
+    ordering = ("-created_at", "-id")
+
+
+def _likers_response(request, queryset):
+    """Zoznam ľudí, čo dali lajk – bez tých, s ktorými má divák blok.
+
+    Blok sa filtruje OBOJSMERNE a rovnakým helperom ako inde v appke; pre
+    anonyma je to no-op (nemá identitu, takže ani blok).
+    """
+    queryset = exclude_blocked_users(
+        queryset.select_related("user"),
+        viewer_user_id=request.user.id if request.user.is_authenticated else None,
+        user_id_field="user_id",
+    )
+    paginator = FeedLikersCursorPagination()
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = FeedUserSummarySerializer(
+        [like.user for like in page],
+        many=True,
+        context={"request": request},
+    )
+    return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@api_rate_limit
+def feed_post_likers_view(request, post_id: int):
+    """Kto dal lajk príspevku. Verejné rovnako ako samotný príspevok."""
+    post = _get_visible_post(request, post_id)
+    if post is None:
+        return _post_not_found()
+    return _likers_response(request, FeedPostLike.objects.filter(post=post))
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@api_rate_limit
+def feed_post_comment_likers_view(request, post_id: int, comment_id: int):
+    """Kto dal lajk komentáru. Viditeľný musí byť príspevok AJ komentár."""
+    post = _get_visible_post(request, post_id)
+    if post is None:
+        return _post_not_found()
+    comment = FeedPostComment.objects.filter(pk=comment_id, post=post).first()
+    if comment is None:
+        return _comment_not_found()
+    return _likers_response(
+        request, FeedPostCommentLike.objects.filter(comment=comment)
+    )
 
 
 def _report_duplicate_response() -> Response:

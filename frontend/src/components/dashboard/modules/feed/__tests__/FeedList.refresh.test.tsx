@@ -220,7 +220,7 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
 
     // Prekrývajúce sa id sa NAHRADIA čerstvou verziou, nezahodia sa.
     await waitFor(() =>
-      expect(screen.getByTestId('feed-like-button')).toHaveTextContent('12'),
+      expect(screen.getByTestId('feed-like-count')).toHaveTextContent('12'),
     );
   });
 

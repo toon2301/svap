@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LocationSection from '../skillDescriptionModal/sections/LocationSection';
 import { resolveInitialOfferDistrictSelection } from '@/shared/districtRegistry';
+import { writeGeoDetectionCache } from '@/shared/offerCountryPreference';
 
 // Mock LanguageContext to provide deterministic translations and country
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -13,6 +14,15 @@ jest.mock('@/contexts/LanguageContext', () => ({
 }));
 
 describe('LocationSection', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    writeGeoDetectionCache({
+      country: 'SK',
+      detectedAt: Date.now(),
+      status: 'ok',
+    });
+  });
+
   it('shows validation error and clears invalid district on blur', async () => {
     const onDistrictChange = jest.fn();
 
@@ -235,6 +245,54 @@ describe('LocationSection', () => {
     expect(
       screen.getByPlaceholderText('Zadaj, kde ponúkaš svoje služby'),
     ).toBeVisible();
+  });
+
+  it('keeps locality optional and available without selecting a curated district', () => {
+    render(
+      <LocationSection
+        value=""
+        onChange={jest.fn()}
+        onBlur={jest.fn()}
+        error=""
+        isSaving={false}
+        district=""
+        countryCode="SK"
+        districtCode=""
+        onCountryCodeChange={jest.fn()}
+        onDistrictChange={jest.fn()}
+        onDistrictCodeChange={jest.fn()}
+        showCountrySelector
+        isSeeking={false}
+      />,
+    );
+
+    expect(screen.getByPlaceholderText('Zadaj okres')).toBeVisible();
+    expect(
+      screen.getByPlaceholderText('Zadaj, kde ponúkaš svoje služby'),
+    ).toBeVisible();
+  });
+
+  it('allows an optional locality for a demand and uses demand wording', () => {
+    render(
+      <LocationSection
+        value=""
+        onChange={jest.fn()}
+        onBlur={jest.fn()}
+        error=""
+        isSaving={false}
+        district=""
+        countryCode="CZ"
+        districtCode=""
+        onCountryCodeChange={jest.fn()}
+        onDistrictChange={jest.fn()}
+        onDistrictCodeChange={jest.fn()}
+        showCountrySelector
+        isSeeking
+      />,
+    );
+
+    expect(screen.getByPlaceholderText('Zadaj okres')).toBeVisible();
+    expect(screen.getByPlaceholderText('Zadaj, kde hľadáš službu')).toBeVisible();
   });
 
   it('shows a clear warning for an existing inactive district', () => {
