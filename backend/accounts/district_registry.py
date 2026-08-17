@@ -13,8 +13,12 @@ from .country_registry import normalize_offer_country_code
 # Backend-owned data shipped with the accounts app (see accounts/data/).
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 DISTRICT_REGISTRY_PATH = _DATA_DIR / "district_registry.json"
-STRICT_DISTRICT_REGISTRY_COUNTRIES = frozenset({"SK", "CZ", "PL", "HU"})
-_NON_DECOMPOSING_CHARACTERS = str.maketrans({"ł": "l", "Ł": "L"})
+STRICT_DISTRICT_REGISTRY_COUNTRIES = frozenset(
+    {"SK", "CZ", "PL", "HU", "AT", "DE"}
+)
+_NON_DECOMPOSING_CHARACTERS = str.maketrans(
+    {"ł": "l", "Ł": "L", "ß": "ss", "ẞ": "SS"}
+)
 
 
 class DistrictEntry(TypedDict):
@@ -94,7 +98,10 @@ def _load_registry() -> dict[str, tuple[DistrictEntry, ...]]:
                     f"Duplicate official district code for {normalized_country}: "
                     f"{official_code}"
                 )
-            if normalized_country in STRICT_DISTRICT_REGISTRY_COUNTRIES:
+            if (
+                normalized_country in STRICT_DISTRICT_REGISTRY_COUNTRIES
+                and raw_active
+            ):
                 for candidate_label in (label, *aliases):
                     normalized_label = _normalize_text(candidate_label)
                     existing_code = seen_labels.get(normalized_label)
@@ -163,10 +170,14 @@ def _district_label_lookup(
     include_inactive: bool = False,
 ) -> dict[str, tuple[str, str]]:
     lookup: dict[str, tuple[str, str]] = {}
-    for item in get_offer_district_entries(
+    entries = get_offer_district_entries(
         country_code,
         include_inactive=include_inactive,
-    ):
+    )
+    if include_inactive:
+        # Populate legacy values first so an active entry wins label collisions.
+        entries = tuple(sorted(entries, key=lambda item: item["active"]))
+    for item in entries:
         resolved = (item["code"], item["label"])
         lookup[_normalize_text(item["label"])] = resolved
         for alias in item["aliases"]:

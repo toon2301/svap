@@ -4363,6 +4363,7 @@
     "viewOwnerResponse": "Válasz megtekintése"
   },
   "feed": {
+    "originalPost": "Eredeti bejegyzés",
     "postDeleteHint": "Ez a művelet nem vonható vissza.",
     "deletePost": "Bejegyzés törlése",
     "postDeleteConfirm": "Biztosan törlöd ezt a bejegyzést?",

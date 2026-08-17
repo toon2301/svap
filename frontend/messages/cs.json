@@ -4363,6 +4363,7 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "originalPost": "Původní příspěvek",
     "postDeleteHint": "Tuto akci už nelze vrátit zpět.",
     "deletePost": "Smazat příspěvek",
     "postDeleteConfirm": "Opravdu chceš smazat tento příspěvek?",

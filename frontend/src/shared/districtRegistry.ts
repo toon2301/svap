@@ -63,6 +63,7 @@ export function getDistrictOptions(
 export function removeDistrictDiacritics(value: string): string {
   return value
     .replace(/[Łł]/g, 'l')
+    .replace(/[\u00df\u1e9e]/g, 'ss')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -93,15 +94,15 @@ export function findDistrictByLabel(
   if (!normalizedLabel) {
     return null;
   }
-  return (
-    getDistrictOptions(countryCode, options).find(
-      (option) =>
-        removeDistrictDiacritics(option.label) === normalizedLabel ||
-        option.aliases.some(
-          (alias) => removeDistrictDiacritics(alias) === normalizedLabel,
-        ),
-    ) ?? null
+  const matches = getDistrictOptions(countryCode, options).filter(
+    (option) =>
+      removeDistrictDiacritics(option.label) === normalizedLabel ||
+      option.aliases.some(
+        (alias) => removeDistrictDiacritics(alias) === normalizedLabel,
+      ),
   );
+
+  return matches.find((option) => option.active) ?? matches[0] ?? null;
 }
 
 export function getOfferDistrictLabel(

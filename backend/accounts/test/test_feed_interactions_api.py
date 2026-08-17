@@ -478,3 +478,61 @@ class FeedInteractionsAccountDeletionTests(APITestCase):
         self.assertFalse(Notification.objects.filter(user=author).exists())
         self.assertFalse(FeedPost.objects.filter(id=post.id).exists())
         self.assertFalse(FeedPostLike.objects.filter(post_id=post.id).exists())
+
+
+class FeedCommentNotificationTargetTests(APITestCase):
+    """Notifikácia o komentári musí doviesť ku KONKRÉTNEMU komentáru."""
+
+    def setUp(self):
+        self.author = _user("notif-target-author")
+        self.commenter = _user("notif-target-commenter")
+        self.post = _free_post(self.author)
+
+    def _notification_payload(self, notification):
+        """Nájde notifikáciu v odpovedi zoznamu.
+
+        Endpoint vracia raz stránkovaný objekt s ``results``, inokedy priamy
+        zoznam (podľa nastavenia stránkovania) – test sa nesmie viazať na
+        jeden z tvarov.
+        """
+        listed = self.client.get(reverse("accounts:notifications_list"))
+        results = listed.data
+        if isinstance(results, dict):
+            results = results.get("results", [])
+        return next(item for item in results if item["id"] == notification.id)
+
+    def test_notification_carries_comment_id_and_targets_it(self):
+        self.client.force_authenticate(user=self.commenter)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse("accounts:feed_post_comments", args=[self.post.id]),
+                {"text": "Ahoj"},
+                format="json",
+            )
+        comment_id = response.data["id"]
+
+        notification = Notification.objects.filter(
+            user=self.author, type=NotificationType.FEED_POST_COMMENTED
+        ).first()
+        self.assertIsNotNone(notification)
+        self.assertEqual(notification.data["comment_id"], comment_id)
+
+        self.client.force_authenticate(user=self.author)
+        payload = self._notification_payload(notification)
+        self.assertEqual(
+            payload["target_url"],
+            f"/dashboard/feed/{self.post.id}?comment={comment_id}",
+        )
+
+    def test_other_feed_notifications_keep_the_plain_permalink(self):
+        """Bez comment_id sa cieľ nemení – lajk vedie na príspevok ako doteraz."""
+        self.client.force_authenticate(user=self.commenter)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(reverse("accounts:feed_post_like", args=[self.post.id]))
+
+        notification = Notification.objects.filter(
+            user=self.author, type=NotificationType.FEED_POST_LIKED
+        ).first()
+        self.client.force_authenticate(user=self.author)
+        payload = self._notification_payload(notification)
+        self.assertEqual(payload["target_url"], f"/dashboard/feed/{self.post.id}")

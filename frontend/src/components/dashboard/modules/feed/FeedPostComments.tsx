@@ -79,8 +79,21 @@ function mergeComments(
   return [...byId.values()].sort((a, b) => a.id - b.id);
 }
 
+/** Ako dlho ostane komentár z notifikácie zvýraznený. */
+const HIGHLIGHT_MS = 3000;
+/**
+ * Strop donačítavania pri hľadaní komentára z notifikácie.
+ *
+ * Pri COMMENTS_PAGE_SIZE = 10 to je 200 komentárov – hlbšie vlákno je
+ * v praxi výnimka a nekonečné stránkovanie by pri zlom odkaze bolo horšie
+ * než sa zastaviť.
+ */
+const HIGHLIGHT_MAX_PAGES = 20;
+
 type FeedPostCommentsProps = {
   postId: number;
+  /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
+  highlightCommentId?: number | null;
   onCountChange?: (delta: number) => void;
   /** Skutočný počet zo servera – drží číslo pri ikone v súlade so zoznamom. */
   onTotalChange?: (total: number) => void;
@@ -88,6 +101,7 @@ type FeedPostCommentsProps = {
 
 export default function FeedPostComments({
   postId,
+  highlightCommentId,
   onCountChange,
   onTotalChange,
 }: FeedPostCommentsProps) {
@@ -116,6 +130,24 @@ export default function FeedPostComments({
   const scrollToBottomRef = useRef<ScrollBehavior | null>(null);
   /** Počet komentárov, ktoré prišli, kým používateľ čítal vyššie v zozname. */
   const [newCommentsCount, setNewCommentsCount] = useState(0);
+  const [highlighted, setHighlighted] = useState<number | null>(null);
+  // Ktorý cieľ už bol vybavený – doscrolluje sa RAZ, aby ďalší poll alebo
+  // donačítanie nestrhlo pohľad späť, keď si používateľ odscrolloval inam.
+  const highlightHandledRef = useRef<number | null>(null);
+  // Časovač zvýraznenia drží ref, nie cleanup efektu závislého od `comments`:
+  // ten by ho rušil pri KAŽDOM polle, takže by zvýraznenie buď zmizlo
+  // predčasne, alebo (po zmeškanom vyčistení) ostalo visieť.
+  const highlightTimerRef = useRef<number | null>(null);
+  /** Koľko stránok sa už donačítalo pri hľadaní cieľa – strop proti slučke. */
+  const highlightPagesRef = useRef(0);
+  /**
+   * Beží práve donačítanie kvôli hľadaniu?
+   *
+   * Stav `loadingMore` na to nestačí: `setLoadingMore(false)` v `finally`
+   * prebehne SKÔR než `.then` s výsledkom, takže by efekt stihol vystreliť
+   * druhý pokus ešte pred vyhodnotením toho prvého.
+   */
+  const highlightSeekingRef = useRef(false);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -186,8 +218,19 @@ export default function FeedPostComments({
     void load();
   }, [load]);
 
-  const loadMore = useCallback(async () => {
-    if (loadingMoreRef.current || !nextUrlRef.current) return;
+  /**
+   * Donačíta ďalšiu stránku.
+   *
+   * Vracia `false` IBA keď požiadavka zlyhala – volajúci sa podľa toho vie
+   * zastaviť. „Nič sa nerobilo" (beží iné donačítanie, nie je ďalšia stránka)
+   * vracia `true`: zlyhanie to nie je a opakovanie rieši bežná cesta.
+   *
+   * `silent` potlačí chybový toast. Používa ho hľadanie komentára z
+   * notifikácie – to beží na pozadí, používateľ oň nežiadal, takže hlásiť mu
+   * zlyhanie nemá čo.
+   */
+  const loadMore = useCallback(async (options?: { silent?: boolean }) => {
+    if (loadingMoreRef.current || !nextUrlRef.current) return true;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     // Rovnaká ochrana ako v `load()`: mutácia počas donačítavania zvýši
@@ -199,7 +242,7 @@ export default function FeedPostComments({
       const page = await listFeedPostComments(postId, {
         cursorUrl: nextUrlRef.current,
       });
-      if (seq !== loadSeqRef.current) return;
+      if (seq !== loadSeqRef.current) return true;
       setComments((current) => {
         const seen = new Set(current.map((comment) => comment.id));
         return [...current, ...page.results.filter((c) => !seen.has(c.id))];
@@ -215,15 +258,17 @@ export default function FeedPostComments({
       // request je už zneplatnený a jeho zlyhanie nemá čo riešiť – hláška
       // „komentáre sa nepodarilo načítať" hneď po úspešnom pridaní komentára
       // by len mýlila. Ďalší scroll si stránku vyžiada znova.
-      if (seq === loadSeqRef.current) {
+      if (seq === loadSeqRef.current && !options?.silent) {
         toast.error(
           tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
         );
       }
+      return false;
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
+    return true;
   }, [postId, markSeen]);
 
   /** Doscrolluje zoznam na koniec; `scrollTo` jsdom nemá, preto fallback. */
@@ -340,6 +385,95 @@ export default function FeedPostComments({
     setNewCommentsCount((current) => (current === 0 ? current : 0));
   }, [comments, scrollListToBottom]);
 
+  // Nový cieľ = nové hľadanie. Časovač sa ruší LEN tu (zmena cieľa) a pri
+  // odmountovaní – nie pri každej zmene zoznamu.
+  useEffect(() => {
+    // Najprv zhasni staré zvýraznenie: pri prechode na iný (alebo žiadny)
+    // cieľ by inak ostalo svietiť, kým nedobehne jeho vlastný časovač.
+    setHighlighted(null);
+    highlightHandledRef.current = null;
+    highlightPagesRef.current = 0;
+    highlightSeekingRef.current = false;
+    return () => {
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
+    };
+  }, [highlightCommentId]);
+
+  /**
+   * Komentár z notifikácie: nájdi ho, doscrolluj naň a krátko ho zvýrazni.
+   *
+   * Keď v načítanom okne nie je, DONAČÍTAVA sa ďalej – a to je bežný prípad,
+   * nie okrajový: komentáre sú zoradené vzostupne, takže čerstvý komentár
+   * (o akom notifikácia takmer vždy je) leží na POSLEDNEJ stránke, nie na
+   * prvej.
+   *
+   * Prečo stránkovať a nepýtať si komentár priamo: aby sa dalo NA komentár
+   * doscrollovať, musí byť v zozname aj všetko pred ním – zoznam je súvislé
+   * okno od začiatku vlákna. Samostatný „daj mi tento komentár" endpoint by
+   * vrátil objekt, ale nie jeho pozíciu, takže stránky by sa aj tak museli
+   * donačítať. Preto sa znovupoužije `loadMore`, bez zásahu do backendu.
+   */
+  useEffect(() => {
+    if (!highlightCommentId || loading) return;
+    if (highlightHandledRef.current === highlightCommentId) return;
+    if (highlightSeekingRef.current) return;
+
+    const found = comments.some((comment) => comment.id === highlightCommentId);
+    if (found) {
+      highlightHandledRef.current = highlightCommentId;
+      setHighlighted(highlightCommentId);
+      const node = document.querySelector(
+        `[data-comment-id="${highlightCommentId}"]`,
+      );
+      if (node && typeof node.scrollIntoView === 'function') {
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      highlightTimerRef.current = window.setTimeout(
+        () => setHighlighted(null),
+        HIGHLIGHT_MS,
+      );
+      return;
+    }
+
+    // Zoznam je vzostupný: keď už je načítané id VYŠŠIE než hľadané, prešli
+    // sme okolo neho – komentár medzitým zanikol. Ďalšie stránkovanie by
+    // nepomohlo.
+    const highestLoaded = comments.length ? comments[comments.length - 1].id : 0;
+    const passedIt = highestLoaded > highlightCommentId;
+    if (
+      passedIt ||
+      !hasMore ||
+      loadingMore ||
+      highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES
+    ) {
+      // Vzdaj to ticho – zoznam ostáva normálne použiteľný, len bez skoku.
+      if (passedIt || !hasMore || highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
+        highlightHandledRef.current = highlightCommentId;
+      }
+      return;
+    }
+
+    highlightPagesRef.current += 1;
+    highlightSeekingRef.current = true;
+    // Ticho: hľadanie beží na pozadí, používateľ oň nežiadal.
+    void loadMore({ silent: true }).then((ok) => {
+      highlightSeekingRef.current = false;
+      // Zlyhanie sa berie rovnako ako „koniec vlákna" – ďalšie pokusy by pri
+      // výpadku siete len opakovali ten istý neúspech.
+      //
+      // Zapisuje sa BEZ ohľadu na to, či medzitým efekt prebehol znova:
+      // `loadingMore` sa prepne skôr než dorazí tento výsledok, takže guard
+      // typu „zrušené pri cleanupe" by výsledok zahodil a hľadanie by sa
+      // rozbehlo nanovo. Ref patrí cieľu, nie behu efektu – pri zmene
+      // `highlightCommentId` ho aj tak resetuje efekt vyššie.
+      if (!ok) highlightHandledRef.current = highlightCommentId;
+      // Po úspechu narastie `comments` a tento efekt sa spustí znova.
+    });
+  }, [comments, highlightCommentId, loading, loadingMore, hasMore, loadMore]);
+
   // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
   const handleListScroll = useCallback(() => {
     const node = scrollRef.current;
@@ -454,7 +588,15 @@ export default function FeedPostComments({
           ) : (
             <ul className="space-y-3">
               {comments.map((comment) => (
-                <li key={comment.id} className="flex items-start gap-2.5">
+                <li
+                key={comment.id}
+                data-comment-id={comment.id}
+                className={`flex items-start gap-2.5 rounded-xl transition-colors duration-700 ${
+                  highlighted === comment.id
+                    ? 'bg-purple-100/80 dark:bg-purple-900/30'
+                    : ''
+                }`}
+              >
                   <InitialsAvatar
                     name={comment.author?.display_name}
                     avatarUrl={comment.author?.avatar_url}

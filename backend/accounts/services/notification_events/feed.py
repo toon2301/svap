@@ -93,7 +93,9 @@ def create_feed_post_comment_liked_notification(*, comment, actor) -> Notificati
     )
 
 
-def create_feed_post_commented_notification(*, post, actor) -> Notification | None:
+def create_feed_post_commented_notification(
+    *, post, actor, comment=None
+) -> Notification | None:
     """Komentár k príspevku – ZÁMERNE bez dedupu (na rozdiel od lajku):
     každý komentár nesie nový obsah, takže autor má dostať notifikáciu vždy.
     Self-comment notifikáciu nevytvára (konvencia všetkých sociálnych typov)."""
@@ -110,6 +112,9 @@ def create_feed_post_commented_notification(*, post, actor) -> Notification | No
         actor=actor,
         data={
             "post_id": post.id,
+            # Umožní na FE doscrollovať rovno ku KONKRÉTNEMU komentáru, nie
+            # len otvoriť príspevok s rozbalenými komentármi.
+            "comment_id": getattr(comment, "id", None),
         },
     )
 
