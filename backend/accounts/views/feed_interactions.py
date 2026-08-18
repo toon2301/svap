@@ -20,7 +20,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import CursorPagination
@@ -29,7 +29,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..feed_serializers import FeedPostCommentSerializer
+from ..feed_serializers import FeedPostCommentSerializer, FeedUserSummarySerializer
 from ..models import (
     FeedPost,
     FeedPostComment,
@@ -45,6 +45,7 @@ from ..services.notifications import (
 )
 from ..services.user_blocks import (
     BlockedUserInteractionError,
+    exclude_blocked_users,
     lock_user_pair_for_update,
     lock_users_and_ensure_interaction_allowed,
 )
@@ -429,6 +430,79 @@ def feed_post_self_tag_view(request, post_id: int):
 
     # 204 ako feed_post_comment_delete_view – zhodný vzor pre jednoduché DELETE.
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FeedLikersCursorPagination(CursorPagination):
+    """Najnovší lajk prvý – rovnaký cursor vzor ako zvyšok feedu."""
+
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 50
+    ordering = ("-created_at", "-id")
+
+
+def _likers_response(request, queryset):
+    """Zoznam ľudí, čo dali lajk – bez skrytých a bez blokovaných.
+
+    Súkromný účet sa v zozname NEZOBRAZÍ. Appka ho dôsledne skrýva všade inde
+    (profil, vyhľadávanie, feed), takže lajk na verejnom príspevku nesmie byť
+    dierou, ktorou sa jeho meno a avatar dostanú von. Výnimka je jediná a tá
+    istá ako pri ``visible_feed_posts``: SÁM SEBA vidí prihlásený vždy.
+
+    Blok sa filtruje OBOJSMERNE a rovnakým helperom ako inde v appke; pre
+    anonyma je oboje no-op v tom zmysle, že nemá identitu – vidí teda len
+    verejné účty a nikoho nevyfiltruje blok.
+
+    Obe pravidlá sa uplatnia PRED stránkovaním, inak by stránky mali rôznu
+    veľkosť podľa toho, koľko sa z nich vyhodí.
+    """
+    viewer_id = request.user.id if request.user.is_authenticated else None
+
+    visible = Q(user__is_public=True, user__is_active=True)
+    if viewer_id:
+        visible |= Q(user_id=viewer_id)
+    queryset = queryset.select_related("user").filter(visible)
+
+    queryset = exclude_blocked_users(
+        queryset,
+        viewer_user_id=viewer_id,
+        user_id_field="user_id",
+    )
+    paginator = FeedLikersCursorPagination()
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = FeedUserSummarySerializer(
+        [like.user for like in page],
+        many=True,
+        context={"request": request},
+    )
+    return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@api_rate_limit
+def feed_post_likers_view(request, post_id: int):
+    """Kto dal lajk príspevku. Verejné rovnako ako samotný príspevok."""
+    post = _get_visible_post(request, post_id)
+    if post is None:
+        return _post_not_found()
+    return _likers_response(request, FeedPostLike.objects.filter(post=post))
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@api_rate_limit
+def feed_post_comment_likers_view(request, post_id: int, comment_id: int):
+    """Kto dal lajk komentáru. Viditeľný musí byť príspevok AJ komentár."""
+    post = _get_visible_post(request, post_id)
+    if post is None:
+        return _post_not_found()
+    comment = FeedPostComment.objects.filter(pk=comment_id, post=post).first()
+    if comment is None:
+        return _comment_not_found()
+    return _likers_response(
+        request, FeedPostCommentLike.objects.filter(comment=comment)
+    )
 
 
 def _report_duplicate_response() -> Response:

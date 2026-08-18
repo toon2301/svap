@@ -6,6 +6,7 @@ import {
   normalizeOfferCountryCode,
   type OfferCountryCode,
 } from './countryRegistry';
+import { resolvePreferredOfferCountry } from './offerCountryPreference';
 
 export { getSupportedOfferCountries, normalizeOfferCountryCode } from './countryRegistry';
 export type { OfferCountryCode } from './countryRegistry';
@@ -120,10 +121,6 @@ export function isInactiveOfferDistrictCode(
   return Boolean(entry && !entry.active);
 }
 
-export function getDefaultOfferCountryCode(countryCode: unknown): OfferCountryCode {
-  return normalizeOfferCountryCode(countryCode) || 'SK';
-}
-
 export function isValidOfferDistrictSelection(params: {
   countryCode?: unknown;
   districtCode?: unknown;
@@ -197,36 +194,40 @@ export function resolveInitialOfferDistrictSelection(params: {
   const inferredCountryCode =
     explicitCountryCode ||
     inferCountryFromDistrictCode(params.districtCode) ||
-    inferCountryFromDistrictLabel(params.districtLabel) ||
-    getDefaultOfferCountryCode(params.fallbackCountryCode);
+    inferCountryFromDistrictLabel(params.districtLabel);
+  const resolvedCountryCode =
+    inferredCountryCode ||
+    resolvePreferredOfferCountry({
+      detectedCountryCode: params.fallbackCountryCode,
+    });
 
   const districtCode = String(params.districtCode || '').trim().toLowerCase();
   const districtLabel = String(params.districtLabel || '').trim();
 
-  const byCode = findDistrictByCode(inferredCountryCode, districtCode, {
+  const byCode = findDistrictByCode(resolvedCountryCode, districtCode, {
     includeInactive: true,
   });
   if (byCode) {
     return {
-      countryCode: inferredCountryCode,
+      countryCode: resolvedCountryCode,
       districtCode: byCode.code,
       districtLabel: byCode.label,
     };
   }
 
-  const byLabel = findDistrictByLabel(inferredCountryCode, districtLabel, {
+  const byLabel = findDistrictByLabel(resolvedCountryCode, districtLabel, {
     includeInactive: true,
   });
   if (byLabel) {
     return {
-      countryCode: inferredCountryCode,
+      countryCode: resolvedCountryCode,
       districtCode: byLabel.code,
       districtLabel: byLabel.label,
     };
   }
 
   return {
-    countryCode: inferredCountryCode,
+    countryCode: resolvedCountryCode,
     districtCode: '',
     districtLabel,
   };

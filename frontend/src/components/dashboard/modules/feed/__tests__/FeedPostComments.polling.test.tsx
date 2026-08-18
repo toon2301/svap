@@ -225,7 +225,7 @@ describe('FeedPostComments – polling', () => {
 
     // Prekrývajúce sa id sa NAHRADÍ čerstvou verziou.
     await waitFor(() =>
-      expect(screen.getByTestId('feed-comment-like-1')).toHaveTextContent('7'),
+      expect(screen.getByTestId('feed-comment-like-count-1')).toHaveTextContent('7'),
     );
   });
 

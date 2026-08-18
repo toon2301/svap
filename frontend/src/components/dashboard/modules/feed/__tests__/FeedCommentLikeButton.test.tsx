@@ -73,12 +73,15 @@ describe('FeedCommentLikeButton', () => {
 
     render(<FeedCommentLikeButton postId={5} comment={comment()} />);
     const button = screen.getByTestId('feed-comment-like-7');
-    expect(button).toHaveTextContent('2');
+    // Počet je od zavedenia zoznamu lajkujúcich samostatné tlačidlo vedľa
+    // prepínača (vnorené tlačidlo by bolo neplatné HTML).
+    const count = () => screen.queryByTestId('feed-comment-like-count-7');
+    expect(count()).toHaveTextContent('2');
 
     await userEvent.click(button);
 
     // Request ešte beží – počet už musí byť zvýšený.
-    expect(button).toHaveTextContent('3');
+    expect(count()).toHaveTextContent('3');
     expect(button).toHaveAttribute('aria-pressed', 'true');
 
     await act(async () => {
@@ -86,7 +89,7 @@ describe('FeedCommentLikeButton', () => {
     });
 
     // Server je zdroj pravdy – iný divák mohol medzitým lajknúť tiež.
-    await waitFor(() => expect(button).toHaveTextContent('9'));
+    await waitFor(() => expect(count()).toHaveTextContent('9'));
   });
 
   it('reverts and warns when the request fails', async () => {
@@ -94,10 +97,13 @@ describe('FeedCommentLikeButton', () => {
 
     render(<FeedCommentLikeButton postId={5} comment={comment()} />);
     const button = screen.getByTestId('feed-comment-like-7');
+    // Počet je od zavedenia zoznamu lajkujúcich samostatné tlačidlo vedľa
+    // prepínača (vnorené tlačidlo by bolo neplatné HTML).
+    const count = () => screen.queryByTestId('feed-comment-like-count-7');
 
     await userEvent.click(button);
 
-    await waitFor(() => expect(button).toHaveTextContent('2'));
+    await waitFor(() => expect(count()).toHaveTextContent('2'));
     expect(button).toHaveAttribute('aria-pressed', 'false');
     expect(mockedToastError).toHaveBeenCalledWith('Akciu sa nepodarilo uložiť.');
   });
@@ -116,13 +122,16 @@ describe('FeedCommentLikeButton', () => {
       />,
     );
     const button = screen.getByTestId('feed-comment-like-7');
+    // Počet je od zavedenia zoznamu lajkujúcich samostatné tlačidlo vedľa
+    // prepínača (vnorené tlačidlo by bolo neplatné HTML).
+    const count = () => screen.queryByTestId('feed-comment-like-count-7');
     expect(button).toHaveAttribute('aria-pressed', 'true');
 
     await userEvent.click(button);
 
     expect(mockedUnlike).toHaveBeenCalledWith(5, 7);
     expect(mockedLike).not.toHaveBeenCalled();
-    await waitFor(() => expect(button).toHaveTextContent('1'));
+    await waitFor(() => expect(count()).toHaveTextContent('1'));
   });
 
   it('ignores a second click while the first is in flight', async () => {

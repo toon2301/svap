@@ -13,6 +13,7 @@ import UrgencyModal from './skillDescriptionModal/UrgencyModal';
 import DurationModal from './skillDescriptionModal/DurationModal';
 import { MAX_DETAILED_LENGTH } from './skillDescriptionModal/types';
 import type { SkillsDescriptionScreenState } from './skillDescriptionModal/hooks/useSkillsDescriptionScreenState';
+import { useMobileLocationDraft } from './skillDescriptionModal/hooks/useMobileLocationDraft';
 
 interface SkillsDescriptionMobileModalsProps {
   state: SkillsDescriptionScreenState;
@@ -58,6 +59,7 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     isUrgencyModalOpen,
     isDurationModalOpen,
     remainingDetailedChars,
+    setIsLocationModalOpen,
     setPriceCurrency,
     setExperienceUnit,
     setOpeningHours,
@@ -76,7 +78,6 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     handleLocationChange,
     handleLocationBlur,
     handleLocationSave,
-    handleLocationBack,
     handleExperienceValueChange,
     handleExperienceSave,
     handleExperienceBack,
@@ -91,6 +92,19 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     handleDurationSave,
     handleDurationBack,
   } = state;
+
+  const handleLocationModalBack = useMobileLocationDraft({
+    isOpen: isLocationModalOpen,
+    countryCode,
+    districtCode,
+    district,
+    location,
+    onCountryCodeChange: handleCountryCodeChange,
+    onDistrictCodeChange: handleDistrictCodeChange,
+    onDistrictChange: handleDistrictChange,
+    onLocationChange: handleLocationChange,
+    onClose: () => setIsLocationModalOpen(false),
+  });
 
   const handleTagsModalSave = () => {
     const pendingTag = tagsSectionRef.current?.getTagInput().trim() || '';
@@ -194,10 +208,8 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
       {/* Location Modal */}
       <MobileFullScreenModal
         isOpen={isLocationModalOpen}
-        title={
-          isSeeking ? t('skills.districtTitleSeeking', 'Okres (povinné)') : t('skills.district', 'Okres')
-        }
-        onBack={handleLocationBack}
+        title={t('profile.location', 'Lokalita')}
+        onBack={handleLocationModalBack}
         onSave={handleLocationSave}
       >
         <LocationSection

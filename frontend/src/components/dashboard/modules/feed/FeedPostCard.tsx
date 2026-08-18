@@ -34,6 +34,7 @@ import {
   type FeedPost,
 } from '@/lib/feedApi';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
+import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
@@ -99,6 +100,9 @@ function ActionButton({
   count,
   active = false,
   onClick,
+  onCountClick,
+  countLabel,
+  countTestId,
   testId,
   children,
 }: {
@@ -106,9 +110,54 @@ function ActionButton({
   count?: number;
   active?: boolean;
   onClick: () => void;
+  /**
+   * Klik na POČET (nie na ikonu) – napr. otvorenie zoznamu lajkujúcich.
+   * Keď chýba alebo je počet 0, ostáva počet obyčajný text: vnorené tlačidlo
+   * v tlačidle je neplatné HTML, takže sa vyčlení iba keď má čo robiť.
+   */
+  onCountClick?: () => void;
+  countLabel?: string;
+  countTestId?: string;
   testId?: string;
   children: React.ReactNode;
 }) {
+  const countIsInteractive = Boolean(onCountClick) && (count ?? 0) > 0;
+
+  if (countIsInteractive) {
+    return (
+      <span className="-m-1 inline-flex items-center">
+        <button
+          type="button"
+          onClick={onClick}
+          data-testid={testId}
+          aria-label={count === undefined ? label : `${label}: ${count}`}
+          title={label}
+          className={`inline-flex items-center rounded-full p-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+            active
+              ? 'text-purple-600 dark:text-purple-300'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          {children}
+        </button>
+        <button
+          type="button"
+          onClick={onCountClick}
+          data-testid={countTestId}
+          aria-label={countLabel ? `${countLabel}: ${count}` : undefined}
+          title={countLabel}
+          className={`rounded-full px-1.5 py-2 text-sm tabular-nums transition-colors hover:bg-black/5 hover:underline dark:hover:bg-white/10 ${
+            active
+              ? 'text-purple-600 dark:text-purple-300'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          {count}
+        </button>
+      </span>
+    );
+  }
+
   return (
     // p-2 + gap drží dotykový cieľ nad 40px aj na mobile (vzor ostatných
     // ikonových tlačidiel appky, napr. zatváracie X v modaloch).
@@ -364,6 +413,7 @@ export default function FeedPostCard({
   const [tagRemoveOpen, setTagRemoveOpen] = useState(false);
   const [removingTag, setRemovingTag] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [likersOpen, setLikersOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const likePendingRef = useRef(false);
   // Poradové číslo lajkov. `likePendingRef` sám nestačí: lajk, ktorý sa počas
@@ -700,6 +750,9 @@ export default function FeedPostCard({
           count={likesCount}
           active={isLiked}
           onClick={() => void handleToggleLike()}
+          onCountClick={() => setLikersOpen(true)}
+          countLabel={t('feed.likersTitle', 'Páči sa im to')}
+          countTestId="feed-like-count"
           testId="feed-like-button"
         >
           <svg
@@ -754,6 +807,12 @@ export default function FeedPostCard({
           onTotalChange={setCommentsCount}
         />
       ) : null}
+
+      <FeedLikersDialog
+        open={likersOpen}
+        onClose={() => setLikersOpen(false)}
+        postId={post.id}
+      />
 
       <FeedDestructiveConfirm
         open={deleteOpen}

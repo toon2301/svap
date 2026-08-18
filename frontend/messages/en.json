@@ -4363,6 +4363,9 @@
     "viewOwnerResponse": "View owner response"
   },
   "feed": {
+    "likersTitle": "Liked by",
+    "likersEmpty": "Nobody yet.",
+    "likersLoadError": "The list could not be loaded.",
     "originalPost": "Original post",
     "postDeleteHint": "This action cannot be undone.",
     "deletePost": "Delete post",

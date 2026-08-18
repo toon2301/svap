@@ -6,12 +6,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import {
   findDistrictByCode,
   findDistrictByLabel,
-  getDefaultOfferCountryCode,
   getDistrictOptions,
   isInactiveOfferDistrictCode,
+  normalizeOfferCountryCode,
   removeDistrictDiacritics,
   type OfferCountryCode,
 } from '@/shared/districtRegistry';
+import { resolvePreferredOfferCountry } from '@/shared/offerCountryPreference';
 import CountrySelect from '../CountrySelect';
 
 interface LocationSectionProps {
@@ -47,7 +48,7 @@ export default function LocationSection({
   showCountrySelector = false,
   isSeeking = false,
 }: LocationSectionProps) {
-  const { t, country: appCountry } = useLanguage();
+  const { t, country: appCountry, setCountry: setAppCountry } = useLanguage();
   const [districtInput, setDistrictInput] = useState(district || '');
   const [filteredDistricts, setFilteredDistricts] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -63,9 +64,14 @@ export default function LocationSection({
   const isSelectingFromDropdown = useRef(false);
 
   const isOfferDistrictFlow = showCountrySelector && typeof onCountryCodeChange === 'function';
-  const activeCountryCode = getDefaultOfferCountryCode(
-    isOfferDistrictFlow ? countryCode || appCountry || 'SK' : appCountry || 'SK',
-  );
+  const activeCountryCode = isOfferDistrictFlow
+    ? resolvePreferredOfferCountry({
+        savedCountryCode: countryCode,
+        detectedCountryCode: appCountry,
+        trustDetectedCountryCode: true,
+      })
+    : normalizeOfferCountryCode(appCountry) || 'SK';
+  const hasActiveCountry = Boolean(activeCountryCode);
   const districtOptions = useMemo(
     () => getDistrictOptions(activeCountryCode),
     [activeCountryCode],
@@ -75,6 +81,9 @@ export default function LocationSection({
     [districtOptions],
   );
   const hasDistrictOptions = districtOptions.length > 0;
+  const shouldShowLocationInput = isOfferDistrictFlow
+    ? hasActiveCountry
+    : districtInput.trim() !== '';
   const inactiveDistrictError = isInactiveOfferDistrictCode(
     activeCountryCode,
     districtCode,
@@ -84,6 +93,17 @@ export default function LocationSection({
         'Uložený okres už nie je aktuálny. Vyber nový okres zo zoznamu.',
       )
     : '';
+
+  useEffect(() => {
+    if (isOfferDistrictFlow && !countryCode && activeCountryCode) {
+      onCountryCodeChange?.(activeCountryCode);
+    }
+  }, [
+    activeCountryCode,
+    countryCode,
+    isOfferDistrictFlow,
+    onCountryCodeChange,
+  ]);
 
   useEffect(() => {
     const canonicalLabel =
@@ -146,6 +166,23 @@ export default function LocationSection({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDropdown]);
+
+  useEffect(() => {
+    if (!showDropdown) {
+      return undefined;
+    }
+
+    const handleScroll = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Node && dropdownRef.current?.contains(target)) {
+        return;
+      }
+      setShowDropdown(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
   }, [showDropdown]);
 
   const updateDropdownPosition = () => {
@@ -247,6 +284,7 @@ export default function LocationSection({
   };
 
   const handleCountryChange = (nextCountryCode: OfferCountryCode) => {
+    setAppCountry?.(nextCountryCode);
     onCountryCodeChange?.(nextCountryCode);
     clearDistrictSelection();
     setDistrictError('');
@@ -352,7 +390,7 @@ export default function LocationSection({
               )}
           </div>
 
-          {isOfferDistrictFlow && !hasDistrictOptions && (
+          {isOfferDistrictFlow && hasActiveCountry && !hasDistrictOptions && (
             <div className="flex-1 flex items-end">
               <p className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
                 {t(
@@ -363,8 +401,7 @@ export default function LocationSection({
             </div>
           )}
 
-          {!isSeeking &&
-            (districtInput.trim() !== '' || (isOfferDistrictFlow && !hasDistrictOptions)) && (
+          {shouldShowLocationInput && (
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('skills.locationTitle', 'Mesto/obec (voliteľné)')}
@@ -377,8 +414,12 @@ export default function LocationSection({
                   onChange(newValue);
                 }}
                 placeholder={t(
-                  'skills.locationPlaceholder',
-                  'Zadaj, kde ponúkaš svoje služby',
+                  isSeeking
+                    ? 'skills.locationPlaceholderSeeking'
+                    : 'skills.locationPlaceholder',
+                  isSeeking
+                    ? 'Zadaj, kde hľadáš službu'
+                    : 'Zadaj, kde ponúkaš svoje služby',
                 )}
                 maxLength={25}
                 onBlur={onBlur}

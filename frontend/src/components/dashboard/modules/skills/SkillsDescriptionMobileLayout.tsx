@@ -4,6 +4,7 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { SkillsDescriptionScreenState } from './skillDescriptionModal/hooks/useSkillsDescriptionScreenState';
 import ImageWithStatusOverlay from '@/components/shared/ImageWithStatusOverlay';
+import { getOfferLocationSummary } from './offerLocationSummary';
 
 interface SkillsDescriptionMobileLayoutProps {
   category: string;
@@ -16,7 +17,7 @@ export default function SkillsDescriptionMobileLayout({
   subcategory,
   state,
 }: SkillsDescriptionMobileLayoutProps) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
 
   const {
     isSeeking,
@@ -24,6 +25,7 @@ export default function SkillsDescriptionMobileLayout({
     description,
     detailedDescription,
     tags,
+    countryCode,
     district,
     location,
     experience,
@@ -171,16 +173,18 @@ export default function SkillsDescriptionMobileLayout({
             onClick={() => setIsLocationModalOpen(true)}
           >
             <span className="text-gray-900 dark:text-white font-medium w-40 whitespace-nowrap">
-              {t('skills.district', 'Okres')}
+              {t('profile.location', 'Lokalita')}
             </span>
             <div className="flex items-center flex-1 min-w-0 ml-4 pr-2">
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3" />
               <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-                {location && location.trim()
-                  ? location
-                  : district
-                    ? district
-                    : t('skills.addDistrict', 'Pridať okres')}
+                {getOfferLocationSummary({
+                  location,
+                  district,
+                  countryCode,
+                  locale,
+                  emptyLabel: t('profile.addLocation', 'Pridať lokalitu'),
+                })}
               </span>
             </div>
           </div>

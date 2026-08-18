@@ -4363,6 +4363,9 @@
     "viewOwnerResponse": "Antwort anzeigen"
   },
   "feed": {
+    "likersTitle": "Gefällt",
+    "likersEmpty": "Noch niemand.",
+    "likersLoadError": "Die Liste konnte nicht geladen werden.",
     "originalPost": "Ursprünglicher Beitrag",
     "postDeleteHint": "Diese Aktion kann nicht rückgängig gemacht werden.",
     "deletePost": "Beitrag löschen",

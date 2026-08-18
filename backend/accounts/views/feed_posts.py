@@ -45,6 +45,11 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
+from ..district_registry import (
+    get_country_district_labels,
+    normalize_district_text as _normalize_district_text,
+    resolve_country_from_district_label,
+)
 from ..feed_serializers import FeedPostSerializer
 from ..models import (
     FeedPost,
@@ -90,15 +95,30 @@ class FeedLocalityCursorPagination(FeedCursorPagination):
 # rozptyl reálnych created_at, takže každý lokálny príspevok je nad každým
 # nelokálnym, a vnútri oboch skupín ostáva chronológia nedotknutá.
 LOCAL_FEED_RANK_BOOST = timedelta(days=36500)
+# Stredná vrstva: rovnaká krajina, iný okres. Musí byť VÝRAZNE menší než
+# okresný bonus, ale zároveň väčší než rozptyl reálnych ``created_at`` – inak
+# by starý príspevok z krajiny prepadol pod čerstvý zo sveta. 10 rokov spĺňa
+# oboje: je 10× menší než okresný (90-ročný odstup medzi vrstvami) a zároveň
+# rádovo viac, než koľko má appka histórie.
+COUNTRY_FEED_RANK_BOOST = timedelta(days=3650)
 
 
 def _feed_rank_expression(viewer):
-    """Zoraďovací kľúč: created_at, lokálnym príspevkom pripočítaný boost.
+    """Zoraďovací kľúč: created_at + bonus podľa blízkosti autora.
+
+    Tri vrstvy v JEDNOM sortovateľnom poli (cursor vie radiť len podľa
+    jedného): okres > krajina > zvyšok sveta, s chronológiou zachovanou
+    vnútri každej vrstvy.
 
     Anonym aj prihlásený bez vyplneného okresu dostanú čistý ``created_at`` –
     teda presne pôvodné chronologické poradie, žiadne uprednostňovanie.
     Okres sa berie z AUTORA príspevku (``author__district``) pre všetky typy
     vrátane zdieľaní – rozhoduje, kto zdieľal, nie odkiaľ je pôvodná ponuka.
+
+    Krajina sa ODVODZUJE z názvu okresu cez register (``User`` ju neukladá).
+    Porovnáva sa preto zoznamom labelov danej krajiny, nie kódom – a keď sa
+    krajina odvodiť nedá (neznámy alebo vo viacerých krajinách rovnaký názov),
+    stredná vrstva jednoducho odpadne a ostane pôvodné dvojvrstvové správanie.
     """
     district = ""
     if getattr(viewer, "is_authenticated", False):
@@ -106,11 +126,37 @@ def _feed_rank_expression(viewer):
     if not district:
         return F("created_at")
 
-    return Case(
+    # Aj okresná vrstva porovnáva bez ohľadu na veľkosť písmen a diakritiku:
+    # obe strany sú voľný text, takže „Kosice I" vs. „Košice I" je ten istý
+    # okres a rozdielny zápis nemá dôvod bonus zrušiť.
+    district_forms = {district.lower(), _normalize_district_text(district)}
+    branches = [
         When(
-            author__district=district,
+            author__district__lower__in=tuple(form for form in district_forms if form),
             then=F("created_at") + Value(LOCAL_FEED_RANK_BOOST),
-        ),
+        )
+    ]
+
+    country_code = resolve_country_from_district_label(district)
+    country_districts = (
+        get_country_district_labels(country_code) if country_code else ()
+    )
+    if country_districts:
+        # Case vyhodnocuje vetvy v poradí, takže zhoda okresu vyššie vyhráva
+        # nad zhodou krajiny – žiadny príspevok nedostane oba bonusy.
+        branches.append(
+            When(
+                # `__lower` zrovná veľkosť písmen na strane DB, diakritiku
+                # rieši samotný zoznam (obsahuje aj tvar bez mäkčeňov) –
+                # ``User.district`` je voľný text, takže presné porovnanie by
+                # inak zapísaný, ale rovnaký okres minulo.
+                author__district__lower__in=country_districts,
+                then=F("created_at") + Value(COUNTRY_FEED_RANK_BOOST),
+            )
+        )
+
+    return Case(
+        *branches,
         default=F("created_at"),
         output_field=DateTimeField(),
     )

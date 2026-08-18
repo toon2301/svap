@@ -1,6 +1,14 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import enMessages from '../../messages/en.json';
 import skMessages from '../../messages/sk.json';
 import plMessages from '../../messages/pl.json';
@@ -11,15 +19,26 @@ import {
   normalizeOfferCountryCode,
   type OfferCountryCode,
 } from '@/shared/countryRegistry';
+import {
+  isGeoDetectionCacheFresh,
+  readGeoDetectionCache,
+  readLastManualOfferCountry,
+  writeGeoDetectionCache,
+  writeLastManualOfferCountry,
+} from '@/shared/offerCountryPreference';
+
+export {
+  GEO_DETECTION_CACHE_KEY,
+  GEO_DETECTION_FAILURE_TTL_MS,
+  GEO_DETECTION_SUCCESS_TTL_MS,
+  isGeoDetectionCacheFresh,
+  readGeoDetectionCache,
+  writeGeoDetectionCache,
+} from '@/shared/offerCountryPreference';
 
 type SupportedLocale = 'sk' | 'en' | 'pl' | 'cs' | 'de' | 'hu';
 type CountryCode = OfferCountryCode | null;
 type StoredCountryCode = Exclude<CountryCode, null>;
-type GeoDetectionCache = {
-  country: StoredCountryCode | null;
-  detectedAt: number;
-  status: 'ok' | 'failed';
-};
 
 type LanguageContextValue = {
   locale: SupportedLocale;
@@ -30,10 +49,6 @@ type LanguageContextValue = {
 };
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
-
-export const GEO_DETECTION_CACHE_KEY = 'appGeoDetectionCacheV2';
-export const GEO_DETECTION_SUCCESS_TTL_MS = 1000 * 60 * 60 * 24 * 14;
-export const GEO_DETECTION_FAILURE_TTL_MS = 1000 * 60 * 60 * 6;
 
 export function isSupportedCountryCode(value: unknown): value is StoredCountryCode {
   return Boolean(normalizeOfferCountryCode(value));
@@ -62,36 +77,6 @@ export function localeFromBrowser(): SupportedLocale {
   return 'sk';
 }
 
-export function readGeoDetectionCache(): GeoDetectionCache | null {
-  try {
-    const raw = window.localStorage.getItem(GEO_DETECTION_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<GeoDetectionCache> | null;
-    if (!parsed || typeof parsed !== 'object') return null;
-    if (typeof parsed.detectedAt !== 'number') return null;
-    if (parsed.status !== 'ok' && parsed.status !== 'failed') return null;
-    if (parsed.country !== null && !isSupportedCountryCode(parsed.country)) return null;
-    return {
-      country: parsed.country ?? null,
-      detectedAt: parsed.detectedAt,
-      status: parsed.status,
-    };
-  } catch {
-    return null;
-  }
-}
-
-export function writeGeoDetectionCache(entry: GeoDetectionCache): void {
-  try {
-    window.localStorage.setItem(GEO_DETECTION_CACHE_KEY, JSON.stringify(entry));
-  } catch {}
-}
-
-export function isGeoDetectionCacheFresh(entry: GeoDetectionCache): boolean {
-  const ttlMs = entry.status === 'ok' ? GEO_DETECTION_SUCCESS_TTL_MS : GEO_DETECTION_FAILURE_TTL_MS;
-  return Date.now() - entry.detectedAt < ttlMs;
-}
-
 function getByPath(messages: Record<string, unknown>, key: string): unknown {
   let current: unknown = messages;
   for (const segment of key.split('.')) {
@@ -104,6 +89,7 @@ function getByPath(messages: Record<string, unknown>, key: string): unknown {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<SupportedLocale>('sk');
   const [country, setCountryState] = useState<CountryCode>(null);
+  const manualCountryRef = useRef<OfferCountryCode | ''>('');
 
   useEffect(() => {
     let hasSavedLocale = false;
@@ -123,6 +109,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         setLocaleState(localeFromCountry(nextCountry) ?? localeFromBrowser());
       }
     };
+
+    const savedManualCountry = readLastManualOfferCountry();
+    if (savedManualCountry) {
+      manualCountryRef.current = savedManualCountry;
+      setCountryState(savedManualCountry);
+      if (!hasSavedLocale) {
+        setLocaleState(localeFromBrowser());
+      }
+      return;
+    }
 
     const cachedGeo = readGeoDetectionCache();
     if (cachedGeo && isGeoDetectionCacheFresh(cachedGeo)) {
@@ -149,8 +145,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         writeGeoDetectionCache({
           country: detectedCountry,
           detectedAt: Date.now(),
-          status: 'ok',
+          status: detectedCountry ? 'ok' : 'failed',
         });
+        const currentManualCountry =
+          manualCountryRef.current || readLastManualOfferCountry();
+        if (currentManualCountry) {
+          manualCountryRef.current = currentManualCountry;
+          setCountryState(currentManualCountry);
+          if (!hasSavedLocale) {
+            setLocaleState(
+              localeFromCountry(detectedCountry) ?? localeFromBrowser(),
+            );
+          }
+          return;
+        }
         applyDetectedCountry(detectedCountry);
       } catch {
         if (!cancelled) {
@@ -181,7 +189,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setCountry = useCallback((next: CountryCode) => {
-    setCountryState(next ? normalizeOfferCountryCode(next) || null : null);
+    const normalized = writeLastManualOfferCountry(next);
+    manualCountryRef.current = normalized;
+    setCountryState(normalized || null);
   }, []);
 
   const messages = useMemo(() => {

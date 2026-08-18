@@ -239,3 +239,86 @@ def resolve_offer_district_code(
         normalized_label,
         ("", ""),
     )
+
+
+@lru_cache(maxsize=1)
+def _country_by_district_label() -> dict[str, str]:
+    """Normalizovaný label okresu → kód krajiny.
+
+    Register je primárne country → okresy; feed potrebuje opačný smer, lebo
+    ``User`` krajinu neukladá – má len voľnotextový ``district``.
+
+    Labely, ktoré sa opakujú vo VIAC krajinách, sa zámerne vynechajú: hádať
+    z nich krajinu by znamenalo tichú chybu. Takých je v registri jednotky
+    (dnes jediný), takže cena je zanedbateľná a dotknutý používateľ len
+    nedostane krajinový bonus – okresný mu ostáva.
+    """
+    counts: dict[str, set[str]] = {}
+    for country, entries in _load_registry().items():
+        for entry in entries:
+            for candidate in (entry["label"], *entry.get("aliases", ())):
+                normalized = _normalize_text(candidate)
+                if normalized:
+                    counts.setdefault(normalized, set()).add(country)
+    return {
+        label: next(iter(countries))
+        for label, countries in counts.items()
+        if len(countries) == 1
+    }
+
+
+def resolve_country_from_district_label(district_label: Any) -> str:
+    """Kód krajiny podľa názvu okresu; prázdny reťazec pri neznámom/nejednoznačnom."""
+    normalized = _normalize_text(str(district_label or ""))
+    if not normalized:
+        return ""
+    return _country_by_district_label().get(normalized, "")
+
+
+@lru_cache(maxsize=None)
+def get_country_district_labels(country_code: Any) -> tuple[str, ...]:
+    """Porovnávacie tvary názvov okresov danej krajiny (vrátane aliasov).
+
+    ``User.district`` je VOĽNÝ TEXT – appka pri ňom neponúka pevný zoznam,
+    takže „Kosice I" aj „KOŠICE I" sú bežné zápisy toho istého okresu. Presné
+    porovnanie by im krajinový bonus uprelo, preto sa vracajú tvary zrovnané
+    na malé písmená, a to v DVOCH podobách:
+      - s diakritikou (``label.lower()``) – trafí správne napísaný okres,
+      - bez diakritiky (``_normalize_text``) – trafí zápis bez mäkčeňov.
+    Volajúci ich porovnáva cez ``district__lower__in``, takže veľkosť písmen
+    rieši databáza a diakritiku tento zoznam.
+
+    Nejednoznačné labely (rovnaký názov vo viacerých krajinách) sa VYNECHÁVAJÚ
+    – rovnaké pravidlo „radšej vynechať než hádať" ako pri opačnom smere.
+    """
+    normalized_country = normalize_offer_country_code(country_code)
+    if not normalized_country:
+        return ()
+
+    ambiguous = _country_by_district_label()
+    forms: list[str] = []
+    seen: set[str] = set()
+    for entry in _load_registry().get(normalized_country, ()):  # type: ignore[arg-type]
+        for candidate in (entry["label"], *entry.get("aliases", ())):
+            text = str(candidate or "").strip()
+            if not text:
+                continue
+            ascii_form = _normalize_text(text)
+            # Label, ktorý register pozná vo viacerých krajinách, do porovnania
+            # nepatrí – inak by cudzinec dostal bonus za zhodu názvu.
+            if ascii_form and ascii_form not in ambiguous:
+                continue
+            for form in (text.lower(), ascii_form):
+                if form and form not in seen:
+                    seen.add(form)
+                    forms.append(form)
+    return tuple(forms)
+
+
+def normalize_district_text(value: Any) -> str:
+    """Porovnávací tvar názvu okresu (bez diakritiky, malé písmená).
+
+    Verejný alias nad interným ``_normalize_text`` – feed potrebuje presne tú
+    istú normalizáciu, akou je postavený register, aby sa obe strany zhodli.
+    """
+    return _normalize_text(str(value or ""))
