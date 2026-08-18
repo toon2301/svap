@@ -706,10 +706,13 @@ describe('FeedPostDetailModule – okno nad pollovacím stropom', () => {
     render(<FeedPostDetailModule postId={9} />);
     await screen.findByText('K1');
 
-    // HIGHLIGHT_MAX_PAGES = 20 + počiatočné načítanie; bez stropu by tu
-    // donačítavanie bežalo donekonečna.
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    expect(mockedListComments.mock.calls.length).toBeLessThanOrEqual(21);
-    expect(mockedListComments.mock.calls.length).toBeGreaterThan(5);
+    // Presne 1 počiatočné načítanie + HIGHLIGHT_MAX_PAGES (20) stránok.
+    // waitFor počká, kým počet dorazí na 21 – pevné oneskorenie by pri
+    // pomalšom behu skončilo predčasne a strop by v skutočnosti neoveril.
+    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(21));
+
+    // A na 21 aj ZOSTANE – bez stropu by donačítavanie bežalo ďalej.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(mockedListComments).toHaveBeenCalledTimes(21);
   });
 });
