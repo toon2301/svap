@@ -368,6 +368,33 @@ export default function FeedPostComments({
     if (added > 0) announceNewComments(added);
   }, [postId, announceNewComments, markSeen]);
 
+  /**
+   * Znovu otvorí stránkovanie pre okno DLHŠIE než pollovací strop.
+   *
+   * `refresh` vie doniesť nové komentáre len vtedy, keď sa celé okno zmestí
+   * do jedného dopytu (strop COMMENTS_MAX_POLL_SIZE). Nad ním pokryje iba
+   * začiatok vlákna, takže `next` zámerne nepreberá – ukazoval by doprostred
+   * už načítaného. Lenže keď je `nextUrlRef` medzitým vyčerpaný (vlákno bolo
+   * dočítané do konca), nemá sa odkiaľ pohnúť ďalej a hľadanie komentára za
+   * koncom okna by sa vzdalo, hoci ten komentár existuje.
+   *
+   * Preto sa kurzor postaví nanovo od začiatku: `loadMore` sa ním prehryzie
+   * dopredu a už načítané položky cestou zahodí dedup. Cena je pár dopytov
+   * navyše, ohraničených tým istým stropom HIGHLIGHT_MAX_PAGES ako zvyšok
+   * hľadania.
+   */
+  const reopenPagination = useCallback(async () => {
+    if (loadingMoreRef.current) return;
+    const seq = loadSeqRef.current;
+    const page = await listFeedPostComments(postId, {
+      pageSize: COMMENTS_MAX_POLL_SIZE,
+    });
+    if (seq !== loadSeqRef.current || loadingMoreRef.current) return;
+    if (!page.next) return;
+    nextUrlRef.current = page.next;
+    setHasMore(true);
+  }, [postId]);
+
   // Sekcia sa mountuje až pri rozbalení, takže „namountovaná" = „otvorená".
   // Každá otvorená karta má vlastnú inštanciu, teda aj vlastný polling.
   useFeedCommentsPolling({ enabled: !loading && !failed, onPoll: refresh });
@@ -456,8 +483,11 @@ export default function FeedPostComments({
 
     // Cieľ je ZA načítaným koncom, ale server o ďalšej stránke nevie –
     // typicky preto, že komentár vznikol až po poslednom načítaní. Raz sa
-    // spýtaj znova; `refresh` dotiahne, čo pribudlo, a vráti čerstvý `next`,
-    // takže sa stránkovanie môže rozbehnúť ďalej.
+    // spýtaj znova, ale KTOROU cestou závisí od veľkosti okna:
+    //  - do stropu: `refresh` pokryje celé okno aj to, čo pribudlo za ním,
+    //    takže cieľ dorazí rovno v odpovedi,
+    //  - nad stropom: taký dopyt sa už do jednej stránky nezmestí, preto sa
+    //    len znovu postaví kurzor a ďalej sa stránkuje cez `loadMore`.
     if (
       !passedIt &&
       !hasMore &&
@@ -466,7 +496,9 @@ export default function FeedPostComments({
     ) {
       highlightRefreshedRef.current = highlightCommentId;
       highlightSeekingRef.current = true;
-      void refresh()
+      const recheck =
+        comments.length > COMMENTS_MAX_POLL_SIZE ? reopenPagination : refresh;
+      void recheck()
         .catch(() => undefined)
         .finally(() => {
           highlightSeekingRef.current = false;
@@ -503,7 +535,16 @@ export default function FeedPostComments({
       if (!ok) highlightHandledRef.current = highlightCommentId;
       // Po úspechu narastie `comments` a tento efekt sa spustí znova.
     });
-  }, [comments, highlightCommentId, loading, loadingMore, hasMore, loadMore, refresh]);
+  }, [
+    comments,
+    highlightCommentId,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+    reopenPagination,
+  ]);
 
   // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
   const handleListScroll = useCallback(() => {

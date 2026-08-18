@@ -343,10 +343,14 @@ describe('FeedPostDetailModule – komentár mimo prvej stránky', () => {
 
     // Bez donačítavania by sa zobrazila len prvá desiatka a nič by sa nestalo.
     expect(await screen.findByText('K25')).toBeInTheDocument();
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
-    expect(
-      document.querySelector('[data-comment-id="25"]')?.className,
-    ).toContain('bg-purple-100/80');
+    // Obe podmienky v JEDNOM waitFor: zvýraznenie je len dočasné (HIGHLIGHT_MS),
+    // takže samostatné čakania po sebe ho vedia minúť, keď je beh pomalší.
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalled();
+      expect(
+        document.querySelector('[data-comment-id="25"]')?.className,
+      ).toContain('bg-purple-100/80');
+    });
   });
 
   it('stops paging when it has passed the target id', async () => {
@@ -602,5 +606,110 @@ describe('FeedPostDetailModule – druhá a ďalšia notifikácia', () => {
     await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(2));
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(mockedListComments).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('FeedPostDetailModule – okno nad pollovacím stropom', () => {
+  // `mockImplementation` neruší `clearAllMocks`; bez týchto resetov by
+  // falošný server pretiekol do ostatných testov v súbore (a naopak).
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedListComments.mockReset();
+    mockedGetPost.mockResolvedValue(post);
+  });
+
+  afterEach(() => {
+    mockedListComments.mockReset();
+  });
+
+  /** Server, ktorý rešpektuje page_size aj kurzor – inak by test nerozlíšil
+   *  „donačítava" od „vzdalo to". */
+  function serve(store: ReturnType<typeof comment>[]) {
+    mockedListComments.mockImplementation(async (_postId, params = {}) => {
+      const query = params.cursorUrl ? new URL(params.cursorUrl).searchParams : null;
+      const after = query ? Number(query.get('after')) : null;
+      const size = Math.min(
+        Number(query?.get('page_size') ?? params.pageSize ?? 20),
+        50,
+      );
+      const from = after === null ? 0 : store.findIndex((item) => item.id > after);
+      const slice = from < 0 ? [] : store.slice(from, from + size);
+      const last = slice[slice.length - 1];
+      const hasNext = last ? store.indexOf(last) < store.length - 1 : false;
+      return {
+        results: slice,
+        next: hasNext
+          ? `http://api.test/c?after=${last.id}&page_size=${size}`
+          : null,
+        previous: null,
+        count: params.cursorUrl ? undefined : store.length,
+      };
+    });
+  }
+
+  it('keeps seeking when the loaded window is longer than the poll cap', async () => {
+    // Regresia: vlákno je celé dočítané (55 komentárov, `hasMore` false),
+    // takže na nový komentár za koncom treba kurzor postaviť nanovo. Pod
+    // stropom to zvládne `refresh`, nad ním nie – a hľadanie sa vzdávalo.
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: jest.fn(),
+      configurable: true,
+      writable: true,
+    });
+    const store = Array.from({ length: 55 }, (_, i) => comment(i + 1, `K${i + 1}`));
+    serve(store);
+
+    // Prvá notifikácia dočíta vlákno až na koniec.
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '55' : null,
+    );
+    const { rerender } = render(<FeedPostDetailModule postId={9} />);
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-comment-id="55"]')?.className,
+      ).toContain('bg-purple-100/80'),
+    );
+
+    // Pribudne 56. komentár a príde naň druhá notifikácia. Okno má už 55
+    // položiek, teda viac než pollovací strop.
+    store.push(comment(56, 'K56'));
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '56' : null,
+    );
+    rerender(<FeedPostDetailModule postId={9} />);
+
+    expect(await screen.findByText('K56')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-comment-id="56"]')?.className,
+      ).toContain('bg-purple-100/80'),
+    );
+  });
+
+  it('still stops at the page cap when the comment never turns up', async () => {
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: jest.fn(),
+      configurable: true,
+      writable: true,
+    });
+    // Nekonečné vlákno: server vždy hlási ďalšiu stránku, cieľ nikdy nepríde.
+    mockedListComments.mockImplementation(async (_postId, params = {}) => ({
+      results: [comment(1, 'K1')],
+      next: 'http://api.test/c?after=1&page_size=10',
+      previous: null,
+      count: params.cursorUrl ? undefined : 9999,
+    }));
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'comment' ? '99999' : null,
+    );
+
+    render(<FeedPostDetailModule postId={9} />);
+    await screen.findByText('K1');
+
+    // HIGHLIGHT_MAX_PAGES = 20 + počiatočné načítanie; bez stropu by tu
+    // donačítavanie bežalo donekonečna.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(mockedListComments.mock.calls.length).toBeLessThanOrEqual(21);
+    expect(mockedListComments.mock.calls.length).toBeGreaterThan(5);
   });
 });
