@@ -47,6 +47,7 @@ from swaply.rate_limiting import api_rate_limit
 
 from ..district_registry import (
     get_country_district_labels,
+    normalize_district_text as _normalize_district_text,
     resolve_country_from_district_label,
 )
 from ..feed_serializers import FeedPostSerializer
@@ -125,9 +126,13 @@ def _feed_rank_expression(viewer):
     if not district:
         return F("created_at")
 
+    # Aj okresná vrstva porovnáva bez ohľadu na veľkosť písmen a diakritiku:
+    # obe strany sú voľný text, takže „Kosice I" vs. „Košice I" je ten istý
+    # okres a rozdielny zápis nemá dôvod bonus zrušiť.
+    district_forms = {district.lower(), _normalize_district_text(district)}
     branches = [
         When(
-            author__district=district,
+            author__district__lower__in=tuple(form for form in district_forms if form),
             then=F("created_at") + Value(LOCAL_FEED_RANK_BOOST),
         )
     ]
@@ -141,7 +146,11 @@ def _feed_rank_expression(viewer):
         # nad zhodou krajiny – žiadny príspevok nedostane oba bonusy.
         branches.append(
             When(
-                author__district__in=country_districts,
+                # `__lower` zrovná veľkosť písmen na strane DB, diakritiku
+                # rieši samotný zoznam (obsahuje aj tvar bez mäkčeňov) –
+                # ``User.district`` je voľný text, takže presné porovnanie by
+                # inak zapísaný, ale rovnaký okres minulo.
+                author__district__lower__in=country_districts,
                 then=F("created_at") + Value(COUNTRY_FEED_RANK_BOOST),
             )
         )

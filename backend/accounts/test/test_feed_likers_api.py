@@ -182,3 +182,63 @@ class FeedCommentLikersTests(APITestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class FeedLikersPrivacyTests(APITestCase):
+    """Súkromný účet sa v zozname lajkov neukáže – okrem seba samého."""
+
+    def setUp(self):
+        self.author = _user("priv-author")
+        self.public_liker = _user("priv-public")
+        self.private_liker = _user("priv-private", is_public=False)
+        self.bystander = _user("priv-bystander")
+        self.post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Verejny prispevok",
+        )
+        FeedPostLike.objects.create(post=self.post, user=self.public_liker)
+        FeedPostLike.objects.create(post=self.post, user=self.private_liker)
+        self.url = reverse("accounts:feed_post_likers", args=[self.post.id])
+
+    def _ids(self, response):
+        return [item["id"] for item in response.data["results"]]
+
+    def test_private_liker_is_hidden_from_others(self):
+        self.client.force_authenticate(user=self.bystander)
+
+        self.assertEqual(self._ids(self.client.get(self.url)), [self.public_liker.id])
+
+    def test_private_liker_is_hidden_from_anonymous(self):
+        self.assertEqual(self._ids(self.client.get(self.url)), [self.public_liker.id])
+
+    def test_private_liker_sees_themselves(self):
+        self.client.force_authenticate(user=self.private_liker)
+
+        ids = self._ids(self.client.get(self.url))
+
+        self.assertIn(self.private_liker.id, ids)
+        self.assertIn(self.public_liker.id, ids)
+
+    def test_inactive_liker_is_hidden(self):
+        self.public_liker.is_active = False
+        self.public_liker.save(update_fields=["is_active"])
+
+        self.assertEqual(self._ids(self.client.get(self.url)), [])
+
+    def test_comment_likers_hide_private_accounts_too(self):
+        comment = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Komentar"
+        )
+        FeedPostCommentLike.objects.create(comment=comment, user=self.private_liker)
+        FeedPostCommentLike.objects.create(comment=comment, user=self.public_liker)
+        url = reverse(
+            "accounts:feed_post_comment_likers", args=[self.post.id, comment.id]
+        )
+        self.client.force_authenticate(user=self.bystander)
+
+        response = self.client.get(url)
+
+        self.assertEqual(
+            [item["id"] for item in response.data["results"]], [self.public_liker.id]
+        )

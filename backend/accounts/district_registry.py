@@ -277,20 +277,48 @@ def resolve_country_from_district_label(district_label: Any) -> str:
 
 @lru_cache(maxsize=None)
 def get_country_district_labels(country_code: Any) -> tuple[str, ...]:
-    """Všetky názvy okresov danej krajiny (vrátane aliasov).
+    """Porovnávacie tvary názvov okresov danej krajiny (vrátane aliasov).
 
-    Feed ich používa v ``author__district__in`` – ``User.district`` je label,
-    nie kód, takže porovnávať sa dá len cez zoznam labelov.
+    ``User.district`` je VOĽNÝ TEXT – appka pri ňom neponúka pevný zoznam,
+    takže „Kosice I" aj „KOŠICE I" sú bežné zápisy toho istého okresu. Presné
+    porovnanie by im krajinový bonus uprelo, preto sa vracajú tvary zrovnané
+    na malé písmená, a to v DVOCH podobách:
+      - s diakritikou (``label.lower()``) – trafí správne napísaný okres,
+      - bez diakritiky (``_normalize_text``) – trafí zápis bez mäkčeňov.
+    Volajúci ich porovnáva cez ``district__lower__in``, takže veľkosť písmen
+    rieši databáza a diakritiku tento zoznam.
+
+    Nejednoznačné labely (rovnaký názov vo viacerých krajinách) sa VYNECHÁVAJÚ
+    – rovnaké pravidlo „radšej vynechať než hádať" ako pri opačnom smere.
     """
     normalized_country = normalize_offer_country_code(country_code)
     if not normalized_country:
         return ()
-    labels: list[str] = []
+
+    ambiguous = _country_by_district_label()
+    forms: list[str] = []
     seen: set[str] = set()
     for entry in _load_registry().get(normalized_country, ()):  # type: ignore[arg-type]
         for candidate in (entry["label"], *entry.get("aliases", ())):
             text = str(candidate or "").strip()
-            if text and text not in seen:
-                seen.add(text)
-                labels.append(text)
-    return tuple(labels)
+            if not text:
+                continue
+            ascii_form = _normalize_text(text)
+            # Label, ktorý register pozná vo viacerých krajinách, do porovnania
+            # nepatrí – inak by cudzinec dostal bonus za zhodu názvu.
+            if ascii_form and ascii_form not in ambiguous:
+                continue
+            for form in (text.lower(), ascii_form):
+                if form and form not in seen:
+                    seen.add(form)
+                    forms.append(form)
+    return tuple(forms)
+
+
+def normalize_district_text(value: Any) -> str:
+    """Porovnávací tvar názvu okresu (bez diakritiky, malé písmená).
+
+    Verejný alias nad interným ``_normalize_text`` – feed potrebuje presne tú
+    istú normalizáciu, akou je postavený register, aby sa obe strany zhodli.
+    """
+    return _normalize_text(str(value or ""))

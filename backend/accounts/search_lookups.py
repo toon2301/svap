@@ -15,6 +15,7 @@ sa použije accent-regex fallback, preto ``as_sql`` zámerne nedefinujeme.
 from __future__ import annotations
 
 from django.db.models import CharField, TextField, Transform
+from django.db.models.functions import Lower
 
 
 class UnaccentLower(Transform):
@@ -30,10 +31,20 @@ class UnaccentLower(Transform):
 
 
 def register_search_lookups() -> None:
-    """Idempotentne zaregistruje `unaccent_lower` transform na textové polia."""
+    """Idempotentne zaregistruje textové transformy na CharField/TextField.
+
+    ``unaccent_lower`` je PG-only (accent-insensitive ILIKE nad expression
+    indexom). ``lower`` je Djangov built-in ``Lower`` – funguje na každom
+    backende a umožňuje case-insensitive ``__in`` porovnanie, ktoré samotné
+    Django lookupy neponúkajú (``__iexact`` zoznam neprijíma).
+    """
     for field_cls in (CharField, TextField):
         try:
             field_cls.register_lookup(UnaccentLower)
+        except (AttributeError, LookupError):
+            pass
+        try:
+            field_cls.register_lookup(Lower)
         except (AttributeError, LookupError):
             # Duplicitná registrácia (opätovný import) – bezpečne ignoruj.
             # Iné (neočakávané) výnimky nechaj propagovať, nech nezostanú tiché.

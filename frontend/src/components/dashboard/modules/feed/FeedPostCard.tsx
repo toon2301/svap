@@ -130,7 +130,7 @@ function ActionButton({
           type="button"
           onClick={onClick}
           data-testid={testId}
-          aria-label={label}
+          aria-label={count === undefined ? label : `${label}: ${count}`}
           title={label}
           className={`inline-flex items-center rounded-full p-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
             active
@@ -144,7 +144,7 @@ function ActionButton({
           type="button"
           onClick={onCountClick}
           data-testid={countTestId}
-          aria-label={countLabel}
+          aria-label={countLabel ? `${countLabel}: ${count}` : undefined}
           title={countLabel}
           className={`rounded-full px-1.5 py-2 text-sm tabular-nums transition-colors hover:bg-black/5 hover:underline dark:hover:bg-white/10 ${
             active

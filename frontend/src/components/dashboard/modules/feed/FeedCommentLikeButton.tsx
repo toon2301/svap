@@ -74,8 +74,8 @@ export default function FeedCommentLikeButton({
   const label = t('feed.commentLike', 'Páči sa mi komentár');
 
   const toggle = (
-    // Menšie než lajk príspevku (h-3.5 vs h-4), ale p-1.5 + záporný margin
-    // držia dotykový cieľ použiteľný aj na mobile.
+    // Menšie než lajk príspevku (h-3.5 vs h-4); dotykový cieľ drží p-1.5 na
+    // tlačidle a záporný margin na obale, ktorý prepínač aj počet spája.
     <button
       type="button"
       onClick={() => void handleToggle()}
@@ -113,7 +113,7 @@ export default function FeedCommentLikeButton({
           type="button"
           onClick={() => setLikersOpen(true)}
           data-testid={`feed-comment-like-count-${comment.id}`}
-          aria-label={t('feed.likersTitle', 'Páči sa im to')}
+          aria-label={`${t('feed.likersTitle', 'Páči sa im to')}: ${likesCount}`}
           title={t('feed.likersTitle', 'Páči sa im to')}
           className={`rounded-full px-1 py-1.5 text-xs tabular-nums transition-colors hover:bg-black/5 hover:underline dark:hover:bg-white/10 ${
             isLiked

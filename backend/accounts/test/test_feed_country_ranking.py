@@ -128,3 +128,57 @@ class FeedCountryRankingTests(APITestCase):
             first_ids + second_ids,
             [self.district_post.id, self.country_post.id, self.world_post.id],
         )
+
+
+class FeedCountryRankingNormalizationTests(APITestCase):
+    """Okres je voľný text – rozdielny zápis nesmie bonus zrušiť."""
+
+    def setUp(self):
+        self.viewer = _user("norm-viewer", district="Nitra")
+        self.url = reverse("accounts:feed_posts")
+
+    def _post(self, author):
+        return FeedPost.objects.create(
+            author=author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption=f"Od {author.username}",
+        )
+
+    def _ids(self, response):
+        return [item["id"] for item in response.data["results"]]
+
+    def test_country_tier_matches_a_differently_spelled_district(self):
+        # „Kosice I" bez diakritiky je ten istý okres ako „Košice I".
+        sloppy = self._post(_user("norm-sloppy", district="kosice i"))
+        abroad = self._post(_user("norm-abroad", district="Praha 1"))
+        self.client.force_authenticate(user=self.viewer)
+
+        ids = self._ids(self.client.get(self.url))
+
+        self.assertLess(ids.index(sloppy.id), ids.index(abroad.id))
+
+    def test_district_tier_matches_a_differently_spelled_district(self):
+        viewer = _user("norm-viewer-2", district="Košice I")
+        same = self._post(_user("norm-same", district="KOSICE I"))
+        other_country = self._post(_user("norm-other", district="Praha 1"))
+        self.client.force_authenticate(user=viewer)
+
+        ids = self._ids(self.client.get(self.url))
+
+        self.assertEqual(ids[0], same.id)
+        self.assertLess(ids.index(same.id), ids.index(other_country.id))
+
+    def test_colliding_label_stays_excluded(self):
+        """„Neunkirchen" je v AT aj DE – bonus zaň nepatrí ani jednej strane."""
+        viewer = _user("norm-at", district="Neunkirchen")
+        peer = self._post(_user("norm-de", district="Wien"))
+        self.client.force_authenticate(user=viewer)
+
+        response = self.client.get(self.url)
+
+        # Krajina sa z nejednoznačného okresu odvodiť nedá, takže rakúsky
+        # divák nedostane krajinový bonus na viedenský príspevok.
+        self.assertEqual(self._ids(response), [peer.id])
+        from accounts.district_registry import resolve_country_from_district_label
+
+        self.assertEqual(resolve_country_from_district_label("Neunkirchen"), "")

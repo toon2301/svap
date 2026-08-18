@@ -20,7 +20,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import CursorPagination
@@ -442,14 +442,30 @@ class FeedLikersCursorPagination(CursorPagination):
 
 
 def _likers_response(request, queryset):
-    """Zoznam ľudí, čo dali lajk – bez tých, s ktorými má divák blok.
+    """Zoznam ľudí, čo dali lajk – bez skrytých a bez blokovaných.
+
+    Súkromný účet sa v zozname NEZOBRAZÍ. Appka ho dôsledne skrýva všade inde
+    (profil, vyhľadávanie, feed), takže lajk na verejnom príspevku nesmie byť
+    dierou, ktorou sa jeho meno a avatar dostanú von. Výnimka je jediná a tá
+    istá ako pri ``visible_feed_posts``: SÁM SEBA vidí prihlásený vždy.
 
     Blok sa filtruje OBOJSMERNE a rovnakým helperom ako inde v appke; pre
-    anonyma je to no-op (nemá identitu, takže ani blok).
+    anonyma je oboje no-op v tom zmysle, že nemá identitu – vidí teda len
+    verejné účty a nikoho nevyfiltruje blok.
+
+    Obe pravidlá sa uplatnia PRED stránkovaním, inak by stránky mali rôznu
+    veľkosť podľa toho, koľko sa z nich vyhodí.
     """
+    viewer_id = request.user.id if request.user.is_authenticated else None
+
+    visible = Q(user__is_public=True, user__is_active=True)
+    if viewer_id:
+        visible |= Q(user_id=viewer_id)
+    queryset = queryset.select_related("user").filter(visible)
+
     queryset = exclude_blocked_users(
-        queryset.select_related("user"),
-        viewer_user_id=request.user.id if request.user.is_authenticated else None,
+        queryset,
+        viewer_user_id=viewer_id,
         user_id_field="user_id",
     )
     paginator = FeedLikersCursorPagination()
