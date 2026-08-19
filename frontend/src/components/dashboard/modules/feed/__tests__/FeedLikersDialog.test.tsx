@@ -169,3 +169,57 @@ it('leaves a zero count non-interactive', () => {
   ).not.toBeInTheDocument();
   expect(screen.queryByTestId('feed-likers-dialog')).not.toBeInTheDocument();
 });
+
+// --- srdiečko a číslo sú dva nezávislé ciele ------------------------------
+
+describe('lajk komentára – srdiečko vs. číslo', () => {
+  it('toggles the like from the heart without opening the list', async () => {
+    const { likeFeedPostComment } = jest.requireMock('@/lib/feedApi');
+    (likeFeedPostComment as jest.Mock).mockResolvedValue({
+      comment_id: 7,
+      is_liked_by_me: true,
+      likes_count: 3,
+    });
+
+    render(<FeedCommentLikeButton postId={5} comment={comment(2)} />);
+
+    await userEvent.click(screen.getByTestId('feed-comment-like-7'));
+
+    expect(likeFeedPostComment).toHaveBeenCalledWith(5, 7);
+    expect(screen.queryByTestId('feed-likers-dialog')).not.toBeInTheDocument();
+    expect(mockedCommentLikers).not.toHaveBeenCalled();
+  });
+
+  it('opens the list from the count without toggling the like', async () => {
+    const { likeFeedPostComment } = jest.requireMock('@/lib/feedApi');
+    mockedCommentLikers.mockResolvedValue(page([liker(1, 'Jana')]));
+
+    render(<FeedCommentLikeButton postId={5} comment={comment(2)} />);
+
+    await userEvent.click(screen.getByTestId('feed-comment-like-count-7'));
+
+    expect(await screen.findByTestId('feed-likers-dialog')).toBeInTheDocument();
+    expect(likeFeedPostComment).not.toHaveBeenCalled();
+  });
+
+  it('keeps the count visually distinct from the heart when liked', () => {
+    render(
+      <FeedCommentLikeButton
+        postId={5}
+        comment={{ ...comment(2), is_liked_by_me: true }}
+      />,
+    );
+
+    const heart = screen.getByTestId('feed-comment-like-7');
+    const count = screen.getByTestId('feed-comment-like-count-7');
+
+    // Lajknuté srdiečko je fialové, číslo ostáva neutrálne – inak by pôsobili
+    // ako jeden zliaty prvok.
+    expect(heart.className).toContain('text-purple-600');
+    expect(count.className).not.toContain('text-purple-600');
+    // Číslo sa pri hoveri podčiarkne, čím sa hlási ako samostatný cieľ kliku.
+    expect(count.className).toContain('hover:underline');
+    // A medzi nimi je skutočná medzera.
+    expect(count.parentElement?.className).toContain('gap-');
+  });
+});

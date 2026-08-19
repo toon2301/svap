@@ -119,6 +119,44 @@ def create_feed_post_commented_notification(
     )
 
 
+def create_feed_post_comment_reply_notification(
+    *, comment, actor
+) -> Notification | None:
+    """Odpoveď na komentár – príjemcom je autor RODIČOVSKÉHO komentára.
+
+    Nie autor príspevku: ten už dostal ``feed_post_commented`` a o odpovedi
+    pod cudzím komentárom vedieť nepotrebuje. Keď je zhodou okolností oboje
+    tá istá osoba, dostane obe notifikácie – sú to dve rôzne udalosti.
+
+    ZÁMERNE bez dedupu, rovnako ako pri komentári: každá odpoveď nesie nový
+    obsah. Odpoveď na vlastný komentár notifikáciu nevytvára (konvencia
+    všetkých sociálnych typov).
+    """
+    parent = getattr(comment, "parent_comment", None)
+    if parent is None:
+        return None
+    recipient = getattr(parent, "author", None)
+    if recipient is None or getattr(recipient, "id", None) == getattr(
+        actor, "id", None
+    ):
+        return None
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=recipient,
+        notif_type=NotificationType.FEED_POST_COMMENT_REPLIED,
+        title="Odpoveď na komentár",
+        body=f"{actor_name} odpovedal na tvoj komentár.",
+        actor=actor,
+        data={
+            "post_id": parent.post_id,
+            # Rovnaký kľúč ako pri komentári, takže existujúci scroll-to-comment
+            # mechanizmus na FE funguje aj pre odpoveď bez ďalšej práce.
+            "comment_id": comment.id,
+        },
+    )
+
+
 def create_feed_post_shared_notification(*, post, actor):
     """Niekto zdieľal obsah ďalej – notifikácia pôvodnému vlastníkovi.
 

@@ -16,6 +16,10 @@ from ..district_registry import (
     get_offer_district_label,
     resolve_offer_district_code,
 )
+from ..offer_price_currencies import (
+    SUPPORTED_OFFER_PRICE_CURRENCIES,
+    normalize_offer_price_currency,
+)
 
 
 MAX_OFFER_WATCHES_PER_USER = 5
@@ -50,6 +54,9 @@ class OfferWatch(models.Model):
     )
     price_max = models.DecimalField(
         _("Cena do"), max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    price_currency = models.CharField(
+        _("Mena"), max_length=8, blank=True, default=""
     )
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Aktualizované"), auto_now=True)
@@ -95,6 +102,25 @@ class OfferWatch(models.Model):
                 ),
                 name="acc_watch_price_order",
             ),
+            models.CheckConstraint(
+                check=(
+                    models.Q(
+                        price_min__isnull=True,
+                        price_max__isnull=True,
+                        price_currency="",
+                    )
+                    | (
+                        (
+                            models.Q(price_min__isnull=False)
+                            | models.Q(price_max__isnull=False)
+                        )
+                        & models.Q(
+                            price_currency__in=SUPPORTED_OFFER_PRICE_CURRENCIES
+                        )
+                    )
+                ),
+                name="acc_watch_price_currency",
+            ),
             models.UniqueConstraint(
                 models.F("user"),
                 models.F("category"),
@@ -104,6 +130,7 @@ class OfferWatch(models.Model):
                 models.F("district_code"),
                 Coalesce("price_min", models.Value(Decimal("-1.00"))),
                 Coalesce("price_max", models.Value(Decimal("-1.00"))),
+                models.F("price_currency"),
                 name="acc_watch_unique_filters",
             ),
         ]
@@ -133,6 +160,7 @@ class OfferWatch(models.Model):
         self.subcategory = (self.subcategory or "").strip()
         self.country_code = normalize_offer_country_code(self.country_code)
         self.district_code = (self.district_code or "").strip().lower()
+        self.price_currency = (self.price_currency or "").strip()
         super().clean_fields(exclude=exclude)
 
     def clean(self):
@@ -172,6 +200,14 @@ class OfferWatch(models.Model):
             errors["price_max"] = _(
                 "Maximálna cena musí byť aspoň minimálna cena."
             )
+
+        has_price_filter = self.price_min is not None or self.price_max is not None
+        if not has_price_filter:
+            self.price_currency = ""
+        elif not self.price_currency:
+            errors["price_currency"] = _("Pri cenovom rozsahu vyber menu.")
+        elif not normalize_offer_price_currency(self.price_currency):
+            errors["price_currency"] = _("Vyber podporovanú menu.")
 
         if errors:
             raise ValidationError(errors)

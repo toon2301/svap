@@ -20,7 +20,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import CursorPagination
@@ -40,6 +40,7 @@ from ..models import (
 )
 from ..services.notifications import (
     create_feed_post_comment_liked_notification,
+    create_feed_post_comment_reply_notification,
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
 )
@@ -63,6 +64,8 @@ class FeedCommentCursorPagination(CursorPagination):
     page_size_query_param = "page_size"
     max_page_size = 50
     ordering = ("created_at", "id")
+    #: Nastaví view, keď sa celkový počet líši od stránkovaného querysetu.
+    forced_total_count: int | None = None
 
     def paginate_queryset(self, queryset, request, view=None):
         """Count počíta LEN pri prvom načítaní (request bez cursoru).
@@ -78,7 +81,14 @@ class FeedCommentCursorPagination(CursorPagination):
         """
         self.total_count = None
         if request.query_params.get(self.cursor_query_param) is None:
-            self.total_count = queryset.count()
+            # `total_count` sa nastavuje zvonku (view), keď sa počet líši od
+            # veľkosti stránkovaného querysetu – zoznam nesie len vrcholové
+            # komentáre, ale číslo pri ikone musí zahŕňať aj odpovede.
+            self.total_count = (
+                self.forced_total_count
+                if self.forced_total_count is not None
+                else queryset.count()
+            )
         return super().paginate_queryset(queryset, request, view=view)
 
     def get_paginated_response(self, data):
@@ -301,8 +311,52 @@ def _create_comment(request, post: FeedPost) -> Response:
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # Odpoveď na komentár – voliteľná. Rodiča overíme TU, aby chyba bola
+    # zrozumiteľná; model to isté kontroluje ešte raz ako poslednú poistku.
+    parent = None
+    raw_parent_id = request.data.get("parent_comment_id")
+    if raw_parent_id not in (None, ""):
+        try:
+            parent_id = int(raw_parent_id)
+        except (TypeError, ValueError):
+            return Response(
+                {
+                    "error": "Neplatny komentar na odpoved.",
+                    "code": "reply_parent_invalid",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        parent = (
+            FeedPostComment.objects.select_related("author")
+            .filter(pk=parent_id, post=post)
+            .first()
+        )
+        if parent is None:
+            return Response(
+                {
+                    "error": "Komentar na odpoved nebol najdeny.",
+                    "code": "reply_parent_missing",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if parent.parent_comment_id is not None:
+            return Response(
+                {
+                    "error": "Na odpoved sa uz odpovedat neda.",
+                    "code": "reply_depth_exceeded",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     def notify_author_about_comment():
         try:
+            # Odpoveď upozorní autora RODIČOVSKÉHO komentára; bežný komentár
+            # autora príspevku. Nikdy oboje za tú istú udalosť.
+            if parent is not None:
+                create_feed_post_comment_reply_notification(
+                    comment=comment, actor=request.user
+                )
+                return
             create_feed_post_commented_notification(
                 post=post, actor=request.user, comment=comment
             )
@@ -319,7 +373,7 @@ def _create_comment(request, post: FeedPost) -> Response:
     try:
         with transaction.atomic():
             comment = FeedPostComment.objects.create(
-                post=post, author=request.user, text=text
+                post=post, author=request.user, text=text, parent_comment=parent
             )
             transaction.on_commit(notify_author_about_comment)
     except ValidationError as exc:
@@ -355,12 +409,31 @@ def feed_post_comments_view(request, post_id: int):
 
     # Count bez distinct je tu bezpečný: v dotaze je JEDINÝ „many" vzťah, takže
     # nevzniká krížový join ako pri lajkoch × komentároch vo feede.
+    # Stránkujú sa LEN vrcholové komentáre; odpovede prídu vnorené v nich,
+    # takže kurzor ostáva stabilný a stránka má predvídateľnú veľkosť.
+    replies_prefetch = Prefetch(
+        "replies",
+        queryset=FeedPostComment.objects.select_related("author")
+        .annotate(_likes_count=Count("likes"))
+        .order_by("created_at", "id"),
+    )
     queryset = (
-        FeedPostComment.objects.filter(post=post)
+        FeedPostComment.objects.filter(post=post, parent_comment__isnull=True)
         .select_related("author")
         .annotate(_likes_count=Count("likes"))
+        .prefetch_related(replies_prefetch)
     )
     paginator = FeedCommentCursorPagination()
+    # Číslo pri ikone počíta VŠETKY komentáre vrátane odpovedí – rovnako ako
+    # `comments_count` na karte príspevku, inak by sa tie dve čísla rozišli.
+    #
+    # Počíta sa LEN pri prvom načítaní, rovnako ako doteraz: pri pokračovacích
+    # stránkach je `count` zbytočný a jeho volanie by zrušilo optimalizáciu,
+    # kvôli ktorej paginator existuje.
+    if request.query_params.get(paginator.cursor_query_param) is None:
+        paginator.forced_total_count = FeedPostComment.objects.filter(
+            post=post
+        ).count()
     page = paginator.paginate_queryset(queryset, request)
     serializer = FeedPostCommentSerializer(
         page,

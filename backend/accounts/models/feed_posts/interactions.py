@@ -87,6 +87,16 @@ class FeedPostComment(models.Model):
     )
     # CharField z rovnakého dôvodu ako FeedPost.caption – TextField by limit nevynútil.
     text = models.CharField(_("Text"), max_length=500)
+    # Odpoveď na komentár. CASCADE zámerne: so zmazaným komentárom zaniknú aj
+    # jeho odpovede – rovnako, ako komentáre zanikajú s príspevkom.
+    parent_comment = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="replies",
+        verbose_name=_("Odpoveď na komentár"),
+    )
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
 
     class Meta:
@@ -98,6 +108,11 @@ class FeedPostComment(models.Model):
                 fields=["post", "created_at"],
                 name="acc_fpcomm_post_cr_idx",
             ),
+            # „Odpovede tohto komentára" – načítava ich zoznam komentárov.
+            models.Index(
+                fields=["parent_comment", "created_at"],
+                name="acc_fpcomm_parent_cr_idx",
+            ),
         ]
 
     def __str__(self):
@@ -105,7 +120,46 @@ class FeedPostComment(models.Model):
 
     def save(self, *args, **kwargs):
         ensure_text_within_limit(self.text, field_label="Komentár")
+        self._ensure_single_reply_level()
         super().save(*args, **kwargs)
+
+    def _ensure_single_reply_level(self):
+        """Povolená je PRESNE jedna úroveň vnorenia.
+
+        Odpoveď na odpoveď by vytvorila strom neobmedzenej hĺbky – zobrazenie
+        aj notifikácie počítajú s plochým „komentár + jeho odpovede". Pravidlo
+        sa nedá vyjadriť DB constraintom (potrebuje si prečítať RODIČOV riadok),
+        preto žije tu, rovnako ako kontrola typu vo ``FeedPost.save()`` alebo
+        „zdieľanie nemá vlastnú fotku" vo ``FeedPostImage.save()``.
+
+        Kontroluje sa aj zhoda príspevku: odpoveď pod komentárom z iného
+        príspevku by v zozname zmizla, lebo sa načítava podľa príspevku.
+        """
+        if self.parent_comment_id is None:
+            return
+
+        parent = (
+            FeedPostComment.objects.filter(pk=self.parent_comment_id)
+            .values_list("parent_comment_id", "post_id")
+            .first()
+        )
+        if parent is None:
+            raise ValidationError(
+                _("Komentár, na ktorý odpovedáš, neexistuje."),
+                code="reply_parent_missing",
+            )
+
+        parent_parent_id, parent_post_id = parent
+        if parent_parent_id is not None:
+            raise ValidationError(
+                _("Na odpoveď sa už odpovedať nedá."),
+                code="reply_depth_exceeded",
+            )
+        if self.post_id is not None and parent_post_id != self.post_id:
+            raise ValidationError(
+                _("Odpoveď musí patriť k tomu istému príspevku."),
+                code="reply_post_mismatch",
+            )
 
 
 class FeedPostCommentLike(models.Model):

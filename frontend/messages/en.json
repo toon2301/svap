@@ -4363,6 +4363,10 @@
     "viewOwnerResponse": "View owner response"
   },
   "feed": {
+    "reply": "Reply",
+    "replySubmit": "Reply",
+    "replyPlaceholder": "Write a reply...",
+    "replyCreateError": "The reply could not be added.",
     "likersTitle": "Liked by",
     "likersEmpty": "Nobody yet.",
     "likersLoadError": "The list could not be loaded.",

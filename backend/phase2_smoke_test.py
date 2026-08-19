@@ -41,8 +41,15 @@ def filters(subcategory, **overrides):
         "district_code": "nitra",
         "price_min": Decimal("10.00"),
         "price_max": Decimal("100.00"),
+        "price_currency": "€",
     }
     data.update(overrides)
+    if (
+        data["price_min"] is None
+        and data["price_max"] is None
+        and "price_currency" not in overrides
+    ):
+        data["price_currency"] = ""
     return data
 
 
@@ -449,7 +456,7 @@ try:
 
     print("PASS: vlastná karta nevytvorila kandidáta")
 
-    # 8. Fáza 2 nič automaticky neposiela
+    # 8. Jadro matcheru sa bez explicitného volania nespúšťa
     notification_count = Notification.objects.filter(
         user__in=[
             duplicate_user,
@@ -473,7 +480,7 @@ try:
         ]
     ).count() == notification_count
 
-    print("PASS: matcher a reálne notifikácie ešte nie sú aktívne")
+    print("PASS: automatické párovanie a reálne notifikácie nie sú aktívne")
 
     # 9. Mazanie a GDPR
     base_watch.delete()

@@ -17,6 +17,7 @@ import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedCommentLikeButton from './FeedCommentLikeButton';
+import FeedCommentReplyComposer from './FeedCommentReplyComposer';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
@@ -90,6 +91,11 @@ const HIGHLIGHT_MS = 3000;
  */
 const HIGHLIGHT_MAX_PAGES = 20;
 
+/** Komentáre aj ich odpovede v jednom zozname – na hľadanie a počítanie. */
+function flattenComments(list: FeedPostComment[]): FeedPostComment[] {
+  return list.flatMap((comment) => [comment, ...(comment.replies ?? [])]);
+}
+
 type FeedPostCommentsProps = {
   postId: number;
   /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
@@ -121,6 +127,9 @@ export default function FeedPostComments({
   // Rovnaký vzor ako loadingMoreRef v useFeedInfiniteScroll.
   const loadingMoreRef = useRef(false);
   const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // Ohraničený scrollovateľný zoznam + požadované správanie doscrollovania po
   // commite (null = nescrollovať). Nový komentár ide na koniec, takže by inak
@@ -207,7 +216,7 @@ export default function FeedPostComments({
       setComments(page.results);
       // Iný príspevok = iné vlákno, hranica sa počíta odznova.
       highestSeenIdRef.current = 0;
-      markSeen(page.results);
+      markSeen(flattenComments(page.results));
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
       // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
@@ -259,7 +268,7 @@ export default function FeedPostComments({
       // Používateľ si ich doscrolloval sám – polling ich už nesmie ohlásiť
       // ako nové. Zapisuje sa synchrónne, nie až po prekreslení, lebo poll
       // môže dobehnúť skôr, než React zoznam commitne.
-      markSeen(page.results);
+      markSeen(flattenComments(page.results));
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
     } catch {
@@ -345,12 +354,15 @@ export default function FeedPostComments({
     // Hranicu prepočítaj z AKTUÁLNEHO okna, nie zo snapshotu spred awaitu:
     // keby loadMore medzitým dotiahol ďalšiu stránku, jej komentáre už
     // používateľ na obrazovke má a nesmú sa počítať ako nové.
-    markSeen(commentsRef.current);
+    markSeen(flattenComments(commentsRef.current));
     const highestSeen = highestSeenIdRef.current;
-    const added = page.results.filter((comment) => comment.id > highestSeen).length;
+    // Aj odpovede sú novinky – prídu vnorené v obnovenom rodičovi.
+    const added = flattenComments(page.results).filter(
+      (comment) => comment.id > highestSeen,
+    ).length;
 
     setComments((current) => mergeComments(current, page.results, hasNext));
-    markSeen(page.results);
+    markSeen(flattenComments(page.results));
     // Počet pri ikone drží krok so zoznamom aj vtedy, keď nové komentáre
     // pribudli za hranicou toho, čo má používateľ načítané.
     if (typeof page.count === 'number') {
@@ -458,7 +470,10 @@ export default function FeedPostComments({
     if (highlightHandledRef.current === highlightCommentId) return;
     if (highlightSeekingRef.current) return;
 
-    const found = comments.some((comment) => comment.id === highlightCommentId);
+    // Cieľom môže byť aj ODPOVEĎ – tá v zozname žije vnorená v rodičovi.
+    const found = flattenComments(comments).some(
+      (comment) => comment.id === highlightCommentId,
+    );
     if (found) {
       highlightHandledRef.current = highlightCommentId;
       setHighlighted(highlightCommentId);
@@ -603,6 +618,35 @@ export default function FeedPostComments({
     }
   };
 
+  const handleSubmitReply = async (parentId: number) => {
+    const trimmedReply = replyText.trim();
+    if (!trimmedReply || replySubmitting) return;
+    setReplySubmitting(true);
+    try {
+      const created = await createFeedPostComment(postId, trimmedReply, parentId);
+      // Zneplatní prebiehajúci load() – rovnako ako pri bežnom komentári.
+      loadSeqRef.current += 1;
+      markSeen([created]);
+      setComments((current) =>
+        current.map((comment) =>
+          comment.id === parentId
+            ? { ...comment, replies: [...(comment.replies ?? []), created] }
+            : comment,
+        ),
+      );
+      setReplyText('');
+      setReplyingTo(null);
+      onCountChange?.(1);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error || t('feed.replyCreateError', 'Odpoveď sa nepodarilo pridať.');
+      toast.error(message);
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     const comment = pendingDelete;
     if (!comment) return;
@@ -610,7 +654,20 @@ export default function FeedPostComments({
     try {
       await deleteFeedPostComment(postId, comment.id);
       loadSeqRef.current += 1;
-      setComments((current) => current.filter((item) => item.id !== comment.id));
+      // Zmazaný môže byť vrcholový komentár aj odpoveď – odpoveď žije
+      // vnorená, takže sa musí odstrániť z rodiča.
+      setComments((current) =>
+        current
+          .filter((item) => item.id !== comment.id)
+          .map((item) =>
+            item.replies?.some((reply) => reply.id === comment.id)
+              ? {
+                  ...item,
+                  replies: item.replies.filter((reply) => reply.id !== comment.id),
+                }
+              : item,
+          ),
+      );
       onCountChange?.(-1);
       toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));
       setPendingDelete(null);
@@ -620,6 +677,67 @@ export default function FeedPostComments({
       setDeleting(false);
     }
   };
+
+  /**
+   * Jeden komentár. Tá istá funkcia kreslí vrcholový komentár aj odpoveď –
+   * líšia sa len veľkosťou a tým, že odpoveď NEMÁ tlačidlo „Odpovedať"
+   * (vnorenie je jednoúrovňové, na odpoveď sa už odpovedať nedá).
+   */
+  const renderComment = (comment: FeedPostComment, isReply = false) => (
+    <div
+      data-comment-id={comment.id}
+      className={`flex items-start gap-2.5 rounded-xl transition-colors duration-700 ${
+        highlighted === comment.id ? 'bg-purple-100/80 dark:bg-purple-900/30' : ''
+      }`}
+    >
+      <InitialsAvatar
+        name={comment.author?.display_name}
+        avatarUrl={comment.author?.avatar_url}
+        size="xs"
+      />
+      <div
+        className={`min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ${
+          isReply ? 'text-[13px]' : ''
+        }`}
+      >
+        <p className="text-xs font-semibold text-gray-900 dark:text-white">
+          {comment.author?.display_name}
+        </p>
+        <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
+          {comment.text}
+        </p>
+        <div className="mt-1 flex items-center gap-2">
+          <FeedCommentLikeButton postId={postId} comment={comment} />
+          {isReply ? null : (
+            <button
+              type="button"
+              onClick={() => {
+                setReplyingTo((current) =>
+                  current === comment.id ? null : comment.id,
+                );
+                setReplyText('');
+              }}
+              data-testid={`feed-comment-reply-${comment.id}`}
+              className="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
+            >
+              {t('feed.reply', 'Odpovedať')}
+            </button>
+          )}
+        </div>
+      </div>
+      {comment.can_delete ? (
+        <button
+          type="button"
+          onClick={() => setPendingDelete(comment)}
+          aria-label={t('feed.commentDelete', 'Zmazať komentár')}
+          title={t('feed.commentDelete', 'Zmazať komentár')}
+          className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </button>
+      ) : null}
+    </div>
+  );
 
   return (
     <div
@@ -660,41 +778,35 @@ export default function FeedPostComments({
           ) : (
             <ul className="space-y-3">
               {comments.map((comment) => (
-                <li
-                key={comment.id}
-                data-comment-id={comment.id}
-                className={`flex items-start gap-2.5 rounded-xl transition-colors duration-700 ${
-                  highlighted === comment.id
-                    ? 'bg-purple-100/80 dark:bg-purple-900/30'
-                    : ''
-                }`}
-              >
-                  <InitialsAvatar
-                    name={comment.author?.display_name}
-                    avatarUrl={comment.author?.avatar_url}
-                    size="xs"
-                  />
-                  <div className="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                      {comment.author?.display_name}
-                    </p>
-                    <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-                      {comment.text}
-                    </p>
-                    <div className="mt-1 flex items-center">
-                      <FeedCommentLikeButton postId={postId} comment={comment} />
-                    </div>
-                  </div>
-                  {comment.can_delete ? (
-                    <button
-                      type="button"
-                      onClick={() => setPendingDelete(comment)}
-                      aria-label={t('feed.commentDelete', 'Zmazať komentár')}
-                      title={t('feed.commentDelete', 'Zmazať komentár')}
-                      className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
+                <li key={comment.id}>
+                  {renderComment(comment)}
+
+                  {/* Odpovede – jedna úroveň, odsadené a menšie. Žiadna
+                      @menovka: kontext dáva samotné vnorenie. */}
+                  {comment.replies?.length ? (
+                    <ul
+                      data-testid={`feed-comment-replies-${comment.id}`}
+                      className="mt-2 space-y-2 border-l-2 border-gray-200 pl-3 ml-4 dark:border-gray-700"
                     >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+                      {comment.replies.map((reply) => (
+                        <li key={reply.id}>{renderComment(reply, true)}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {replyingTo === comment.id ? (
+                    <div className="ml-4 pl-3">
+                      <FeedCommentReplyComposer
+                        value={replyText}
+                        onChange={setReplyText}
+                        submitting={replySubmitting}
+                        onSubmit={() => void handleSubmitReply(comment.id)}
+                        onCancel={() => {
+                          setReplyingTo(null);
+                          setReplyText('');
+                        }}
+                      />
+                    </div>
                   ) : null}
                 </li>
               ))}

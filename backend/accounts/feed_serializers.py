@@ -50,6 +50,7 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
     can_delete = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPostComment
@@ -60,8 +61,38 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             "can_delete",
             "likes_count",
             "is_liked_by_me",
+            "parent_comment_id",
+            "replies",
             "created_at",
         ]
+
+    def get_replies(self, obj):
+        """Odpovede vnorené pod svojím komentárom.
+
+        Vnorenie je LEN JEDNU úroveň hlboké (model to vynucuje), takže sa
+        serializuje bez rekurzie a bez vlastného stránkovania: odpovedí býva
+        na komentár pár kusov a druhý stránkovací mechanizmus by pridal
+        zložitosť, ktorú dnešný objem dát nepotrebuje. Keby raz začali byť
+        dlhé, prirodzené miesto je samostatný endpoint – tvar odpovede sa
+        pritom nemusí meniť.
+
+        Odpovediam sa `replies` neserializuje vôbec (vždy prázdne), preto sa
+        pole vynechá – zoznam by len zväčšovalo.
+        """
+        if obj.parent_comment_id is not None:
+            return None
+        # Prefetch z view (`replies` s autorom a lajkami) – žiadne N+1.
+        replies = obj.replies.all()
+        return FeedPostCommentSerializer(
+            replies, many=True, context=self.context
+        ).data
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Odpoveď nemá `replies` – vnorenie je jednoúrovňové.
+        if data.get("replies") is None:
+            data.pop("replies", None)
+        return data
 
     def get_can_delete(self, obj):
         request = self.context.get("request")

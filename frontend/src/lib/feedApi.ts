@@ -178,6 +178,13 @@ export type FeedPostComment = {
   can_delete: boolean;
   likes_count: number;
   is_liked_by_me: boolean;
+  /** Vyplnené len pri odpovedi; vrcholový komentár má null. */
+  parent_comment_id?: number | null;
+  /**
+   * Odpovede vnorené pod komentárom. Vnorenie je jednoúrovňové, takže samotné
+   * odpovede toto pole nemajú vôbec (BE ho pri nich vynecháva).
+   */
+  replies?: FeedPostComment[];
   created_at: string;
 };
 
@@ -253,10 +260,14 @@ export async function listFeedPostComments(
 export async function createFeedPostComment(
   postId: number,
   text: string,
+  /** Odpoveď na komentár – vynechané pri bežnom komentári. */
+  parentCommentId?: number | null,
 ): Promise<FeedPostComment> {
   const { data } = await api.post<FeedPostComment>(
     endpoints.feed.postComments(postId),
-    { text },
+    parentCommentId
+      ? { text, parent_comment_id: parentCommentId }
+      : { text },
   );
   return data;
 }

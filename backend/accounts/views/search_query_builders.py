@@ -49,16 +49,6 @@ for group in SMART_KEYWORD_GROUPS:
         SMART_KEYWORD_INDEX[no_accents] = lowered
 
 
-COUNTRY_LOCATION_MAPPING = {
-    "SK": ["slovakia", "slovensko", "slovak"],
-    "CZ": ["czech", "česko", "česká", "cesko", "ceska"],
-    "PL": ["poland", "poľsko", "polsko", "polish"],
-    "HU": ["hungary", "maďarsko", "madarsko", "hungarian"],
-    "DE": ["germany", "nemecko", "deutschland", "german"],
-    "AT": ["austria", "rakúsko", "rakusko", "österreich", "osterreich"],
-}
-
-
 def _build_only_my_location_filters(location_snapshot):
     user_loc_q = Q()
     skill_loc_q = Q()
@@ -119,25 +109,12 @@ def _build_skill_search_query(skill_terms, *, projection=False):
     return skill_query
 
 
-def _apply_skill_country_filter(qs, country_filter, *, projection=False):
-    country_terms = COUNTRY_LOCATION_MAPPING.get(country_filter)
-    if not country_terms:
-        return qs
-
-    country_query = Q()
-    for term in country_terms:
-        if projection:
-            country_query |= Q(user_location__icontains=term) | Q(
-                user_district__icontains=term
-            )
-        else:
-            country_query |= Q(user__location__icontains=term) | Q(
-                user__district__icontains=term
-            )
-
-    test_qs = qs.filter(country_query)
-    if test_qs.exists():
-        return qs.filter(country_query)
+def _apply_skill_geography_filters(qs, *, country_filter, district_filter):
+    """Filter cards by their canonical geography, never by owner profile text."""
+    if country_filter:
+        qs = qs.filter(country_code=country_filter)
+    if district_filter:
+        qs = qs.filter(district_code=district_filter)
     return qs
 
 
@@ -179,6 +156,7 @@ def _build_projection_skills_page_qs(
     raw_query,
     skill_terms,
     country_filter,
+    district_filter,
     offer_type,
     price_min,
     price_max,
@@ -196,12 +174,11 @@ def _build_projection_skills_page_qs(
             _build_skill_search_query(skill_terms, projection=True)
         )
 
-    if country_filter:
-        skills_qs = _apply_skill_country_filter(
-            skills_qs,
-            country_filter,
-            projection=True,
-        )
+    skills_qs = _apply_skill_geography_filters(
+        skills_qs,
+        country_filter=country_filter,
+        district_filter=district_filter,
+    )
 
     skills_qs = _apply_skill_search_scalar_filters(
         skills_qs,
@@ -235,6 +212,7 @@ def _build_legacy_skills_page_qs(
     raw_query,
     skill_terms,
     country_filter,
+    district_filter,
     offer_type,
     price_min,
     price_max,
@@ -250,8 +228,11 @@ def _build_legacy_skills_page_qs(
     if skill_terms:
         skills_qs = skills_qs.filter(_build_skill_search_query(skill_terms))
 
-    if country_filter:
-        skills_qs = _apply_skill_country_filter(skills_qs, country_filter)
+    skills_qs = _apply_skill_geography_filters(
+        skills_qs,
+        country_filter=country_filter,
+        district_filter=district_filter,
+    )
 
     skills_qs = _apply_skill_search_scalar_filters(
         skills_qs,
