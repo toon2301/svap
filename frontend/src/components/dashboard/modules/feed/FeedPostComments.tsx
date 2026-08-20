@@ -668,7 +668,10 @@ export default function FeedPostComments({
               : item,
           ),
       );
-      onCountChange?.(-1);
+      // Backend maže vrcholový komentár aj jeho odpovede naraz (CASCADE),
+      // takže číslo pri ikone musí klesnúť o celý podstrom – nie o jedno.
+      // Odpoveď žiadne vlastné odpovede nemá, takže tam ostáva -1.
+      onCountChange?.(-(1 + (comment.replies?.length ?? 0)));
       toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));
       setPendingDelete(null);
     } catch {

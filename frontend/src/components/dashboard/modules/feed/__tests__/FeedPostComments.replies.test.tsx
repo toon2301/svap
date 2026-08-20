@@ -217,3 +217,61 @@ it('scrolls to and highlights a reply from a notification', async () => {
     ).toContain('bg-purple-100/80');
   });
 });
+
+describe('mazanie a počet komentárov', () => {
+  const mockedDelete = jest.requireMock('@/lib/feedApi')
+    .deleteFeedPostComment as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedDelete.mockResolvedValue(undefined);
+  });
+
+  function deletable(base: FeedPostComment): FeedPostComment {
+    return { ...base, can_delete: true };
+  }
+
+  it('drops the whole subtree from the count when a parent goes', async () => {
+    const onCountChange = jest.fn();
+    mockedList.mockResolvedValue(
+      page([
+        deletable(
+          comment(1, 'Hlavný', [
+            reply(2, 'Prvá odpoveď', 1),
+            reply(3, 'Druhá odpoveď', 1),
+          ]),
+        ),
+      ]),
+    );
+
+    render(<FeedPostComments postId={5} onCountChange={onCountChange} />);
+    await screen.findByText('Hlavný');
+
+    await userEvent.click(screen.getByLabelText('Zmazať komentár'));
+    const dialog = await screen.findByTestId('feed-comment-delete-confirm');
+    await userEvent.click(
+      within(dialog).getByTestId('feed-comment-delete-confirm-action'),
+    );
+
+    // Backend zmaže rodiča aj obe odpovede (CASCADE) – číslo musí klesnúť o 3.
+    await waitFor(() => expect(onCountChange).toHaveBeenCalledWith(-3));
+  });
+
+  it('drops just one when a reply goes', async () => {
+    const onCountChange = jest.fn();
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', [deletable(reply(2, 'Odpoveď', 1))])]),
+    );
+
+    render(<FeedPostComments postId={5} onCountChange={onCountChange} />);
+    await screen.findByText('Odpoveď');
+
+    await userEvent.click(screen.getByLabelText('Zmazať komentár'));
+    const dialog = await screen.findByTestId('feed-comment-delete-confirm');
+    await userEvent.click(
+      within(dialog).getByTestId('feed-comment-delete-confirm-action'),
+    );
+
+    await waitFor(() => expect(onCountChange).toHaveBeenCalledWith(-1));
+  });
+});

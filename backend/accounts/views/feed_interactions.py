@@ -348,6 +348,20 @@ def _create_comment(request, post: FeedPost) -> Response:
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Blok voči AUTOROVI KOMENTÁRA. Viditeľnosť príspevku ho nepokrýva:
+        # príspevok môže patriť tretej strane, s ktorou blok neexistuje, takže
+        # `visible_feed_posts` ho prepustí. Bez tejto kontroly by si vzájomne
+        # blokovaní vedeli cez odpoveď posielať notifikácie. Rovnaký helper
+        # aj rovnaká odpoveď (404) ako pri lajku komentára.
+        try:
+            with transaction.atomic():
+                lock_users_and_ensure_interaction_allowed(
+                    first_user_id=request.user.id,
+                    second_user_id=parent.author_id,
+                )
+        except BlockedUserInteractionError:
+            return _comment_not_found()
+
     def notify_author_about_comment():
         try:
             # Odpoveď upozorní autora RODIČOVSKÉHO komentára; bežný komentár
@@ -435,13 +449,24 @@ def feed_post_comments_view(request, post_id: int):
             post=post
         ).count()
     page = paginator.paginate_queryset(queryset, request)
+    # Odpovede sa serializujú vnorene, takže do dotazu na „čo mám lajknuté"
+    # musia ísť AJ ich id. Inak by každá odpoveď dostala is_liked_by_me=False
+    # a klik na už lajknutú by poslal ďalší lajk namiesto odlajkovania.
+    # Jeden spoločný zoznam pre obe úrovne = jeden dotaz, žiadne N+1.
+    page_with_replies = [
+        comment
+        for root in (page or [])
+        for comment in (root, *root.replies.all())
+    ]
     serializer = FeedPostCommentSerializer(
         page,
         many=True,
         context={
             "request": request,
             "post_author_id": post.author_id,
-            "liked_feed_comment_ids": _liked_comment_ids(request.user, page),
+            "liked_feed_comment_ids": _liked_comment_ids(
+                request.user, page_with_replies
+            ),
         },
     )
     return paginator.get_paginated_response(serializer.data)

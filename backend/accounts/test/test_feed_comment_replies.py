@@ -16,6 +16,7 @@ from accounts.models import (
     FeedPostCommentLike,
     Notification,
     NotificationType,
+    UserBlock,
 )
 
 User = get_user_model()
@@ -270,3 +271,149 @@ class FeedCommentReplyTests(APITestCase):
                 user=self.post_author, type=NotificationType.FEED_POST_COMMENTED
             ).exists()
         )
+
+
+class FeedCommentReplyBlockingTests(APITestCase):
+    """Odpoveď na komentár TRETEJ strany nesmie obísť blokovanie."""
+
+    def setUp(self):
+        self.stranger = _user("blk-stranger")   # autor príspevku, mimo dvojice
+        self.a = _user("blk-a")
+        self.b = _user("blk-b")
+        self.post = FeedPost.objects.create(
+            author=self.stranger,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Verejny prispevok",
+        )
+        self.b_comment = FeedPostComment.objects.create(
+            post=self.post, author=self.b, text="Komentar od B"
+        )
+        self.url = reverse("accounts:feed_post_comments", args=[self.post.id])
+
+    def _try_reply(self, user):
+        self.client.force_authenticate(user=user)
+        with self.captureOnCommitCallbacks(execute=True):
+            return self.client.post(
+                self.url,
+                {"text": "Odpoved", "parent_comment_id": self.b_comment.id},
+                format="json",
+            )
+
+    def _assert_rejected(self, response):
+        # 404 rovnako ako ostatné feed interakcie – existencia sa neprezrádza.
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(
+            FeedPostComment.objects.filter(parent_comment=self.b_comment).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(
+                type=NotificationType.FEED_POST_COMMENT_REPLIED
+            ).exists()
+        )
+
+    def test_blocked_by_the_comment_author_cannot_reply(self):
+        UserBlock.objects.create(blocker=self.b, blocked_user=self.a)
+
+        self._assert_rejected(self._try_reply(self.a))
+
+    def test_blocking_the_comment_author_also_blocks_replying(self):
+        UserBlock.objects.create(blocker=self.a, blocked_user=self.b)
+
+        self._assert_rejected(self._try_reply(self.a))
+
+    def test_unrelated_user_can_still_reply(self):
+        """Guard nesmie byť širší, než treba."""
+        response = self._try_reply(_user("blk-other"))
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class FeedCommentReplyLikeStateTests(APITestCase):
+    """`is_liked_by_me` musí platiť aj pre vnorené odpovede."""
+
+    def setUp(self):
+        self.author = _user("likestate-author")
+        self.viewer = _user("likestate-viewer")
+        self.post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Ahoj",
+        )
+        self.parent = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Hlavny"
+        )
+        self.reply = FeedPostComment.objects.create(
+            post=self.post,
+            author=self.author,
+            text="Odpoved",
+            parent_comment=self.parent,
+        )
+        self.url = reverse("accounts:feed_post_comments", args=[self.post.id])
+
+    def test_liked_reply_reports_is_liked_by_me(self):
+        FeedPostCommentLike.objects.create(comment=self.reply, user=self.viewer)
+        self.client.force_authenticate(user=self.viewer)
+
+        response = self.client.get(self.url)
+
+        root = response.data["results"][0]
+        self.assertFalse(root["is_liked_by_me"])
+        self.assertTrue(root["replies"][0]["is_liked_by_me"])
+        self.assertEqual(root["replies"][0]["likes_count"], 1)
+
+    def test_unliked_reply_stays_false(self):
+        self.client.force_authenticate(user=self.viewer)
+
+        response = self.client.get(self.url)
+
+        self.assertFalse(response.data["results"][0]["replies"][0]["is_liked_by_me"])
+
+
+class FeedCommentReplyIndirectNestingTests(APITestCase):
+    """Druhá úroveň sa nesmie dať vytvoriť ani nepriamo."""
+
+    def setUp(self):
+        self.author = _user("nest-author")
+        self.post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Ahoj",
+        )
+        self.comment = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Hlavny"
+        )
+
+    def test_comment_cannot_be_its_own_parent(self):
+        self.comment.parent_comment_id = self.comment.id
+
+        with self.assertRaises(ValidationError) as exc:
+            self.comment.save()
+        self.assertEqual(exc.exception.code, "reply_self_reference")
+
+    def test_comment_with_replies_cannot_become_a_reply(self):
+        FeedPostComment.objects.create(
+            post=self.post,
+            author=self.author,
+            text="Odpoved",
+            parent_comment=self.comment,
+        )
+        other = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Iny hlavny"
+        )
+        # Priradením rodiča by sa z existujúcej odpovede stal vnuk.
+        self.comment.parent_comment = other
+
+        with self.assertRaises(ValidationError) as exc:
+            self.comment.save()
+        self.assertEqual(exc.exception.code, "reply_would_nest_existing")
+
+    def test_a_childless_comment_can_still_become_a_reply(self):
+        """Poistka nesmie zablokovať legitímny prípad."""
+        other = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Iny hlavny"
+        )
+        self.comment.parent_comment = other
+        self.comment.save()
+
+        self.comment.refresh_from_db()
+        self.assertEqual(self.comment.parent_comment_id, other.id)

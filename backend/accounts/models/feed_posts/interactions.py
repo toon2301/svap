@@ -138,6 +138,26 @@ class FeedPostComment(models.Model):
         if self.parent_comment_id is None:
             return
 
+        # Seba-referencia: komentár ako vlastný rodič by vytvoril cyklus,
+        # ktorý by nasledujúci dotaz na rodiča ani nezachytil (našiel by sám
+        # seba). Kontroluje sa PRED vyhľadaním rodiča.
+        if self.pk is not None and self.parent_comment_id == self.pk:
+            raise ValidationError(
+                _("Komentár nemôže byť odpoveďou sám na seba."),
+                code="reply_self_reference",
+            )
+
+        # Dodatočné priradenie rodiča komentáru, ktorý UŽ MÁ vlastné odpovede:
+        # z nich by sa stali vnuci, teda skrytá druhá úroveň, hoci samotný
+        # komentár by mal formálne hĺbku 1.
+        if self.pk is not None and FeedPostComment.objects.filter(
+            parent_comment_id=self.pk
+        ).exists():
+            raise ValidationError(
+                _("Komentár s odpoveďami sa nedá zmeniť na odpoveď."),
+                code="reply_would_nest_existing",
+            )
+
         parent = (
             FeedPostComment.objects.filter(pk=self.parent_comment_id)
             .values_list("parent_comment_id", "post_id")

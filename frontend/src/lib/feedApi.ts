@@ -265,7 +265,9 @@ export async function createFeedPostComment(
 ): Promise<FeedPostComment> {
   const { data } = await api.post<FeedPostComment>(
     endpoints.feed.postComments(postId),
-    parentCommentId
+    // Nullish, nie truthiness: `0` je platné id a truthy kontrola by ho
+    // z payloadu ticho vynechala.
+    parentCommentId != null
       ? { text, parent_comment_id: parentCommentId }
       : { text },
   );
