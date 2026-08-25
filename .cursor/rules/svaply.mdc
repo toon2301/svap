@@ -9,6 +9,7 @@ Dodrž a dbaj na:
 - čistý, čitateľný a modulárny kód
 - súbory drž do 500 riadkov (okrem testovacích súborov a FE súborov); ak pri práci natrafiš na produkčný BE súbor ktorý má viac ako 500 riadkov, rozdeľ ho na menšie moduly pokiaľ je to bezpečné — ak nie je bezpečné, nahlás to ako nález a pokračuj
 - všetky .tsx a .ts subory ktoré presiahli limit 500 riadkov nahlasuj ale nič s nimi nerob!
+- pri novej funkcii, čo tvorí súvislý, samostatný celok (nový modal, dialóg, hook, samostatná logika), vytvor preň NOVÝ súbor namiesto pridávania do už existujúceho veľkého súboru — najmä ak je už nad/blízko 500 riadkov. Do veľkého "riadiaceho" súboru (napr. hlavný komponent karty/zoznamu) pridávaj len nevyhnutné prepojenie (import, krátke zavolanie, JSX vykreslenie), nie celú novú logiku
 - zachovaj existujúcu funkcionalitu bez regresií — pred zmenou over, čo daná funkcia/endpoint presne robí a kde všade sa používa (vyhľadaj referencie v kóde)
 - backend musí byť zdroj pravdy
 - frontend nesmie obchádzať permissions
@@ -20,7 +21,7 @@ Dodrž a dbaj na:
 - rob malé, logicky oddelené zmeny, nech sa dajú jednotlivo overiť/revertnúť
 
 Po implementácii:
-- Ak vieš niečo navrhnuť lepšie a spoľahlivejšie tak návrh vypíš
+- Ak vieš niečo navrhnúť lepšie a spoľahlivejšie tak návrh vypíš
 - skontroluj logiku
 - skontroluj edge cases
 - reálne otestuj (nielen vizuálnou kontrolou kódu)

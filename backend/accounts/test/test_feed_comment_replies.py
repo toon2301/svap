@@ -8,6 +8,8 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -516,3 +518,95 @@ class FeedCommentReplyPreviewLimitTests(APITestCase):
 
         reply = response.data["results"][0]["replies"][0]
         self.assertNotIn("replies_count", reply)
+
+
+class FeedCommentReplyScopingTests(APITestCase):
+    """Očíslovanie odpovedí musí bežať len nad daným príspevkom."""
+
+    def setUp(self):
+        self.author = _user("scope-author")
+        self.first_post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Prvy",
+        )
+        self.second_post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Druhy",
+        )
+
+    def _thread(self, post, reply_count, label):
+        parent = FeedPostComment.objects.create(
+            post=post, author=self.author, text=f"Hlavny {label}"
+        )
+        base = timezone.now() - timedelta(hours=3)
+        for index in range(reply_count):
+            reply = FeedPostComment.objects.create(
+                post=post,
+                author=self.author,
+                text=f"{label} odpoved {index + 1}",
+                parent_comment=parent,
+            )
+            FeedPostComment.objects.filter(pk=reply.pk).update(
+                created_at=base + timedelta(minutes=index)
+            )
+        return parent
+
+    def _get(self, post):
+        return self.client.get(
+            reverse("accounts:feed_post_comments", args=[post.id])
+        )
+
+    def test_limit_applies_independently_per_post(self):
+        # Obidva príspevky majú vlastné vlákno; jedno nad stropom, druhé pod.
+        self._thread(self.first_post, FEED_REPLIES_PREVIEW_LIMIT + 4, "A")
+        self._thread(self.second_post, 3, "B")
+
+        first = self._get(self.first_post).data["results"][0]
+        second = self._get(self.second_post).data["results"][0]
+
+        self.assertEqual(len(first["replies"]), FEED_REPLIES_PREVIEW_LIMIT)
+        self.assertEqual(first["replies_count"], FEED_REPLIES_PREVIEW_LIMIT + 4)
+        # Druhý príspevok si svoje odpovede neskráti – strop je per komentár,
+        # nie zdieľaný naprieč appkou.
+        self.assertEqual(len(second["replies"]), 3)
+        self.assertEqual(second["replies_count"], 3)
+
+    def test_replies_never_leak_between_posts(self):
+        self._thread(self.first_post, 2, "A")
+        self._thread(self.second_post, 2, "B")
+
+        first = self._get(self.first_post).data["results"][0]
+
+        texts = [reply["text"] for reply in first["replies"]]
+        self.assertEqual(texts, ["A odpoved 1", "A odpoved 2"])
+        self.assertTrue(all(not text.startswith("B ") for text in texts))
+
+    def test_ranking_query_is_scoped_to_the_post(self):
+        """Očíslovanie musí byť zúžené UŽ vo vnútornom dotaze okna.
+
+        Overuje sa na SQL zámerne: rozsah okna je čisto výkonová vlastnosť –
+        partícia je podľa `parent_comment_id`, takže odpovede cudzieho
+        príspevku by výsledok aj tak neovplyvnili. Funkčný test teda rozdiel
+        nezachytí a jediná pozorovateľná stopa je WHERE vo vnútri okna.
+        """
+        self._thread(self.first_post, 2, "A")
+        self._thread(self.second_post, 2, "B")
+
+        with CaptureQueriesContext(connection) as captured:
+            self._get(self.first_post)
+
+        windowed = [
+            query["sql"]
+            for query in captured.captured_queries
+            if "ROW_NUMBER" in query["sql"].upper()
+        ]
+        self.assertTrue(windowed, "Očíslovanie odpovedí sa vôbec nespustilo.")
+        for sql in windowed:
+            # `"post_id" =` sa vo vonkajšej časti dotazu nevyskytuje (tá filtruje
+            # cez `parent_comment_id IN (...)`), takže jeho prítomnosť znamená,
+            # že zúženie na príspevok je práve vo vnútornom dotaze okna.
+            self.assertIn('"post_id" =', sql)
+            # A vrcholové komentáre (parent NULL) sa neočíslovávajú vôbec.
+            self.assertIn("IS NOT NULL", sql)
