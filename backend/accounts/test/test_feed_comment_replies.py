@@ -4,12 +4,16 @@ Odpoveď je stále ``FeedPostComment``, takže lajky, mazanie aj scroll-to-comme
 fungujú bez zvláštnej vetvy; testy to overujú, nie predpokladajú.
 """
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from accounts.views.feed_interactions import FEED_REPLIES_PREVIEW_LIMIT
 from accounts.models import (
     FeedPost,
     FeedPostComment,
@@ -417,3 +421,98 @@ class FeedCommentReplyIndirectNestingTests(APITestCase):
 
         self.comment.refresh_from_db()
         self.assertEqual(self.comment.parent_comment_id, other.id)
+
+
+class FeedCommentReplyPreviewLimitTests(APITestCase):
+    """Odpovede sa načítajú ohraničene, ale nič sa nestratí."""
+
+    def setUp(self):
+        self.author = _user("limit-author")
+        self.post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Ahoj",
+        )
+        self.parent = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Hlavny"
+        )
+        self.url = reverse("accounts:feed_post_comments", args=[self.post.id])
+
+    def _make_replies(self, count):
+        base = timezone.now() - timedelta(hours=2)
+        created = []
+        for index in range(count):
+            reply = FeedPostComment.objects.create(
+                post=self.post,
+                author=self.author,
+                text=f"Odpoved {index + 1}",
+                parent_comment=self.parent,
+            )
+            FeedPostComment.objects.filter(pk=reply.pk).update(
+                created_at=base + timedelta(minutes=index)
+            )
+            created.append(reply)
+        return created
+
+    def test_replies_are_capped_but_the_total_is_reported(self):
+        self._make_replies(FEED_REPLIES_PREVIEW_LIMIT + 5)
+
+        response = self.client.get(self.url)
+
+        root = response.data["results"][0]
+        self.assertEqual(len(root["replies"]), FEED_REPLIES_PREVIEW_LIMIT)
+        # Klient vie, že ich je viac – žiadna sa nestratila, len sa nezobrazia
+        # všetky naraz.
+        self.assertEqual(root["replies_count"], FEED_REPLIES_PREVIEW_LIMIT + 5)
+        self.assertEqual(
+            FeedPostComment.objects.filter(parent_comment=self.parent).count(),
+            FEED_REPLIES_PREVIEW_LIMIT + 5,
+        )
+
+    def test_capped_slice_keeps_the_oldest_first_order(self):
+        self._make_replies(FEED_REPLIES_PREVIEW_LIMIT + 3)
+
+        response = self.client.get(self.url)
+
+        texts = [reply["text"] for reply in response.data["results"][0]["replies"]]
+        self.assertEqual(
+            texts,
+            [f"Odpoved {index + 1}" for index in range(FEED_REPLIES_PREVIEW_LIMIT)],
+        )
+
+    def test_cap_applies_per_comment_not_per_page(self):
+        """Strop je na KOMENTÁR – druhý komentár si svoje odpovede nekráti."""
+        self._make_replies(FEED_REPLIES_PREVIEW_LIMIT + 2)
+        second = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Druhy hlavny"
+        )
+        FeedPostComment.objects.create(
+            post=self.post,
+            author=self.author,
+            text="Jedina odpoved",
+            parent_comment=second,
+        )
+
+        response = self.client.get(self.url)
+
+        roots = {item["text"]: item for item in response.data["results"]}
+        self.assertEqual(
+            len(roots["Hlavny"]["replies"]), FEED_REPLIES_PREVIEW_LIMIT
+        )
+        self.assertEqual(len(roots["Druhy hlavny"]["replies"]), 1)
+        self.assertEqual(roots["Druhy hlavny"]["replies_count"], 1)
+
+    def test_comment_without_replies_reports_zero(self):
+        response = self.client.get(self.url)
+
+        root = response.data["results"][0]
+        self.assertEqual(root["replies"], [])
+        self.assertEqual(root["replies_count"], 0)
+
+    def test_reply_payload_has_no_replies_count(self):
+        self._make_replies(1)
+
+        response = self.client.get(self.url)
+
+        reply = response.data["results"][0]["replies"][0]
+        self.assertNotIn("replies_count", reply)

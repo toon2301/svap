@@ -20,7 +20,8 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, F, OuterRef, Prefetch, Q, Subquery, Value, Window
+from django.db.models.functions import Coalesce, RowNumber
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import CursorPagination
@@ -54,6 +55,10 @@ from .feed_posts import visible_feed_posts
 from .photo_reports import _validate_report_payload
 
 logger = logging.getLogger(__name__)
+
+#: Koľko odpovedí sa načíta pod jeden komentár. Zvyšok je dostupný cez
+#: `replies_count` – klient vie, že tam sú, aj keď ich zatiaľ nevidí.
+FEED_REPLIES_PREVIEW_LIMIT = 10
 
 
 class FeedCommentCursorPagination(CursorPagination):
@@ -348,20 +353,6 @@ def _create_comment(request, post: FeedPost) -> Response:
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Blok voči AUTOROVI KOMENTÁRA. Viditeľnosť príspevku ho nepokrýva:
-        # príspevok môže patriť tretej strane, s ktorou blok neexistuje, takže
-        # `visible_feed_posts` ho prepustí. Bez tejto kontroly by si vzájomne
-        # blokovaní vedeli cez odpoveď posielať notifikácie. Rovnaký helper
-        # aj rovnaká odpoveď (404) ako pri lajku komentára.
-        try:
-            with transaction.atomic():
-                lock_users_and_ensure_interaction_allowed(
-                    first_user_id=request.user.id,
-                    second_user_id=parent.author_id,
-                )
-        except BlockedUserInteractionError:
-            return _comment_not_found()
-
     def notify_author_about_comment():
         try:
             # Odpoveď upozorní autora RODIČOVSKÉHO komentára; bežný komentár
@@ -385,7 +376,27 @@ def _create_comment(request, post: FeedPost) -> Response:
             )
 
     try:
+        # JEDNA transakcia pre zámok, zápis aj registráciu notifikácie.
+        # Keby bol blok overený vo vlastnej transakcii, jej commit by zámok
+        # dvojice uvoľnil ešte pred zápisom – medzitým vzniknutý blok by
+        # odpoveď prepustil. `on_commit` sa tak zároveň viaže na commit TEJTO
+        # transakcie, takže notifikácia odíde až po skutočnom uložení.
         with transaction.atomic():
+            if parent is not None:
+                # Blok voči AUTOROVI KOMENTÁRA. Viditeľnosť príspevku ho
+                # nepokrýva: príspevok môže patriť tretej strane, s ktorou blok
+                # neexistuje, takže `visible_feed_posts` ho prepustí. Bez tejto
+                # kontroly by si vzájomne blokovaní vedeli cez odpoveď posielať
+                # notifikácie. Rovnaký helper aj rovnaká odpoveď (404) ako pri
+                # lajku komentára.
+                try:
+                    lock_users_and_ensure_interaction_allowed(
+                        first_user_id=request.user.id,
+                        second_user_id=parent.author_id,
+                    )
+                except BlockedUserInteractionError:
+                    return _comment_not_found()
+
             comment = FeedPostComment.objects.create(
                 post=post, author=request.user, text=text, parent_comment=parent
             )
@@ -425,16 +436,52 @@ def feed_post_comments_view(request, post_id: int):
     # nevzniká krížový join ako pri lajkoch × komentároch vo feede.
     # Stránkujú sa LEN vrcholové komentáre; odpovede prídu vnorené v nich,
     # takže kurzor ostáva stabilný a stránka má predvídateľnú veľkosť.
+    #
+    # Odpovedí sa načíta najviac FEED_REPLIES_PREVIEW_LIMIT na komentár. Bez
+    # stropu by jeden komentár s tisíckami odpovedí stiahol celé vlákno do
+    # jednej odpovede API. Reže sa NA ÚROVNI DB (window funkcia číslujúca
+    # odpovede v rámci rodiča), nie až v Pythone – inak by sa riadky aj tak
+    # museli všetky načítať a strop by nič neušetril.
+    #
+    # Nič sa nestráca: `replies_count` nesie skutočný počet, takže klient vie,
+    # že je ich viac. Endpoint na dotiahnutie zvyšku zámerne nepridávam –
+    # zadanie ho nežiada a dnešné vlákna sú krátke.
+    ranked_replies = FeedPostComment.objects.annotate(
+        _reply_rank=Window(
+            expression=RowNumber(),
+            partition_by=[F("parent_comment_id")],
+            order_by=[F("created_at").asc(), F("id").asc()],
+        )
+    ).filter(_reply_rank__lte=FEED_REPLIES_PREVIEW_LIMIT)
+
     replies_prefetch = Prefetch(
         "replies",
-        queryset=FeedPostComment.objects.select_related("author")
+        queryset=FeedPostComment.objects.filter(
+            pk__in=ranked_replies.values("pk")
+        )
+        .select_related("author")
         .annotate(_likes_count=Count("likes"))
         .order_by("created_at", "id"),
     )
     queryset = (
         FeedPostComment.objects.filter(post=post, parent_comment__isnull=True)
         .select_related("author")
-        .annotate(_likes_count=Count("likes"))
+        # Subquery, nie druhý Count: dva „many" vzťahy v jednom dotaze sa
+        # spoja krížom (lajky × odpovede) – rovnaký dôvod, pre aký existuje
+        # `_related_count_subquery` vo feed_posts.
+        .annotate(
+            _likes_count=Count("likes"),
+            _replies_count=Coalesce(
+                Subquery(
+                    FeedPostComment.objects.filter(parent_comment=OuterRef("pk"))
+                    .order_by()
+                    .values("parent_comment")
+                    .annotate(total=Count("pk"))
+                    .values("total")[:1]
+                ),
+                Value(0),
+            ),
+        )
         .prefetch_related(replies_prefetch)
     )
     paginator = FeedCommentCursorPagination()

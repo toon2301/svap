@@ -185,6 +185,12 @@ export type FeedPostComment = {
    * odpovede toto pole nemajú vôbec (BE ho pri nich vynecháva).
    */
   replies?: FeedPostComment[];
+  /**
+   * Celkový počet odpovedí vrátane tých, ktoré sa do `replies` nezmestili
+   * (BE ich načítava ohraničene). Väčší než `replies.length` znamená, že
+   * pod komentárom je viac odpovedí.
+   */
+  replies_count?: number;
   created_at: string;
 };
 

@@ -51,6 +51,7 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
     likes_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
+    replies_count = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPostComment
@@ -63,6 +64,7 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             "is_liked_by_me",
             "parent_comment_id",
             "replies",
+            "replies_count",
             "created_at",
         ]
 
@@ -87,11 +89,25 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             replies, many=True, context=self.context
         ).data
 
+    def get_replies_count(self, obj):
+        """Celkový počet odpovedí – vrátane tých nad zobrazovacím stropom.
+
+        Klient podľa neho vie, že pod komentárom je viac odpovedí, než mu
+        prišlo v `replies`.
+        """
+        if obj.parent_comment_id is not None:
+            return None
+        annotated = getattr(obj, "_replies_count", None)
+        if annotated is not None:
+            return int(annotated)
+        return obj.replies.count()
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Odpoveď nemá `replies` – vnorenie je jednoúrovňové.
+        # Odpoveď nemá `replies` ani ich počet – vnorenie je jednoúrovňové.
         if data.get("replies") is None:
             data.pop("replies", None)
+            data.pop("replies_count", None)
         return data
 
     def get_can_delete(self, obj):
