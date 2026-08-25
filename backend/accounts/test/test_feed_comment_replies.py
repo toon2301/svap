@@ -4,6 +4,7 @@ Odpoveď je stále ``FeedPostComment``, takže lajky, mazanie aj scroll-to-comme
 fungujú bez zvláštnej vetvy; testy to overujú, nie predpokladajú.
 """
 
+import re
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -26,6 +27,18 @@ from accounts.models import (
 )
 
 User = get_user_model()
+
+
+def _normalize_sql(sql: str) -> str:
+    """SQL bez úvodzoviek okolo identifikátorov a s jednotnými medzerami.
+
+    Backendy citujú identifikátory rôzne (dvojité úvodzovky v SQLite aj
+    Postgrese, backticky v MySQL, hranaté zátvorky v MSSQL), takže porovnávať
+    surový text by test zbytočne viazalo na jeden konkrétny backend.
+    Reťazcové literály používajú apostrofy, tie sa teda nedotknú.
+    """
+    without_quotes = re.sub(r"[`\"\[\]]", "", sql)
+    return re.sub(r"\s+", " ", without_quotes)
 
 
 def _user(name):
@@ -604,9 +617,10 @@ class FeedCommentReplyScopingTests(APITestCase):
         ]
         self.assertTrue(windowed, "Očíslovanie odpovedí sa vôbec nespustilo.")
         for sql in windowed:
-            # `"post_id" =` sa vo vonkajšej časti dotazu nevyskytuje (tá filtruje
+            normalized = _normalize_sql(sql)
+            # `post_id =` sa vo vonkajšej časti dotazu nevyskytuje (tá filtruje
             # cez `parent_comment_id IN (...)`), takže jeho prítomnosť znamená,
             # že zúženie na príspevok je práve vo vnútornom dotaze okna.
-            self.assertIn('"post_id" =', sql)
+            self.assertRegex(normalized, r"post_id\s*=")
             # A vrcholové komentáre (parent NULL) sa neočíslovávajú vôbec.
-            self.assertIn("IS NOT NULL", sql)
+            self.assertIn("IS NOT NULL", normalized.upper())
