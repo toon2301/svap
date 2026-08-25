@@ -121,6 +121,13 @@ class DashboardSkillSearchProjection(models.Model):
     ids. The final response is still serialized from real OfferedSkill rows.
     """
 
+    country_code = models.CharField(
+        _("Krajina zručnosti"), max_length=2, blank=True, default=""
+    )
+    district_code = models.CharField(
+        _("Kód okresu zručnosti"), max_length=80, blank=True, default=""
+    )
+
     skill = models.OneToOneField(
         "accounts.OfferedSkill",
         on_delete=models.CASCADE,
@@ -172,6 +179,10 @@ class DashboardSkillSearchProjection(models.Model):
                 name="acc_dsh_skl_prj_type_idx",
             ),
             models.Index(fields=["user", "-created_at"], name="acc_dash_skill_proj_user_idx"),
+            models.Index(
+                fields=["country_code", "district_code"],
+                name="acc_dsh_skl_prj_geo_idx",
+            ),
         ]
 
     def __str__(self):

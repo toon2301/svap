@@ -178,6 +178,19 @@ export type FeedPostComment = {
   can_delete: boolean;
   likes_count: number;
   is_liked_by_me: boolean;
+  /** Vyplnené len pri odpovedi; vrcholový komentár má null. */
+  parent_comment_id?: number | null;
+  /**
+   * Odpovede vnorené pod komentárom. Vnorenie je jednoúrovňové, takže samotné
+   * odpovede toto pole nemajú vôbec (BE ho pri nich vynecháva).
+   */
+  replies?: FeedPostComment[];
+  /**
+   * Celkový počet odpovedí vrátane tých, ktoré sa do `replies` nezmestili
+   * (BE ich načítava ohraničene). Väčší než `replies.length` znamená, že
+   * pod komentárom je viac odpovedí.
+   */
+  replies_count?: number;
   created_at: string;
 };
 
@@ -253,10 +266,16 @@ export async function listFeedPostComments(
 export async function createFeedPostComment(
   postId: number,
   text: string,
+  /** Odpoveď na komentár – vynechané pri bežnom komentári. */
+  parentCommentId?: number | null,
 ): Promise<FeedPostComment> {
   const { data } = await api.post<FeedPostComment>(
     endpoints.feed.postComments(postId),
-    { text },
+    // Nullish, nie truthiness: `0` je platné id a truthy kontrola by ho
+    // z payloadu ticho vynechala.
+    parentCommentId != null
+      ? { text, parent_comment_id: parentCommentId }
+      : { text },
   );
   return data;
 }

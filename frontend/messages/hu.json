@@ -4363,6 +4363,10 @@
     "viewOwnerResponse": "Válasz megtekintése"
   },
   "feed": {
+    "reply": "Válasz",
+    "replySubmit": "Válasz",
+    "replyPlaceholder": "Írj választ...",
+    "replyCreateError": "A választ nem sikerült hozzáadni.",
     "likersTitle": "Kedvelték",
     "likersEmpty": "Még senki.",
     "likersLoadError": "A listát nem sikerült betölteni.",

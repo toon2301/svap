@@ -35,8 +35,15 @@ def watch_fields(**overrides):
         "district_code": "nitra",
         "price_min": Decimal("10.00"),
         "price_max": Decimal("100.00"),
+        "price_currency": "€",
     }
     values.update(overrides)
+    if (
+        values["price_min"] is None
+        and values["price_max"] is None
+        and "price_currency" not in overrides
+    ):
+        values["price_currency"] = ""
     return values
 
 
@@ -156,6 +163,111 @@ def test_duplicate_filters_are_rejected_even_when_optional_prices_are_null():
 
     with pytest.raises(IntegrityError), transaction.atomic():
         OfferWatch.objects.create(user=user, slot=2, **filters)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("currency", ["€", "Kč", "$", "zł", "Ft"])
+def test_offer_watch_accepts_every_supported_price_currency(currency):
+    user = create_user(f"currency-{ord(currency[0])}")
+
+    watch = create_offer_watch(
+        user=user,
+        **watch_fields(price_currency=f" {currency} "),
+    )
+
+    assert watch.price_currency == currency
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("price_min", "price_max"),
+    [
+        (Decimal("0.00"), None),
+        (None, Decimal("100.00")),
+        (Decimal("50.00"), Decimal("50.00")),
+    ],
+)
+def test_offer_watch_accepts_valid_price_boundary_variants(price_min, price_max):
+    user = create_user(f"price-boundary-{price_min}-{price_max}")
+
+    watch = create_offer_watch(
+        user=user,
+        **watch_fields(
+            price_min=price_min,
+            price_max=price_max,
+            price_currency="€",
+        ),
+    )
+
+    assert watch.price_min == price_min
+    assert watch.price_max == price_max
+    assert watch.price_currency == "€"
+
+
+@pytest.mark.django_db
+def test_offer_watch_requires_supported_currency_for_price_filter():
+    user = create_user("currency-validation")
+
+    for slot, currency in enumerate(("", "EUR"), start=1):
+        watch = OfferWatch(
+            user=user,
+            slot=slot,
+            **watch_fields(price_currency=currency),
+        )
+
+        with pytest.raises(ValidationError) as error:
+            watch.full_clean()
+
+        assert "price_currency" in error.value.message_dict
+
+
+@pytest.mark.django_db
+def test_offer_watch_removes_currency_when_price_filter_is_empty():
+    user = create_user("currency-without-price")
+
+    watch = create_offer_watch(
+        user=user,
+        **watch_fields(price_min=None, price_max=None, price_currency="€"),
+    )
+
+    assert watch.price_currency == ""
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"price_currency": ""},
+        {"price_currency": "EUR"},
+        {"price_min": None, "price_max": None, "price_currency": "€"},
+    ],
+)
+def test_database_rejects_inconsistent_price_currency(overrides):
+    user = create_user(f"db-currency-{len(str(overrides))}")
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        OfferWatch.objects.create(
+            user=user,
+            slot=1,
+            **watch_fields(**overrides),
+        )
+
+
+@pytest.mark.django_db
+def test_same_price_range_in_different_currencies_is_not_a_duplicate():
+    user = create_user("currency-uniqueness")
+    eur_watch = OfferWatch.objects.create(
+        user=user,
+        slot=1,
+        **watch_fields(price_currency="€"),
+    )
+    czk_watch = OfferWatch.objects.create(
+        user=user,
+        slot=2,
+        **watch_fields(price_currency="Kč"),
+    )
+
+    assert eur_watch.pk != czk_watch.pk
 
 
 @pytest.mark.django_db

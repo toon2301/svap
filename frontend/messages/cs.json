@@ -4363,6 +4363,10 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "reply": "Odpovědět",
+    "replySubmit": "Odpovědět",
+    "replyPlaceholder": "Napiš odpověď...",
+    "replyCreateError": "Odpověď se nepodařilo přidat.",
     "likersTitle": "Líbí se jim to",
     "likersEmpty": "Zatím nikdo.",
     "likersLoadError": "Seznam se nepodařilo načíst.",

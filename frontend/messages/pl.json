@@ -4363,6 +4363,10 @@
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
   },
   "feed": {
+    "reply": "Odpowiedz",
+    "replySubmit": "Odpowiedz",
+    "replyPlaceholder": "Napisz odpowiedź...",
+    "replyCreateError": "Nie udało się dodać odpowiedzi.",
     "likersTitle": "Polubili to",
     "likersEmpty": "Jeszcze nikt.",
     "likersLoadError": "Nie udało się wczytać listy.",

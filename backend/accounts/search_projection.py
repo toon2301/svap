@@ -22,6 +22,8 @@ def build_dashboard_skill_search_projection_defaults(skill: OfferedSkill) -> dic
         "category": skill.category,
         "subcategory": skill.subcategory,
         "tags_text": _tags_to_search_text(skill.tags),
+        "country_code": skill.country_code or "",
+        "district_code": skill.district_code or "",
         "skill_location": skill.location or "",
         "skill_district": skill.district or "",
         "user_location": getattr(user, "location", "") or "",

@@ -53,6 +53,8 @@ NOTIFICATION_RETENTION_DAYS: dict[str, int] = {
     NotificationType.FEED_POST_SHARED: 30,
     # Komentár nesie obsah (ako odpoveď na recenziu) → dôležitejší tier.
     NotificationType.FEED_POST_COMMENTED: 60,
+    # Odpoveď nesie text rovnako ako komentár – rovnaká review-tier retencia.
+    NotificationType.FEED_POST_COMMENT_REPLIED: 60,
     # Dôležité (status výmeny / recenzie)
     NotificationType.REVIEW_CREATED: 60,
     NotificationType.REVIEW_REPLY_CREATED: 60,
@@ -104,6 +106,7 @@ def purge_old_notifications(*, dry_run: bool = True) -> dict[str, int]:
 # notification_core, NIE tento hub -> žiadny cyklus). Re-export pre kompatibilitu.
 from .notification_events import (  # noqa: E402, F401
     create_feed_post_comment_liked_notification,
+    create_feed_post_comment_reply_notification,
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
     create_feed_post_shared_notification,

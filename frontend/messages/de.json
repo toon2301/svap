@@ -4363,6 +4363,10 @@
     "viewOwnerResponse": "Antwort anzeigen"
   },
   "feed": {
+    "reply": "Antworten",
+    "replySubmit": "Antworten",
+    "replyPlaceholder": "Antwort schreiben...",
+    "replyCreateError": "Die Antwort konnte nicht hinzugefügt werden.",
     "likersTitle": "Gefällt",
     "likersEmpty": "Noch niemand.",
     "likersLoadError": "Die Liste konnte nicht geladen werden.",

@@ -38,6 +38,10 @@ class NotificationType(models.TextChoices):
         "feed_post_comment_liked",
         _("Páči sa mi komentár"),
     )
+    FEED_POST_COMMENT_REPLIED = (
+        "feed_post_comment_replied",
+        _("Odpoveď na komentár"),
+    )
 
 
 class Notification(models.Model):

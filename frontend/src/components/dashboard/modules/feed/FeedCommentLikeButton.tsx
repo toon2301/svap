@@ -106,7 +106,9 @@ export default function FeedCommentLikeButton({
   // by bolo neplatné HTML. Pri nule ostáva úplne skrytý, takže nie je čo
   // otvárať a prázdny dialóg nevznikne.
   return (
-    <span className="-m-1 inline-flex items-center">
+    // gap-0.5 (menšie než pri príspevku, lebo aj celý prvok je menší) drží
+    // srdiečko a číslo opticky oddelené ako dva samostatné ciele kliku.
+    <span className="-m-1 inline-flex items-center gap-0.5">
       {toggle}
       {likesCount > 0 ? (
         <button
@@ -115,11 +117,10 @@ export default function FeedCommentLikeButton({
           data-testid={`feed-comment-like-count-${comment.id}`}
           aria-label={`${t('feed.likersTitle', 'Páči sa im to')}: ${likesCount}`}
           title={t('feed.likersTitle', 'Páči sa im to')}
-          className={`rounded-full px-1 py-1.5 text-xs tabular-nums transition-colors hover:bg-black/5 hover:underline dark:hover:bg-white/10 ${
-            isLiked
-              ? 'text-purple-600 dark:text-purple-300'
-              : 'text-gray-400 dark:text-gray-500'
-          }`}
+          // Rovnaký princíp ako pri lajku príspevku: farba nesleduje stav
+          // lajku, takže sfialovené srdiečko a neutrálne číslo sú viditeľne
+          // dve veci. Hover pridá podčiarknutie a fialovú.
+          className="rounded-full px-1 py-1.5 text-xs tabular-nums text-gray-400 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-purple-300"
         >
           {likesCount}
         </button>

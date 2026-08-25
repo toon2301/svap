@@ -140,6 +140,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         if obj.type in (
             NotificationType.FEED_POST_LIKED,
             NotificationType.FEED_POST_COMMENTED,
+            NotificationType.FEED_POST_COMMENT_REPLIED,
             NotificationType.FEED_POST_TAGGED,
             NotificationType.FEED_POST_SHARED,
             NotificationType.FEED_POST_COMMENT_LIKED,

@@ -13,6 +13,7 @@ class OfferWatchAdmin(admin.ModelAdmin):
         "is_seeking",
         "country_code",
         "district_code",
+        "price_currency",
         "created_at",
     ]
     list_filter = ["is_seeking", "country_code", "created_at"]

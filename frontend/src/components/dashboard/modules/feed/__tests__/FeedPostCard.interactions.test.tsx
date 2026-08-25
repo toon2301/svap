@@ -22,6 +22,8 @@ jest.mock('@/lib/feedApi', () => ({
   deleteFeedPostComment: jest.fn(),
   reportFeedPost: jest.fn(),
   shareFeedPost: jest.fn(),
+  listFeedPostLikers: jest.fn(),
+  listFeedCommentLikers: jest.fn(),
 }));
 
 const toastError = jest.fn();
@@ -603,5 +605,57 @@ describe('FeedPostCard – zdieľaný príspevok (feed_post)', () => {
     expect(
       screen.getByText('Tento príspevok už nie je dostupný'),
     ).toBeInTheDocument();
+  });
+});
+
+
+describe('FeedPostCard – srdiečko vs. číslo lajkov', () => {
+  const likers = jest.requireMock('@/lib/feedApi')
+    .listFeedPostLikers as jest.Mock;
+
+  beforeEach(() => {
+    likers.mockReset();
+    likers.mockResolvedValue({ results: [], next: null, previous: null });
+  });
+
+  it('toggles the like from the heart without opening the list', async () => {
+    mockedLike.mockResolvedValue({
+      post_id: 1,
+      is_liked_by_me: true,
+      likes_count: 6,
+    } as never);
+
+    render(<FeedPostCard post={makePost({ likes_count: 5 })} />);
+
+    await userEvent.click(screen.getByTestId('feed-like-button'));
+
+    expect(mockedLike).toHaveBeenCalledWith(1);
+    expect(screen.queryByTestId('feed-likers-dialog')).not.toBeInTheDocument();
+    expect(likers).not.toHaveBeenCalled();
+  });
+
+  it('opens the list from the count without toggling the like', async () => {
+    render(<FeedPostCard post={makePost({ likes_count: 5 })} />);
+
+    await userEvent.click(screen.getByTestId('feed-like-count'));
+
+    expect(await screen.findByTestId('feed-likers-dialog')).toBeInTheDocument();
+    expect(mockedLike).not.toHaveBeenCalled();
+  });
+
+  it('keeps the count visually distinct from the heart when liked', () => {
+    render(
+      <FeedPostCard post={makePost({ likes_count: 5, is_liked_by_me: true })} />,
+    );
+
+    const heart = screen.getByTestId('feed-like-button');
+    const count = screen.getByTestId('feed-like-count');
+
+    // Lajknuté srdiečko je fialové, číslo ostáva neutrálne.
+    expect(heart.className).toContain('text-purple-600');
+    expect(count.className).not.toContain('text-purple-600');
+    expect(count.className).toContain('hover:underline');
+    // Medzi oboma cieľmi je skutočná medzera.
+    expect(count.parentElement?.className).toContain('gap-');
   });
 });

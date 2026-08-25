@@ -14,12 +14,13 @@ from rest_framework.response import Response
 from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import search_rate_limit
 
+from ...country_registry import normalize_offer_country_code
+from ...district_registry import get_offer_district_entry
 from ...models import OfferedSkill
 from ...search_visibility import searchable_user_q
 from ...serializers import OfferedSkillSerializer
 from ...viewer_location_cache import get_viewer_location_snapshot
 from ..search_query_builders import (
-    COUNTRY_LOCATION_MAPPING,
     SMART_KEYWORD_INDEX,
     _build_legacy_skills_page_qs,
     _build_only_my_location_filters,
@@ -122,6 +123,43 @@ def dashboard_search_view(request):
     # ich dĺžku, aby extrémne dlhý vstup nespôsobil pomalý pattern matching.
     raw_location = (request.GET.get("location") or "").strip()[:100]
     raw_district = (request.GET.get("district") or "").strip()[:100]
+    raw_country_filter = (request.GET.get("country") or "").strip()
+    raw_district_filter = (request.GET.get("district_code") or "").strip()
+
+    if raw_country_filter and len(raw_country_filter) != 2:
+        return Response(
+            {"error": "Invalid query parameter."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    country_filter = normalize_offer_country_code(raw_country_filter)
+    if raw_country_filter and not country_filter:
+        return Response(
+            {"error": "Invalid query parameter."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    district_filter = ""
+    if raw_district_filter:
+        if len(raw_district_filter) > 80:
+            return Response(
+                {"error": "Invalid query parameter."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not country_filter:
+            return Response(
+                {"error": "Invalid query parameter."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        district_entry = get_offer_district_entry(
+            country_filter,
+            raw_district_filter,
+        )
+        if not district_entry:
+            return Response(
+                {"error": "Invalid query parameter."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        district_filter = district_entry["code"]
 
     offer_type = ((request.GET.get("offer_type") or "").strip().lower())
     only_my_location = (request.GET.get("only_my_location") or "").strip().lower() in (
@@ -151,7 +189,6 @@ def dashboard_search_view(request):
 
     price_min_raw = (request.GET.get("price_min") or "").strip()
     price_max_raw = (request.GET.get("price_max") or "").strip()
-    country_filter = ((request.GET.get("country") or "").strip().upper())
 
     try:
         page = int(request.GET.get("page", 1))
@@ -230,6 +267,7 @@ def dashboard_search_view(request):
             raw_query=raw_query,
             skill_terms=skill_terms,
             country_filter=country_filter,
+            district_filter=district_filter,
             offer_type=offer_type,
             price_min=price_min,
             price_max=price_max,
@@ -262,6 +300,7 @@ def dashboard_search_view(request):
             raw_query=raw_query,
             skill_terms=skill_terms,
             country_filter=country_filter,
+            district_filter=district_filter,
             offer_type=offer_type,
             price_min=price_min,
             price_max=price_max,
@@ -312,19 +351,6 @@ def dashboard_search_view(request):
                 | Q(district__iregex=pattern)
             )
         users_qs = users_qs.filter(user_query)
-
-    if country_filter and country_filter in COUNTRY_LOCATION_MAPPING:
-        # Rovnak\u00e9 mapovanie ako pre skills (modulov\u00e1 kon\u0161tanta) \u2013 \u017eiadny duplik\u00e1t.
-        country_terms = COUNTRY_LOCATION_MAPPING[country_filter]
-        user_country_query = Q()
-        for term in country_terms:
-            user_country_query |= Q(location__icontains=term) | Q(
-                district__icontains=term
-            )
-
-        test_qs = users_qs.filter(user_country_query)
-        if test_qs.exists():
-            users_qs = users_qs.filter(user_country_query)
 
     if only_my_location and user_loc_q:
         users_qs = users_qs.filter(user_loc_q)
