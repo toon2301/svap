@@ -250,8 +250,20 @@ def feed_post_comment_replies_view(request, post_id: int, comment_id: int):
 
     after_id = request.query_params.get("after")
     if after_id:
+        # Kotva musí byť číslo – nečíselné id by inak spadlo až v dotaze ako
+        # 500-ka. Rovnaké spracovanie ako `parent_comment_id` v _create_comment.
+        try:
+            after_pk = int(after_id)
+        except (TypeError, ValueError):
+            return Response(
+                {
+                    "error": "Neplatna kotva pokracovania.",
+                    "code": "reply_anchor_invalid",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         anchor = FeedPostComment.objects.filter(
-            pk=after_id, parent_comment=parent
+            pk=after_pk, parent_comment=parent
         ).first()
         if anchor is None:
             return Response(

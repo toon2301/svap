@@ -288,6 +288,53 @@ describe('celá sekvencia', () => {
     await waitFor(() => expect(order).toEqual(['delete', 'upload']));
   });
 
+  it('uploads before deleting when the only photo is swapped', async () => {
+    const order: string[] = [];
+    mockedDeleteImage.mockImplementation(async () => {
+      order.push('delete');
+    });
+    mockedUpload.mockImplementation(async () => {
+      order.push('upload');
+      return [];
+    });
+    // Príspevok bez textu s jedinou fotkou – tú chce používateľ vymeniť.
+    const single = makePost({ caption: '', images: [image(11)] });
+    mockedGetPost.mockResolvedValue(makePost({ caption: '', images: [image(99)] }));
+    const { onClose } = renderModal(single);
+    const { input, file } = pickFile();
+
+    // Najprv pribudne náhrada, potom sa dá označiť pôvodná.
+    await userEvent.upload(input, file);
+    await userEvent.click(screen.getByTestId('feed-post-edit-photo-remove-11'));
+    await userEvent.click(screen.getByTestId('feed-post-edit-submit'));
+
+    // Bez tohto poradia by backend odobratie poslednej fotky odmietol a
+    // príspevok by skončil s oboma fotkami.
+    await waitFor(() => expect(order).toEqual(['upload', 'delete']));
+    expect(mockedDeleteImage).toHaveBeenCalledWith(7, 11);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(toastError).not.toHaveBeenCalled();
+    expect(toastSuccess).toHaveBeenCalled();
+  });
+
+  it('keeps the old photo when its replacement fails to upload', async () => {
+    mockedUpload.mockResolvedValue([
+      { file: new File(['x'], 'nova.jpg'), error: new Error('offline') },
+    ]);
+    const single = makePost({ caption: '', images: [image(11)] });
+    renderModal(single);
+    const { input, file } = pickFile();
+
+    await userEvent.upload(input, file);
+    await userEvent.click(screen.getByTestId('feed-post-edit-photo-remove-11'));
+    await userEvent.click(screen.getByTestId('feed-post-edit-submit'));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    // Náhrada nedorazila, takže stará fotka je jediný obsah – zmazať ju by
+    // znamenalo vyrobiť prázdny príspevok.
+    expect(mockedDeleteImage).not.toHaveBeenCalled();
+  });
+
   it('stops before touching photos when the text fails', async () => {
     mockedUpdate.mockRejectedValue(new Error('offline'));
     const { onClose } = renderModal();

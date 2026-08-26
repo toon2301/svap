@@ -300,6 +300,34 @@ describe('označenie „(upravené)"', () => {
     expect(await screen.findByTestId('feed-post-image')).toBeInTheDocument();
   });
 
+  it('reopens with the freshly saved text, not the stale feed prop', async () => {
+    const { getFeedPost } = jest.requireMock('@/lib/feedApi');
+    const afterTextEdit = makePost({ caption: 'Novy text', is_edited: true });
+    mockedUpdate.mockResolvedValue(afterTextEdit);
+    (getFeedPost as jest.Mock).mockResolvedValue(afterTextEdit);
+    render(<FeedPostCard post={makePost({ caption: 'Povodny text' })} />);
+
+    // Úprava A: zmena textu.
+    let menu = await openMenu();
+    await userEvent.click(within(menu).getByTestId('feed-post-edit'));
+    let input = await screen.findByTestId('feed-post-edit-input');
+    await userEvent.clear(input);
+    await userEvent.type(input, 'Novy text');
+    await userEvent.click(screen.getByTestId('feed-post-edit-submit'));
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('feed-post-edit-modal'),
+      ).not.toBeInTheDocument(),
+    );
+
+    // Úprava B: modal sa musí otvoriť s TEXTOM Z ÚPRAVY A, nie s propom
+    // z feedu – inak by ho uloženie ticho prepísalo späť.
+    menu = await openMenu();
+    await userEvent.click(within(menu).getByTestId('feed-post-edit'));
+    input = await screen.findByTestId('feed-post-edit-input');
+    expect(input).toHaveValue('Novy text');
+  });
+
   it('starts showing the mark right after a successful edit', async () => {
     mockedUpdate.mockResolvedValue(
       makePost({ caption: 'Novy text', is_edited: true }),

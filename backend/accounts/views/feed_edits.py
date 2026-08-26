@@ -81,39 +81,64 @@ def _forbidden(message: str) -> Response:
 def edit_feed_post(request, post: FeedPost) -> Response:
     """PATCH príspevku – mení sa výhradne ``caption``.
 
+    PATCH je čiastočná úprava: keď kľúč ``caption`` v payloade CHÝBA, text sa
+    nedotýka vôbec (klient upravuje niečo iné, napr. fotky). Prázdny reťazec je
+    naopak výslovný pokyn text vymazať a podlieha validácii nižšie. Bez tohto
+    rozlíšenia by požiadavka bez textového poľa ticho zmazala caption –
+    a čisto textovému príspevku by vrátila ``caption_required``.
+
     Validácia je PRESNE tá istá ako pri vytvorení: voľný príspevok nesmie
     ostať bez textu aj bez fotky. Rozdiel je len v tom, čím sa fotka overuje –
     pri vytvorení príspevok ešte neexistuje, takže sa verí klientovmu
     ``will_attach_photo``; tu už fotky reálne existujú, takže sa pozerá na
-    skutočný stav (``images.exists()``) a klientovmu tvrdeniu sa neverí vôbec.
-    Zdieľania (``shared_*``) môžu mať prázdny text vždy, rovnako ako pri vzniku.
+    skutočný stav a klientovmu tvrdeniu sa neverí vôbec. Zdieľania
+    (``shared_*``) môžu mať prázdny text vždy, rovnako ako pri vzniku.
+
+    Kontrola aj zápis bežia pod zámkom príspevku – zhodne s odobratím fotky.
+    Bez neho by súbežné „vymaž text" a „odober poslednú fotku" obe videli, že
+    to druhé ešte existuje, a príspevok by ostal prázdny.
     """
     if post.author_id != request.user.id:
         return _forbidden("Na upravu prispevku nemas opravnenie.")
 
+    if "caption" not in request.data:
+        # Nič na zmenu – vráť aktuálny stav a `edited_at` nechaj tak.
+        return _post_response(request, post)
+
     caption = str(request.data.get("caption") or "").strip()
-    if (
-        post.post_type == FeedPost.PostType.FREE_POST
-        and not caption
-        and not _has_content_photo(post)
-    ):
-        return Response(
-            {
-                "error": "Volny prispevok musi mat text alebo fotku.",
-                "code": "caption_required",
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
-    if caption != post.caption:
-        post.caption = caption
-        post.edited_at = timezone.now()
-        try:
-            post.save(update_fields=["caption", "edited_at", "updated_at"])
-        except ValidationError as exc:
-            # Model vynucuje 500-znakový limit nezávisle od DB backendu.
-            return _validation_error_response(exc)
+    with transaction.atomic():
+        locked = FeedPost.objects.select_for_update().filter(pk=post.pk).first()
+        if locked is None:
+            return _post_not_found()
 
+        if (
+            locked.post_type == FeedPost.PostType.FREE_POST
+            and not caption
+            and not _has_content_photo(locked)
+        ):
+            return Response(
+                {
+                    "error": "Volny prispevok musi mat text alebo fotku.",
+                    "code": "caption_required",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if caption != locked.caption:
+            locked.caption = caption
+            locked.edited_at = timezone.now()
+            try:
+                locked.save(update_fields=["caption", "edited_at", "updated_at"])
+            except ValidationError as exc:
+                # Model vynucuje 500-znakový limit nezávisle od DB backendu.
+                return _validation_error_response(exc)
+
+    return _post_response(request, post)
+
+
+def _post_response(request, post: FeedPost) -> Response:
+    """Aktuálny stav príspevku v tom istom tvare, aký vracia zoznam/detail."""
     fresh = _annotated_queryset().get(pk=post.pk)
     serializer = FeedPostSerializer(
         fresh, context=_serializer_context(request, [fresh])

@@ -29,9 +29,13 @@ jest.mock('@/lib/feedApi', () => ({
   listFeedCommentLikers: jest.fn(),
 }));
 
+const toastError = jest.fn();
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
-  default: { error: jest.fn(), success: jest.fn() },
+  default: {
+    error: (...args: unknown[]) => toastError(...args),
+    success: jest.fn(),
+  },
 }));
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -113,6 +117,7 @@ function page(results: FeedPostComment[], count?: number) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockedReplies.mockReset();
+  toastError.mockReset();
 });
 
 // --- Časť B: zbalené vlákno -------------------------------------------------
@@ -283,6 +288,25 @@ describe('donačítanie odpovedí', () => {
     }
   });
 
+  it('reports a failed manual load instead of swallowing it', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 12)], 13),
+    );
+    mockedReplies.mockRejectedValue(new Error('offline'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+
+    // Klik je vedomá akcia – zlyhanie sa nesmie stratiť.
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith('Odpovede sa nepodarilo načítať.'),
+    );
+    // Tlačidlo ostáva, takže sa dá skúsiť znova.
+    expect(screen.getByTestId('feed-comment-more-replies-1')).toBeEnabled();
+  });
+
   it('offers nothing more when the preview already covers the thread', async () => {
     mockedList.mockResolvedValue(
       page([comment(1, 'Hlavný', [reply(11, 'Jediná', 1)], 1)], 2),
@@ -385,6 +409,8 @@ describe('zvýraznenie z notifikácie', () => {
     await screen.findByText('Hlavný');
 
     await waitFor(() => expect(mockedReplies).toHaveBeenCalledTimes(1));
+    // Hľadanie beží na pozadí – používateľa neotravuje chybou.
+    expect(toastError).not.toHaveBeenCalled();
     // Chvíľa navyše: keby sa hľadanie reštartovalo, počet by narástol.
     await act(async () => {
       await Promise.resolve();

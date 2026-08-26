@@ -27,13 +27,11 @@ import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import { GroupUserPicker } from '../messages/GroupUserPicker';
 import type { GroupMemberCandidate } from '../messages/types';
 import { useEmojiInsertion } from './useEmojiInsertion';
+import { imagePickError, pickFeedImages } from './pickFeedImages';
 import { createFeedPost, getFeedPost, type FeedPost } from '@/lib/feedApi';
 import {
   FEED_IMAGE_ACCEPT,
-  FEED_IMAGE_MAX_BYTES,
-  FEED_IMAGE_MAX_MB,
   MAX_FEED_POST_IMAGES,
-  isAllowedFeedImageName,
   uploadFeedPostImages,
 } from '@/lib/feedImageUpload';
 
@@ -110,29 +108,13 @@ export default function FeedPostComposerForm({
     event.target.value = '';
     if (!selected.length) return;
 
-    const accepted: File[] = [];
-    for (const candidate of selected) {
-      // Formát aj veľkosť overíme TU – po vytvorení príspevku by odmietnutie
-      // zo servera nechalo používateľa s príspevkom bez očakávanej fotky.
-      if (!isAllowedFeedImageName(candidate.name)) {
-        toast.error(
-          t('feed.composerImageBadType', 'Tento formát fotky nie je podporovaný.'),
-        );
-        continue;
-      }
-      if (candidate.size > FEED_IMAGE_MAX_BYTES) {
-        toast.error(
-          t('feed.composerImageTooLarge', 'Fotka je príliš veľká. Maximum je {max} MB.')
-            .replace('{max}', String(FEED_IMAGE_MAX_MB)),
-        );
-        continue;
-      }
-      accepted.push(candidate);
-    }
-    if (!accepted.length) return;
-
+    const { accepted, rejected, overLimit } = pickFeedImages(
+      selected,
+      remainingSlots,
+    );
+    rejected.forEach(({ reason }) => toast.error(imagePickError(t, reason)));
     // Limit sa vynucuje priebežne: nadbytočné sa zahodia a povie sa to.
-    if (accepted.length > remainingSlots) {
+    if (overLimit) {
       toast.error(
         t('feed.composerImagesLimit', 'Príspevok môže mať najviac {max} fotiek.')
           .replace('{max}', String(MAX_FEED_POST_IMAGES)),
@@ -267,7 +249,9 @@ export default function FeedPostComposerForm({
             )}
             <span
               data-testid="feed-composer-counter"
-              className={`text-xs tabular-nums ${
+              // `ml-auto`: na mobile emoji tlačidlo nie je, takže bez neho by
+              // počítadlo skočilo doľava. Na desktope je bez účinku.
+              className={`ml-auto text-xs tabular-nums ${
                 tooLong
                   ? 'font-semibold text-red-600 dark:text-red-400'
                   : 'text-gray-400 dark:text-gray-500'

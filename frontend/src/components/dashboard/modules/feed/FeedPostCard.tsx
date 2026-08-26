@@ -402,10 +402,16 @@ export default function FeedPostCard({
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
   // pending/rejected – hook ich dosleduje, kým sa spracovanie nedokončí.
   //
-  // Hook dostáva NAJČERSTVEJŠIU známu verziu príspevku, nie prop: úprava fotiek
-  // mení zoznam skôr, než sa obnoví feed, a karta to má ukázať hneď.
-  const [photoSource, setPhotoSource] = useState(post);
-  const images = usePendingFeedImages(photoSource);
+  // Karta drží JEDNU lokálnu verziu príspevku. Prop z feedu je len počiatočný
+  // stav: po úprave sa zoznam neobnovuje, takže by ostal zastaraný – a keby sa
+  // z neho inicializoval edit modal pri druhom otvorení, ukázal by už zmazané
+  // fotky a starým textom by prepísal ten práve uložený.
+  const [currentPost, setCurrentPost] = useState(post);
+  const images = usePendingFeedImages(currentPost);
+  const caption = currentPost.caption;
+  // `is_edited` chodí LEN autorovi – cudziemu divákovi kľúč v odpovedi vôbec
+  // nie je, takže `undefined` znamená „nezobrazuj", nie „neviem".
+  const isEdited = currentPost.is_edited === true;
 
   const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(post.likes_count);
@@ -422,10 +428,6 @@ export default function FeedPostCard({
   const [removingTag, setRemovingTag] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  // Text a príznak úpravy držíme lokálne, nech sa karta po uložení prekreslí
-  // bez obnovenia celého feedu. Prop-sync nižšie ich vráti do súladu.
-  const [caption, setCaption] = useState(post.caption);
-  const [isEdited, setIsEdited] = useState(post.is_edited === true);
   const [likersOpen, setLikersOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const likePendingRef = useRef(false);
@@ -457,17 +459,10 @@ export default function FeedPostCard({
     setTaggedUsers(post.tagged_users ?? []);
   }, [post.tagged_users]);
 
+  // Obnovenie feedu prináša čerstvejšiu verziu – tá má prednosť pred lokálnou.
   useEffect(() => {
-    setPhotoSource(post);
+    setCurrentPost(post);
   }, [post]);
-
-  useEffect(() => {
-    setCaption(post.caption);
-    // `is_edited` chodí LEN autorovi – cudziemu divákovi kľúč v odpovedi
-    // vôbec nie je, takže `undefined` sa musí správať ako „nezobrazuj",
-    // nie ako „neviem".
-    setIsEdited(post.is_edited === true);
-  }, [post.caption, post.is_edited]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -893,13 +888,9 @@ export default function FeedPostCard({
       {editOpen ? (
         <FeedPostEditModal
           open
-          post={post}
+          post={currentPost}
           onClose={() => setEditOpen(false)}
-          onUpdated={(updated) => {
-            setCaption(updated.caption);
-            setIsEdited(updated.is_edited === true);
-            setPhotoSource(updated);
-          }}
+          onUpdated={setCurrentPost}
         />
       ) : null}
       <FeedPostReportModal

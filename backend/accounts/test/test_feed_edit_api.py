@@ -118,6 +118,57 @@ class FeedPostEditTests(APITestCase):
         self.post.refresh_from_db()
         self.assertEqual(self.post.edited_at, first)
 
+    def test_missing_caption_key_leaves_the_text_alone(self):
+        # PATCH je čiastočná úprava – požiadavka o fotkách sa textu nedotýka.
+        response = self._patch({"images_changed": True}, user=self.author)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["caption"], "Povodny text")
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.caption, "Povodny text")
+        self.assertIsNone(self.post.edited_at)
+
+    def test_missing_caption_key_does_not_demand_a_caption(self):
+        # Príspevok bez fotiek: chýbajúci kľúč nesmie skončiť ako
+        # `caption_required`, keď sa text vôbec nemení.
+        response = self._patch({}, user=self.author)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.caption, "Povodny text")
+
+    def test_missing_caption_key_keeps_the_text_of_a_shared_post(self):
+        source_author = _user("edit-post-keep-source")
+        source = FeedPost.objects.create(
+            author=source_author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Original",
+        )
+        share = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.SHARED_FEED_POST,
+            caption="Moj komentar k zdielaniu",
+            shared_feed_post=source,
+        )
+
+        self.client.force_authenticate(user=self.author)
+        response = self.client.patch(
+            reverse("accounts:feed_post_detail", args=[share.id]),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        share.refresh_from_db()
+        self.assertEqual(share.caption, "Moj komentar k zdielaniu")
+
+    def test_explicit_empty_caption_is_still_validated(self):
+        # Výslovné vymazanie textu ostáva pod tou istou validáciou ako doteraz.
+        response = self._patch({"caption": ""}, user=self.author)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "caption_required")
+
     def test_stranger_cannot_edit_someone_elses_post(self):
         response = self._patch({"caption": "Cudzi zasah"}, user=self.viewer)
 

@@ -37,6 +37,8 @@ jest.mock('@/contexts/LanguageContext', () => ({
 
 const mockIsMobile = jest.fn(() => false);
 jest.mock('@/hooks', () => ({
+  // Prepíš LEN detekciu mobilu – ostatné hooky nech modulu zostanú dostupné.
+  ...jest.requireActual('@/hooks'),
   useIsMobile: () => mockIsMobile(),
   useIsMobileState: () => ({ isMobile: mockIsMobile(), isResolved: true }),
 }));

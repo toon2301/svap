@@ -33,6 +33,7 @@ import { useFeedDialog } from './useFeedDialog';
 import { CAPTION_MAX_LENGTH } from './FeedPostComposerForm';
 import { translateFeedActionError } from './feedActionErrors';
 import { useFeedPostPhotoDraft } from './useFeedPostPhotoDraft';
+import { imagePickError, pickFeedImages } from './pickFeedImages';
 import {
   deleteFeedPostImage,
   getFeedPost,
@@ -41,10 +42,7 @@ import {
 } from '@/lib/feedApi';
 import {
   FEED_IMAGE_ACCEPT,
-  FEED_IMAGE_MAX_BYTES,
-  FEED_IMAGE_MAX_MB,
   MAX_FEED_POST_IMAGES,
-  isAllowedFeedImageName,
   uploadFeedPostImages,
 } from '@/lib/feedImageUpload';
 
@@ -99,30 +97,12 @@ export default function FeedPostEditModal({
     event.target.value = '';
     if (!selected.length) return;
 
-    const accepted: File[] = [];
-    for (const candidate of selected) {
-      // Formát aj veľkosť overíme TU, rovnako ako composer – inak by sa to
-      // používateľ dozvedel až v polovici ukladacej sekvencie.
-      if (!isAllowedFeedImageName(candidate.name)) {
-        toast.error(
-          t('feed.composerImageBadType', 'Tento formát fotky nie je podporovaný.'),
-        );
-        continue;
-      }
-      if (candidate.size > FEED_IMAGE_MAX_BYTES) {
-        toast.error(
-          t(
-            'feed.composerImageTooLarge',
-            'Fotka je príliš veľká. Maximum je {max} MB.',
-          ).replace('{max}', String(FEED_IMAGE_MAX_MB)),
-        );
-        continue;
-      }
-      accepted.push(candidate);
-    }
-    if (!accepted.length) return;
-
-    if (accepted.length > draft.remainingSlots) {
+    const { accepted, rejected, overLimit } = pickFeedImages(
+      selected,
+      draft.remainingSlots,
+    );
+    rejected.forEach(({ reason }) => toast.error(imagePickError(t, reason)));
+    if (overLimit) {
       toast.error(
         t(
           'feed.composerImagesLimit',
@@ -130,7 +110,7 @@ export default function FeedPostEditModal({
         ).replace('{max}', String(MAX_FEED_POST_IMAGES)),
       );
     }
-    draft.addFiles(accepted.slice(0, draft.remainingSlots));
+    draft.addFiles(accepted);
   };
 
   /**
@@ -172,21 +152,21 @@ export default function FeedPostEditModal({
         }
       }
 
-      // (b) MAZANIE označených fotiek – pred uploadom, nech sa uvoľní miesto
-      // v limite a nech sa pravidlo „nesmie ostať prázdne" vyhodnocuje voči
-      // medzistavu, ktorý naozaj vznikne.
       let removalFailed = false;
-      for (const imageId of draft.removedIds) {
-        try {
-          await deleteFeedPostImage(post.id, imageId);
-        } catch {
-          removalFailed = true;
+      const removePhotos = async () => {
+        for (const imageId of draft.removedIds) {
+          try {
+            await deleteFeedPostImage(post.id, imageId);
+          } catch {
+            removalFailed = true;
+          }
         }
-      }
+      };
 
-      // (c) UPLOAD nových – sekvenčne, rovnaký helper aj priebeh ako composer.
+      // Sekvenčne, rovnaký helper aj hlásenie priebehu ako composer.
       let uploadFailures: string[] = [];
-      if (draft.added.length) {
+      const uploadPhotos = async () => {
+        if (!draft.added.length) return;
         try {
           const failures = await uploadFeedPostImages(
             post.id,
@@ -198,6 +178,34 @@ export default function FeedPostEditModal({
         } finally {
           setUploadProgress(null);
         }
+      };
+
+      // (b)(c) FOTKY. Normálne sa najprv maže a potom nahráva – uvoľní sa tým
+      // miesto v limite a pravidlo „nesmie ostať prázdne" sa vyhodnocuje voči
+      // medzistavu, ktorý naozaj vznikne.
+      //
+      // VÝMENA JEDINEJ FOTKY je jediná výnimka: keď sa odoberá všetko, čo
+      // príspevok má, text je prázdny a náhrada už čaká v drafte, backend by
+      // mazanie (správne) odmietol – príspevok by v tej chvíli nemal žiadny
+      // obsah. Nová fotka preto ide prvá; potom je odobratie starej bezpečné
+      // a používateľ nedostane chybu za úplne platnú výmenu.
+      const keepsNoExistingPhoto = draft.existing.every((entry) => entry.removed);
+      const swapsLastPhoto =
+        isFreePost &&
+        !trimmed &&
+        draft.removedIds.length > 0 &&
+        keepsNoExistingPhoto &&
+        draft.added.length > 0;
+
+      if (swapsLastPhoto) {
+        await uploadPhotos();
+        // Keď sa náhrada nenahrala, stará fotka je jediný obsah príspevku –
+        // mazať ju by znamenalo vyrobiť presne ten prázdny stav, pred ktorým
+        // pravidlo chráni.
+        if (!uploadFailures.length) await removePhotos();
+      } else {
+        await removePhotos();
+        await uploadPhotos();
       }
 
       // Karta dostane skutočný stav aj pri čiastočnom zlyhaní – používateľ má

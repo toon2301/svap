@@ -740,6 +740,13 @@ class FeedCommentRepliesEndpointTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.data["code"], "reply_anchor_missing")
 
+    def test_non_numeric_anchor_is_rejected(self):
+        # Nečíselná kotva je chyba klienta (400), nie pád dotazu (500).
+        response = self.client.get(self.url, {"after": "abc"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "reply_anchor_invalid")
+
     def test_anchor_from_another_comment_is_rejected(self):
         other_parent = FeedPostComment.objects.create(
             post=self.post, author=self.author, text="Iny hlavny"

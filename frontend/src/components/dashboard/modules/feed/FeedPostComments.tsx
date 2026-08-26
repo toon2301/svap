@@ -550,9 +550,14 @@ export default function FeedPostComments({
    * nezduplikuje ani nevynechá; `mergeReplies` navyše zladí prekryv.
    * Vracia `false` LEN pri zlyhaní požiadavky – volajúci (hľadanie
    * zvýrazneného komentára) sa podľa toho vie zastaviť.
+   *
+   * `silent` potlačí chybový toast – rovnaký prepínač a z rovnakého dôvodu
+   * ako v `loadMore`: hľadanie komentára z notifikácie beží na pozadí,
+   * používateľ oň nežiadal. Klik na „Zobraziť ďalšie odpovede" je naopak
+   * vedomá akcia, takže tam sa zlyhanie hlási.
    */
   const loadMoreReplies = useCallback(
-    async (parentId: number) => {
+    async (parentId: number, options?: { silent?: boolean }) => {
       const parent = commentsRef.current.find(
         (comment) => comment.id === parentId,
       );
@@ -576,6 +581,14 @@ export default function FeedPostComments({
         );
         return true;
       } catch {
+        if (!options?.silent) {
+          toast.error(
+            tRef.current(
+              'feed.repliesLoadError',
+              'Odpovede sa nepodarilo načítať.',
+            ),
+          );
+        }
         return false;
       } finally {
         setLoadingRepliesFor(null);
@@ -653,7 +666,8 @@ export default function FeedPostComments({
       if (loadingRepliesFor !== null) return;
       highlightPagesRef.current += 1;
       highlightSeekingRef.current = true;
-      void loadMoreReplies(parentWithMissingReplies.id).then((ok) => {
+      // Ticho: hľadanie beží na pozadí, používateľ oň nežiadal.
+      void loadMoreReplies(parentWithMissingReplies.id, { silent: true }).then((ok) => {
         highlightSeekingRef.current = false;
         if (!ok) highlightHandledRef.current = highlightCommentId;
       });

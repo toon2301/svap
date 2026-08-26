@@ -39,7 +39,40 @@ class FeedUserSummarySerializer(serializers.ModelSerializer):
         return None
 
 
-class FeedPostCommentSerializer(serializers.ModelSerializer):
+class AuthorOnlyEditedFlagMixin:
+    """``is_edited`` len pre autora – zdieľané príspevkom aj komentárom.
+
+    Kľúč sa komukoľvek inému z odpovede VYNECHÁ, nie nastaví na False: rovnaký
+    vzor ako ``rejected_reason`` pri fotkách. Nepravdivá hodnota by tvrdila
+    niečo, čo divákovi nepatrí, kým chýbajúci kľúč nehovorí nič. Filtruje sa
+    pri serializácii, takže sa to nedá vytiahnuť ani priamym čítaním API.
+
+    Trieda, ktorá mixin použije, musí mať ``is_edited`` vo ``fields``
+    a serializovaný objekt polia ``edited_at`` a ``author_id``.
+    """
+
+    def _viewer_id(self):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_authenticated", False):
+            return int(user.id)
+        return None
+
+    def get_is_edited(self, obj):
+        # Pravdivosť tejto hodnoty platí len pre autora – `to_representation`
+        # ju komukoľvek inému z odpovede odstráni.
+        return obj.edited_at is not None
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self._viewer_id() != instance.author_id:
+            data.pop("is_edited", None)
+        return data
+
+
+class FeedPostCommentSerializer(
+    AuthorOnlyEditedFlagMixin, serializers.ModelSerializer
+):
     """Komentár k príspevku – autor ako mini payload, can_delete pre FE.
 
     can_delete: autor komentára ALEBO autor príspevku (moderácia vlastnej
@@ -112,21 +145,7 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
         if data.get("replies") is None:
             data.pop("replies", None)
             data.pop("replies_count", None)
-        # „Upravené" vidí LEN autor komentára. Kľúč sa ostatným VYNECHÁ, nie
-        # nastaví na False – rovnaký vzor ako `rejected_reason` pri fotkách:
-        # nepravdivá hodnota by tvrdila niečo, čo nevieme, kým chýbajúci kľúč
-        # nehovorí nič. Filtruje sa TU, pri serializácii, takže cudzí divák to
-        # nevytiahne ani priamym čítaním API odpovede.
-        if self._viewer_id() != instance.author_id:
-            data.pop("is_edited", None)
         return data
-
-    def _viewer_id(self):
-        request = self.context.get("request")
-        user = getattr(request, "user", None)
-        if user is not None and getattr(user, "is_authenticated", False):
-            return int(user.id)
-        return None
 
     def get_can_delete(self, obj):
         request = self.context.get("request")
@@ -145,11 +164,6 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
         """
         return self._viewer_id() == obj.author_id
 
-    def get_is_edited(self, obj):
-        # Pravdivosť tejto hodnoty platí len pre autora – `to_representation`
-        # ju komukoľvek inému z odpovede odstráni.
-        return obj.edited_at is not None
-
     def get_likes_count(self, obj):
         # Anotácia zo zoznamu; fallback pre jednotlivo serializovaný komentár
         # (napr. čerstvo vytvorený) – rovnaký vzor ako FeedPostSerializer.
@@ -167,7 +181,7 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
         return obj.id in liked_ids
 
 
-class FeedPostSerializer(serializers.ModelSerializer):
+class FeedPostSerializer(AuthorOnlyEditedFlagMixin, serializers.ModelSerializer):
     """Príspevok pre feed/detail/profilové zoznamy.
 
     Context:
@@ -207,13 +221,6 @@ class FeedPostSerializer(serializers.ModelSerializer):
         ]
 
     # --- helpers -----------------------------------------------------------
-
-    def _viewer_id(self):
-        request = self.context.get("request")
-        user = getattr(request, "user", None)
-        if user is not None and getattr(user, "is_authenticated", False):
-            return int(user.id)
-        return None
 
     def _absolute(self, path: str) -> str:
         request = self.context.get("request")
@@ -399,17 +406,3 @@ class FeedPostSerializer(serializers.ModelSerializer):
 
     def get_can_manage(self, obj):
         return self._viewer_id() == obj.author_id
-
-    def get_is_edited(self, obj):
-        # Pravdivosť platí len pre autora – ostatným kľúč vypadne v
-        # `to_representation` (viď tam).
-        return obj.edited_at is not None
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        # „Upravené" je informácia LEN pre autora príspevku; nikto iný ju
-        # nedostane ani priamym čítaním API odpovede. Kľúč sa vynecháva (nie
-        # vracia ako False) – rovnaký vzor ako `rejected_reason` pri fotkách.
-        if self._viewer_id() != instance.author_id:
-            data.pop("is_edited", None)
-        return data

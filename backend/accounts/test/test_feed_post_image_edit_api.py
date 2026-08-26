@@ -308,6 +308,37 @@ class FeedPostImageAddToExistingPostTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_complete_on_a_post_deleted_meanwhile_cleans_the_staging_object(self):
+        # Príspevok môže zaniknúť medzi initom a completom – vtedy sa nesmie
+        # zapisovať (ani značiť úprava) a staging objekt nemá kde ostať visieť.
+        self.client.force_authenticate(user=self.author)
+        init = self._init()
+        image_id = init.data["image_id"]
+        FeedPost.objects.filter(pk=self.post.pk).delete()
+
+        with patch(
+            "accounts.views.feed_uploads.delete_storage_keys"
+        ) as cleanup:
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self._complete(image_id, is_edit=True)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(cleanup.called)
+
+    def test_complete_on_a_foreign_post_does_not_touch_its_staging_object(self):
+        # Cudzí príspevok skončí rovnakou 404-kou, ale upratovať mu rozbehnutý
+        # upload nesmieme – bol by to spôsob, ako niekomu zhodiť nahrávanie.
+        self.client.force_authenticate(user=self.author)
+        init = self._init()
+        image_id = init.data["image_id"]
+
+        self.client.force_authenticate(user=self.stranger)
+        with patch("accounts.views.feed_uploads.delete_storage_keys") as cleanup:
+            response = self._complete(image_id, is_edit=True)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(cleanup.called)
+
     def test_stranger_cannot_add_a_photo_to_a_foreign_post(self):
         self.client.force_authenticate(user=self.stranger)
 
