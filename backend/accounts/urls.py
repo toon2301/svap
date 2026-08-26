@@ -171,6 +171,11 @@ urlpatterns = [
         name="feed_post_detail",
     ),
     path(
+        "feed/posts/<int:post_id>/images/<int:image_id>/",
+        views.feed_post_image_delete_view,
+        name="feed_post_image_delete",
+    ),
+    path(
         "feed/posts/<int:post_id>/images/<int:image_id>/file/",
         views.feed_post_image_file_view,
         name="feed_post_image_file",
@@ -202,8 +207,8 @@ urlpatterns = [
     ),
     path(
         "feed/posts/<int:post_id>/comments/<int:comment_id>/",
-        views.feed_post_comment_delete_view,
-        name="feed_post_comment_delete",
+        views.feed_post_comment_detail_view,
+        name="feed_post_comment_detail",
     ),
     path(
         "feed/posts/<int:post_id>/comments/<int:comment_id>/like/",
@@ -214,6 +219,11 @@ urlpatterns = [
         "feed/posts/<int:post_id>/likes/",
         views.feed_post_likers_view,
         name="feed_post_likers",
+    ),
+    path(
+        "feed/posts/<int:post_id>/comments/<int:comment_id>/replies/",
+        views.feed_post_comment_replies_view,
+        name="feed_post_comment_replies",
     ),
     path(
         "feed/posts/<int:post_id>/comments/<int:comment_id>/likes/",
@@ -249,6 +259,21 @@ urlpatterns = [
     path("skills/<int:skill_id>/like/", views.offer_like_view, name="offer_like"),
     path("skills/<int:skill_id>/", views.skills_detail_view, name="skills_detail"),
     path("skills/<int:skill_id>/images/", views.skill_images_view, name="skill_images"),
+    path(
+        "offer-watches/",
+        views.offer_watches_view,
+        name="offer_watches",
+    ),
+    path(
+        "offer-watches/<int:watch_id>/matches/",
+        views.offer_watch_results_view,
+        name="offer_watch_results",
+    ),
+    path(
+        "offer-watches/<int:watch_id>/",
+        views.offer_watch_detail_view,
+        name="offer_watch_detail",
+    ),
     path(
         "skills/<int:skill_id>/images/upload-init/",
         views.skill_images_upload_init_view,

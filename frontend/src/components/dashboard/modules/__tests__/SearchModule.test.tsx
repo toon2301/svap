@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import type { AxiosResponse } from 'axios';
 import SearchModule from '../SearchModule';
 import { api } from '@/lib/api';
 import type { User } from '../../../../types';
@@ -38,7 +39,7 @@ describe('SearchModule', () => {
     jest.clearAllMocks();
     mockApiGet.mockResolvedValue({
       data: { skills: [], users: [] },
-    } as any);
+    } as AxiosResponse<{ skills: never[]; users: never[] }>);
   });
 
   it('renders heading and inputs', () => {
@@ -82,5 +83,15 @@ describe('SearchModule', () => {
     render(<SearchModule user={mockUser} isOverlay isActive={false} />);
 
     expect(mockApiGet).not.toHaveBeenCalled();
+  });
+
+  it('uses the shared Svaply scrollbar in the desktop overlay', () => {
+    const { container } = render(
+      <SearchModule user={mockUser} isOverlay isActive={false} />,
+    );
+
+    expect(container.querySelector('aside > .overflow-y-auto')).toHaveClass(
+      'elegant-scrollbar',
+    );
   });
 });

@@ -490,17 +490,17 @@ def feed_posts_view(request):
     )
 
 
-@api_view(["GET", "DELETE"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([AllowAny])
 @api_rate_limit
 def feed_post_detail_view(request, post_id: int):
-    """GET: permalink na príspevok. DELETE: zmazanie vlastného príspevku.
+    """GET: permalink. PATCH: úprava textu. DELETE: zmazanie vlastného príspevku.
 
     Viditeľnosť je pre obe metódy rovnaká ako v zozname. AllowAny s ručnou
     kontrolou prihlásenia pri zapisovacej metóde je vzor už použitý pri
     ``feed_post_comments_view`` – GET musí ostať verejný.
 
-    Mazať smie IBA autor, presne podľa ``can_manage`` v serializeri
+    Upravovať aj mazať smie IBA autor, presne podľa ``can_manage`` v serializeri
     (``viewer_id == author_id``); iný vzťah k príspevku právo nedáva.
     Súvisiace záznamy (fotky, lajky, komentáre, tagy, nahlásenia) idú
     CASCADE-om z Fázy 1; zdieľania cudzích autorov majú ``SET_NULL``, takže
@@ -511,6 +511,18 @@ def feed_post_detail_view(request, post_id: int):
         return Response(
             {"error": "Prispevok nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
         )
+
+    if request.method == "PATCH":
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Prihlasenie je povinne."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        # Import až tu: `feed_edits` si berie helpery z tohto modulu, takže
+        # import na úrovni súboru by uzavrel kruh.
+        from .feed_edits import edit_feed_post
+
+        return edit_feed_post(request, post)
 
     if request.method == "DELETE":
         if not request.user.is_authenticated:

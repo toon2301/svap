@@ -138,6 +138,12 @@ class FeedPost(FeedPostSharingMixin, models.Model):
 
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Upravené"), auto_now=True)
+    # Kedy autor naposledy zmenil TEXT. Zámerne nie ``updated_at``: ten sa hýbe
+    # pri každom uložení riadku (aj keď sa text nedotkol), takže by z neho
+    # „upravené" nebolo pravdivé. NULL = nikdy neupravené.
+    edited_at = models.DateTimeField(
+        _("Text upravený"), null=True, blank=True, default=None
+    )
 
     class Meta:
         verbose_name = _("Príspevok na nástenke")

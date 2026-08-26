@@ -17,6 +17,7 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { useFeedDialog } from './useFeedDialog';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import BlurredContainImage from '../shared/BlurredContainImage';
@@ -64,6 +65,9 @@ export default function FeedShareDialog({
   onShared,
 }: FeedShareDialogProps) {
   const { t } = useLanguage();
+  // Mobil má emoji priamo na systémovej klávesnici – appkové
+  // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
+  const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
   const [caption, setCaption] = useState('');
   const [taggedUsers, setTaggedUsers] = useState<GroupMemberCandidate[]>([]);
@@ -162,12 +166,14 @@ export default function FeedShareDialog({
             className="w-full resize-y subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
           />
           <div className="mt-1 flex items-center justify-between gap-3">
-            <DesktopEmojiPickerButton
-              ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
-              disabled={submitting}
-              onSelect={insertEmoji}
-              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
-            />
+            {isMobile ? null : (
+              <DesktopEmojiPickerButton
+                ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
+                disabled={submitting}
+                onSelect={insertEmoji}
+                className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
+              />
+            )}
             <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
               <span className={tooLong ? 'font-semibold text-red-600 dark:text-red-400' : ''}>
                 {caption.length}/{SHARE_CAPTION_MAX_LENGTH}

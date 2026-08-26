@@ -98,6 +98,11 @@ class FeedPostComment(models.Model):
         verbose_name=_("Odpoveď na komentár"),
     )
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+    # Kedy autor naposledy zmenil text komentára/odpovede (NULL = nikdy).
+    # Rovnaká úvaha ako pri ``FeedPost.edited_at``.
+    edited_at = models.DateTimeField(
+        _("Text upravený"), null=True, blank=True, default=None
+    )
 
     class Meta:
         verbose_name = _("Komentár k príspevku")

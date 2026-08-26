@@ -88,6 +88,17 @@ def _reject_pending_image(image_id: int, reason: str) -> None:
     )
 
 
+def _parse_bool(value) -> bool:
+    """Tolerantné čítanie príznaku – JSON pošle bool, multipart reťazec.
+
+    Zhodné s ``feed_posts._parse_bool``; kopíruje sa zámerne, aby si upload
+    modul neťahal závislosť na module s vytváraním príspevku.
+    """
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
 def _get_own_free_post(request, post_id: int) -> FeedPost | None:
     """Fotky smie mať len VLASTNÝ voľný príspevok.
 
@@ -401,6 +412,21 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
                 delete_storage_keys([key])
 
         transaction.on_commit(enqueue_processing)
+
+    # Fotka pridaná ÚPRAVOU značí príspevok ako upravený; fotka nahraná hneď
+    # po vytvorení nie – tam je to súčasť vzniku, nie zmena.
+    #
+    # Rozlíšiť to server sám nevie: obe cesty volajú ten istý endpoint nad
+    # príspevkom, ktorý už existuje (S3 kľúč potrebuje post_id), takže žiadny
+    # stav v DB tie dva prípady neodlíši. Preto to hovorí klient – rovnako
+    # vedomá dôvera ako pri ``will_attach_photo`` vo ``_create_feed_post``.
+    # Zneužitie nič neotvára: ``is_edited`` je kozmetický príznak, ktorý
+    # backend posiela LEN autorovi, takže klamstvom si používateľ nanajvýš
+    # označí vlastný príspevok sám sebe.
+    if _parse_bool(request.data.get("is_edit")):
+        from .feed_edits import _mark_post_edited
+
+        _mark_post_edited(post)
 
     image.refresh_from_db()
     return Response(

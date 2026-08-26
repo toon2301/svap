@@ -48,5 +48,5 @@ def feed_post_self_tag_view(request, post_id: int):
             {"error": "Oznacenie nebolo najdene."}, status=status.HTTP_404_NOT_FOUND
         )
 
-    # 204 ako feed_post_comment_delete_view – zhodný vzor pre jednoduché DELETE.
+    # 204 ako feed_post_comment_detail_view – zhodný vzor pre jednoduché DELETE.
     return Response(status=status.HTTP_204_NO_CONTENT)

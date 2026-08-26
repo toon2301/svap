@@ -48,10 +48,12 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
 
     author = FeedUserSummarySerializer(read_only=True)
     can_delete = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
     replies_count = serializers.SerializerMethodField()
+    is_edited = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPostComment
@@ -60,6 +62,8 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             "text",
             "author",
             "can_delete",
+            "can_edit",
+            "is_edited",
             "likes_count",
             "is_liked_by_me",
             "parent_comment_id",
@@ -108,7 +112,21 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
         if data.get("replies") is None:
             data.pop("replies", None)
             data.pop("replies_count", None)
+        # „Upravené" vidí LEN autor komentára. Kľúč sa ostatným VYNECHÁ, nie
+        # nastaví na False – rovnaký vzor ako `rejected_reason` pri fotkách:
+        # nepravdivá hodnota by tvrdila niečo, čo nevieme, kým chýbajúci kľúč
+        # nehovorí nič. Filtruje sa TU, pri serializácii, takže cudzí divák to
+        # nevytiahne ani priamym čítaním API odpovede.
+        if self._viewer_id() != instance.author_id:
+            data.pop("is_edited", None)
         return data
+
+    def _viewer_id(self):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_authenticated", False):
+            return int(user.id)
+        return None
 
     def get_can_delete(self, obj):
         request = self.context.get("request")
@@ -117,6 +135,20 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             return False
         post_author_id = self.context.get("post_author_id")
         return user.id == obj.author_id or user.id == post_author_id
+
+    def get_can_edit(self, obj):
+        """Upraviť smie LEN autor komentára – na rozdiel od `can_delete`.
+
+        Mazanie je aj moderačný nástroj autora príspevku (cudzí komentár na
+        vlastnej nástenke), ale úprava je osobnejšia: prepisovať cudzí text
+        nesmie nikto.
+        """
+        return self._viewer_id() == obj.author_id
+
+    def get_is_edited(self, obj):
+        # Pravdivosť tejto hodnoty platí len pre autora – `to_representation`
+        # ju komukoľvek inému z odpovede odstráni.
+        return obj.edited_at is not None
 
     def get_likes_count(self, obj):
         # Anotácia zo zoznamu; fallback pre jednotlivo serializovaný komentár
@@ -153,6 +185,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
     comments_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
+    is_edited = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPost
@@ -169,6 +202,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
             "comments_count",
             "is_liked_by_me",
             "can_manage",
+            "is_edited",
             "created_at",
         ]
 
@@ -365,3 +399,17 @@ class FeedPostSerializer(serializers.ModelSerializer):
 
     def get_can_manage(self, obj):
         return self._viewer_id() == obj.author_id
+
+    def get_is_edited(self, obj):
+        # Pravdivosť platí len pre autora – ostatným kľúč vypadne v
+        # `to_representation` (viď tam).
+        return obj.edited_at is not None
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # „Upravené" je informácia LEN pre autora príspevku; nikto iný ju
+        # nedostane ani priamym čítaním API odpovede. Kľúč sa vynecháva (nie
+        # vracia ako False) – rovnaký vzor ako `rejected_reason` pri fotkách.
+        if self._viewer_id() != instance.author_id:
+            data.pop("is_edited", None)
+        return data

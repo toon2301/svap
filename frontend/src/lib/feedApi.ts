@@ -80,6 +80,12 @@ export type FeedPost = {
   comments_count: number;
   is_liked_by_me: boolean;
   can_manage: boolean;
+  /**
+   * Bol text upravený? Backend toto pole posiela LEN autorovi príspevku –
+   * komukoľvek inému v odpovedi vôbec nie je (nie `false`, ale chýba), takže
+   * `undefined` znamená „nie je to moja informácia", nie „neupravené".
+   */
+  is_edited?: boolean;
   created_at: string;
 };
 
@@ -176,6 +182,10 @@ export type FeedPostComment = {
   text: string;
   author: FeedUserSummary;
   can_delete: boolean;
+  /** Upraviť smie LEN autor komentára – nie autor príspevku (ten smie mazať). */
+  can_edit?: boolean;
+  /** Ako `FeedPost.is_edited`: chodí len autorovi komentára. */
+  is_edited?: boolean;
   likes_count: number;
   is_liked_by_me: boolean;
   /** Vyplnené len pri odpovedi; vrcholový komentár má null. */
@@ -263,6 +273,33 @@ export async function listFeedPostComments(
   };
 }
 
+/**
+ * Ďalšie odpovede jedného komentára – pokračovanie za úvodným náhľadom.
+ *
+ * `after` je id poslednej odpovede, ktorú klient už má; backend z nej odvodí
+ * presnú pozíciu (created_at, id), takže sa nič nezduplikuje ani nevynechá.
+ */
+export async function listFeedCommentReplies(
+  postId: number,
+  commentId: number,
+  params: { after?: number | null; pageSize?: number } = {},
+): Promise<FeedCommentPage> {
+  const query = new URLSearchParams();
+  if (params.after != null) query.set('after', String(params.after));
+  if (params.pageSize) query.set('page_size', String(params.pageSize));
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  const { data } = await api.get(
+    `${endpoints.feed.postCommentReplies(postId, commentId)}${suffix}`,
+  );
+  const payload = (data ?? {}) as Partial<FeedCommentPage>;
+  return {
+    results: Array.isArray(payload.results) ? payload.results : [],
+    next: typeof payload.next === 'string' ? payload.next : null,
+    previous: typeof payload.previous === 'string' ? payload.previous : null,
+    count: typeof payload.count === 'number' ? payload.count : undefined,
+  };
+}
+
 export async function createFeedPostComment(
   postId: number,
   text: string,
@@ -278,6 +315,19 @@ export async function createFeedPostComment(
       : { text },
   );
   return data;
+}
+
+/** Upraví text vlastného komentára alebo odpovede (jeden model, jedna cesta). */
+export async function updateFeedPostComment(
+  postId: number,
+  commentId: number,
+  text: string,
+): Promise<FeedPostComment> {
+  const { data } = await api.patch(
+    endpoints.feed.postCommentDetail(postId, commentId),
+    { text },
+  );
+  return data as FeedPostComment;
 }
 
 export async function deleteFeedPostComment(
@@ -430,6 +480,33 @@ export async function listFeedCommentLikers(
     ),
   );
   return normalizeLikersPage(data);
+}
+
+/**
+ * Upraví TEXT vlastného príspevku. Fotky sa týmto nemenia – backend polia
+ * o fotkách ignoruje, na ich zmenu slúži upload flow.
+ */
+export async function updateFeedPost(
+  postId: number,
+  caption: string,
+): Promise<FeedPost> {
+  const { data } = await api.patch(endpoints.feed.postDetail(postId), {
+    caption,
+  });
+  return data as FeedPost;
+}
+
+/**
+ * Odoberie jednu fotku z vlastného príspevku.
+ *
+ * Backend odmietne (400 `cannot_remove_last_content`), keby príspevok ostal
+ * bez textu aj bez fotky – to isté pravidlo, aké stráži úpravu textu.
+ */
+export async function deleteFeedPostImage(
+  postId: number,
+  imageId: number,
+): Promise<void> {
+  await api.delete(endpoints.feed.postImage(postId, imageId));
 }
 
 /** Zmaže vlastný príspevok. Právo overuje backend podľa `can_manage`. */

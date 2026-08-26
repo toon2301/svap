@@ -20,6 +20,7 @@ import {
 jest.mock('@/lib/feedApi', () => ({
   FEED_COMMENT_MAX_LENGTH: 500,
   listFeedPostComments: jest.fn(),
+  listFeedCommentReplies: jest.fn(),
   createFeedPostComment: jest.fn(),
   deleteFeedPostComment: jest.fn(),
   likeFeedPostComment: jest.fn(),
@@ -73,6 +74,7 @@ function comment(
     is_liked_by_me: false,
     parent_comment_id: null,
     replies,
+    replies_count: replies.length,
     created_at: '2026-01-01',
   } as FeedPostComment;
 }
@@ -114,6 +116,8 @@ it('shows replies nested under their parent comment', async () => {
   render(<FeedPostComments postId={5} />);
   await screen.findByText('Hlavný');
 
+  await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
   const nested = screen.getByTestId('feed-comment-replies-1');
   expect(within(nested).getByText('Odpoveď na prvý')).toBeInTheDocument();
   // Odpoveď patrí pod prvý komentár, nie pod druhý.
@@ -129,6 +133,7 @@ it('offers Reply on top-level comments only', async () => {
 
   render(<FeedPostComments postId={5} />);
   await screen.findByText('Hlavný');
+  await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
 
   expect(screen.getByTestId('feed-comment-reply-1')).toBeInTheDocument();
   // Na odpoveď sa už odpovedať nedá – tlačidlo pri nej nie je vôbec.
@@ -188,8 +193,16 @@ it('picks up a reply written by someone else through polling', async () => {
       jest.advanceTimersByTime(COMMENTS_POLL_INTERVAL_MS + 50);
     });
 
-    // Odpoveď príde vnorená v obnovenom rodičovi – bez akcie používateľa.
-    expect(await screen.findByText('Cudzia odpoveď')).toBeInTheDocument();
+    // Polling počet prepíše, ale vlákno sám NEROZBALÍ – inak by sa zoznam
+    // pod rukami roztiahol.
+    const toggle = await screen.findByTestId('feed-comment-toggle-replies-1');
+    await waitFor(() => expect(toggle).toHaveTextContent('Zobraziť odpovede (1)'));
+    expect(screen.queryByText('Cudzia odpoveď')).not.toBeInTheDocument();
+
+    await act(async () => {
+      toggle.click();
+    });
+    expect(screen.getByText('Cudzia odpoveď')).toBeInTheDocument();
   } finally {
     jest.useRealTimers();
   }
@@ -264,6 +277,8 @@ describe('mazanie a počet komentárov', () => {
     );
 
     render(<FeedPostComments postId={5} onCountChange={onCountChange} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
     await screen.findByText('Odpoveď');
 
     await userEvent.click(screen.getByLabelText('Zmazať komentár'));

@@ -22,7 +22,8 @@ from .feed_comment_queries import (
 )
 from .feed_comments import (
     _create_comment,
-    feed_post_comment_delete_view,
+    feed_post_comment_detail_view,
+    feed_post_comment_replies_view,
     feed_post_comments_view,
 )
 from .feed_interaction_helpers import (
@@ -56,7 +57,8 @@ __all__ = [
     "_likers_response",
     "_post_not_found",
     "_report_duplicate_response",
-    "feed_post_comment_delete_view",
+    "feed_post_comment_detail_view",
+    "feed_post_comment_replies_view",
     "feed_post_comment_like_view",
     "feed_post_comment_likers_view",
     "feed_post_comments_view",

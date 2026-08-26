@@ -13,10 +13,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedCommentLikeButton from './FeedCommentLikeButton';
+import FeedCommentEditComposer from './FeedCommentEditComposer';
 import FeedCommentReplyComposer from './FeedCommentReplyComposer';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
@@ -25,6 +27,8 @@ import {
   FEED_COMMENT_MAX_LENGTH,
   createFeedPostComment,
   deleteFeedPostComment,
+  listFeedCommentReplies,
+  updateFeedPostComment,
   listFeedPostComments,
   type FeedPostComment,
 } from '@/lib/feedApi';
@@ -38,6 +42,60 @@ const COMMENTS_PAGE_SIZE = 10;
 const COMMENTS_MAX_POLL_SIZE = 50;
 /** Do tejto vzdialenosti od spodku sa nový komentár doscrolluje sám. */
 const NEAR_BOTTOM_PX = 100;
+
+/** Zhodné s FEED_REPLIES_PREVIEW_LIMIT na backende. */
+const REPLIES_PREVIEW_LIMIT = 10;
+/** Koľko odpovedí sa dotiahne jedným kliknutím na „Zobraziť ďalšie". */
+const REPLIES_PAGE_SIZE = 10;
+
+/** Zoradí odpovede podľa id – to rastie rovnako ako čas vzniku. */
+function sortedById(byId: Map<number, FeedPostComment>): FeedPostComment[] {
+  return [...byId.values()].sort((a, b) => a.id - b.id);
+}
+
+/**
+ * Zlúči NÁHĽAD odpovedí (prvých pár od začiatku vlákna) s tým, čo appka má.
+ *
+ * Rovnaký princíp ako `mergeComments` o úroveň vyššie: náhľad má posledné
+ * slovo o svojom rozsahu, takže čo v ňom chýba a má nižšie id než jeho koniec,
+ * bolo medzitým zmazané. Nad jeho hranicou sa nezahadzuje nič – o tom náhľad
+ * nič nehovorí a používateľ tam môže mať vlastné donačítané odpovede.
+ *
+ * Keď je odpovedí menej než náhľadový strop, pokrýva náhľad celé vlákno, takže
+ * jeho dosah je neohraničený (aj prázdny náhľad vtedy znamená „nič tam nie je").
+ */
+function mergeReplyPreview(
+  current: FeedPostComment[],
+  preview: FeedPostComment[],
+  previewCoversThread: boolean,
+): FeedPostComment[] {
+  if (!preview.length) return previewCoversThread ? [] : current;
+  const highest = previewCoversThread
+    ? Number.POSITIVE_INFINITY
+    : Math.max(...preview.map((reply) => reply.id));
+  const byId = new Map(
+    current.filter((reply) => reply.id > highest).map((reply) => [reply.id, reply]),
+  );
+  preview.forEach((reply) => byId.set(reply.id, reply));
+  return sortedById(byId);
+}
+
+/**
+ * Pripojí ĎALŠIU dávku odpovedí za tie, čo už máme.
+ *
+ * Dávka je pokračovanie za kotvou, nie pohľad od začiatku vlákna – nehovorí
+ * teda nič o predchádzajúcich odpovediach a žiadna sa pri nej nezahadzuje.
+ * Prienik podľa id ošetrí prípad, keď medzitým niečo pribudlo pred kotvou.
+ */
+function mergeReplyBatch(
+  current: FeedPostComment[],
+  batch: FeedPostComment[],
+): FeedPostComment[] {
+  if (!batch.length) return current;
+  const byId = new Map(current.map((reply) => [reply.id, reply]));
+  batch.forEach((reply) => byId.set(reply.id, reply));
+  return sortedById(byId);
+}
 
 /**
  * Zlúči čerstvú odpoveď servera do lokálneho zoznamu.
@@ -71,12 +129,25 @@ function mergeComments(
     ? Math.max(...incoming.map((comment) => comment.id))
     : Number.POSITIVE_INFINITY;
 
+  const currentById = new Map(current.map((comment) => [comment.id, comment]));
   const byId = new Map(
     current
       .filter((comment) => comment.id > highest)
       .map((comment) => [comment.id, comment]),
   );
-  incoming.forEach((comment) => byId.set(comment.id, comment));
+  incoming.forEach((comment) => {
+    // Prišiel len NÁHĽAD odpovedí. Keby sa komentár nahradil celý, používateľ
+    // by prišiel o odpovede, ktoré si sám donačítal nad rámec náhľadu.
+    const existing = currentById.get(comment.id);
+    byId.set(comment.id, {
+      ...comment,
+      replies: mergeReplyPreview(
+        existing?.replies ?? [],
+        comment.replies ?? [],
+        (comment.replies_count ?? 0) <= REPLIES_PREVIEW_LIMIT,
+      ),
+    });
+  });
   return [...byId.values()].sort((a, b) => a.id - b.id);
 }
 
@@ -92,6 +163,16 @@ const HIGHLIGHT_MS = 3000;
 const HIGHLIGHT_MAX_PAGES = 20;
 
 /** Komentáre aj ich odpovede v jednom zozname – na hľadanie a počítanie. */
+/**
+ * Koľko odpovedí komentár celkovo má.
+ *
+ * Zdroj pravdy je `replies_count` z backendu (počíta aj tie nenačítané);
+ * načítané pole je len poistka, keby pole v odpovedi chýbalo.
+ */
+function repliesTotal(comment: FeedPostComment): number {
+  return comment.replies_count ?? comment.replies?.length ?? 0;
+}
+
 function flattenComments(list: FeedPostComment[]): FeedPostComment[] {
   return list.flatMap((comment) => [comment, ...(comment.replies ?? [])]);
 }
@@ -112,6 +193,9 @@ export default function FeedPostComments({
   onTotalChange,
 }: FeedPostCommentsProps) {
   const { t } = useLanguage();
+  // Mobil má emoji priamo na systémovej klávesnici – appkové
+  // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
+  const isMobile = useIsMobile();
   const [comments, setComments] = useState<FeedPostComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -130,6 +214,14 @@ export default function FeedPostComments({
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
+  // Rozbalenie je LOKÁLNE per komentár – jedno vlákno môže mať naraz
+  // rozbalené jedny odpovede a zbalené druhé.
+  const [editingComment, setEditingComment] = useState<number | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [loadingRepliesFor, setLoadingRepliesFor] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   // Ohraničený scrollovateľný zoznam + požadované správanie doscrollovania po
   // commite (null = nescrollovať). Nový komentár ide na koniec, takže by inak
@@ -452,6 +544,47 @@ export default function FeedPostComments({
   }, [highlightCommentId]);
 
   /**
+   * Dotiahne ďalšiu dávku odpovedí jedného komentára.
+   *
+   * Pokračuje od poslednej odpovede, ktorú už máme (`after`), takže sa nič
+   * nezduplikuje ani nevynechá; `mergeReplies` navyše zladí prekryv.
+   * Vracia `false` LEN pri zlyhaní požiadavky – volajúci (hľadanie
+   * zvýrazneného komentára) sa podľa toho vie zastaviť.
+   */
+  const loadMoreReplies = useCallback(
+    async (parentId: number) => {
+      const parent = commentsRef.current.find(
+        (comment) => comment.id === parentId,
+      );
+      const loaded = parent?.replies ?? [];
+      setLoadingRepliesFor(parentId);
+      try {
+        const page = await listFeedCommentReplies(postId, parentId, {
+          after: loaded.length ? loaded[loaded.length - 1].id : null,
+          pageSize: REPLIES_PAGE_SIZE,
+        });
+        markSeen(page.results);
+        setComments((current) =>
+          current.map((comment) =>
+            comment.id === parentId
+              ? {
+                  ...comment,
+                  replies: mergeReplyBatch(comment.replies ?? [], page.results),
+                }
+              : comment,
+          ),
+        );
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setLoadingRepliesFor(null);
+      }
+    },
+    [postId, markSeen],
+  );
+
+  /**
    * Komentár z notifikácie: nájdi ho, doscrolluj naň a krátko ho zvýrazni.
    *
    * Keď v načítanom okne nie je, DONAČÍTAVA sa ďalej – a to je bežný prípad,
@@ -471,10 +604,18 @@ export default function FeedPostComments({
     if (highlightSeekingRef.current) return;
 
     // Cieľom môže byť aj ODPOVEĎ – tá v zozname žije vnorená v rodičovi.
-    const found = flattenComments(comments).some(
+    const target = flattenComments(comments).find(
       (comment) => comment.id === highlightCommentId,
     );
-    if (found) {
+    if (target) {
+      // Vlákno odpovedí je predvolene ZBALENÉ, takže hľadaná odpoveď nemusí
+      // byť v DOM – najprv otvor práve toho rodiča (nie všetky). Scroll aj
+      // zvýraznenie dobehnú v ďalšom behu efektu, keď už uzol existuje.
+      const parentId = target.parent_comment_id ?? null;
+      if (parentId != null && !expandedReplies.has(parentId)) {
+        setExpandedReplies((current) => new Set(current).add(parentId));
+        return;
+      }
       highlightHandledRef.current = highlightCommentId;
       setHighlighted(highlightCommentId);
       const node = document.querySelector(
@@ -487,6 +628,35 @@ export default function FeedPostComments({
         () => setHighlighted(null),
         HIGHLIGHT_MS,
       );
+      return;
+    }
+
+    // Cieľ môže byť ODPOVEĎ ZA úvodným náhľadom – rodiča máme, odpoveď ešte
+    // nie. Donačítaj ďalšiu dávku odpovedí; efekt sa po nej spustí znova, a ak
+    // treba, dávky sa reťazia. Poistky sú tie isté ako pri stránkovaní
+    // komentárov: spoločný strop pokusov a zastavenie pri zlyhaní.
+    const parentWithMissingReplies = comments.find((comment) => {
+      const loadedReplies = comment.replies ?? [];
+      if (loadedReplies.length >= (comment.replies_count ?? 0)) return false;
+      // Nenačítané odpovede majú vyššie id než posledná načítaná, takže vlákno,
+      // ktoré je už za cieľom, nemá zmysel prehľadávať.
+      const lastId = loadedReplies.length
+        ? loadedReplies[loadedReplies.length - 1].id
+        : 0;
+      return lastId < highlightCommentId;
+    });
+    if (parentWithMissingReplies) {
+      if (highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
+        highlightHandledRef.current = highlightCommentId;
+        return;
+      }
+      if (loadingRepliesFor !== null) return;
+      highlightPagesRef.current += 1;
+      highlightSeekingRef.current = true;
+      void loadMoreReplies(parentWithMissingReplies.id).then((ok) => {
+        highlightSeekingRef.current = false;
+        if (!ok) highlightHandledRef.current = highlightCommentId;
+      });
       return;
     }
 
@@ -552,9 +722,12 @@ export default function FeedPostComments({
     });
   }, [
     comments,
+    expandedReplies,
     highlightCommentId,
     loading,
     loadingMore,
+    loadingRepliesFor,
+    loadMoreReplies,
     hasMore,
     loadMore,
     refresh,
@@ -618,6 +791,47 @@ export default function FeedPostComments({
     }
   };
 
+  const toggleReplies = (commentId: number) => {
+    setExpandedReplies((current) => {
+      const next = new Set(current);
+      if (next.has(commentId)) next.delete(commentId);
+      else next.add(commentId);
+      return next;
+    });
+  };
+
+  const handleSubmitEdit = async (comment: FeedPostComment, text: string) => {
+    if (editSubmitting || !text) return;
+    setEditSubmitting(true);
+    try {
+      const updated = await updateFeedPostComment(postId, comment.id, text);
+      // Zneplatní prebiehajúci load() – rovnako ako pri vytvorení komentára.
+      loadSeqRef.current += 1;
+      // Preberá sa LEN text a príznak úpravy. Celý objekt by prepísal odpovede
+      // náhľadom zo serverovej odpovede, takže by používateľ prišiel o tie,
+      // ktoré si sám donačítal.
+      const patch = (item: FeedPostComment): FeedPostComment =>
+        item.id === comment.id
+          ? { ...item, text: updated.text, is_edited: updated.is_edited }
+          : item;
+      setComments((current) =>
+        current.map((item) => ({
+          ...patch(item),
+          replies: item.replies?.map(patch),
+        })),
+      );
+      setEditingComment(null);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ||
+        t('feed.commentUpdateError', 'Komentár sa nepodarilo upraviť.');
+      toast.error(message);
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const handleSubmitReply = async (parentId: number) => {
     const trimmedReply = replyText.trim();
     if (!trimmedReply || replySubmitting) return;
@@ -630,12 +844,20 @@ export default function FeedPostComments({
       setComments((current) =>
         current.map((comment) =>
           comment.id === parentId
-            ? { ...comment, replies: [...(comment.replies ?? []), created] }
+            ? {
+                ...comment,
+                replies: [...(comment.replies ?? []), created],
+                // Počet drží tlačidlo „Zobraziť odpovede (N)" – bez neho by
+                // sa vlastná odpoveď po zbalení už nedala otvoriť.
+                replies_count: repliesTotal(comment) + 1,
+              }
             : comment,
         ),
       );
       setReplyText('');
       setReplyingTo(null);
+      // Vlastnú odpoveď má autor hneď vidieť, aj keď mal sekciu zbalenú.
+      setExpandedReplies((current) => new Set(current).add(parentId));
       onCountChange?.(1);
     } catch (err) {
       const message =
@@ -664,6 +886,7 @@ export default function FeedPostComments({
               ? {
                   ...item,
                   replies: item.replies.filter((reply) => reply.id !== comment.id),
+                  replies_count: Math.max(repliesTotal(item) - 1, 0),
                 }
               : item,
           ),
@@ -671,7 +894,9 @@ export default function FeedPostComments({
       // Backend maže vrcholový komentár aj jeho odpovede naraz (CASCADE),
       // takže číslo pri ikone musí klesnúť o celý podstrom – nie o jedno.
       // Odpoveď žiadne vlastné odpovede nemá, takže tam ostáva -1.
-      onCountChange?.(-(1 + (comment.replies?.length ?? 0)));
+      // Ráta sa CELKOVÝ počet odpovedí, nie len načítaný – zbalené vlákno má
+      // v appke nanajvýš náhľad, backend však zmaže všetky.
+      onCountChange?.(-(1 + repliesTotal(comment)));
       toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));
       setPendingDelete(null);
     } catch {
@@ -706,11 +931,45 @@ export default function FeedPostComments({
         <p className="text-xs font-semibold text-gray-900 dark:text-white">
           {comment.author?.display_name}
         </p>
-        <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-          {comment.text}
-        </p>
+        {editingComment === comment.id ? (
+          <FeedCommentEditComposer
+            initialText={comment.text}
+            submitting={editSubmitting}
+            onCancel={() => setEditingComment(null)}
+            onSubmit={(next) => void handleSubmitEdit(comment, next)}
+            testId={`feed-comment-edit-composer-${comment.id}`}
+          />
+        ) : (
+          <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
+            {comment.text}
+            {/* „Upravené" vidí LEN autor komentára – backend pole nikomu inému
+                neposiela, takže tu netreba porovnávať identity. */}
+            {comment.is_edited ? (
+              <span
+                data-testid={`feed-comment-edited-${comment.id}`}
+                className="ml-1 align-baseline text-xs text-gray-400 dark:text-gray-500"
+              >
+                {t('feed.editedMark', '(upravené)')}
+              </span>
+            ) : null}
+          </p>
+        )}
         <div className="mt-1 flex items-center gap-2">
           <FeedCommentLikeButton postId={postId} comment={comment} />
+          {/* „Upraviť" patrí do TOHTO riadku, nie ku košu vpravo: kôš je
+              deštruktívna ikona a navyše ho vidí aj autor príspevku pri cudzom
+              komentári. Upravovať smie len autor komentára (`can_edit` z BE) a
+              týka sa to aj odpovedí, ktoré vlastné „Odpovedať" nemajú. */}
+          {comment.can_edit && editingComment !== comment.id ? (
+            <button
+              type="button"
+              onClick={() => setEditingComment(comment.id)}
+              data-testid={`feed-comment-edit-${comment.id}`}
+              className="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
+            >
+              {t('feed.commentEdit', 'Upraviť')}
+            </button>
+          ) : null}
           {isReply ? null : (
             <button
               type="button"
@@ -726,6 +985,25 @@ export default function FeedPostComments({
               {t('feed.reply', 'Odpovedať')}
             </button>
           )}
+          {/* Počet berieme z `replies_count` (celkový, nie len načítaný), takže
+              polling ho aktualizuje aj v ZBALENOM stave – sekcia sa pritom
+              sama neotvorí. */}
+          {!isReply && repliesTotal(comment) > 0 ? (
+            <button
+              type="button"
+              onClick={() => toggleReplies(comment.id)}
+              data-testid={`feed-comment-toggle-replies-${comment.id}`}
+              aria-expanded={expandedReplies.has(comment.id)}
+              className="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
+            >
+              {expandedReplies.has(comment.id)
+                ? t('feed.repliesHide', 'Skryť odpovede')
+                : t('feed.repliesShow', 'Zobraziť odpovede ({n})').replace(
+                    '{n}',
+                    String(repliesTotal(comment)),
+                  )}
+            </button>
+          ) : null}
         </div>
       </div>
       {comment.can_delete ? (
@@ -785,8 +1063,9 @@ export default function FeedPostComments({
                   {renderComment(comment)}
 
                   {/* Odpovede – jedna úroveň, odsadené a menšie. Žiadna
-                      @menovka: kontext dáva samotné vnorenie. */}
-                  {comment.replies?.length ? (
+                      @menovka: kontext dáva samotné vnorenie. Predvolene
+                      zbalené, nech dlhé vlákno neprevalcuje zoznam. */}
+                  {expandedReplies.has(comment.id) && comment.replies?.length ? (
                     <ul
                       data-testid={`feed-comment-replies-${comment.id}`}
                       className="mt-2 space-y-2 border-l-2 border-gray-200 pl-3 ml-4 dark:border-gray-700"
@@ -795,6 +1074,32 @@ export default function FeedPostComments({
                         <li key={reply.id}>{renderComment(reply, true)}</li>
                       ))}
                     </ul>
+                  ) : null}
+
+                  {/* TRETIA akcia, samostatná od „Odpovedať" aj „Zobraziť
+                      odpovede": objaví sa až po rozbalení a len keď je čo
+                      dotiahnuť. */}
+                  {expandedReplies.has(comment.id) &&
+                  (comment.replies?.length ?? 0) <
+                    (comment.replies_count ?? 0) ? (
+                    <button
+                      type="button"
+                      onClick={() => void loadMoreReplies(comment.id)}
+                      disabled={loadingRepliesFor === comment.id}
+                      data-testid={`feed-comment-more-replies-${comment.id}`}
+                      className="ml-4 mt-2 pl-3 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:text-purple-700 hover:underline disabled:opacity-60 dark:text-gray-400 dark:hover:text-purple-300"
+                    >
+                      {loadingRepliesFor === comment.id
+                        ? t('common.loading', 'Načítavam...')
+                        : t('feed.repliesShowMore', 'Zobraziť ďalšie odpovede ({n})')
+                            .replace(
+                              '{n}',
+                              String(
+                                (comment.replies_count ?? 0) -
+                                  (comment.replies?.length ?? 0),
+                              ),
+                            )}
+                    </button>
                   ) : null}
 
                   {replyingTo === comment.id ? (
@@ -890,12 +1195,14 @@ export default function FeedPostComments({
           className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
-          <DesktopEmojiPickerButton
-            ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
-            disabled={submitting}
-            onSelect={insertEmoji}
-            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
-          />
+          {isMobile ? null : (
+            <DesktopEmojiPickerButton
+              ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
+              disabled={submitting}
+              onSelect={insertEmoji}
+              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
+            />
+          )}
           <span
             data-testid="feed-comment-counter"
             className={`ml-auto text-xs tabular-nums ${

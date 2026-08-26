@@ -1,4 +1,4 @@
-"""Komentáre a odpovede – zoznam, vytvorenie, zmazanie.
+"""Komentáre a odpovede – zoznam, vytvorenie, úprava, zmazanie.
 
 Vyčlenené z ``feed_interactions`` – správanie nezmenené.
 
@@ -13,6 +13,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -34,10 +35,12 @@ from ..services.user_blocks import (
     lock_users_and_ensure_interaction_allowed,
 )
 from .feed_comment_queries import (
+    FEED_REPLIES_PREVIEW_LIMIT,
     FeedCommentCursorPagination,
     _liked_comment_ids,
     post_comments_queryset,
 )
+from .feed_edits import edit_feed_comment
 from .feed_interaction_helpers import (
     _comment_not_found,
     _get_visible_post,
@@ -208,11 +211,85 @@ def feed_post_comments_view(request, post_id: int):
     return paginator.get_paginated_response(serializer.data)
 
 
-@api_view(["DELETE"])
+@api_view(["GET"])
+@permission_classes([AllowAny])
+@api_rate_limit
+def feed_post_comment_replies_view(request, post_id: int, comment_id: int):
+    """Ďalšie odpovede jedného komentára – pokračovanie za úvodným náhľadom.
+
+    Zoznam komentárov nesie pod každým komentárom len prvých
+    ``FEED_REPLIES_PREVIEW_LIMIT`` odpovedí; zvyšok si klient vyžiada tu.
+
+    Pokračovanie rieši parameter ``after`` (id poslednej odpovede, ktorú klient
+    už má). Kotva sa prekladá na presne to isté porovnanie, aké používa kurzor
+    – ``(created_at, id)`` – takže sa nič nezduplikuje ani nevynechá, aj keď
+    má viac odpovedí rovnaký čas vzniku. Bez ``after`` sa vracia od začiatku.
+
+    Stránkovanie samotné ide cez ``FeedCommentCursorPagination``, tú istú
+    triedu ako zoznam komentárov, takže tvar odpovede aj správanie ``count``
+    sú konzistentné so zvyškom appky.
+    """
+    post = _get_visible_post(request, post_id)
+    if post is None:
+        return _post_not_found()
+
+    parent = FeedPostComment.objects.filter(
+        pk=comment_id, post=post, parent_comment__isnull=True
+    ).first()
+    if parent is None:
+        # Aj odpoveď (ktorá vlastné odpovede mať nemôže) skončí tu – klient sa
+        # z nej nedozvie, či komentár neexistuje alebo len nie je vrcholový.
+        return _comment_not_found()
+
+    replies = (
+        FeedPostComment.objects.filter(parent_comment=parent)
+        .select_related("author")
+        .annotate(_likes_count=Count("likes"))
+        .order_by("created_at", "id")
+    )
+
+    after_id = request.query_params.get("after")
+    if after_id:
+        anchor = FeedPostComment.objects.filter(
+            pk=after_id, parent_comment=parent
+        ).first()
+        if anchor is None:
+            return Response(
+                {
+                    "error": "Kotva pokracovania nebola najdena.",
+                    "code": "reply_anchor_missing",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        replies = replies.filter(
+            Q(created_at__gt=anchor.created_at)
+            | Q(created_at=anchor.created_at, id__gt=anchor.id)
+        )
+
+    paginator = FeedCommentCursorPagination()
+    page = paginator.paginate_queryset(replies, request)
+    serializer = FeedPostCommentSerializer(
+        page,
+        many=True,
+        context={
+            "request": request,
+            "post_author_id": post.author_id,
+            "liked_feed_comment_ids": _liked_comment_ids(request.user, page),
+        },
+    )
+    return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
-def feed_post_comment_delete_view(request, post_id: int, comment_id: int):
-    """Zmazanie komentára – autor komentára alebo autor príspevku (viď hlavičku)."""
+def feed_post_comment_detail_view(request, post_id: int, comment_id: int):
+    """PATCH: úprava textu (len autor komentára). DELETE: zmazanie (viď hlavičku).
+
+    Právomoci sa ZÁMERNE líšia – prepisovať cudzí text nesmie ani autor
+    príspevku, hoci ho zmazať smie. Podrobnosti a validácia sú vo
+    ``feed_edits``.
+    """
     post = _get_visible_post(request, post_id)
     if post is None:
         return _post_not_found()
@@ -222,6 +299,9 @@ def feed_post_comment_delete_view(request, post_id: int, comment_id: int):
         return Response(
             {"error": "Komentar nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
         )
+
+    if request.method == "PATCH":
+        return edit_feed_comment(request, post, comment)
 
     if request.user.id not in (comment.author_id, post.author_id):
         # Komentár je na viditeľnom príspevku (existenciu netajíme) → 403.

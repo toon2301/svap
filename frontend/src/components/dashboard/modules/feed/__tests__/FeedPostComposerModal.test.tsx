@@ -35,6 +35,12 @@ jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fallback: string) => fallback }),
 }));
 
+const mockIsMobile = jest.fn(() => false);
+jest.mock('@/hooks', () => ({
+  useIsMobile: () => mockIsMobile(),
+  useIsMobileState: () => ({ isMobile: mockIsMobile(), isResolved: true }),
+}));
+
 jest.mock('../../messages/DesktopEmojiPickerButton', () => ({
   DesktopEmojiPickerButton: ({
     ariaLabel,
@@ -115,6 +121,7 @@ describe('FeedPostComposerModal', () => {
     mockedUpload.mockReset();
     mockedToastError.mockReset();
     mockedToastSuccess.mockReset();
+    mockIsMobile.mockReturnValue(false);
     mockedCreate.mockResolvedValue(created);
     mockedUpload.mockResolvedValue([]);
   });
@@ -353,6 +360,20 @@ describe('FeedPostComposerModal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pridať emoji' }));
 
     await waitFor(() => expect(textarea).toHaveValue('Ahoj🙂'));
+  });
+
+  it('drops the emoji button on mobile, keeps it on desktop', () => {
+    const { unmount } = render(
+      <FeedPostComposerModal open onClose={jest.fn()} />,
+    );
+    expect(screen.getByLabelText('Pridať emoji')).toBeInTheDocument();
+    unmount();
+
+    // Na mobile emoji ponúka systémová klávesnica – appkové tlačidlo by len
+    // zaberalo miesto.
+    mockIsMobile.mockReturnValue(true);
+    render(<FeedPostComposerModal open onClose={jest.fn()} />);
+    expect(screen.queryByLabelText('Pridať emoji')).not.toBeInTheDocument();
   });
 });
 
