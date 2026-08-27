@@ -39,7 +39,40 @@ class FeedUserSummarySerializer(serializers.ModelSerializer):
         return None
 
 
-class FeedPostCommentSerializer(serializers.ModelSerializer):
+class AuthorOnlyEditedFlagMixin:
+    """``is_edited`` len pre autora – zdieľané príspevkom aj komentárom.
+
+    Kľúč sa komukoľvek inému z odpovede VYNECHÁ, nie nastaví na False: rovnaký
+    vzor ako ``rejected_reason`` pri fotkách. Nepravdivá hodnota by tvrdila
+    niečo, čo divákovi nepatrí, kým chýbajúci kľúč nehovorí nič. Filtruje sa
+    pri serializácii, takže sa to nedá vytiahnuť ani priamym čítaním API.
+
+    Trieda, ktorá mixin použije, musí mať ``is_edited`` vo ``fields``
+    a serializovaný objekt polia ``edited_at`` a ``author_id``.
+    """
+
+    def _viewer_id(self):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_authenticated", False):
+            return int(user.id)
+        return None
+
+    def get_is_edited(self, obj):
+        # Pravdivosť tejto hodnoty platí len pre autora – `to_representation`
+        # ju komukoľvek inému z odpovede odstráni.
+        return obj.edited_at is not None
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if self._viewer_id() != instance.author_id:
+            data.pop("is_edited", None)
+        return data
+
+
+class FeedPostCommentSerializer(
+    AuthorOnlyEditedFlagMixin, serializers.ModelSerializer
+):
     """Komentár k príspevku – autor ako mini payload, can_delete pre FE.
 
     can_delete: autor komentára ALEBO autor príspevku (moderácia vlastnej
@@ -48,10 +81,12 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
 
     author = FeedUserSummarySerializer(read_only=True)
     can_delete = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
     replies_count = serializers.SerializerMethodField()
+    is_edited = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPostComment
@@ -60,6 +95,8 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             "text",
             "author",
             "can_delete",
+            "can_edit",
+            "is_edited",
             "likes_count",
             "is_liked_by_me",
             "parent_comment_id",
@@ -118,6 +155,15 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
         post_author_id = self.context.get("post_author_id")
         return user.id == obj.author_id or user.id == post_author_id
 
+    def get_can_edit(self, obj):
+        """Upraviť smie LEN autor komentára – na rozdiel od `can_delete`.
+
+        Mazanie je aj moderačný nástroj autora príspevku (cudzí komentár na
+        vlastnej nástenke), ale úprava je osobnejšia: prepisovať cudzí text
+        nesmie nikto.
+        """
+        return self._viewer_id() == obj.author_id
+
     def get_likes_count(self, obj):
         # Anotácia zo zoznamu; fallback pre jednotlivo serializovaný komentár
         # (napr. čerstvo vytvorený) – rovnaký vzor ako FeedPostSerializer.
@@ -135,7 +181,7 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
         return obj.id in liked_ids
 
 
-class FeedPostSerializer(serializers.ModelSerializer):
+class FeedPostSerializer(AuthorOnlyEditedFlagMixin, serializers.ModelSerializer):
     """Príspevok pre feed/detail/profilové zoznamy.
 
     Context:
@@ -153,6 +199,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
     comments_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
     can_manage = serializers.SerializerMethodField()
+    is_edited = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPost
@@ -169,17 +216,11 @@ class FeedPostSerializer(serializers.ModelSerializer):
             "comments_count",
             "is_liked_by_me",
             "can_manage",
+            "is_edited",
             "created_at",
         ]
 
     # --- helpers -----------------------------------------------------------
-
-    def _viewer_id(self):
-        request = self.context.get("request")
-        user = getattr(request, "user", None)
-        if user is not None and getattr(user, "is_authenticated", False):
-            return int(user.id)
-        return None
 
     def _absolute(self, path: str) -> str:
         request = self.context.get("request")

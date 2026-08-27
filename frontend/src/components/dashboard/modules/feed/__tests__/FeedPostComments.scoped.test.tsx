@@ -20,6 +20,12 @@ jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fallback: string) => fallback }),
 }));
 
+const mockIsMobile = jest.fn(() => false);
+jest.mock('@/hooks', () => ({
+  useIsMobile: () => mockIsMobile(),
+  useIsMobileState: () => ({ isMobile: mockIsMobile(), isResolved: true }),
+}));
+
 jest.mock('../../messages/DesktopEmojiPickerButton', () => ({
   DesktopEmojiPickerButton: ({
     ariaLabel,
@@ -97,6 +103,7 @@ describe('FeedPostComments – scoped infinite scroll', () => {
 
   beforeEach(() => {
     mockedList.mockReset();
+    mockIsMobile.mockReturnValue(false);
     observer = installScopedObserverMock();
   });
 
@@ -309,6 +316,81 @@ describe('FeedPostComments – scoped infinite scroll', () => {
         'Komentáre sa nepodarilo načítať.',
       ),
     );
+  });
+
+  it('drops the emoji button on mobile in both comment fields', async () => {
+    mockIsMobile.mockReturnValue(true);
+    mockedList.mockResolvedValue({
+      results: [
+        {
+          id: 1,
+          text: 'Prvý',
+          author: {
+            id: 1,
+            display_name: 'Jana',
+            slug: 'jana',
+            user_type: 'individual',
+            avatar_url: null,
+          },
+          can_delete: false,
+          likes_count: 0,
+          is_liked_by_me: false,
+          parent_comment_id: null,
+          replies: [],
+          replies_count: 0,
+          created_at: '2026-01-01',
+        },
+      ],
+      next: null,
+      previous: null,
+    } as never);
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    // Nové pole komentára: na mobile emoji rieši systémová klávesnica.
+    expect(screen.queryByLabelText('Pridať emoji')).not.toBeInTheDocument();
+
+    // A to isté platí aj v poli odpovede.
+    await userEvent.click(screen.getByTestId('feed-comment-reply-1'));
+    await screen.findByTestId('feed-reply-composer');
+    expect(screen.queryByLabelText('Pridať emoji')).not.toBeInTheDocument();
+  });
+
+  it('keeps the emoji button in both comment fields on desktop', async () => {
+    mockedList.mockResolvedValue({
+      results: [
+        {
+          id: 1,
+          text: 'Prvý',
+          author: {
+            id: 1,
+            display_name: 'Jana',
+            slug: 'jana',
+            user_type: 'individual',
+            avatar_url: null,
+          },
+          can_delete: false,
+          likes_count: 0,
+          is_liked_by_me: false,
+          parent_comment_id: null,
+          replies: [],
+          replies_count: 0,
+          created_at: '2026-01-01',
+        },
+      ],
+      next: null,
+      previous: null,
+    } as never);
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    expect(screen.getAllByLabelText('Pridať emoji')).toHaveLength(1);
+
+    await userEvent.click(screen.getByTestId('feed-comment-reply-1'));
+    await screen.findByTestId('feed-reply-composer');
+    expect(screen.getAllByLabelText('Pridať emoji')).toHaveLength(2);
   });
 
   it('inserts an emoji into the comment field', async () => {

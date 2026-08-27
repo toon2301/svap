@@ -45,6 +45,8 @@ from .reviews import (
     review_like_view,
 )
 from .offer_likes import offer_like_view
+from .offer_watches import offer_watch_detail_view, offer_watches_view
+from .offer_watch_results import offer_watch_results_view
 from .profile_likes import profile_like_view
 from .user_blocks import blocked_users_view, user_block_detail_view
 from .notifications import (
@@ -59,12 +61,16 @@ from .push import (
     push_subscription_current_view,
     push_preferences_view,
 )
+from .feed_edits import (
+    feed_post_image_delete_view,
+)
 from .feed_image_files import (
     feed_post_image_file_view,
     feed_post_shared_thumbnail_view,
 )
 from .feed_interactions import (
-    feed_post_comment_delete_view,
+    feed_post_comment_detail_view,
+    feed_post_comment_replies_view,
     feed_post_comment_like_view,
     feed_post_comments_view,
     feed_post_like_view,
@@ -138,6 +144,9 @@ __all__ = [
     "review_report_view",
     "review_like_view",
     "offer_like_view",
+    "offer_watches_view",
+    "offer_watch_detail_view",
+    "offer_watch_results_view",
     "profile_like_view",
     "blocked_users_view",
     "user_block_detail_view",
@@ -172,11 +181,12 @@ __all__ = [
     "feed_post_detail_view",
     "feed_user_posts_view",
     "feed_user_tagged_posts_view",
+    "feed_post_image_delete_view",
     "feed_post_image_file_view",
     "feed_post_shared_thumbnail_view",
     "feed_post_like_view",
     "feed_post_comments_view",
-    "feed_post_comment_delete_view",
+    "feed_post_comment_detail_view",
     "feed_post_comment_like_view",
     "feed_post_report_view",
     "feed_post_likers_view",

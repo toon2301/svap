@@ -19,6 +19,7 @@ import toast from 'react-hot-toast';
 import {
   EllipsisHorizontalIcon,
   FlagIcon,
+  PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,6 +38,7 @@ import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
+import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
 import ShareIcon from './ShareIcon';
@@ -399,7 +401,17 @@ export default function FeedPostCard({
 
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
   // pending/rejected – hook ich dosleduje, kým sa spracovanie nedokončí.
-  const images = usePendingFeedImages(post);
+  //
+  // Karta drží JEDNU lokálnu verziu príspevku. Prop z feedu je len počiatočný
+  // stav: po úprave sa zoznam neobnovuje, takže by ostal zastaraný – a keby sa
+  // z neho inicializoval edit modal pri druhom otvorení, ukázal by už zmazané
+  // fotky a starým textom by prepísal ten práve uložený.
+  const [currentPost, setCurrentPost] = useState(post);
+  const images = usePendingFeedImages(currentPost);
+  const caption = currentPost.caption;
+  // `is_edited` chodí LEN autorovi – cudziemu divákovi kľúč v odpovedi vôbec
+  // nie je, takže `undefined` znamená „nezobrazuj", nie „neviem".
+  const isEdited = currentPost.is_edited === true;
 
   const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(post.likes_count);
@@ -415,6 +427,7 @@ export default function FeedPostCard({
   const [tagRemoveOpen, setTagRemoveOpen] = useState(false);
   const [removingTag, setRemovingTag] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [likersOpen, setLikersOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const likePendingRef = useRef(false);
@@ -445,6 +458,11 @@ export default function FeedPostCard({
   useEffect(() => {
     setTaggedUsers(post.tagged_users ?? []);
   }, [post.tagged_users]);
+
+  // Obnovenie feedu prináša čerstvejšiu verziu – tá má prednosť pred lokálnou.
+  useEffect(() => {
+    setCurrentPost(post);
+  }, [post]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -613,12 +631,18 @@ export default function FeedPostCard({
           <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
             {authorName}
           </p>
-          <time
-            dateTime={post.created_at}
-            className="text-xs text-gray-500 dark:text-gray-400"
-          >
-            {formatRelativeTime(post.created_at, t, locale)}
-          </time>
+          <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <time dateTime={post.created_at}>
+              {formatRelativeTime(post.created_at, t, locale)}
+            </time>
+            {/* „Upravené" vidí LEN autor – backend pole nikomu inému neposiela,
+                takže tu netreba (ani sa nedá) porovnávať identity. */}
+            {isEdited ? (
+              <span data-testid="feed-post-edited">
+                · {t('feed.editedMark', '(upravené)')}
+              </span>
+            ) : null}
+          </p>
         </div>
 
         {/* „..." menu v pravom hornom rohu karty, vedľa času. Zámerne nie je
@@ -659,8 +683,23 @@ export default function FeedPostCard({
                   ? t('feed.alreadyReported', 'Už nahlásené')
                   : t('feed.reportPost', 'Nahlásiť príspevok')}
               </button>
-              {/* Mazať smie iba autor – o tom rozhoduje backend cez
-                  `can_manage`, FE si to neodvodzuje sám. */}
+              {/* Upravovať aj mazať smie iba autor – o tom rozhoduje backend
+                  cez `can_manage`, FE si to neodvodzuje sám. */}
+              {post.can_manage ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditOpen(true);
+                  }}
+                  data-testid="feed-post-edit"
+                  className="flex w-full items-center gap-2 border-t border-gray-200 px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
+                >
+                  <PencilSquareIcon className="h-4 w-4" />
+                  {t('feed.editPost', 'Upraviť príspevok')}
+                </button>
+              ) : null}
               {post.can_manage ? (
                 <button
                   type="button"
@@ -697,9 +736,9 @@ export default function FeedPostCard({
           />
         ) : null}
 
-        {post.caption ? (
+        {caption ? (
           <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-            {post.caption}
+            {caption}
           </p>
         ) : null}
 
@@ -844,6 +883,16 @@ export default function FeedPostCard({
         busyLabel={t('feed.tagRemoving', 'Odstraňujem...')}
       />
 
+      {/* Mountuje sa až pri otvorení – rovnaký vzor ako composer: každé
+          otvorenie je čistý stav, bez resetovacieho efektu. */}
+      {editOpen ? (
+        <FeedPostEditModal
+          open
+          post={currentPost}
+          onClose={() => setEditOpen(false)}
+          onUpdated={setCurrentPost}
+        />
+      ) : null}
       <FeedPostReportModal
         open={reportOpen}
         onClose={() => setReportOpen(false)}

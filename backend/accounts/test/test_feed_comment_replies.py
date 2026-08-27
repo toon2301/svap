@@ -193,7 +193,7 @@ class FeedCommentReplyTests(APITestCase):
 
         response = self.client.delete(
             reverse(
-                "accounts:feed_post_comment_delete", args=[self.post.id, reply_id]
+                "accounts:feed_post_comment_detail", args=[self.post.id, reply_id]
             )
         )
 
@@ -624,3 +624,164 @@ class FeedCommentReplyScopingTests(APITestCase):
             self.assertRegex(normalized, r"post_id\s*=")
             # A vrcholové komentáre (parent NULL) sa neočíslovávajú vôbec.
             self.assertIn("IS NOT NULL", normalized.upper())
+
+
+class FeedCommentRepliesEndpointTests(APITestCase):
+    """Donačítanie odpovedí nad rámec úvodného náhľadu."""
+
+    def setUp(self):
+        self.author = _user("repl-author")
+        self.post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Ahoj",
+        )
+        self.parent = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Hlavny"
+        )
+        self.replies = self._make_replies(15)
+        self.url = reverse(
+            "accounts:feed_post_comment_replies", args=[self.post.id, self.parent.id]
+        )
+
+    def _make_replies(self, count):
+        base = timezone.now() - timedelta(hours=2)
+        created = []
+        for index in range(count):
+            reply = FeedPostComment.objects.create(
+                post=self.post,
+                author=self.author,
+                text=f"Odpoved {index + 1}",
+                parent_comment=self.parent,
+            )
+            FeedPostComment.objects.filter(pk=reply.pk).update(
+                created_at=base + timedelta(minutes=index)
+            )
+            reply.refresh_from_db()
+            created.append(reply)
+        return created
+
+    def _ids(self, response):
+        return [item["id"] for item in response.data["results"]]
+
+    def test_continues_exactly_after_the_preview(self):
+        preview = self.replies[:FEED_REPLIES_PREVIEW_LIMIT]
+
+        response = self.client.get(self.url, {"after": preview[-1].id})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Presne zvyšok – žiadna duplicita, nič nevynechané.
+        self.assertEqual(
+            self._ids(response),
+            [reply.id for reply in self.replies[FEED_REPLIES_PREVIEW_LIMIT:]],
+        )
+
+    def test_without_anchor_returns_from_the_start(self):
+        response = self.client.get(self.url, {"page_size": 5})
+
+        self.assertEqual(self._ids(response), [r.id for r in self.replies[:5]])
+        self.assertEqual(response.data["count"], 15)
+
+    def test_anchor_handles_identical_timestamps(self):
+        """Kotva porovnáva (created_at, id), nie len čas."""
+        same_time = self.replies[0].created_at
+        twins = []
+        for text in ("Dvojca A", "Dvojca B"):
+            twin = FeedPostComment.objects.create(
+                post=self.post,
+                author=self.author,
+                text=text,
+                parent_comment=self.parent,
+            )
+            FeedPostComment.objects.filter(pk=twin.pk).update(created_at=same_time)
+            twin.refresh_from_db()
+            twins.append(twin)
+
+        response = self.client.get(self.url, {"after": twins[0].id})
+
+        ids = self._ids(response)
+        self.assertNotIn(twins[0].id, ids)
+        self.assertIn(twins[1].id, ids)
+
+    def test_pagination_within_the_endpoint(self):
+        first = self.client.get(self.url, {"page_size": 5})
+        self.assertEqual(len(first.data["results"]), 5)
+        self.assertIsNotNone(first.data["next"])
+
+        second = self.client.get("/api" + first.data["next"].split("/api", 1)[1])
+
+        combined = self._ids(first) + self._ids(second)
+        self.assertEqual(len(set(combined)), len(combined))
+        self.assertEqual(combined, [r.id for r in self.replies[:10]])
+
+    def test_replies_carry_the_same_shape_as_nested_ones(self):
+        response = self.client.get(self.url, {"page_size": 1})
+
+        reply = response.data["results"][0]
+        for field in ("id", "text", "author", "can_delete", "likes_count",
+                      "is_liked_by_me", "parent_comment_id"):
+            self.assertIn(field, reply)
+        # Odpoveď je vždy list – vlastné odpovede nemá.
+        self.assertNotIn("replies", reply)
+
+    def test_liked_state_is_correct_for_the_viewer(self):
+        viewer = _user("repl-viewer")
+        FeedPostCommentLike.objects.create(comment=self.replies[0], user=viewer)
+        self.client.force_authenticate(user=viewer)
+
+        response = self.client.get(self.url, {"page_size": 2})
+
+        self.assertTrue(response.data["results"][0]["is_liked_by_me"])
+        self.assertFalse(response.data["results"][1]["is_liked_by_me"])
+
+    def test_unknown_anchor_is_rejected(self):
+        response = self.client.get(self.url, {"after": 999999})
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["code"], "reply_anchor_missing")
+
+    def test_non_numeric_anchor_is_rejected(self):
+        # Nečíselná kotva je chyba klienta (400), nie pád dotazu (500).
+        response = self.client.get(self.url, {"after": "abc"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "reply_anchor_invalid")
+
+    def test_anchor_from_another_comment_is_rejected(self):
+        other_parent = FeedPostComment.objects.create(
+            post=self.post, author=self.author, text="Iny hlavny"
+        )
+        foreign = FeedPostComment.objects.create(
+            post=self.post,
+            author=self.author,
+            text="Cudzia odpoved",
+            parent_comment=other_parent,
+        )
+
+        response = self.client.get(self.url, {"after": foreign.id})
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_reply_cannot_be_used_as_the_parent(self):
+        response = self.client.get(
+            reverse(
+                "accounts:feed_post_comment_replies",
+                args=[self.post.id, self.replies[0].id],
+            )
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_invisible_post_is_not_found(self):
+        self.author.is_public = False
+        self.author.save(update_fields=["is_public"])
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_anonymous_can_read_replies(self):
+        response = self.client.get(self.url, {"page_size": 3})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 3)

@@ -64,9 +64,19 @@ export function isAllowedFeedImageName(filename: string): boolean {
 /** Zaseknutý upload musí spadnúť, inak by tlačidlo ostalo navždy v loadingu. */
 export const FEED_UPLOAD_TIMEOUT_MS = 60_000;
 
+export type FeedUploadOptions = {
+  /**
+   * Fotka sa pridáva ÚPRAVOU existujúceho príspevku, nie pri jeho vzniku.
+   * Backend podľa toho označí príspevok ako upravený – rozlíšiť to sám nevie,
+   * obe cesty volajú ten istý endpoint nad už existujúcim príspevkom.
+   */
+  isEdit?: boolean;
+};
+
 export async function uploadFeedPostImage(
   postId: number,
   file: File,
+  options: FeedUploadOptions = {},
 ): Promise<FeedUploadCompleteResponse> {
   const { data: init } = await api.post<FeedUploadInitResponse>(
     endpoints.feed.postImagesUploadInit(postId),
@@ -97,7 +107,7 @@ export async function uploadFeedPostImage(
 
   const { data } = await api.post<FeedUploadCompleteResponse>(
     endpoints.feed.postImageUploadComplete(postId, init.image_id),
-    { key: init.key, filename: file.name },
+    { key: init.key, filename: file.name, is_edit: Boolean(options.isEdit) },
   );
   return data;
 }
@@ -116,12 +126,13 @@ export async function uploadFeedPostImages(
   postId: number,
   files: File[],
   onProgress?: (current: number, total: number) => void,
+  options: FeedUploadOptions = {},
 ): Promise<FeedImageUploadFailure[]> {
   const failures: FeedImageUploadFailure[] = [];
   for (let index = 0; index < files.length; index += 1) {
     onProgress?.(index + 1, files.length);
     try {
-      await uploadFeedPostImage(postId, files[index]);
+      await uploadFeedPostImage(postId, files[index], options);
     } catch (error) {
       failures.push({ file: files[index], error });
     }

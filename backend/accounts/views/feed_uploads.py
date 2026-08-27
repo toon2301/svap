@@ -88,6 +88,17 @@ def _reject_pending_image(image_id: int, reason: str) -> None:
     )
 
 
+def _parse_bool(value) -> bool:
+    """Tolerantné čítanie príznaku – JSON pošle bool, multipart reťazec.
+
+    Zhodné s ``feed_posts._parse_bool``; kopíruje sa zámerne, aby si upload
+    modul neťahal závislosť na module s vytváraním príspevku.
+    """
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
 def _get_own_free_post(request, post_id: int) -> FeedPost | None:
     """Fotky smie mať len VLASTNÝ voľný príspevok.
 
@@ -238,6 +249,19 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
     """Overí staging objekt, prejde moderáciou a naplánuje spracovanie."""
     post = _get_own_free_post(request, post_id)
     if post is None:
+        # Príspevok medzitým zanikol – staging objekt už nemá komu patriť,
+        # takže by inak visel v úložisku navždy.
+        #
+        # Upratuje sa LEN keď riadok naozaj neexistuje: pri CUDZOM príspevku
+        # (ktorý sem spadne tiež) by sa takto dal zmazať rozbehnutý upload
+        # niekoho iného. Kontrola prefixu ostáva, nech sa nedá podstrčiť kľúč
+        # mimo tohto príspevku.
+        stale_key = str(request.data.get("key") or "").strip()
+        if (
+            stale_key.startswith(f"uploads/feed/{post_id}/")
+            and not FeedPost.objects.filter(pk=post_id).exists()
+        ):
+            delete_storage_keys([stale_key])
         return _post_not_found()
 
     if not FeedPostImage.objects.filter(pk=image_id, post_id=post.id).exists():
@@ -331,9 +355,19 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
             )
 
     with transaction.atomic():
+        # Príspevok pod zámkom: medzi kontrolami vyššie a zápisom ho mohol
+        # majiteľ zmazať alebo mu odobrať poslednú fotku. Zámok drží pravidlo
+        # „príspevok nesmie ostať prázdny" a značku úpravy v jednej transakcii
+        # so zápisom fotky – rovnaké poradie zámkov (FeedPost, potom
+        # FeedPostImage) ako vo `FeedPost.save()`.
+        locked_post = FeedPost.objects.select_for_update().filter(pk=post.id).first()
+        if locked_post is None:
+            transaction.on_commit(lambda: delete_storage_keys([key]))
+            return _post_not_found()
+
         image = (
             FeedPostImage.objects.select_for_update()
-            .filter(pk=image_id, post_id=post.id)
+            .filter(pk=image_id, post_id=locked_post.id)
             .first()
         )
         if image is None:
@@ -372,6 +406,24 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
             ]
         )
 
+        # Fotka pridaná ÚPRAVOU značí príspevok ako upravený; fotka nahraná
+        # hneď po vytvorení nie – tam je to súčasť vzniku, nie zmena.
+        #
+        # Rozlíšiť to server sám nevie: obe cesty volajú ten istý endpoint nad
+        # príspevkom, ktorý už existuje (S3 kľúč potrebuje post_id), takže
+        # žiadny stav v DB tie dva prípady neodlíši. Preto to hovorí klient –
+        # rovnako vedomá dôvera ako pri ``will_attach_photo`` vo
+        # ``_create_feed_post``. Zneužitie nič neotvára: ``is_edited`` je
+        # kozmetický príznak, ktorý backend posiela LEN autorovi, takže
+        # klamstvom si používateľ nanajvýš označí vlastný príspevok sám sebe.
+        #
+        # Zapisuje sa POD ZÁMKOM, spolu s fotkou – po jeho uvoľnení by riadok
+        # už nemusel existovať.
+        if _parse_bool(request.data.get("is_edit")):
+            from .feed_edits import _mark_post_edited
+
+            _mark_post_edited(locked_post)
+
         def enqueue_processing(image_id=image.id, key=key):
             try:
                 if local_portfolio_upload_enabled():
@@ -406,7 +458,7 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
     return Response(
         {
             "id": image.id,
-            "post_id": post.id,
+            "post_id": image.post_id,
             "status": image.status,
         },
         status=status.HTTP_200_OK,

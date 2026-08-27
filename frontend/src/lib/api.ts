@@ -822,6 +822,8 @@ export const endpoints = {
       `/auth/feed/posts/${postId}/comments/${commentId}/`,
     postReport: (id: number) => `/auth/feed/posts/${id}/report/`,
     postLikers: (id: number) => `/auth/feed/posts/${id}/likes/`,
+    postCommentReplies: (postId: number, commentId: number) =>
+      `/auth/feed/posts/${postId}/comments/${commentId}/replies/`,
     postCommentLikers: (postId: number, commentId: number) =>
       `/auth/feed/posts/${postId}/comments/${commentId}/likes/`,
     postSelfTag: (id: number) => `/auth/feed/posts/${id}/tags/me/`,
@@ -829,6 +831,8 @@ export const endpoints = {
     userTaggedPosts: (userId: number) => `/auth/feed/users/${userId}/tagged/`,
     postImagesUploadInit: (postId: number) =>
       `/auth/feed/posts/${postId}/images/upload-init/`,
+    postImage: (postId: number, imageId: number) =>
+      `/auth/feed/posts/${postId}/images/${imageId}/`,
     postImageUploadComplete: (postId: number, imageId: number) =>
       `/auth/feed/posts/${postId}/images/${imageId}/upload-complete/`,
   },

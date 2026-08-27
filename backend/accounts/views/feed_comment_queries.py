@@ -100,8 +100,7 @@ def post_comments_queryset(post):
     # museli všetky načítať a strop by nič neušetril.
     #
     # Nič sa nestráca: `replies_count` nesie skutočný počet, takže klient vie,
-    # že je ich viac. Endpoint na dotiahnutie zvyšku zámerne nepridávam –
-    # zadanie ho nežiada a dnešné vlákna sú krátke.
+    # že je ich viac, a zvyšok si vypýta cez `feed_post_comment_replies_view`.
     ranked_replies = (
         # Zúžiť PRED očíslovaním: filtre uplatnené pred `Window` idú do
         # vnútorného dotazu, takže sa poradové čísla počítajú len nad

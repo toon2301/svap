@@ -32,6 +32,12 @@ jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fallback: string) => fallback }),
 }));
 
+const mockIsMobile = jest.fn(() => false);
+jest.mock('@/hooks', () => ({
+  useIsMobile: () => mockIsMobile(),
+  useIsMobileState: () => ({ isMobile: mockIsMobile(), isResolved: true }),
+}));
+
 jest.mock('../../messages/DesktopEmojiPickerButton', () => ({
   DesktopEmojiPickerButton: ({ ariaLabel }: { ariaLabel: string }) => (
     <button type="button" aria-label={ariaLabel}>
@@ -69,6 +75,26 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
     mockedShareOffer.mockReset();
     mockedSharePortfolio.mockReset();
     mockedToastError.mockReset();
+    mockIsMobile.mockReturnValue(false);
+  });
+
+  it('drops the emoji button on mobile, keeps it on desktop', async () => {
+    const shareProps = {
+      open: true as const,
+      onClose: jest.fn(),
+      preview: { heading: 'Moja ponuka', text: 'Bratislava' },
+      onShare: jest.fn(),
+    };
+
+    const { unmount } = render(<FeedShareDialog {...shareProps} />);
+    expect(screen.getByLabelText('Pridať emoji')).toBeInTheDocument();
+    unmount();
+
+    // Na mobile emoji ponúka systémová klávesnica – appkové tlačidlo by len
+    // zaberalo miesto.
+    mockIsMobile.mockReturnValue(true);
+    render(<FeedShareDialog {...shareProps} />);
+    expect(screen.queryByLabelText('Pridať emoji')).not.toBeInTheDocument();
   });
 
   it('sends the offer id and announces the new post to the feed', async () => {

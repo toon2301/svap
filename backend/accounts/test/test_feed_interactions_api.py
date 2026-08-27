@@ -155,7 +155,7 @@ class FeedPostCommentsApiTests(APITestCase):
 
     def _delete_url(self, comment):
         return reverse(
-            "accounts:feed_post_comment_delete",
+            "accounts:feed_post_comment_detail",
             args=[comment.post_id, comment.id],
         )
 
@@ -288,7 +288,7 @@ class FeedPostCommentsApiTests(APITestCase):
 
         response = self.client.delete(
             reverse(
-                "accounts:feed_post_comment_delete",
+                "accounts:feed_post_comment_detail",
                 args=[other_post.id, comment.id],
             )
         )

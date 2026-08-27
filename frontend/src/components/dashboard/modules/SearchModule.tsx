@@ -163,7 +163,7 @@ export default function SearchModule({
             t={t}
           />
 
-          <div className={isOverlay ? 'flex-1 overflow-y-auto min-h-0 px-4 sm:px-5' : 'px-4 sm:px-5'}>
+          <div className={isOverlay ? 'flex-1 overflow-y-auto min-h-0 px-4 sm:px-5 elegant-scrollbar' : 'px-4 sm:px-5'}>
             <SearchResults
               user={user}
               searchState={searchState}

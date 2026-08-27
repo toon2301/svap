@@ -107,6 +107,18 @@ class OfferedSkill(models.Model):
             models.Index(fields=["is_hidden", "-created_at"], name="acc_off_skill_hidden_new_idx"),
             # - type filter (is_seeking) + newest
             models.Index(fields=["is_hidden", "is_seeking", "-created_at"], name="acc_off_skill_type_new_idx"),
+            # - live offer-watch matches by exact saved filters + newest
+            models.Index(
+                fields=[
+                    "is_hidden",
+                    "is_seeking",
+                    "country_code",
+                    "category",
+                    "subcategory",
+                    "-created_at",
+                ],
+                name="acc_off_skill_watch_match_idx",
+            ),
         ]
 
     def __str__(self):
