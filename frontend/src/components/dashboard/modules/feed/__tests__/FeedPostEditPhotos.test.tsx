@@ -335,6 +335,125 @@ describe('celá sekvencia', () => {
     expect(mockedDeleteImage).not.toHaveBeenCalled();
   });
 
+  /**
+   * Poradie krokov kopíruje to, čo UI vôbec dovolí: kým je príspevok plný,
+   * nedá sa nič pridať, a kým je text prázdny, nedá sa označiť posledná
+   * zostávajúca fotka. Plná výmena teda vzniká ako „označ, čo sa dá → pridaj
+   * náhradu → označ aj zvyšok".
+   */
+  async function markPhotos(ids: number[]) {
+    for (const id of ids) {
+      await userEvent.click(
+        screen.getByTestId(`feed-post-edit-photo-remove-${id}`),
+      );
+    }
+  }
+
+  async function addPhotos(names: string[]) {
+    const input = screen.getByTestId(
+      'feed-post-edit-file-input',
+    ) as HTMLInputElement;
+    await userEvent.upload(
+      input,
+      names.map((name) => new File(['x'], name, { type: 'image/jpeg' })),
+    );
+  }
+
+  /** Mocky, ktoré sa správajú ako backend: strážia limit aj prázdny príspevok. */
+  function trackPhotoServer(ids: number[]) {
+    const active = new Set(ids);
+    const steps: string[] = [];
+    let nextId = 100;
+    mockedDeleteImage.mockImplementation(async (_postId, imageId) => {
+      if (active.size <= 1) throw new Error('cannot_remove_last_content');
+      active.delete(imageId);
+      steps.push(`delete:${imageId}`);
+    });
+    mockedUpload.mockImplementation(async (_postId, files) => {
+      for (const file of files) {
+        if (active.size >= 5) throw new Error('feed_post_images_limit_reached');
+        active.add((nextId += 1));
+        steps.push(`upload:${file.name}`);
+      }
+      return [];
+    });
+    return { active, steps };
+  }
+
+  it('swaps a full set of photos without ever emptying the post', async () => {
+    const ids = [11, 12, 13, 14, 15];
+    const { active, steps } = trackPhotoServer(ids);
+    mockedGetPost.mockResolvedValue(
+      makePost({ caption: '', images: [image(101), image(102)] }),
+    );
+    const { onClose } = renderModal(
+      makePost({ caption: '', images: ids.map(image) }),
+    );
+
+    await markPhotos([11, 12, 13, 14]);
+    await addPhotos(['nova1.jpg', 'nova2.jpg']);
+    await markPhotos([15]);
+    await userEvent.click(screen.getByTestId('feed-post-edit-submit'));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    // Uvoľni miesto (štyri preč), jednu podrž ako obsah, nahraj nové, a až
+    // potom pusti aj tú podržanú.
+    expect(steps).toEqual([
+      'delete:11',
+      'delete:12',
+      'delete:13',
+      'delete:14',
+      'upload:nova1.jpg',
+      'upload:nova2.jpg',
+      'delete:15',
+    ]);
+    // Ostali len tie dve nové. Mocky by vyhodili chybu, keby príspevok
+    // v ktoromkoľvek kroku ostal prázdny alebo prekročil limit.
+    expect(active.size).toBe(2);
+    expect(toastError).not.toHaveBeenCalled();
+    expect(toastSuccess).toHaveBeenCalled();
+  });
+
+  it('adds the photos that did not fit only after the held one is gone', async () => {
+    // Krajný prípad päť za päť: piata nová sa vojde až po odchode podržanej.
+    const ids = [11, 12, 13, 14, 15];
+    const { active, steps } = trackPhotoServer(ids);
+    mockedGetPost.mockResolvedValue(makePost({ caption: '', images: [image(101)] }));
+    renderModal(makePost({ caption: '', images: ids.map(image) }));
+
+    await markPhotos([11, 12, 13, 14]);
+    await addPhotos(['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']);
+    await markPhotos([15]);
+    await addPhotos(['e.jpg']);
+    await userEvent.click(screen.getByTestId('feed-post-edit-submit'));
+
+    await waitFor(() => expect(steps).toContain('upload:e.jpg'));
+    expect(steps.indexOf('upload:e.jpg')).toBeGreaterThan(
+      steps.indexOf('delete:15'),
+    );
+    expect(active.size).toBe(5);
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('keeps the held photo when the replacements fail to upload', async () => {
+    const ids = [11, 12, 13, 14, 15];
+    mockedUpload.mockResolvedValue([
+      { file: new File(['x'], 'nova.jpg'), error: new Error('offline') },
+    ]);
+    renderModal(makePost({ caption: '', images: ids.map(image) }));
+
+    await markPhotos([11, 12, 13, 14]);
+    await addPhotos(['nova.jpg']);
+    await markPhotos([15]);
+    await userEvent.click(screen.getByTestId('feed-post-edit-submit'));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    // Uvoľnenie miesta prebehlo, ale podržaná fotka ostáva – bez nej by
+    // príspevok nemal žiadny obsah.
+    const deleted = mockedDeleteImage.mock.calls.map(([, imageId]) => imageId);
+    expect(deleted).toEqual([11, 12, 13, 14]);
+  });
+
   it('stops before touching photos when the text fails', async () => {
     mockedUpdate.mockRejectedValue(new Error('offline'));
     const { onClose } = renderModal();

@@ -153,8 +153,8 @@ export default function FeedPostEditModal({
       }
 
       let removalFailed = false;
-      const removePhotos = async () => {
-        for (const imageId of draft.removedIds) {
+      const removePhotos = async (imageIds: number[]) => {
+        for (const imageId of imageIds) {
           try {
             await deleteFeedPostImage(post.id, imageId);
           } catch {
@@ -164,17 +164,17 @@ export default function FeedPostEditModal({
       };
 
       // Sekvenčne, rovnaký helper aj hlásenie priebehu ako composer.
-      let uploadFailures: string[] = [];
-      const uploadPhotos = async () => {
-        if (!draft.added.length) return;
+      const uploadFailures: string[] = [];
+      const uploadPhotos = async (files: File[]) => {
+        if (!files.length) return;
         try {
           const failures = await uploadFeedPostImages(
             post.id,
-            draft.added,
+            files,
             (current, total) => setUploadProgress({ current, total }),
             { isEdit: true },
           );
-          uploadFailures = failures.map((failure) => failure.file.name);
+          uploadFailures.push(...failures.map((failure) => failure.file.name));
         } finally {
           setUploadProgress(null);
         }
@@ -184,28 +184,38 @@ export default function FeedPostEditModal({
       // miesto v limite a pravidlo „nesmie ostať prázdne" sa vyhodnocuje voči
       // medzistavu, ktorý naozaj vznikne.
       //
-      // VÝMENA JEDINEJ FOTKY je jediná výnimka: keď sa odoberá všetko, čo
-      // príspevok má, text je prázdny a náhrada už čaká v drafte, backend by
-      // mazanie (správne) odmietol – príspevok by v tej chvíli nemal žiadny
-      // obsah. Nová fotka preto ide prvá; potom je odobratie starej bezpečné
-      // a používateľ nedostane chybu za úplne platnú výmenu.
+      // VÝMENA VŠETKÝCH FOTIEK pri prázdnom texte je výnimka, lebo obe poradia
+      // narazia: zmazať všetko naraz nejde (príspevok by ostal bez obsahu)
+      // a nahrať všetko dopredu tiež nie (pri plnom počte by upload narazil na
+      // limit). Preto sa jedna pôvodná fotka PODRŽÍ ako obsah, zvyšok uvoľní
+      // miesto, nahrajú sa nové a až potom ide preč aj tá podržaná.
       const keepsNoExistingPhoto = draft.existing.every((entry) => entry.removed);
-      const swapsLastPhoto =
+      const swapsAllPhotos =
         isFreePost &&
         !trimmed &&
         draft.removedIds.length > 0 &&
         keepsNoExistingPhoto &&
         draft.added.length > 0;
 
-      if (swapsLastPhoto) {
-        await uploadPhotos();
-        // Keď sa náhrada nenahrala, stará fotka je jediný obsah príspevku –
+      if (swapsAllPhotos) {
+        const held = draft.removedIds[draft.removedIds.length - 1];
+        await removePhotos(draft.removedIds.filter((id) => id !== held));
+
+        // S podržanou fotkou ostáva voľných MAX-1 miest. Čo sa nezmestí, príde
+        // hneď po jej odobratí – dovtedy je jediným obsahom príspevku.
+        const room = MAX_FEED_POST_IMAGES - 1;
+        await uploadPhotos(draft.added.slice(0, room));
+
+        // Keď sa náhrada nenahrala, podržaná fotka je jediný obsah príspevku –
         // mazať ju by znamenalo vyrobiť presne ten prázdny stav, pred ktorým
         // pravidlo chráni.
-        if (!uploadFailures.length) await removePhotos();
+        if (!uploadFailures.length) {
+          await removePhotos([held]);
+          await uploadPhotos(draft.added.slice(room));
+        }
       } else {
-        await removePhotos();
-        await uploadPhotos();
+        await removePhotos(draft.removedIds);
+        await uploadPhotos(draft.added);
       }
 
       // Karta dostane skutočný stav aj pri čiastočnom zlyhaní – používateľ má
