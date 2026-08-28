@@ -202,9 +202,9 @@ describe('FeedPostComments – ohraničená výška a vlastný scroll', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
 
     expect(await screen.findByText('Môj nový')).toBeInTheDocument();
-    // Nový komentár ide na koniec zoznamu – v ohraničenom boxe by ostal pod
-    // zlomom a pôsobil by, akoby sa nepridal.
-    await waitFor(() => expect(scrollTopSetter).toHaveBeenCalledWith(1234));
+    // Nový komentár ide NAVRCH zoznamu, ale composer je pod ním – pri dlhšom
+    // vlákne by ostal nad zlomom a pôsobil by, akoby sa nepridal.
+    await waitFor(() => expect(scrollTopSetter).toHaveBeenCalledWith(0));
   });
 
   it('does not move the scroll position when older pages load in', async () => {

@@ -4385,7 +4385,6 @@
     "commentUpdateError": "The comment could not be updated.",
     "repliesShow": "Show replies ({n})",
     "repliesHide": "Hide replies",
-    "repliesShowMore": "Show more replies ({n})",
     "repliesLoadError": "The replies could not be loaded.",
     "replyCreateError": "The reply could not be added.",
     "likersTitle": "Liked by",

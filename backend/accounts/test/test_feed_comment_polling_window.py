@@ -71,28 +71,37 @@ class FeedCommentPollingWindowTests(APITestCase):
         second = self._follow(first.data["next"])
         self.assertNotIn("count", second.data)
 
-    def test_cursor_page_says_nothing_about_earlier_comments(self):
-        """Jadro G3 – kurzorová stránka nie je dôkazom o ničom pred sebou."""
+    def test_cursor_page_says_nothing_about_newer_comments(self):
+        """Jadro G3 – kurzorová stránka nie je dôkazom o ničom pred sebou.
+
+        Pri novom smere (najnovšie hore) je „pred sebou" = NOVŠIE komentáre,
+        takže zmazanie na prvej stránke sa v pokračovacej neprejaví rovnako
+        ako predtým, len na opačnom konci vlákna.
+        """
+        newest_first = list(reversed(self.comments))
         first = self.client.get(self.url, {"page_size": FE_PAGE_SIZE})
         cursor_url = first.data["next"]
         before = self._ids(self._follow(cursor_url))
-        self.assertEqual(before, [c.id for c in self.comments[10:]])
+        self.assertEqual(before, [c.id for c in newest_first[10:]])
 
-        # Zmazanie na PRVEJ stránke...
-        deleted_id = self.comments[6].id
-        self.comments[6].delete()
+        # Zmazanie na PRVEJ stránke (medzi najnovšími)...
+        deleted = newest_first[6]
+        deleted_id = deleted.id
+        deleted.delete()
 
         # ...sa v odpovedi tej istej kurzorovej stránky nijako neprejaví.
         after = self._ids(self._follow(cursor_url))
         self.assertEqual(after, before)
-        self.assertLess(deleted_id, min(after))
+        self.assertGreater(deleted_id, max(after))
 
     def test_window_request_covers_the_whole_thread_including_deletions(self):
         """Tvar dopytu, ktorý polling používa: bez kurzora, na celé okno."""
         # Poradie si zapamätaj PRED zmazaním – Django zmazanej inštancii pk
         # vynuluje.
         deleted_id = self.comments[6].id
-        expected = [c.id for c in self.comments if c.id != deleted_id]
+        expected = [
+            c.id for c in reversed(self.comments) if c.id != deleted_id
+        ]
         self.comments[6].delete()
 
         response = self.client.get(self.url, {"page_size": 15 + FE_PAGE_SIZE})

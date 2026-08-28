@@ -4385,7 +4385,6 @@
     "commentUpdateError": "Der Kommentar konnte nicht bearbeitet werden.",
     "repliesShow": "Antworten anzeigen ({n})",
     "repliesHide": "Antworten ausblenden",
-    "repliesShowMore": "Weitere Antworten anzeigen ({n})",
     "repliesLoadError": "Die Antworten konnten nicht geladen werden.",
     "replyCreateError": "Die Antwort konnte nicht hinzugefügt werden.",
     "likersTitle": "Gefällt",

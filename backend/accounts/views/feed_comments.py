@@ -221,9 +221,10 @@ def feed_post_comment_replies_view(request, post_id: int, comment_id: int):
     ``FEED_REPLIES_PREVIEW_LIMIT`` odpovedí; zvyšok si klient vyžiada tu.
 
     Pokračovanie rieši parameter ``after`` (id poslednej odpovede, ktorú klient
-    už má). Kotva sa prekladá na presne to isté porovnanie, aké používa kurzor
-    – ``(created_at, id)`` – takže sa nič nezduplikuje ani nevynechá, aj keď
-    má viac odpovedí rovnaký čas vzniku. Bez ``after`` sa vracia od začiatku.
+    už má, teda tej NAJSTARŠEJ z načítaných). Kotva sa prekladá na presne to
+    isté porovnanie, aké používa kurzor – ``(created_at, id)`` zostupne –
+    takže sa nič nezduplikuje ani nevynechá, aj keď má viac odpovedí rovnaký
+    čas vzniku. Bez ``after`` sa vracia od najnovšej.
 
     Stránkovanie samotné ide cez ``FeedCommentCursorPagination``, tú istú
     triedu ako zoznam komentárov, takže tvar odpovede aj správanie ``count``
@@ -245,7 +246,7 @@ def feed_post_comment_replies_view(request, post_id: int, comment_id: int):
         FeedPostComment.objects.filter(parent_comment=parent)
         .select_related("author")
         .annotate(_likes_count=Count("likes"))
-        .order_by("created_at", "id")
+        .order_by("-created_at", "-id")
     )
 
     after_id = request.query_params.get("after")
@@ -273,9 +274,12 @@ def feed_post_comment_replies_view(request, post_id: int, comment_id: int):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
+        # Pokračovanie ide k STARŠÍM – rovnaký smer ako zoznam. Porovnáva
+        # sa celá dvojica `(created_at, id)`, takže rovnaké časy nič
+        # nezduplikujú ani nevynechajú.
         replies = replies.filter(
-            Q(created_at__gt=anchor.created_at)
-            | Q(created_at=anchor.created_at, id__gt=anchor.id)
+            Q(created_at__lt=anchor.created_at)
+            | Q(created_at=anchor.created_at, id__lt=anchor.id)
         )
 
     paginator = FeedCommentCursorPagination()

@@ -158,14 +158,14 @@ class FeedCommentReplyTests(APITestCase):
         response = self.client.get(self.url)
 
         results = response.data["results"]
-        # Zoznam nesie LEN vrcholové komentáre.
+        # Zoznam nesie LEN vrcholové komentáre, najnovší hore.
         self.assertEqual([item["text"] for item in results],
-                         ["Hlavny komentar", "Druhy hlavny"])
+                         ["Druhy hlavny", "Hlavny komentar"])
         self.assertEqual(
-            [reply["text"] for reply in results[0]["replies"]],
-            ["Prva odpoved", "Druha odpoved"],
+            [reply["text"] for reply in results[1]["replies"]],
+            ["Druha odpoved", "Prva odpoved"],
         )
-        self.assertEqual(results[1]["replies"], [])
+        self.assertEqual(results[0]["replies"], [])
 
     def test_reply_payload_has_no_replies_field(self):
         self._reply()
@@ -484,15 +484,17 @@ class FeedCommentReplyPreviewLimitTests(APITestCase):
             FEED_REPLIES_PREVIEW_LIMIT + 5,
         )
 
-    def test_capped_slice_keeps_the_oldest_first_order(self):
-        self._make_replies(FEED_REPLIES_PREVIEW_LIMIT + 3)
+    def test_capped_slice_keeps_the_newest_first_order(self):
+        total = FEED_REPLIES_PREVIEW_LIMIT + 3
+        self._make_replies(total)
 
         response = self.client.get(self.url)
 
         texts = [reply["text"] for reply in response.data["results"][0]["replies"]]
+        # Náhľad je NAJNOVŠÍCH 10, zoradených od najnovšej.
         self.assertEqual(
             texts,
-            [f"Odpoved {index + 1}" for index in range(FEED_REPLIES_PREVIEW_LIMIT)],
+            [f"Odpoved {total - index}" for index in range(FEED_REPLIES_PREVIEW_LIMIT)],
         )
 
     def test_cap_applies_per_comment_not_per_page(self):
@@ -593,7 +595,7 @@ class FeedCommentReplyScopingTests(APITestCase):
         first = self._get(self.first_post).data["results"][0]
 
         texts = [reply["text"] for reply in first["replies"]]
-        self.assertEqual(texts, ["A odpoved 1", "A odpoved 2"])
+        self.assertEqual(texts, ["A odpoved 2", "A odpoved 1"])
         self.assertTrue(all(not text.startswith("B ") for text in texts))
 
     def test_ranking_query_is_scoped_to_the_post(self):
@@ -665,21 +667,25 @@ class FeedCommentRepliesEndpointTests(APITestCase):
         return [item["id"] for item in response.data["results"]]
 
     def test_continues_exactly_after_the_preview(self):
-        preview = self.replies[:FEED_REPLIES_PREVIEW_LIMIT]
+        # `self.replies` je od najstaršej; náhľad je 10 NAJNOVŠÍCH, teda koniec
+        # zoznamu odzadu, a kotvou je tá najstaršia z nich.
+        newest_first = list(reversed(self.replies))
+        preview = newest_first[:FEED_REPLIES_PREVIEW_LIMIT]
 
         response = self.client.get(self.url, {"after": preview[-1].id})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Presne zvyšok – žiadna duplicita, nič nevynechané.
+        # Presne zvyšok (staršie), žiadna duplicita, nič nevynechané.
         self.assertEqual(
             self._ids(response),
-            [reply.id for reply in self.replies[FEED_REPLIES_PREVIEW_LIMIT:]],
+            [reply.id for reply in newest_first[FEED_REPLIES_PREVIEW_LIMIT:]],
         )
 
-    def test_without_anchor_returns_from_the_start(self):
+    def test_without_anchor_returns_from_the_newest(self):
         response = self.client.get(self.url, {"page_size": 5})
 
-        self.assertEqual(self._ids(response), [r.id for r in self.replies[:5]])
+        newest_first = list(reversed(self.replies))
+        self.assertEqual(self._ids(response), [r.id for r in newest_first[:5]])
         self.assertEqual(response.data["count"], 15)
 
     def test_anchor_handles_identical_timestamps(self):
@@ -697,11 +703,13 @@ class FeedCommentRepliesEndpointTests(APITestCase):
             twin.refresh_from_db()
             twins.append(twin)
 
-        response = self.client.get(self.url, {"after": twins[0].id})
+        # Dvojčatá majú rovnaký čas ako NAJSTARŠIA odpoveď, takže sú na konci
+        # zoznamu; kotvou je to s vyšším id, pokračovať sa má tým s nižším.
+        response = self.client.get(self.url, {"after": twins[1].id})
 
         ids = self._ids(response)
-        self.assertNotIn(twins[0].id, ids)
-        self.assertIn(twins[1].id, ids)
+        self.assertNotIn(twins[1].id, ids)
+        self.assertIn(twins[0].id, ids)
 
     def test_pagination_within_the_endpoint(self):
         first = self.client.get(self.url, {"page_size": 5})
@@ -712,7 +720,8 @@ class FeedCommentRepliesEndpointTests(APITestCase):
 
         combined = self._ids(first) + self._ids(second)
         self.assertEqual(len(set(combined)), len(combined))
-        self.assertEqual(combined, [r.id for r in self.replies[:10]])
+        newest_first = list(reversed(self.replies))
+        self.assertEqual(combined, [r.id for r in newest_first[:10]])
 
     def test_replies_carry_the_same_shape_as_nested_ones(self):
         response = self.client.get(self.url, {"page_size": 1})
@@ -726,7 +735,8 @@ class FeedCommentRepliesEndpointTests(APITestCase):
 
     def test_liked_state_is_correct_for_the_viewer(self):
         viewer = _user("repl-viewer")
-        FeedPostCommentLike.objects.create(comment=self.replies[0], user=viewer)
+        # Prvá v odpovedi je NAJNOVŠIA odpoveď.
+        FeedPostCommentLike.objects.create(comment=self.replies[-1], user=viewer)
         self.client.force_authenticate(user=viewer)
 
         response = self.client.get(self.url, {"page_size": 2})
