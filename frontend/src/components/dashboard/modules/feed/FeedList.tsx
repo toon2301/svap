@@ -212,7 +212,10 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   const renderBody = () => {
     if (loading) {
       return (
-        <div className="space-y-4" data-testid="feed-initial-loading">
+        <div
+          className="-mx-4 space-y-4 sm:mx-0"
+          data-testid="feed-initial-loading"
+        >
           <FeedCardSkeleton />
           <FeedCardSkeleton />
         </div>
@@ -245,7 +248,11 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="space-y-4"
+        // Na mobile karty od kraja po kraj: `-mx-4` presne ruší vodorovný
+        // padding obsahu z DashboardLayout (`px-4 sm:px-6 lg:px-8`), od `sm:`
+        // vyššie ostáva rozloženie nezmenené. Zvislé rozostupy (`space-y-4`)
+        // sa nemenia a vnútorný padding karty drží text ďalej od hrany.
+        className="-mx-4 space-y-4 sm:mx-0"
         data-testid="feed-list"
       >
         {posts.map((post) => (

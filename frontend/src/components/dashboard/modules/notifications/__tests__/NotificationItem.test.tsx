@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 
 import NotificationItem from '../NotificationItem';
 import type { DashboardNotification } from '../types';
+import skMessages from '../../../../../../messages/sk.json';
 
 const mockPush = jest.fn();
 
@@ -12,10 +13,34 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+/**
+ * Kľúče, ktoré testy overujú menovite, sa prekladajú zo SKUTOČNÝCH slovenských
+ * dát – nie z fallbacku v komponente. Keby komponent siahol po kľúči, ktorý
+ * v jazykových súboroch neexistuje, fallback by chybu zakryl; takto sa
+ * z takého kľúča stane `MISSING:...` a asercia padne.
+ */
+const SK_NAMESPACE_UNDER_TEST = 'notifications.offerWatchMatch';
+
+function resolveSlovak(key: string): string {
+  const value = key
+    .split('.')
+    .reduce<unknown>(
+      (node, part) =>
+        node && typeof node === 'object'
+          ? (node as Record<string, unknown>)[part]
+          : undefined,
+      skMessages,
+    );
+  return typeof value === 'string' ? value : `MISSING:${key}`;
+}
+
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     locale: 'sk',
-    t: (_key: string, fallback: string) => fallback,
+    t: (key: string, fallback: string) =>
+      // Celá menovka, nie zoznam kľúčov: preklep v názve kľúča tak neprepadne
+      // na fallback, ale skončí ako `MISSING:...`.
+      key.startsWith(SK_NAMESPACE_UNDER_TEST) ? resolveSlovak(key) : fallback,
   }),
 }));
 
@@ -167,6 +192,50 @@ describe('NotificationItem', () => {
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12&side=back');
   });
+
+  it.each([
+    [
+      false,
+      'Watch Owner pridal novú ponuku, ktorá zodpovedá tvojmu sledovaniu.',
+    ],
+    [
+      true,
+      'Watch Owner pridal nový dopyt, ktorý zodpovedá tvojmu sledovaniu.',
+    ],
+  ])(
+    'renders a localized offer-watch match when offer_is_seeking=%s',
+    (offerIsSeeking, expectedBody) => {
+      const notification = makeNotification({
+        type: 'offer_watch_match',
+        title: 'Backend fallback title',
+        body: 'Backend fallback body',
+        data: {
+          offer_id: 42,
+          offer_is_seeking: offerIsSeeking,
+        },
+        target_url: '/dashboard/users/watch-owner?highlight=42',
+        actor: {
+          id: 12,
+          display_name: 'Watch Owner',
+          slug: 'watch-owner',
+          user_type: 'individual',
+          avatar_url: null,
+        },
+      });
+
+      render(<NotificationItem notification={notification} />);
+
+      expect(screen.getByText('Nová zhoda sledovania')).toBeInTheDocument();
+      expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+        expectedBody,
+      );
+
+      fireEvent.click(screen.getByRole('button'));
+      expect(mockPush).toHaveBeenCalledWith(
+        '/dashboard/users/watch-owner?highlight=42',
+      );
+    },
+  );
 
   it('renders portfolio like notifications and navigates to portfolio detail', () => {
     const notification = makeNotification({

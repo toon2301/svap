@@ -16,3 +16,14 @@ CELERY_RESULT_SERIALIZER = "json"
 # Safer defaults for production: don't block web on task failures.
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") in ("1", "true", "yes", "on")
 CELERY_TASK_EAGER_PROPAGATES = bool(DEBUG)
+
+try:
+    OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS = int(
+        os.getenv("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS", "300")
+    )
+except ValueError as exc:
+    raise ValueError(
+        "OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS must be an integer"
+    ) from exc
+if OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS < 60:
+    raise ValueError("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS must be at least 60")

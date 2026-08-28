@@ -9,6 +9,7 @@ import pytest
 
 
 _TEST_ENV_KEYS = {
+    "OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS",
     "ALLOWED_HOSTS",
     "BACKEND_ORIGIN",
     "BUG_REPORT_ADMIN_ORIGIN",
@@ -430,3 +431,34 @@ def test_missing_email_envs_raises_in_prod(monkeypatch):
                 "DEFAULT_FROM_EMAIL": "",
             },
         )
+
+
+def test_offer_watch_match_claim_setting_defaults_and_accepts_override(monkeypatch):
+    from swaply.settings_split import celery_cfg
+
+    monkeypatch.delenv("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS", raising=False)
+    assert importlib.reload(celery_cfg).OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS == 300
+
+    monkeypatch.setenv("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS", "600")
+    assert importlib.reload(celery_cfg).OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS == 600
+
+    monkeypatch.delenv("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS")
+    importlib.reload(celery_cfg)
+
+
+@pytest.mark.parametrize(
+    "invalid_value",
+    ["invalid", "59"],
+)
+def test_offer_watch_match_claim_setting_rejects_invalid_values(
+    monkeypatch,
+    invalid_value,
+):
+    from swaply.settings_split import celery_cfg
+
+    monkeypatch.setenv("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS", invalid_value)
+    with pytest.raises(ValueError):
+        importlib.reload(celery_cfg)
+
+    monkeypatch.delenv("OFFER_WATCH_MATCH_STALE_CLAIM_SECONDS")
+    importlib.reload(celery_cfg)

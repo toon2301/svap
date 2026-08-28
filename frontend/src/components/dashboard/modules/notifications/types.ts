@@ -9,6 +9,7 @@ export type NotificationType =
   | 'review_reply_created'
   | 'review_liked'
   | 'offer_liked'
+  | 'offer_watch_match'
   | 'portfolio_liked'
   | 'profile_liked'
   | 'group_invitation'

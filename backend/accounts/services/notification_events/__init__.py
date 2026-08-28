@@ -24,6 +24,7 @@ from .likes import (
     create_portfolio_liked_notification,
     create_profile_liked_notification,
 )
+from .offer_watches import create_offer_watch_match_notification
 from .reviews import (
     create_review_created_notification,
     create_review_liked_notification,
@@ -47,6 +48,7 @@ __all__ = [
     "create_feed_post_tagged_notification",
     "create_group_invitation_notification",
     "create_offer_liked_notification",
+    "create_offer_watch_match_notification",
     "create_portfolio_liked_notification",
     "create_profile_liked_notification",
     "create_review_created_notification",

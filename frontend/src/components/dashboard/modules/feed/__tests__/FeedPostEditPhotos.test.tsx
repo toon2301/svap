@@ -504,33 +504,42 @@ describe('celá sekvencia', () => {
 });
 
 describe('príspevok nesmie ostať prázdny', () => {
-  it('blocks removing the last photo when there is no text', async () => {
+  it('hides the remove button on the last photo when there is no text', async () => {
     renderModal(makePost({ caption: '', images: [image(11)] }));
 
-    // Bez textu je táto fotka jediný obsah – označiť ju nejde.
-    expect(screen.getByTestId('feed-post-edit-photo-remove-11')).toBeDisabled();
+    // Bez textu je táto fotka jediný obsah. „X" sa nekreslí vôbec – vypnuté
+    // tlačidlo by ponúkalo akciu, ktorá sa nikdy nevykoná.
+    expect(
+      screen.queryByTestId('feed-post-edit-photo-remove-11'),
+    ).not.toBeInTheDocument();
+    // Fotka samotná je stále vidieť.
+    expect(screen.getByTestId('feed-post-edit-photo-11')).toBeInTheDocument();
   });
 
-  it('unblocks it as soon as text is typed', async () => {
+  it('brings the remove button back as soon as text is typed', async () => {
     renderModal(makePost({ caption: '', images: [image(11)] }));
 
     await userEvent.type(screen.getByTestId('feed-post-edit-input'), 'Nieco');
 
-    expect(screen.getByTestId('feed-post-edit-photo-remove-11')).toBeEnabled();
+    expect(
+      await screen.findByTestId('feed-post-edit-photo-remove-11'),
+    ).toBeEnabled();
   });
 
-  it('blocks removing the last photo left in the draft', async () => {
+  it('hides it on the last photo left in the draft', async () => {
     renderModal(makePost({ caption: '' }));
 
     await userEvent.click(screen.getByTestId('feed-post-edit-photo-remove-11'));
 
     // Prvá je označená, takže druhá je jediný zostávajúci obsah.
-    expect(screen.getByTestId('feed-post-edit-photo-remove-12')).toBeDisabled();
-    // Označenie prvej sa dá vrátiť späť aj tak.
+    expect(
+      screen.queryByTestId('feed-post-edit-photo-remove-12'),
+    ).not.toBeInTheDocument();
+    // Označenie prvej sa dá vrátiť späť aj tak – tam „X" ostáva.
     expect(screen.getByTestId('feed-post-edit-photo-remove-11')).toBeEnabled();
   });
 
-  it('allows removing the last photo when the post has text', async () => {
+  it('keeps the remove button on the last photo when the post has text', async () => {
     renderModal(makePost({ images: [image(11)] }));
 
     expect(screen.getByTestId('feed-post-edit-photo-remove-11')).toBeEnabled();

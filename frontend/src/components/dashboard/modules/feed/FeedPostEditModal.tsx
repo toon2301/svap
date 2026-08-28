@@ -334,31 +334,27 @@ export default function FeedPostEditModal({
                         <PhotoIcon className="h-5 w-5 text-gray-400" />
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => draft.toggleRemoved(entry.image.id)}
-                      // Poslednú fotku pri prázdnom texte nejde odobrať; už
-                      // označenú sa dá vrátiť späť vždy.
-                      disabled={saving || (removalBlocked && !entry.removed)}
-                      data-testid={`feed-post-edit-photo-remove-${entry.image.id}`}
-                      aria-pressed={entry.removed}
-                      aria-label={
-                        entry.removed
-                          ? t('feed.editPhotoKeep', 'Ponechať fotku')
-                          : t('feed.editPhotoRemove', 'Odobrať fotku')
-                      }
-                      title={
-                        removalBlocked && !entry.removed
-                          ? t(
-                              'feed.editPhotoRemoveBlocked',
-                              'Príspevok nesmie ostať bez textu aj bez fotky.',
-                            )
-                          : undefined
-                      }
-                      className="absolute right-1 top-1 rounded-full bg-black/55 p-1 text-white transition-colors hover:bg-black/75 disabled:opacity-40"
-                    >
-                      <XMarkIcon className="h-3.5 w-3.5" />
-                    </button>
+                    {/* Poslednú fotku pri prázdnom texte odobrať nejde, tak sa
+                        „X" pri nej NEKRESLÍ vôbec – vypnuté tlačidlo ponúka
+                        akciu, ktorá sa nikdy nevykoná. Už označenú fotku sa
+                        dá vrátiť späť vždy, tam „X" ostáva. */}
+                    {removalBlocked && !entry.removed ? null : (
+                      <button
+                        type="button"
+                        onClick={() => draft.toggleRemoved(entry.image.id)}
+                        disabled={saving}
+                        data-testid={`feed-post-edit-photo-remove-${entry.image.id}`}
+                        aria-pressed={entry.removed}
+                        aria-label={
+                          entry.removed
+                            ? t('feed.editPhotoKeep', 'Ponechať fotku')
+                            : t('feed.editPhotoRemove', 'Odobrať fotku')
+                        }
+                        className="absolute right-1 top-1 rounded-full bg-black/55 p-1 text-white transition-colors hover:bg-black/75 disabled:opacity-50"
+                      >
+                        <XMarkIcon className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     {entry.removed ? (
                       <span className="block truncate bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300">
                         {t('feed.editPhotoMarkedRemoved', 'Odoberie sa')}

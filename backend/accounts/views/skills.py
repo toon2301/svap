@@ -24,6 +24,7 @@ from ..models import (
 )
 from ..serializers import OfferedSkillSerializer
 from ..services.offer_visibility import offer_hidden_from_user
+from ..services.offer_watch_match_dispatch import schedule_offer_watch_matching
 from ..services.user_blocks import lock_users_for_update
 from django.core.exceptions import ValidationError
 
@@ -199,7 +200,8 @@ def skills_list_view(request):
                     skill_type = "Hľadám" if is_seeking else "Ponúkam"
                     return offer_limit_reached_response(skill_type=skill_type)
 
-                serializer.save(user=request.user)
+                offer = serializer.save(user=request.user)
+                schedule_offer_watch_matching(offer_id=offer.id)
         except IntegrityError:
             # The unique constraint remains authoritative when POST requests race.
             if _matching_offer_identity(

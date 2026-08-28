@@ -48,9 +48,29 @@ const REPLIES_PREVIEW_LIMIT = 10;
 /** Koľko odpovedí sa dotiahne jedným kliknutím na „Zobraziť ďalšie". */
 const REPLIES_PAGE_SIZE = 10;
 
-/** Zoradí odpovede podľa id – to rastie rovnako ako čas vzniku. */
-function sortedById(byId: Map<number, FeedPostComment>): FeedPostComment[] {
-  return [...byId.values()].sort((a, b) => a.id - b.id);
+/**
+ * Poradie zhodné s backendom: ``(created_at, id)``.
+ *
+ * Radiť len podľa id by v drvivej väčšine prípadov vyšlo rovnako (id rastie
+ * s časom), ale zoznam by sa od servera rozišiel vždy, keď to neplatí. Jedno
+ * pravidlo pre všetky cesty – polling, donačítanie aj vlastný príspevok –
+ * znamená, že poradie nezávisí od toho, ktorou z nich sa komentár dostal
+ * do lokálneho stavu.
+ */
+function compareChronologically(
+  a: FeedPostComment,
+  b: FeedPostComment,
+): number {
+  if (a.created_at !== b.created_at) {
+    return a.created_at < b.created_at ? -1 : 1;
+  }
+  return a.id - b.id;
+}
+
+function sortedChronologically(
+  byId: Map<number, FeedPostComment>,
+): FeedPostComment[] {
+  return [...byId.values()].sort(compareChronologically);
 }
 
 /**
@@ -77,7 +97,7 @@ function mergeReplyPreview(
     current.filter((reply) => reply.id > highest).map((reply) => [reply.id, reply]),
   );
   preview.forEach((reply) => byId.set(reply.id, reply));
-  return sortedById(byId);
+  return sortedChronologically(byId);
 }
 
 /**
@@ -94,7 +114,7 @@ function mergeReplyBatch(
   if (!batch.length) return current;
   const byId = new Map(current.map((reply) => [reply.id, reply]));
   batch.forEach((reply) => byId.set(reply.id, reply));
-  return sortedById(byId);
+  return sortedChronologically(byId);
 }
 
 /**
@@ -114,8 +134,8 @@ function mergeReplyBatch(
  * odolné aj voči orezaniu veľkosti stránky na strane BE – dĺžky sa
  * neporovnávajú.
  *
- * Radí sa podľa id: komentáre chodia z BE chronologicky vzostupne a id je
- * monotónne, takže poradie sedí bez ďalšieho porovnávania dátumov.
+ * Radí sa rovnakým pravidlom ako na backende – ``(created_at, id)``, viď
+ * `compareChronologically`.
  */
 function mergeComments(
   current: FeedPostComment[],
@@ -148,7 +168,7 @@ function mergeComments(
       ),
     });
   });
-  return [...byId.values()].sort((a, b) => a.id - b.id);
+  return sortedChronologically(byId);
 }
 
 /** Ako dlho ostane komentár z notifikácie zvýraznený. */
@@ -162,7 +182,6 @@ const HIGHLIGHT_MS = 3000;
  */
 const HIGHLIGHT_MAX_PAGES = 20;
 
-/** Komentáre aj ich odpovede v jednom zozname – na hľadanie a počítanie. */
 /**
  * Koľko odpovedí komentár celkovo má.
  *
@@ -173,6 +192,7 @@ function repliesTotal(comment: FeedPostComment): number {
   return comment.replies_count ?? comment.replies?.length ?? 0;
 }
 
+/** Komentáre aj ich odpovede v jednom zozname – na hľadanie a počítanie. */
 function flattenComments(list: FeedPostComment[]): FeedPostComment[] {
   return list.flatMap((comment) => [comment, ...(comment.replies ?? [])]);
 }
@@ -250,6 +270,17 @@ export default function FeedPostComments({
    */
   const highlightSeekingRef = useRef(false);
   /**
+   * Prebudenie efektu po dobehnutí kola hľadania.
+   *
+   * Samotný `highlightSeekingRef` je ref, takže jeho vynulovanie nespustí
+   * efekt znova. Keď sa medzitým stihol efekt prebehnúť (prekreslenie po
+   * `setComments` môže prísť skôr, než dobehne `.then`), narazil by na
+   * zdvihnutý príznak, ticho by sa vrátil – a keďže by už nič ďalšie stav
+   * nemenilo, hľadanie by zamrzlo na polceste. Tento počítadlový stav
+   * garantuje ešte jeden beh po každom kole.
+   */
+  const [seekTick, setSeekTick] = useState(0);
+  /**
    * Pre ktorý cieľ sa už raz preverilo, či vlákno medzitým nenarástlo.
    *
    * `hasMore` je len snímka spred posledného načítania. Komentár vzniknutý
@@ -274,8 +305,19 @@ export default function FeedPostComments({
   const loadSeqRef = useRef(0);
   // Aktuálne načítané okno pre `refresh` – cez ref (nie závislosť), aby sa
   // pollovací callback pri každom novom komentári nepreskladal.
+  const finishSeek = useCallback(() => {
+    highlightSeekingRef.current = false;
+    setSeekTick((tick) => tick + 1);
+  }, []);
+
   const commentsRef = useRef(comments);
   commentsRef.current = comments;
+  /**
+   * Kam až siaha SÚVISLÝ úsek odpovedí, ktorý appka dostala od servera – per
+   * komentár. Posúva ho len serverová odpoveď (náhľad alebo donačítaná dávka),
+   * nikdy nie odpoveď pridaná lokálne.
+   */
+  const replyReachRef = useRef(new Map<number, number>());
   /**
    * Najvyššie id, ktoré používateľ UŽ mal na obrazovke.
    *
@@ -544,6 +586,37 @@ export default function FeedPostComments({
   }, [highlightCommentId]);
 
   /**
+   * Posledná odpoveď SÚVISLÉHO úseku od servera – kotva pre ďalšiu dávku.
+   *
+   * Nie je to posledná načítaná odpoveď: medzi náhľadom a ňou môže byť
+   * MEDZERA. Vzniká celkom bežne – vlastná odpoveď sa pridá lokálne (a je
+   * novšia než všetko, čo server poslal), rovnako môže pribudnúť cieľ
+   * notifikácie. Keby sa kotvilo na ňu, dopyt by medzeru preskočil, staršie
+   * odpovede by sa už nikdy nedotiahli a „Zobraziť ďalšie" by vracalo prázdno.
+   *
+   * Bez donačítania siaha server po náhľadový strop, ďalej ho posúva
+   * `replyReachRef`.
+   */
+  const replyReach = useCallback(
+    (parentId: number, replies: FeedPostComment[]): number | null => {
+      // Kotva je POZÍCIA v poradí `(created_at, id)`, nie „najvyššie id".
+      // Porovnávať id číselne sa nesmie: dávka, ktorá je chronologicky ďalej,
+      // môže mať nižšie id, a `Math.max` by sa vrátil na staršiu pozíciu –
+      // ďalší dopyt by vracal tú istú dávku dokola a novšie odpovede by sa
+      // stali nedosiahnuteľnými.
+      //
+      // Kým sa nič nedonačítalo, siaha server po koniec náhľadu; potom platí
+      // koniec POSLEDNEJ dávky, ktorá je z definície pokračovaním za ním.
+      const fetched = replyReachRef.current.get(parentId);
+      if (fetched != null) return fetched;
+      return replies.length
+        ? replies[Math.min(replies.length, REPLIES_PREVIEW_LIMIT) - 1].id
+        : null;
+    },
+    [],
+  );
+
+  /**
    * Dotiahne ďalšiu dávku odpovedí jedného komentára.
    *
    * Pokračuje od poslednej odpovede, ktorú už máme (`after`), takže sa nič
@@ -556,6 +629,11 @@ export default function FeedPostComments({
    * používateľ oň nežiadal. Klik na „Zobraziť ďalšie odpovede" je naopak
    * vedomá akcia, takže tam sa zlyhanie hlási.
    */
+  // Iný príspevok = iné vlákna; starý dosah by kotvil na cudzie id.
+  useEffect(() => {
+    replyReachRef.current = new Map();
+  }, [postId]);
+
   const loadMoreReplies = useCallback(
     async (parentId: number, options?: { silent?: boolean }) => {
       const parent = commentsRef.current.find(
@@ -565,10 +643,19 @@ export default function FeedPostComments({
       setLoadingRepliesFor(parentId);
       try {
         const page = await listFeedCommentReplies(postId, parentId, {
-          after: loaded.length ? loaded[loaded.length - 1].id : null,
+          after: replyReach(parentId, loaded),
           pageSize: REPLIES_PAGE_SIZE,
         });
         markSeen(page.results);
+        if (page.results.length) {
+          // Dávka prichádza v poradí radenia a je pokračovaním za kotvou,
+          // takže jej POSLEDNÝ prvok je nová pozícia – priame priradenie,
+          // žiadne porovnávanie čísel s predošlou kotvou.
+          replyReachRef.current.set(
+            parentId,
+            page.results[page.results.length - 1].id,
+          );
+        }
         setComments((current) =>
           current.map((comment) =>
             comment.id === parentId
@@ -594,7 +681,7 @@ export default function FeedPostComments({
         setLoadingRepliesFor(null);
       }
     },
-    [postId, markSeen],
+    [postId, markSeen, replyReach],
   );
 
   /**
@@ -651,12 +738,12 @@ export default function FeedPostComments({
     const parentWithMissingReplies = comments.find((comment) => {
       const loadedReplies = comment.replies ?? [];
       if (loadedReplies.length >= (comment.replies_count ?? 0)) return false;
-      // Nenačítané odpovede majú vyššie id než posledná načítaná, takže vlákno,
-      // ktoré je už za cieľom, nemá zmysel prehľadávať.
-      const lastId = loadedReplies.length
-        ? loadedReplies[loadedReplies.length - 1].id
-        : 0;
-      return lastId < highlightCommentId;
+      // Rozhoduje koniec SÚVISLÉHO úseku, nie posledná načítaná odpoveď:
+      // chýbajúce odpovede ležia práve za ním. Podľa poslednej načítanej by
+      // vlákno s medzerou (vlastná odpoveď na konci) vyšlo ako „už za cieľom"
+      // a cieľ v medzere by sa nikdy nenašiel.
+      const reach = replyReach(comment.id, loadedReplies) ?? 0;
+      return reach < highlightCommentId;
     });
     if (parentWithMissingReplies) {
       if (highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
@@ -667,10 +754,12 @@ export default function FeedPostComments({
       highlightPagesRef.current += 1;
       highlightSeekingRef.current = true;
       // Ticho: hľadanie beží na pozadí, používateľ oň nežiadal.
-      void loadMoreReplies(parentWithMissingReplies.id, { silent: true }).then((ok) => {
-        highlightSeekingRef.current = false;
-        if (!ok) highlightHandledRef.current = highlightCommentId;
-      });
+      void loadMoreReplies(parentWithMissingReplies.id, { silent: true }).then(
+        (ok) => {
+          finishSeek();
+          if (!ok) highlightHandledRef.current = highlightCommentId;
+        },
+      );
       return;
     }
 
@@ -699,9 +788,7 @@ export default function FeedPostComments({
         comments.length > COMMENTS_MAX_POLL_SIZE ? reopenPagination : refresh;
       void recheck()
         .catch(() => undefined)
-        .finally(() => {
-          highlightSeekingRef.current = false;
-        });
+        .finally(finishSeek);
       return;
     }
 
@@ -712,7 +799,21 @@ export default function FeedPostComments({
       highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES
     ) {
       // Vzdaj to ticho – zoznam ostáva normálne použiteľný, len bez skoku.
-      if (passedIt || !hasMore || highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
+      //
+      // Definitívne to však vzdaj LEN vtedy, keď naozaj nie je čo skúsiť.
+      // Vlákno s nedotiahnutými odpoveďami môže cieľ ešte priniesť – a jeho
+      // dávka sa do stavu dostane až o prekreslenie neskôr, než sa posunie
+      // dosah servera. Bez tejto poistky by práve ten medzičas označil
+      // hľadanie za vybavené a odpoveď, ktorá o chvíľu dorazí, by sa už
+      // nikdy nezvýraznila.
+      const someThreadIncomplete = comments.some(
+        (comment) =>
+          (comment.replies?.length ?? 0) < (comment.replies_count ?? 0),
+      );
+      if (
+        !someThreadIncomplete &&
+        (passedIt || !hasMore || highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES)
+      ) {
         highlightHandledRef.current = highlightCommentId;
       }
       return;
@@ -722,7 +823,7 @@ export default function FeedPostComments({
     highlightSeekingRef.current = true;
     // Ticho: hľadanie beží na pozadí, používateľ oň nežiadal.
     void loadMore({ silent: true }).then((ok) => {
-      highlightSeekingRef.current = false;
+      finishSeek();
       // Zlyhanie sa berie rovnako ako „koniec vlákna" – ďalšie pokusy by pri
       // výpadku siete len opakovali ten istý neúspech.
       //
@@ -742,6 +843,9 @@ export default function FeedPostComments({
     loadingMore,
     loadingRepliesFor,
     loadMoreReplies,
+    replyReach,
+    finishSeek,
+    seekTick,
     hasMore,
     loadMore,
     refresh,

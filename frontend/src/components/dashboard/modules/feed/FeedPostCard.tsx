@@ -38,6 +38,8 @@ import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
+import FeedAnchoredMenu from './FeedAnchoredMenu';
+import FeedPostCaption from './FeedPostCaption';
 import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
@@ -379,6 +381,13 @@ export default function FeedPostCard({
     }
   };
 
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+    // Fokus späť na spúšťač – inak by po zatvorení skončil na <body>
+    // a klávesnicová navigácia by začínala odznova.
+    menuTriggerRef.current?.focus();
+  }, []);
+
   const handleDeletePost = async () => {
     if (deleting) return;
     setDeleting(true);
@@ -418,6 +427,8 @@ export default function FeedPostCard({
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
   const [commentsOpen, setCommentsOpen] = useState(initialCommentsOpen);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Pozícia spúšťača v okne – menu sa kreslí portálom, takže si ju musí niesť.
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reported, setReported] = useState(false);
@@ -438,7 +449,6 @@ export default function FeedPostCard({
   const likeSeqRef = useRef(0);
   // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
   const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
-  const menuRef = useRef<HTMLDivElement | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Obnovenie feedu nahradí príspevok čerstvejšou verziou, ale `key` ostáva
@@ -463,28 +473,6 @@ export default function FeedPostCard({
   useEffect(() => {
     setCurrentPost(post);
   }, [post]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setMenuOpen(false);
-      // Fokus späť na spúšťacie tlačidlo – inak by po zatvorení skončil na
-      // <body> a klávesnicová navigácia by začínala odznova.
-      menuTriggerRef.current?.focus();
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [menuOpen]);
 
   const handleToggleLike = async () => {
     if (likePendingRef.current) return;
@@ -649,11 +637,14 @@ export default function FeedPostCard({
             štvrtou ikonou v riadku akcií – ten by sa na mobile preplnil.
             Štruktúrou je pripravené na ďalšie položky (napr. kopírovanie
             odkazu), zatiaľ nesie jedinú akciu. */}
-        <div className="relative shrink-0" ref={menuRef}>
+        <div className="shrink-0">
           <button
             type="button"
             ref={menuTriggerRef}
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={(event) => {
+              setMenuAnchor(event.currentTarget.getBoundingClientRect());
+              setMenuOpen((open) => !open);
+            }}
             aria-label={t('feed.postMenu', 'Možnosti príspevku')}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
@@ -662,12 +653,13 @@ export default function FeedPostCard({
           >
             <EllipsisHorizontalIcon className="h-5 w-5" />
           </button>
-          {menuOpen ? (
-            <div
-              role="menu"
-              data-testid="feed-post-menu"
-              className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-[#0f0f10]"
-            >
+          <FeedAnchoredMenu
+            open={menuOpen}
+            anchorRect={menuAnchor}
+            onClose={closeMenu}
+            ariaLabel={t('feed.postMenu', 'Možnosti príspevku')}
+            testId="feed-post-menu"
+          >
               <button
                 type="button"
                 role="menuitem"
@@ -715,10 +707,18 @@ export default function FeedPostCard({
                   {t('feed.deletePost', 'Zmazať príspevok')}
                 </button>
               ) : null}
-            </div>
-          ) : null}
+          </FeedAnchoredMenu>
         </div>
       </header>
+
+      {/* Voľný príspevok: VEDIE text, fotky idú pod neho. Zdieľanie má poradie
+          iné a zámerne nezmenené – tam je hlavným obsahom náhľad zdieľaného
+          a caption je komentár autora k nemu, takže patrí až zaň. */}
+      {!isShared && caption ? (
+        <div className="px-4 py-3">
+          <FeedPostCaption text={caption} />
+        </div>
+      ) : null}
 
       {images.length > 0 ? (
         <FeedPostImageCarousel
@@ -727,63 +727,61 @@ export default function FeedPostCard({
         />
       ) : null}
 
-      <div className="space-y-3 px-4 py-3">
-        {isShared ? (
-          <SharedContentPreview
-            post={post}
-            hideOwner={isSelfShare}
-            onOpenSource={handleOpenSharedSource}
-          />
-        ) : null}
+      {isShared || taggedUsers.length ? (
+        <div className="space-y-3 px-4 py-3">
+          {isShared ? (
+            <SharedContentPreview
+              post={post}
+              hideOwner={isSelfShare}
+              onOpenSource={handleOpenSharedSource}
+            />
+          ) : null}
 
-        {caption ? (
-          <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-            {caption}
-          </p>
-        ) : null}
+          {isShared && caption ? <FeedPostCaption text={caption} /> : null}
 
-        {taggedUsers.length ? (
-          <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">
-            {taggedUsers.map((tagged) => {
-              // „x" patrí VÝHRADNE vlastnému označeniu; príznak dáva backend,
-              // ktorý je aj tak jediný, kto o tom rozhoduje.
-              const isOwnTag = tagged.can_remove_tag === true;
-              return (
-                <li
-                  key={tagged.id}
-                  data-testid={`feed-post-tag-${tagged.id}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200"
-                >
-                  @{tagged.display_name}
-                  {isOwnTag ? (
-                    <button
-                      type="button"
-                      onClick={() => setTagRemoveOpen(true)}
-                      data-testid="feed-post-tag-remove"
-                      aria-label={t('feed.tagRemoveAction', 'Odstrániť označenie')}
-                      title={t('feed.tagRemoveAction', 'Odstrániť označenie')}
-                      className="-mr-1 rounded-full p-0.5 text-purple-500 transition-colors hover:bg-purple-200 hover:text-purple-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-purple-300 dark:hover:bg-purple-800/60 dark:hover:text-white"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        className="h-3 w-3"
-                        aria-hidden="true"
+          {taggedUsers.length ? (
+            <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">
+              {taggedUsers.map((tagged) => {
+                // „x" patrí VÝHRADNE vlastnému označeniu; príznak dáva backend,
+                // ktorý je aj tak jediný, kto o tom rozhoduje.
+                const isOwnTag = tagged.can_remove_tag === true;
+                return (
+                  <li
+                    key={tagged.id}
+                    data-testid={`feed-post-tag-${tagged.id}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200"
+                  >
+                    @{tagged.display_name}
+                    {isOwnTag ? (
+                      <button
+                        type="button"
+                        onClick={() => setTagRemoveOpen(true)}
+                        data-testid="feed-post-tag-remove"
+                        aria-label={t('feed.tagRemoveAction', 'Odstrániť označenie')}
+                        title={t('feed.tagRemoveAction', 'Odstrániť označenie')}
+                        className="-mr-1 rounded-full p-0.5 text-purple-500 transition-colors hover:bg-purple-200 hover:text-purple-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-purple-300 dark:hover:bg-purple-800/60 dark:hover:text-white"
                       >
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                      </svg>
-                    </button>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-      </div>
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          className="h-3 w-3"
+                          aria-hidden="true"
+                        >
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              })}
+              </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       <footer className="flex items-center gap-4 border-t border-gray-200/70 px-4 py-2.5 dark:border-gray-700/60">
         <ActionButton
