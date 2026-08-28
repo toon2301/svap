@@ -599,13 +599,19 @@ export default function FeedPostComments({
    */
   const replyReach = useCallback(
     (parentId: number, replies: FeedPostComment[]): number | null => {
-      const previewEnd = replies.length
+      // Kotva je POZÍCIA v poradí `(created_at, id)`, nie „najvyššie id".
+      // Porovnávať id číselne sa nesmie: dávka, ktorá je chronologicky ďalej,
+      // môže mať nižšie id, a `Math.max` by sa vrátil na staršiu pozíciu –
+      // ďalší dopyt by vracal tú istú dávku dokola a novšie odpovede by sa
+      // stali nedosiahnuteľnými.
+      //
+      // Kým sa nič nedonačítalo, siaha server po koniec náhľadu; potom platí
+      // koniec POSLEDNEJ dávky, ktorá je z definície pokračovaním za ním.
+      const fetched = replyReachRef.current.get(parentId);
+      if (fetched != null) return fetched;
+      return replies.length
         ? replies[Math.min(replies.length, REPLIES_PREVIEW_LIMIT) - 1].id
         : null;
-      const fetched = replyReachRef.current.get(parentId) ?? null;
-      if (previewEnd == null) return fetched;
-      if (fetched == null) return previewEnd;
-      return Math.max(previewEnd, fetched);
     },
     [],
   );
@@ -642,12 +648,12 @@ export default function FeedPostComments({
         });
         markSeen(page.results);
         if (page.results.length) {
-          // Dávka je súvislé pokračovanie za kotvou, takže jej koniec je nový
-          // dosah servera.
-          const reached = page.results[page.results.length - 1].id;
+          // Dávka prichádza v poradí radenia a je pokračovaním za kotvou,
+          // takže jej POSLEDNÝ prvok je nová pozícia – priame priradenie,
+          // žiadne porovnávanie čísel s predošlou kotvou.
           replyReachRef.current.set(
             parentId,
-            Math.max(replyReachRef.current.get(parentId) ?? 0, reached),
+            page.results[page.results.length - 1].id,
           );
         }
         setComments((current) =>

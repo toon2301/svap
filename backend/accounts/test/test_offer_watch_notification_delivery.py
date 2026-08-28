@@ -252,16 +252,23 @@ def test_recovery_enqueues_only_pending_candidates_in_stable_order():
 
 
 @pytest.mark.django_db
-def test_broker_failure_keeps_candidate_pending_for_recovery():
+def test_broker_failure_keeps_candidate_pending_for_recovery(
+    django_capture_on_commit_callbacks,
+):
     *_, candidate = create_candidate("broker-failure")
 
     with patch(
         "accounts.offer_watch_notification_tasks."
         "deliver_offer_watch_notification_task.delay",
         side_effect=RuntimeError("broker unavailable"),
-    ):
-        schedule_offer_watch_notification(candidate_id=candidate.id)
+    ) as enqueue:
+        # Zaradenie do fronty visí na `transaction.on_commit`, ktoré sa
+        # v testovej transakcii samo nespustí – bez tohto by cesta cez
+        # zlyhanie brokera vôbec nenastala a test by prešiel aj tak.
+        with django_capture_on_commit_callbacks(execute=True):
+            schedule_offer_watch_notification(candidate_id=candidate.id)
 
+    enqueue.assert_called_once_with(candidate_id=candidate.id)
     candidate.refresh_from_db()
     assert candidate.processed_at is None
     assert candidate.notified_at is None

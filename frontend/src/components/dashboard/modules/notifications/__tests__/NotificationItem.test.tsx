@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 
 import NotificationItem from '../NotificationItem';
 import type { DashboardNotification } from '../types';
+import skMessages from '../../../../../../messages/sk.json';
 
 const mockPush = jest.fn();
 
@@ -12,10 +13,34 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+/**
+ * Kľúče, ktoré testy overujú menovite, sa prekladajú zo SKUTOČNÝCH slovenských
+ * dát – nie z fallbacku v komponente. Keby komponent siahol po kľúči, ktorý
+ * v jazykových súboroch neexistuje, fallback by chybu zakryl; takto sa
+ * z takého kľúča stane `MISSING:...` a asercia padne.
+ */
+const SK_NAMESPACE_UNDER_TEST = 'notifications.offerWatchMatch';
+
+function resolveSlovak(key: string): string {
+  const value = key
+    .split('.')
+    .reduce<unknown>(
+      (node, part) =>
+        node && typeof node === 'object'
+          ? (node as Record<string, unknown>)[part]
+          : undefined,
+      skMessages,
+    );
+  return typeof value === 'string' ? value : `MISSING:${key}`;
+}
+
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     locale: 'sk',
-    t: (_key: string, fallback: string) => fallback,
+    t: (key: string, fallback: string) =>
+      // Celá menovka, nie zoznam kľúčov: preklep v názve kľúča tak neprepadne
+      // na fallback, ale skončí ako `MISSING:...`.
+      key.startsWith(SK_NAMESPACE_UNDER_TEST) ? resolveSlovak(key) : fallback,
   }),
 }));
 

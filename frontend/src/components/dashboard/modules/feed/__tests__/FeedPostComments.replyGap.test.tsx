@@ -292,6 +292,76 @@ describe('vlákno s medzerou', () => {
     // celej sady sa do predvolených 5 s jestu nemusí zmestiť.
   }, 15000);
 
+  it('keeps the cursor at the last batch, not at the highest id', async () => {
+    // Kotva je POZÍCIA v poradí (created_at, id). Dávka B je chronologicky
+    // ďalej, ale má NIŽŠIE id než koniec dávky A – porovnávanie čísel by sa
+    // vrátilo na A a ďalší dopyt by vracal B dokola.
+    const preview = { ...timed(101, 1), created_at: '2026-01-01T10:01:00Z' };
+    const batchA = { ...timed(200, 1), created_at: '2026-01-01T10:02:00Z' };
+    const batchB = { ...timed(150, 1), created_at: '2026-01-01T10:03:00Z' };
+    mockedList.mockResolvedValue(page([comment(1, 'Hlavný', [preview], 4)], 5));
+    mockedReplies
+      .mockResolvedValueOnce({ results: [batchA], next: null, previous: null })
+      .mockResolvedValueOnce({ results: [batchB], next: null, previous: null })
+      .mockResolvedValue({ results: [], next: null, previous: null });
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+    await waitFor(() => expect(renderedReplyIds()).toEqual([101, 200]));
+    expect(mockedReplies).toHaveBeenLastCalledWith(5, 1, {
+      after: 101,
+      pageSize: 10,
+    });
+
+    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+    await waitFor(() => expect(renderedReplyIds()).toEqual([101, 200, 150]));
+    // Druhý dopyt pokračoval za koncom dávky A.
+    expect(mockedReplies).toHaveBeenLastCalledWith(5, 1, {
+      after: 200,
+      pageSize: 10,
+    });
+
+    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+
+    // Tretí dopyt musí pokračovať za dávkou B (id 150), nie znova za A (200).
+    await waitFor(() =>
+      expect(mockedReplies).toHaveBeenLastCalledWith(5, 1, {
+        after: 150,
+        pageSize: 10,
+      }),
+    );
+  });
+
+  it('prefers the fetched cursor over a numerically higher preview id', async () => {
+    // Náhľad končí na VYSOKOM id (300), donačítaná dávka má nižšie (150), ale
+    // je chronologicky ďalej. Kotva musí ísť za dávku, nie za náhľad.
+    const preview = { ...timed(300, 1), created_at: '2026-01-01T10:01:00Z' };
+    const batch = { ...timed(150, 1), created_at: '2026-01-01T10:02:00Z' };
+    mockedList.mockResolvedValue(page([comment(1, 'Hlavný', [preview], 3)], 4));
+    mockedReplies
+      .mockResolvedValueOnce({ results: [batch], next: null, previous: null })
+      .mockResolvedValue({ results: [], next: null, previous: null });
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+    await waitFor(() => expect(renderedReplyIds()).toEqual([300, 150]));
+
+    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+
+    await waitFor(() =>
+      expect(mockedReplies).toHaveBeenLastCalledWith(5, 1, {
+        after: 150,
+        pageSize: 10,
+      }),
+    );
+  });
+
   it('merges by created_at, not by id, when the two disagree', async () => {
     // Poistka pre prípad, že id nekopíruje čas vzniku (posun hodín, import).
     // Zlučuje sa lokálna vlastná odpoveď s dávkou zo servera, takže o poradí

@@ -53,8 +53,21 @@ export default function FeedPostCaption({
     setOverflows(node.scrollHeight - node.clientHeight > OVERFLOW_TOLERANCE_PX);
   }, []);
 
+  /** Text, ku ktorému patrí aktuálne meranie aj stav rozbalenia. */
+  const measuredTextRef = useRef(text);
+
   // Pred vykreslením: zmeria sa hneď po zmene textu aj po zbalení.
   useLayoutEffect(() => {
+    if (measuredTextRef.current !== text) {
+      measuredTextRef.current = text;
+      // Iný text = iné meranie. Po úprave príspevku sa musí začať zbalene,
+      // inak by nový text ostal „zamrznutý" v rozbalenom stave predošlého.
+      // Meranie prebehne hneď v ďalšom behu, keď je orezanie zapnuté.
+      if (expanded) {
+        setExpanded(false);
+        return;
+      }
+    }
     if (expanded) return;
     measure();
   }, [text, expanded, measure]);

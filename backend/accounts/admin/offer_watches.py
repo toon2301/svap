@@ -83,3 +83,11 @@ class OfferWatchMatchOutboxAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Záznam je fronta pre spracovanie, nie história na upratovanie.
+
+        Zmazaním by sa stratil kandidát, ktorý ``process_offer_watch_matches_task``
+        ešte nespracovala – vrátane tých, čo čakajú na zotavenie po zlyhaní.
+        """
+        return False

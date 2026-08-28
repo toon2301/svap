@@ -253,6 +253,47 @@ describe('skrátenie na tri riadky', () => {
     );
   });
 
+  it('collapses again when the text itself changes', async () => {
+    setTextHeights({ visible: 60, full: 200 });
+    const { rerender } = render(
+      <FeedPostCard post={makePost({ caption: 'Pôvodný dlhý text' })} />,
+    );
+
+    await userEvent.click(screen.getByTestId('feed-post-caption-toggle'));
+    expect(screen.getByTestId('feed-post-caption-toggle')).toHaveTextContent(
+      'Menej',
+    );
+
+    // Autor príspevok upraví – nový text musí prísť ZBALENÝ a znova zmeraný,
+    // nie zdedený v rozbalenom stave predošlého.
+    rerender(<FeedPostCard post={makePost({ caption: 'Iný dlhý text' })} />);
+
+    const caption = screen.getByTestId('feed-post-caption');
+    await waitFor(() => expect(caption.className).toContain('line-clamp-3'));
+    expect(caption).toHaveTextContent('Iný dlhý text');
+    expect(screen.getByTestId('feed-post-caption-toggle')).toHaveTextContent(
+      '...Viac',
+    );
+  });
+
+  it('drops the toggle when the new text is short enough', async () => {
+    setTextHeights({ visible: 60, full: 200 });
+    const { rerender } = render(
+      <FeedPostCard post={makePost({ caption: 'Pôvodný dlhý text' })} />,
+    );
+    await userEvent.click(screen.getByTestId('feed-post-caption-toggle'));
+
+    // Po úprave sa text zmestí do troch riadkov – prepínač nemá čo ponúkať.
+    setTextHeights({ visible: 60, full: 60 });
+    rerender(<FeedPostCard post={makePost({ caption: 'Krátky' })} />);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('feed-post-caption-toggle'),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
   it('keeps the expanded state separate for each card', async () => {
     setTextHeights({ visible: 60, full: 200 });
     render(
