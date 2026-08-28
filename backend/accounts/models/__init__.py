@@ -35,6 +35,7 @@ from .notifications import Notification, NotificationType
 from .offer_watches import (
     MAX_OFFER_WATCHES_PER_USER,
     OfferWatch,
+    OfferWatchMatchOutbox,
     OfferWatchNotification,
 )
 from .feed_posts import (
@@ -99,6 +100,7 @@ __all__ = [
     "NotificationType",
     "MAX_OFFER_WATCHES_PER_USER",
     "OfferWatch",
+    "OfferWatchMatchOutbox",
     "OfferWatchNotification",
     "FeedPost",
     "FeedPostComment",

@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class NotificationType(models.TextChoices):
+    OFFER_WATCH_MATCH = "offer_watch_match", _("Nová zhoda sledovania")
     OFFER_LIKED = "offer_liked", _("Páči sa mi ponuka")
     PORTFOLIO_LIKED = "portfolio_liked", _("Paci sa mi portfolio")
     PROFILE_LIKED = "profile_liked", _("Paci sa mi profil")

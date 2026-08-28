@@ -16,7 +16,10 @@ from swaply.rate_limiting import api_rate_limit
 
 from ..models import Notification, NotificationType
 from ..serializers import NotificationSerializer
-from ..notification_serializers import existing_review_offer_ids
+from ..notification_serializers import (
+    existing_offer_watch_targets,
+    existing_review_offer_ids,
+)
 from ..realtime import notify_user
 from ..services.notifications import (
     GENERAL_NOTIFICATION_UNREAD_TYPE,
@@ -118,6 +121,10 @@ def notifications_list_view(request):
                     context={
                         "request": request,
                         "existing_review_offer_ids": existing_review_offer_ids(items),
+                        "offer_watch_targets": existing_offer_watch_targets(
+                            items,
+                            viewer_user_id=request.user.id,
+                        ),
                     },
                 ).data,
                 "total": paginator.count,
@@ -143,6 +150,10 @@ def notifications_list_view(request):
             context={
                 "request": request,
                 "existing_review_offer_ids": existing_review_offer_ids(items),
+                "offer_watch_targets": existing_offer_watch_targets(
+                    items,
+                    viewer_user_id=request.user.id,
+                ),
             },
         ).data,
         status=status.HTTP_200_OK,

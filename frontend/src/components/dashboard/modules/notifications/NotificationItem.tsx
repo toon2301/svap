@@ -153,6 +153,8 @@ export default function NotificationItem({
           ? t('notifications.reviewLikedTitle', 'Páči sa mi tvoja recenzia')
         : notification.type === 'offer_liked'
           ? t('notifications.offerLikedTitle', 'Páči sa mi tvoja ponuka')
+        : notification.type === 'offer_watch_match'
+          ? t('notifications.offerWatchMatchTitle', 'Nová zhoda sledovania')
         : notification.type === 'portfolio_liked'
           ? t('notifications.portfolioLikedTitle', 'Paci sa mi tvoje portfolio')
         : notification.type === 'profile_liked'
@@ -244,6 +246,18 @@ export default function NotificationItem({
           ? t(
               'notifications.offerLikedBody',
               '{name} označil tvoju ponuku ako páči sa mi.',
+            ).replace('{name}', () => actorName)
+        : notification.type === 'offer_watch_match'
+          ? (
+              notification.data?.offer_is_seeking === true
+                ? t(
+                    'notifications.offerWatchMatchRequestBody',
+                    '{name} pridal nový dopyt, ktorý zodpovedá tvojmu sledovaniu.',
+                  )
+                : t(
+                    'notifications.offerWatchMatchOfferBody',
+                    '{name} pridal novú ponuku, ktorá zodpovedá tvojmu sledovaniu.',
+                  )
             ).replace('{name}', () => actorName)
         : notification.type === 'portfolio_liked'
           ? t(

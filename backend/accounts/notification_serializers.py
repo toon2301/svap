@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from .models import Notification, NotificationType, OfferedSkill
+from .search_visibility import searchable_user_q
+from .services.user_blocks import exclude_blocked_users
 
 _REVIEW_NOTIFICATION_TYPES = (
     NotificationType.REVIEW_CREATED,
@@ -33,6 +35,39 @@ def existing_review_offer_ids(notifications) -> set[int]:
     return set(
         OfferedSkill.objects.filter(id__in=offer_ids).values_list("id", flat=True)
     )
+
+
+def existing_offer_watch_targets(notifications, *, viewer_user_id: int) -> dict[int, str]:
+    """Return safe owner identifiers for currently visible matched offers."""
+
+    offer_ids: set[int] = set()
+    for notification in notifications:
+        if getattr(notification, "type", None) != NotificationType.OFFER_WATCH_MATCH:
+            continue
+        data = notification.data if isinstance(notification.data, dict) else {}
+        try:
+            offer_id = int(data.get("offer_id") or 0)
+        except (TypeError, ValueError):
+            offer_id = 0
+        if offer_id > 0:
+            offer_ids.add(offer_id)
+    if not offer_ids:
+        return {}
+
+    offers = OfferedSkill.objects.select_related("user").filter(
+        searchable_user_q("user__"),
+        id__in=offer_ids,
+        is_hidden=False,
+    )
+    offers = exclude_blocked_users(
+        offers,
+        viewer_user_id=viewer_user_id,
+        user_id_field="user_id",
+    )
+    return {
+        offer.id: (getattr(offer.user, "slug", None) or str(offer.user_id))
+        for offer in offers
+    }
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -129,6 +164,29 @@ class NotificationSerializer(serializers.ModelSerializer):
                 offer_id = 0
             if offer_id > 0:
                 return f"/dashboard/profile?highlight={offer_id}&side=back"
+        if obj.type == NotificationType.OFFER_WATCH_MATCH:
+            data = obj.data if isinstance(obj.data, dict) else {}
+            try:
+                offer_id = int(data.get("offer_id") or 0)
+            except (TypeError, ValueError):
+                offer_id = 0
+            if offer_id <= 0:
+                return None
+
+            targets = self.context.get("offer_watch_targets")
+            if targets is not None:
+                identifier = targets.get(offer_id)
+            else:
+                # Realtime serialization happens immediately after transactional
+                # revalidation and has no list context.
+                actor = getattr(obj, "actor", None)
+                identifier = None
+                if actor is not None and getattr(actor, "is_active", True):
+                    identifier = (getattr(actor, "slug", None) or "").strip()
+                    identifier = identifier or str(actor.id)
+            if identifier:
+                return f"/dashboard/users/{identifier}?highlight={offer_id}"
+            return None
         if obj.type == NotificationType.PORTFOLIO_LIKED:
             data = obj.data if isinstance(obj.data, dict) else {}
             try:

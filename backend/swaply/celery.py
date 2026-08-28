@@ -19,6 +19,8 @@ app.conf.imports = tuple(
     set(
         getattr(app.conf, "imports", ())
         + (
+            "accounts.offer_watch_tasks",
+            "accounts.offer_watch_notification_tasks",
             "swaply.tasks.offer_images",
             "swaply.tasks.portfolio_images",
             "swaply.tasks.webpush",
@@ -32,6 +34,20 @@ app.conf.imports = tuple(
 # Periodické (beat) tasky. Celery beží v UTC (žiadny CELERY_TIMEZONE override),
 # takže crontab(hour=3) = 03:00 UTC – nízka záťaž.
 app.conf.beat_schedule = {
+    "recover-pending-offer-watch-notifications": {
+        "task": (
+            "accounts.offer_watch_notification_tasks."
+            "recover_pending_offer_watch_notifications_task"
+        ),
+        "schedule": crontab(minute="*/5"),
+    },
+    "recover-pending-offer-watch-matches": {
+        "task": (
+            "accounts.offer_watch_tasks."
+            "recover_pending_offer_watch_matches_task"
+        ),
+        "schedule": crontab(minute="*/5"),
+    },
     "recover-pending-bug-report-notifications": {
         "task": "accounts.tasks.recover_pending_bug_report_notifications_task",
         "schedule": crontab(minute="*/5"),

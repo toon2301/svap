@@ -168,6 +168,50 @@ describe('NotificationItem', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12&side=back');
   });
 
+  it.each([
+    [
+      false,
+      'Watch Owner pridal novú ponuku, ktorá zodpovedá tvojmu sledovaniu.',
+    ],
+    [
+      true,
+      'Watch Owner pridal nový dopyt, ktorý zodpovedá tvojmu sledovaniu.',
+    ],
+  ])(
+    'renders a localized offer-watch match when offer_is_seeking=%s',
+    (offerIsSeeking, expectedBody) => {
+      const notification = makeNotification({
+        type: 'offer_watch_match',
+        title: 'Backend fallback title',
+        body: 'Backend fallback body',
+        data: {
+          offer_id: 42,
+          offer_is_seeking: offerIsSeeking,
+        },
+        target_url: '/dashboard/users/watch-owner?highlight=42',
+        actor: {
+          id: 12,
+          display_name: 'Watch Owner',
+          slug: 'watch-owner',
+          user_type: 'individual',
+          avatar_url: null,
+        },
+      });
+
+      render(<NotificationItem notification={notification} />);
+
+      expect(screen.getByText('Nová zhoda sledovania')).toBeInTheDocument();
+      expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+        expectedBody,
+      );
+
+      fireEvent.click(screen.getByRole('button'));
+      expect(mockPush).toHaveBeenCalledWith(
+        '/dashboard/users/watch-owner?highlight=42',
+      );
+    },
+  );
+
   it('renders portfolio like notifications and navigates to portfolio detail', () => {
     const notification = makeNotification({
       type: 'portfolio_liked',

@@ -39,6 +39,7 @@ from .notification_core import (  # noqa: F401
 NOTIFICATION_RETENTION_DAYS: dict[str, int] = {
     # Informačné / sociálne
     NotificationType.OFFER_LIKED: 30,
+    NotificationType.OFFER_WATCH_MATCH: 30,
     NotificationType.PORTFOLIO_LIKED: 30,
     NotificationType.PROFILE_LIKED: 30,
     NotificationType.REVIEW_LIKED: 30,
@@ -113,6 +114,7 @@ from .notification_events import (  # noqa: E402, F401
     create_feed_post_tagged_notification,
     create_group_invitation_notification,
     create_offer_liked_notification,
+    create_offer_watch_match_notification,
     create_portfolio_liked_notification,
     create_profile_liked_notification,
     create_review_created_notification,

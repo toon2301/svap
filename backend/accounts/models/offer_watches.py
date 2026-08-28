@@ -245,6 +245,9 @@ class OfferWatchNotification(models.Model):
     notified_at = models.DateTimeField(
         _("Notifikácia odoslaná"), null=True, blank=True
     )
+    processed_at = models.DateTimeField(
+        _("Doručenie spracované"), null=True, blank=True
+    )
 
     class Meta:
         verbose_name = _("Kandidát notifikácie sledovania")
@@ -254,14 +257,22 @@ class OfferWatchNotification(models.Model):
             models.UniqueConstraint(
                 fields=["user", "offer"],
                 name="acc_watch_notif_unique_offer",
-            )
+            ),
+            models.CheckConstraint(
+                check=(
+                    models.Q(notified_at__isnull=True)
+                    | models.Q(processed_at__isnull=False)
+                ),
+                name="acc_watch_notif_sent_processed",
+            ),
         ]
         indexes = [
             models.Index(
                 fields=["user", "-matched_at"], name="acc_watch_notif_user_idx"
             ),
             models.Index(
-                fields=["notified_at", "matched_at"], name="acc_watch_notif_pending_idx"
+                fields=["processed_at", "matched_at"],
+                name="acc_watch_notif_process_idx",
             ),
         ]
 
@@ -278,3 +289,25 @@ class OfferWatchNotification(models.Model):
             raise ValidationError(
                 {"offer": _("Vlastná karta nemôže vytvoriť notifikáciu sledovania.")}
             )
+
+
+class OfferWatchMatchOutbox(models.Model):
+    """Durable intent to match a new offer against saved watches."""
+
+    offer = models.OneToOneField(
+        "accounts.OfferedSkill",
+        on_delete=models.CASCADE,
+        related_name="watch_match_outbox",
+    )
+    attempt_count = models.PositiveIntegerField(default=0)
+    claimed_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = _("Čakajúce párovanie sledovania")
+        verbose_name_plural = _("Čakajúce párovania sledovaní")
+
+    def __str__(self):
+        return f"Offer watch match intent {self.offer_id}"

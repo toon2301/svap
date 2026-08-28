@@ -18,11 +18,18 @@
  * Výška plochy je JEDNOTNÁ pre všetky fotky a obrázok sa do nej vkladá cez
  * `object-contain` s rozmazaným pozadím – `BlurredContainImage` je ten istý
  * komponent, aký na letterbox používa portfólio/ponuky.
+ *
+ * Klik na fotku otvára `ImageLightbox` – to isté jadro, aké má fullscreen
+ * prehliadač portfólia, takže ovládanie (X, Escape, šípky, swipe) je zhodné.
+ * Do prehliadača idú LEN fotky, ktoré sa dajú zobraziť: zamietnuté sú
+ * odfiltrované rovnako ako na karte a rozpracovaná fotka ešte nemá URL, takže
+ * sa nedá ani otvoriť.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
+import { ImageLightbox } from '../shared/ImageLightbox';
 import { translateImageRejection } from './feedImageRejection';
 import type { FeedPostImage } from '@/lib/feedApi';
 
@@ -53,10 +60,32 @@ function ProcessingSlide() {
   );
 }
 
-function Slide({ image, alt }: { image: FeedPostImage; alt: string }) {
+function Slide({
+  image,
+  alt,
+  onOpen,
+}: {
+  image: FeedPostImage;
+  alt: string;
+  /** Chýba pri fotke bez URL – rozpracovanú nie je čo otvárať. */
+  onOpen?: () => void;
+}) {
+  const { t } = useLanguage();
   const src = imageSrc(image);
   if (!src) return <ProcessingSlide />;
-  return <BlurredContainImage src={src} alt={alt} loading="lazy" />;
+  const media = <BlurredContainImage src={src} alt={alt} loading="lazy" />;
+  if (!onOpen) return media;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')}
+      data-testid={`feed-image-open-${image.id}`}
+      className="block h-full w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+    >
+      {media}
+    </button>
+  );
 }
 
 export default function FeedPostImageCarousel({
@@ -65,16 +94,51 @@ export default function FeedPostImageCarousel({
 }: FeedPostImageCarouselProps) {
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
+  // Index do zoznamu ZOBRAZITEĽNÝCH fotiek; null = prehliadač je zatvorený.
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Zamietnuté sa nezobrazujú; cudziemu divákovi ich backend ani neposiela.
   const slides = images.filter((image) => image.status !== 'rejected');
   const rejected = images.filter((image) => image.status === 'rejected');
   const total = slides.length;
 
+  // Do prehliadača ide len to, čo má skutočnú URL – rozpracovaná fotka je na
+  // karte len stavová plocha a otvárať sa nedá.
+  const viewable = slides.filter((image) => imageSrc(image));
+  const lightboxSources = viewable.map(imageSrc);
+
   // Po obnovení feedu môže fotiek ubudnúť – index mimo rozsahu by vykreslil nič.
   useEffect(() => {
     setIndex((current) => (current >= total ? 0 : current));
   }, [total]);
+
+  const openLightbox = useCallback(
+    (image: FeedPostImage) => {
+      const at = viewable.findIndex((candidate) => candidate.id === image.id);
+      if (at < 0) return;
+      setLightboxIndex(at);
+    },
+    [viewable],
+  );
+
+  const lightbox = (
+    <ImageLightbox
+      open={lightboxIndex !== null}
+      sources={lightboxSources}
+      initialIndex={lightboxIndex ?? 0}
+      alt={alt}
+      onClose={() => setLightboxIndex(null)}
+      testId="feed-image-lightbox"
+      labels={{
+        dialog: t('feed.imageCarousel', 'Fotky príspevku'),
+        close: t('common.close', 'Zavrieť'),
+        previous: t('feed.imagePrev', 'Predchádzajúca fotka'),
+        next: t('feed.imageNext', 'Ďalšia fotka'),
+        // Rovnaký tvar ako počítadlo na karte, z ktorej sa prehliadač otvoril.
+        counter: (current, count) => `${current}/${count}`,
+      }}
+    />
+  );
 
   const go = useCallback(
     (delta: number) => {
@@ -104,9 +168,14 @@ export default function FeedPostImageCarousel({
     return (
       <>
         <div data-testid="feed-post-image" className={`w-full ${MEDIA_HEIGHT}`}>
-          <Slide image={active} alt={alt} />
+          <Slide
+            image={active}
+            alt={alt}
+            onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
+          />
         </div>
         {rejectedNote}
+        {lightbox}
       </>
     );
   }
@@ -130,7 +199,11 @@ export default function FeedPostImageCarousel({
           }
         }}
       >
-        <Slide image={active} alt={`${alt} (${index + 1}/${total})`} />
+        <Slide
+          image={active}
+          alt={`${alt} (${index + 1}/${total})`}
+          onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
+        />
 
         <button
           type="button"
@@ -196,6 +269,7 @@ export default function FeedPostImageCarousel({
         </span>
       </div>
       {rejectedNote}
+      {lightbox}
     </>
   );
 }
