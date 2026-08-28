@@ -4386,6 +4386,7 @@
     "repliesShow": "Show replies ({n})",
     "repliesHide": "Hide replies",
     "repliesLoadError": "The replies could not be loaded.",
+    "repliesLoadMore": "Show older replies",
     "replyCreateError": "The reply could not be added.",
     "likersTitle": "Liked by",
     "likersEmpty": "Nobody yet.",

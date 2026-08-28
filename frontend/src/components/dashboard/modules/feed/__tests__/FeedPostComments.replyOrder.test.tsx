@@ -336,6 +336,52 @@ it('keeps two expanded threads loading independently', async () => {
   });
 });
 
+it('reaches an older top-level comment even next to a huge unread thread', async () => {
+  // Cieľ je STARŠÍ vrcholový komentár na ďalšej stránke. Vedľa neho je vlákno
+  // s dvomi stovkami nedotiahnutých odpovedí, ktoré s cieľom nesúvisí – so
+  // spoločným rozpočtom by minulo celý a k stránkovaniu komentárov by sa
+  // hľadanie nikdy nedostalo.
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {
+    value: jest.fn(),
+    configurable: true,
+    writable: true,
+  });
+  const huge = { ...comment(PREVIEW, 200), id: 1, text: 'Vlákno s odpoveďami' };
+  mockedList
+    .mockResolvedValueOnce({
+      results: [huge],
+      next: 'http://api.test/c?cursor=older',
+      previous: null,
+      count: 202,
+    })
+    .mockResolvedValue({
+      results: [{ ...comment([], 0), id: 2, text: 'Hľadaný starý' }],
+      next: null,
+      previous: null,
+    });
+  // Vlákno odpovedí je bezodné – vždy vráti ďalšiu dávku.
+  mockedReplies.mockImplementation(async (_postId, _commentId, params) => {
+    const after = params?.after ?? 300;
+    return {
+      results: [reply(after - 1, 1), reply(after - 2, 1)],
+      next: null,
+      previous: null,
+    };
+  });
+
+  render(<FeedPostComments postId={5} highlightCommentId={2} />);
+  await screen.findByText('Vlákno s odpoveďami');
+
+  // Cieľ sa napriek nesúvisiacemu vláknu nájde a zvýrazní.
+  await waitFor(
+    () =>
+      expect(
+        document.querySelector('[data-comment-id="2"]')?.className,
+      ).toContain('bg-purple-100/80'),
+    { timeout: 8000 },
+  );
+}, 15000);
+
 it('pages down to find an older reply from a notification', async () => {
   // Cieľ (102) je hlboko v histórii vlákna – appka sa k nemu musí prehrýzť
   // smerom nadol.

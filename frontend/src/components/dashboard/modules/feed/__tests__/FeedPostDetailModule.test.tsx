@@ -353,29 +353,45 @@ describe('FeedPostDetailModule – komentár mimo prvej stránky', () => {
     });
   });
 
-  it('stops paging when it has passed the target id', async () => {
+  it('stops at the end of the thread when the target no longer exists', async () => {
     const scrollIntoView = jest.fn();
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       value: scrollIntoView,
       configurable: true,
       writable: true,
     });
-    // Cieľ 7 medzitým zanikol – prvá stránka už siaha za neho.
+    // Cieľ 7 medzitým zanikol. Pri poradí „najnovšie hore" o tom prvá stránka
+    // nič nehovorí – cieľ môže byť medzi staršími, takže appka SPRÁVNE
+    // pokračuje nadol. Zastaviť sa má až na konci vlákna.
     mockSearchParams.get.mockImplementation((key: string) =>
       key === 'comment' ? '7' : null,
     );
-    mockedListComments.mockResolvedValue({
-      results: [comment(5, 'Piaty'), comment(9, 'Deviaty')],
-      next: 'http://api.test/c?after=9',
-      previous: null,
-      count: 20,
-    });
+    mockedListComments
+      .mockResolvedValueOnce({
+        results: [comment(9, 'Deviaty'), comment(8, 'Ôsmy')],
+        next: 'http://api.test/c?after=8',
+        previous: null,
+        count: 4,
+      })
+      // Posledná stránka – za ňou už nič nie je.
+      .mockResolvedValue({
+        results: [comment(6, 'Šiesty'), comment(5, 'Piaty')],
+        next: null,
+        previous: null,
+      });
 
     render(<FeedPostDetailModule postId={9} />);
     await screen.findByText('Deviaty');
 
-    // Ďalšie stránky by nepomohli – zoznam je vzostupný, cieľ sme prešli.
-    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(1));
+    // 1 počiatočné načítanie + 1 stránka nadol + 1 obnovenie (poistka „cieľ
+    // je novší, než čo máme"). Potom sa hľadanie vzdá.
+    // waitFor čaká na dosiahnutie čísla – pevné oneskorenie by pri pomalšom
+    // behu skončilo predčasne a test by prešiel bez toho, aby čokoľvek overil.
+    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(3));
+
+    // A na 3 aj ZOSTANE – bez zastavenia by stránkovanie bežalo ďalej.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(mockedListComments).toHaveBeenCalledTimes(3);
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });

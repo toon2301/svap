@@ -11,9 +11,16 @@
  * nový ref), takže viac naraz rozbalených vlákien si donačítavanie navzájom
  * nespúšťa. Rootom je scrollovateľný box zoznamu, nie okno – inak by sa
  * pri scrollovaní vnútri boxu nikdy nepretlo.
+ *
+ * ZÁLOHA: v prostredí bez `IntersectionObserver` (staršie vstavané webview)
+ * sa sentinel nemá ako pretnúť, takže by vlákno navždy ostalo na náhľade bez
+ * možnosti dostať sa k zvyšku. Len vtedy – a nikde inde – pribudne tlačidlo
+ * na ručné donačítanie. Detekcia je tá istá jednoduchá kontrola, akú appka
+ * používa v `useFeedInfiniteScroll` aj `useCardInViewport`.
  */
 
-import { type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 
 type FeedRepliesAutoLoaderProps = {
@@ -33,6 +40,14 @@ export default function FeedRepliesAutoLoader({
   onLoadMore,
   testId,
 }: FeedRepliesAutoLoaderProps) {
+  const { t } = useLanguage();
+  // Až v efekte, nie pri rendri: na serveri `IntersectionObserver` nie je
+  // nikdy, takže priama kontrola by na klientovi spôsobila nesúlad hydratácie.
+  const [observerMissing, setObserverMissing] = useState(false);
+  useEffect(() => {
+    setObserverMissing(typeof IntersectionObserver === 'undefined');
+  }, []);
+
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: onLoadMore,
     enabled,
@@ -44,6 +59,17 @@ export default function FeedRepliesAutoLoader({
 
   return (
     <div className="ml-4 pl-3">
+      {observerMissing && !loading ? (
+        <button
+          type="button"
+          onClick={onLoadMore}
+          disabled={!enabled}
+          data-testid={`${testId}-fallback`}
+          className="mt-2 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:text-purple-700 hover:underline disabled:opacity-60 dark:text-gray-400 dark:hover:text-purple-300"
+        >
+          {t('feed.repliesLoadMore', 'Zobraziť staršie odpovede')}
+        </button>
+      ) : null}
       {loading ? (
         <ul
           className="mt-2 space-y-2"

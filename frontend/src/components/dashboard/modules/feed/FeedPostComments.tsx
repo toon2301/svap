@@ -266,6 +266,16 @@ export default function FeedPostComments({
   /** Koľko stránok sa už donačítalo pri hľadaní cieľa – strop proti slučke. */
   const highlightPagesRef = useRef(0);
   /**
+   * Rozpočet donačítavania ODPOVEDÍ pri hľadaní – oddelený od stránkovania
+   * komentárov.
+   *
+   * Appka nevie, či cieľ notifikácie je vrcholový komentár alebo odpoveď (a ak
+   * odpoveď, tak čia), takže skúša oboje. So spoločným rozpočtom stačilo jedno
+   * vlákno s dvomi stovkami nedotiahnutých odpovedí na to, aby ho celý minulo
+   * a k stránkovaniu komentárov – teda k skutočnému cieľu – sa už nedostalo.
+   */
+  const highlightReplyPagesRef = useRef(0);
+  /**
    * Beží práve donačítanie kvôli hľadaniu?
    *
    * Stav `loadingMore` na to nestačí: `setLoadingMore(false)` v `finally`
@@ -544,6 +554,7 @@ export default function FeedPostComments({
     setHighlighted(null);
     highlightHandledRef.current = null;
     highlightPagesRef.current = 0;
+    highlightReplyPagesRef.current = 0;
     highlightSeekingRef.current = false;
     highlightRefreshedRef.current = null;
     return () => {
@@ -670,23 +681,27 @@ export default function FeedPostComments({
       (comment) =>
         (comment.replies?.length ?? 0) < (comment.replies_count ?? 0),
     );
-    if (parentWithMissingReplies) {
-      if (highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
-        highlightHandledRef.current = highlightCommentId;
-        return;
-      }
+    if (
+      parentWithMissingReplies &&
+      highlightReplyPagesRef.current < HIGHLIGHT_MAX_PAGES
+    ) {
       if (loadingRepliesFor !== null) return;
-      highlightPagesRef.current += 1;
+      highlightReplyPagesRef.current += 1;
       highlightSeekingRef.current = true;
       // Ticho: hľadanie beží na pozadí, používateľ oň nežiadal.
       void loadMoreReplies(parentWithMissingReplies.id, { silent: true }).then(
         (ok) => {
           finishSeek();
-          if (!ok) highlightHandledRef.current = highlightCommentId;
+          // Zlyhanie zastaví ďalšie doťahovanie odpovedí (opakovaný pokus by
+          // pri výpadku siete len opakoval ten istý neúspech), ale hľadanie
+          // ako také nekončí – cieľ môže byť vrcholový komentár nižšie.
+          if (!ok) highlightReplyPagesRef.current = HIGHLIGHT_MAX_PAGES;
         },
       );
       return;
     }
+    // Vyčerpaný rozpočet odpovedí NIE JE koniec hľadania – pokračuje sa
+    // stránkovaním komentárov, ktoré má rozpočet vlastný.
 
     // Cieľ nie je v okne. Keď je NOVŠÍ než čokoľvek načítané, leží nad ním –
     // presne tam, kam sa pozerá dopyt bez kurzora, takže stačí raz obnoviť.

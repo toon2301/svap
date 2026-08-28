@@ -226,6 +226,61 @@ describe('zbalené odpovede', () => {
 // --- Časť C: donačítanie zvyšku --------------------------------------------
 
 describe('donačítanie odpovedí', () => {
+  it('offers a manual fallback only where IntersectionObserver is missing', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 12)], 13),
+    );
+    mockedReplies.mockResolvedValue({
+      results: [reply(100, 'Predposledná', 1), reply(99, 'Posledná', 1)],
+      next: null,
+      previous: null,
+    });
+    // Prostredie bez observera – sentinel sa nemá ako pretnúť.
+    observer.restore();
+    const original = (global as unknown as { IntersectionObserver: unknown })
+      .IntersectionObserver;
+    (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+      undefined;
+
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('Hlavný');
+      await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+      const fallback = await screen.findByTestId(
+        'feed-comment-replies-sentinel-1-fallback',
+      );
+      await userEvent.click(fallback);
+
+      expect(mockedReplies).toHaveBeenCalledWith(5, 1, {
+        after: 101,
+        pageSize: 10,
+      });
+      expect(await screen.findByText('Posledná')).toBeInTheDocument();
+    } finally {
+      (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+        original;
+    }
+  });
+
+  it('shows no button in a normal environment', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 12)], 13),
+    );
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+    // S observerom ostáva výhradne automatické donačítanie pri scrollovaní.
+    expect(
+      screen.getByTestId('feed-comment-replies-sentinel-1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('feed-comment-replies-sentinel-1-fallback'),
+    ).not.toBeInTheDocument();
+  });
+
   it('loads the older ones by itself when the reader reaches the end', async () => {
     mockedList.mockResolvedValue(
       page([comment(1, 'Hlavný', preview(1), 12)], 13),

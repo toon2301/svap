@@ -4386,6 +4386,7 @@
     "repliesShow": "Pokaż odpowiedzi ({n})",
     "repliesHide": "Ukryj odpowiedzi",
     "repliesLoadError": "Nie udało się wczytać odpowiedzi.",
+    "repliesLoadMore": "Pokaż starsze odpowiedzi",
     "replyCreateError": "Nie udało się dodać odpowiedzi.",
     "likersTitle": "Polubili to",
     "likersEmpty": "Jeszcze nikt.",

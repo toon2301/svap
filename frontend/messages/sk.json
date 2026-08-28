@@ -4386,6 +4386,7 @@
     "repliesShow": "Zobraziť odpovede ({n})",
     "repliesHide": "Skryť odpovede",
     "repliesLoadError": "Odpovede sa nepodarilo načítať.",
+    "repliesLoadMore": "Zobraziť staršie odpovede",
     "replyCreateError": "Odpoveď sa nepodarilo pridať.",
     "likersTitle": "Páči sa im to",
     "likersEmpty": "Zatiaľ nikto.",

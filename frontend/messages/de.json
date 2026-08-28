@@ -4386,6 +4386,7 @@
     "repliesShow": "Antworten anzeigen ({n})",
     "repliesHide": "Antworten ausblenden",
     "repliesLoadError": "Die Antworten konnten nicht geladen werden.",
+    "repliesLoadMore": "Ältere Antworten anzeigen",
     "replyCreateError": "Die Antwort konnte nicht hinzugefügt werden.",
     "likersTitle": "Gefällt",
     "likersEmpty": "Noch niemand.",

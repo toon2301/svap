@@ -4386,6 +4386,7 @@
     "repliesShow": "Válaszok megjelenítése ({n})",
     "repliesHide": "Válaszok elrejtése",
     "repliesLoadError": "A válaszokat nem sikerült betölteni.",
+    "repliesLoadMore": "Régebbi válaszok megjelenítése",
     "replyCreateError": "A választ nem sikerült hozzáadni.",
     "likersTitle": "Kedvelték",
     "likersEmpty": "Még senki.",
