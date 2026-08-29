@@ -20,6 +20,7 @@ import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedCommentLikeButton from './FeedCommentLikeButton';
 import FeedCommentEditComposer from './FeedCommentEditComposer';
 import FeedCommentReplyComposer from './FeedCommentReplyComposer';
+import FeedRepliesAutoLoader from './FeedRepliesAutoLoader';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
@@ -40,8 +41,8 @@ const COMMENTS_PAGE_SIZE = 10;
  * orezáva rovno tu, nech je zrejmé, čo odpoveď pokrýva.
  */
 const COMMENTS_MAX_POLL_SIZE = 50;
-/** Do tejto vzdialenosti od spodku sa nový komentár doscrolluje sám. */
-const NEAR_BOTTOM_PX = 100;
+/** Do tejto vzdialenosti od vrchu sa nový komentár doscrolluje sám. */
+const NEAR_TOP_PX = 100;
 
 /** Zhodné s FEED_REPLIES_PREVIEW_LIMIT na backende. */
 const REPLIES_PREVIEW_LIMIT = 10;
@@ -49,37 +50,40 @@ const REPLIES_PREVIEW_LIMIT = 10;
 const REPLIES_PAGE_SIZE = 10;
 
 /**
- * Poradie zhodné s backendom: ``(created_at, id)``.
+ * Poradie zhodné s backendom: NAJNOVŠIE HORE, teda `(-created_at, -id)`.
  *
  * Radiť len podľa id by v drvivej väčšine prípadov vyšlo rovnako (id rastie
  * s časom), ale zoznam by sa od servera rozišiel vždy, keď to neplatí. Jedno
- * pravidlo pre všetky cesty – polling, donačítanie aj vlastný príspevok –
+ * pravidlo pre všetky cesty – polling, donačítanie aj vlastný komentár –
  * znamená, že poradie nezávisí od toho, ktorou z nich sa komentár dostal
  * do lokálneho stavu.
  */
-function compareChronologically(
-  a: FeedPostComment,
-  b: FeedPostComment,
-): number {
+function compareNewestFirst(a: FeedPostComment, b: FeedPostComment): number {
   if (a.created_at !== b.created_at) {
-    return a.created_at < b.created_at ? -1 : 1;
+    return a.created_at < b.created_at ? 1 : -1;
   }
-  return a.id - b.id;
+  return b.id - a.id;
 }
 
-function sortedChronologically(
+/** Je `item` STARŠÍ než `edge`? (V zozname teda leží pod ním.) */
+function isOlderThan(item: FeedPostComment, edge: FeedPostComment): boolean {
+  return compareNewestFirst(item, edge) > 0;
+}
+
+function sortedNewestFirst(
   byId: Map<number, FeedPostComment>,
 ): FeedPostComment[] {
-  return [...byId.values()].sort(compareChronologically);
+  return [...byId.values()].sort(compareNewestFirst);
 }
 
 /**
- * Zlúči NÁHĽAD odpovedí (prvých pár od začiatku vlákna) s tým, čo appka má.
+ * Zlúči NÁHĽAD odpovedí (pár NAJNOVŠÍCH) s tým, čo appka má.
  *
  * Rovnaký princíp ako `mergeComments` o úroveň vyššie: náhľad má posledné
- * slovo o svojom rozsahu, takže čo v ňom chýba a má nižšie id než jeho koniec,
- * bolo medzitým zmazané. Nad jeho hranicou sa nezahadzuje nič – o tom náhľad
- * nič nehovorí a používateľ tam môže mať vlastné donačítané odpovede.
+ * slovo o svojom rozsahu – od najnovšej odpovede po tú svoju najstaršiu –
+ * takže čo v ňom v tomto rozsahu chýba, bolo medzitým zmazané. Čo je STARŠIE
+ * než jeho koniec, sa nezahadzuje: o tom náhľad nič nehovorí a používateľ tam
+ * môže mať donačítané staršie odpovede.
  *
  * Keď je odpovedí menej než náhľadový strop, pokrýva náhľad celé vlákno, takže
  * jeho dosah je neohraničený (aj prázdny náhľad vtedy znamená „nič tam nie je").
@@ -90,22 +94,23 @@ function mergeReplyPreview(
   previewCoversThread: boolean,
 ): FeedPostComment[] {
   if (!preview.length) return previewCoversThread ? [] : current;
-  const highest = previewCoversThread
-    ? Number.POSITIVE_INFINITY
-    : Math.max(...preview.map((reply) => reply.id));
+  const oldestInPreview = preview[preview.length - 1];
   const byId = new Map(
-    current.filter((reply) => reply.id > highest).map((reply) => [reply.id, reply]),
+    (previewCoversThread
+      ? []
+      : current.filter((reply) => isOlderThan(reply, oldestInPreview))
+    ).map((reply) => [reply.id, reply]),
   );
   preview.forEach((reply) => byId.set(reply.id, reply));
-  return sortedChronologically(byId);
+  return sortedNewestFirst(byId);
 }
 
 /**
  * Pripojí ĎALŠIU dávku odpovedí za tie, čo už máme.
  *
- * Dávka je pokračovanie za kotvou, nie pohľad od začiatku vlákna – nehovorí
- * teda nič o predchádzajúcich odpovediach a žiadna sa pri nej nezahadzuje.
- * Prienik podľa id ošetrí prípad, keď medzitým niečo pribudlo pred kotvou.
+ * Dávka nesie STARŠIE odpovede za kotvou, nie pohľad od najnovšej – nehovorí
+ * teda nič o tých nad ňou a žiadna sa pri nej nezahadzuje. Prienik podľa id
+ * ošetrí prípad, keď medzitým niečo pribudlo.
  */
 function mergeReplyBatch(
   current: FeedPostComment[],
@@ -114,28 +119,28 @@ function mergeReplyBatch(
   if (!batch.length) return current;
   const byId = new Map(current.map((reply) => [reply.id, reply]));
   batch.forEach((reply) => byId.set(reply.id, reply));
-  return sortedChronologically(byId);
+  return sortedNewestFirst(byId);
 }
 
 /**
  * Zlúči čerstvú odpoveď servera do lokálneho zoznamu.
  *
- * Kľúčový predpoklad: odpoveď VŽDY začína od začiatku vlákna (polling sa pýta
- * bez cursoru – viď `refresh`). Preto má server posledné slovo o všetkom až po
- * posledné vrátené id:
+ * Kľúčový predpoklad: odpoveď VŽDY začína od najnovšieho komentára (polling sa
+ * pýta bez cursoru – viď `refresh`). Preto má server posledné slovo o všetkom
+ * až po posledný vrátený komentár:
  *  - čo v odpovedi je → nahradí sa serverovou verziou (čerstvé počty lajkov,
  *    nové komentáre),
  *  - čo v nej chýba a spadá do jej dosahu → medzitým to niekto zmazal,
- *  - čo je NAD jej dosahom → odpoveď o tom nič nehovorí, ostáva nedotknuté.
- *    Nastáva len pri okne dlhšom než COMMENTS_MAX_POLL_SIZE.
+ *  - čo je STARŠIE než jej koniec → odpoveď o tom nič nehovorí, ostáva
+ *    nedotknuté. Nastáva len pri okne dlhšom než COMMENTS_MAX_POLL_SIZE.
  *
  * Dosah určuje `hasNext`, nie počet položiek: keď ďalšia stránka neexistuje,
  * server vrátil celé vlákno, takže dosah je neohraničený. Tým je pravidlo
  * odolné aj voči orezaniu veľkosti stránky na strane BE – dĺžky sa
  * neporovnávajú.
  *
- * Radí sa rovnakým pravidlom ako na backende – ``(created_at, id)``, viď
- * `compareChronologically`.
+ * Radí sa rovnakým pravidlom ako na backende – najnovšie hore, viď
+ * `compareNewestFirst`.
  */
 function mergeComments(
   current: FeedPostComment[],
@@ -145,15 +150,14 @@ function mergeComments(
   // Prázdna odpoveď bez ďalšej stránky = vlákno je prázdne (zmazalo sa všetko).
   if (!incoming.length) return hasNext ? current : [];
 
-  const highest = hasNext
-    ? Math.max(...incoming.map((comment) => comment.id))
-    : Number.POSITIVE_INFINITY;
+  const oldestIncoming = incoming[incoming.length - 1];
 
   const currentById = new Map(current.map((comment) => [comment.id, comment]));
   const byId = new Map(
-    current
-      .filter((comment) => comment.id > highest)
-      .map((comment) => [comment.id, comment]),
+    (hasNext
+      ? current.filter((comment) => isOlderThan(comment, oldestIncoming))
+      : []
+    ).map((comment) => [comment.id, comment]),
   );
   incoming.forEach((comment) => {
     // Prišiel len NÁHĽAD odpovedí. Keby sa komentár nahradil celý, používateľ
@@ -168,7 +172,7 @@ function mergeComments(
       ),
     });
   });
-  return sortedChronologically(byId);
+  return sortedNewestFirst(byId);
 }
 
 /** Ako dlho ostane komentár z notifikácie zvýraznený. */
@@ -248,7 +252,7 @@ export default function FeedPostComments({
   // pribudol pod zlomom boxu a pôsobil by, akoby sa vôbec nepridal.
   // 'auto' = vlastný komentár (okamžite), 'smooth' = cudzí z pollingu.
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const scrollToBottomRef = useRef<ScrollBehavior | null>(null);
+  const scrollToTopRef = useRef<ScrollBehavior | null>(null);
   /** Počet komentárov, ktoré prišli, kým používateľ čítal vyššie v zozname. */
   const [newCommentsCount, setNewCommentsCount] = useState(0);
   const [highlighted, setHighlighted] = useState<number | null>(null);
@@ -261,6 +265,16 @@ export default function FeedPostComments({
   const highlightTimerRef = useRef<number | null>(null);
   /** Koľko stránok sa už donačítalo pri hľadaní cieľa – strop proti slučke. */
   const highlightPagesRef = useRef(0);
+  /**
+   * Rozpočet donačítavania ODPOVEDÍ pri hľadaní – oddelený od stránkovania
+   * komentárov.
+   *
+   * Appka nevie, či cieľ notifikácie je vrcholový komentár alebo odpoveď (a ak
+   * odpoveď, tak čia), takže skúša oboje. So spoločným rozpočtom stačilo jedno
+   * vlákno s dvomi stovkami nedotiahnutých odpovedí na to, aby ho celý minulo
+   * a k stránkovaniu komentárov – teda k skutočnému cieľu – sa už nedostalo.
+   */
+  const highlightReplyPagesRef = useRef(0);
   /**
    * Beží práve donačítanie kvôli hľadaniu?
    *
@@ -312,12 +326,6 @@ export default function FeedPostComments({
 
   const commentsRef = useRef(comments);
   commentsRef.current = comments;
-  /**
-   * Kam až siaha SÚVISLÝ úsek odpovedí, ktorý appka dostala od servera – per
-   * komentár. Posúva ho len serverová odpoveď (náhľad alebo donačítaná dávka),
-   * nikdy nie odpoveď pridaná lokálne.
-   */
-  const replyReachRef = useRef(new Map<number, number>());
   /**
    * Najvyššie id, ktoré používateľ UŽ mal na obrazovke.
    *
@@ -423,14 +431,14 @@ export default function FeedPostComments({
     return true;
   }, [postId, markSeen]);
 
-  /** Doscrolluje zoznam na koniec; `scrollTo` jsdom nemá, preto fallback. */
-  const scrollListToBottom = useCallback((behavior: ScrollBehavior) => {
+  /** Doscrolluje zoznam navrch; `scrollTo` jsdom nemá, preto fallback. */
+  const scrollListToTop = useCallback((behavior: ScrollBehavior) => {
     const node = scrollRef.current;
     if (!node) return;
     if (typeof node.scrollTo === 'function') {
-      node.scrollTo({ top: node.scrollHeight, behavior });
+      node.scrollTo({ top: 0, behavior });
     } else {
-      node.scrollTop = node.scrollHeight;
+      node.scrollTop = 0;
     }
   }, []);
 
@@ -441,16 +449,14 @@ export default function FeedPostComments({
    */
   const announceNewComments = useCallback((added: number) => {
     const node = scrollRef.current;
-    // Bez uzla (alebo pri zozname, ktorý sa ešte nescrolluje) je koniec na
-    // obrazovke – indikátor by len prekážal.
-    const distanceToBottom = node
-      ? node.scrollHeight - node.scrollTop - node.clientHeight
-      : 0;
-    if (distanceToBottom <= NEAR_BOTTOM_PX) {
-      scrollToBottomRef.current = 'smooth';
+    // Nové komentáre pribúdajú NAVRCH. Kto je pri vrchu, má ich rovno pred
+    // sebou – vtedy stačí dorovnať pohľad, indikátor by len prekážal.
+    const distanceToTop = node ? node.scrollTop : 0;
+    if (distanceToTop <= NEAR_TOP_PX) {
+      scrollToTopRef.current = 'smooth';
       return;
     }
-    // Číta niečo vyššie → pohľad mu neposúvame, len ho upozorníme.
+    // Číta staršie nižšie → pohľad mu netrháme, len ho upozorníme.
     setNewCommentsCount((current) => current + added);
   }, []);
 
@@ -514,33 +520,6 @@ export default function FeedPostComments({
     if (added > 0) announceNewComments(added);
   }, [postId, announceNewComments, markSeen]);
 
-  /**
-   * Znovu otvorí stránkovanie pre okno DLHŠIE než pollovací strop.
-   *
-   * `refresh` vie doniesť nové komentáre len vtedy, keď sa celé okno zmestí
-   * do jedného dopytu (strop COMMENTS_MAX_POLL_SIZE). Nad ním pokryje iba
-   * začiatok vlákna, takže `next` zámerne nepreberá – ukazoval by doprostred
-   * už načítaného. Lenže keď je `nextUrlRef` medzitým vyčerpaný (vlákno bolo
-   * dočítané do konca), nemá sa odkiaľ pohnúť ďalej a hľadanie komentára za
-   * koncom okna by sa vzdalo, hoci ten komentár existuje.
-   *
-   * Preto sa kurzor postaví nanovo od začiatku: `loadMore` sa ním prehryzie
-   * dopredu a už načítané položky cestou zahodí dedup. Cena je pár dopytov
-   * navyše, ohraničených tým istým stropom HIGHLIGHT_MAX_PAGES ako zvyšok
-   * hľadania.
-   */
-  const reopenPagination = useCallback(async () => {
-    if (loadingMoreRef.current) return;
-    const seq = loadSeqRef.current;
-    const page = await listFeedPostComments(postId, {
-      pageSize: COMMENTS_MAX_POLL_SIZE,
-    });
-    if (seq !== loadSeqRef.current || loadingMoreRef.current) return;
-    if (!page.next) return;
-    nextUrlRef.current = page.next;
-    setHasMore(true);
-  }, [postId]);
-
   // Sekcia sa mountuje až pri rozbalení, takže „namountovaná" = „otvorená".
   // Každá otvorená karta má vlastnú inštanciu, teda aj vlastný polling.
   useFeedCommentsPolling({ enabled: !loading && !failed, onPoll: refresh });
@@ -559,13 +538,13 @@ export default function FeedPostComments({
   // Gate cez ref: donačítanie staršej stránky pridáva komentáre tiež, ale
   // vtedy pozíciu scrollu meniť nechceme.
   useEffect(() => {
-    const behavior = scrollToBottomRef.current;
+    const behavior = scrollToTopRef.current;
     if (!behavior) return;
-    scrollToBottomRef.current = null;
-    scrollListToBottom(behavior);
+    scrollToTopRef.current = null;
+    scrollListToTop(behavior);
     // Doscrollovaním sa upozornenie vyčerpalo.
     setNewCommentsCount((current) => (current === 0 ? current : 0));
-  }, [comments, scrollListToBottom]);
+  }, [comments, scrollListToTop]);
 
   // Nový cieľ = nové hľadanie. Časovač sa ruší LEN tu (zmena cieľa) a pri
   // odmountovaní – nie pri každej zmene zoznamu.
@@ -575,6 +554,7 @@ export default function FeedPostComments({
     setHighlighted(null);
     highlightHandledRef.current = null;
     highlightPagesRef.current = 0;
+    highlightReplyPagesRef.current = 0;
     highlightSeekingRef.current = false;
     highlightRefreshedRef.current = null;
     return () => {
@@ -586,41 +566,11 @@ export default function FeedPostComments({
   }, [highlightCommentId]);
 
   /**
-   * Posledná odpoveď SÚVISLÉHO úseku od servera – kotva pre ďalšiu dávku.
-   *
-   * Nie je to posledná načítaná odpoveď: medzi náhľadom a ňou môže byť
-   * MEDZERA. Vzniká celkom bežne – vlastná odpoveď sa pridá lokálne (a je
-   * novšia než všetko, čo server poslal), rovnako môže pribudnúť cieľ
-   * notifikácie. Keby sa kotvilo na ňu, dopyt by medzeru preskočil, staršie
-   * odpovede by sa už nikdy nedotiahli a „Zobraziť ďalšie" by vracalo prázdno.
-   *
-   * Bez donačítania siaha server po náhľadový strop, ďalej ho posúva
-   * `replyReachRef`.
-   */
-  const replyReach = useCallback(
-    (parentId: number, replies: FeedPostComment[]): number | null => {
-      // Kotva je POZÍCIA v poradí `(created_at, id)`, nie „najvyššie id".
-      // Porovnávať id číselne sa nesmie: dávka, ktorá je chronologicky ďalej,
-      // môže mať nižšie id, a `Math.max` by sa vrátil na staršiu pozíciu –
-      // ďalší dopyt by vracal tú istú dávku dokola a novšie odpovede by sa
-      // stali nedosiahnuteľnými.
-      //
-      // Kým sa nič nedonačítalo, siaha server po koniec náhľadu; potom platí
-      // koniec POSLEDNEJ dávky, ktorá je z definície pokračovaním za ním.
-      const fetched = replyReachRef.current.get(parentId);
-      if (fetched != null) return fetched;
-      return replies.length
-        ? replies[Math.min(replies.length, REPLIES_PREVIEW_LIMIT) - 1].id
-        : null;
-    },
-    [],
-  );
-
-  /**
    * Dotiahne ďalšiu dávku odpovedí jedného komentára.
    *
-   * Pokračuje od poslednej odpovede, ktorú už máme (`after`), takže sa nič
-   * nezduplikuje ani nevynechá; `mergeReplies` navyše zladí prekryv.
+   * Pokračuje od najstaršej odpovede, ktorú už máme (`after`), smerom
+   * k starším – nič sa nezduplikuje ani nevynechá; `mergeReplyBatch` navyše
+   * zladí prekryv.
    * Vracia `false` LEN pri zlyhaní požiadavky – volajúci (hľadanie
    * zvýrazneného komentára) sa podľa toho vie zastaviť.
    *
@@ -629,11 +579,6 @@ export default function FeedPostComments({
    * používateľ oň nežiadal. Klik na „Zobraziť ďalšie odpovede" je naopak
    * vedomá akcia, takže tam sa zlyhanie hlási.
    */
-  // Iný príspevok = iné vlákna; starý dosah by kotvil na cudzie id.
-  useEffect(() => {
-    replyReachRef.current = new Map();
-  }, [postId]);
-
   const loadMoreReplies = useCallback(
     async (parentId: number, options?: { silent?: boolean }) => {
       const parent = commentsRef.current.find(
@@ -643,19 +588,13 @@ export default function FeedPostComments({
       setLoadingRepliesFor(parentId);
       try {
         const page = await listFeedCommentReplies(postId, parentId, {
-          after: replyReach(parentId, loaded),
+          // Kotvou je NAJSTARŠIA načítaná odpoveď, teda koniec zoznamu.
+          // Sledovať „kam siaha server" už netreba: nové odpovede (vlastné aj
+          // cudzie) pribúdajú NAVRCH, takže pod kotvou nikdy nevznikne medzera.
+          after: loaded.length ? loaded[loaded.length - 1].id : null,
           pageSize: REPLIES_PAGE_SIZE,
         });
         markSeen(page.results);
-        if (page.results.length) {
-          // Dávka prichádza v poradí radenia a je pokračovaním za kotvou,
-          // takže jej POSLEDNÝ prvok je nová pozícia – priame priradenie,
-          // žiadne porovnávanie čísel s predošlou kotvou.
-          replyReachRef.current.set(
-            parentId,
-            page.results[page.results.length - 1].id,
-          );
-        }
         setComments((current) =>
           current.map((comment) =>
             comment.id === parentId
@@ -681,7 +620,7 @@ export default function FeedPostComments({
         setLoadingRepliesFor(null);
       }
     },
-    [postId, markSeen, replyReach],
+    [postId, markSeen],
   );
 
   /**
@@ -735,65 +674,54 @@ export default function FeedPostComments({
     // nie. Donačítaj ďalšiu dávku odpovedí; efekt sa po nej spustí znova, a ak
     // treba, dávky sa reťazia. Poistky sú tie isté ako pri stránkovaní
     // komentárov: spoločný strop pokusov a zastavenie pri zlyhaní.
-    const parentWithMissingReplies = comments.find((comment) => {
-      const loadedReplies = comment.replies ?? [];
-      if (loadedReplies.length >= (comment.replies_count ?? 0)) return false;
-      // Rozhoduje koniec SÚVISLÉHO úseku, nie posledná načítaná odpoveď:
-      // chýbajúce odpovede ležia práve za ním. Podľa poslednej načítanej by
-      // vlákno s medzerou (vlastná odpoveď na konci) vyšlo ako „už za cieľom"
-      // a cieľ v medzere by sa nikdy nenašiel.
-      const reach = replyReach(comment.id, loadedReplies) ?? 0;
-      return reach < highlightCommentId;
-    });
-    if (parentWithMissingReplies) {
-      if (highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES) {
-        highlightHandledRef.current = highlightCommentId;
-        return;
-      }
+    // Chýbajúce odpovede sú vždy tie STARŠIE pod načítanými, takže stačí
+    // vedieť, či vlákno ešte nie je dotiahnuté celé. Porovnávať id s cieľom
+    // netreba – smer je jednoznačný a medzera v zozname nevzniká.
+    const parentWithMissingReplies = comments.find(
+      (comment) =>
+        (comment.replies?.length ?? 0) < (comment.replies_count ?? 0),
+    );
+    if (
+      parentWithMissingReplies &&
+      highlightReplyPagesRef.current < HIGHLIGHT_MAX_PAGES
+    ) {
       if (loadingRepliesFor !== null) return;
-      highlightPagesRef.current += 1;
+      highlightReplyPagesRef.current += 1;
       highlightSeekingRef.current = true;
       // Ticho: hľadanie beží na pozadí, používateľ oň nežiadal.
       void loadMoreReplies(parentWithMissingReplies.id, { silent: true }).then(
         (ok) => {
           finishSeek();
-          if (!ok) highlightHandledRef.current = highlightCommentId;
+          // Zlyhanie zastaví ďalšie doťahovanie odpovedí (opakovaný pokus by
+          // pri výpadku siete len opakoval ten istý neúspech), ale hľadanie
+          // ako také nekončí – cieľ môže byť vrcholový komentár nižšie.
+          if (!ok) highlightReplyPagesRef.current = HIGHLIGHT_MAX_PAGES;
         },
       );
       return;
     }
+    // Vyčerpaný rozpočet odpovedí NIE JE koniec hľadania – pokračuje sa
+    // stránkovaním komentárov, ktoré má rozpočet vlastný.
 
-    // Zoznam je vzostupný: keď už je načítané id VYŠŠIE než hľadané, prešli
-    // sme okolo neho – komentár medzitým zanikol. Ďalšie stránkovanie by
-    // nepomohlo.
-    const highestLoaded = comments.length ? comments[comments.length - 1].id : 0;
-    const passedIt = highestLoaded > highlightCommentId;
-
-    // Cieľ je ZA načítaným koncom, ale server o ďalšej stránke nevie –
-    // typicky preto, že komentár vznikol až po poslednom načítaní. Raz sa
-    // spýtaj znova, ale KTOROU cestou závisí od veľkosti okna:
-    //  - do stropu: `refresh` pokryje celé okno aj to, čo pribudlo za ním,
-    //    takže cieľ dorazí rovno v odpovedi,
-    //  - nad stropom: taký dopyt sa už do jednej stránky nezmestí, preto sa
-    //    len znovu postaví kurzor a ďalej sa stránkuje cez `loadMore`.
+    // Cieľ nie je v okne. Keď je NOVŠÍ než čokoľvek načítané, leží nad ním –
+    // presne tam, kam sa pozerá dopyt bez kurzora, takže stačí raz obnoviť.
+    // (V starom, opačnom poradí pribúdali nové komentáre ZA koncom okna, a
+    // preto tu musel byť ešte druhý mechanizmus na znovupostavenie kurzora.)
     if (
-      !passedIt &&
       !hasMore &&
       !loadingMore &&
       highlightRefreshedRef.current !== highlightCommentId
     ) {
       highlightRefreshedRef.current = highlightCommentId;
       highlightSeekingRef.current = true;
-      const recheck =
-        comments.length > COMMENTS_MAX_POLL_SIZE ? reopenPagination : refresh;
-      void recheck()
+      void refresh()
         .catch(() => undefined)
         .finally(finishSeek);
       return;
     }
 
+    // Inak je STARŠÍ – donačítava sa smerom nadol, stránku po stránke.
     if (
-      passedIt ||
       !hasMore ||
       loadingMore ||
       highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES
@@ -812,7 +740,7 @@ export default function FeedPostComments({
       );
       if (
         !someThreadIncomplete &&
-        (passedIt || !hasMore || highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES)
+        (!hasMore || highlightPagesRef.current >= HIGHLIGHT_MAX_PAGES)
       ) {
         highlightHandledRef.current = highlightCommentId;
       }
@@ -843,30 +771,27 @@ export default function FeedPostComments({
     loadingMore,
     loadingRepliesFor,
     loadMoreReplies,
-    replyReach,
     finishSeek,
     seekTick,
     hasMore,
     loadMore,
     refresh,
-    reopenPagination,
   ]);
 
-  // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
+  // Keď sa používateľ dostane navrch sám, indikátor už nemá čo hlásiť.
   const handleListScroll = useCallback(() => {
     const node = scrollRef.current;
     if (!node) return;
-    const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
-    if (distanceToBottom <= NEAR_BOTTOM_PX) {
+    if (node.scrollTop <= NEAR_TOP_PX) {
       setNewCommentsCount((current) => (current === 0 ? current : 0));
     }
   }, []);
 
   const handleNewCommentsClick = useCallback(() => {
-    scrollToBottomRef.current = null;
-    scrollListToBottom('smooth');
+    scrollToTopRef.current = null;
+    scrollListToTop('smooth');
     setNewCommentsCount(0);
-  }, [scrollListToBottom]);
+  }, [scrollListToTop]);
 
   const trimmed = text.trim();
   const tooLong = text.length > FEED_COMMENT_MAX_LENGTH;
@@ -891,10 +816,12 @@ export default function FeedPostComments({
       // Zneplatní prebiehajúci load() – jeho odpoveď by tento komentár
       // prepísala stavom spred vytvorenia.
       loadSeqRef.current += 1;
-      // Najstarší prvý (poradie z BE) → nový ide na koniec. Vlastný komentár
-      // bez animácie: používateľ práve odoslal, čakať na dojazd nemá zmysel.
-      scrollToBottomRef.current = 'auto';
-      setComments((current) => [...current, created]);
+      // Najnovší prvý (poradie z BE) → vlastný komentár ide NAVRCH. Composer
+      // je pod zoznamom, takže pri dlhšom vlákne je vrch mimo dohľadu –
+      // pohľad sa tam dorovná bez animácie (používateľ práve odoslal, čakať
+      // na dojazd nemá zmysel).
+      scrollToTopRef.current = 'auto';
+      setComments((current) => [created, ...current]);
       // Vlastný komentár sa nesmie vrátiť ako „nový" v najbližšom polle.
       markSeen([created]);
       setText('');
@@ -964,7 +891,8 @@ export default function FeedPostComments({
           comment.id === parentId
             ? {
                 ...comment,
-                replies: [...(comment.replies ?? []), created],
+                // Najnovšia odpoveď je prvá – rovnaký smer ako komentáre.
+                replies: [created, ...(comment.replies ?? [])],
                 // Počet drží tlačidlo „Zobraziť odpovede (N)" – bez neho by
                 // sa vlastná odpoveď po zbalení už nedala otvoriť.
                 replies_count: repliesTotal(comment) + 1,
@@ -1194,30 +1122,19 @@ export default function FeedPostComments({
                     </ul>
                   ) : null}
 
-                  {/* TRETIA akcia, samostatná od „Odpovedať" aj „Zobraziť
-                      odpovede": objaví sa až po rozbalení a len keď je čo
-                      dotiahnuť. */}
+                  {/* Staršie odpovede sa dopĺňajú samy pri scrollovaní –
+                      žiadne tlačidlo. Sentinel patrí TOMUTO vláknu, takže
+                      viac rozbalených naraz sa navzájom nespúšťa. */}
                   {expandedReplies.has(comment.id) &&
                   (comment.replies?.length ?? 0) <
                     (comment.replies_count ?? 0) ? (
-                    <button
-                      type="button"
-                      onClick={() => void loadMoreReplies(comment.id)}
-                      disabled={loadingRepliesFor === comment.id}
-                      data-testid={`feed-comment-more-replies-${comment.id}`}
-                      className="ml-4 mt-2 pl-3 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:text-purple-700 hover:underline disabled:opacity-60 dark:text-gray-400 dark:hover:text-purple-300"
-                    >
-                      {loadingRepliesFor === comment.id
-                        ? t('common.loading', 'Načítavam...')
-                        : t('feed.repliesShowMore', 'Zobraziť ďalšie odpovede ({n})')
-                            .replace(
-                              '{n}',
-                              String(
-                                (comment.replies_count ?? 0) -
-                                  (comment.replies?.length ?? 0),
-                              ),
-                            )}
-                    </button>
+                    <FeedRepliesAutoLoader
+                      enabled={loadingRepliesFor !== comment.id}
+                      loading={loadingRepliesFor === comment.id}
+                      root={scrollRef}
+                      onLoadMore={() => void loadMoreReplies(comment.id)}
+                      testId={`feed-comment-replies-sentinel-${comment.id}`}
+                    />
                   ) : null}
 
                   {replyingTo === comment.id ? (

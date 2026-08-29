@@ -25,13 +25,17 @@ FEED_REPLIES_PREVIEW_LIMIT = 10
 
 
 class FeedCommentCursorPagination(CursorPagination):
-    """Cursor ako feed (konzistentné), ale chronologicky NAHOR – komentáre sa
-    čítajú od najstaršieho (vlákno), nové prichádzajú na koniec."""
+    """Cursor ako feed: NAJNOVŠIE HORE, staršie smerom dole.
+
+    Smer je zhodný s hlavným feedom, takže ``next`` znamená „staršie" – nové
+    komentáre pribúdajú na ZAČIATOK, teda presne tam, kam sa pozerá každé
+    načítanie bez kurzora (polling aj prvé otvorenie).
+    """
 
     page_size = 20
     page_size_query_param = "page_size"
     max_page_size = 50
-    ordering = ("created_at", "id")
+    ordering = ("-created_at", "-id")
     #: Nastaví view, keď sa celkový počet líši od stránkovaného querysetu.
     forced_total_count: int | None = None
 
@@ -113,7 +117,9 @@ def post_comments_queryset(post):
             _reply_rank=Window(
                 expression=RowNumber(),
                 partition_by=[F("parent_comment_id")],
-                order_by=[F("created_at").asc(), F("id").asc()],
+                # Náhľad ukazuje 10 NAJNOVŠÍCH odpovedí – rovnaký smer
+                # ako zoznam komentárov.
+                order_by=[F("created_at").desc(), F("id").desc()],
             )
         )
         .filter(_reply_rank__lte=FEED_REPLIES_PREVIEW_LIMIT)
@@ -126,7 +132,7 @@ def post_comments_queryset(post):
         )
         .select_related("author")
         .annotate(_likes_count=Count("likes"))
-        .order_by("created_at", "id"),
+        .order_by("-created_at", "-id"),
     )
     queryset = (
         FeedPostComment.objects.filter(post=post, parent_comment__isnull=True)

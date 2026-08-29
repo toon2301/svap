@@ -225,7 +225,7 @@ class FeedPostCommentsApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(FeedPostComment.objects.count(), 0)
 
-    def test_list_comments_chronologically_with_cursor(self):
+    def test_list_comments_newest_first_with_cursor(self):
         for index in range(3):
             FeedPostComment.objects.create(
                 post=self.post, author=self.commenter, text=f"Komentár {index}"
@@ -235,13 +235,14 @@ class FeedPostCommentsApiTests(APITestCase):
 
         self.assertEqual(first_page.status_code, status.HTTP_200_OK)
         texts = [item["text"] for item in first_page.data["results"]]
-        self.assertEqual(texts, ["Komentár 0", "Komentár 1"])  # najstarší prvý
+        self.assertEqual(texts, ["Komentár 2", "Komentár 1"])  # najnovší prvý
         # Anonym: can_delete False, autor payload prítomný.
         self.assertFalse(first_page.data["results"][0]["can_delete"])
 
+        # `next` vedie k STARŠÍM komentárom.
         second_page = self.client.get(first_page.data["next"])
         self.assertEqual(
-            [item["text"] for item in second_page.data["results"]], ["Komentár 2"]
+            [item["text"] for item in second_page.data["results"]], ["Komentár 0"]
         )
 
     def test_delete_own_comment(self):

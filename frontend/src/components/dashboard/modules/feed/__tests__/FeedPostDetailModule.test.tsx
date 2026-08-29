@@ -353,29 +353,45 @@ describe('FeedPostDetailModule – komentár mimo prvej stránky', () => {
     });
   });
 
-  it('stops paging when it has passed the target id', async () => {
+  it('stops at the end of the thread when the target no longer exists', async () => {
     const scrollIntoView = jest.fn();
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       value: scrollIntoView,
       configurable: true,
       writable: true,
     });
-    // Cieľ 7 medzitým zanikol – prvá stránka už siaha za neho.
+    // Cieľ 7 medzitým zanikol. Pri poradí „najnovšie hore" o tom prvá stránka
+    // nič nehovorí – cieľ môže byť medzi staršími, takže appka SPRÁVNE
+    // pokračuje nadol. Zastaviť sa má až na konci vlákna.
     mockSearchParams.get.mockImplementation((key: string) =>
       key === 'comment' ? '7' : null,
     );
-    mockedListComments.mockResolvedValue({
-      results: [comment(5, 'Piaty'), comment(9, 'Deviaty')],
-      next: 'http://api.test/c?after=9',
-      previous: null,
-      count: 20,
-    });
+    mockedListComments
+      .mockResolvedValueOnce({
+        results: [comment(9, 'Deviaty'), comment(8, 'Ôsmy')],
+        next: 'http://api.test/c?after=8',
+        previous: null,
+        count: 4,
+      })
+      // Posledná stránka – za ňou už nič nie je.
+      .mockResolvedValue({
+        results: [comment(6, 'Šiesty'), comment(5, 'Piaty')],
+        next: null,
+        previous: null,
+      });
 
     render(<FeedPostDetailModule postId={9} />);
     await screen.findByText('Deviaty');
 
-    // Ďalšie stránky by nepomohli – zoznam je vzostupný, cieľ sme prešli.
-    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(1));
+    // 1 počiatočné načítanie + 1 stránka nadol + 1 obnovenie (poistka „cieľ
+    // je novší, než čo máme"). Potom sa hľadanie vzdá.
+    // waitFor čaká na dosiahnutie čísla – pevné oneskorenie by pri pomalšom
+    // behu skončilo predčasne a test by prešiel bez toho, aby čokoľvek overil.
+    await waitFor(() => expect(mockedListComments).toHaveBeenCalledTimes(3));
+
+    // A na 3 aj ZOSTANE – bez zastavenia by stránkovanie bežalo ďalej.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(mockedListComments).toHaveBeenCalledTimes(3);
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 });
@@ -632,10 +648,13 @@ describe('FeedPostDetailModule – okno nad pollovacím stropom', () => {
         Number(query?.get('page_size') ?? params.pageSize ?? 20),
         50,
       );
-      const from = after === null ? 0 : store.findIndex((item) => item.id > after);
-      const slice = from < 0 ? [] : store.slice(from, from + size);
+      // Najnovšie hore; `next` vedie k STARŠÍM.
+      const ordered = [...store].sort((left, right) => right.id - left.id);
+      const from =
+        after === null ? 0 : ordered.findIndex((item) => item.id < after);
+      const slice = from < 0 ? [] : ordered.slice(from, from + size);
       const last = slice[slice.length - 1];
-      const hasNext = last ? store.indexOf(last) < store.length - 1 : false;
+      const hasNext = last ? ordered.indexOf(last) < ordered.length - 1 : false;
       return {
         results: slice,
         next: hasNext
@@ -647,10 +666,15 @@ describe('FeedPostDetailModule – okno nad pollovacím stropom', () => {
     });
   }
 
-  it('keeps seeking when the loaded window is longer than the poll cap', async () => {
-    // Regresia: vlákno je celé dočítané (55 komentárov, `hasMore` false),
-    // takže na nový komentár za koncom treba kurzor postaviť nanovo. Pod
-    // stropom to zvládne `refresh`, nad ním nie – a hľadanie sa vzdávalo.
+  it('finds a comment that arrived after the whole thread was read', async () => {
+    // Vlákno je celé dočítané (55 komentárov, `hasMore` false) a pribudne
+    // nový. Pri novom poradí leží NAVRCH, teda presne tam, kam sa pozerá
+    // dopyt bez kurzora – stačí jedno obnovenie.
+    //
+    // V starom poradí (najstaršie hore) pribúdal ZA koncom okna, a keď bolo
+    // okno dlhšie než pollovací strop, `refresh` ho nedosiahol; práve preto
+    // existoval `reopenPagination`, ktorý staval kurzor nanovo. Tento test
+    // dokazuje, že po otočení smeru tú istú situáciu zvládne jednoduchá cesta.
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       value: jest.fn(),
       configurable: true,
@@ -659,14 +683,14 @@ describe('FeedPostDetailModule – okno nad pollovacím stropom', () => {
     const store = Array.from({ length: 55 }, (_, i) => comment(i + 1, `K${i + 1}`));
     serve(store);
 
-    // Prvá notifikácia dočíta vlákno až na koniec.
+    // Prvá notifikácia dočíta vlákno až k najstaršiemu komentáru.
     mockSearchParams.get.mockImplementation((key: string) =>
-      key === 'comment' ? '55' : null,
+      key === 'comment' ? '1' : null,
     );
     const { rerender } = render(<FeedPostDetailModule postId={9} />);
     await waitFor(() =>
       expect(
-        document.querySelector('[data-comment-id="55"]')?.className,
+        document.querySelector('[data-comment-id="1"]')?.className,
       ).toContain('bg-purple-100/80'),
     );
 

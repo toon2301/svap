@@ -11,6 +11,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostComments from '../FeedPostComments';
+import { installFiringIntersectionObserver } from '../feedObserverTestUtils';
 import { COMMENTS_POLL_INTERVAL_MS } from '../useFeedCommentsPolling';
 import {
   listFeedCommentReplies,
@@ -98,10 +99,10 @@ function reply(id: number, text: string, parentId: number): FeedPostComment {
   } as FeedPostComment;
 }
 
-/** Náhľad: prvých 10 odpovedí, presne ako ich posiela backend. */
-function preview(parentId: number, from = 101): FeedPostComment[] {
+/** Náhľad: 10 NAJNOVŠÍCH odpovedí, presne ako ich posiela backend. */
+function preview(parentId: number, newest = 110): FeedPostComment[] {
   return Array.from({ length: 10 }, (_, i) =>
-    reply(from + i, `Odpoveď ${from + i}`, parentId),
+    reply(newest - i, `Odpoveď ${newest - i}`, parentId),
   );
 }
 
@@ -114,11 +115,25 @@ function page(results: FeedPostComment[], count?: number) {
   };
 }
 
+let observer: ReturnType<typeof installFiringIntersectionObserver>;
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockedReplies.mockReset();
   toastError.mockReset();
+  observer = installFiringIntersectionObserver();
 });
+
+afterEach(() => {
+  observer.restore();
+});
+
+/** Doscrollovanie na koniec vlákna – to spúšťa donačítanie starších. */
+async function reachReplySentinel(commentId: number) {
+  await act(async () => {
+    observer.fire(`feed-comment-replies-sentinel-${commentId}`);
+  });
+}
 
 // --- Časť B: zbalené vlákno -------------------------------------------------
 
@@ -211,12 +226,111 @@ describe('zbalené odpovede', () => {
 // --- Časť C: donačítanie zvyšku --------------------------------------------
 
 describe('donačítanie odpovedí', () => {
-  it('loads the rest from a separate action below the list', async () => {
+  it('offers a manual fallback only where IntersectionObserver is missing', async () => {
     mockedList.mockResolvedValue(
       page([comment(1, 'Hlavný', preview(1), 12)], 13),
     );
     mockedReplies.mockResolvedValue({
-      results: [reply(111, 'Jedenásta', 1), reply(112, 'Dvanásta', 1)],
+      results: [reply(100, 'Predposledná', 1), reply(99, 'Posledná', 1)],
+      next: null,
+      previous: null,
+    });
+    // Prostredie bez observera – sentinel sa nemá ako pretnúť.
+    observer.restore();
+    const original = (global as unknown as { IntersectionObserver: unknown })
+      .IntersectionObserver;
+    (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+      undefined;
+
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('Hlavný');
+      await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+      const fallback = await screen.findByTestId(
+        'feed-comment-replies-sentinel-1-fallback',
+      );
+      await userEvent.click(fallback);
+
+      expect(mockedReplies).toHaveBeenCalledWith(5, 1, {
+        after: 101,
+        pageSize: 10,
+      });
+      expect(await screen.findByText('Posledná')).toBeInTheDocument();
+    } finally {
+      (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+        original;
+    }
+  });
+
+  it('sends one request even when the sentinel fires repeatedly', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 30)], 31),
+    );
+    // Dávka nech visí – guard sa uvoľňuje až po jej dokončení.
+    let release: ((value: unknown) => void) | null = null;
+    mockedReplies.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve as (value: unknown) => void;
+        }) as ReturnType<typeof listFeedCommentReplies>,
+    );
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+    // Rýchle scrollovanie: tri pretnutia v jednom kole, ešte než sa stihne
+    // prekresliť `loading` z rodiča.
+    await act(async () => {
+      observer.fire('feed-comment-replies-sentinel-1');
+      observer.fire('feed-comment-replies-sentinel-1');
+      observer.fire('feed-comment-replies-sentinel-1');
+    });
+
+    expect(mockedReplies).toHaveBeenCalledTimes(1);
+
+    // Po dobehnutí dávky sa donačítavanie zase pustí.
+    await act(async () => {
+      release?.({
+        results: [reply(100, 'Staršia', 1)],
+        next: null,
+        previous: null,
+      });
+    });
+    await waitFor(() =>
+      expect(screen.getByText('Staršia')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      observer.fire('feed-comment-replies-sentinel-1');
+    });
+    await waitFor(() => expect(mockedReplies).toHaveBeenCalledTimes(2));
+  });
+
+  it('shows no button in a normal environment', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 12)], 13),
+    );
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+    // S observerom ostáva výhradne automatické donačítanie pri scrollovaní.
+    expect(
+      screen.getByTestId('feed-comment-replies-sentinel-1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('feed-comment-replies-sentinel-1-fallback'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('loads the older ones by itself when the reader reaches the end', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 12)], 13),
+    );
+    mockedReplies.mockResolvedValue({
+      results: [reply(100, 'Predposledná', 1), reply(99, 'Posledná', 1)],
       next: null,
       previous: null,
     });
@@ -224,30 +338,35 @@ describe('donačítanie odpovedí', () => {
     render(<FeedPostComments postId={5} />);
     await screen.findByText('Hlavný');
 
-    // Kým je vlákno zbalené, tretia akcia sa neponúka.
+    // Kým je vlákno zbalené, nie je čo donačítavať – sentinel neexistuje.
+    expect(
+      screen.queryByTestId('feed-comment-replies-sentinel-1'),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+    expect(
+      screen.getByTestId('feed-comment-replies-sentinel-1'),
+    ).toBeInTheDocument();
+    // Žiadne tlačidlo – doplní sa samo pri scrollovaní.
     expect(
       screen.queryByTestId('feed-comment-more-replies-1'),
     ).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
-    const more = screen.getByTestId('feed-comment-more-replies-1');
-    expect(more).toHaveTextContent('Zobraziť ďalšie odpovede (2)');
+    await reachReplySentinel(1);
 
-    await userEvent.click(more);
-
-    // Pokračuje sa PRESNE za poslednou doručenou odpoveďou.
+    // Pokračuje sa PRESNE za najstaršou doručenou odpoveďou.
     expect(mockedReplies).toHaveBeenCalledWith(5, 1, {
-      after: 110,
+      after: 101,
       pageSize: 10,
     });
-    expect(await screen.findByText('Dvanásta')).toBeInTheDocument();
-    expect(screen.getByText('Jedenásta')).toBeInTheDocument();
+    expect(await screen.findByText('Posledná')).toBeInTheDocument();
+    expect(screen.getByText('Predposledná')).toBeInTheDocument();
     // Náhľad ostáva – donačítané sa pridáva, nie nahrádza.
-    expect(screen.getByText('Odpoveď 101')).toBeInTheDocument();
-    // Po dobratí vlákna tlačidlo zmizne.
+    expect(screen.getByText('Odpoveď 110')).toBeInTheDocument();
+    // Po dobratí vlákna sentinel zmizne.
     await waitFor(() =>
       expect(
-        screen.queryByTestId('feed-comment-more-replies-1'),
+        screen.queryByTestId('feed-comment-replies-sentinel-1'),
       ).not.toBeInTheDocument(),
     );
   });
@@ -259,7 +378,7 @@ describe('donačítanie odpovedí', () => {
         page([comment(1, 'Hlavný', preview(1), 12)], 13),
       );
       mockedReplies.mockResolvedValue({
-        results: [reply(111, 'Jedenásta', 1), reply(112, 'Dvanásta', 1)],
+        results: [reply(100, 'Predposledná', 1), reply(99, 'Posledná', 1)],
         next: null,
         previous: null,
       });
@@ -269,20 +388,18 @@ describe('donačítanie odpovedí', () => {
       await act(async () => {
         screen.getByTestId('feed-comment-toggle-replies-1').click();
       });
-      await act(async () => {
-        screen.getByTestId('feed-comment-more-replies-1').click();
-      });
-      expect(await screen.findByText('Dvanásta')).toBeInTheDocument();
+      await reachReplySentinel(1);
+      expect(await screen.findByText('Posledná')).toBeInTheDocument();
 
       await act(async () => {
         jest.advanceTimersByTime(COMMENTS_POLL_INTERVAL_MS + 50);
       });
 
-      // Polling nesie len náhľad (prvých 10). Keby rodiča prepísal celého,
-      // používateľ by prišiel o to, čo si sám donačítal.
-      expect(screen.getByText('Dvanásta')).toBeInTheDocument();
-      expect(screen.getByText('Jedenásta')).toBeInTheDocument();
-      expect(screen.getByText('Odpoveď 101')).toBeInTheDocument();
+      // Polling nesie len náhľad (10 najnovších). Keby rodiča prepísal celého,
+      // používateľ by prišiel o staršie, ktoré si sám donačítal.
+      expect(screen.getByText('Posledná')).toBeInTheDocument();
+      expect(screen.getByText('Predposledná')).toBeInTheDocument();
+      expect(screen.getByText('Odpoveď 110')).toBeInTheDocument();
     } finally {
       jest.useRealTimers();
     }
@@ -297,14 +414,17 @@ describe('donačítanie odpovedí', () => {
     render(<FeedPostComments postId={5} />);
     await screen.findByText('Hlavný');
     await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
-    await userEvent.click(screen.getByTestId('feed-comment-more-replies-1'));
+    await reachReplySentinel(1);
 
-    // Klik je vedomá akcia – zlyhanie sa nesmie stratiť.
+    // Donačítanie pri scrollovaní je vedomé čítanie – zlyhanie sa nesmie
+    // stratiť (na rozdiel od hľadania z notifikácie, ktoré beží na pozadí).
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith('Odpovede sa nepodarilo načítať.'),
     );
-    // Tlačidlo ostáva, takže sa dá skúsiť znova.
-    expect(screen.getByTestId('feed-comment-more-replies-1')).toBeEnabled();
+    // Sentinel ostáva, takže sa dá skúsiť znova.
+    expect(
+      screen.getByTestId('feed-comment-replies-sentinel-1'),
+    ).toBeInTheDocument();
   });
 
   it('offers nothing more when the preview already covers the thread', async () => {
@@ -369,32 +489,32 @@ describe('zvýraznenie z notifikácie', () => {
     mockedList.mockResolvedValue(
       page([comment(1, 'Hlavný', preview(1), 15)], 16),
     );
-    // Server dáva po dvoch – cieľ (114) je až v druhej dávke.
+    // Server dáva po dvoch smerom k STARŠÍM – cieľ (98) je až v druhej dávke.
     mockedReplies
       .mockResolvedValueOnce({
-        results: [reply(111, 'Jedenásta', 1), reply(112, 'Dvanásta', 1)],
+        results: [reply(100, 'Stotina', 1), reply(99, 'Deväťdesiatdeviata', 1)],
         next: null,
         previous: null,
       })
       .mockResolvedValueOnce({
-        results: [reply(113, 'Trinásta', 1), reply(114, 'Štrnásta', 1)],
+        results: [reply(98, 'Hľadaná', 1), reply(97, 'Najstaršia', 1)],
         next: null,
         previous: null,
       });
 
-    render(<FeedPostComments postId={5} highlightCommentId={114} />);
+    render(<FeedPostComments postId={5} highlightCommentId={98} />);
 
-    expect(await screen.findByText('Štrnásta')).toBeInTheDocument();
-    await waitFor(() => expect(highlightClass(114)).toContain('bg-purple-100/80'));
+    expect(await screen.findByText('Hľadaná')).toBeInTheDocument();
+    await waitFor(() => expect(highlightClass(98)).toContain('bg-purple-100/80'));
     expect(scrollIntoView).toHaveBeenCalled();
     // Dve dávky, každá presne za predchádzajúcou – bez duplicít a bez dier.
     expect(mockedReplies).toHaveBeenCalledTimes(2);
     expect(mockedReplies).toHaveBeenNthCalledWith(1, 5, 1, {
-      after: 110,
+      after: 101,
       pageSize: 10,
     });
     expect(mockedReplies).toHaveBeenNthCalledWith(2, 5, 1, {
-      after: 112,
+      after: 99,
       pageSize: 10,
     });
   });
@@ -405,7 +525,7 @@ describe('zvýraznenie z notifikácie', () => {
     );
     mockedReplies.mockRejectedValue(new Error('sieť'));
 
-    render(<FeedPostComments postId={5} highlightCommentId={114} />);
+    render(<FeedPostComments postId={5} highlightCommentId={98} />);
     await screen.findByText('Hlavný');
 
     await waitFor(() => expect(mockedReplies).toHaveBeenCalledTimes(1));
