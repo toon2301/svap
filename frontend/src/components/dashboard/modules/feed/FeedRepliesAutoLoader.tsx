@@ -19,7 +19,7 @@
  * používa v `useFeedInfiniteScroll` aj `useCardInViewport`.
  */
 
-import { useEffect, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 
@@ -48,8 +48,32 @@ export default function FeedRepliesAutoLoader({
     setObserverMissing(typeof IntersectionObserver === 'undefined');
   }, []);
 
+  /**
+   * Prebieha už dávka? Ref, nie stav: pri rýchlom scrollovaní sa observer
+   * stihne pretnúť viackrát v tom istom kole, ešte než sa `loading` z rodiča
+   * vôbec prekreslí – a každé pretnutie by poslalo dopyt s tou istou kotvou.
+   * Rovnaký dôvod aj rovnaký vzor ako `loadingMoreRef` v hlavnom zozname.
+   */
+  const requestedRef = useRef(false);
+
+  // Uvoľní sa v prvom prekreslení, v ktorom už dávka nebeží. Zámerne BEZ
+  // zoznamu závislostí: keď odpoveď dorazí rýchlo, React stihne `loading`
+  // zdvihnúť aj zhodiť v jednom kole a efekt viazaný na jeho zmenu by sa
+  // nespustil vôbec – guard by ostal navždy zdvihnutý a vlákno by sa už
+  // nikdy nedonačítalo. Sériu pretnutí v jednom kole to neohrozí: medzi nimi
+  // sa nič neprekresľuje.
+  useEffect(() => {
+    if (!loading) requestedRef.current = false;
+  });
+
+  const requestMore = useCallback(() => {
+    if (requestedRef.current) return;
+    requestedRef.current = true;
+    onLoadMore();
+  }, [onLoadMore]);
+
   const sentinelRef = useInfiniteScrollSentinel({
-    onIntersect: onLoadMore,
+    onIntersect: requestMore,
     enabled,
     root,
     // Rovnaká predsávka ako pri komentároch – v nízkom boxe by 400px z hlavného
@@ -62,7 +86,7 @@ export default function FeedRepliesAutoLoader({
       {observerMissing && !loading ? (
         <button
           type="button"
-          onClick={onLoadMore}
+          onClick={requestMore}
           disabled={!enabled}
           data-testid={`${testId}-fallback`}
           className="mt-2 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:text-purple-700 hover:underline disabled:opacity-60 dark:text-gray-400 dark:hover:text-purple-300"

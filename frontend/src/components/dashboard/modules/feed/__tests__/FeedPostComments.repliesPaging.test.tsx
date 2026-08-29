@@ -263,6 +263,50 @@ describe('donačítanie odpovedí', () => {
     }
   });
 
+  it('sends one request even when the sentinel fires repeatedly', async () => {
+    mockedList.mockResolvedValue(
+      page([comment(1, 'Hlavný', preview(1), 30)], 31),
+    );
+    // Dávka nech visí – guard sa uvoľňuje až po jej dokončení.
+    let release: ((value: unknown) => void) | null = null;
+    mockedReplies.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve as (value: unknown) => void;
+        }) as ReturnType<typeof listFeedCommentReplies>,
+    );
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Hlavný');
+    await userEvent.click(screen.getByTestId('feed-comment-toggle-replies-1'));
+
+    // Rýchle scrollovanie: tri pretnutia v jednom kole, ešte než sa stihne
+    // prekresliť `loading` z rodiča.
+    await act(async () => {
+      observer.fire('feed-comment-replies-sentinel-1');
+      observer.fire('feed-comment-replies-sentinel-1');
+      observer.fire('feed-comment-replies-sentinel-1');
+    });
+
+    expect(mockedReplies).toHaveBeenCalledTimes(1);
+
+    // Po dobehnutí dávky sa donačítavanie zase pustí.
+    await act(async () => {
+      release?.({
+        results: [reply(100, 'Staršia', 1)],
+        next: null,
+        previous: null,
+      });
+    });
+    await waitFor(() =>
+      expect(screen.getByText('Staršia')).toBeInTheDocument(),
+    );
+    await act(async () => {
+      observer.fire('feed-comment-replies-sentinel-1');
+    });
+    await waitFor(() => expect(mockedReplies).toHaveBeenCalledTimes(2));
+  });
+
   it('shows no button in a normal environment', async () => {
     mockedList.mockResolvedValue(
       page([comment(1, 'Hlavný', preview(1), 12)], 13),
