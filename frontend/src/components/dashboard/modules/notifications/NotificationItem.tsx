@@ -175,6 +175,8 @@ export default function NotificationItem({
           ? t('notifications.feedPostSharedTitle', 'Zdieľanie tvojho obsahu')
         : notification.type === 'feed_post_comment_liked'
           ? t('notifications.feedPostCommentLikedTitle', 'Páči sa mi tvoj komentár')
+        : notification.type === 'feed_post_comment_replied'
+          ? t('notifications.feedPostCommentRepliedTitle', 'Odpoveď na komentár')
           : notification.title || t('notifications.genericTitle', 'Nové upozornenie');
 
   const body =
@@ -293,6 +295,11 @@ export default function NotificationItem({
           ? t(
               'notifications.feedPostCommentLikedBody',
               '{name} lajkol tvoj komentár.',
+            ).replace('{name}', () => actorName)
+        : notification.type === 'feed_post_comment_replied'
+          ? t(
+              'notifications.feedPostCommentRepliedBody',
+              '{name} odpovedal na tvoj komentár.',
             ).replace('{name}', () => actorName)
         : notification.body ||
           t('notifications.genericBody', 'Otvorte upozornenie pre viac detailov.');

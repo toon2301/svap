@@ -23,6 +23,7 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { translateFeedActionError } from './feedActionErrors';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
@@ -38,6 +39,11 @@ import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
+import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
+import {
+  emitFeedPostCounts,
+  onFeedPostCounts,
+} from './feedPostCountEvents';
 import FeedAnchoredMenu from './FeedAnchoredMenu';
 import FeedPostCaption from './FeedPostCaption';
 import FeedPostEditModal from './FeedPostEditModal';
@@ -338,8 +344,18 @@ export default function FeedPostCard({
   onShared,
   onSelfTagRemoved,
   onDeleted,
+  variant = 'card',
+  commentsCount: commentsCountOverride,
 }: {
   post: FeedPost;
+  /**
+   * `card` = dlaždica vo feede (vlastný rám, komentáre sa rozbaľujú v nej).
+   * `detail` = vnútrajšok okna detailu: bez rámu a BEZ komentárovej sekcie –
+   * tú si okno vykresľuje samo v scrollovateľnej časti.
+   */
+  variant?: 'card' | 'detail';
+  /** V okne drží počet komentárov okno (má ich pod sebou), nie karta. */
+  commentsCount?: number;
   /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
   initialCommentsOpen?: boolean;
   /** Komentár z notifikácie – sekcia naň doscrolluje a zvýrazní ho. */
@@ -355,6 +371,7 @@ export default function FeedPostCard({
   onDeleted?: (postId: number) => void;
 }) {
   const { t, locale } = useLanguage();
+  const isMobile = useIsMobile();
   const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
@@ -425,6 +442,15 @@ export default function FeedPostCard({
   const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // V okne detailu drží počet okno (komentáre sú pod kartou, nie v nej);
+  // vlastný stav karty pritom beží ďalej, takže po zatvorení okna nič nechýba.
+  const shownCommentsCount = commentsCountOverride ?? commentsCount;
+  const isDetail = variant === 'detail';
+  // Kontext chýba mimo dashboardu (napr. samostatne vykreslená karta) – vtedy
+  // ostáva pôvodné správanie: komentáre sa rozbalia priamo v karte.
+  const postOverlay = useFeedPostOverlay();
+  // Okno je DESKTOPOVÁ náhrada rozbaľovania; mobil ostáva nezmenený.
+  const opensOverlay = Boolean(postOverlay) && !isMobile && !isDetail;
   const [commentsOpen, setCommentsOpen] = useState(initialCommentsOpen);
   const [menuOpen, setMenuOpen] = useState(false);
   // Pozícia spúšťača v okne – menu sa kreslí portálom, takže si ju musí niesť.
@@ -483,8 +509,16 @@ export default function FeedPostCard({
     const previousLiked = isLiked;
     const previousCount = likesCount;
     const nextLiked = !previousLiked;
+    const optimisticCount = Math.max(0, previousCount + (nextLiked ? 1 : -1));
     setIsLiked(nextLiked);
-    setLikesCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
+    setLikesCount(optimisticCount);
+    // Druhá karta toho istého príspevku (feed pod oknom detailu) má prebliknúť
+    // spolu s touto, nie až po odpovedi servera.
+    emitFeedPostCounts({
+      postId: post.id,
+      likesCount: optimisticCount,
+      isLikedByMe: nextLiked,
+    });
 
     try {
       const payload = nextLiked
@@ -493,9 +527,19 @@ export default function FeedPostCard({
       // Zosúlaď s pravdou zo servera (iný divák mohol medzitým lajknúť tiež).
       setIsLiked(payload.is_liked_by_me);
       setLikesCount(payload.likes_count);
+      emitFeedPostCounts({
+        postId: post.id,
+        likesCount: payload.likes_count,
+        isLikedByMe: payload.is_liked_by_me,
+      });
     } catch (err) {
       setIsLiked(previousLiked);
       setLikesCount(previousCount);
+      emitFeedPostCounts({
+        postId: post.id,
+        likesCount: previousCount,
+        isLikedByMe: previousLiked,
+      });
       toast.error(translateFeedActionError(t, err));
     } finally {
       likePendingRef.current = false;
@@ -527,6 +571,24 @@ export default function FeedPostCard({
   }, [post.id]);
 
   useFeedCommentsPolling({ enabled: inViewport, onPoll: refreshCounts });
+
+  // Počty z inej karty toho istého príspevku (typicky okno detailu nad
+  // feedom). Vlastný prebiehajúci lajk má prednosť – rovnaká zásada ako pri
+  // pollovaní, inak by sa čerstvé kliknutie prepísalo starším číslom.
+  useEffect(
+    () =>
+      onFeedPostCounts((patch) => {
+        if (patch.postId !== post.id) return;
+        if (!likePendingRef.current) {
+          if (patch.likesCount !== undefined) setLikesCount(patch.likesCount);
+          if (patch.isLikedByMe !== undefined) setIsLiked(patch.isLikedByMe);
+        }
+        if (patch.commentsCount !== undefined) {
+          setCommentsCount(patch.commentsCount);
+        }
+      }),
+    [post.id],
+  );
 
   // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
   // zobrazí dvakrát pod sebou (hlavička + vnorený náhľad), čo pôsobí ako chyba.
@@ -590,10 +652,17 @@ export default function FeedPostCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
       className={[
-        'overflow-hidden rounded-2xl border shadow-sm',
-        isShared
+        // Na mobile ide karta od kraja po kraj, takže zaoblenie nemá čo
+        // ohraničovať – od `sm:` (kde má karta bočné okraje) ostáva pôvodné.
+        // V okne detailu rám nekreslíme vôbec – má ho samotné okno.
+        isDetail
+          ? 'overflow-hidden'
+          : 'overflow-hidden rounded-none border shadow-sm sm:rounded-2xl',
+        isShared && !isDetail
           ? SHARED_CARD_SURFACE
-          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202223]',
+          : isDetail
+            ? ''
+            : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202223]',
       ].join(' ')}
     >
       {isShared ? (
@@ -609,7 +678,13 @@ export default function FeedPostCard({
         </div>
       ) : null}
 
-      <header className="flex items-center gap-3 px-4 pb-3 pt-3">
+      {/* V okne detailu sedí vpravo hore ešte jeho vlastné „X". Bez miesta
+          navyše by prekrylo „..." menu karty – oboje má byť dosiahnuteľné. */}
+      <header
+        className={`flex items-center gap-3 px-4 pb-3 pt-3 ${
+          isDetail ? 'pr-12' : ''
+        }`}
+      >
         <InitialsAvatar
           name={authorName}
           avatarUrl={post.author?.avatar_url}
@@ -724,6 +799,11 @@ export default function FeedPostCard({
         <FeedPostImageCarousel
           images={images}
           alt={t('feed.imageAlt', 'Fotka príspevku')}
+          // Vo feede klik na fotku otvára okno detailu; v samotnom okne už
+          // otvorí fullscreen prehliadač (vrstvu nad ním).
+          onPhotoClick={
+            opensOverlay ? () => postOverlay?.open({ postId: post.id }) : undefined
+          }
         />
       ) : null}
 
@@ -808,9 +888,15 @@ export default function FeedPostCard({
 
         <ActionButton
           label={t('feed.comments', 'Komentáre')}
-          count={commentsCount}
+          count={shownCommentsCount}
           active={commentsOpen}
-          onClick={() => setCommentsOpen((open) => !open)}
+          onClick={() => {
+            if (opensOverlay) {
+              postOverlay?.open({ postId: post.id });
+              return;
+            }
+            setCommentsOpen((open) => !open);
+          }}
           testId="feed-comments-button"
         >
           <svg
@@ -834,7 +920,7 @@ export default function FeedPostCard({
         </ActionButton>
       </footer>
 
-      {commentsOpen ? (
+      {commentsOpen && !isDetail ? (
         <FeedPostComments
           highlightCommentId={highlightCommentId}
           postId={post.id}

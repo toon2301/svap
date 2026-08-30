@@ -36,6 +36,14 @@ import type { FeedPostImage } from '@/lib/feedApi';
 type FeedPostImageCarouselProps = {
   images: FeedPostImage[];
   alt: string;
+  /**
+   * Prepíše, čo sa stane po kliknutí na fotku.
+   *
+   * Vo feede otvára klik OKNO DETAILU (fotka je vstup do príspevku, nie do
+   * galérie); bez tejto funkcie ostáva pôvodné správanie – fullscreen
+   * prehliadač priamo, čo platí práve vnútri okna detailu.
+   */
+  onPhotoClick?: () => void;
 };
 
 /** Jednotná výška médiovej plochy – nič sa neoreže, dopĺňa sa rozmazaním. */
@@ -91,6 +99,7 @@ function Slide({
 export default function FeedPostImageCarousel({
   images,
   alt,
+  onPhotoClick,
 }: FeedPostImageCarouselProps) {
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
@@ -114,11 +123,15 @@ export default function FeedPostImageCarousel({
 
   const openLightbox = useCallback(
     (image: FeedPostImage) => {
+      if (onPhotoClick) {
+        onPhotoClick();
+        return;
+      }
       const at = viewable.findIndex((candidate) => candidate.id === image.id);
       if (at < 0) return;
       setLightboxIndex(at);
     },
-    [viewable],
+    [viewable, onPhotoClick],
   );
 
   const lightbox = (

@@ -151,8 +151,20 @@ describe.each(MOBILE_WIDTHS)('šírka %ipx', (width) => {
     // od desktopu vracia – rozloženie nad `sm` sa teda nemení.
     expect(list.className).toContain('-mx-4');
     expect(list.className).toContain('sm:mx-0');
-    // Zvislé rozostupy medzi príspevkami ostávajú.
-    expect(list.className).toContain('space-y-4');
+    // Zvislé rozostupy: na mobile tesnejšie, na desktope pôvodné.
+    expect(list.className).toContain('space-y-3');
+    expect(list.className).toContain('sm:space-y-4');
+  });
+
+  it('squares off the card corners on mobile only', async () => {
+    render(<FeedList />);
+
+    await screen.findByTestId('feed-list');
+    const card = screen.getAllByTestId('feed-post-card')[0];
+    // Karta ide od kraja po kraj, takže zaoblenie na mobile nemá čo ohraničovať.
+    expect(card.className).toContain('rounded-none');
+    // Na desktope ostáva pôvodné zaoblenie.
+    expect(card.className).toContain('sm:rounded-2xl');
   });
 
   it('keeps the card content padded away from the screen edge', async () => {
@@ -176,7 +188,8 @@ describe.each(MOBILE_WIDTHS)('šírka %ipx', (width) => {
     const list = await screen.findByTestId('profile-feed-list-posts');
     expect(list.className).toContain('-mx-4');
     expect(list.className).toContain('sm:mx-0');
-    expect(list.className).toContain('space-y-4');
+    expect(list.className).toContain('space-y-3');
+    expect(list.className).toContain('sm:space-y-4');
   });
 });
 
@@ -196,6 +209,7 @@ it('uses the same full-bleed width while the feed is still loading', async () =>
   const skeleton = await screen.findByTestId('feed-initial-loading');
   expect(skeleton.className).toContain('-mx-4');
   expect(skeleton.className).toContain('sm:mx-0');
+  expect(skeleton.className).toContain('space-y-3');
 
   release?.({ results: [makePost(1)], next: null, previous: null });
   await waitFor(() => expect(screen.getByTestId('feed-list')).toBeInTheDocument());

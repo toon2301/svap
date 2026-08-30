@@ -112,7 +112,7 @@ function ProfileFeedList({
   if (loading) {
     return (
       <div
-        className="-mx-4 mt-4 space-y-4 sm:mx-0"
+        className="-mx-4 mt-4 space-y-3 sm:mx-0 sm:space-y-4"
         data-testid="profile-feed-loading"
       >
         <FeedCardSkeleton />
@@ -147,7 +147,7 @@ function ProfileFeedList({
   return (
     // Rovnaké plnošírkové správanie ako vo feede – karta je ten istý komponent.
     <div
-      className="-mx-4 mt-4 space-y-4 sm:mx-0"
+      className="-mx-4 mt-4 space-y-3 sm:mx-0 sm:space-y-4"
       data-testid={`profile-feed-list-${tab}`}
     >
       {posts.map((post) => (

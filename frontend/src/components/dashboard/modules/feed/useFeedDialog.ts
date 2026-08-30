@@ -14,6 +14,10 @@
 
 import { useEffect, useRef } from 'react';
 import { useModalFocusTrap } from '../profile/useModalFocusTrap';
+import {
+  isTopOverlayLayer,
+  pushOverlayLayer,
+} from '../shared/overlayLayers';
 
 type UseFeedDialogOptions = {
   open: boolean;
@@ -37,10 +41,29 @@ export function useFeedDialog({
   // Uloženie/obnova fokusu + Tab trap z existujúceho hooku appky.
   useModalFocusTrap(open, containerRef);
 
+  // Poradie vrstiev. Dialógy sa dajú otvárať jeden nad druhým (napr. zoznam
+  // lajkov nad oknom detailu príspevku) a všetky počúvajú Escape na `window`,
+  // takže sa navzájom nedajú zastaviť cez `stopPropagation`. Register určí,
+  // ktorý z nich stlačenie patrí.
+  const layerRef = useRef<symbol | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const layer = pushOverlayLayer();
+    layerRef.current = layer.id;
+    return () => {
+      layer.release();
+      layerRef.current = null;
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      // Register sa číta až tu: vrchná vrstva sa mení počas života dialógu a
+      // hodnota v stave by v tej istej udalosti bola ešte stará (React
+      // prekreslí až po dobehnutí listenerov).
+      if (!isTopOverlayLayer(layerRef.current)) return;
       if (!canCloseRef.current) return;
       event.stopPropagation();
       onCloseRef.current();

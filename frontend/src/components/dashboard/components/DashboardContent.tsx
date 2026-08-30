@@ -57,6 +57,15 @@ import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
+import {
+  FeedPostOverlayProvider,
+  type FeedPostOverlayTarget,
+} from '../contexts/FeedPostOverlayContext';
+import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
+import {
+  buildFeedPostPath,
+  parseFeedPostTargetUrl,
+} from '../modules/feed/feedPostRouting';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
 
 interface DashboardContentProps {
@@ -605,6 +614,52 @@ export default function DashboardContent({
     desktopOnboardingSkillCreatedHandlerRef.current = handler;
   }, []);
 
+  // --- Okno detailu prispevku -------------------------------------------
+  // Vrstva nad appkou: URL sa meni cez `history.pushState`, teda BEZ Next
+  // navigacie, takze sa nic pod oknom neodmountuje ani nestrati scroll.
+  const [feedOverlayTarget, setFeedOverlayTarget] =
+    useState<FeedPostOverlayTarget | null>(null);
+  // URL spred otvorenia - po zavreti sa appka vrati presne na nu.
+  const feedOverlayReturnUrlRef = useRef<string | null>(null);
+
+  const handleFeedOverlayTargetChange = useCallback(
+    (target: FeedPostOverlayTarget | null) => {
+      setFeedOverlayTarget(target);
+      if (typeof window === 'undefined') return;
+      try {
+        if (target) {
+          if (feedOverlayReturnUrlRef.current === null) {
+            feedOverlayReturnUrlRef.current =
+              window.location.pathname + window.location.search;
+          }
+          window.history.pushState(
+            null,
+            '',
+            buildFeedPostPath(target.postId, target.highlightCommentId),
+          );
+          return;
+        }
+        const returnUrl = feedOverlayReturnUrlRef.current;
+        feedOverlayReturnUrlRef.current = null;
+        if (returnUrl) window.history.pushState(null, '', returnUrl);
+      } catch {
+        // URL je pohodlie (obnovenie, priamy odkaz); okno funguje aj bez nej.
+      }
+    },
+    [],
+  );
+
+  // Tlacidlo spat v prehliadaci zavrie okno namiesto navigacie prec.
+  useEffect(() => {
+    if (!feedOverlayTarget || typeof window === 'undefined') return;
+    const handlePopState = () => {
+      feedOverlayReturnUrlRef.current = null;
+      setFeedOverlayTarget(null);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [feedOverlayTarget]);
+
   const handleNotificationsPanelClose = useCallback(() => {
     setIsNotificationsPanelOpen(false);
   }, []);
@@ -612,6 +667,19 @@ export default function DashboardContent({
   const handleNotificationNavigate = useCallback(
     (targetUrl: string) => {
       if (targetUrl !== '/dashboard' && !targetUrl.startsWith('/dashboard/')) {
+        return;
+      }
+
+      // Feedove notifikacie (lajk, komentar, odpoved, oznacenie, zdielanie)
+      // vedu na `/dashboard/feed/<id>`. Na DESKTOPE ich otvori okno nad
+      // appkou - pouzivatel tak nepride o to, kde prave bol. Mobil ostava
+      // pri celoobrazovkovej stranke.
+      const feedTarget = parseFeedPostTargetUrl(targetUrl);
+      if (feedTarget && !isMobile) {
+        setIsNotificationsPanelOpen(false);
+        setIsSearchOpen(false);
+        setIsMobileMenuOpen(false);
+        handleFeedOverlayTargetChange(feedTarget);
         return;
       }
 
@@ -685,6 +753,8 @@ export default function DashboardContent({
       setViewedUserSlug,
       setViewedUserSummary,
       highlighting,
+      handleFeedOverlayTargetChange,
+      isMobile,
     ],
   );
 
@@ -952,10 +1022,22 @@ export default function DashboardContent({
   }, [portfolioItemIdFromPath, setActiveModule]);
 
   useEffect(() => {
-    if (feedPostIdFromPath != null) {
-      setActiveModule('feed-post-detail');
+    // Kym je otvorene okno, URL ukazuje na prispevok ZAMERNE - prepnutie
+    // modulu by odmountovalo to, nad cim okno lezi (presne to, comu sa
+    // vyhybame). Celoobrazovkova stranka ostava pre priamy vstup.
+    if (feedPostIdFromPath == null || feedOverlayTarget) return;
+    // `usePathname()` sa po vlastnom `pushState` dorovnava az v transition,
+    // takze hned po zavreti okna este vracia cestu prispevku, hoci realna
+    // adresa uz je spat. Bez tejto kontroly by sa prave vtedy appka pod oknom
+    // vymenila za celoobrazovkovu stranku - presne to, comu sa vyhybame.
+    if (
+      typeof window !== 'undefined' &&
+      !parseFeedPostTargetUrl(window.location.pathname)
+    ) {
+      return;
     }
-  }, [feedPostIdFromPath, setActiveModule]);
+    setActiveModule('feed-post-detail');
+  }, [feedPostIdFromPath, setActiveModule, feedOverlayTarget]);
 
   useEffect(() => {
     if (portfolioCreateMatch) {
@@ -1414,6 +1496,7 @@ export default function DashboardContent({
       acknowledgeNotificationsBadge={activeModule === 'notifications' || isNotificationsPanelOpen}
       acknowledgeMessagesBadge={activeModule === 'messages'}
     >
+      <FeedPostOverlayProvider onTargetChange={handleFeedOverlayTargetChange}>
       <DesktopOnboardingProvider
         activeModule={activeModule}
         isSearchOpen={isSearchOpen}
@@ -1588,6 +1671,16 @@ export default function DashboardContent({
         onConfirm={handleConfirmDeleteOwnProfileOffer}
         isDeleting={isDeletingOwnProfileOffer}
       />
+      {/* Okno lezi NAD celou appkou a mountuje sa az pri otvoreni, takze
+          zavretim sa vrati presne povodny stav pod nim. */}
+      {feedOverlayTarget ? (
+        <FeedPostDetailOverlay
+          postId={feedOverlayTarget.postId}
+          highlightCommentId={feedOverlayTarget.highlightCommentId ?? null}
+          onClose={() => handleFeedOverlayTargetChange(null)}
+        />
+      ) : null}
+      </FeedPostOverlayProvider>
     </RequestsNotificationsProvider>
   );
 }
