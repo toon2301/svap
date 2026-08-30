@@ -66,6 +66,11 @@ import {
   buildFeedPostPath,
   parseFeedPostTargetUrl,
 } from '../modules/feed/feedPostRouting';
+import {
+  forgetFeedOverlayHistory,
+  popFeedOverlayHistory,
+  pushFeedOverlayHistory,
+} from '../modules/feed/feedOverlayHistory';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
 
 interface DashboardContentProps {
@@ -615,36 +620,23 @@ export default function DashboardContent({
   }, []);
 
   // --- Okno detailu prispevku -------------------------------------------
-  // Vrstva nad appkou: URL sa meni cez `history.pushState`, teda BEZ Next
-  // navigacie, takze sa nic pod oknom neodmountuje ani nestrati scroll.
+  // Vrstva nad appkou: URL sa meni cez history API, teda BEZ Next navigacie,
+  // takze sa nic pod oknom neodmountuje ani nestrati scroll. Otvorenie prida
+  // presne jeden zaznam historie a zatvorenie ho odoberie - detaily aj s
+  // odovodnenim su vo `feedOverlayHistory`.
   const [feedOverlayTarget, setFeedOverlayTarget] =
     useState<FeedPostOverlayTarget | null>(null);
-  // URL spred otvorenia - po zavreti sa appka vrati presne na nu.
-  const feedOverlayReturnUrlRef = useRef<string | null>(null);
 
   const handleFeedOverlayTargetChange = useCallback(
     (target: FeedPostOverlayTarget | null) => {
       setFeedOverlayTarget(target);
-      if (typeof window === 'undefined') return;
-      try {
-        if (target) {
-          if (feedOverlayReturnUrlRef.current === null) {
-            feedOverlayReturnUrlRef.current =
-              window.location.pathname + window.location.search;
-          }
-          window.history.pushState(
-            null,
-            '',
-            buildFeedPostPath(target.postId, target.highlightCommentId),
-          );
-          return;
-        }
-        const returnUrl = feedOverlayReturnUrlRef.current;
-        feedOverlayReturnUrlRef.current = null;
-        if (returnUrl) window.history.pushState(null, '', returnUrl);
-      } catch {
-        // URL je pohodlie (obnovenie, priamy odkaz); okno funguje aj bez nej.
+      if (target) {
+        pushFeedOverlayHistory(
+          buildFeedPostPath(target.postId, target.highlightCommentId),
+        );
+        return;
       }
+      popFeedOverlayHistory();
     },
     [],
   );
@@ -653,7 +645,8 @@ export default function DashboardContent({
   useEffect(() => {
     if (!feedOverlayTarget || typeof window === 'undefined') return;
     const handlePopState = () => {
-      feedOverlayReturnUrlRef.current = null;
+      // Zaznam okna prave zmizol - zatvorenie uz nema co odoberat.
+      forgetFeedOverlayHistory();
       setFeedOverlayTarget(null);
     };
     window.addEventListener('popstate', handlePopState);

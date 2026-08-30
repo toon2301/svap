@@ -72,11 +72,14 @@ function Slide({
   image,
   alt,
   onOpen,
+  opensPostDetail,
 }: {
   image: FeedPostImage;
   alt: string;
   /** Chýba pri fotke bez URL – rozpracovanú nie je čo otvárať. */
   onOpen?: () => void;
+  /** Klik vedie do detailu príspevku, nie do fullscreen prehliadača fotky. */
+  opensPostDetail?: boolean;
 }) {
   const { t } = useLanguage();
   const src = imageSrc(image);
@@ -87,9 +90,17 @@ function Slide({
     <button
       type="button"
       onClick={onOpen}
-      aria-label={t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')}
+      // Popis aj kurzor musia sedieť s tým, čo sa naozaj stane: vo feede klik
+      // otvára detail príspevku, nie fotku na celú obrazovku.
+      aria-label={
+        opensPostDetail
+          ? t('feed.imageOpenPostDetail', 'Otvoriť detail príspevku')
+          : t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')
+      }
       data-testid={`feed-image-open-${image.id}`}
-      className="block h-full w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+      className={`block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
+        opensPostDetail ? 'cursor-pointer' : 'cursor-zoom-in'
+      }`}
     >
       {media}
     </button>
@@ -185,6 +196,7 @@ export default function FeedPostImageCarousel({
             image={active}
             alt={alt}
             onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
+            opensPostDetail={Boolean(onPhotoClick)}
           />
         </div>
         {rejectedNote}
@@ -216,6 +228,7 @@ export default function FeedPostImageCarousel({
           image={active}
           alt={`${alt} (${index + 1}/${total})`}
           onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
+          opensPostDetail={Boolean(onPhotoClick)}
         />
 
         <button

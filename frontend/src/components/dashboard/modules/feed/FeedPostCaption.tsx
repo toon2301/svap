@@ -32,15 +32,32 @@ const CLAMP_CLASS = 'line-clamp-3';
  */
 const OVERFLOW_TOLERANCE_PX = 1;
 
+/**
+ * Strop rozbaleného textu v okne detailu – štvrtina výšky obrazovky, aby sa
+ * pod text vždy zmestili akcie aj komentáre. Píše sa doslova z rovnakého
+ * dôvodu ako `CLAMP_CLASS` (Tailwind hľadá v zdroji celé názvy tried).
+ */
+const BOUNDED_EXPANDED_CLASS = 'max-h-[25vh] overflow-y-auto';
+
 type FeedPostCaptionProps = {
   text: string;
   /** Kvôli testom a prípadnému druhému výskytu na tej istej obrazovke. */
   testId?: string;
+  /**
+   * Rozbalený text dostane vlastný ohraničený rámik a scrolluje sa v ňom.
+   *
+   * V okne detailu je text súčasťou PEVNÉHO bloku nad komentármi. Bez stropu
+   * by dosť dlhý rozbalený text vytlačil riadok akcií aj komentáre mimo
+   * orezanú plochu okna, kam sa nedá doscrollovať. Na karte vo feede strop
+   * netreba – tam sa stránka jednoducho predĺži.
+   */
+  boundedExpansion?: boolean;
 };
 
 export default function FeedPostCaption({
   text,
   testId = 'feed-post-caption',
+  boundedExpansion = false,
 }: FeedPostCaptionProps) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -90,14 +107,16 @@ export default function FeedPostCaption({
     };
   }, [expanded, measure]);
 
+  const sizeClass = expanded
+    ? (boundedExpansion ? BOUNDED_EXPANDED_CLASS : '')
+    : CLAMP_CLASS;
+
   return (
     <div>
       <p
         ref={textRef}
         data-testid={testId}
-        className={`whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 ${
-          expanded ? '' : CLAMP_CLASS
-        }`}
+        className={`whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 ${sizeClass}`}
       >
         {text}
       </p>

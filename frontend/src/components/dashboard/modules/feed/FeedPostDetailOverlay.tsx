@@ -155,8 +155,18 @@ export default function FeedPostDetailOverlay({
           </div>
         ) : post ? (
           <>
-            {/* PEVNÝ blok – hlavička, text, fotky, akcie. Nescrolluje. */}
-            <div className="shrink-0" data-testid="feed-post-overlay-fixed">
+            {/* PEVNÝ blok – hlavička, text, fotky, akcie. Za bežných
+                okolností sa nescrolluje: komentáre pod ním majú `flex-1` so
+                základom 0, takže si berú až to, čo zvýši.
+
+                `overflow-y-auto` je POISTKA pre krajný prípad (nízke okno,
+                dlhý rozbalený text): až keď by sa blok sám nezmestil, zmrští
+                sa a doscrolluje sa v ňom, takže nič neostane nedosiahnuteľné
+                za orezanou hranou okna. */}
+            <div
+              className="min-h-0 overflow-y-auto"
+              data-testid="feed-post-overlay-fixed"
+            >
               <FeedPostCard
                 post={post}
                 variant="detail"
@@ -165,10 +175,13 @@ export default function FeedPostDetailOverlay({
               />
             </div>
 
-            {/* Jediná scrollovateľná časť. `min-h-0` je nutné – inak by ju
-                obsah roztiahol a okno by prerástlo `max-h-[90vh]`. */}
+            {/* Jediná scrollovateľná časť za bežných okolností. `min-h`
+                plní dve úlohy naraz: ruší automatické minimum flex položky
+                (inak by ju obsah roztiahol a okno by prerástlo `max-h-[90vh]`)
+                a zároveň drží komentárom podlahu, aby ich pevný blok nad nimi
+                nikdy nestlačil na nulu. */}
             <div
-              className="min-h-0 flex-1 overflow-hidden"
+              className="min-h-[7rem] flex-1 overflow-hidden"
               data-testid="feed-post-overlay-comments"
             >
               <FeedPostComments

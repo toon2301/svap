@@ -4437,6 +4437,7 @@
     "imagePrev": "Predchádzajúca fotka",
     "imageNext": "Ďalšia fotka",
     "imageOpen": "Otvoriť fotku na celú obrazovku",
+    "imageOpenPostDetail": "Otvoriť detail príspevku",
     "imageGoTo": "Zobraziť fotku {n}",
     "imageAlt": "Fotka príspevku",
     "composerImageBadType": "Tento formát fotky nie je podporovaný.",

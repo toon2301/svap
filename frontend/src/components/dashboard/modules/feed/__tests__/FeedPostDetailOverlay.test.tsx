@@ -158,6 +158,12 @@ async function renderLoadedOverlay(
   return handles;
 }
 
+afterEach(() => {
+  // Výšky sú nastavené na prototype – bez upratania by pretiekli inam.
+  Reflect.deleteProperty(HTMLParagraphElement.prototype, 'clientHeight');
+  Reflect.deleteProperty(HTMLParagraphElement.prototype, 'scrollHeight');
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   resetOverlayLayers();
@@ -222,18 +228,54 @@ describe('obsah okna', () => {
     // Okno sa nikdy nenatiahne cez obrazovku…
     expect(overlay.className).toContain('max-h-[90vh]');
     expect(overlay.className).toContain('overflow-hidden');
-    // …pevný blok sa nezmršťuje…
-    expect(
-      screen.getByTestId('feed-post-overlay-fixed').className,
-    ).toContain('shrink-0');
-    // …a zvyšok dostane komentárová časť (`min-h-0`, inak by ju obsah
-    // roztiahol a okno by prerástlo).
+    // …zvyšok dostane komentárová časť (`flex-1` so základom 0), pričom
+    // `min-h` jej drží podlahu, aby ju pevný blok nestlačil na nulu…
     const comments = screen.getByTestId('feed-post-overlay-comments');
-    expect(comments.className).toContain('min-h-0');
     expect(comments.className).toContain('flex-1');
+    expect(comments.className).toContain('min-h-[7rem]');
     expect(
       screen.getByTestId('feed-comments-scroll').className,
     ).toContain('overflow-y-auto');
+    // …a pevný blok má poistku pre krajný prípad, aby sa nič neschovalo za
+    // orezanou hranou okna.
+    expect(
+      screen.getByTestId('feed-post-overlay-fixed').className,
+    ).toContain('overflow-y-auto');
+  });
+
+  it('keeps the actions and comments reachable with a long caption expanded', async () => {
+    // jsdom nelayoutuje – „presahuje tri riadky?" sa nastavuje priamo na
+    // uzle, rovnako ako v teste samotného textu príspevku.
+    Object.defineProperty(HTMLParagraphElement.prototype, 'clientHeight', {
+      configurable: true,
+      get() {
+        return this.dataset.testid === 'feed-post-caption' ? 60 : 0;
+      },
+    });
+    Object.defineProperty(HTMLParagraphElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get() {
+        if (this.dataset.testid !== 'feed-post-caption') return 0;
+        return this.className.includes('line-clamp-3') ? 4000 : 60;
+      },
+    });
+
+    const longText = Array.from(
+      { length: 40 },
+      (_unused, paragraph) => `Odsek ${paragraph + 1} veľmi dlhého textu.`,
+    ).join('\n\n');
+    await renderLoadedOverlay(makePost({ caption: longText }));
+
+    await userEvent.click(await screen.findByTestId('feed-post-caption-toggle'));
+
+    // Rozbalený text v okne dostane vlastný strop a scrolluje sa v ňom, takže
+    // nevytlačí riadok akcií ani komentáre za orezanú hranu okna.
+    const caption = screen.getByTestId('feed-post-caption');
+    expect(caption.className).toContain('max-h-[25vh]');
+    expect(caption.className).toContain('overflow-y-auto');
+    expect(caption.className).not.toContain('line-clamp-3');
+    expect(screen.getByTestId('feed-like-button')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-comments')).toBeInTheDocument();
   });
 
   it('does not render its own comments inside the card', async () => {

@@ -160,6 +160,17 @@ describe('desktop', () => {
     expect(screen.queryByTestId('feed-image-lightbox')).not.toBeInTheDocument();
   });
 
+  it('describes the photo click as opening the post detail', async () => {
+    renderWithOverlay();
+
+    // Popis musí sedieť s tým, čo sa naozaj stane – vo feede klik neotvára
+    // fotku na celú obrazovku, ale detail príspevku.
+    expect(screen.getByTestId('feed-image-open-11')).toHaveAttribute(
+      'aria-label',
+      'Otvoriť detail príspevku',
+    );
+  });
+
   it('opens the window when the comment count is clicked', async () => {
     const { onTargetChange } = renderWithOverlay();
 
@@ -195,6 +206,11 @@ describe('mobil ostáva nezmenený', () => {
     mobile = true;
     const { onTargetChange } = renderWithOverlay();
 
+    // Na mobile ostáva pôvodný popis – klik naozaj otvára fotku.
+    expect(screen.getByTestId('feed-image-open-11')).toHaveAttribute(
+      'aria-label',
+      'Otvoriť fotku na celú obrazovku',
+    );
     await userEvent.click(screen.getByTestId('feed-image-open-11'));
 
     expect(screen.getByTestId('feed-image-lightbox')).toBeInTheDocument();

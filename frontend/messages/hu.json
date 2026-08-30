@@ -4437,6 +4437,7 @@
     "imagePrev": "Előző fotó",
     "imageNext": "Következő fotó",
     "imageOpen": "Fotó megnyitása teljes képernyőn",
+    "imageOpenPostDetail": "Bejegyzés részleteinek megnyitása",
     "imageGoTo": "{n}. fotó megjelenítése",
     "imageAlt": "A bejegyzés fotója",
     "composerImageBadType": "Ez a fotóformátum nem támogatott.",

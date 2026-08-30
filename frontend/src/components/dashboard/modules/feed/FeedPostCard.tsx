@@ -791,7 +791,7 @@ export default function FeedPostCard({
           a caption je komentár autora k nemu, takže patrí až zaň. */}
       {!isShared && caption ? (
         <div className="px-4 py-3">
-          <FeedPostCaption text={caption} />
+          <FeedPostCaption text={caption} boundedExpansion={isDetail} />
         </div>
       ) : null}
 
@@ -817,7 +817,9 @@ export default function FeedPostCard({
             />
           ) : null}
 
-          {isShared && caption ? <FeedPostCaption text={caption} /> : null}
+          {isShared && caption ? (
+            <FeedPostCaption text={caption} boundedExpansion={isDetail} />
+          ) : null}
 
           {taggedUsers.length ? (
             <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">

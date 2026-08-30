@@ -4437,6 +4437,7 @@
     "imagePrev": "Vorheriges Foto",
     "imageNext": "Nächstes Foto",
     "imageOpen": "Foto im Vollbild öffnen",
+    "imageOpenPostDetail": "Beitragsdetail öffnen",
     "imageGoTo": "Foto {n} anzeigen",
     "imageAlt": "Foto des Beitrags",
     "composerImageBadType": "Dieses Fotoformat wird nicht unterstützt.",
