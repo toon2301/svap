@@ -202,6 +202,15 @@ function flattenComments(list: FeedPostComment[]): FeedPostComment[] {
 }
 
 type FeedPostCommentsProps = {
+  /**
+   * Sekcia vyplní výšku rodiča namiesto vlastného stropu.
+   *
+   * V karte je zoznam ohraničený pevným stropom, aby stovky komentárov
+   * nenaťahovali stránku. V okne detailu je to naopak: pevný blok nad ním má
+   * svoju výšku a komentáre majú dostať PRESNE zvyšok – strop by tam nechal
+   * prázdne miesto alebo by okno prerástol.
+   */
+  fillHeight?: boolean;
   postId: number;
   /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
   highlightCommentId?: number | null;
@@ -212,6 +221,7 @@ type FeedPostCommentsProps = {
 
 export default function FeedPostComments({
   postId,
+  fillHeight = false,
   highlightCommentId,
   onCountChange,
   onTotalChange,
@@ -1069,7 +1079,9 @@ export default function FeedPostComments({
   return (
     <div
       data-testid="feed-post-comments"
-      className="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60"
+      className={`border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 ${
+        fillHeight ? 'flex h-full min-h-0 flex-col' : ''
+      }`}
     >
       {/* Ohraničený box s vlastným scrollom: stovky komentárov nenaťahujú
           stránku do nekonečna. `overscroll-contain` zastaví reťazenie scrollu
@@ -1077,7 +1089,7 @@ export default function FeedPostComments({
           tabIndex robí oblasť dostupnou aj z klávesnice (WCAG 2.1.1). */}
       {/* `relative` kvôli indikátoru nových komentárov, ktorý pláva nad
           spodným okrajom zoznamu. */}
-      <div className="relative">
+      <div className={`relative ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
         <div
           ref={scrollRef}
           onScroll={handleListScroll}
@@ -1085,7 +1097,9 @@ export default function FeedPostComments({
           role="region"
           aria-label={t('feed.commentsList', 'Komentáre')}
           tabIndex={0}
-          className="max-h-[min(26rem,60dvh)] overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+          className={`overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
+            fillHeight ? 'h-full' : 'max-h-[min(26rem,60dvh)]'
+          }`}
         >
           {loading ? (
             <p className="py-2 text-sm text-gray-500 dark:text-gray-400">

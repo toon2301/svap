@@ -36,6 +36,14 @@ import type { FeedPostImage } from '@/lib/feedApi';
 type FeedPostImageCarouselProps = {
   images: FeedPostImage[];
   alt: string;
+  /**
+   * Prepíše, čo sa stane po kliknutí na fotku.
+   *
+   * Vo feede otvára klik OKNO DETAILU (fotka je vstup do príspevku, nie do
+   * galérie); bez tejto funkcie ostáva pôvodné správanie – fullscreen
+   * prehliadač priamo, čo platí práve vnútri okna detailu.
+   */
+  onPhotoClick?: () => void;
 };
 
 /** Jednotná výška médiovej plochy – nič sa neoreže, dopĺňa sa rozmazaním. */
@@ -64,11 +72,14 @@ function Slide({
   image,
   alt,
   onOpen,
+  opensPostDetail,
 }: {
   image: FeedPostImage;
   alt: string;
   /** Chýba pri fotke bez URL – rozpracovanú nie je čo otvárať. */
   onOpen?: () => void;
+  /** Klik vedie do detailu príspevku, nie do fullscreen prehliadača fotky. */
+  opensPostDetail?: boolean;
 }) {
   const { t } = useLanguage();
   const src = imageSrc(image);
@@ -79,9 +90,17 @@ function Slide({
     <button
       type="button"
       onClick={onOpen}
-      aria-label={t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')}
+      // Popis aj kurzor musia sedieť s tým, čo sa naozaj stane: vo feede klik
+      // otvára detail príspevku, nie fotku na celú obrazovku.
+      aria-label={
+        opensPostDetail
+          ? t('feed.imageOpenPostDetail', 'Otvoriť detail príspevku')
+          : t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')
+      }
       data-testid={`feed-image-open-${image.id}`}
-      className="block h-full w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+      className={`block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
+        opensPostDetail ? 'cursor-pointer' : 'cursor-zoom-in'
+      }`}
     >
       {media}
     </button>
@@ -91,6 +110,7 @@ function Slide({
 export default function FeedPostImageCarousel({
   images,
   alt,
+  onPhotoClick,
 }: FeedPostImageCarouselProps) {
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
@@ -114,11 +134,15 @@ export default function FeedPostImageCarousel({
 
   const openLightbox = useCallback(
     (image: FeedPostImage) => {
+      if (onPhotoClick) {
+        onPhotoClick();
+        return;
+      }
       const at = viewable.findIndex((candidate) => candidate.id === image.id);
       if (at < 0) return;
       setLightboxIndex(at);
     },
-    [viewable],
+    [viewable, onPhotoClick],
   );
 
   const lightbox = (
@@ -172,6 +196,7 @@ export default function FeedPostImageCarousel({
             image={active}
             alt={alt}
             onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
+            opensPostDetail={Boolean(onPhotoClick)}
           />
         </div>
         {rejectedNote}
@@ -203,6 +228,7 @@ export default function FeedPostImageCarousel({
           image={active}
           alt={`${alt} (${index + 1}/${total})`}
           onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
+          opensPostDetail={Boolean(onPhotoClick)}
         />
 
         <button

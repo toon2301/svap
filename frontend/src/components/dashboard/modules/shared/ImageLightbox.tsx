@@ -26,6 +26,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useModalFocusTrap } from '../profile/useModalFocusTrap';
+import { isTopOverlayLayer, pushOverlayLayer } from './overlayLayers';
 import { useProtectedImage } from './useProtectedImage';
 
 export type ImageLightboxLabels = {
@@ -123,10 +124,26 @@ export function ImageLightbox({
     };
   }, [open]);
 
+  // Prehliadač sa dá otvoriť aj NAD oknom detailu príspevku. Zaregistruje sa
+  // preto ako vrstva: Escape zavrie najprv ju a až ďalšie stlačenie okno pod
+  // ňou. Bez toho by jedno stlačenie zavrelo obe – oba listenery sedia na
+  // `window`, takže sa navzájom nedajú zastaviť.
+  const layerRef = useRef<symbol | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const layer = pushOverlayLayer();
+    layerRef.current = layer.id;
+    return () => {
+      layer.release();
+      layerRef.current = null;
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (!isTopOverlayLayer(layerRef.current)) return;
         event.preventDefault();
         onClose();
         return;

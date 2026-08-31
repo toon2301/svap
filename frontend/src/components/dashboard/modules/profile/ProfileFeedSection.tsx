@@ -16,10 +16,11 @@
  * Endpointy sú AllowAny, preto sekcia funguje aj pre neprihláseného diváka.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FeedCardSkeleton from '../feed/FeedCardSkeleton';
 import FeedPostCard from '../feed/FeedPostCard';
+import { onFeedPostDeleted } from '../feed/feedPostDeletedEvents';
 import {
   useFeedInfiniteScroll,
   useInfiniteScrollSentinel,
@@ -102,6 +103,9 @@ function ProfileFeedList({
     isEmpty,
   } = useFeedInfiniteScroll({ loader });
 
+  // Zmazanie z okna detailu nad profilom – karta musí zmiznúť aj tu.
+  useEffect(() => onFeedPostDeleted(removePost), [removePost]);
+
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
     // Po zlyhaní observer vypneme – sentinel ostáva vo viewporte, takže by sa
@@ -112,7 +116,7 @@ function ProfileFeedList({
   if (loading) {
     return (
       <div
-        className="-mx-4 mt-4 space-y-4 sm:mx-0"
+        className="-mx-4 mt-4 space-y-3 sm:mx-0 sm:space-y-4"
         data-testid="profile-feed-loading"
       >
         <FeedCardSkeleton />
@@ -147,7 +151,7 @@ function ProfileFeedList({
   return (
     // Rovnaké plnošírkové správanie ako vo feede – karta je ten istý komponent.
     <div
-      className="-mx-4 mt-4 space-y-4 sm:mx-0"
+      className="-mx-4 mt-4 space-y-3 sm:mx-0 sm:space-y-4"
       data-testid={`profile-feed-list-${tab}`}
     >
       {posts.map((post) => (

@@ -19,7 +19,10 @@ jest.mock('next/navigation', () => ({
  * v jazykových súboroch neexistuje, fallback by chybu zakryl; takto sa
  * z takého kľúča stane `MISSING:...` a asercia padne.
  */
-const SK_NAMESPACE_UNDER_TEST = 'notifications.offerWatchMatch';
+const SK_NAMESPACES_UNDER_TEST = [
+  'notifications.offerWatchMatch',
+  'notifications.feedPostCommentReplied',
+];
 
 function resolveSlovak(key: string): string {
   const value = key
@@ -40,7 +43,9 @@ jest.mock('@/contexts/LanguageContext', () => ({
     t: (key: string, fallback: string) =>
       // Celá menovka, nie zoznam kľúčov: preklep v názve kľúča tak neprepadne
       // na fallback, ale skončí ako `MISSING:...`.
-      key.startsWith(SK_NAMESPACE_UNDER_TEST) ? resolveSlovak(key) : fallback,
+      SK_NAMESPACES_UNDER_TEST.some((prefix) => key.startsWith(prefix))
+        ? resolveSlovak(key)
+        : fallback,
   }),
 }));
 

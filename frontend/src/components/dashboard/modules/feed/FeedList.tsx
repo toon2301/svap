@@ -19,6 +19,7 @@ import FeedCardSkeleton from './FeedCardSkeleton';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComposerModal from './FeedPostComposerModal';
 import { onFeedPostCreated } from './feedShareEvents';
+import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import { useFeedPullToRefresh } from './useFeedPullToRefresh';
 import {
   useFeedInfiniteScroll,
@@ -177,6 +178,9 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
     prependPosts,
   ]);
 
+  // Zmazanie z okna detailu nad feedom – karta musí zmiznúť aj tu.
+  useEffect(() => onFeedPostDeleted(removePost), [removePost]);
+
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
     // Po zlyhaní donačítania observer vypneme – sentinel ostáva vo viewporte,
@@ -213,7 +217,7 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
     if (loading) {
       return (
         <div
-          className="-mx-4 space-y-4 sm:mx-0"
+          className="-mx-4 space-y-3 sm:mx-0 sm:space-y-4"
           data-testid="feed-initial-loading"
         >
           <FeedCardSkeleton />
@@ -250,9 +254,11 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
         transition={{ duration: 0.3 }}
         // Na mobile karty od kraja po kraj: `-mx-4` presne ruší vodorovný
         // padding obsahu z DashboardLayout (`px-4 sm:px-6 lg:px-8`), od `sm:`
-        // vyššie ostáva rozloženie nezmenené. Zvislé rozostupy (`space-y-4`)
-        // sa nemenia a vnútorný padding karty drží text ďalej od hrany.
-        className="-mx-4 space-y-4 sm:mx-0"
+        // vyššie ostáva rozloženie nezmenené. Zvislé rozostupy sú na mobile
+        // tesnejšie (`space-y-3`), na desktope pôvodné – karty sú tam od kraja
+        // po kraj a hranaté, takže menšia medzera ich delí dosť zreteľne.
+        // Vnútorný padding karty drží text ďalej od hrany displeja.
+        className="-mx-4 space-y-3 sm:mx-0 sm:space-y-4"
         data-testid="feed-list"
       >
         {posts.map((post) => (
