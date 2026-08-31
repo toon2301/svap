@@ -19,6 +19,7 @@ import FeedCardSkeleton from './FeedCardSkeleton';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComposerModal from './FeedPostComposerModal';
 import { onFeedPostCreated } from './feedShareEvents';
+import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import { useFeedPullToRefresh } from './useFeedPullToRefresh';
 import {
   useFeedInfiniteScroll,
@@ -176,6 +177,9 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   useEffect(() => onFeedPostCreated((created) => prependPosts([created])), [
     prependPosts,
   ]);
+
+  // Zmazanie z okna detailu nad feedom – karta musí zmiznúť aj tu.
+  useEffect(() => onFeedPostDeleted(removePost), [removePost]);
 
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,

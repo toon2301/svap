@@ -44,6 +44,7 @@ import {
   emitFeedPostCounts,
   onFeedPostCounts,
 } from './feedPostCountEvents';
+import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import FeedAnchoredMenu from './FeedAnchoredMenu';
 import FeedPostCaption from './FeedPostCaption';
 import FeedPostEditModal from './FeedPostEditModal';
@@ -414,6 +415,9 @@ export default function FeedPostCard({
       toast.success(t('feed.postDeleted', 'Príspevok bol zmazaný.'));
       // Zoznam si kartu odstráni sám; na detaile to znamená odchod na Nástenku.
       onDeleted?.(post.id);
+      // Mazať sa dá aj z okna detailu, ktoré leží NAD feedom – ten sa o tom
+      // inak nedozvie a nechal by kartu neexistujúceho príspevku.
+      emitFeedPostDeleted(post.id);
     } catch (error) {
       toast.error(
         translateFeedActionError(t, error, () =>

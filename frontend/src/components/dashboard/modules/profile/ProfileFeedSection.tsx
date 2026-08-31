@@ -16,10 +16,11 @@
  * Endpointy sú AllowAny, preto sekcia funguje aj pre neprihláseného diváka.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FeedCardSkeleton from '../feed/FeedCardSkeleton';
 import FeedPostCard from '../feed/FeedPostCard';
+import { onFeedPostDeleted } from '../feed/feedPostDeletedEvents';
 import {
   useFeedInfiniteScroll,
   useInfiniteScrollSentinel,
@@ -101,6 +102,9 @@ function ProfileFeedList({
     removePost,
     isEmpty,
   } = useFeedInfiniteScroll({ loader });
+
+  // Zmazanie z okna detailu nad profilom – karta musí zmiznúť aj tu.
+  useEffect(() => onFeedPostDeleted(removePost), [removePost]);
 
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,

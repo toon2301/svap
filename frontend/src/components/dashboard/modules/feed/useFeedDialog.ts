@@ -24,12 +24,23 @@ type UseFeedDialogOptions = {
   onClose: () => void;
   /** False počas odosielania – Escape ani backdrop vtedy nezatvárajú. */
   canClose?: boolean;
+  /**
+   * Je obsah dialógu už vykreslený?
+   *
+   * Dialóg vykreslený portálom sa mountuje až v druhom kroku (najprv treba
+   * nájsť cieľový uzol), takže pri prvom behu efektu je `containerRef` ešte
+   * prázdny a fokus by nemal kam ísť – a keďže `open` sa už nemení, druhá
+   * šanca by neprišla. Volajúci sem preto pošle, kedy je kontajner naozaj
+   * pripravený. Dialógy, ktoré sa vykresľujú rovno, nemusia riešiť nič.
+   */
+  ready?: boolean;
 };
 
 export function useFeedDialog({
   open,
   onClose,
   canClose = true,
+  ready = true,
 }: UseFeedDialogOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Refy, aby listener nebolo treba pripájať znova pri každej zmene props.
@@ -73,7 +84,7 @@ export function useFeedDialog({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !ready) return;
     const root = containerRef.current;
     if (!root) return;
     // Prvý ovládateľný prvok, inak samotný kontajner (má tabIndex={-1}).
@@ -81,7 +92,7 @@ export function useFeedDialog({
       'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [href], select:not([disabled])',
     );
     (focusable ?? root).focus?.();
-  }, [open]);
+  }, [open, ready]);
 
   return containerRef;
 }

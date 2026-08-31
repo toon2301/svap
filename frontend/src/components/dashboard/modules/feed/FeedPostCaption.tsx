@@ -36,8 +36,14 @@ const OVERFLOW_TOLERANCE_PX = 1;
  * Strop rozbaleného textu v okne detailu – štvrtina výšky obrazovky, aby sa
  * pod text vždy zmestili akcie aj komentáre. Píše sa doslova z rovnakého
  * dôvodu ako `CLAMP_CLASS` (Tailwind hľadá v zdroji celé názvy tried).
+ *
+ * Keďže sa v rámiku scrolluje, musí sa doň dať dostať aj Tabom – inak by časť
+ * textu ostala pre ovládanie klávesnicou neprístupná (WCAG 2.1.1). Prsteň
+ * fokusu je ten istý ako pri zozname komentárov, čo je jediná ďalšia takáto
+ * oblasť v Nástenke.
  */
-const BOUNDED_EXPANDED_CLASS = 'max-h-[25vh] overflow-y-auto';
+const BOUNDED_EXPANDED_CLASS =
+  'max-h-[25vh] overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60';
 
 type FeedPostCaptionProps = {
   text: string;
@@ -107,6 +113,10 @@ export default function FeedPostCaption({
     };
   }, [expanded, measure]);
 
+  // Scrollovateľný je len ROZBALENÝ text v ohraničenom rámiku; zbalený sa
+  // orezáva CSS-kom a scrollovať sa v ňom nedá, takže by z neho tab stop bol
+  // len prekážka navyše.
+  const scrollable = expanded && boundedExpansion;
   const sizeClass = expanded
     ? (boundedExpansion ? BOUNDED_EXPANDED_CLASS : '')
     : CLAMP_CLASS;
@@ -116,6 +126,11 @@ export default function FeedPostCaption({
       <p
         ref={textRef}
         data-testid={testId}
+        role={scrollable ? 'region' : undefined}
+        aria-label={
+          scrollable ? t('feed.captionRegion', 'Text príspevku') : undefined
+        }
+        tabIndex={scrollable ? 0 : undefined}
         className={`whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 ${sizeClass}`}
       >
         {text}

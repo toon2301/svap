@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostDetailOverlay from '../FeedPostDetailOverlay';
 import { resetOverlayLayers } from '../../shared/overlayLayers';
+import { onFeedPostCounts } from '../feedPostCountEvents';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
@@ -148,6 +149,15 @@ function renderOverlay(post = makePost(), highlightCommentId: number | null = nu
   return { onClose };
 }
 
+/** Odpoveď, ktorú test rozhodne, kedy dorazí. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
 /** Počká, kým sa príspevok načíta – dovtedy je v okne len kostra. */
 async function renderLoadedOverlay(
   post = makePost(),
@@ -156,6 +166,26 @@ async function renderLoadedOverlay(
   const handles = renderOverlay(post, highlightCommentId);
   await screen.findByTestId('feed-post-overlay-fixed');
   return handles;
+}
+
+/**
+ * jsdom nelayoutuje – „presahuje text tri riadky?" sa nastavuje priamo na
+ * uzle, rovnako ako v teste samotného textu príspevku.
+ */
+function stubCaptionHeights() {
+  Object.defineProperty(HTMLParagraphElement.prototype, 'clientHeight', {
+    configurable: true,
+    get() {
+      return this.dataset.testid === 'feed-post-caption' ? 60 : 0;
+    },
+  });
+  Object.defineProperty(HTMLParagraphElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      if (this.dataset.testid !== 'feed-post-caption') return 0;
+      return this.className.includes('line-clamp-3') ? 4000 : 60;
+    },
+  });
 }
 
 afterEach(() => {
@@ -243,22 +273,25 @@ describe('obsah okna', () => {
     ).toContain('overflow-y-auto');
   });
 
+  it('lets the keyboard reach the scrollable expanded caption', async () => {
+    stubCaptionHeights();
+    await renderLoadedOverlay(makePost({ caption: 'Veľmi dlhý text.' }));
+
+    await userEvent.click(await screen.findByTestId('feed-post-caption-toggle'));
+
+    // Text sa v okne scrolluje, takže musí byť v poradí Tab – inak by sa jeho
+    // skrytá časť pri ovládaní klávesnicou nedala prečítať.
+    const caption = screen.getByTestId('feed-post-caption');
+    expect(caption).toHaveAttribute('tabindex', '0');
+    expect(caption).toHaveAttribute('role', 'region');
+    expect(caption).toHaveAccessibleName('Text príspevku');
+
+    caption.focus();
+    expect(caption).toHaveFocus();
+  });
+
   it('keeps the actions and comments reachable with a long caption expanded', async () => {
-    // jsdom nelayoutuje – „presahuje tri riadky?" sa nastavuje priamo na
-    // uzle, rovnako ako v teste samotného textu príspevku.
-    Object.defineProperty(HTMLParagraphElement.prototype, 'clientHeight', {
-      configurable: true,
-      get() {
-        return this.dataset.testid === 'feed-post-caption' ? 60 : 0;
-      },
-    });
-    Object.defineProperty(HTMLParagraphElement.prototype, 'scrollHeight', {
-      configurable: true,
-      get() {
-        if (this.dataset.testid !== 'feed-post-caption') return 0;
-        return this.className.includes('line-clamp-3') ? 4000 : 60;
-      },
-    });
+    stubCaptionHeights();
 
     const longText = Array.from(
       { length: 40 },
@@ -345,6 +378,70 @@ describe('fullscreen prehliadač nad oknom', () => {
       await userEvent.keyboard('{Escape}');
     });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+});
+
+describe('príprava okna a poradie odpovedí', () => {
+  it('moves the focus inside once the portal exists', async () => {
+    // Okno sa vykresľuje portálom, takže pri prvom renderi ešte nie je kam
+    // fokus presunúť. Musí sa doň dostať, keď kontajner pribudne – inak by
+    // klávesnica ostala v appke pod oknom.
+    await renderLoadedOverlay();
+
+    const overlay = screen.getByTestId('feed-post-overlay');
+    await waitFor(() => expect(overlay.contains(document.activeElement)).toBe(true));
+  });
+
+  it('ignores a slow answer that belongs to the previous post', async () => {
+    const slowFirst = deferred<FeedPost>();
+    mockedGetPost.mockReturnValueOnce(slowFirst.promise);
+    const secondPost = makePost({ id: 9, caption: 'Druhý príspevok', comments_count: 5 });
+    mockedGetPost.mockResolvedValueOnce(secondPost);
+
+    const { rerender } = render(
+      <FeedPostDetailOverlay postId={7} onClose={jest.fn()} />,
+    );
+    // Prepnutie skôr, než dorazí odpoveď pre príspevok 7.
+    rerender(<FeedPostDetailOverlay postId={9} onClose={jest.fn()} />);
+    expect(await screen.findByText('Druhý príspevok')).toBeInTheDocument();
+
+    // Až TERAZ dorazí pomalá odpoveď pre pôvodný príspevok.
+    await act(async () => {
+      slowFirst.resolve(makePost({ id: 7, caption: 'Prvý príspevok' }));
+    });
+
+    // Zobrazený ostáva ten, ktorý používateľ naozaj otvoril.
+    expect(screen.getByText('Druhý príspevok')).toBeInTheDocument();
+    expect(screen.queryByText('Prvý príspevok')).not.toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+  });
+
+  it('does not publish the counts of the previous post', async () => {
+    const seen: Array<{ postId: number; commentsCount?: number }> = [];
+    const stop = onFeedPostCounts((patch) => {
+      if (patch.commentsCount !== undefined) {
+        seen.push({ postId: patch.postId, commentsCount: patch.commentsCount });
+      }
+    });
+
+    const slowFirst = deferred<FeedPost>();
+    mockedGetPost.mockReturnValueOnce(slowFirst.promise);
+    mockedGetPost.mockResolvedValueOnce(makePost({ id: 9, comments_count: 5 }));
+
+    const { rerender } = render(
+      <FeedPostDetailOverlay postId={7} onClose={jest.fn()} />,
+    );
+    rerender(<FeedPostDetailOverlay postId={9} onClose={jest.fn()} />);
+    await screen.findByTestId('feed-post-overlay-fixed');
+
+    await act(async () => {
+      slowFirst.resolve(makePost({ id: 7, comments_count: 99 }));
+    });
+    stop();
+
+    // Počet z príspevku 7 sa nesmie rozposlať – ani pod cudzím id.
+    expect(seen.every((patch) => patch.postId === 9)).toBe(true);
+    expect(seen.some((patch) => patch.commentsCount === 99)).toBe(false);
   });
 });
 

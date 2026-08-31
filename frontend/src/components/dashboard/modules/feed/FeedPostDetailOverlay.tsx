@@ -51,7 +51,14 @@ export default function FeedPostDetailOverlay({
   // Fokus, Tab trap aj Escape rieši spoločný hook feed dialógov – vrátane
   // poradia vrstiev, takže Escape nad otvoreným prehliadačom fotky (alebo nad
   // zoznamom lajkov) zavrie najprv ten a až ďalšie stlačenie okno.
-  const dialogRef = useFeedDialog({ open: true, onClose });
+  //
+  // `ready` je tu podstatné: okno sa vykresľuje portálom, takže pri prvom
+  // renderi ešte neexistuje uzol, do ktorého by sa dal presunúť fokus.
+  const dialogRef = useFeedDialog({
+    open: true,
+    onClose,
+    ready: portalNode !== null,
+  });
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -64,14 +71,26 @@ export default function FeedPostDetailOverlay({
     onClose();
   };
 
+  /**
+   * Poradové číslo načítania. Okno sa pri prepnutí na iný príspevok
+   * neodmountuje, takže pomalšia odpoveď na TEN PREDOŠLÝ môže doraziť až
+   * potom – bez tejto kontroly by prepísala už zobrazený nový príspevok.
+   * Rovnaký vzor ako `loadSeqRef` v komentároch.
+   */
+  const loadSeqRef = useRef(0);
+
   const load = useCallback(async () => {
+    loadSeqRef.current += 1;
+    const seq = loadSeqRef.current;
     setLoading(true);
     setFailed(false);
     try {
       const loaded = await getFeedPost(postId);
+      if (seq !== loadSeqRef.current) return;
       setPost(loaded);
       setCommentsCount(loaded.comments_count ?? 0);
     } catch (err) {
+      if (seq !== loadSeqRef.current) return;
       const status = (err as { response?: { status?: number } })?.response?.status;
       // Zavrieť sa smie LEN pri potvrdenej nedostupnosti – výpadok siete je
       // dočasný a používateľ si má môcť dať „skúsiť znova".
@@ -80,7 +99,9 @@ export default function FeedPostDetailOverlay({
       if (gone) goneRef.current();
       else setFailed(true);
     } finally {
-      setLoading(false);
+      // Aj „načítavam" patrí len aktuálnemu behu – inak by staršia odpoveď
+      // zhasla kostru, hoci nový príspevok sa ešte načítava.
+      if (seq === loadSeqRef.current) setLoading(false);
     }
   }, [postId]);
 
@@ -92,7 +113,9 @@ export default function FeedPostDetailOverlay({
   // nevie a po zavretí by ukazovala staré číslo. Až po načítaní – dovtedy je
   // v stave nula, ktorá by karte počet vynulovala.
   useEffect(() => {
-    if (!post) return;
+    // `post.id !== postId` = v stave je ešte predošlý príspevok; jeho počet by
+    // sa poslal pod cudzím identifikátorom.
+    if (!post || post.id !== postId) return;
     emitFeedPostCounts({ postId, commentsCount });
   }, [post, postId, commentsCount]);
 
