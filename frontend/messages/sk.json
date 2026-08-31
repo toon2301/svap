@@ -655,6 +655,7 @@
     "district": "Okres",
     "countryTitle": "Krajina",
     "countryPlaceholder": "Vyber krajinu",
+    "countryRequired": "Vyber krajinu ponuky alebo dopytu.",
     "countrySearchPlaceholder": "Vyhľadaj krajinu",
     "countryNoResults": "Nenašla sa žiadna krajina.",
     "districtUnavailableForCountry": "Pre túto krajinu zatiaľ okresy nevyberáme. Môžeš zadať mesto alebo obec.",

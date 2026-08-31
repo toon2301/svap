@@ -1,6 +1,9 @@
+import { OFFER_COUNTRY_REQUIRED_CODE } from './offerCountryRequirement';
+
 type Translator = (key: string, fallback: string) => string;
 
 type OfferApiError = {
+  code?: unknown;
   response?: {
     data?: {
       code?: unknown;
@@ -9,9 +12,15 @@ type OfferApiError = {
 };
 
 export function getOfferSaveErrorMessage(error: unknown, t: Translator): string {
-  const code = (error as OfferApiError)?.response?.data?.code;
+  const typedError = error as OfferApiError;
+  const code = typedError?.code ?? typedError?.response?.data?.code;
 
   switch (code) {
+    case OFFER_COUNTRY_REQUIRED_CODE:
+      return t(
+        'skills.countryRequired',
+        'Vyber krajinu ponuky alebo dopytu.',
+      );
     case 'duplicate_offer':
       return t(
         'skills.duplicateCard',

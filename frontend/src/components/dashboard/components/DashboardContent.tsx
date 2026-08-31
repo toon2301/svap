@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsMobile } from '@/hooks';
+import { useIsMobileState } from '@/hooks';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
 import { parseFeedPostId } from '@/lib/feedApi';
@@ -67,10 +67,14 @@ import {
   parseFeedPostTargetUrl,
 } from '../modules/feed/feedPostRouting';
 import {
+  adoptFeedOverlayHistory,
   forgetFeedOverlayHistory,
+  isFeedOverlayHistoryBusy,
   popFeedOverlayHistory,
   pushFeedOverlayHistory,
 } from '../modules/feed/feedOverlayHistory';
+import type { FeedPostOverlayCloseOptions } from '../contexts/FeedPostOverlayContext';
+import { decideFeedPostEntry } from '../modules/feed/feedPostEntryDecision';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
 
 interface DashboardContentProps {
@@ -205,7 +209,9 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const router = useRouter();
   const { t } = useLanguage();
-  const isMobile = useIsMobile();
+  // `isResolved` je pri priamom vstupe podstatné: okno je desktopová vec a
+  // pred vyhodnotením media query hlási hook „nie je mobil".
+  const { isMobile, isResolved: isViewportResolved } = useIsMobileState();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
@@ -628,12 +634,21 @@ export default function DashboardContent({
     useState<FeedPostOverlayTarget | null>(null);
 
   const handleFeedOverlayTargetChange = useCallback(
-    (target: FeedPostOverlayTarget | null) => {
+    (
+      target: FeedPostOverlayTarget | null,
+      options?: FeedPostOverlayCloseOptions,
+    ) => {
       setFeedOverlayTarget(target);
       if (target) {
         pushFeedOverlayHistory(
           buildFeedPostPath(target.postId, target.highlightCommentId),
         );
+        return;
+      }
+      // Appka práve naviguje inam a adresu si rieši sama - krok spat by tu
+      // navigaciu vzapati zrusil.
+      if (options?.keepHistory) {
+        forgetFeedOverlayHistory();
         return;
       }
       popFeedOverlayHistory();
@@ -1015,22 +1030,42 @@ export default function DashboardContent({
   }, [portfolioItemIdFromPath, setActiveModule]);
 
   useEffect(() => {
-    // Kym je otvorene okno, URL ukazuje na prispevok ZAMERNE - prepnutie
-    // modulu by odmountovalo to, nad cim okno lezi (presne to, comu sa
-    // vyhybame). Celoobrazovkova stranka ostava pre priamy vstup.
-    if (feedPostIdFromPath == null || feedOverlayTarget) return;
-    // `usePathname()` sa po vlastnom `pushState` dorovnava az v transition,
-    // takze hned po zavreti okna este vracia cestu prispevku, hoci realna
-    // adresa uz je spat. Bez tejto kontroly by sa prave vtedy appka pod oknom
-    // vymenila za celoobrazovkovu stranku - presne to, comu sa vyhybame.
-    if (
-      typeof window !== 'undefined' &&
-      !parseFeedPostTargetUrl(window.location.pathname)
-    ) {
+    // Priamy vstup na /dashboard/feed/<id> (odkaz, F5, aj preklik na zdielany
+    // prispevok): na desktope ma appka vzdy ukazat Nastenku a NAD nou to iste
+    // okno, ake sa otvara klikom vo feede. Samotne rozhodovanie (aj s oboma
+    // oneskoreniami adresy) je vo `feedPostEntryDecision`.
+    const decision = decideFeedPostEntry({
+      pathPostId: feedPostIdFromPath,
+      overlayOpen: feedOverlayTarget !== null,
+      historyBusy: isFeedOverlayHistoryBusy(),
+      liveUrl:
+        typeof window === 'undefined'
+          ? null
+          : window.location.pathname + window.location.search,
+      viewportResolved: isViewportResolved,
+      isMobile,
+    });
+
+    if (decision.kind === 'full-page') {
+      setActiveModule('feed-post-detail');
       return;
     }
-    setActiveModule('feed-post-detail');
-  }, [feedPostIdFromPath, setActiveModule, feedOverlayTarget]);
+    if (decision.kind !== 'overlay') return;
+
+    // Predvoleny modul ako pozadie: pri priamom vstupe neexistuje ziadny
+    // predosly stav appky, na ktory by sa dalo vratit.
+    setActiveModule('home');
+    // Adresa uz na prispevok ukazuje - okno ju len prevezme, nepridava dalsi
+    // zaznam do historie.
+    adoptFeedOverlayHistory();
+    setFeedOverlayTarget(decision.target);
+  }, [
+    feedPostIdFromPath,
+    setActiveModule,
+    feedOverlayTarget,
+    isMobile,
+    isViewportResolved,
+  ]);
 
   useEffect(() => {
     if (portfolioCreateMatch) {

@@ -413,10 +413,27 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             key in attrs for key in ("country_code", "district_code", "district")
         )
 
+        existing_country_code = normalize_offer_country_code(
+            getattr(instance, "country_code", "")
+        )
         country_code = attrs.get(
             "country_code",
-            normalize_offer_country_code(getattr(instance, "country_code", "")),
+            existing_country_code,
         )
+        country_code_was_provided = "country_code" in initial_data
+        country_is_required = instance is None or (
+            bool(existing_country_code) and country_code_was_provided
+        )
+        if country_is_required and not country_code:
+            raise serializers.ValidationError(
+                {
+                    "country_code": serializers.ErrorDetail(
+                        "Vyber krajinu ponuky alebo dopytu.",
+                        code="required",
+                    )
+                }
+            )
+
         district_code = attrs.get(
             "district_code",
             (getattr(instance, "district_code", "") or "").strip().lower(),

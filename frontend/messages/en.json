@@ -655,6 +655,7 @@
     "district": "District",
     "countryTitle": "Country",
     "countryPlaceholder": "Select a country",
+    "countryRequired": "Select the country for the offer or request.",
     "countrySearchPlaceholder": "Search for a country",
     "countryNoResults": "No country was found.",
     "districtUnavailableForCountry": "Districts are not available for this country yet. You can enter a city or municipality.",

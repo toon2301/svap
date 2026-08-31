@@ -18,7 +18,9 @@
  */
 
 import {
+  adoptFeedOverlayHistory,
   forgetFeedOverlayHistory,
+  isFeedOverlayHistoryBusy,
   popFeedOverlayHistory,
   pushFeedOverlayHistory,
   resetFeedOverlayHistory,
@@ -105,6 +107,90 @@ it('does not step back when the entry is already gone', async () => {
   // Bez tejto poistky by appka odskočila o krok NAVYŠE, teda preč zo stránky,
   // na ktorej používateľ zostal.
   expect(window.location.pathname).toBe('/dashboard/feed/7');
+});
+
+describe('komu patrí cesta príspevku', () => {
+  it('keeps the path owned while the step back is still running', async () => {
+    pushFeedOverlayHistory('/dashboard/feed/7');
+    expect(isFeedOverlayHistoryBusy()).toBe(true);
+
+    popFeedOverlayHistory();
+
+    // Toto je jadro chyby: krok späť ešte nedobehol, takže appka VIDÍ cestu
+    // príspevku, hoci okno je už zavreté. Keby si ju v tej chvíli privlastnila,
+    // otvorí pod zavretým oknom celoobrazovkovú stránku – a tá po dobehnutí
+    // kroku ostane bez identifikátora, čiže ohlási nedostupný príspevok.
+    expect(window.location.pathname).toBe('/dashboard/feed/7');
+    expect(isFeedOverlayHistoryBusy()).toBe(true);
+
+    await flushHistory();
+
+    // Až keď je adresa naozaj späť, prestáva cesta patriť oknu.
+    expect(window.location.pathname).toBe('/dashboard');
+    expect(isFeedOverlayHistoryBusy()).toBe(false);
+  });
+
+  it('releases the path when the user steps back themselves', async () => {
+    pushFeedOverlayHistory('/dashboard/feed/7');
+
+    // Používateľ dal „späť" pri otvorenom okne – appka to zaznamená.
+    forgetFeedOverlayHistory();
+
+    expect(isFeedOverlayHistoryBusy()).toBe(false);
+  });
+
+  it('does not own anything without an open window', () => {
+    // Priamy vstup na permalink: cesta patrí celoobrazovkovej stránke.
+    expect(isFeedOverlayHistoryBusy()).toBe(false);
+  });
+
+  it('stays released after repeated opening and closing', async () => {
+    for (let round = 0; round < 3; round += 1) {
+      pushFeedOverlayHistory('/dashboard/feed/7');
+      popFeedOverlayHistory();
+      // eslint-disable-next-line no-await-in-loop
+      await flushHistory();
+      expect(isFeedOverlayHistoryBusy()).toBe(false);
+    }
+  });
+});
+
+describe('okno otvorené priamym vstupom', () => {
+  beforeEach(() => {
+    // Chladný vstup: prehliadač otvoril rovno adresu príspevku.
+    window.history.replaceState(null, '', '/dashboard/feed/7');
+  });
+
+  it('adds no history entry – the address is already there', () => {
+    adoptFeedOverlayHistory();
+
+    expect(window.location.pathname).toBe('/dashboard/feed/7');
+    expect(isFeedOverlayHistoryBusy()).toBe(false);
+  });
+
+  it('leaves the user on the feed when the window closes', async () => {
+    adoptFeedOverlayHistory();
+
+    popFeedOverlayHistory();
+    await flushHistory();
+
+    // Predošlý stav appky neexistuje, takže sa niet kam vracať – adresa sa
+    // zrovná s tým, čo používateľ vidí pod oknom.
+    expect(window.location.pathname).toBe('/dashboard');
+  });
+
+  it('does not step back out of the app', async () => {
+    // Krok späť by pri chladnom vstupe viedol MIMO appky (predošlá stránka
+    // prehliadača), preto sa tu adresa nahrádza, nie odvíja.
+    const before = window.history.length;
+    adoptFeedOverlayHistory();
+
+    popFeedOverlayHistory();
+    await flushHistory();
+
+    expect(window.history.length).toBe(before);
+    expect(window.location.pathname).toBe('/dashboard');
+  });
 });
 
 it('does nothing when the window was never opened', async () => {

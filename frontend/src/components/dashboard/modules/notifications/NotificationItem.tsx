@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNotificationTimestamp } from '@/utils/formatNotificationTimestamp';
 
 import { getTerminationReasonLabel } from '../requests/terminationReasons';
+import { dispatchOfferWatchNotificationNavigation } from './offerWatchNotificationNavigation';
 import type { DashboardNotification } from './types';
 
 interface NotificationItemProps {
@@ -310,6 +311,15 @@ export default function NotificationItem({
       type="button"
       onClick={() => {
         if (!targetUrl) return;
+        const usedOfferWatchNavigation =
+          notification.type === 'offer_watch_match' &&
+          dispatchOfferWatchNotificationNavigation(targetUrl);
+        if (usedOfferWatchNavigation) {
+          if (!notification.is_read) {
+            onMarkRead?.(notification);
+          }
+          return;
+        }
         if (!notification.is_read) {
           onMarkRead?.(notification);
         }

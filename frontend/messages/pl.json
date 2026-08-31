@@ -747,6 +747,7 @@
     "ratings": "Hodnotenia",
     "countryTitle": "Kraj",
     "countryPlaceholder": "Wybierz kraj",
+    "countryRequired": "Wybierz kraj oferty lub zapytania.",
     "countrySearchPlaceholder": "Wyszukaj kraj",
     "countryNoResults": "Nie znaleziono kraju.",
     "districtUnavailableForCountry": "Dla tego kraju nie udostępniamy jeszcze listy powiatów. Możesz wpisać miasto lub miejscowość.",

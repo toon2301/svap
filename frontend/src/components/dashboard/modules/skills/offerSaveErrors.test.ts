@@ -4,6 +4,7 @@ const t = (_key: string, fallback: string) => fallback;
 
 describe('getOfferSaveErrorMessage', () => {
   it.each([
+    ['offer_country_required', 'Vyber krajinu ponuky alebo dopytu.'],
     ['duplicate_offer', 'Takúto ponuku alebo dopyt už máš vytvorený.'],
     [
       'offer_description_too_long',
@@ -15,6 +16,12 @@ describe('getOfferSaveErrorMessage', () => {
     const error = { response: { data: { code } } };
 
     expect(getOfferSaveErrorMessage(error, t)).toBe(expected);
+  });
+
+  it('maps a local pre-validation code too', () => {
+    expect(
+      getOfferSaveErrorMessage({ code: 'offer_country_required' }, t),
+    ).toBe('Vyber krajinu ponuky alebo dopytu.');
   });
 
   it('does not expose an unknown technical API message', () => {

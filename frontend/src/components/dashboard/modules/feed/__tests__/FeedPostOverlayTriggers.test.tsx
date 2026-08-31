@@ -218,6 +218,81 @@ describe('mobil ostáva nezmenený', () => {
   });
 });
 
+describe('zdieľaný obsah', () => {
+  function sharedPost() {
+    return makePost({
+      post_type: 'shared_post',
+      caption: 'Toto stojí za pozretie.',
+      images: [],
+      shared_content: {
+        type: 'offer',
+        id: 55,
+        title: 'Kurz gitary',
+        owner: {
+          id: 21,
+          display_name: 'Peter',
+          slug: 'peter',
+          user_type: 'individual',
+          avatar_url: null,
+        },
+      },
+    } as Partial<FeedPost>);
+  }
+
+  it('closes the window together with the navigation', async () => {
+    const onTargetChange = jest.fn();
+    const navigations: unknown[] = [];
+    const listener = (event: Event) =>
+      navigations.push((event as CustomEvent).detail);
+    window.addEventListener('goToUserProfile', listener);
+
+    render(
+      <FeedPostOverlayProvider onTargetChange={onTargetChange}>
+        <FeedPostCard post={sharedPost()} variant="detail" />
+      </FeedPostOverlayProvider>,
+    );
+
+    await userEvent.click(screen.getByTestId('feed-shared-compact-preview'));
+    window.removeEventListener('goToUserProfile', listener);
+
+    // Preklik vedie preč – okno nesmie ostať visieť nad novou stránkou…
+    expect(onTargetChange).toHaveBeenCalledWith(null, { keepHistory: true });
+    // …a navigácia sa naozaj stala.
+    expect(navigations).toHaveLength(1);
+  });
+
+  it('keeps the sharer text below the preview on the feed card', async () => {
+    renderWithOverlay(sharedPost());
+
+    const caption = screen.getByTestId('feed-post-caption');
+    const preview = screen.getByTestId('feed-shared-compact-preview');
+    // Na karte je hlavným obsahom náhľad a text je komentár k nemu – toto
+    // poradie sa zámerne nemení, otáča sa len v okne detailu.
+    expect(preview.compareDocumentPosition(caption)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('still shortens the caption to three lines on the feed card', async () => {
+    renderWithOverlay(makePost({ caption: 'Dlhý text.' }));
+
+    // Okno detailu skracuje na desať riadkov; karta ostáva na troch.
+    expect(screen.getByTestId('feed-post-caption').className).toContain(
+      'line-clamp-3',
+    );
+  });
+
+  it('does not collapse blank lines on the feed card', async () => {
+    renderWithOverlay(makePost({ caption: 'Prvý.\n\n\n\nDruhý.' }));
+
+    // Normalizácia platí len v okne – na karte autor vidí text tak, ako ho
+    // napísal (zmena zobrazenia v zozname nie je predmetom tejto úpravy).
+    expect(screen.getByTestId('feed-post-caption').textContent).toBe(
+      'Prvý.\n\n\n\nDruhý.',
+    );
+  });
+});
+
 describe('zosúladenie počtov medzi kartami', () => {
   it('mirrors a like onto the other card of the same post', async () => {
     mockedLike.mockResolvedValue({ likes_count: 3, is_liked_by_me: true } as never);

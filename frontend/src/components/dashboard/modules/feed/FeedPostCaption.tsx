@@ -21,11 +21,29 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
- * Trieda orezania. Píše sa DOSLOVA (nie cez interpoláciu): Tailwind hľadá celé
- * názvy tried v zdroji, takže `line-clamp-${n}` by sa do buildu nemuselo
- * dostať vôbec.
+ * Triedy orezania podľa počtu riadkov. Píšu sa DOSLOVA (nie cez interpoláciu):
+ * Tailwind hľadá celé názvy tried v zdroji, takže `line-clamp-${n}` by sa do
+ * buildu nemuselo dostať vôbec. Preto je to mapa hotových názvov, nie výpočet.
  */
-const CLAMP_CLASS = 'line-clamp-3';
+const CLAMP_CLASSES: Record<number, string> = {
+  3: 'line-clamp-3',
+  10: 'line-clamp-[10]',
+};
+
+/** Karta vo feede – text ustúpi fotke a ostatným príspevkom v zozname. */
+export const CARD_CAPTION_LINES = 3;
+/** Okno detailu – je oveľa väčšie, takže tri riadky by pôsobili zbytočne. */
+export const DETAIL_CAPTION_LINES = 10;
+
+/**
+ * Zhluk PRÁZDNYCH riadkov (dva a viac) sa scvrkne na jedno zalomenie.
+ *
+ * Jeden prázdny riadok je bežné oddelenie odsekov a ostáva; až séria ďalších
+ * robí v texte veľké diery, ktoré v okne zaberajú miesto komentárom.
+ */
+function collapseBlankRuns(text: string): string {
+  return text.replace(/[ \t]*\n(?:[ \t]*\n){2,}[ \t]*/g, '\n');
+}
 /**
  * Sub-pixelová tolerancia. Zaokrúhľovanie výšky riadku vie vyrobiť rozdiel
  * pár desatín pixela aj pri texte, ktorý sa v skutočnosti celý zmestí.
@@ -35,7 +53,7 @@ const OVERFLOW_TOLERANCE_PX = 1;
 /**
  * Strop rozbaleného textu v okne detailu – štvrtina výšky obrazovky, aby sa
  * pod text vždy zmestili akcie aj komentáre. Píše sa doslova z rovnakého
- * dôvodu ako `CLAMP_CLASS` (Tailwind hľadá v zdroji celé názvy tried).
+ * dôvodu ako `CLAMP_CLASSES` (Tailwind hľadá v zdroji celé názvy tried).
  *
  * Keďže sa v rámiku scrolluje, musí sa doň dať dostať aj Tabom – inak by časť
  * textu ostala pre ovládanie klávesnicou neprístupná (WCAG 2.1.1). Prsteň
@@ -58,13 +76,30 @@ type FeedPostCaptionProps = {
    * netreba – tam sa stránka jednoducho predĺži.
    */
   boundedExpansion?: boolean;
+  /**
+   * Koľko riadkov je vidno pred „…Viac". Karta vo feede musí ustúpiť fotke a
+   * ďalším príspevkom, okno detailu má miesta podstatne viac.
+   */
+  maxLines?: number;
+  /**
+   * Scvrknúť zhluky prázdnych riadkov na jedno zalomenie.
+   *
+   * V okne detailu áno: veľké diery v texte tlačia akcie aj komentáre nižšie.
+   * Karta vo feede ostáva zámerne nezmenená – text tam autor vidí tak, ako ho
+   * napísal, a zmena zobrazenia v zozname nie je predmetom tejto úpravy.
+   */
+  collapseBlankLines?: boolean;
 };
 
 export default function FeedPostCaption({
-  text,
+  text: rawText,
   testId = 'feed-post-caption',
   boundedExpansion = false,
+  maxLines = CARD_CAPTION_LINES,
+  collapseBlankLines = false,
 }: FeedPostCaptionProps) {
+  const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
+  const clampClass = CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES];
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -119,7 +154,7 @@ export default function FeedPostCaption({
   const scrollable = expanded && boundedExpansion;
   const sizeClass = expanded
     ? (boundedExpansion ? BOUNDED_EXPANDED_CLASS : '')
-    : CLAMP_CLASS;
+    : clampClass;
 
   return (
     <div>

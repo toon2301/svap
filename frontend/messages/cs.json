@@ -747,6 +747,7 @@
     "ratings": "Hodnotenia",
     "countryTitle": "Země",
     "countryPlaceholder": "Vyberte zemi",
+    "countryRequired": "Vyberte zemi nabídky nebo poptávky.",
     "countrySearchPlaceholder": "Vyhledejte zemi",
     "countryNoResults": "Nebyla nalezena žádná země.",
     "districtUnavailableForCountry": "Pro tuto zemi zatím okresy nenabízíme. Můžete zadat město nebo obec.",

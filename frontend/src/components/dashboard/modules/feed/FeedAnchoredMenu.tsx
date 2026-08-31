@@ -16,6 +16,13 @@
  *
  * Menu sa zmestí do obrazovky: keď dole nie je miesto, otvorí sa nahor,
  * a vodorovne aj zvisle sa drží v okne.
+ *
+ * Vrstva menu leží NAD vrstvou dialógov (`z-[110]` – okno detailu príspevku,
+ * potvrdenia): menu sa otvára z ovládacieho prvku, ktorý je v danej chvíli
+ * najvyššie, takže musí byť nad ním. Pri nižšej hodnote sa menu otvorené v
+ * okne detailu vykreslí ZA jeho podkladom – v DOM je, ale nevidno ho a nedá
+ * sa naň kliknúť. Zostáva pod fullscreen prehliadačom fotky (`z-[112]`),
+ * ktorý je modálny a spod ktorého sa menu otvoriť nedá.
  */
 
 import {
@@ -132,7 +139,7 @@ export default function FeedAnchoredMenu({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[105] bg-transparent"
+      className="fixed inset-0 z-[111] bg-transparent"
       onClick={onClose}
       data-testid={testId ? `${testId}-layer` : undefined}
     >

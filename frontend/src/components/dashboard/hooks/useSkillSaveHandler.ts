@@ -14,6 +14,7 @@ import type { DashboardSkill } from './useSkillsModals';
 import { startBoundedImageRefresh } from './offerImageRefresh';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { getOfferSaveErrorMessage } from '../modules/skills/offerSaveErrors';
+import { isCountryMissingForNewOffer } from '../modules/skills/offerCountryRequirement';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -97,6 +98,21 @@ export function useSkillSaveHandler({
     const trimmedLocation = (draftSkill.location || '').trim();
     const trimmedCountryCode = String(draftSkill.country_code || '').trim().toUpperCase();
     const trimmedDistrictCode = String(draftSkill.district_code || '').trim().toLowerCase();
+
+    if (
+      isCountryMissingForNewOffer({
+        offerId: draftSkill.id,
+        countryCode: trimmedCountryCode,
+      })
+    ) {
+      toast.error(
+        t(
+          'skills.countryRequired',
+          'Vyber krajinu ponuky alebo dopytu.',
+        ),
+      );
+      return;
+    }
 
     if (
       !isValidOfferDistrictSelection({
