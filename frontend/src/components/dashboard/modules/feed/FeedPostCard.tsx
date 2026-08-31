@@ -46,7 +46,10 @@ import {
 } from './feedPostCountEvents';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import FeedAnchoredMenu from './FeedAnchoredMenu';
-import FeedPostCaption from './FeedPostCaption';
+import FeedPostCaption, {
+  CARD_CAPTION_LINES,
+  DETAIL_CAPTION_LINES,
+} from './FeedPostCaption';
 import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
@@ -617,6 +620,11 @@ export default function FeedPostCard({
   const handleOpenSharedSource =
     sharedSourceId && (sharedType === 'feed_post' || sharedOwnerIdentifier)
       ? () => {
+          // Preklik zo zdieľaného náhľadu vedie preč – okno detailu nesmie
+          // ostať visieť nad stránkou, na ktorú sa používateľ práve dostal.
+          // Adresu si rieši samotná navigácia, preto `keepHistory`: krok späť
+          // by ju vzápätí zrušil.
+          if (isDetail) postOverlay?.close({ keepHistory: true });
           if (sharedType === 'portfolio_item') {
             router.push(
               buildPortfolioDetailPath(sharedOwnerIdentifier, sharedSourceId),
@@ -639,6 +647,17 @@ export default function FeedPostCard({
           );
         }
       : undefined;
+
+  // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
+  const sharedCaptionNode =
+    isShared && caption ? (
+      <FeedPostCaption
+        text={caption}
+        boundedExpansion={isDetail}
+        maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
+        collapseBlankLines={isDetail}
+      />
+    ) : null;
 
   const sharedHeadline =
     post.shared_content?.type === 'portfolio_item'
@@ -795,7 +814,12 @@ export default function FeedPostCard({
           a caption je komentár autora k nemu, takže patrí až zaň. */}
       {!isShared && caption ? (
         <div className="px-4 py-3">
-          <FeedPostCaption text={caption} boundedExpansion={isDetail} />
+          <FeedPostCaption
+            text={caption}
+            boundedExpansion={isDetail}
+            maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
+            collapseBlankLines={isDetail}
+          />
         </div>
       ) : null}
 
@@ -813,6 +837,12 @@ export default function FeedPostCard({
 
       {isShared || taggedUsers.length ? (
         <div className="space-y-3 px-4 py-3">
+          {/* V OKNE ide text autora nad náhľad – rovnaké pravidlo ako „text
+              nad fotkou" pri voľnom príspevku. Na karte vo feede ostáva
+              poradie zámerne opačné: tam je hlavným obsahom náhľad a caption
+              je komentár k nemu. */}
+          {isDetail ? sharedCaptionNode : null}
+
           {isShared ? (
             <SharedContentPreview
               post={post}
@@ -821,9 +851,7 @@ export default function FeedPostCard({
             />
           ) : null}
 
-          {isShared && caption ? (
-            <FeedPostCaption text={caption} boundedExpansion={isDetail} />
-          ) : null}
+          {isDetail ? null : sharedCaptionNode}
 
           {taggedUsers.length ? (
             <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">

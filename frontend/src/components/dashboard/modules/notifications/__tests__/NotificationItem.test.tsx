@@ -210,6 +210,14 @@ describe('NotificationItem', () => {
   ])(
     'renders a localized offer-watch match when offer_is_seeking=%s',
     (offerIsSeeking, expectedBody) => {
+      const callOrder: string[] = [];
+      const onNavigate = jest.fn();
+      const onMarkRead = jest.fn(() => {
+        callOrder.push('read');
+      });
+      const onProfileNavigate = jest.fn(() => {
+        callOrder.push('navigate');
+      });
       const notification = makeNotification({
         type: 'offer_watch_match',
         title: 'Backend fallback title',
@@ -228,7 +236,14 @@ describe('NotificationItem', () => {
         },
       });
 
-      render(<NotificationItem notification={notification} />);
+      window.addEventListener('goToUserProfile', onProfileNavigate);
+      render(
+        <NotificationItem
+          notification={notification}
+          onNavigate={onNavigate}
+          onMarkRead={onMarkRead}
+        />,
+      );
 
       expect(screen.getByText('Nová zhoda sledovania')).toBeInTheDocument();
       expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
@@ -236,9 +251,16 @@ describe('NotificationItem', () => {
       );
 
       fireEvent.click(screen.getByRole('button'));
-      expect(mockPush).toHaveBeenCalledWith(
-        '/dashboard/users/watch-owner?highlight=42',
-      );
+      expect(onProfileNavigate).toHaveBeenCalledTimes(1);
+      expect((onProfileNavigate.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+        identifier: 'watch-owner',
+        highlightId: 42,
+      });
+      expect(callOrder).toEqual(['navigate', 'read']);
+      expect(onMarkRead).toHaveBeenCalledWith(notification);
+      expect(onNavigate).not.toHaveBeenCalled();
+      expect(mockPush).not.toHaveBeenCalled();
+      window.removeEventListener('goToUserProfile', onProfileNavigate);
     },
   );
 

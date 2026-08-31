@@ -22,6 +22,13 @@ import {
   useFeedPostOverlay,
 } from '../../../contexts/FeedPostOverlayContext';
 import { resetOverlayLayers } from '../../shared/overlayLayers';
+import {
+  isFeedOverlayHistoryBusy,
+  popFeedOverlayHistory,
+  pushFeedOverlayHistory,
+  resetFeedOverlayHistory,
+} from '../feedOverlayHistory';
+import { buildFeedPostPath } from '../feedPostRouting';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
@@ -60,9 +67,13 @@ jest.mock('@/lib/feedImageUpload', () => ({
   FEED_IMAGE_ACCEPT: '.jpg,.png',
 }));
 
+const toastError = jest.fn();
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
-  default: { error: jest.fn(), success: jest.fn() },
+  default: {
+    error: (...args: unknown[]) => toastError(...args),
+    success: jest.fn(),
+  },
 }));
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -177,9 +188,15 @@ function ProfileTab() {
   );
 }
 
+/** Rovnaká synchronizácia URL, akú robí dashboard. */
+function syncHistory(target: { postId: number } | null) {
+  if (target) pushFeedOverlayHistory(buildFeedPostPath(target.postId));
+  else popFeedOverlayHistory();
+}
+
 function renderApp() {
   render(
-    <FeedPostOverlayProvider>
+    <FeedPostOverlayProvider onTargetChange={syncHistory}>
       <OverlayHost>
         <ProfileTab />
       </OverlayHost>
@@ -190,6 +207,9 @@ function renderApp() {
 beforeEach(() => {
   jest.clearAllMocks();
   resetOverlayLayers();
+  resetFeedOverlayHistory();
+  // Cudzí profil – okno sa otvára odtiaľto, nie z Nástenky.
+  window.history.replaceState(null, '', '/dashboard/users/5');
   profileTabMounts = 0;
   mockedGetPost.mockResolvedValue(makePost());
 });
@@ -238,4 +258,52 @@ it('opens the window again after it was closed', async () => {
   await userEvent.click(screen.getByTestId('feed-comments-button'));
 
   expect(await screen.findByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+});
+
+
+describe('bežné zatvorenie okna z cudzieho profilu', () => {
+  /** Otvorí okno a vráti spôsob, akým ho test zatvorí. */
+  async function openWindow() {
+    renderApp();
+    await userEvent.click(screen.getByTestId('feed-comments-button'));
+    await screen.findByTestId('feed-post-overlay-fixed');
+    toastError.mockClear();
+  }
+
+  async function expectQuietClose() {
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-post-overlay')).not.toBeInTheDocument(),
+    );
+    // Príspevok existuje a používateľ len zavrel okno – hlásiť nedostupnosť
+    // je vyslovene mätúce.
+    expect(toastError).not.toHaveBeenCalled();
+    // A kým sa krok späť nedokončí, cesta príspevku patrí ešte oknu: appka
+    // pod ním preto NESMIE otvoriť celoobrazovkovú stránku (tá by po
+    // dobehnutí kroku ostala bez id a nedostupnosť by ohlásila).
+    expect(isFeedOverlayHistoryBusy()).toBe(true);
+  }
+
+  it('says nothing when closing with Escape', async () => {
+    await openWindow();
+
+    await userEvent.keyboard('{Escape}');
+
+    await expectQuietClose();
+  });
+
+  it('says nothing when closing with the X button', async () => {
+    await openWindow();
+
+    await userEvent.click(screen.getByTestId('feed-post-overlay-close'));
+
+    await expectQuietClose();
+  });
+
+  it('says nothing when closing by a click outside', async () => {
+    await openWindow();
+
+    await userEvent.click(screen.getByTestId('feed-post-overlay-layer'));
+
+    await expectQuietClose();
+  });
 });

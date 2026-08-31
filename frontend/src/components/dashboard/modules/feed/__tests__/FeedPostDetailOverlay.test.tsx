@@ -183,7 +183,7 @@ function stubCaptionHeights() {
     configurable: true,
     get() {
       if (this.dataset.testid !== 'feed-post-caption') return 0;
-      return this.className.includes('line-clamp-3') ? 4000 : 60;
+      return this.className.includes('line-clamp') ? 4000 : 60;
     },
   });
 }
@@ -256,7 +256,7 @@ describe('obsah okna', () => {
 
     const overlay = screen.getByTestId('feed-post-overlay');
     // Okno sa nikdy nenatiahne cez obrazovku…
-    expect(overlay.className).toContain('max-h-[90vh]');
+    expect(overlay.className).toContain('max-h-[95vh]');
     expect(overlay.className).toContain('overflow-hidden');
     // …zvyšok dostane komentárová časť (`flex-1` so základom 0), pričom
     // `min-h` jej drží podlahu, aby ju pevný blok nestlačil na nulu…
@@ -442,6 +442,164 @@ describe('príprava okna a poradie odpovedí', () => {
     // Počet z príspevku 7 sa nesmie rozposlať – ani pod cudzím id.
     expect(seen.every((patch) => patch.postId === 9)).toBe(true);
     expect(seen.some((patch) => patch.commentsCount === 99)).toBe(false);
+  });
+});
+
+describe('zdieľaný obsah v okne', () => {
+  function sharedPost() {
+    return makePost({
+      post_type: 'shared_post',
+      caption: 'Toto stojí za pozretie.',
+      images: [],
+      shared_content: {
+        type: 'offer',
+        id: 55,
+        title: 'Kurz gitary',
+        owner: { id: 21, display_name: 'Peter', slug: 'peter', user_type: 'individual', avatar_url: null },
+      },
+    } as Partial<FeedPost>);
+  }
+
+  it('puts the sharer text above the nested preview', async () => {
+    await renderLoadedOverlay(sharedPost());
+
+    const caption = screen.getByTestId('feed-post-caption');
+    const preview = screen.getByTestId('feed-shared-compact-preview');
+    // Rovnaké pravidlo ako „text nad fotkou" pri voľnom príspevku: najprv
+    // čítam, čo autor napísal, potom vidím, k čomu to napísal.
+    expect(caption.compareDocumentPosition(preview)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+});
+
+describe('rozmery okna', () => {
+  it('is wider than the feed card and nearly as tall as the screen', async () => {
+    await renderLoadedOverlay();
+
+    const overlay = screen.getByTestId('feed-post-overlay');
+    // 54rem = 864 px, teda o ~29 % viac než pôvodných 42rem (672 px).
+    expect(overlay.className).toContain('max-w-[54rem]');
+    // Strop výšky necháva 2,5 % viewportu hore aj dole.
+    expect(overlay.className).toContain('max-h-[95vh]');
+  });
+
+  it('keeps the same width for a text-only post', async () => {
+    // Šírka je fixná, nech okno vyzerá rovnako bez ohľadu na to, či príspevok
+    // má fotku – inak by sa pri prechádzaní príspevkov „mrvilo".
+    await renderLoadedOverlay(makePost({ images: [] }));
+
+    expect(screen.getByTestId('feed-post-overlay').className).toContain(
+      'max-w-[54rem]',
+    );
+  });
+
+  it('lets the height grow with the content instead of fixing it', async () => {
+    await renderLoadedOverlay(makePost({ images: [] }));
+
+    const overlay = screen.getByTestId('feed-post-overlay');
+    // Žiadna pevná ani minimálna výška – krátky príspevok drží okno nízke,
+    // dlhý ho natiahne až po strop.
+    expect(overlay.className).not.toMatch(/(^|\s)h-\[/);
+    expect(overlay.className).not.toMatch(/(^|\s)min-h-\[/);
+    expect(overlay.className).toContain('max-h-[95vh]');
+  });
+});
+
+describe('text v okne detailu', () => {
+  it('shows about ten lines before the toggle, not three', async () => {
+    stubCaptionHeights();
+    await renderLoadedOverlay(makePost({ caption: 'Dlhý text príspevku.' }));
+
+    // Karta vo feede orezáva na tri riadky; okno je oveľa väčšie, takže tam
+    // by tri riadky pôsobili ako zbytočné skrátenie.
+    expect(screen.getByTestId('feed-post-caption').className).toContain(
+      'line-clamp-[10]',
+    );
+    expect(screen.getByTestId('feed-post-caption').className).not.toContain(
+      'line-clamp-3',
+    );
+  });
+
+  it('collapses runs of blank lines into a single break', async () => {
+    await renderLoadedOverlay(
+      makePost({ caption: 'Prvý odsek.\n\n\n\n\nDruhý odsek.' }),
+    );
+
+    // Séria prázdnych riadkov robí v okne veľkú dieru, ktorá tlačí akcie aj
+    // komentáre nižšie – ostane z nej jedno zalomenie.
+    expect(screen.getByTestId('feed-post-caption')).toHaveTextContent(
+      'Prvý odsek. Druhý odsek.',
+    );
+    expect(screen.getByTestId('feed-post-caption').textContent).toBe(
+      'Prvý odsek.\nDruhý odsek.',
+    );
+  });
+
+  it('keeps a single blank line as paragraph separation', async () => {
+    await renderLoadedOverlay(
+      makePost({ caption: 'Prvý odsek.\n\nDruhý odsek.' }),
+    );
+
+    // Jeden prázdny riadok je bežné oddelenie odsekov – ten sa neruší.
+    expect(screen.getByTestId('feed-post-caption').textContent).toBe(
+      'Prvý odsek.\n\nDruhý odsek.',
+    );
+  });
+});
+
+describe('„..." menu vnútri okna', () => {
+  /** Číselná hodnota z triedy `z-[NNN]`. */
+  function zIndexOf(node: Element | null): number {
+    const match = node?.className.match(/z-\[(\d+)\]/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  it('opens above the window, not behind it', async () => {
+    await renderLoadedOverlay(makePost({ can_manage: true }));
+
+    await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+
+    const menu = screen.getByTestId('feed-post-menu');
+    expect(menu).toBeInTheDocument();
+    // Menu sa vykresľuje portálom MIMO okna, takže o tom, či ho vidno,
+    // rozhoduje vrstva. Nižšia hodnota = menu je za podkladom okna: v DOM je,
+    // ale kliknúť sa naň nedá.
+    const menuLayer = document.querySelector('[data-testid="feed-post-menu-layer"]');
+    expect(zIndexOf(menuLayer)).toBeGreaterThan(
+      zIndexOf(screen.getByTestId('feed-post-overlay-layer')),
+    );
+  });
+
+  it('offers report, edit and delete to the author', async () => {
+    await renderLoadedOverlay(makePost({ can_manage: true }));
+
+    await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+
+    expect(screen.getByText('Nahlásiť príspevok')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-edit')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-delete')).toBeInTheDocument();
+  });
+
+  it('offers only report to somebody else', async () => {
+    await renderLoadedOverlay(makePost({ can_manage: false }));
+
+    await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+
+    // Upravovať a mazať smie iba autor – rozhoduje o tom backend cez
+    // `can_manage`, presne ako na karte vo feede.
+    expect(screen.getByText('Nahlásiť príspevok')).toBeInTheDocument();
+    expect(screen.queryByTestId('feed-post-edit')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('feed-post-delete')).not.toBeInTheDocument();
+  });
+
+  it('opens the delete confirmation from inside the window', async () => {
+    await renderLoadedOverlay(makePost({ can_manage: true }));
+
+    await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
+    await userEvent.click(screen.getByTestId('feed-post-delete'));
+
+    expect(screen.getByTestId('feed-post-delete-confirm')).toBeInTheDocument();
   });
 });
 

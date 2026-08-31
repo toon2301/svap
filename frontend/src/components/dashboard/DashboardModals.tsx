@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/lib/apiError';
 import toast from 'react-hot-toast';
 import { getOfferSaveErrorMessage } from './modules/skills/offerSaveErrors';
+import { isCountryMissingForNewOffer } from './modules/skills/offerCountryRequirement';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -131,6 +132,19 @@ export default function DashboardModals({
     const trimmedDistrictCode =
       typeof districtCode === 'string' ? districtCode.trim().toLowerCase() : '';
     const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
+    if (
+      isCountryMissingForNewOffer({
+        offerId: selectedSkillsCategory?.id,
+        countryCode: trimmedCountryCode,
+      })
+    ) {
+      const message = t(
+        'skills.countryRequired',
+        'Vyber krajinu ponuky alebo dopytu.',
+      );
+      toast.error(message);
+      throw new Error(message);
+    }
     const pricePayload =
       priceNegotiable === true
         ? { price_from: null, price_currency: '', price_negotiable: true }

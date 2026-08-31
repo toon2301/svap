@@ -655,6 +655,7 @@
     "district": "Bezirk",
     "countryTitle": "Land",
     "countryPlaceholder": "Land auswählen",
+    "countryRequired": "Wähle das Land des Angebots oder Gesuchs aus.",
     "countrySearchPlaceholder": "Land suchen",
     "countryNoResults": "Kein Land gefunden.",
     "districtUnavailableForCountry": "Für dieses Land stehen derzeit keine Bezirke zur Auswahl. Du kannst eine Stadt oder Gemeinde eingeben.",

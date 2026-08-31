@@ -137,9 +137,19 @@ export default function FeedPostDetailOverlay({
         aria-modal="true"
         aria-label={t('feed.postDetail', 'Detail príspevku')}
         data-testid="feed-post-overlay"
-        // `max-h` drží okno v obrazovke, `flex`+`overflow-hidden` zaisťujú, že
-        // pretečie len komentárová časť nižšie.
-        className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl"
+        // Rozmery: `max-w-[54rem]` (864 px) je o ~29 % viac než pôvodných
+        // `max-w-2xl` (672 px) – šírka je FIXNÁ pre foto aj text-only variant,
+        // nech okno vyzerá rovnako bez ohľadu na obsah. Výška je len STROP:
+        // krátky príspevok drží okno nízke, dlhý ho natiahne až po `95vh`.
+        //
+        // Prečo práve 95vh: ostávajú 2,5 % viewportu hore aj dole, takže je
+        // vidno, že appka pokračuje pod oknom. Nad 640 px výšky obrazovky je
+        // `95vh` tesnejšie než `p-4` podkladu (2 × 16 px), takže odstup drží
+        // za všetkých bežných okolností práve táto hodnota.
+        //
+        // `flex` + `overflow-hidden` zaisťujú, že pretečie len komentárová
+        // časť nižšie.
+        className="relative flex max-h-[95vh] w-full max-w-[54rem] flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <button

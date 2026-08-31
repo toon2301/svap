@@ -299,3 +299,59 @@ it('shows the translated card-limit toast when the backend rejects a stale clien
     'Môžeš mať maximálne 3 karty v tejto sekcii.',
   );
 });
+
+it.each([
+  ['offer', 'skills-offer', false],
+  ['request', 'skills-search', true],
+])(
+  'keeps a new %s draft open and skips the API when its country is missing',
+  async (_label, activeModule, isSeeking) => {
+    const setActiveModule = jest.fn();
+    const selectedSkillsCategory = {
+      ...draft,
+      country_code: '',
+      district_code: '',
+      district: '',
+      location: '',
+      is_seeking: isSeeking,
+    } as DashboardSkill;
+    const { save } = setup({
+      selectedSkillsCategory,
+      activeModule,
+      setActiveModule,
+    });
+
+    await act(async () => {
+      await save();
+    });
+
+    expect(mockedPost).not.toHaveBeenCalled();
+    expect(setActiveModule).not.toHaveBeenCalled();
+    expect(mockedToastError).toHaveBeenCalledWith(
+      'Vyber krajinu ponuky alebo dopytu.',
+    );
+  },
+);
+
+it('keeps a legacy saved offer editable when its country is still empty', async () => {
+  const selectedSkillsCategory = {
+    ...draft,
+    id: 42,
+    country_code: '',
+    district_code: '',
+    district: '',
+    location: '',
+  } as DashboardSkill;
+  mockedPatch.mockResolvedValue({ data: selectedSkillsCategory });
+  const { save } = setup({ selectedSkillsCategory });
+
+  await act(async () => {
+    await save();
+  });
+
+  expect(mockedPatch).toHaveBeenCalledWith(
+    '/skills/42/',
+    expect.objectContaining({ country_code: '' }),
+  );
+  expect(mockedPost).not.toHaveBeenCalled();
+});

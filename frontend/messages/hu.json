@@ -747,6 +747,7 @@
     "ratings": "Értékelések",
     "countryTitle": "Ország",
     "countryPlaceholder": "Válassz országot",
+    "countryRequired": "Válaszd ki az ajánlat vagy keresés országát.",
     "countrySearchPlaceholder": "Ország keresése",
     "countryNoResults": "Nem található ország.",
     "districtUnavailableForCountry": "Ehhez az országhoz még nem érhető el járáslista. Megadhatsz egy várost vagy települést.",

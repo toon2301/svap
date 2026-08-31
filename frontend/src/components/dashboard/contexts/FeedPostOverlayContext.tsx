@@ -29,10 +29,21 @@ export type FeedPostOverlayTarget = {
   highlightCommentId?: number | null;
 };
 
+export type FeedPostOverlayCloseOptions = {
+  /**
+   * Appka práve naviguje inam, takže si adresu rieši sama.
+   *
+   * Bežné zatvorenie vracia adresu na stav spred otvorenia (krok späť). Keď sa
+   * ale zatvára PRETO, že používateľ preklikol ďalej (napr. na zdieľanú
+   * ponuku), krok späť by tú navigáciu vzápätí zrušil.
+   */
+  keepHistory?: boolean;
+};
+
 type FeedPostOverlayContextValue = {
   /** Otvorí okno nad appkou. Volajúci nemusí vedieť, kde okno žije. */
   open: (target: FeedPostOverlayTarget) => void;
-  close: () => void;
+  close: (options?: FeedPostOverlayCloseOptions) => void;
   /** Práve zobrazený príspevok, alebo null keď je okno zavreté. */
   target: FeedPostOverlayTarget | null;
 };
@@ -52,7 +63,10 @@ export function useFeedPostOverlay(): FeedPostOverlayContextValue | null {
 type FeedPostOverlayProviderProps = {
   children: ReactNode;
   /** Volá sa pri otvorení/zatvorení – dashboard podľa toho synchronizuje URL. */
-  onTargetChange?: (target: FeedPostOverlayTarget | null) => void;
+  onTargetChange?: (
+    target: FeedPostOverlayTarget | null,
+    options?: FeedPostOverlayCloseOptions,
+  ) => void;
 };
 
 export function FeedPostOverlayProvider({
@@ -69,10 +83,13 @@ export function FeedPostOverlayProvider({
     [onTargetChange],
   );
 
-  const close = useCallback(() => {
-    setTarget(null);
-    onTargetChange?.(null);
-  }, [onTargetChange]);
+  const close = useCallback(
+    (options?: FeedPostOverlayCloseOptions) => {
+      setTarget(null);
+      onTargetChange?.(null, options);
+    },
+    [onTargetChange],
+  );
 
   const value = useMemo(
     () => ({ open, close, target }),

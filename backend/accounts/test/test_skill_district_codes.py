@@ -45,6 +45,40 @@ class SkillDistrictCodeApiTests(APITestCase):
         self.assertEqual(skill.district_code, "nitra")
         self.assertEqual(skill.district, "Nitra")
 
+    def test_create_skill_requires_country_even_without_district_or_location(self):
+        for country_value in (None, "", "missing"):
+            with self.subTest(country_value=country_value):
+                payload = {
+                    "category": "Remeslá",
+                    "subcategory": "Maliar",
+                    "description": "Maľovanie stien",
+                }
+                if country_value != "missing":
+                    payload["country_code"] = country_value
+
+                response = self.client.post(self.list_url, payload, format="json")
+
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.data["code"], "offer_country_required")
+                self.assertIn("country_code", response.data)
+        self.assertFalse(OfferedSkill.objects.exists())
+
+    def test_create_skill_accepts_country_without_district_or_location(self):
+        response = self.client.post(
+            self.list_url,
+            {
+                "category": "Remeslá",
+                "subcategory": "Maliar",
+                "description": "Maľovanie stien",
+                "country_code": "IT",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["country_code"], "IT")
+        self.assertEqual(response.data["district_code"], "")
+
     def test_create_skill_rejects_district_code_from_different_country(self):
         response = self.client.post(
             self.list_url,
@@ -161,6 +195,50 @@ class SkillDistrictCodeApiTests(APITestCase):
         self.assertEqual(skill.district, "Nitra")
         self.assertEqual(skill.country_code, "")
         self.assertEqual(skill.district_code, "")
+
+    def test_full_location_patch_keeps_legacy_skill_without_country_editable(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Domácnosť",
+            subcategory="Upratovanie",
+            description="Povysávam byt",
+        )
+
+        response = self.client.patch(
+            reverse("accounts:skills_detail", args=[skill.id]),
+            {
+                "description": "Povysávam aj dom",
+                "country_code": "",
+                "district_code": "",
+                "district": "",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        skill.refresh_from_db()
+        self.assertEqual(skill.description, "Povysávam aj dom")
+        self.assertEqual(skill.country_code, "")
+
+    def test_patch_cannot_clear_country_from_a_current_skill(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Domácnosť",
+            subcategory="Upratovanie",
+            description="Povysávam byt",
+            country_code="SK",
+        )
+
+        response = self.client.patch(
+            reverse("accounts:skills_detail", args=[skill.id]),
+            {"country_code": ""},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "offer_country_required")
+        skill.refresh_from_db()
+        self.assertEqual(skill.country_code, "SK")
 
     def test_price_negotiable_clears_numeric_price(self):
         response = self.client.post(
