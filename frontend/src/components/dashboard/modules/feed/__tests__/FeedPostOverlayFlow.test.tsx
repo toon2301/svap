@@ -219,7 +219,7 @@ it('opens the window from a profile tab', async () => {
 
   await userEvent.click(screen.getByTestId('feed-comments-button'));
 
-  expect(await screen.findByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+  expect(await screen.findByTestId('feed-post-overlay-comments')).toBeInTheDocument();
   // Profil ostáva presne tam, kde bol – okno je vrstva, nie navigácia.
   expect(screen.getByTestId('profilova-zalozka')).toBeInTheDocument();
 });
@@ -232,7 +232,7 @@ it('returns the user to the untouched app after closing', async () => {
   expect(screen.getByTestId('stav-zalozky')).toHaveTextContent('1');
 
   await userEvent.click(screen.getByTestId('feed-comments-button'));
-  await screen.findByTestId('feed-post-overlay-fixed');
+  await screen.findByTestId('feed-post-overlay-comments');
 
   await userEvent.keyboard('{Escape}');
 
@@ -249,7 +249,7 @@ it('opens the window again after it was closed', async () => {
   renderApp();
 
   await userEvent.click(screen.getByTestId('feed-comments-button'));
-  await screen.findByTestId('feed-post-overlay-fixed');
+  await screen.findByTestId('feed-post-overlay-comments');
   await userEvent.click(screen.getByTestId('feed-post-overlay-close'));
   await waitFor(() =>
     expect(screen.queryByTestId('feed-post-overlay')).not.toBeInTheDocument(),
@@ -257,7 +257,7 @@ it('opens the window again after it was closed', async () => {
 
   await userEvent.click(screen.getByTestId('feed-comments-button'));
 
-  expect(await screen.findByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+  expect(await screen.findByTestId('feed-post-overlay-comments')).toBeInTheDocument();
 });
 
 
@@ -266,7 +266,7 @@ describe('bežné zatvorenie okna z cudzieho profilu', () => {
   async function openWindow() {
     renderApp();
     await userEvent.click(screen.getByTestId('feed-comments-button'));
-    await screen.findByTestId('feed-post-overlay-fixed');
+    await screen.findByTestId('feed-post-overlay-comments');
     toastError.mockClear();
   }
 

@@ -28,3 +28,16 @@ Po implementácii:
 - over, že nič nerozbíja existujúce flow
 - oprav chyby, ak ich nájdeš
 - vypíš zmenené súbory, nové súbory, migrácie, testy a výsledok kontrol
+
+## Dokumentácia Python kódu
+
+Pri každej práci v Python súbore:
+
+- Každá nová alebo upravená funkcia, metóda a trieda musí mať zmysluplný docstring.
+- Ak agent priamo pracuje s existujúcou funkciou bez docstringu, musí jej docstring doplniť.
+- Docstring musí stručne vysvetľovať účel kódu; nepridávať prázdne alebo formálne docstringy iba kvôli pokrytiu.
+- Dokumentačné pokrytie sa nesmie znížiť oproti stavu pred zmenou.
+- Ak je dokumentačné pokrytie upravovaného súboru pod požadovaným prahom a chýbajúce docstringy sa dajú bezpečne doplniť bez veľkého nesúvisiaceho diffu, agent ich má doplniť.
+- Nemeniť správanie existujúceho kódu iba kvôli zvýšeniu dokumentačného pokrytia.
+- Pred dokončením úlohy spusti príslušnú kontrolu dokumentačného pokrytia, ak je v projekte dostupná.
+- Cieľ projektu je minimálne 80 % dokumentačné pokrytie.

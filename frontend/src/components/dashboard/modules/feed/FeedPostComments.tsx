@@ -1097,7 +1097,12 @@ export default function FeedPostComments({
           role="region"
           aria-label={t('feed.commentsList', 'Komentáre')}
           tabIndex={0}
-          className={`overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
+          // `subtle-scrollbar` je appkina utilita (tenký zaoblený scrollbar so
+          // svetlým aj tmavým variantom v globals.css) – tú istú má composer,
+          // zdieľací dialóg aj zoznam lajkujúcich. V dvojstĺpcovom okne
+          // detailu je toto JEDINÉ scrollovateľné miesto, takže by tu
+          // predvolený systémový scrollbar bil do očí najviac.
+          className={`subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
             fillHeight ? 'h-full' : 'max-h-[min(26rem,60dvh)]'
           }`}
         >
@@ -1241,7 +1246,7 @@ export default function FeedPostComments({
           rows={2}
           placeholder={t('feed.commentPlaceholder', 'Napíš komentár...')}
           aria-label={t('feed.commentPlaceholder', 'Napíš komentár...')}
-          className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
+          className="w-full resize-y subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           {isMobile ? null : (

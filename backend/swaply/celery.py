@@ -21,6 +21,7 @@ app.conf.imports = tuple(
         + (
             "accounts.offer_watch_tasks",
             "accounts.offer_watch_notification_tasks",
+            "accounts.password_reset_tasks",
             "swaply.tasks.offer_images",
             "swaply.tasks.portfolio_images",
             "swaply.tasks.webpush",

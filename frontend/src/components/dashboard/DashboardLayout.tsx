@@ -110,6 +110,13 @@ export default function DashboardLayout({
 
   const isMobileEditMode =
     isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile';
+  // Pri priamom návrate na /dashboard/notifications môže staršia inicializácia
+  // ponechať rovnomennú položku pravého panela. Zoznam upozornení však nie je
+  // nastavenie ani otvorený pravý panel.
+  const isRestoredNotificationsFeedState =
+    activeModule === 'notifications' && activeRightItem === 'notifications';
+  const isEffectiveRightSidebarOpen =
+    isRightSidebarOpen && !isRestoredNotificationsFeedState;
   const isMobileSettingsDetailOpen =
     activeModule === 'notification-settings' ||
     activeModule === 'language' ||
@@ -117,7 +124,7 @@ export default function DashboardLayout({
     activeModule === 'privacy' ||
     activeModule === 'account-settings' ||
     activeModule === 'blocked-users' ||
-    activeRightItem === 'notifications' ||
+    (activeRightItem === 'notifications' && activeModule !== 'notifications') ||
     activeRightItem === 'language' ||
     activeRightItem === 'account-type' ||
     activeRightItem === 'privacy' ||
@@ -127,8 +134,8 @@ export default function DashboardLayout({
   const isAuxiliaryPanelOpen = Boolean(isSearchOpen || isNotificationsPanelOpen);
   const activeSidebarItem = isNotificationsPanelOpen ? 'notifications' : isSearchOpen ? 'search' : activeModule;
   const auxiliaryPanelRef = useRef<HTMLDivElement>(null);
-  const hasAuxiliaryRightRail = !isRightSidebarOpen && Boolean(desktopRightRail);
-  const hasDesktopRightColumn = isRightSidebarOpen || hasAuxiliaryRightRail;
+  const hasAuxiliaryRightRail = !isEffectiveRightSidebarOpen && Boolean(desktopRightRail);
+  const hasDesktopRightColumn = isEffectiveRightSidebarOpen || hasAuxiliaryRightRail;
   const shouldShowDesktopRightColumn = hasDesktopRightColumn && !isAuxiliaryPanelOpen;
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
@@ -406,9 +413,9 @@ export default function DashboardLayout({
         {/* Right rail - Desktop only, shows in grid when open */}
         {shouldShowDesktopRightColumn && (
           <div className="svap-right-sidebar-col hidden lg:block h-screen overflow-hidden">
-            {isRightSidebarOpen ? (
+            {isEffectiveRightSidebarOpen ? (
               <RightSidebar
-                isOpen={isRightSidebarOpen}
+                isOpen={isEffectiveRightSidebarOpen}
                 onClose={onRightSidebarClose}
                 activeItem={activeRightItem}
                 onItemClick={onRightItemClick}

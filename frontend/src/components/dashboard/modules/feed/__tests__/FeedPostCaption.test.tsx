@@ -222,7 +222,7 @@ describe('skrátenie na tri riadky', () => {
     expect(caption).toHaveTextContent('Veľmi dlhý text');
 
     const toggle = screen.getByTestId('feed-post-caption-toggle');
-    expect(toggle).toHaveTextContent('...Viac');
+    expect(toggle).toHaveTextContent('Viac');
 
     await userEvent.click(toggle);
 
@@ -234,7 +234,7 @@ describe('skrátenie na tri riadky', () => {
 
     expect(caption.className).toContain('line-clamp-3');
     expect(screen.getByTestId('feed-post-caption-toggle')).toHaveTextContent(
-      '...Viac',
+      'Viac',
     );
   });
 
@@ -272,7 +272,7 @@ describe('skrátenie na tri riadky', () => {
     await waitFor(() => expect(caption.className).toContain('line-clamp-3'));
     expect(caption).toHaveTextContent('Iný dlhý text');
     expect(screen.getByTestId('feed-post-caption-toggle')).toHaveTextContent(
-      '...Viac',
+      'Viac',
     );
   });
 
@@ -309,7 +309,7 @@ describe('skrátenie na tri riadky', () => {
     await userEvent.click(firstToggle);
 
     expect(firstToggle).toHaveTextContent('Menej');
-    expect(secondToggle).toHaveTextContent('...Viac');
+    expect(secondToggle).toHaveTextContent('Viac');
   });
 
   it('re-measures when the window width changes', async () => {

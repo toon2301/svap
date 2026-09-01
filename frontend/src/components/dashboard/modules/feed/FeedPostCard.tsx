@@ -34,6 +34,7 @@ import {
   removeOwnFeedPostTag,
   unlikeFeedPost,
   type FeedPost,
+  type FeedPostImage,
 } from '@/lib/feedApi';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
@@ -349,6 +350,9 @@ export default function FeedPostCard({
   onSelfTagRemoved,
   onDeleted,
   variant = 'card',
+  fillHeight = false,
+  liveImages,
+  onPostUpdated,
   commentsCount: commentsCountOverride,
 }: {
   post: FeedPost;
@@ -358,6 +362,30 @@ export default function FeedPostCard({
    * tú si okno vykresľuje samo v scrollovateľnej časti.
    */
   variant?: 'card' | 'detail';
+  /**
+   * Karta vyplní výšku rodiča a fotka si vezme zvyšok (dvojstĺpcové okno
+   * detailu pri príspevku S FOTKOU).
+   *
+   * Hlavička, text, označenia aj riadok akcií majú vtedy pevnú výšku
+   * (`shrink-0`) a jediná pružná časť je médiová plocha, takže rozbalenie
+   * textu fotku zmenší namiesto toho, aby stĺpec pretiekol. Bez fotky nemá
+   * čo zvyšok pohltiť, preto to zapína výhradne `FeedPostDetailSplitLayout`.
+   */
+  fillHeight?: boolean;
+  /**
+   * Živý stav fotiek zvonka – karta si ho vtedy nesleduje sama.
+   *
+   * Používa to okno detailu: podľa fotiek sa rozhoduje o rozložení, takže ich
+   * musí poznať UŽ NAD kartou. Aby nad tým istým príspevkom nebežali dva
+   * pollingy, dostane ich karta hotové (viď `usePendingFeedImages`).
+   */
+  liveImages?: FeedPostImage[];
+  /**
+   * Autor príspevok upravil. Karta si novú verziu drží aj sama; okno detailu
+   * ju ale potrebuje tiež – rozhoduje sa podľa nej o rozložení a podáva karte
+   * fotky späť.
+   */
+  onPostUpdated?: (post: FeedPost) => void;
   /** V okne drží počet komentárov okno (má ich pod sebou), nie karta. */
   commentsCount?: number;
   /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
@@ -440,7 +468,12 @@ export default function FeedPostCard({
   // z neho inicializoval edit modal pri druhom otvorení, ukázal by už zmazané
   // fotky a starým textom by prepísal ten práve uložený.
   const [currentPost, setCurrentPost] = useState(post);
-  const images = usePendingFeedImages(currentPost);
+  // Keď fotky sleduje niekto nad kartou (okno detailu), vlastný polling sa
+  // vypne – inak by nad jedným príspevkom bežali dva naraz.
+  const ownImages = usePendingFeedImages(currentPost, {
+    enabled: liveImages === undefined,
+  });
+  const images = liveImages ?? ownImages;
   const caption = currentPost.caption;
   // `is_edited` chodí LEN autorovi – cudziemu divákovi kľúč v odpovedi vôbec
   // nie je, takže `undefined` znamená „nezobrazuj", nie „neviem".
@@ -453,6 +486,9 @@ export default function FeedPostCard({
   // vlastný stav karty pritom beží ďalej, takže po zatvorení okna nič nechýba.
   const shownCommentsCount = commentsCountOverride ?? commentsCount;
   const isDetail = variant === 'detail';
+  // V pružnom stĺpci nesmie hlavičku, text, označenia ani akcie nič stlačiť –
+  // zmenšuje sa výhradne fotka. Mimo neho trieda nič nemení (rodič nie je flex).
+  const fixedBlock = fillHeight ? 'shrink-0' : '';
   // Kontext chýba mimo dashboardu (napr. samostatne vykreslená karta) – vtedy
   // ostáva pôvodné správanie: komentáre sa rozbalia priamo v karte.
   const postOverlay = useFeedPostOverlay();
@@ -654,8 +690,9 @@ export default function FeedPostCard({
       <FeedPostCaption
         text={caption}
         boundedExpansion={isDetail}
+        expansionBound={fillHeight ? 'roomy' : 'compact'}
         maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
-        collapseBlankLines={isDetail}
+        collapseBlankLines
       />
     ) : null;
 
@@ -681,6 +718,9 @@ export default function FeedPostCard({
         isDetail
           ? 'overflow-hidden'
           : 'overflow-hidden rounded-none border shadow-sm sm:rounded-2xl',
+        // `overflow-hidden` vyššie + pevné bloky + pružná fotka = stĺpec, ktorý
+        // sa NEDÁ doscrollovať. `min-h-0` ruší automatické minimum flex položky.
+        fillHeight ? 'flex min-h-0 flex-1 flex-col' : '',
         isShared && !isDetail
           ? SHARED_CARD_SURFACE
           : isDetail
@@ -689,7 +729,9 @@ export default function FeedPostCard({
       ].join(' ')}
     >
       {isShared ? (
-        <div className="flex items-center gap-2 px-4 pt-3 text-xs font-medium text-purple-700 dark:text-purple-200">
+        <div
+          className={`flex items-center gap-2 px-4 pt-3 text-xs font-medium text-purple-700 dark:text-purple-200 ${fixedBlock}`}
+        >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-200/80 text-purple-700 dark:bg-purple-900/60 dark:text-purple-200">
             <ExchangeIcon />
           </span>
@@ -701,12 +743,15 @@ export default function FeedPostCard({
         </div>
       ) : null}
 
-      {/* V okne detailu sedí vpravo hore ešte jeho vlastné „X". Bez miesta
-          navyše by prekrylo „..." menu karty – oboje má byť dosiahnuteľné. */}
+      {/* V jednostĺpcovom okne detailu sedí vpravo hore ešte jeho vlastné „X".
+          Bez miesta navyše by prekrylo „..." menu karty – oboje má byť
+          dosiahnuteľné. V dvojstĺpcovom rozložení leží „X" nad PRAVÝM stĺpcom
+          (miesto mu uvoľňuje nadpis komentárov), takže tu by odsadenie len
+          zbytočne ukrajovalo šírku. */}
       <header
         className={`flex items-center gap-3 px-4 pb-3 pt-3 ${
-          isDetail ? 'pr-12' : ''
-        }`}
+          isDetail && !fillHeight ? 'pr-12' : ''
+        } ${fixedBlock}`}
       >
         <InitialsAvatar
           name={authorName}
@@ -809,34 +854,57 @@ export default function FeedPostCard({
         </div>
       </header>
 
-      {/* Voľný príspevok: VEDIE text, fotky idú pod neho. Zdieľanie má poradie
-          iné a zámerne nezmenené – tam je hlavným obsahom náhľad zdieľaného
-          a caption je komentár autora k nemu, takže patrí až zaň. */}
+      {/* Voľný príspevok: VEDIE text, fotky idú pod neho. Zdieľanie sa riadi
+          tým istým pravidlom v okne detailu (text nad náhľadom), na karte vo
+          feede ostáva poradie opačné – viď blok zdieľaného obsahu nižšie. */}
       {!isShared && caption ? (
-        <div className="px-4 py-3">
+        <div className={`px-4 py-3 ${fixedBlock}`}>
           <FeedPostCaption
             text={caption}
             boundedExpansion={isDetail}
+            expansionBound={fillHeight ? 'roomy' : 'compact'}
             maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
-            collapseBlankLines={isDetail}
+            collapseBlankLines
           />
         </div>
       ) : null}
 
       {images.length > 0 ? (
-        <FeedPostImageCarousel
-          images={images}
-          alt={t('feed.imageAlt', 'Fotka príspevku')}
-          // Vo feede klik na fotku otvára okno detailu; v samotnom okne už
-          // otvorí fullscreen prehliadač (vrstvu nad ním).
-          onPhotoClick={
-            opensOverlay ? () => postOverlay?.open({ postId: post.id }) : undefined
-          }
-        />
+        fillHeight ? (
+          // Jediná PRUŽNÁ časť stĺpca: vlastný flex stĺpec, aby si médiová
+          // plocha vzala zvyšok a poznámka o zamietnutej fotke ostala pod ňou.
+          //
+          // `min-h-[8rem]` je PODLAHA, nie výška: ruší automatické minimum
+          // flex položky (to je úloha, akú tu inak plní `min-h-0`) a zároveň
+          // drží fotku viditeľnú aj vtedy, keď pevné časti nad ňou vyčerpajú
+          // celý stĺpec (dlhý text + plný zoznam označených + nízke okno).
+          // V takom prípade sa doscrolluje stĺpec ako celok – viď
+          // `FeedPostDetailSplitLayout`.
+          <div
+            className="flex min-h-[8rem] flex-1 flex-col"
+            data-testid="feed-post-media-fill"
+          >
+            <FeedPostImageCarousel
+              images={images}
+              alt={t('feed.imageAlt', 'Fotka príspevku')}
+              fillHeight
+            />
+          </div>
+        ) : (
+          <FeedPostImageCarousel
+            images={images}
+            alt={t('feed.imageAlt', 'Fotka príspevku')}
+            // Vo feede klik na fotku otvára okno detailu; v samotnom okne už
+            // otvorí fullscreen prehliadač (vrstvu nad ním).
+            onPhotoClick={
+              opensOverlay ? () => postOverlay?.open({ postId: post.id }) : undefined
+            }
+          />
+        )
       ) : null}
 
       {isShared || taggedUsers.length ? (
-        <div className="space-y-3 px-4 py-3">
+        <div className={`space-y-3 px-4 py-3 ${fixedBlock}`}>
           {/* V OKNE ide text autora nad náhľad – rovnaké pravidlo ako „text
               nad fotkou" pri voľnom príspevku. Na karte vo feede ostáva
               poradie zámerne opačné: tam je hlavným obsahom náhľad a caption
@@ -897,7 +965,9 @@ export default function FeedPostCard({
         </div>
       ) : null}
 
-      <footer className="flex items-center gap-4 border-t border-gray-200/70 px-4 py-2.5 dark:border-gray-700/60">
+      <footer
+        className={`flex items-center gap-4 border-t border-gray-200/70 px-4 py-2.5 dark:border-gray-700/60 ${fixedBlock}`}
+      >
         <ActionButton
           label={t('feed.likes', 'Páči sa mi')}
           count={likesCount}
@@ -1008,7 +1078,10 @@ export default function FeedPostCard({
           open
           post={currentPost}
           onClose={() => setEditOpen(false)}
-          onUpdated={setCurrentPost}
+          onUpdated={(updated) => {
+            setCurrentPost(updated);
+            onPostUpdated?.(updated);
+          }}
         />
       ) : null}
       <FeedPostReportModal

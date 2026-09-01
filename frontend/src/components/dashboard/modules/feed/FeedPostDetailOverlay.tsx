@@ -7,10 +7,15 @@
  * neodmountuje: appka sa nenaviguje, len sa navrch vykreslí portál. Po zavretí
  * je teda používateľ presne tam, kde bol, vrátane pozície scrollu.
  *
- * Rozloženie: pevný blok (hlavička, text, fotky, akcie) sa nikdy nescrolluje,
- * komentáre dostanú všetok zvyšný priestor. Robí to `flex` stĺpec s
- * `min-h-0` na komentárovej časti – bez toho by ju obsah roztiahol a okno by
- * prerástlo obrazovku (flex položka má predvolene `min-height: auto`).
+ * Rozloženie má dva tvary podľa toho, či príspevok má fotku:
+ *
+ *  - S FOTKOU: dva stĺpce vedľa seba (`FeedPostDetailSplitLayout`) – vľavo
+ *    hlavička, text, fotka a akcie, vpravo výhradne komentáre.
+ *  - BEZ FOTKY: pôvodné jednostĺpcové rozloženie – pevný blok (hlavička, text,
+ *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor.
+ *    Robí to `flex` stĺpec s `min-h-0` na komentárovej časti – bez toho by ju
+ *    obsah roztiahol a okno by prerástlo obrazovku (flex položka má
+ *    predvolene `min-height: auto`).
  *
  * Obsah pevného bloku je TÁ ISTÁ `FeedPostCard` ako vo feede, len vo variante
  * `detail`: hlavička, „..." menu, lajk, počty aj zdieľanie tak majú jedinú
@@ -24,10 +29,15 @@ import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
+import FeedPostDetailSplitLayout, {
+  hasVisibleFeedPhoto,
+} from './FeedPostDetailSplitLayout';
 import { useFeedDialog } from './useFeedDialog';
+import { usePendingFeedImages } from './usePendingFeedImages';
 import { emitFeedPostCounts } from './feedPostCountEvents';
 
 type FeedPostDetailOverlayProps = {
@@ -119,6 +129,38 @@ export default function FeedPostDetailOverlay({
     emitFeedPostCounts({ postId, commentsCount });
   }, [post, postId, commentsCount]);
 
+  /**
+   * ŽIVÝ stav fotiek – ten istý hook, akým si ich sleduje karta vo feede.
+   *
+   * Musí bežať TU, nad kartou: podľa fotiek sa vyberá rozloženie, takže
+   * jednorazová snímka z načítania nestačí. Keby moderácia zamietla jedinú
+   * (rozpracovanú) fotku počas otvoreného okna, ostalo by dvojstĺpcové
+   * rozloženie s prázdnou médiovou plochou až do zavretia a znovuotvorenia.
+   *
+   * Karta v okne dostane výsledok hotový (`liveImages`), takže nad tým istým
+   * príspevkom nebežia dva pollingy naraz.
+   */
+  const liveImages = usePendingFeedImages(post);
+
+  /**
+   * Dvojstĺpcové rozloženie potrebuje DVE veci naraz:
+   *
+   *  - fotku (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
+   *  - a dosť širokú obrazovku, inak by z dvoch stĺpcov ostali dva nepoužiteľne
+   *    úzke pruhy.
+   *
+   * Hranicu určuje `useIsMobile` – tá istá, akou sa rozhoduje, či sa okno
+   * vôbec otvorí namiesto celoobrazovkovej stránky (`decideFeedPostEntry`),
+   * takže je to appkina existujúca hranica desktop/mobil (lg, 1024 px), nie
+   * nová konštanta. Otvorené okno sa pri zúžení prehliadača nezatvára, takže
+   * bez tejto podmienky by sa dva stĺpce udržali aj hlboko pod ňou.
+   *
+   * Pod hranicou platí presne to, čo dnes platí pre text-only príspevky:
+   * pôvodné jednostĺpcové rozloženie.
+   */
+  const isMobile = useIsMobile();
+  const splitLayout = hasVisibleFeedPhoto(liveImages) && !isMobile;
+
   if (!portalNode) return null;
 
   return createPortal(
@@ -149,7 +191,14 @@ export default function FeedPostDetailOverlay({
         //
         // `flex` + `overflow-hidden` zaisťujú, že pretečie len komentárová
         // časť nižšie.
-        className="relative flex max-h-[95vh] w-full max-w-[54rem] flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl"
+        //
+        // Pri dvojstĺpcovom rozložení je výška PEVNÁ (`h-[95vh]`, nie strop):
+        // pružná fotka v ľavom stĺpci má `flex-1`, ktoré potrebuje definitívnu
+        // výšku rodiča – zo `max-h` by vyšla nula. Text-only príspevok ostáva
+        // pri strope, aby krátky príspevok držal okno nízke.
+        className={`relative flex w-full max-w-[54rem] flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
+          splitLayout ? 'h-[95vh]' : 'max-h-[95vh]'
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -187,6 +236,20 @@ export default function FeedPostDetailOverlay({
             </button>
           </div>
         ) : post ? (
+          splitLayout ? (
+            <FeedPostDetailSplitLayout
+              post={post}
+              liveImages={liveImages}
+              commentsCount={commentsCount}
+              highlightCommentId={highlightCommentId}
+              onDeleted={onClose}
+              onPostUpdated={setPost}
+              onCommentsCountChange={(delta) =>
+                setCommentsCount((count) => Math.max(0, count + delta))
+              }
+              onCommentsTotalChange={setCommentsCount}
+            />
+          ) : (
           <>
             {/* PEVNÝ blok – hlavička, text, fotky, akcie. Za bežných
                 okolností sa nescrolluje: komentáre pod ním majú `flex-1` so
@@ -197,14 +260,16 @@ export default function FeedPostDetailOverlay({
                 sa a doscrolluje sa v ňom, takže nič neostane nedosiahnuteľné
                 za orezanou hranou okna. */}
             <div
-              className="min-h-0 overflow-y-auto"
+              className="subtle-scrollbar min-h-0 overflow-y-auto"
               data-testid="feed-post-overlay-fixed"
             >
               <FeedPostCard
                 post={post}
                 variant="detail"
+                liveImages={liveImages}
                 commentsCount={commentsCount}
                 onDeleted={onClose}
+                onPostUpdated={setPost}
               />
             </div>
 
@@ -228,6 +293,7 @@ export default function FeedPostDetailOverlay({
               />
             </div>
           </>
+          )
         ) : null}
       </div>
     </div>,

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Text príspevku – dlhý sa zbalí na tri riadky s prepínačom „…Viac"/„Menej".
+ * Text príspevku – dlhý sa zbalí na pár riadkov s prepínačom „Viac"/„Menej".
  *
  * Orezáva sa CSS-kom (`line-clamp-3`, tú istú utilitu appka používa napr.
  * v náhľade zdieľaného príspevku), nie skrátením reťazca: koľko sa zmestí,
@@ -51,17 +51,37 @@ function collapseBlankRuns(text: string): string {
 const OVERFLOW_TOLERANCE_PX = 1;
 
 /**
- * Strop rozbaleného textu v okne detailu – štvrtina výšky obrazovky, aby sa
- * pod text vždy zmestili akcie aj komentáre. Píše sa doslova z rovnakého
- * dôvodu ako `CLAMP_CLASSES` (Tailwind hľadá v zdroji celé názvy tried).
+ * Stropy rozbaleného textu. Píšu sa DOSLOVA z rovnakého dôvodu ako
+ * `CLAMP_CLASSES` (Tailwind hľadá v zdroji celé názvy tried).
  *
+ * - `compact` = jednostĺpcové okno detailu: text, akcie aj komentáre sú pod
+ *   sebou, takže text si smie vziať nanajvýš štvrtinu obrazovky.
+ * - `roomy` = dvojstĺpcové okno pri príspevku s fotkou: v ľavom stĺpci je s
+ *   textom už len hlavička, fotka a riadok akcií, takže text má miesta viac.
+ *   Strop je tam POISTKA, nie bežný stav – reálny caption (limit 500 znakov)
+ *   sa pri šírke stĺpca zmestí do ~8 riadkov (~10 % výšky obrazovky), takže
+ *   sa nadobudne len pri texte plnom vynútených zalomení. Práve on ale drží
+ *   záruku, že ľavý stĺpec nikdy nescrolluje – viď FeedPostDetailSplitLayout.
+ */
+export const BOUNDED_EXPANDED_MAX_HEIGHT = {
+  compact: 'max-h-[25vh]',
+  roomy: 'max-h-[40vh]',
+} as const;
+
+export type CaptionExpansionBound = keyof typeof BOUNDED_EXPANDED_MAX_HEIGHT;
+
+/**
  * Keďže sa v rámiku scrolluje, musí sa doň dať dostať aj Tabom – inak by časť
  * textu ostala pre ovládanie klávesnicou neprístupná (WCAG 2.1.1). Prsteň
  * fokusu je ten istý ako pri zozname komentárov, čo je jediná ďalšia takáto
  * oblasť v Nástenke.
+ *
+ * `subtle-scrollbar` je appkina utilita (tenký, zaoblený, so svetlým aj tmavým
+ * variantom v globals.css) – tú istú má composer, zdieľací dialóg aj zoznam
+ * komentárov, takže scrollbary vyzerajú všade rovnako.
  */
 const BOUNDED_EXPANDED_CLASS =
-  'max-h-[25vh] overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60';
+  'subtle-scrollbar overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60';
 
 type FeedPostCaptionProps = {
   text: string;
@@ -77,16 +97,22 @@ type FeedPostCaptionProps = {
    */
   boundedExpansion?: boolean;
   /**
-   * Koľko riadkov je vidno pred „…Viac". Karta vo feede musí ustúpiť fotke a
+   * Ako vysoko smie rozbalený text siahnuť, keď je `boundedExpansion` zapnuté.
+   * Predvolene `compact`; dvojstĺpcové okno s fotkou si pýta `roomy`.
+   */
+  expansionBound?: CaptionExpansionBound;
+  /**
+   * Koľko riadkov je vidno pred „Viac". Karta vo feede musí ustúpiť fotke a
    * ďalším príspevkom, okno detailu má miesta podstatne viac.
    */
   maxLines?: number;
   /**
    * Scvrknúť zhluky prázdnych riadkov na jedno zalomenie.
    *
-   * V okne detailu áno: veľké diery v texte tlačia akcie aj komentáre nižšie.
-   * Karta vo feede ostáva zámerne nezmenená – text tam autor vidí tak, ako ho
-   * napísal, a zmena zobrazenia v zozname nie je predmetom tejto úpravy.
+   * Veľké diery v texte tlačia na karte fotku a v okne akcie aj komentáre
+   * nižšie – v oboch prípadoch bez toho, aby čokoľvek pridali. Prepínač ostáva
+   * kvôli miestam, kde by sa text mal ukázať PRESNE tak, ako ho autor napísal
+   * (napr. náhľad pri úprave).
    */
   collapseBlankLines?: boolean;
 };
@@ -95,6 +121,7 @@ export default function FeedPostCaption({
   text: rawText,
   testId = 'feed-post-caption',
   boundedExpansion = false,
+  expansionBound = 'compact',
   maxLines = CARD_CAPTION_LINES,
   collapseBlankLines = false,
 }: FeedPostCaptionProps) {
@@ -153,7 +180,9 @@ export default function FeedPostCaption({
   // len prekážka navyše.
   const scrollable = expanded && boundedExpansion;
   const sizeClass = expanded
-    ? (boundedExpansion ? BOUNDED_EXPANDED_CLASS : '')
+    ? (boundedExpansion
+        ? `${BOUNDED_EXPANDED_MAX_HEIGHT[expansionBound]} ${BOUNDED_EXPANDED_CLASS}`
+        : '')
     : clampClass;
 
   return (
@@ -180,7 +209,7 @@ export default function FeedPostCaption({
         >
           {expanded
             ? t('feed.captionLess', 'Menej')
-            : t('feed.captionMore', '...Viac')}
+            : t('feed.captionMore', 'Viac')}
         </button>
       ) : null}
     </div>

@@ -130,6 +130,38 @@ describe('DashboardLayout messages mobile sizing', () => {
     expect(screen.queryByTestId('mobile-top-nav')).not.toBeInTheDocument();
   });
 
+  it('treats a restored notifications route as the feed, not as notification settings', () => {
+    render(
+      <DashboardLayout
+        {...baseProps}
+        activeModule="notifications"
+        activeRightItem="notifications"
+        isRightSidebarOpen
+      >
+        <div>Upozornenia</div>
+      </DashboardLayout>,
+    );
+
+    expect(screen.getByTestId('mobile-top-nav')).toBeInTheDocument();
+    expect(screen.queryByTestId('right-sidebar')).not.toBeInTheDocument();
+  });
+
+  it('keeps notification settings in the dedicated settings flow', () => {
+    render(
+      <DashboardLayout
+        {...baseProps}
+        activeModule="notification-settings"
+        activeRightItem="notifications"
+        isRightSidebarOpen
+      >
+        <div>Nastavenia upozornení</div>
+      </DashboardLayout>,
+    );
+
+    expect(screen.queryByTestId('mobile-top-nav')).not.toBeInTheDocument();
+    expect(screen.getByTestId('right-sidebar')).toBeInTheDocument();
+  });
+
   it('temporarily hides the desktop right sidebar while the auxiliary search panel is open', () => {
     const { rerender } = render(
       <DashboardLayout
