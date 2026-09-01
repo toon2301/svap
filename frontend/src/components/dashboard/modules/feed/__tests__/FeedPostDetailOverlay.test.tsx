@@ -1,9 +1,11 @@
 /**
  * Okno detailu príspevku – vrstva nad appkou (DESKTOP).
  *
- * Overuje sa obsah a poradie pevného bloku, že scrolluje len komentárová
- * časť, zatváranie (X / Escape / klik mimo), vnorený fullscreen prehliadač
- * fotky ako druhá vrstva a to, že appka pod oknom ostáva namountovaná.
+ * Tento súbor pokrýva JEDNOSTĹPCOVÉ rozloženie (príspevok BEZ fotky) a to, čo
+ * je spoločné obom: zatváranie (X / Escape / klik mimo), vnorený fullscreen
+ * prehliadač fotky ako druhá vrstva a to, že appka pod oknom ostáva
+ * namountovaná. Dvojstĺpcové rozloženie príspevku S FOTKOU má vlastný súbor
+ * `FeedPostDetailSplitLayout.test.tsx`.
  */
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
@@ -158,14 +160,24 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-/** Počká, kým sa príspevok načíta – dovtedy je v okne len kostra. */
+/**
+ * Počká, kým sa príspevok načíta – dovtedy je v okne len kostra.
+ *
+ * Čaká sa na KARTU, nie na pevný blok: ten je len v jednostĺpcovom rozložení,
+ * kým karta je v oboch.
+ */
 async function renderLoadedOverlay(
   post = makePost(),
   highlightCommentId: number | null = null,
 ) {
   const handles = renderOverlay(post, highlightCommentId);
-  await screen.findByTestId('feed-post-overlay-fixed');
+  await screen.findByTestId('feed-post-card');
   return handles;
+}
+
+/** Text-only príspevok – jednostĺpcové rozloženie okna. */
+function textOnlyPost(overrides: Partial<FeedPost> = {}): FeedPost {
+  return makePost({ images: [], ...overrides });
 }
 
 /**
@@ -207,23 +219,18 @@ beforeEach(() => {
 
 describe('obsah okna', () => {
   it('shows the fixed block in order and the comments below it', async () => {
-    await renderLoadedOverlay();
+    await renderLoadedOverlay(textOnlyPost());
 
     const overlay = screen.getByTestId('feed-post-overlay');
     const fixed = within(overlay).getByTestId('feed-post-overlay-fixed');
 
-    // Poradie: hlavička, text, fotka, akcie – všetko v pevnom bloku.
+    // Poradie: hlavička, text, akcie – všetko v pevnom bloku.
     const order = Array.from(
       fixed.querySelectorAll(
-        'header, [data-testid="feed-post-caption"], [data-testid="feed-post-image"], footer',
+        'header, [data-testid="feed-post-caption"], footer',
       ),
     ).map((node) => node.getAttribute('data-testid') ?? node.tagName.toLowerCase());
-    expect(order).toEqual([
-      'header',
-      'feed-post-caption',
-      'feed-post-image',
-      'footer',
-    ]);
+    expect(order).toEqual(['header', 'feed-post-caption', 'footer']);
 
     // Komentáre sú MIMO pevného bloku – to je jediná scrollovateľná časť.
     const comments = within(overlay).getByTestId('feed-post-overlay-comments');
@@ -234,7 +241,7 @@ describe('obsah okna', () => {
   });
 
   it('keeps both the post menu and the close button reachable', async () => {
-    await renderLoadedOverlay();
+    await renderLoadedOverlay(textOnlyPost());
 
     const header = screen.getByTestId('feed-post-overlay-fixed').querySelector('header');
     expect(screen.getByTestId('feed-post-menu-trigger')).toBeInTheDocument();
@@ -252,7 +259,7 @@ describe('obsah okna', () => {
   });
 
   it('keeps the window inside the screen and scrolls only the comments', async () => {
-    await renderLoadedOverlay();
+    await renderLoadedOverlay(textOnlyPost());
 
     const overlay = screen.getByTestId('feed-post-overlay');
     // Okno sa nikdy nenatiahne cez obrazovku…
@@ -263,9 +270,11 @@ describe('obsah okna', () => {
     const comments = screen.getByTestId('feed-post-overlay-comments');
     expect(comments.className).toContain('flex-1');
     expect(comments.className).toContain('min-h-[7rem]');
-    expect(
-      screen.getByTestId('feed-comments-scroll').className,
-    ).toContain('overflow-y-auto');
+    const scroll = screen.getByTestId('feed-comments-scroll');
+    expect(scroll.className).toContain('overflow-y-auto');
+    // Scrollbar má appkinu utilitu (tenký, zaoblený, so svetlým aj tmavým
+    // variantom v globals.css) – nie systémový predvolený.
+    expect(scroll.className).toContain('subtle-scrollbar');
     // …a pevný blok má poistku pre krajný prípad, aby sa nič neschovalo za
     // orezanou hranou okna.
     expect(
@@ -275,7 +284,7 @@ describe('obsah okna', () => {
 
   it('lets the keyboard reach the scrollable expanded caption', async () => {
     stubCaptionHeights();
-    await renderLoadedOverlay(makePost({ caption: 'Veľmi dlhý text.' }));
+    await renderLoadedOverlay(textOnlyPost({ caption: 'Veľmi dlhý text.' }));
 
     await userEvent.click(await screen.findByTestId('feed-post-caption-toggle'));
 
@@ -297,7 +306,7 @@ describe('obsah okna', () => {
       { length: 40 },
       (_unused, paragraph) => `Odsek ${paragraph + 1} veľmi dlhého textu.`,
     ).join('\n\n');
-    await renderLoadedOverlay(makePost({ caption: longText }));
+    await renderLoadedOverlay(textOnlyPost({ caption: longText }));
 
     await userEvent.click(await screen.findByTestId('feed-post-caption-toggle'));
 
@@ -306,6 +315,7 @@ describe('obsah okna', () => {
     const caption = screen.getByTestId('feed-post-caption');
     expect(caption.className).toContain('max-h-[25vh]');
     expect(caption.className).toContain('overflow-y-auto');
+    expect(caption.className).toContain('subtle-scrollbar');
     expect(caption.className).not.toContain('line-clamp-3');
     expect(screen.getByTestId('feed-like-button')).toBeInTheDocument();
     expect(screen.getByTestId('feed-post-comments')).toBeInTheDocument();
@@ -413,7 +423,7 @@ describe('príprava okna a poradie odpovedí', () => {
     // Zobrazený ostáva ten, ktorý používateľ naozaj otvoril.
     expect(screen.getByText('Druhý príspevok')).toBeInTheDocument();
     expect(screen.queryByText('Prvý príspevok')).not.toBeInTheDocument();
-    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-card')).toBeInTheDocument();
   });
 
   it('does not publish the counts of the previous post', async () => {
@@ -432,7 +442,7 @@ describe('príprava okna a poradie odpovedí', () => {
       <FeedPostDetailOverlay postId={7} onClose={jest.fn()} />,
     );
     rerender(<FeedPostDetailOverlay postId={9} onClose={jest.fn()} />);
-    await screen.findByTestId('feed-post-overlay-fixed');
+    await screen.findByTestId('feed-post-card');
 
     await act(async () => {
       slowFirst.resolve(makePost({ id: 7, comments_count: 99 }));
@@ -475,7 +485,7 @@ describe('zdieľaný obsah v okne', () => {
 
 describe('rozmery okna', () => {
   it('is wider than the feed card and nearly as tall as the screen', async () => {
-    await renderLoadedOverlay();
+    await renderLoadedOverlay(textOnlyPost());
 
     const overlay = screen.getByTestId('feed-post-overlay');
     // 54rem = 864 px, teda o ~29 % viac než pôvodných 42rem (672 px).
@@ -509,7 +519,7 @@ describe('rozmery okna', () => {
 describe('text v okne detailu', () => {
   it('shows about ten lines before the toggle, not three', async () => {
     stubCaptionHeights();
-    await renderLoadedOverlay(makePost({ caption: 'Dlhý text príspevku.' }));
+    await renderLoadedOverlay(textOnlyPost({ caption: 'Dlhý text príspevku.' }));
 
     // Karta vo feede orezáva na tri riadky; okno je oveľa väčšie, takže tam
     // by tri riadky pôsobili ako zbytočné skrátenie.
@@ -523,7 +533,7 @@ describe('text v okne detailu', () => {
 
   it('collapses runs of blank lines into a single break', async () => {
     await renderLoadedOverlay(
-      makePost({ caption: 'Prvý odsek.\n\n\n\n\nDruhý odsek.' }),
+      textOnlyPost({ caption: 'Prvý odsek.\n\n\n\n\nDruhý odsek.' }),
     );
 
     // Séria prázdnych riadkov robí v okne veľkú dieru, ktorá tlačí akcie aj
@@ -538,7 +548,7 @@ describe('text v okne detailu', () => {
 
   it('keeps a single blank line as paragraph separation', async () => {
     await renderLoadedOverlay(
-      makePost({ caption: 'Prvý odsek.\n\nDruhý odsek.' }),
+      textOnlyPost({ caption: 'Prvý odsek.\n\nDruhý odsek.' }),
     );
 
     // Jeden prázdny riadok je bežné oddelenie odsekov – ten sa neruší.
@@ -556,7 +566,7 @@ describe('„..." menu vnútri okna', () => {
   }
 
   it('opens above the window, not behind it', async () => {
-    await renderLoadedOverlay(makePost({ can_manage: true }));
+    await renderLoadedOverlay(textOnlyPost({ can_manage: true }));
 
     await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
 
@@ -572,7 +582,7 @@ describe('„..." menu vnútri okna', () => {
   });
 
   it('offers report, edit and delete to the author', async () => {
-    await renderLoadedOverlay(makePost({ can_manage: true }));
+    await renderLoadedOverlay(textOnlyPost({ can_manage: true }));
 
     await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
 
@@ -582,7 +592,7 @@ describe('„..." menu vnútri okna', () => {
   });
 
   it('offers only report to somebody else', async () => {
-    await renderLoadedOverlay(makePost({ can_manage: false }));
+    await renderLoadedOverlay(textOnlyPost({ can_manage: false }));
 
     await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
 
@@ -594,7 +604,7 @@ describe('„..." menu vnútri okna', () => {
   });
 
   it('opens the delete confirmation from inside the window', async () => {
-    await renderLoadedOverlay(makePost({ can_manage: true }));
+    await renderLoadedOverlay(textOnlyPost({ can_manage: true }));
 
     await userEvent.click(screen.getByTestId('feed-post-menu-trigger'));
     await userEvent.click(screen.getByTestId('feed-post-delete'));

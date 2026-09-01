@@ -44,10 +44,26 @@ type FeedPostImageCarouselProps = {
    * prehliadač priamo, čo platí práve vnútri okna detailu.
    */
   onPhotoClick?: () => void;
+  /**
+   * Médiová plocha si vezme zvyšok výšky rodiča namiesto pevných `h-80/h-96`.
+   *
+   * Používa to dvojstĺpcové okno detailu: v ľavom stĺpci má fotka dostať
+   * presne to, čo zvýši po hlavičke, texte a riadku akcií, takže sa pri
+   * rozbalení textu primerane zmenší namiesto toho, aby stĺpec pretiekol.
+   * Vnútorná logika karuselu (šípky, bodky, počítadlo, klávesnica) sa tým
+   * nemení – mení sa len výška kontajnera.
+   */
+  fillHeight?: boolean;
 };
 
 /** Jednotná výška médiovej plochy – nič sa neoreže, dopĺňa sa rozmazaním. */
 const MEDIA_HEIGHT = 'h-80 sm:h-96';
+
+/**
+ * Pružná výška: `flex-1` berie zvyšok stĺpca, `min-h-0` ruší automatické
+ * minimum flex položky (bez neho by ju obrázok roztiahol a stĺpec by pretiekol).
+ */
+const MEDIA_FILL = 'min-h-0 flex-1';
 
 function imageSrc(image: FeedPostImage): string {
   return image.large_url || image.thumbnail_url || '';
@@ -111,11 +127,13 @@ export default function FeedPostImageCarousel({
   images,
   alt,
   onPhotoClick,
+  fillHeight = false,
 }: FeedPostImageCarouselProps) {
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
   // Index do zoznamu ZOBRAZITEĽNÝCH fotiek; null = prehliadač je zatvorený.
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const mediaSize = fillHeight ? MEDIA_FILL : MEDIA_HEIGHT;
 
   // Zamietnuté sa nezobrazujú; cudziemu divákovi ich backend ani neposiela.
   const slides = images.filter((image) => image.status !== 'rejected');
@@ -178,7 +196,7 @@ export default function FeedPostImageCarousel({
     rejected.length > 0 ? (
       <p
         data-testid="feed-image-rejected-note"
-        className="px-4 pt-3 text-xs text-gray-500 dark:text-gray-400"
+        className="shrink-0 px-4 pt-3 text-xs text-gray-500 dark:text-gray-400"
       >
         {translateImageRejection(t, rejected[0].rejected_reason)}
       </p>
@@ -191,7 +209,7 @@ export default function FeedPostImageCarousel({
   if (total === 1) {
     return (
       <>
-        <div data-testid="feed-post-image" className={`w-full ${MEDIA_HEIGHT}`}>
+        <div data-testid="feed-post-image" className={`w-full ${mediaSize}`}>
           <Slide
             image={active}
             alt={alt}
@@ -209,7 +227,7 @@ export default function FeedPostImageCarousel({
     <>
       <div
         data-testid="feed-post-image"
-        className={`relative w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${MEDIA_HEIGHT}`}
+        className={`relative w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${mediaSize}`}
         role="group"
         aria-roledescription="carousel"
         aria-label={t('feed.imageCarousel', 'Fotky príspevku')}

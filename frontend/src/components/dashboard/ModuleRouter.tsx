@@ -182,7 +182,11 @@ export default function ModuleRouter({
     />
   );
 
-  if (isRightSidebarOpen && activeRightItem === 'notifications') {
+  if (
+    activeModule !== 'notifications' &&
+    isRightSidebarOpen &&
+    activeRightItem === 'notifications'
+  ) {
     return <NotificationSettingsModule onBack={closeOwnProfileEdit} />;
   }
 

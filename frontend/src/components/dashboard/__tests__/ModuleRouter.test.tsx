@@ -30,6 +30,14 @@ jest.mock('../modules/StatisticsModule', () => ({
     </div>
   ),
 }));
+jest.mock('../modules/NotificationsModule', () => ({
+  __esModule: true,
+  default: () => <div data-testid="notifications-module">NotificationsModule</div>,
+}));
+jest.mock('../modules/NotificationSettingsModule', () => ({
+  __esModule: true,
+  default: () => <div data-testid="notification-settings-module">NotificationSettingsModule</div>,
+}));
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
@@ -124,5 +132,33 @@ describe('ModuleRouter – home', () => {
       'data-variant',
       'mobile-page',
     );
+  });
+
+  it('renders the notifications feed after history restores a stale right-panel state', () => {
+    render(
+      <ModuleRouter
+        {...baseProps()}
+        activeModule="notifications"
+        activeRightItem="notifications"
+        isRightSidebarOpen
+      />,
+    );
+
+    expect(screen.getByTestId('notifications-module')).toBeInTheDocument();
+    expect(screen.queryByTestId('notification-settings-module')).not.toBeInTheDocument();
+  });
+
+  it('keeps the actual notification settings route unchanged', () => {
+    render(
+      <ModuleRouter
+        {...baseProps()}
+        activeModule="notification-settings"
+        activeRightItem="notifications"
+        isRightSidebarOpen
+      />,
+    );
+
+    expect(screen.getByTestId('notification-settings-module')).toBeInTheDocument();
+    expect(screen.queryByTestId('notifications-module')).not.toBeInTheDocument();
   });
 });

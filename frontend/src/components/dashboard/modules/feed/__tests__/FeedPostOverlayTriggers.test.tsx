@@ -282,13 +282,22 @@ describe('zdieľaný obsah', () => {
     );
   });
 
-  it('does not collapse blank lines on the feed card', async () => {
+  it('collapses runs of blank lines on the feed card too', async () => {
     renderWithOverlay(makePost({ caption: 'Prvý.\n\n\n\nDruhý.' }));
 
-    // Normalizácia platí len v okne – na karte autor vidí text tak, ako ho
-    // napísal (zmena zobrazenia v zozname nie je predmetom tejto úpravy).
+    // Séria prázdnych riadkov robí v texte veľkú dieru, ktorá na karte tlačí
+    // fotku aj ďalšie príspevky nižšie – rovnaká normalizácia ako v okne.
     expect(screen.getByTestId('feed-post-caption').textContent).toBe(
-      'Prvý.\n\n\n\nDruhý.',
+      'Prvý.\nDruhý.',
+    );
+  });
+
+  it('keeps a single blank line as paragraph separation on the card', async () => {
+    renderWithOverlay(makePost({ caption: 'Prvý.\n\nDruhý.' }));
+
+    // Jeden prázdny riadok je bežné oddelenie odsekov – ten sa neruší.
+    expect(screen.getByTestId('feed-post-caption').textContent).toBe(
+      'Prvý.\n\nDruhý.',
     );
   });
 });

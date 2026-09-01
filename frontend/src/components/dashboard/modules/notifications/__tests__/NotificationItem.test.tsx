@@ -110,6 +110,12 @@ describe('NotificationItem', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews?review_id=99');
   });
 
+  it('keeps an unavailable non-offer-watch notification disabled', () => {
+    render(<NotificationItem notification={makeNotification({ target_url: null })} />);
+
+    expect(screen.getByRole('button')).toBeDisabled();
+  });
+
   it('renders review reply notifications and navigates to offer reviews', () => {
     const notification = makeNotification({
       type: 'review_reply_created',

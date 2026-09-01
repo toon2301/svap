@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
+import toast from 'react-hot-toast';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNotificationTimestamp } from '@/utils/formatNotificationTimestamp';
@@ -109,6 +110,8 @@ export default function NotificationItem({
   );
   const actorDisplayName = (notification.actor?.display_name || '').trim();
   const targetUrl = safeInternalTarget(notification.target_url);
+  const isUnavailableOfferWatch =
+    notification.type === 'offer_watch_match' && targetUrl === null;
   const terminationReasonLabel = getTerminationReasonLabel(
     notification.data?.termination_reason,
     t,
@@ -310,6 +313,18 @@ export default function NotificationItem({
     <button
       type="button"
       onClick={() => {
+        if (isUnavailableOfferWatch) {
+          toast(
+            t(
+              'notifications.contentUnavailable',
+              'Tento obsah už nie je dostupný.',
+            ),
+          );
+          if (!notification.is_read) {
+            onMarkRead?.(notification);
+          }
+          return;
+        }
         if (!targetUrl) return;
         const usedOfferWatchNavigation =
           notification.type === 'offer_watch_match' &&
@@ -329,7 +344,8 @@ export default function NotificationItem({
         }
         router.push(targetUrl);
       }}
-      disabled={!targetUrl}
+      disabled={!targetUrl && !isUnavailableOfferWatch}
+      aria-disabled={isUnavailableOfferWatch || undefined}
       className={`w-full rounded-2xl px-2 py-1.5 text-left transition-colors lg:px-3 lg:py-2.5 ${
         notification.is_read
           ? 'bg-white hover:bg-gray-50 dark:bg-black dark:hover:bg-gray-900'

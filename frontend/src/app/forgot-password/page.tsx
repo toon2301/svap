@@ -2,7 +2,6 @@
 
 import { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -18,8 +17,15 @@ interface ForgotPasswordErrors {
   email?: string;
 }
 
+type PasswordResetRequestError = {
+  response?: {
+    data?: {
+      error?: unknown;
+    };
+  };
+};
+
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const { t } = useLanguage();
   const [formData, setFormData] = useState<ForgotPasswordData>({
     email: ''
@@ -46,14 +52,15 @@ export default function ForgotPasswordPage() {
 
   const validateForm = (): boolean => {
     const newErrors: ForgotPasswordErrors = {};
+    const normalizedEmail = formData.email.trim();
 
-    if (!formData.email.trim()) {
+    if (!normalizedEmail) {
       newErrors.email = t('auth.emailRequired');
     }
 
     // Validácia emailu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
+    if (normalizedEmail && !emailRegex.test(normalizedEmail)) {
       newErrors.email = t('auth.invalidEmailFormat');
     }
 
@@ -72,16 +79,17 @@ export default function ForgotPasswordPage() {
     try {
       // Použi vlastný password reset endpoint
       await api.post('/auth/password-reset/', {
-        email: formData.email
+        email: formData.email.trim()
       });
       
       setIsSuccess(true);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password reset error:', error);
-      
-      if (error.response?.data?.error) {
-        setErrors({ general: error.response.data.error });
+
+      const apiError = (error as PasswordResetRequestError).response?.data?.error;
+      if (typeof apiError === 'string' && apiError) {
+        setErrors({ general: apiError });
       } else {
         setErrors({ general: t('auth.passwordResetError') });
       }
@@ -115,11 +123,11 @@ export default function ForgotPasswordPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                {t('auth.emailSent')}
+                {t('auth.passwordResetRequestAccepted')}
               </motion.h1>
 
               <motion.div 
-                className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6"
+                className="bg-green-100 dark:bg-green-950/40 border border-green-400 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-6"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}
@@ -129,10 +137,7 @@ export default function ForgotPasswordPage() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <div>
-                    <p className="font-semibold">{t('auth.passwordResetEmailSent')}</p>
-                    <p className="text-sm mt-1">
-                      {t('auth.checkEmailForReset', 'Skontrolujte si emailovú schránku na adrese')} <strong>{formData.email}</strong> {t('auth.andClickResetLink', 'a kliknite na odkaz pre reset hesla')}.
-                    </p>
+                    <p>{t('auth.passwordResetNeutralMessage')}</p>
                   </div>
                 </div>
               </motion.div>

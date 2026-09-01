@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import userEvent from '@testing-library/user-event';
+import toast from 'react-hot-toast';
 
 import NotificationItem from '../NotificationItem';
 import type { DashboardNotification } from '../types';
@@ -8,6 +10,11 @@ const mockPush = jest.fn();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+}));
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -96,7 +103,7 @@ describe('NotificationItem offer-watch navigation edge cases', () => {
     }
   });
 
-  it('keeps an unavailable notification disabled', () => {
+  it('explains an unavailable unread notification without navigating', () => {
     const onMarkRead = jest.fn();
     const onNavigate = jest.fn();
     const onProfileNavigate = jest.fn();
@@ -112,15 +119,75 @@ describe('NotificationItem offer-watch navigation edge cases', () => {
       );
 
       const button = screen.getByRole('button');
-      expect(button).toBeDisabled();
+      expect(button).not.toBeDisabled();
+      expect(button).toHaveAttribute('aria-disabled', 'true');
       fireEvent.click(button);
 
+      expect(toast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');
       expect(onProfileNavigate).not.toHaveBeenCalled();
-      expect(onMarkRead).not.toHaveBeenCalled();
+      expect(onMarkRead).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
       expect(onNavigate).not.toHaveBeenCalled();
       expect(mockPush).not.toHaveBeenCalled();
     } finally {
       window.removeEventListener('goToUserProfile', onProfileNavigate);
     }
+  });
+
+  it('does not mark an unavailable already-read notification again', () => {
+    const onMarkRead = jest.fn();
+
+    render(
+      <NotificationItem
+        notification={makeOfferWatchNotification({
+          target_url: null,
+          is_read: true,
+          read_at: '2026-05-06T12:01:00.000Z',
+        })}
+        onMarkRead={onMarkRead}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(toast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');
+    expect(onMarkRead).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['Enter', '{Enter}'],
+    ['Space', ' '],
+  ])('explains an unavailable notification with the %s key', async (_name, key) => {
+    const user = userEvent.setup();
+    render(
+      <NotificationItem
+        notification={makeOfferWatchNotification({ target_url: null })}
+      />,
+    );
+
+    screen.getByRole('button').focus();
+    await user.keyboard(key);
+
+    expect(toast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'https://example.com/dashboard/users/watch-owner?highlight=42',
+    '//example.com/dashboard/users/watch-owner?highlight=42',
+  ])('never follows an external target and gives only neutral feedback: %s', (targetUrl) => {
+    const onNavigate = jest.fn();
+    render(
+      <NotificationItem
+        notification={makeOfferWatchNotification({ target_url: targetUrl })}
+        onNavigate={onNavigate}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(toast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

@@ -1,57 +1,74 @@
-"""
-Password reset views pre Swaply
-"""
+"""Verejné API endpointy pre bezpečný reset hesla."""
 
-from django.shortcuts import render, redirect
+import logging
+
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.sites.shortcuts import get_current_site
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.conf import settings
-from django.contrib import messages
+from django.core.mail import send_mail
+from django.core.validators import validate_email
 from django.http import JsonResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import status
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
+from rest_framework.permissions import AllowAny
+
 from swaply.rate_limiting import (
     password_reset_confirm_rate_limit,
     password_reset_rate_limit,
     password_reset_verify_rate_limit,
 )
+
 from ..models import User
-import logging
 
 logger = logging.getLogger(__name__)
 
+PASSWORD_RESET_REQUEST_MESSAGE = (
+    "Ak účet s touto emailovou adresou existuje a je aktívny, "
+    "pošleme vám odkaz na reset hesla."
+)
+
+
+def _password_reset_request_response() -> JsonResponse:
+    """Vráti neutrálnu odpoveď, ktorá neprezrádza stav ani existenciu účtu."""
+    return JsonResponse(
+        {"message": PASSWORD_RESET_REQUEST_MESSAGE},
+        status=status.HTTP_200_OK,
+    )
+
 
 @api_view(["POST"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 @password_reset_rate_limit
 def password_reset_request_view(request):
-    """
-    API endpoint pre požiadavku na reset hesla
-    """
+    """Pošle reset aktívnemu účtu a ostatným vráti rovnakú neutrálnu odpoveď."""
     email = request.data.get("email")
 
-    if not email:
+    if not isinstance(email, str) or not email.strip():
         return JsonResponse(
             {"error": "Email je povinný"}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    email = email.strip()
     try:
-        user = User.objects.get(email=email)
-    except User.DoesNotExist:
-        # Pre bezpečnosť nevracajme chybu, že používateľ neexistuje
+        validate_email(email)
+    except DjangoValidationError:
         return JsonResponse(
-            {
-                "message": "Ak email existuje v našej databáze, pošleme vám odkaz na reset hesla."
-            },
-            status=status.HTTP_200_OK,
+            {"error": "Zadajte platnú emailovú adresu"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
+
+    # Neaktívny a neexistujúci účet musia mať navonok totožné správanie.
+    user = User.objects.filter(email__iexact=email, is_active=True).first()
+    if user is None:
+        return _password_reset_request_response()
 
     try:
         # Generuj token pre reset hesla
@@ -137,12 +154,7 @@ def password_reset_request_view(request):
         else:
             logger.info("Password reset email sent")
 
-        return JsonResponse(
-            {
-                "message": "Ak email existuje v našej databáze, pošleme vám odkaz na reset hesla."
-            },
-            status=status.HTTP_200_OK,
-        )
+        return _password_reset_request_response()
 
     except Exception as e:
         if getattr(settings, "DEBUG", False):
@@ -156,12 +168,11 @@ def password_reset_request_view(request):
 
 
 @api_view(["POST"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 @password_reset_confirm_rate_limit
 def password_reset_confirm_view(request, uidb64, token):
-    """
-    API endpoint pre potvrdenie reset hesla
-    """
+    """Nastaví nové heslo iba aktívnemu používateľovi s platným tokenom."""
     new_password = request.data.get("password")
 
     if not new_password:
@@ -172,7 +183,7 @@ def password_reset_confirm_view(request, uidb64, token):
     try:
         # Dekóduj uid
         uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
+        user = User.objects.get(pk=uid, is_active=True)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return JsonResponse(
             {"error": "Neplatný odkaz na reset hesla"},
@@ -223,16 +234,15 @@ def password_reset_confirm_view(request, uidb64, token):
 
 
 @api_view(["GET"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 @password_reset_verify_rate_limit
 def password_reset_verify_token_view(request, uidb64, token):
-    """
-    API endpoint pre overenie platnosti tokenu
-    """
+    """Overí token len pre účet, ktorý je v čase kontroly stále aktívny."""
     try:
         # Dekóduj uid
         uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
+        user = User.objects.get(pk=uid, is_active=True)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return JsonResponse(
             {"valid": False, "error": "Neplatný odkaz na reset hesla"},
