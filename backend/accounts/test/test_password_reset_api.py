@@ -11,6 +11,8 @@ from unittest.mock import patch
 
 from accounts.views.password_reset import PASSWORD_RESET_REQUEST_MESSAGE
 
+# View si task importuje až pri volaní, takže sa patchuje na mieste definície.
+MAIL_TASK = "accounts.password_reset_tasks.send_password_reset_email_task"
 
 User = get_user_model()
 
@@ -28,25 +30,26 @@ class TestPasswordResetAPI(APITestCase):
             is_verified=True,
         )
 
-    @patch("accounts.views.password_reset.send_mail")
-    def test_password_reset_request_existing_email(self, mock_send_mail):
-        """Aktívny účet dostane e-mail a neutrálnu úspešnú odpoveď."""
-        mock_send_mail.return_value = True
+    @patch(MAIL_TASK)
+    def test_password_reset_request_existing_email(self, mock_task):
+        """Aktívny účet dostane neutrálnu odpoveď a e-mail sa zaradí na pozadie."""
         url = reverse("accounts:password_reset_request")
         r = self.client.post(url, {"email": "reset@example.com"}, format="json")
         assert r.status_code == status.HTTP_200_OK
         assert r.json() == {"message": PASSWORD_RESET_REQUEST_MESSAGE}
-        mock_send_mail.assert_called_once()
+        mock_task.delay.assert_called_once_with(user_id=self.user.pk)
 
-    def test_password_reset_request_unknown_email(self):
+    @patch(MAIL_TASK)
+    def test_password_reset_request_unknown_email(self, mock_task):
         """Neexistujúci účet dostane rovnakú neutrálnu odpoveď."""
         url = reverse("accounts:password_reset_request")
         r = self.client.post(url, {"email": "unknown@example.com"}, format="json")
         assert r.status_code == status.HTTP_200_OK
         assert r.json() == {"message": PASSWORD_RESET_REQUEST_MESSAGE}
+        mock_task.delay.assert_not_called()
 
-    @patch("accounts.views.password_reset.send_mail")
-    def test_password_reset_request_inactive_email_is_neutral(self, mock_send_mail):
+    @patch(MAIL_TASK)
+    def test_password_reset_request_inactive_email_is_neutral(self, mock_task):
         """Neaktívny účet neprezradí svoj stav a nedostane resetovací e-mail."""
         self.user.is_active = False
         self.user.save(update_fields=["is_active"])
@@ -56,10 +59,10 @@ class TestPasswordResetAPI(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"message": PASSWORD_RESET_REQUEST_MESSAGE}
-        mock_send_mail.assert_not_called()
+        mock_task.delay.assert_not_called()
 
-    @patch("accounts.views.password_reset.send_mail")
-    def test_password_reset_request_ignores_stale_inactive_cookie(self, mock_send_mail):
+    @patch(MAIL_TASK)
+    def test_password_reset_request_ignores_stale_inactive_cookie(self, mock_task):
         """Stará cookie deaktivovaného účtu nesmie zablokovať verejný reset endpoint."""
         access_token = RefreshToken.for_user(self.user).access_token
         self.user.is_active = False
@@ -71,10 +74,10 @@ class TestPasswordResetAPI(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"message": PASSWORD_RESET_REQUEST_MESSAGE}
-        mock_send_mail.assert_not_called()
+        mock_task.delay.assert_not_called()
 
-    @patch("accounts.views.password_reset.send_mail")
-    def test_password_reset_request_normalizes_email_input(self, mock_send_mail):
+    @patch(MAIL_TASK)
+    def test_password_reset_request_normalizes_email_input(self, mock_task):
         """Medzery a veľkosť písmen v e-maile neblokujú aktívny účet."""
         url = reverse("accounts:password_reset_request")
         response = self.client.post(
@@ -84,16 +87,16 @@ class TestPasswordResetAPI(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        mock_send_mail.assert_called_once()
+        mock_task.delay.assert_called_once_with(user_id=self.user.pk)
 
-    @patch("accounts.views.password_reset.send_mail")
-    def test_password_reset_request_rejects_invalid_email(self, mock_send_mail):
+    @patch(MAIL_TASK)
+    def test_password_reset_request_rejects_invalid_email(self, mock_task):
         """Backend odmietne syntakticky neplatný e-mail ešte pred vyhľadaním účtu."""
         url = reverse("accounts:password_reset_request")
         response = self.client.post(url, {"email": "invalid"}, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        mock_send_mail.assert_not_called()
+        mock_task.delay.assert_not_called()
 
     def test_password_reset_confirm_invalid_uid(self):
         """Potvrdenie odmietne neplatne zakódované ID používateľa."""

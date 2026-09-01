@@ -48,7 +48,7 @@ describe('ForgotPasswordPage', () => {
     });
     expect(
       screen.getByText(
-        'Ak účet s touto emailovou adresou existuje a je aktívny, pošleme naň odkaz na reset hesla.',
+        'Ak s touto emailovou adresou existuje aktívny účet, pošleme na ňu odkaz na reset hesla.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText('Email pre reset hesla bol odoslaný!')).not.toBeInTheDocument();

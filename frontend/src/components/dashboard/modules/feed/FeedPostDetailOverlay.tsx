@@ -29,6 +29,7 @@ import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
@@ -141,10 +142,24 @@ export default function FeedPostDetailOverlay({
    */
   const liveImages = usePendingFeedImages(post);
 
-  // Dvojstĺpcové rozloženie má zmysel len s fotkou – tá je jediná časť, ktorá
-  // vie pohltiť zvyšok výšky ľavého stĺpca. Text-only príspevok ostáva na
-  // pôvodnom, už odskúšanom jednostĺpcovom rozložení.
-  const splitLayout = hasVisibleFeedPhoto(liveImages);
+  /**
+   * Dvojstĺpcové rozloženie potrebuje DVE veci naraz:
+   *
+   *  - fotku (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
+   *  - a dosť širokú obrazovku, inak by z dvoch stĺpcov ostali dva nepoužiteľne
+   *    úzke pruhy.
+   *
+   * Hranicu určuje `useIsMobile` – tá istá, akou sa rozhoduje, či sa okno
+   * vôbec otvorí namiesto celoobrazovkovej stránky (`decideFeedPostEntry`),
+   * takže je to appkina existujúca hranica desktop/mobil (lg, 1024 px), nie
+   * nová konštanta. Otvorené okno sa pri zúžení prehliadača nezatvára, takže
+   * bez tejto podmienky by sa dva stĺpce udržali aj hlboko pod ňou.
+   *
+   * Pod hranicou platí presne to, čo dnes platí pre text-only príspevky:
+   * pôvodné jednostĺpcové rozloženie.
+   */
+  const isMobile = useIsMobile();
+  const splitLayout = hasVisibleFeedPhoto(liveImages) && !isMobile;
 
   if (!portalNode) return null;
 

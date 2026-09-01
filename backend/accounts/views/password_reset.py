@@ -6,11 +6,10 @@ from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.mail import send_mail
 from django.core.validators import validate_email
 from django.http import JsonResponse
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -43,6 +42,26 @@ def _password_reset_request_response() -> JsonResponse:
     )
 
 
+def _enqueue_password_reset_email(*, user_id: int) -> None:
+    """Zaradí odoslanie e-mailu na pozadie; nikdy nevyhodí výnimku.
+
+    Zlyhanie fronty (výpadok brokera) NESMIE ovplyvniť odpoveď: keby sa z neho
+    stala chyba 500, líšila by sa od neutrálnej odpovede pri neexistujúcom účte
+    a útočník by z toho vyčítal, že účet existuje. Používateľ preto dostane
+    rovnakú vetu vždy a stopa po probléme ostáva len v logu.
+    """
+    try:
+        # Lokálny import drží view nezávislé od Celery pri štarte (rovnaký vzor
+        # ako `services.bug_reports.schedule_bug_report_notification`).
+        from accounts.password_reset_tasks import send_password_reset_email_task
+
+        send_password_reset_email_task.delay(user_id=user_id)
+    except Exception:
+        logger.warning(
+            "Password reset email could not be enqueued.", exc_info=True
+        )
+
+
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -66,105 +85,19 @@ def password_reset_request_view(request):
         )
 
     # Neaktívny a neexistujúci účet musia mať navonok totožné správanie.
-    user = User.objects.filter(email__iexact=email, is_active=True).first()
-    if user is None:
-        return _password_reset_request_response()
+    #
+    # Odoslanie e-mailu beží MIMO tohto requestu: synchrónne odosielanie cez
+    # SMTP trvalo pri existujúcom účte rádovo dlhšie než odmietnutie
+    # neexistujúceho, takže samo o sebe prezrádzalo existenciu účtu – a jeho
+    # zlyhanie navyše vracalo 500 tam, kde neexistujúci účet dostal 200.
+    # Odteraz je odpoveď za VŠETKÝCH okolností tá istá (účet existuje /
+    # neexistuje / je neaktívny / odoslanie zlyhá) a čokoľvek sa stane na
+    # pozadí, deje sa to až po nej.
+    user = User.objects.filter(email__iexact=email, is_active=True).only("pk").first()
+    if user is not None:
+        _enqueue_password_reset_email(user_id=user.pk)
 
-    try:
-        # Generuj token pre reset hesla
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-        # Zostav URL pre reset hesla
-        reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
-
-        # Vytvor email obsah
-        subject = "[Svaply] Reset hesla"
-
-        html_message = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #7C3AED;">Reset hesla - Svaply</h2>
-                
-                <p>Ahoj {user.first_name or 'používateľ'},</p>
-                
-                <p>Dostali sme požiadavku na reset hesla pre váš účet v Svaply.</p>
-                
-                <p>Ak ste túto požiadavku neposlali vy, ignorujte tento email.</p>
-                
-                <p>Pre nastavenie nového hesla kliknite na tlačidlo nižšie:</p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{reset_url}" 
-                       style="background-color: #7C3AED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                        Resetovať heslo
-                    </a>
-                </div>
-                
-                <p>Alebo skopírujte tento odkaz do prehliadača:</p>
-                <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
-                    {reset_url}
-                </p>
-                
-                <p><strong>Dôležité:</strong> Tento odkaz platí len 24 hodín.</p>
-                
-                <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-                
-                <p style="font-size: 12px; color: #666;">
-                    Tento email bol odoslaný automaticky, neodpovedajte naň.<br>
-                    Svaply - Výmenná platforma zručností
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-
-        text_message = f"""
-        Reset hesla - Svaply
-
-        Ahoj {user.first_name or 'používateľ'},
-
-        Dostali sme požiadavku na reset hesla pre váš účet v Svaply.
-        
-        Ak ste túto požiadavku neposlali vy, ignorujte tento email.
-        
-        Pre nastavenie nového hesla kliknite na odkaz:
-        {reset_url}
-        
-        Dôležité: Tento odkaz platí len 24 hodín.
-        
-        --
-        Tento email bol odoslaný automaticky, neodpovedajte naň.
-        Svaply - Výmenná platforma zručností
-        """
-
-        # Pošli email
-        send_mail(
-            subject=subject,
-            message=text_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-
-        if getattr(settings, "DEBUG", False):
-            logger.info(f"Password reset email sent to {user.email}")
-        else:
-            logger.info("Password reset email sent")
-
-        return _password_reset_request_response()
-
-    except Exception as e:
-        if getattr(settings, "DEBUG", False):
-            logger.error(f"Error sending password reset email: {e}")
-        else:
-            logger.error("Password reset email failed")
-        return JsonResponse(
-            {"error": "Chyba pri odosielaní emailu. Skúste to neskôr."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    return _password_reset_request_response()
 
 
 @api_view(["POST"])

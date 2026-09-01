@@ -873,8 +873,15 @@ export default function FeedPostCard({
         fillHeight ? (
           // Jediná PRUŽNÁ časť stĺpca: vlastný flex stĺpec, aby si médiová
           // plocha vzala zvyšok a poznámka o zamietnutej fotke ostala pod ňou.
+          //
+          // `min-h-[8rem]` je PODLAHA, nie výška: ruší automatické minimum
+          // flex položky (to je úloha, akú tu inak plní `min-h-0`) a zároveň
+          // drží fotku viditeľnú aj vtedy, keď pevné časti nad ňou vyčerpajú
+          // celý stĺpec (dlhý text + plný zoznam označených + nízke okno).
+          // V takom prípade sa doscrolluje stĺpec ako celok – viď
+          // `FeedPostDetailSplitLayout`.
           <div
-            className="flex min-h-0 flex-1 flex-col"
+            className="flex min-h-[8rem] flex-1 flex-col"
             data-testid="feed-post-media-fill"
           >
             <FeedPostImageCarousel

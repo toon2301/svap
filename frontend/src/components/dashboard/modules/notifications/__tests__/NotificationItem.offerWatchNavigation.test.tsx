@@ -120,7 +120,14 @@ describe('NotificationItem offer-watch navigation edge cases', () => {
 
       const button = screen.getByRole('button');
       expect(button).not.toBeDisabled();
-      expect(button).toHaveAttribute('aria-disabled', 'true');
+      // Tlačidlo je FUNKČNÉ (klik vysvetlí stav a označí ako prečítané), takže
+      // ho `aria-disabled` nesmie čítačkám hlásiť ako neovládateľné – inak by
+      // ho ich používatelia obišli a spätnú väzbu nikdy nedostali.
+      expect(button).not.toHaveAttribute('aria-disabled');
+      // Stav je namiesto toho súčasťou prístupného názvu.
+      expect(button).toHaveAccessibleName(
+        /Tento obsah už nie je dostupný\./,
+      );
       fireEvent.click(button);
 
       expect(toast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');

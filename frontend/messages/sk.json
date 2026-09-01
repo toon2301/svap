@@ -998,7 +998,7 @@
     "enterEmailForResend": "Zadajte email pre znovu odoslanie verifikácie",
     "passwordResetError": "Chyba pri odosielaní emailu pre reset hesla",
     "passwordResetRequestAccepted": "Žiadosť prijatá",
-    "passwordResetNeutralMessage": "Ak účet s touto emailovou adresou existuje a je aktívny, pošleme naň odkaz na reset hesla.",
+    "passwordResetNeutralMessage": "Ak s touto emailovou adresou existuje aktívny účet, pošleme na ňu odkaz na reset hesla.",
     "backToLogin": "Späť na prihlásenie",
     "forgotPasswordDescription": "Zadajte svoju emailovú adresu a pošleme vám odkaz na reset hesla.",
     "emailAddress": "Emailová adresa",

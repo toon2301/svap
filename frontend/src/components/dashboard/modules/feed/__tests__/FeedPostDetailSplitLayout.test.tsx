@@ -66,9 +66,11 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+let mockIsMobile = false;
+
 jest.mock('@/hooks', () => ({
-  useIsMobile: () => false,
-  useIsMobileState: () => ({ isMobile: false, isResolved: true }),
+  useIsMobile: () => mockIsMobile,
+  useIsMobileState: () => ({ isMobile: mockIsMobile, isResolved: true }),
 }));
 
 jest.mock('../../shared/useProtectedImage', () => ({
@@ -186,6 +188,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  mockIsMobile = false;
   jest.clearAllMocks();
   resetOverlayLayers();
   mockedListComments.mockResolvedValue({
@@ -297,20 +300,22 @@ describe('rozdelenie na stĺpce', () => {
   });
 });
 
-describe('ľavý stĺpec sa nikdy nescrolluje', () => {
+describe('ľavý stĺpec ustupuje fotkou, nie scrollovaním', () => {
   /**
-   * Ľavý stĺpec sa nedá scrollovať – ani sám, ani žiadny uzol v ňom.
+   * V ľavom stĺpci sa bežný obsah zmestí – zmenšuje sa výhradne fotka.
    *
-   * Jedinou povolenou výnimkou je POISTKA stropu rozbaleného textu
-   * (`captionCap`): tá sa nadobudne až pri texte plnom vynútených zalomení a
-   * práve ona drží záruku, že stĺpec nemá ako pretiecť. Bežný caption sa do
-   * nej nedostane, viď hlavičku `FeedPostDetailSplitLayout`.
+   * Scrollovať sa dá jedine cez POISTKY, ktoré držia krajné kombinácie
+   * dosiahnuteľné: samotný stĺpec (`min-h-[8rem]` na fotke ho zapne, keď pevné
+   * časti vyčerpajú výšku) a strop rozbaleného textu (`captionCap`). Nič iné
+   * v stĺpci scrollovateľné byť nesmie – viď hlavičku
+   * `FeedPostDetailSplitLayout`.
    */
-  function expectLeftColumnCannotScroll({ captionCap = false } = {}) {
+  function expectLeftColumnShrinksThePhotoOnly({ captionCap = false } = {}) {
     const media = screen.getByTestId('feed-post-overlay-media');
-    expect(media.className).toContain('overflow-hidden');
     expect(media.className).toContain('min-h-0');
-    expect(SCROLLABLE_CLASS.test(media.className)).toBe(false);
+    // Poistka stĺpca vyzerá ako zvyšok appky, nie ako systémový scrollbar.
+    expect(media.className).toContain('overflow-y-auto');
+    expect(media.className).toContain('subtle-scrollbar');
     expect(scrollableNodes(media)).toEqual(
       captionCap ? [screen.getByTestId('feed-post-caption')] : [],
     );
@@ -319,7 +324,7 @@ describe('ľavý stĺpec sa nikdy nescrolluje', () => {
   it('gives the photo the leftover height and the rest a fixed one', async () => {
     await renderOverlay();
 
-    expectLeftColumnCannotScroll();
+    expectLeftColumnShrinksThePhotoOnly();
 
     const media = screen.getByTestId('feed-post-overlay-media');
     const card = within(media).getByTestId('feed-post-card');
@@ -333,7 +338,8 @@ describe('ľavý stĺpec sa nikdy nescrolluje', () => {
     // Jediná pružná časť je médiová plocha.
     const fill = within(media).getByTestId('feed-post-media-fill');
     expect(fill.className).toContain('flex-1');
-    expect(fill.className).toContain('min-h-0');
+    // Podlaha, nie výška: fotka sa smie zmenšovať, ale nikdy nezmizne.
+    expect(fill.className).toContain('min-h-[8rem]');
     const photo = within(media).getByTestId('feed-post-image');
     expect(photo.className).toContain('flex-1');
     expect(photo.className).toContain('min-h-0');
@@ -352,7 +358,7 @@ describe('ľavý stĺpec sa nikdy nescrolluje', () => {
     // Fotka ostáva pružná, takže rozbalený text ju len zmenší…
     expect(screen.getByTestId('feed-post-image').className).toContain('flex-1');
     // …a v stĺpci sa aj tak nedá scrollovať.
-    expectLeftColumnCannotScroll({ captionCap: true });
+    expectLeftColumnShrinksThePhotoOnly({ captionCap: true });
   });
 
   it('still leaves the photo room with a caption at the 500-character limit', async () => {
@@ -373,7 +379,7 @@ describe('ľavý stĺpec sa nikdy nescrolluje', () => {
     expect(caption.className).toContain('max-h-[40vh]');
     expect(caption.className).not.toContain('max-h-[25vh]');
     expect(screen.getByTestId('feed-post-image').className).toContain('flex-1');
-    expectLeftColumnCannotScroll({ captionCap: true });
+    expectLeftColumnShrinksThePhotoOnly({ captionCap: true });
   });
 
   it('keeps the safety cap of the caption on the app scrollbar style', async () => {
@@ -392,14 +398,23 @@ describe('ľavý stĺpec sa nikdy nescrolluje', () => {
 });
 
 describe('scrollbar komentárov', () => {
-  it('is the only scrollable place in the whole window', async () => {
+  it('is the only place a normal post actually scrolls', async () => {
     await renderOverlay();
 
     const overlay = screen.getByTestId('feed-post-overlay');
-    const scrollable = scrollableNodes(overlay);
-
-    expect(scrollable).toHaveLength(1);
-    expect(scrollable[0]).toBe(screen.getByTestId('feed-comments-scroll'));
+    // Ľavý stĺpec má scroll len ako POISTKU pre krajnú kombináciu obsahu;
+    // pri bežnom príspevku sa v ňom všetko zmestí. Okrem týchto dvoch uzlov
+    // nesmie byť v okne scrollovateľné nič ďalšie.
+    expect(new Set(scrollableNodes(overlay))).toEqual(
+      new Set([
+        screen.getByTestId('feed-post-overlay-media'),
+        screen.getByTestId('feed-comments-scroll'),
+      ]),
+    );
+    // Obe poistky vyzerajú rovnako ako zvyšok appky.
+    scrollableNodes(overlay).forEach((node) => {
+      expect(node.className.toString()).toContain('subtle-scrollbar');
+    });
   });
 
   it('uses the app subtle-scrollbar utility, not the default one', async () => {
@@ -436,25 +451,44 @@ describe('rozpočet výšky ľavého stĺpca', () => {
     return Number(match?.[1]);
   }
 
-  it('leaves the photo a sane minimum even in the worst case', () => {
-    // Rozpočet stĺpca v percentách výšky obrazovky. Toto je presne ten výpočet,
-    // ktorým je zaručené, že ľavý stĺpec nikdy nepretečie – a keďže strop číta
-    // priamo z komponentu, jeho zdvihnutie tento test rozbije.
-    const windowVh = 95; // `h-[95vh]` na okne
+  /** `h-[95vh]` na okne pri dvojstĺpcovom rozložení. */
+  const WINDOW_VH = 95;
+  // Pevné bloky v pixeloch: hlavička (~3,75 rem), riadok akcií (~2,75 rem),
+  // odsadenie textu (py-3) a prepínač „Viac"/„Menej".
+  const FIXED_PX = 60 + 44 + 24 + 20;
+  /** Podlaha médiovej plochy – `min-h-[8rem]` na `feed-post-media-fill`. */
+  const PHOTO_FLOOR_PX = 128;
+
+  /** Koľko px zvýši fotke, keď text vyčerpá svoj strop. */
+  function leftoverForPhoto(viewportPx: number, extraPx = 0): number {
     const captionCapVh = vhOf(BOUNDED_EXPANDED_MAX_HEIGHT.roomy);
-    // Pevné bloky v pixeloch: hlavička (~3,75 rem), riadok akcií (~2,75 rem),
-    // odsadenie textu (py-3) a prepínač „Viac"/„Menej".
-    const fixedPx = 60 + 44 + 24 + 20;
+    return (
+      (viewportPx * (WINDOW_VH - captionCapVh)) / 100 - FIXED_PX - extraPx
+    );
+  }
 
+  it('lets a post without tags fit without the safety valve', () => {
     // Strop textu musí ostať pod výškou okna aj s pevnými blokmi…
-    expect(captionCapVh).toBeLessThan(windowVh);
+    expect(vhOf(BOUNDED_EXPANDED_MAX_HEIGHT.roomy)).toBeLessThan(WINDOW_VH);
 
-    // …a fotke musí zvýšiť rozumné minimum na každej bežnej výške obrazovky.
+    // …a bez označených ľudí zvýši fotke viac než jej podlaha na každej bežnej
+    // výške obrazovky, takže sa poistka stĺpca vôbec nezapne. Strop sa číta
+    // priamo z komponentu, takže jeho zdvihnutie tento test rozbije.
     for (const viewportPx of [600, 700, 800, 900, 1080, 1440]) {
-      const photoPx =
-        (viewportPx * (windowVh - captionCapVh)) / 100 - fixedPx;
-      expect(photoPx).toBeGreaterThan(140);
+      expect(leftoverForPhoto(viewportPx)).toBeGreaterThan(PHOTO_FLOOR_PX);
     }
+  });
+
+  it('relies on the safety valve once tags are added to the maximum text', () => {
+    // Plný zoznam označených (10) sa pri šírke stĺpca zalomí do ~3 riadkov
+    // chipov aj s odsadením – práve táto KOMBINÁCIA vie na nižšom okne
+    // prerásť dostupnú výšku. Vtedy fotku drží podlaha a dosiahnuteľnosť
+    // riadku akcií zabezpečí scroll stĺpca; test len pomenúva, že sa na to
+    // spoliehame (nie je to prehliadnutý prípad).
+    const tagsPx = 104;
+    expect(leftoverForPhoto(600, tagsPx)).toBeLessThan(PHOTO_FLOOR_PX);
+    // Na bežnom notebooku sa aj tak zmestí všetko.
+    expect(leftoverForPhoto(900, tagsPx)).toBeGreaterThan(PHOTO_FLOOR_PX);
   });
 
   it('gives the split layout more room for text than the single-column one', () => {
@@ -486,5 +520,77 @@ describe('štýl scrollbaru v globals.css', () => {
     // visieť práve na `.dark`.
     expect(css).toContain('.dark .subtle-scrollbar::-webkit-scrollbar-thumb');
     expect(css).toMatch(/\.dark\s+\.subtle-scrollbar\s*\{[^}]*scrollbar-color:/);
+  });
+});
+
+describe('krajná kombinácia obsahu nad fotkou', () => {
+  /** Plný počet označených (`MAX_FEED_POST_TAGS` = 10 na backende). */
+  function tenTaggedUsers() {
+    return Array.from({ length: 10 }, (_unused, index) => ({
+      id: index + 1,
+      display_name: `Označený Používateľ ${index + 1}`,
+      slug: `oznaceny-${index + 1}`,
+      user_type: 'individual',
+      avatar_url: null,
+      can_remove_tag: false,
+    })) as FeedPost['tagged_users'];
+  }
+
+  it('keeps the photo and the action row reachable with max text and full tags', async () => {
+    stubCaptionOverflow();
+    const maxCaption = 'Ab '.repeat(166) + 'cd';
+    expect(maxCaption).toHaveLength(500);
+
+    await renderOverlay(
+      makePost({ caption: maxCaption, tagged_users: tenTaggedUsers() }),
+    );
+    await userEvent.click(await screen.findByTestId('feed-post-caption-toggle'));
+
+    const media = screen.getByTestId('feed-post-overlay-media');
+
+    // Označení sú v hre tiež – práve ich súčet s rozbaleným textom vie
+    // vyčerpať výšku stĺpca.
+    expect(within(media).getAllByTestId(/^feed-post-tag-\d+$/)).toHaveLength(10);
+
+    // 1) Fotka nezmizne: má podlahu, nie len „ber, čo zvýši".
+    expect(within(media).getByTestId('feed-post-media-fill').className).toContain(
+      'min-h-[8rem]',
+    );
+    expect(within(media).getByTestId('feed-post-image')).toBeInTheDocument();
+
+    // 2) Riadok akcií ostáva v stĺpci a stĺpec sa dá doscrollovať, takže sa
+    //    lajk, komentáre ani zdieľanie nemôžu ocitnúť mimo dosahu.
+    const actions = media.querySelector('footer');
+    expect(actions).not.toBeNull();
+    expect(media.contains(actions)).toBe(true);
+    expect(media.className).toContain('overflow-y-auto');
+    expect(within(media).getByTestId('feed-like-button')).toBeInTheDocument();
+    expect(within(media).getByTestId('feed-share-button')).toBeInTheDocument();
+  });
+});
+
+describe('šírka obrazovky rozhoduje spolu s fotkou', () => {
+  it('keeps the single-column layout below the desktop breakpoint', async () => {
+    // Otvorené okno sa pri zúžení prehliadača nezatvára, takže bez tejto
+    // podmienky by dva stĺpce ostali aj na obrazovke, kde by z nich boli dva
+    // nepoužiteľne úzke pruhy.
+    mockIsMobile = true;
+    await renderOverlay();
+
+    expect(screen.queryByTestId('feed-post-overlay-split')).not.toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    // Rovnaké správanie ako pri text-only príspevku: výška je zase len strop.
+    expect(screen.getByTestId('feed-post-overlay').className).toContain(
+      'max-h-[95vh]',
+    );
+    // Fotka sa nestráca – len sa vykresľuje v jednom stĺpci ako doteraz.
+    expect(screen.getByTestId('feed-post-image')).toBeInTheDocument();
+  });
+
+  it('uses the two-column layout above it, as before', async () => {
+    mockIsMobile = false;
+    await renderOverlay();
+
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
   });
 });

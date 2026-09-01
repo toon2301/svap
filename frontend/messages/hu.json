@@ -998,7 +998,7 @@
     "enterEmailForResend": "Adja meg az e-mailt a megerősítés újraküldéséhez",
     "passwordResetError": "Hiba a jelszó visszaállító e-mail küldése során",
     "passwordResetRequestAccepted": "Kérés fogadva",
-    "passwordResetNeutralMessage": "Ha létezik aktív fiók ezzel az e-mail-címmel, elküldjük rá a jelszó-visszaállítási hivatkozást.",
+    "passwordResetNeutralMessage": "Ha létezik aktív fiók ezzel az e-mail-címmel, elküldjük a jelszó-visszaállítási hivatkozást erre az e-mail-címre.",
     "backToLogin": "Vissza a bejelentkezéshez",
     "forgotPasswordDescription": "Adja meg az e-mail címét és elküldjük Önnek a jelszó visszaállítási linket.",
     "emailAddress": "E-mail cím",

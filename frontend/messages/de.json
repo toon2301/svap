@@ -998,7 +998,7 @@
     "enterEmailForResend": "E-Mail für erneutes Senden der Verifizierung eingeben",
     "passwordResetError": "Fehler beim Senden der Passwort-Reset-E-Mail",
     "passwordResetRequestAccepted": "Anfrage erhalten",
-    "passwordResetNeutralMessage": "Wenn ein aktives Konto mit dieser E-Mail-Adresse existiert, senden wir einen Link zum Zurücksetzen des Passworts.",
+    "passwordResetNeutralMessage": "Wenn ein aktives Konto mit dieser E-Mail-Adresse existiert, senden wir einen Link zum Zurücksetzen des Passworts an diese E-Mail-Adresse.",
     "backToLogin": "Zurück zur Anmeldung",
     "forgotPasswordDescription": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen des Passworts.",
     "emailAddress": "E-Mail-Adresse",

@@ -14,24 +14,34 @@
  *   fotka/karusel   flex-1 ← pružná  pole na komentár     shrink-0
  *   akcie           shrink-0
  *
- * PREČO ĽAVÝ STĹPEC NIKDY NESCROLLUJE (a nič sa v ňom ani neschová):
+ * PREČO SA ĽAVÝ STĹPEC PRI BEŽNOM OBSAHU NESCROLLUJE:
  *
  *  1. Okno má pri fotke PEVNÚ výšku `h-[95vh]` (nie `max-h`), takže stĺpec má
  *     definitívnu výšku – bez nej by `flex-1` na fotke nemalo z čoho počítať.
- *  2. Stĺpec má `overflow-hidden`, takže scrollovať sa v ňom NEDÁ. To samo by
- *     ale znamenalo len orezanie, preto:
- *  3. Hlavička (~3,75 rem) a riadok akcií (~2,75 rem) sú `shrink-0` s pevnou
+ *  2. Hlavička (~3,75 rem) a riadok akcií (~2,75 rem) sú `shrink-0` s pevnou
  *     výškou, text má strop `max-h-[40vh]` (`expansionBound="roomy"`) a fotka
- *     je `flex-1 min-h-0`. Súčet pevných častí je teda najviac
- *     `40vh + ~6,5rem`, čo je pri okne vysokom `95vh` vždy menej než celok –
- *     zvyšok (min. `55vh − ~6,5rem`, t. j. ~180 px pri 600 px vysokom okne
- *     a ~350 px pri 900 px) pripadne fotke. Nič teda nemá ako pretiecť.
- *  4. Strop textu je POISTKA, nie bežný stav: caption má limit 500 znakov
+ *     je pružná (`flex-1`). Rozbalenie „Viac" teda fotku len primerane zmenší.
+ *  3. Strop textu je POISTKA, nie bežný stav: caption má limit 500 znakov
  *     (FE `CAPTION_MAX_LENGTH`, BE `MAX_TEXT_LENGTH`) a pri šírke ľavého
  *     stĺpca (56 % z 54 rem ≈ 484 px, po odsadení ≈ 452 px, ~64 znakov na
- *     riadok) sa 500 znakov zmestí do ~8 riadkov ≈ 160 px. Na strop teda
- *     naráža len text plný vynútených zalomení; bežný sa doň nikdy nedostane
- *     a rozbalenie „Viac" iba primerane zmenší fotku.
+ *     riadok) sa 500 znakov zmestí do ~8 riadkov ≈ 160 px. Naráža naň len
+ *     text plný vynútených zalomení.
+ *
+ * ČO SA STANE V KRAJNOM PRÍPADE (a prečo tu je `overflow-y-auto`):
+ *
+ * Pevných častí je viac než len hlavička, text a akcie – pribúdajú aj
+ * označení ľudia (až 10, `MAX_FEED_POST_TAGS`), ktorí sa pri šírke stĺpca
+ * zalomia do niekoľkých riadkov. Pri KOMBINÁCII všetkého naraz (text na
+ * strope + plný zoznam označených + nízke okno) by ich súčet vedel prerásť
+ * `95vh`. Keby stĺpec ostal `overflow-hidden`, fotka by sa scvrkla na nulu a
+ * riadok akcií by sa odrezal MIMO dohľad, bez možnosti sa k nemu dostať.
+ *
+ * Preto dvojica opatrení, ktorá zodpovedá poistke jednostĺpcového rozloženia
+ * (`min-h-0 overflow-y-auto` na pevnom bloku):
+ *  - médiová plocha má podlahu `min-h-[8rem]`, takže fotka nikdy nezmizne,
+ *  - stĺpec ako celok sa v takom prípade dá doscrollovať (`overflow-y-auto`
+ *    s appkinou utilitou `subtle-scrollbar`).
+ * Pri bežnom obsahu sa scrollovacia lišta neobjaví – všetko sa zmestí.
  */
 
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -88,11 +98,12 @@ export default function FeedPostDetailSplitLayout({
   return (
     <div className="flex min-h-0 flex-1" data-testid="feed-post-overlay-split">
       {/* ĽAVÝ STĹPEC – hlavička, text, fotka, akcie POKOPE a v tomto poradí.
-          `min-w-0` drží dlhé meno autora v stĺpci, `overflow-hidden` zaručuje,
-          že sa tu nedá scrollovať (viď rozpis v hlavičke súboru). */}
+          `min-w-0` drží dlhé meno autora v stĺpci. `overflow-y-auto` je
+          POISTKA pre krajnú kombináciu obsahu, nie bežný stav – viď rozpis
+          v hlavičke súboru. */}
       <div
         data-testid="feed-post-overlay-media"
-        className="flex min-h-0 w-[56%] min-w-0 flex-col overflow-hidden"
+        className="subtle-scrollbar flex min-h-0 w-[56%] min-w-0 flex-col overflow-y-auto"
       >
         <FeedPostCard
           post={post}
