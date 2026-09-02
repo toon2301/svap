@@ -18,7 +18,7 @@
  *  - klik na tmavé pozadie zatvára všade.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ChevronLeftIcon,
@@ -52,6 +52,34 @@ type ImageLightboxProps = {
   onClose: () => void;
   /** Kvôli testom a odlíšeniu, keby raz boli dva na jednej obrazovke. */
   testId?: string;
+  /**
+   * Vlastná ovládacia vrstva NAD fotkou (hlavička, text, akcie…).
+   *
+   * Prehliadač ostáva tým, čím bol – prepínanie fotiek, swipe, klávesnica,
+   * zámok scrollovania, fokus aj poradie vrstiev. Volajúci si len prikreslí
+   * svoju vrstvu navrch; bez tejto props je prehliadač presne ako doteraz.
+   */
+  chrome?: ReactNode;
+  /**
+   * Klik/ťuk PRIAMO na fotku. Mobilný prehliadač Nástenky ním prepína, či je
+   * jeho vrstva vidno. Bez neho je fotka na klik netečná (klik sa len
+   * nepropaguje na podklad), rovnako ako doteraz.
+   */
+  onImageActivate?: () => void;
+  /**
+   * Zavrie klik na tmavý podklad? Predvolene áno. Prehliadač s vlastnou
+   * vrstvou to vypína – tam je podklad plocha na prepínanie vrstvy, nie
+   * zatváranie, a zatvára sa výhradne cez „X".
+   */
+  dismissOnBackdropClick?: boolean;
+  /** Skryje vstavané „X" – volajúci má vlastné vo svojej vrstve. */
+  hideCloseButton?: boolean;
+  /**
+   * Fotka dostane PEVNÝ rámec (celá plocha prehliadača) namiesto toho, aby si
+   * rámec určila podľa vlastných rozmerov. Stále `object-contain`, takže sa
+   * nič neoreže – len sa vysoká a široká fotka vykreslia v rovnakom ráme.
+   */
+  fixedFrame?: boolean;
 };
 
 const SWIPE_MIN_DISTANCE = 50;
@@ -70,6 +98,11 @@ export function ImageLightbox({
   labels,
   onClose,
   testId = 'image-lightbox',
+  chrome,
+  onImageActivate,
+  dismissOnBackdropClick = true,
+  hideCloseButton = false,
+  fixedFrame = false,
 }: ImageLightboxProps) {
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -168,13 +201,16 @@ export function ImageLightbox({
     <div
       ref={containerRef}
       tabIndex={-1}
-      className="fixed inset-0 z-[112] flex items-center justify-center bg-black/95 p-4 focus:outline-none"
+      className={`fixed inset-0 z-[112] flex items-center justify-center bg-black/95 focus:outline-none ${
+        fixedFrame ? 'p-0' : 'p-4'
+      }`}
       role="dialog"
       aria-modal="true"
       aria-label={labels.dialog}
       data-testid={testId}
-      onClick={onClose}
+      onClick={dismissOnBackdropClick ? onClose : undefined}
     >
+      {hideCloseButton ? null : (
       <button
         type="button"
         onClick={(event) => {
@@ -187,6 +223,7 @@ export function ImageLightbox({
       >
         <XMarkIcon className="h-5 w-5" />
       </button>
+      )}
 
       {hasMultiple && (
         <>
@@ -218,8 +255,16 @@ export function ImageLightbox({
       )}
 
       <div
-        className="flex max-h-full max-w-full items-center justify-center"
-        onClick={(event) => event.stopPropagation()}
+        className={
+          fixedFrame
+            ? 'flex h-full w-full items-center justify-center'
+            : 'flex max-h-full max-w-full items-center justify-center'
+        }
+        data-testid={`${testId}-frame`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onImageActivate?.();
+        }}
         onTouchStart={(event) => {
           const touch = event.touches[0];
           touchStartRef.current = touch
@@ -251,7 +296,11 @@ export function ImageLightbox({
             src={resolvedSrc}
             alt={alt}
             data-testid={`${testId}-image`}
-            className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
+            className={
+              fixedFrame
+                ? 'h-full w-full object-contain'
+                : 'max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl'
+            }
           />
         ) : (
           // Neutrálny placeholder počas načítania/chyby (žiadna broken-image ikona).
@@ -265,7 +314,11 @@ export function ImageLightbox({
       {hasMultiple && (
         <div
           data-testid={`${testId}-counter`}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white"
+          className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white ${
+            // S vlastnou vrstvou sedí dole riadok akcií – počítadlo by naň
+            // sadlo, tak sa presunie nad fotku hore.
+            chrome ? 'top-20' : 'bottom-4'
+          }`}
         >
           {labels.counter(
             clampIndex(activeIndex, sources.length) + 1,
@@ -273,6 +326,10 @@ export function ImageLightbox({
           )}
         </div>
       )}
+
+      {/* Vrstva volajúceho ide NAD fotku, ale ostáva súčasťou toho istého
+          dialógu, takže s ňou fokus trap aj Escape fungujú bez ďalšej práce. */}
+      {chrome}
     </div>,
     portalNode,
   );

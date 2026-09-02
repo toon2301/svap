@@ -9,7 +9,7 @@
  * otvorených naraz sa navzájom neovplyvňuje.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -23,6 +23,8 @@ import FeedCommentReplyComposer from './FeedCommentReplyComposer';
 import FeedRepliesAutoLoader from './FeedRepliesAutoLoader';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
+import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
+import { formatRelativeTime } from './feedRelativeTime';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 import {
   FEED_COMMENT_MAX_LENGTH,
@@ -211,6 +213,34 @@ type FeedPostCommentsProps = {
    * prázdne miesto alebo by okno prerástol.
    */
   fillHeight?: boolean;
+  /**
+   * Ukázať čas pri komentári.
+   *
+   * Zapína to mobilný prehliadač fotky, kde je meta riadok jediné miesto, kde
+   * sa čas dá zobraziť. Na karte a v okne detailu ostáva riadok zámerne
+   * strohý (čas nesie samotný príspevok nad nimi).
+   */
+  showTimestamp?: boolean;
+  /**
+   * Jednoriadkové pole na komentár s ikonou odoslania namiesto tlačidla.
+   *
+   * Pre vysunutý panel nad fotkou, kde má byť composer čo najnižší. Emoji
+   * tlačidlo tam nie je tak či tak – to appka na mobile skrýva všade.
+   */
+  compactComposer?: boolean;
+  /**
+   * Obsah vložený NAD zoznam, do tej istej scrollovateľnej plochy.
+   *
+   * Mobilná obrazovka detailu tým dosiahne, že text, fotka aj riadok akcií
+   * scrollujú SPOLU s komentármi ako jeden súvislý povrch, a pole na nový
+   * komentár im pritom ostáva pevne na spodku. Bez toho by mala obrazovka dva
+   * nezávislé scrolly nad sebou.
+   *
+   * Musí byť VNÚTRI scrollovateľného boxu, nie nad ním – inak by donačítavanie
+   * (sentinel) aj doscrollovanie na komentár merali inú plochu, než ktorou
+   * používateľ naozaj hýbe.
+   */
+  listHeader?: ReactNode;
   postId: number;
   /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
   highlightCommentId?: number | null;
@@ -222,11 +252,14 @@ type FeedPostCommentsProps = {
 export default function FeedPostComments({
   postId,
   fillHeight = false,
+  showTimestamp = false,
+  compactComposer = false,
+  listHeader,
   highlightCommentId,
   onCountChange,
   onTotalChange,
 }: FeedPostCommentsProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   // Mobil má emoji priamo na systémovej klávesnici – appkové
   // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
   const isMobile = useIsMobile();
@@ -974,19 +1007,38 @@ export default function FeedPostComments({
         highlighted === comment.id ? 'bg-purple-100/80 dark:bg-purple-900/30' : ''
       }`}
     >
-      <InitialsAvatar
-        name={comment.author?.display_name}
-        avatarUrl={comment.author?.avatar_url}
-        size="xs"
-      />
+      {/* Avatar aj meno vedú na profil autora komentára – rovnaké pravidlo
+          ako v hlavičke príspevku, aby sa preklik správal všade rovnako. */}
+      <button
+        type="button"
+        onClick={() => openUserProfile(comment.author)}
+        disabled={!canOpenUserProfile(comment.author)}
+        data-testid={`feed-comment-avatar-${comment.id}`}
+        aria-label={t('feed.openProfile', 'Otvoriť profil')}
+        className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
+      >
+        <InitialsAvatar
+          name={comment.author?.display_name}
+          avatarUrl={comment.author?.avatar_url}
+          size="xs"
+        />
+      </button>
       <div
         className={`min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ${
           isReply ? 'text-[13px]' : ''
         }`}
       >
-        <p className="text-xs font-semibold text-gray-900 dark:text-white">
+        {/* Meno je na VLASTNOM riadku nad textom – text komentára ide pod
+            neho, nie vedľa. */}
+        <button
+          type="button"
+          onClick={() => openUserProfile(comment.author)}
+          disabled={!canOpenUserProfile(comment.author)}
+          data-testid={`feed-comment-author-${comment.id}`}
+          className="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"
+        >
           {comment.author?.display_name}
-        </p>
+        </button>
         {editingComment === comment.id ? (
           <FeedCommentEditComposer
             initialText={comment.text}
@@ -1010,7 +1062,16 @@ export default function FeedPostComments({
             ) : null}
           </p>
         )}
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          {showTimestamp ? (
+            <time
+              dateTime={comment.created_at}
+              data-testid={`feed-comment-time-${comment.id}`}
+              className="text-xs text-gray-500 dark:text-gray-400"
+            >
+              {formatRelativeTime(comment.created_at, t, locale)}
+            </time>
+          ) : null}
           <FeedCommentLikeButton postId={postId} comment={comment} />
           {/* „Upraviť" patrí do TOHTO riadku, nie ku košu vpravo: kôš je
               deštruktívna ikona a navyše ho vidí aj autor príspevku pri cudzom
@@ -1106,6 +1167,7 @@ export default function FeedPostComments({
             fillHeight ? 'h-full' : 'max-h-[min(26rem,60dvh)]'
           }`}
         >
+          {listHeader}
           {loading ? (
             <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
               {t('common.loading', 'Načítavam...')}
@@ -1239,15 +1301,58 @@ export default function FeedPostComments({
       {/* Composer je MIMO scrollovateľnej časti – ostáva viditeľný bez ohľadu
           na to, kde v zozname používateľ je. */}
       <div className="mt-3">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          rows={2}
-          placeholder={t('feed.commentPlaceholder', 'Napíš komentár...')}
-          aria-label={t('feed.commentPlaceholder', 'Napíš komentár...')}
-          className="w-full resize-y subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
-        />
+        {/* Kompaktný variant: jeden riadok a ikona odoslania priamo v poli.
+            Vysunutý panel nad fotkou má na composer len úzky pruh. */}
+        <div className={compactComposer ? 'relative' : ''}>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            rows={compactComposer ? 1 : 2}
+            placeholder={t('feed.commentPlaceholder', 'Napíš komentár...')}
+            aria-label={t('feed.commentPlaceholder', 'Napíš komentár...')}
+            className={`w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 ${
+              compactComposer ? 'resize-none pr-12' : 'resize-y'
+            }`}
+          />
+          {compactComposer ? (
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={!canSubmit}
+              data-testid="feed-comment-send"
+              aria-label={t('feed.commentSubmit', 'Pridať')}
+              className="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <line x1="10" y1="14" x2="21" y2="3" />
+                <path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
+        {/* Kompaktný variant odosiela ikonou v poli, takže spodný riadok
+            (emoji, počítadlo, „Pridať") by bol druhá cesta k tej istej akcii.
+            Zostáva z neho len upozornenie na prekročenú dĺžku. */}
+        {compactComposer ? (
+          tooLong ? (
+            <p
+              data-testid="feed-comment-counter"
+              className="mt-1 text-xs font-semibold tabular-nums text-red-500 dark:text-red-400"
+            >
+              {text.length}/{FEED_COMMENT_MAX_LENGTH}
+            </p>
+          ) : null
+        ) : (
         <div className="mt-2 flex items-center justify-between gap-3">
           {isMobile ? null : (
             <DesktopEmojiPickerButton
@@ -1278,6 +1383,7 @@ export default function FeedPostComments({
               : t('feed.commentSubmit', 'Pridať')}
           </button>
         </div>
+        )}
       </div>
 
       <FeedDestructiveConfirm

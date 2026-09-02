@@ -1,8 +1,12 @@
 /**
- * Ikona „zdieľať" (share-2) – jedna definícia pre celú appku.
+ * Ikona „zdieľať" – jedna definícia pre celú appku.
  *
- * Používa ju akčný riadok príspevku aj zdieľanie portfólia, nech je akcia
- * všade rozpoznateľná rovnako.
+ * Kreslí KLASICKÝ tvar (tri uzly spojené dvoma čiarami, `ti-share`), nie
+ * `ti-share-2` (šípka von z rámčeka) – doterajší popisok tu mýlil, samotná
+ * kresba bola vždy tá klasická.
+ *
+ * Používa ju akčný riadok príspevku, mobilný prehliadač fotky aj zdieľanie
+ * portfólia, nech je akcia všade rozpoznateľná rovnako.
  */
 
 export default function ShareIcon({ className = 'h-4 w-4' }: { className?: string }) {

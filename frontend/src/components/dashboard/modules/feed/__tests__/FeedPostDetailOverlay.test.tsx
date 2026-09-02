@@ -329,6 +329,30 @@ describe('obsah okna', () => {
   });
 });
 
+describe('preklik na profil autora z okna', () => {
+  it('opens the author profile from the avatar and from the name', async () => {
+    const seen: string[] = [];
+    const handler = (event: Event) => {
+      seen.push((event as CustomEvent).detail?.identifier);
+    };
+    window.addEventListener('goToUserProfile', handler);
+    try {
+      const { onClose } = await renderLoadedOverlay(textOnlyPost());
+
+      await userEvent.click(screen.getByTestId('feed-post-author-avatar'));
+      await userEvent.click(screen.getByTestId('feed-post-author-name'));
+
+      // Rovnaké správanie ako v mobilnom prehliadači fotky – preklik na profil
+      // funguje z avatara aj z mena, na oboch platformách.
+      expect(seen).toEqual(['jana', 'jana']);
+      // Okno nesmie ostať visieť nad profilom, na ktorý sa práve navigovalo.
+      expect(onClose).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('goToUserProfile', handler);
+    }
+  });
+});
+
 describe('zatváranie', () => {
   it('closes with the X button', async () => {
     const { onClose } = renderOverlay();

@@ -31,6 +31,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
 import { ImageLightbox } from '../shared/ImageLightbox';
 import { translateImageRejection } from './feedImageRejection';
+import {
+  feedImageSrc,
+  feedSlideImages,
+  feedViewableImages,
+} from './feedImageSources';
 import type { FeedPostImage } from '@/lib/feedApi';
 
 type FeedPostImageCarouselProps = {
@@ -39,11 +44,24 @@ type FeedPostImageCarouselProps = {
   /**
    * Prepíše, čo sa stane po kliknutí na fotku.
    *
-   * Vo feede otvára klik OKNO DETAILU (fotka je vstup do príspevku, nie do
-   * galérie); bez tejto funkcie ostáva pôvodné správanie – fullscreen
-   * prehliadač priamo, čo platí práve vnútri okna detailu.
+   * Na desktope otvára klik OKNO DETAILU (fotka je vstup do príspevku, nie do
+   * galérie), na mobile bohatý prehliadač fotky. Bez tejto funkcie ostáva
+   * pôvodné správanie – fullscreen prehliadač priamo, čo platí práve vnútri
+   * okna detailu.
+   *
+   * Index ukazuje do zoznamu OTVÁRATEĽNÝCH fotiek (`feedViewableImages`), aby
+   * prehliadač otvoril presne tú, na ktorú sa ťuklo.
    */
-  onPhotoClick?: () => void;
+  onPhotoClick?: (index: number) => void;
+  /**
+   * Vedie klik na STRÁNKU/okno detailu (desktopový feed), alebo ostáva pri
+   * fotke (mobilný prehliadač, fullscreen v okne detailu)?
+   *
+   * Rozhoduje o popise pre čítačky a o kurzore, takže musí sedieť s tým, čo sa
+   * naozaj stane – nedá sa odvodiť len z prítomnosti `onPhotoClick`, ten má
+   * dnes obe úlohy.
+   */
+  photoOpensPostDetail?: boolean;
   /**
    * Médiová plocha si vezme zvyšok výšky rodiča namiesto pevných `h-80/h-96`.
    *
@@ -64,10 +82,6 @@ const MEDIA_HEIGHT = 'h-80 sm:h-96';
  * minimum flex položky (bez neho by ju obrázok roztiahol a stĺpec by pretiekol).
  */
 const MEDIA_FILL = 'min-h-0 flex-1';
-
-function imageSrc(image: FeedPostImage): string {
-  return image.large_url || image.thumbnail_url || '';
-}
 
 /** Rozpracovaná fotka: jemný stav, žiadny nápadný blok. */
 function ProcessingSlide() {
@@ -98,7 +112,7 @@ function Slide({
   opensPostDetail?: boolean;
 }) {
   const { t } = useLanguage();
-  const src = imageSrc(image);
+  const src = feedImageSrc(image);
   if (!src) return <ProcessingSlide />;
   const media = <BlurredContainImage src={src} alt={alt} loading="lazy" />;
   if (!onOpen) return media;
@@ -127,6 +141,7 @@ export default function FeedPostImageCarousel({
   images,
   alt,
   onPhotoClick,
+  photoOpensPostDetail = false,
   fillHeight = false,
 }: FeedPostImageCarouselProps) {
   const { t } = useLanguage();
@@ -136,14 +151,15 @@ export default function FeedPostImageCarousel({
   const mediaSize = fillHeight ? MEDIA_FILL : MEDIA_HEIGHT;
 
   // Zamietnuté sa nezobrazujú; cudziemu divákovi ich backend ani neposiela.
-  const slides = images.filter((image) => image.status !== 'rejected');
+  // Pravidlo je spoločné s prehliadačom fotky, aby sa im nerozišli indexy.
+  const slides = feedSlideImages(images);
   const rejected = images.filter((image) => image.status === 'rejected');
   const total = slides.length;
 
   // Do prehliadača ide len to, čo má skutočnú URL – rozpracovaná fotka je na
   // karte len stavová plocha a otvárať sa nedá.
-  const viewable = slides.filter((image) => imageSrc(image));
-  const lightboxSources = viewable.map(imageSrc);
+  const viewable = feedViewableImages(images);
+  const lightboxSources = viewable.map(feedImageSrc);
 
   // Po obnovení feedu môže fotiek ubudnúť – index mimo rozsahu by vykreslil nič.
   useEffect(() => {
@@ -152,12 +168,12 @@ export default function FeedPostImageCarousel({
 
   const openLightbox = useCallback(
     (image: FeedPostImage) => {
-      if (onPhotoClick) {
-        onPhotoClick();
-        return;
-      }
       const at = viewable.findIndex((candidate) => candidate.id === image.id);
       if (at < 0) return;
+      if (onPhotoClick) {
+        onPhotoClick(at);
+        return;
+      }
       setLightboxIndex(at);
     },
     [viewable, onPhotoClick],
@@ -213,8 +229,8 @@ export default function FeedPostImageCarousel({
           <Slide
             image={active}
             alt={alt}
-            onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
-            opensPostDetail={Boolean(onPhotoClick)}
+            onOpen={feedImageSrc(active) ? () => openLightbox(active) : undefined}
+            opensPostDetail={photoOpensPostDetail}
           />
         </div>
         {rejectedNote}
@@ -245,8 +261,8 @@ export default function FeedPostImageCarousel({
         <Slide
           image={active}
           alt={`${alt} (${index + 1}/${total})`}
-          onOpen={imageSrc(active) ? () => openLightbox(active) : undefined}
-          opensPostDetail={Boolean(onPhotoClick)}
+          onOpen={feedImageSrc(active) ? () => openLightbox(active) : undefined}
+          opensPostDetail={photoOpensPostDetail}
         />
 
         <button

@@ -192,29 +192,45 @@ describe('desktop', () => {
 });
 
 describe('mobil ostáva nezmenený', () => {
-  it('expands the comments inside the card', async () => {
+  it('opens the mobile detail screen from the comments button', async () => {
     mobile = true;
     const { onTargetChange } = renderWithOverlay();
 
     await userEvent.click(screen.getByTestId('feed-comments-button'));
 
-    expect(await screen.findByTestId('feed-post-comments')).toBeInTheDocument();
+    // Mobil dostáva vlastnú obrazovku detailu – nie rozbalenie komentárov
+    // v karte a ani desktopové okno.
+    expect(await screen.findByTestId('feed-mobile-detail')).toBeInTheDocument();
     expect(onTargetChange).not.toHaveBeenCalled();
   });
 
-  it('opens the fullscreen viewer from the photo', async () => {
+  it('opens the photo viewer instead of the detail window', async () => {
     mobile = true;
     const { onTargetChange } = renderWithOverlay();
 
-    // Na mobile ostáva pôvodný popis – klik naozaj otvára fotku.
+    // Popis ostáva o FOTKE – ťuk nevedie na stránku detailu ako na desktope.
     expect(screen.getByTestId('feed-image-open-11')).toHaveAttribute(
       'aria-label',
       'Otvoriť fotku na celú obrazovku',
     );
     await userEvent.click(screen.getByTestId('feed-image-open-11'));
 
-    expect(screen.getByTestId('feed-image-lightbox')).toBeInTheDocument();
+    // Mobil dostáva bohatý prehliadač (fotka + hlavička, text, akcie),
+    // nie okno detailu.
+    expect(await screen.findByTestId('feed-photo-viewer')).toBeInTheDocument();
     expect(onTargetChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the photo tap on the immersive viewer, not the detail screen', async () => {
+    mobile = true;
+    renderWithOverlay();
+
+    await userEvent.click(screen.getByTestId('feed-image-open-11'));
+
+    // Fotka a komentáre vedú na mobile na DVE rôzne obrazovky – ťuk na fotku
+    // ostáva pri imerznom prehliadači.
+    expect(await screen.findByTestId('feed-photo-viewer')).toBeInTheDocument();
+    expect(screen.queryByTestId('feed-mobile-detail')).not.toBeInTheDocument();
   });
 });
 

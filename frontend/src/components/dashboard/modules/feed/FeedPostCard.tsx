@@ -58,6 +58,10 @@ import ShareIcon from './ShareIcon';
 import { formatOfferPriceLabel } from './offerPriceLabel';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useCardInViewport } from './useCardInViewport';
+import { formatRelativeTime } from './feedRelativeTime';
+import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
+import FeedPhotoViewer from './FeedPhotoViewer';
+import FeedPostMobileDetail from './FeedPostMobileDetail';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 
 /**
@@ -70,26 +74,6 @@ import { useFeedCommentsPolling } from './useFeedCommentsPolling';
  */
 const SHARED_CARD_SURFACE =
   'bg-[#EEEDFE] dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60';
-
-function formatRelativeTime(
-  iso: string,
-  t: (key: string, fallback?: string) => string,
-  locale: string,
-): string {
-  const created = new Date(iso);
-  if (Number.isNaN(created.getTime())) return '';
-  const diffMs = Date.now() - created.getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return t('feed.timeJustNow', 'práve teraz');
-  if (minutes < 60) return `${minutes} ${t('feed.timeMinutesShort', 'min')}`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ${t('feed.timeHoursShort', 'h')}`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} ${t('feed.timeDaysShort', 'd')}`;
-  // Staršie príspevky ukazujú absolútny dátum – ten musí sledovať jazyk appky,
-  // nie locale prehliadača (tie sa bežne líšia).
-  return created.toLocaleDateString(locale || undefined);
-}
 
 /** Ikona výmeny (ti-arrows-exchange) v kruhu – marker zdieľaného príspevku. */
 function ExchangeIcon() {
@@ -494,6 +478,33 @@ export default function FeedPostCard({
   const postOverlay = useFeedPostOverlay();
   // Okno je DESKTOPOVÁ náhrada rozbaľovania; mobil ostáva nezmenený.
   const opensOverlay = Boolean(postOverlay) && !isMobile && !isDetail;
+  /**
+   * Na MOBILE otvára ťuk na fotku bohatý prehliadač (fotka + hlavička, text,
+   * akcie, komentáre). Desktop sa nemení: tam vedie fotka do okna detailu a
+   * vnútri okna do pôvodného fullscreen prehliadača.
+   *
+   * `null` = zatvorený; číslo je index v zozname otvárateľných fotiek.
+   */
+  const opensPhotoViewer = isMobile && !isDetail;
+  const [photoViewerIndex, setPhotoViewerIndex] = useState<number | null>(null);
+  /**
+   * Mobilná obrazovka detailu – otvára ju ikona komentárov a ťuk na TEXT
+   * príspevku. Ťuk na FOTKU vedie inam (prehliadač fotky vyššie), desktop sa
+   * nemení: tam komentáre aj naďalej otvárajú okno detailu.
+   */
+  const opensMobileDetail = isMobile && !isDetail;
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+
+  /**
+   * Preklik VON z karty (profil autora). V okne detailu musí okno zmiznúť –
+   * inak by ostalo visieť nad stránkou, na ktorú sa používateľ dostal. Adresu
+   * si rieši samotná navigácia, preto `keepHistory`: krok späť by ju vzápätí
+   * zrušil. Rovnaká úvaha ako pri preklikoch zo zdieľaného náhľadu.
+   */
+  const closeOverlayOnLeave = useCallback(() => {
+    if (isDetail) postOverlay?.close({ keepHistory: true });
+  }, [isDetail, postOverlay]);
+
   const [commentsOpen, setCommentsOpen] = useState(initialCommentsOpen);
   const [menuOpen, setMenuOpen] = useState(false);
   // Pozícia spúšťača v okne – menu sa kreslí portálom, takže si ju musí niesť.
@@ -753,15 +764,32 @@ export default function FeedPostCard({
           isDetail && !fillHeight ? 'pr-12' : ''
         } ${fixedBlock}`}
       >
-        <InitialsAvatar
-          name={authorName}
-          avatarUrl={post.author?.avatar_url}
-          size="sm"
-        />
+        {/* Avatar aj meno vedú na profil autora – rovnako vo feede, v okne
+            detailu aj v mobilnom prehliadači fotky. */}
+        <button
+          type="button"
+          onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
+          disabled={!canOpenUserProfile(post.author)}
+          data-testid="feed-post-author-avatar"
+          aria-label={t('feed.openProfile', 'Otvoriť profil')}
+          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
+        >
+          <InitialsAvatar
+            name={authorName}
+            avatarUrl={post.author?.avatar_url}
+            size="sm"
+          />
+        </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+          <button
+            type="button"
+            onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
+            disabled={!canOpenUserProfile(post.author)}
+            data-testid="feed-post-author-name"
+            className="block max-w-full truncate text-left text-sm font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"
+          >
             {authorName}
-          </p>
+          </button>
           <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <time dateTime={post.created_at}>
               {formatRelativeTime(post.created_at, t, locale)}
@@ -865,6 +893,9 @@ export default function FeedPostCard({
             expansionBound={fillHeight ? 'roomy' : 'compact'}
             maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
             collapseBlankLines
+            onTextClick={
+              opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
+            }
           />
         </div>
       ) : null}
@@ -894,11 +925,17 @@ export default function FeedPostCard({
           <FeedPostImageCarousel
             images={images}
             alt={t('feed.imageAlt', 'Fotka príspevku')}
-            // Vo feede klik na fotku otvára okno detailu; v samotnom okne už
-            // otvorí fullscreen prehliadač (vrstvu nad ním).
+            // Desktop: fotka vedie do okna detailu. Mobil: bohatý prehliadač
+            // fotky. V samotnom okne detailu ostáva pôvodné správanie –
+            // fullscreen prehliadač (vrstva nad ním).
             onPhotoClick={
-              opensOverlay ? () => postOverlay?.open({ postId: post.id }) : undefined
+              opensOverlay
+                ? () => postOverlay?.open({ postId: post.id })
+                : opensPhotoViewer
+                  ? (index) => setPhotoViewerIndex(index)
+                  : undefined
             }
+            photoOpensPostDetail={opensOverlay}
           />
         )
       ) : null}
@@ -999,6 +1036,12 @@ export default function FeedPostCard({
               postOverlay?.open({ postId: post.id });
               return;
             }
+            // Mobil dostáva vlastnú obrazovku detailu namiesto rozbaľovania
+            // komentárov priamo v karte.
+            if (opensMobileDetail) {
+              setMobileDetailOpen(true);
+              return;
+            }
             setCommentsOpen((open) => !open);
           }}
           testId="feed-comments-button"
@@ -1034,6 +1077,28 @@ export default function FeedPostCard({
           // Číslo pri ikone vychádza z toho istého načítania ako zoznam,
           // takže sa nemôže rozísť s tým, čo používateľ reálne vidí.
           onTotalChange={setCommentsCount}
+        />
+      ) : null}
+
+      {/* Mobilná obrazovka detailu – mountuje sa až pri otvorení. */}
+      {mobileDetailOpen ? (
+        <FeedPostMobileDetail
+          post={currentPost}
+          onClose={() => setMobileDetailOpen(false)}
+          onDeleted={onDeleted}
+          onShared={onShared}
+        />
+      ) : null}
+
+      {/* Mobilný prehliadač fotky – mountuje sa až pri otvorení, rovnako ako
+          ostatné vrstvy karty. */}
+      {photoViewerIndex !== null ? (
+        <FeedPhotoViewer
+          post={currentPost}
+          initialIndex={photoViewerIndex}
+          onClose={() => setPhotoViewerIndex(null)}
+          onDeleted={onDeleted}
+          onShared={onShared}
         />
       ) : null}
 
