@@ -54,7 +54,12 @@ export default function FeedDestructiveConfirm({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4"
+      // Potvrdenie musí ležať NAD čímkoľvek, z čoho sa otvorilo – vrátane
+      // prehliadača fotky (`z-[112]`), z ktorého sa dá mazať príspevok aj
+      // komentár. Rovnaká vrstva ako ostatné feedové dialógy (zdieľanie,
+      // nahlásenie, úprava, zoznam lajkujúcich), takže sa poradie nemá ako
+      // rozísť.
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="feed-comment-delete-title"

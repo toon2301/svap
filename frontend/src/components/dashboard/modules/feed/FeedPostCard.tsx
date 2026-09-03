@@ -26,13 +26,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { translateFeedActionError } from './feedActionErrors';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
-import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
 import {
   deleteFeedPost,
   getFeedPost,
-  likeFeedPost,
   removeOwnFeedPostTag,
-  unlikeFeedPost,
   type FeedPost,
   type FeedPostImage,
 } from '@/lib/feedApi';
@@ -41,10 +38,7 @@ import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import {
-  emitFeedPostCounts,
-  onFeedPostCounts,
-} from './feedPostCountEvents';
+import { onFeedPostCounts } from './feedPostCountEvents';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import FeedAnchoredMenu from './FeedAnchoredMenu';
 import FeedPostCaption, {
@@ -55,10 +49,17 @@ import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
 import ShareIcon from './ShareIcon';
-import { formatOfferPriceLabel } from './offerPriceLabel';
+import ExchangeIcon from './FeedExchangeIcon';
+import SharedContentPreview from './FeedSharedContentPreview';
+import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useCardInViewport } from './useCardInViewport';
+import { formatRelativeTime } from './feedRelativeTime';
+import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
+import FeedPhotoViewer from './FeedPhotoViewer';
+import FeedPostMobileDetail from './FeedPostMobileDetail';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
+import { useFeedPostLike } from './useFeedPostLike';
 
 /**
  * Pozadie zdieľanej karty. Svetlý odtieň je presne #EEEDFE zo zadania (preto
@@ -70,45 +71,6 @@ import { useFeedCommentsPolling } from './useFeedCommentsPolling';
  */
 const SHARED_CARD_SURFACE =
   'bg-[#EEEDFE] dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60';
-
-function formatRelativeTime(
-  iso: string,
-  t: (key: string, fallback?: string) => string,
-  locale: string,
-): string {
-  const created = new Date(iso);
-  if (Number.isNaN(created.getTime())) return '';
-  const diffMs = Date.now() - created.getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return t('feed.timeJustNow', 'práve teraz');
-  if (minutes < 60) return `${minutes} ${t('feed.timeMinutesShort', 'min')}`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} ${t('feed.timeHoursShort', 'h')}`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} ${t('feed.timeDaysShort', 'd')}`;
-  // Staršie príspevky ukazujú absolútny dátum – ten musí sledovať jazyk appky,
-  // nie locale prehliadača (tie sa bežne líšia).
-  return created.toLocaleDateString(locale || undefined);
-}
-
-/** Ikona výmeny (ti-arrows-exchange) v kruhu – marker zdieľaného príspevku. */
-function ExchangeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-4 h-4"
-      aria-hidden="true"
-    >
-      <path d="M7 10h14l-4-4" />
-      <path d="M17 14H3l4 4" />
-    </svg>
-  );
-}
 
 function ActionButton({
   label,
@@ -192,152 +154,6 @@ function ActionButton({
     >
       {children}
       {count === undefined ? null : <span className="tabular-nums">{count}</span>}
-    </button>
-  );
-}
-
-function SharedContentPreview({
-  post,
-  hideOwner = false,
-  onOpenSource,
-}: {
-  post: FeedPost;
-  hideOwner?: boolean;
-  onOpenSource?: () => void;
-}) {
-  const { t, locale } = useLanguage();
-  const shared = post.shared_content;
-  if (!shared) return null;
-
-  if (post.shared_content_unavailable) {
-    return (
-      <div
-        data-testid="feed-shared-unavailable"
-        className="flex items-center gap-3 rounded-xl border border-purple-200/70 bg-white/70 p-3 dark:border-purple-800/40 dark:bg-black/20"
-      >
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            className="h-6 w-6"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
-          </svg>
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-            {shared.type === 'offer'
-              ? t('feed.sharedOfferUnavailable', 'Táto ponuka už nie je dostupná')
-              : shared.type === 'portfolio_item'
-                ? t('feed.sharedPortfolioUnavailable', 'Toto portfólio už nie je dostupné')
-                : t('feed.sharedPostUnavailable', 'Tento príspevok už nie je dostupný')}
-          </p>
-          {shared.title || shared.caption ? (
-            <p className="truncate text-xs text-gray-400 dark:text-gray-500">
-              {shared.title || shared.caption}
-            </p>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
-  // Zdieľaný VOĽNÝ príspevok – „mini príspevok" (autor + text + fotka),
-  // nie „mini ponuka" (náhľad + názov + kategória).
-  if (shared.type === 'feed_post') {
-    return (
-      // Výraznejší rám než pri ponuke/portfóliu: tu sú „hore" aj „dole"
-      // PRÍSPEVKY OD ĽUDÍ, takže bez zreteľného predelu to môže vyzerať,
-      // akoby pôvodný autor zdieľal sám seba. Ponuka ani portfólio túto
-      // zámenu nevyvolávajú – náhľad je tam očividne iný typ obsahu.
-      <div
-        data-testid="feed-shared-post-preview"
-        className="rounded-xl border-2 border-purple-300 bg-white/90 p-3 shadow-sm dark:border-purple-700/70 dark:bg-black/30"
-      >
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80">
-          {t('feed.originalPost', 'Pôvodný príspevok')}
-        </p>
-        {hideOwner ? null : (
-          <div className="flex items-center gap-2">
-            <InitialsAvatar
-              name={shared.owner_display_name}
-              avatarUrl={shared.owner?.avatar_url}
-              size="xs"
-            />
-            <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-              {shared.owner_display_name}
-            </span>
-          </div>
-        )}
-        {shared.caption ? (
-          <p className="mt-2 line-clamp-4 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">
-            {shared.caption}
-          </p>
-        ) : null}
-        {shared.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={shared.thumbnail_url}
-            alt=""
-            className="mt-2 max-h-64 w-full rounded-lg object-cover"
-          />
-        ) : null}
-      </div>
-    );
-  }
-
-  // Kompaktný náhľad podľa vzoru OfferShareMessageCard z messages: nízky
-  // horizontálny riadok s malým obrázkom, celý klikateľný. Fialový obal karty
-  // aj „výmena ďalej" hlavička ostávajú – mení sa len tento vnútorný náhľad.
-  const isOffer = shared.type === 'offer';
-  // Spoločný helper s náhľadom v zdieľacom dialógu – inak by používateľ pri
-  // zdieľaní videl inú cenu než tú, čo o chvíľu pristane vo feede.
-  const priceLabel = formatOfferPriceLabel(t, locale, shared);
-
-  return (
-    <button
-      type="button"
-      onClick={onOpenSource}
-      disabled={!onOpenSource}
-      data-testid="feed-shared-compact-preview"
-      className="flex w-full items-center gap-3 rounded-xl border border-purple-200/70 bg-white/80 p-2.5 text-left transition-colors hover:bg-white disabled:cursor-default dark:border-purple-800/40 dark:bg-black/20 dark:hover:bg-black/30"
-    >
-      {shared.thumbnail_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={shared.thumbnail_url}
-          alt=""
-          className="h-12 w-12 shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-500 dark:bg-purple-900/40 dark:text-purple-300">
-          <ExchangeIcon />
-        </span>
-      )}
-      <span className="min-w-0 flex-1">
-        {isOffer && shared.is_seeking !== null ? (
-          <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-purple-600 dark:text-purple-300">
-            {shared.is_seeking
-              ? t('skills.search', 'Hľadám')
-              : t('skills.offering', 'Ponúkam')}
-          </span>
-        ) : null}
-        <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">
-          {shared.title}
-        </span>
-        <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-          {shared.owner_display_name}
-        </span>
-      </span>
-      {priceLabel ? (
-        <span className="shrink-0 rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-purple-700 dark:border-purple-800/30 dark:bg-purple-900/20 dark:text-purple-300">
-          {priceLabel}
-        </span>
-      ) : null}
     </button>
   );
 }
@@ -479,9 +295,23 @@ export default function FeedPostCard({
   // nie je, takže `undefined` znamená „nezobrazuj", nie „neviem".
   const isEdited = currentPost.is_edited === true;
 
-  const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
-  const [likesCount, setLikesCount] = useState(post.likes_count);
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // Optimistický lajk je spoločný pre kartu aj obe mobilné vrstvy – karta si
+  // navyše berie `pendingRef`/`seqRef`, lebo počty ešte aj pollingom obnovuje.
+  const {
+    isLiked,
+    likesCount,
+    toggleLike,
+    setIsLiked,
+    setLikesCount,
+    pendingRef: likePendingRef,
+    seqRef: likeSeqRef,
+  } = useFeedPostLike({
+    postId: post.id,
+    initialLiked: post.is_liked_by_me,
+    initialCount: post.likes_count,
+    t,
+  });
   // V okne detailu drží počet okno (komentáre sú pod kartou, nie v nej);
   // vlastný stav karty pritom beží ďalej, takže po zatvorení okna nič nechýba.
   const shownCommentsCount = commentsCountOverride ?? commentsCount;
@@ -494,6 +324,33 @@ export default function FeedPostCard({
   const postOverlay = useFeedPostOverlay();
   // Okno je DESKTOPOVÁ náhrada rozbaľovania; mobil ostáva nezmenený.
   const opensOverlay = Boolean(postOverlay) && !isMobile && !isDetail;
+  /**
+   * Na MOBILE otvára ťuk na fotku bohatý prehliadač (fotka + hlavička, text,
+   * akcie, komentáre). Desktop sa nemení: tam vedie fotka do okna detailu a
+   * vnútri okna do pôvodného fullscreen prehliadača.
+   *
+   * `null` = zatvorený; číslo je index v zozname otvárateľných fotiek.
+   */
+  const opensPhotoViewer = isMobile && !isDetail;
+  const [photoViewerIndex, setPhotoViewerIndex] = useState<number | null>(null);
+  /**
+   * Mobilná obrazovka detailu – otvára ju ikona komentárov a ťuk na TEXT
+   * príspevku. Ťuk na FOTKU vedie inam (prehliadač fotky vyššie), desktop sa
+   * nemení: tam komentáre aj naďalej otvárajú okno detailu.
+   */
+  const opensMobileDetail = isMobile && !isDetail;
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+
+  /**
+   * Preklik VON z karty (profil autora). V okne detailu musí okno zmiznúť –
+   * inak by ostalo visieť nad stránkou, na ktorú sa používateľ dostal. Adresu
+   * si rieši samotná navigácia, preto `keepHistory`: krok späť by ju vzápätí
+   * zrušil. Rovnaká úvaha ako pri preklikoch zo zdieľaného náhľadu.
+   */
+  const closeOverlayOnLeave = useCallback(() => {
+    if (isDetail) postOverlay?.close({ keepHistory: true });
+  }, [isDetail, postOverlay]);
+
   const [commentsOpen, setCommentsOpen] = useState(initialCommentsOpen);
   const [menuOpen, setMenuOpen] = useState(false);
   // Pozícia spúšťača v okne – menu sa kreslí portálom, takže si ju musí niesť.
@@ -510,12 +367,6 @@ export default function FeedPostCard({
   const [editOpen, setEditOpen] = useState(false);
   const [likersOpen, setLikersOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const likePendingRef = useRef(false);
-  // Poradové číslo lajkov. `likePendingRef` sám nestačí: lajk, ktorý sa počas
-  // pollu stihne CELÝ (aj s odpoveďou), príznak zase vynuluje, takže by
-  // zastaraná odpoveď pollu prepísala čerstvý počet späť. Rovnaký vzor ako
-  // loadSeqRef vo FeedPostComments.
-  const likeSeqRef = useRef(0);
   // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
   const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -528,7 +379,7 @@ export default function FeedPostCard({
     if (likePendingRef.current) return;
     setIsLiked(post.is_liked_by_me);
     setLikesCount(post.likes_count);
-  }, [post.is_liked_by_me, post.likes_count]);
+  }, [likePendingRef, setIsLiked, setLikesCount, post.is_liked_by_me, post.likes_count]);
 
   useEffect(() => {
     setCommentsCount(post.comments_count);
@@ -542,52 +393,6 @@ export default function FeedPostCard({
   useEffect(() => {
     setCurrentPost(post);
   }, [post]);
-
-  const handleToggleLike = async () => {
-    if (likePendingRef.current) return;
-    likePendingRef.current = true;
-    likeSeqRef.current += 1;
-
-    // Optimisticky prepni hneď, request beží na pozadí.
-    const previousLiked = isLiked;
-    const previousCount = likesCount;
-    const nextLiked = !previousLiked;
-    const optimisticCount = Math.max(0, previousCount + (nextLiked ? 1 : -1));
-    setIsLiked(nextLiked);
-    setLikesCount(optimisticCount);
-    // Druhá karta toho istého príspevku (feed pod oknom detailu) má prebliknúť
-    // spolu s touto, nie až po odpovedi servera.
-    emitFeedPostCounts({
-      postId: post.id,
-      likesCount: optimisticCount,
-      isLikedByMe: nextLiked,
-    });
-
-    try {
-      const payload = nextLiked
-        ? await likeFeedPost(post.id)
-        : await unlikeFeedPost(post.id);
-      // Zosúlaď s pravdou zo servera (iný divák mohol medzitým lajknúť tiež).
-      setIsLiked(payload.is_liked_by_me);
-      setLikesCount(payload.likes_count);
-      emitFeedPostCounts({
-        postId: post.id,
-        likesCount: payload.likes_count,
-        isLikedByMe: payload.is_liked_by_me,
-      });
-    } catch (err) {
-      setIsLiked(previousLiked);
-      setLikesCount(previousCount);
-      emitFeedPostCounts({
-        postId: post.id,
-        likesCount: previousCount,
-        isLikedByMe: previousLiked,
-      });
-      toast.error(translateFeedActionError(t, err));
-    } finally {
-      likePendingRef.current = false;
-    }
-  };
 
   /**
    * Priebežné počty lajkov od iných používateľov.
@@ -611,7 +416,7 @@ export default function FeedPostCard({
     setLikesCount(fresh.likes_count);
     setIsLiked(fresh.is_liked_by_me);
     setCommentsCount(fresh.comments_count);
-  }, [post.id]);
+  }, [likePendingRef, likeSeqRef, setIsLiked, setLikesCount, post.id]);
 
   useFeedCommentsPolling({ enabled: inViewport, onPoll: refreshCounts });
 
@@ -630,7 +435,7 @@ export default function FeedPostCard({
           setCommentsCount(patch.commentsCount);
         }
       }),
-    [post.id],
+    [likePendingRef, setIsLiked, setLikesCount, post.id],
   );
 
   // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
@@ -644,45 +449,20 @@ export default function FeedPostCard({
   // a hlásiť re-share pri PRVOM zdieľaní vlastnej ponuky by bolo mätúce.
   const isOwnReshare = isSelfShare && post.post_type === 'shared_feed_post';
 
-  // Preklik na zdroj MUSÍ rozlišovať typ: ponuky, portfólio položky aj
-  // príspevky majú nezávislé číslovanie, takže poslať portfolio id ako offerId
-  // by otvorilo cudziu ponuku s rovnakým číslom.
-  const sharedOwnerIdentifier =
-    (post.shared_content?.owner?.slug || '').trim() ||
-    String(post.shared_content?.owner?.id || '');
-  const sharedSourceId = post.shared_content?.id ?? null;
-  const sharedType = post.shared_content?.type;
-
-  const handleOpenSharedSource =
-    sharedSourceId && (sharedType === 'feed_post' || sharedOwnerIdentifier)
-      ? () => {
-          // Preklik zo zdieľaného náhľadu vedie preč – okno detailu nesmie
-          // ostať visieť nad stránkou, na ktorú sa používateľ práve dostal.
-          // Adresu si rieši samotná navigácia, preto `keepHistory`: krok späť
-          // by ju vzápätí zrušil.
-          if (isDetail) postOverlay?.close({ keepHistory: true });
-          if (sharedType === 'portfolio_item') {
-            router.push(
-              buildPortfolioDetailPath(sharedOwnerIdentifier, sharedSourceId),
-            );
-            return;
-          }
-          if (sharedType === 'feed_post') {
-            router.push(`/dashboard/feed/${sharedSourceId}`);
-            return;
-          }
-          // Ponuka – globálny event, rovnako ako OfferShareMessageCard v správach.
-          if (typeof window === 'undefined') return;
-          window.dispatchEvent(
-            new CustomEvent('goToUserProfile', {
-              detail: {
-                identifier: sharedOwnerIdentifier,
-                offerId: sharedSourceId,
-              },
-            }),
-          );
-        }
-      : undefined;
+  /**
+   * Preklik na zdieľaný zdroj.
+   *
+   * Na MOBILE ho karta neponúka: tam vedie ťuk kdekoľvek na zdieľanom
+   * príspevku najprv do mobilnej obrazovky detailu a odtiaľ sa dá prekliknúť
+   * ďalej. Bez toho by mal ten istý príspevok dve rôzne cieľové obrazovky
+   * podľa toho, kam presne používateľ ťukol.
+   */
+  const handleOpenSharedSource = opensMobileDetail
+    ? () => setMobileDetailOpen(true)
+    : buildSharedSourceHandler(currentPost, {
+        router,
+        beforeNavigate: closeOverlayOnLeave,
+      });
 
   // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
   const sharedCaptionNode =
@@ -693,6 +473,9 @@ export default function FeedPostCard({
         expansionBound={fillHeight ? 'roomy' : 'compact'}
         maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
         collapseBlankLines
+        onTextClick={
+          opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
+        }
       />
     ) : null;
 
@@ -753,15 +536,32 @@ export default function FeedPostCard({
           isDetail && !fillHeight ? 'pr-12' : ''
         } ${fixedBlock}`}
       >
-        <InitialsAvatar
-          name={authorName}
-          avatarUrl={post.author?.avatar_url}
-          size="sm"
-        />
+        {/* Avatar aj meno vedú na profil autora – rovnako vo feede, v okne
+            detailu aj v mobilnom prehliadači fotky. */}
+        <button
+          type="button"
+          onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
+          disabled={!canOpenUserProfile(post.author)}
+          data-testid="feed-post-author-avatar"
+          aria-label={t('feed.openProfile', 'Otvoriť profil')}
+          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
+        >
+          <InitialsAvatar
+            name={authorName}
+            avatarUrl={post.author?.avatar_url}
+            size="sm"
+          />
+        </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+          <button
+            type="button"
+            onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
+            disabled={!canOpenUserProfile(post.author)}
+            data-testid="feed-post-author-name"
+            className="block max-w-full truncate text-left text-sm font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"
+          >
             {authorName}
-          </p>
+          </button>
           <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <time dateTime={post.created_at}>
               {formatRelativeTime(post.created_at, t, locale)}
@@ -865,6 +665,9 @@ export default function FeedPostCard({
             expansionBound={fillHeight ? 'roomy' : 'compact'}
             maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
             collapseBlankLines
+            onTextClick={
+              opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
+            }
           />
         </div>
       ) : null}
@@ -894,11 +697,17 @@ export default function FeedPostCard({
           <FeedPostImageCarousel
             images={images}
             alt={t('feed.imageAlt', 'Fotka príspevku')}
-            // Vo feede klik na fotku otvára okno detailu; v samotnom okne už
-            // otvorí fullscreen prehliadač (vrstvu nad ním).
+            // Desktop: fotka vedie do okna detailu. Mobil: bohatý prehliadač
+            // fotky. V samotnom okne detailu ostáva pôvodné správanie –
+            // fullscreen prehliadač (vrstva nad ním).
             onPhotoClick={
-              opensOverlay ? () => postOverlay?.open({ postId: post.id }) : undefined
+              opensOverlay
+                ? () => postOverlay?.open({ postId: post.id })
+                : opensPhotoViewer
+                  ? (index) => setPhotoViewerIndex(index)
+                  : undefined
             }
+            photoOpensPostDetail={opensOverlay}
           />
         )
       ) : null}
@@ -916,6 +725,10 @@ export default function FeedPostCard({
               post={post}
               hideOwner={isSelfShare}
               onOpenSource={handleOpenSharedSource}
+              // Na mobile vedie ťuk kdekoľvek na zdieľanom príspevku do
+              // obrazovky detailu – vrátane náhľadu mini príspevku, ktorý na
+              // desktope ostáva nekliknuteľný ako doteraz.
+              interactivePostPreview={opensMobileDetail}
             />
           ) : null}
 
@@ -972,7 +785,7 @@ export default function FeedPostCard({
           label={t('feed.likes', 'Páči sa mi')}
           count={likesCount}
           active={isLiked}
-          onClick={() => void handleToggleLike()}
+          onClick={() => void toggleLike()}
           onCountClick={() => setLikersOpen(true)}
           countLabel={t('feed.likersTitle', 'Páči sa im to')}
           countTestId="feed-like-count"
@@ -997,6 +810,12 @@ export default function FeedPostCard({
           onClick={() => {
             if (opensOverlay) {
               postOverlay?.open({ postId: post.id });
+              return;
+            }
+            // Mobil dostáva vlastnú obrazovku detailu namiesto rozbaľovania
+            // komentárov priamo v karte.
+            if (opensMobileDetail) {
+              setMobileDetailOpen(true);
               return;
             }
             setCommentsOpen((open) => !open);
@@ -1034,6 +853,30 @@ export default function FeedPostCard({
           // Číslo pri ikone vychádza z toho istého načítania ako zoznam,
           // takže sa nemôže rozísť s tým, čo používateľ reálne vidí.
           onTotalChange={setCommentsCount}
+        />
+      ) : null}
+
+      {/* Mobilná obrazovka detailu – mountuje sa až pri otvorení. */}
+      {mobileDetailOpen ? (
+        <FeedPostMobileDetail
+          post={currentPost}
+          onClose={() => setMobileDetailOpen(false)}
+          onPostUpdated={setCurrentPost}
+          onDeleted={onDeleted}
+          onShared={onShared}
+        />
+      ) : null}
+
+      {/* Mobilný prehliadač fotky – mountuje sa až pri otvorení, rovnako ako
+          ostatné vrstvy karty. */}
+      {photoViewerIndex !== null ? (
+        <FeedPhotoViewer
+          post={currentPost}
+          initialIndex={photoViewerIndex}
+          onClose={() => setPhotoViewerIndex(null)}
+          onPostUpdated={setCurrentPost}
+          onDeleted={onDeleted}
+          onShared={onShared}
         />
       ) : null}
 

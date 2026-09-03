@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostDetailOverlay from '../FeedPostDetailOverlay';
 import { resetOverlayLayers } from '../../shared/overlayLayers';
+import { FeedPostOverlayProvider } from '../../../contexts/FeedPostOverlayContext';
 import { onFeedPostCounts } from '../feedPostCountEvents';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
 
@@ -326,6 +327,44 @@ describe('obsah okna', () => {
 
     // Karta vo variante `detail` komentáre nekreslí – sú len raz, v okne.
     expect(screen.getAllByTestId('feed-post-comments')).toHaveLength(1);
+  });
+});
+
+describe('preklik na profil autora z okna', () => {
+  it('opens the author profile from the avatar and from the name', async () => {
+    const seen: string[] = [];
+    const handler = (event: Event) => {
+      seen.push((event as CustomEvent).detail?.identifier);
+    };
+    window.addEventListener('goToUserProfile', handler);
+    try {
+      // Okno musí byť v kontexte, ktorý ho naozaj zatvára: karta zatvára cez
+      // `postOverlay.close({ keepHistory: true })`, nie cez `onClose` prop –
+      // ten patrí zatváraciemu „X". Bez providera by sa preklik nemal o čo
+      // oprieť a assercia by prešla naprázdno.
+      const onTargetChange = jest.fn();
+      const post = textOnlyPost();
+      mockedGetPost.mockResolvedValue(post);
+      render(
+        <FeedPostOverlayProvider onTargetChange={onTargetChange}>
+          <FeedPostDetailOverlay postId={post.id} onClose={jest.fn()} />
+        </FeedPostOverlayProvider>,
+      );
+      await screen.findByTestId('feed-post-card');
+
+      await userEvent.click(screen.getByTestId('feed-post-author-avatar'));
+      await userEvent.click(screen.getByTestId('feed-post-author-name'));
+
+      // Rovnaké správanie ako v mobilnom prehliadači fotky – preklik na profil
+      // funguje z avatara aj z mena, na oboch platformách.
+      expect(seen).toEqual(['jana', 'jana']);
+      // Okno nesmie ostať visieť nad profilom, na ktorý sa práve navigovalo, a
+      // `keepHistory` bráni tomu, aby krok späť práve dokončenú navigáciu
+      // vzápätí zrušil.
+      expect(onTargetChange).toHaveBeenCalledWith(null, { keepHistory: true });
+    } finally {
+      window.removeEventListener('goToUserProfile', handler);
+    }
   });
 });
 

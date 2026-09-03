@@ -27,6 +27,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
  */
 const CLAMP_CLASSES: Record<number, string> = {
   3: 'line-clamp-3',
+  5: 'line-clamp-5',
   10: 'line-clamp-[10]',
 };
 
@@ -115,6 +116,18 @@ type FeedPostCaptionProps = {
    * (napr. náhľad pri úprave).
    */
   collapseBlankLines?: boolean;
+  /**
+   * Ťuk na samotný TEXT (nie na prepínač „Viac").
+   *
+   * Mobilná obrazovka detailu sa tým otvára aj z textu príspevku. Prepínač
+   * ostáva vyhradený rozbaleniu – preto handler visí na odseku, nie na obale.
+   *
+   * Text je naďalej TEXT, nie tlačidlo: čítačkám by sa ako ovládací prvok
+   * čítal celý príspevok naraz. Tú istú obrazovku otvára aj ikona komentárov
+   * v riadku akcií, ktorá tlačidlo JE – klávesnica ani asistenčné technológie
+   * teda o nič neprídu.
+   */
+  onTextClick?: () => void;
 };
 
 export default function FeedPostCaption({
@@ -124,6 +137,7 @@ export default function FeedPostCaption({
   expansionBound = 'compact',
   maxLines = CARD_CAPTION_LINES,
   collapseBlankLines = false,
+  onTextClick,
 }: FeedPostCaptionProps) {
   const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
   const clampClass = CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES];
@@ -195,7 +209,10 @@ export default function FeedPostCaption({
           scrollable ? t('feed.captionRegion', 'Text príspevku') : undefined
         }
         tabIndex={scrollable ? 0 : undefined}
-        className={`whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 ${sizeClass}`}
+        onClick={onTextClick}
+        className={`whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 ${sizeClass} ${
+          onTextClick ? 'cursor-pointer' : ''
+        }`}
       >
         {text}
       </p>
