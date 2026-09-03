@@ -19,20 +19,16 @@
  * `feedPostCountEvents`, takže po zatvorení sedia čísla na oboch miestach.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ImageLightbox } from '../shared/ImageLightbox';
-import {
-  deleteFeedPost,
-  likeFeedPost,
-  unlikeFeedPost,
-  type FeedPost,
-} from '@/lib/feedApi';
+import { deleteFeedPost, type FeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostCounts } from './feedPostCountEvents';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import { feedViewableSources } from './feedImageSources';
+import { useFeedPostLike } from './useFeedPostLike';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPhotoCommentsSheet from './FeedPhotoCommentsSheet';
@@ -46,6 +42,14 @@ type FeedPhotoViewerProps = {
   /** Index v zozname otvárateľných fotiek (`feedViewableSources`). */
   initialIndex: number;
   onClose: () => void;
+  /**
+   * Autor príspevok upravil.
+   *
+   * Karta pod prehliadačom si novú verziu prevezme, takže po zatvorení ukazuje
+   * upravený obsah bez čakania na obnovenie feedu – ten istý mechanizmus, aký
+   * appka už používa medzi kartou a desktopovým oknom detailu.
+   */
+  onPostUpdated?: (post: FeedPost) => void;
   /** Autor príspevok zmazal – zoznam pod prehliadačom ho má vyhodiť. */
   onDeleted?: (postId: number) => void;
   /** Zdieľanie ďalej vloží nový príspevok na vrch feedu. */
@@ -56,14 +60,20 @@ export default function FeedPhotoViewer({
   post,
   initialIndex,
   onClose,
+  onPostUpdated,
   onDeleted,
   onShared,
 }: FeedPhotoViewerProps) {
   const { t } = useLanguage();
   const [currentPost, setCurrentPost] = useState(post);
-  const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
-  const [likesCount, setLikesCount] = useState(post.likes_count);
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // Optimistický lajk je spoločný pre kartu aj obe mobilné vrstvy.
+  const { isLiked, likesCount, toggleLike } = useFeedPostLike({
+    postId: post.id,
+    initialLiked: post.is_liked_by_me,
+    initialCount: post.likes_count,
+    t,
+  });
   /** Ťuk na fotku skryje celú vrstvu; ďalší ju vráti. */
   const [chromeHidden, setChromeHidden] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -74,56 +84,20 @@ export default function FeedPhotoViewer({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const likePendingRef = useRef(false);
 
   const sources = feedViewableSources(currentPost.images ?? []);
+
+  // Karta je vlastníkom príspevku – jej čerstvejšia verzia má prednosť pred
+  // lokálnou (rovnaký prop-sync ako v samotnej karte).
+  useEffect(() => {
+    setCurrentPost(post);
+  }, [post]);
 
   // Prehliadač sa otvára nad kartou, ktorá si tie isté počty drží tiež –
   // rovnaký mechanizmus ako medzi feedom a oknom detailu na desktope.
   useEffect(() => {
     emitFeedPostCounts({ postId: post.id, commentsCount });
   }, [post.id, commentsCount]);
-
-  const handleToggleLike = useCallback(async () => {
-    if (likePendingRef.current) return;
-    likePendingRef.current = true;
-
-    const previousLiked = isLiked;
-    const previousCount = likesCount;
-    const nextLiked = !previousLiked;
-    const optimisticCount = Math.max(0, previousCount + (nextLiked ? 1 : -1));
-    setIsLiked(nextLiked);
-    setLikesCount(optimisticCount);
-    emitFeedPostCounts({
-      postId: post.id,
-      likesCount: optimisticCount,
-      isLikedByMe: nextLiked,
-    });
-
-    try {
-      const payload = nextLiked
-        ? await likeFeedPost(post.id)
-        : await unlikeFeedPost(post.id);
-      setIsLiked(payload.is_liked_by_me);
-      setLikesCount(payload.likes_count);
-      emitFeedPostCounts({
-        postId: post.id,
-        likesCount: payload.likes_count,
-        isLikedByMe: payload.is_liked_by_me,
-      });
-    } catch (error) {
-      setIsLiked(previousLiked);
-      setLikesCount(previousCount);
-      emitFeedPostCounts({
-        postId: post.id,
-        likesCount: previousCount,
-        isLikedByMe: previousLiked,
-      });
-      toast.error(translateFeedActionError(t, error));
-    } finally {
-      likePendingRef.current = false;
-    }
-  }, [isLiked, likesCount, post.id, t]);
 
   const handleDelete = useCallback(async () => {
     if (deleting) return;
@@ -193,7 +167,7 @@ export default function FeedPhotoViewer({
                 likesCount={likesCount}
                 commentsCount={commentsCount}
                 reported={reported}
-                onToggleLike={() => void handleToggleLike()}
+                onToggleLike={() => void toggleLike()}
                 onOpenLikers={() => setLikersOpen(true)}
                 onOpenComments={() => setCommentsOpen(true)}
                 onOpenShare={() => setShareOpen(true)}
@@ -241,7 +215,10 @@ export default function FeedPhotoViewer({
           open
           post={currentPost}
           onClose={() => setEditOpen(false)}
-          onUpdated={setCurrentPost}
+          onUpdated={(updated) => {
+            setCurrentPost(updated);
+            onPostUpdated?.(updated);
+          }}
         />
       ) : null}
       <FeedDestructiveConfirm

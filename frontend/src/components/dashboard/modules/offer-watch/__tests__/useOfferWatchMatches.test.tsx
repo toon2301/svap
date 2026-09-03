@@ -149,5 +149,71 @@ describe('useOfferWatchMatches', () => {
     act(() => result.current.clearError());
     expect(result.current.error).toBeNull();
   });
+
+  it('drops ids repeated inside a single incoming page', async () => {
+    // Ponuka posunutá medzi stránkami sa vie zopakovať aj v rámci JEDNEJ
+    // dávky – filter postavený len na doterajšom zozname by ju prepustil a
+    // v React zozname by skončila ako duplicitný `key`.
+    mockedListMatches
+      .mockResolvedValueOnce(page([match(3)], 'second'))
+      .mockResolvedValueOnce(page([match(2), match(2), match(1)], null));
+    const { result } = renderHook(() => useOfferWatchMatches(7));
+    await waitFor(() => expect(result.current.nextCursor).toBe('second'));
+
+    await act(async () => {
+      await result.current.loadMore();
+    });
+
+    expect(result.current.matches.map((item) => item.offer.id)).toEqual([3, 2, 1]);
+  });
+
+  it('does not let a superseded page release the lock of a newer one', async () => {
+    const firstPage = deferred<OfferWatchMatchesPage>();
+    const secondPage = deferred<OfferWatchMatchesPage>();
+    mockedListMatches
+      .mockResolvedValueOnce(page([match(9)], 'cursor-a'))
+      .mockReturnValueOnce(firstPage.promise)
+      .mockResolvedValueOnce(page([match(8)], 'cursor-a'))
+      .mockReturnValueOnce(secondPage.promise);
+    const { result } = renderHook(() => useOfferWatchMatches(7));
+    await waitFor(() => expect(result.current.nextCursor).toBe('cursor-a'));
+
+    // Prvé donačítanie beží…
+    let firstLoad: Promise<unknown> = Promise.resolve();
+    act(() => {
+      firstLoad = result.current.loadMore();
+    });
+    // …a refresh ho zruší a spustí nové kolo.
+    let refreshRun: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshRun = result.current.refresh();
+      await refreshRun;
+    });
+    await waitFor(() => expect(result.current.nextCursor).toBe('cursor-a'));
+
+    // Novšie donačítanie si berie zámok…
+    let secondLoad: Promise<unknown> = Promise.resolve();
+    act(() => {
+      secondLoad = result.current.loadMore();
+    });
+    const callsWithLock = mockedListMatches.mock.calls.length;
+
+    // …a až TERAZ dobehne tá zrušená požiadavka. Zámok patrí novšej, takže ho
+    // nesmie uvoľniť – inak by ďalší scroll vyžiadal ten istý kurzor druhýkrát.
+    await act(async () => {
+      firstPage.resolve(page([match(1)], null));
+      await firstLoad;
+    });
+
+    await act(async () => {
+      await result.current.loadMore();
+    });
+    expect(mockedListMatches).toHaveBeenCalledTimes(callsWithLock);
+
+    await act(async () => {
+      secondPage.resolve(page([match(2)], null));
+      await secondLoad;
+    });
+  });
 });
 

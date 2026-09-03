@@ -23,15 +23,26 @@ export type UseOfferWatchMatchesResult = {
   clearError: () => void;
 };
 
+/**
+ * Pripojí novú stránku zhôd a zahodí duplicity.
+ *
+ * Id sa pridávajú PRIEBEŽNE, nie len raz na začiatku: rovnaká ponuka sa vie
+ * zopakovať aj v rámci JEDNEJ dávky (ponuka posunutá medzi stránkami počas
+ * stránkovania), a taká duplicita by prešla filtrom postaveným len na
+ * doterajšom zozname – v React zozname by skončila ako duplicitný `key`.
+ */
 function appendUniqueMatches(
   current: OfferWatchMatch[],
   incoming: OfferWatchMatch[],
 ): OfferWatchMatch[] {
   const knownIds = new Set(current.map((match) => match.offer.id));
-  return [
-    ...current,
-    ...incoming.filter((match) => !knownIds.has(match.offer.id)),
-  ];
+  const added: OfferWatchMatch[] = [];
+  for (const match of incoming) {
+    if (knownIds.has(match.offer.id)) continue;
+    knownIds.add(match.offer.id);
+    added.push(match);
+  }
+  return [...current, ...added];
 }
 
 export function useOfferWatchMatches(
@@ -150,9 +161,18 @@ export function useOfferWatchMatches(
       }
       return { ok: false, error: normalized };
     } finally {
-      loadingMoreRef.current = false;
-      if (mountedRef.current && sequence === requestSequenceRef.current) {
-        setIsLoadingMore(false);
+      // Zámok smie uvoľniť LEN požiadavka, ktorá je stále aktuálna.
+      //
+      // Zrušenú požiadavku (`refresh()` alebo zmena sledovanej ponuky) medzitým
+      // mohla vystriedať novšia, ktorá si zámok práve drží – bezpodmienečné
+      // vynulovanie by jej ho vzalo a ďalší scroll by si vyžiadal TEN ISTÝ
+      // kurzor druhýkrát. O uvoľnenie sa v takom prípade postará ten, kto nás
+      // nahradil: `refresh()` zámok nuluje sám a odmountovanie tiež.
+      if (sequence === requestSequenceRef.current) {
+        loadingMoreRef.current = false;
+        if (mountedRef.current) {
+          setIsLoadingMore(false);
+        }
       }
     }
   }, [watchId]);

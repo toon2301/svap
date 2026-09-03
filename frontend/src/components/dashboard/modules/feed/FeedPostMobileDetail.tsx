@@ -34,16 +34,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { EllipsisHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
-import {
-  deleteFeedPost,
-  likeFeedPost,
-  unlikeFeedPost,
-  type FeedPost,
-} from '@/lib/feedApi';
+import { deleteFeedPost, type FeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostCounts } from './feedPostCountEvents';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
@@ -53,6 +49,7 @@ import { formatRelativeTime } from './feedRelativeTime';
 import { shouldAutoScrollToComments } from './feedMobileDetailAutoScroll';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
+import { useFeedPostLike } from './useFeedPostLike';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostCaption from './FeedPostCaption';
@@ -60,6 +57,8 @@ import FeedPostComments from './FeedPostComments';
 import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
+import SharedContentPreview from './FeedSharedContentPreview';
+import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import FeedPostShareModal from './FeedPostShareModal';
 import ShareIcon from './ShareIcon';
 
@@ -103,6 +102,14 @@ function CommentIcon() {
 type FeedPostMobileDetailProps = {
   post: FeedPost;
   onClose: () => void;
+  /**
+   * Autor príspevok upravil.
+   *
+   * Karta pod obrazovkou si novú verziu prevezme, takže po zatvorení ukazuje
+   * upravený obsah bez čakania na obnovenie feedu – ten istý mechanizmus, aký
+   * appka už používa medzi kartou a desktopovým oknom detailu.
+   */
+  onPostUpdated?: (post: FeedPost) => void;
   /** Autor príspevok zmazal – zoznam pod obrazovkou ho má vyhodiť. */
   onDeleted?: (postId: number) => void;
   /** Zdieľanie ďalej vloží nový príspevok na vrch feedu. */
@@ -112,15 +119,22 @@ type FeedPostMobileDetailProps = {
 export default function FeedPostMobileDetail({
   post,
   onClose,
+  onPostUpdated,
   onDeleted,
   onShared,
 }: FeedPostMobileDetailProps) {
   const { t, locale } = useLanguage();
+  const router = useRouter();
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   const [currentPost, setCurrentPost] = useState(post);
-  const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
-  const [likesCount, setLikesCount] = useState(post.likes_count);
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // Optimistický lajk je spoločný pre kartu aj obe mobilné vrstvy.
+  const { isLiked, likesCount, toggleLike } = useFeedPostLike({
+    postId: post.id,
+    initialLiked: post.is_liked_by_me,
+    initialCount: post.likes_count,
+    t,
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [likersOpen, setLikersOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -129,7 +143,6 @@ export default function FeedPostMobileDetail({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const likePendingRef = useRef(false);
   /** Kotva „Komentáre" – sem sa doscrolluje pri otvorení, ak sa má. */
   const commentsAnchorRef = useRef<HTMLDivElement | null>(null);
   const autoScrolledRef = useRef(false);
@@ -157,11 +170,37 @@ export default function FeedPostMobileDetail({
     setPortalNode(document.getElementById('app-root') ?? document.body);
   }, []);
 
+  // Karta je vlastníkom príspevku – jej čerstvejšia verzia má prednosť pred
+  // lokálnou (rovnaký prop-sync ako v samotnej karte).
+  useEffect(() => {
+    setCurrentPost(post);
+  }, [post]);
+
   // Rozpracované fotky si dosleduje ten istý hook ako karta – obrazovka je
   // otvorená dlho, takže by inak ostala na snímke z otvorenia.
   const images = usePendingFeedImages(currentPost);
   const hasPhoto = feedViewableImages(images).length > 0;
   const caption = currentPost.caption;
+  /**
+   * Zdieľaný obsah zaberá miesto, kde má voľný príspevok fotku.
+   *
+   * Backend posiela `images` len pri `free_post`, takže sa tieto dve vetvy
+   * nemôžu stretnúť. Nedostupný zdroj sa kreslí tiež – `SharedContentPreview`
+   * si stav „už nie je dostupné" rieši sám a aj ten patrí medzi text a
+   * komentáre.
+   */
+  const hasSharedPreview = Boolean(currentPost.shared_content);
+  // Self-share: zdieľajúci JE pôvodný autor. Bez toho by sa to isté meno
+  // ukázalo dvakrát pod sebou (hlavička + náhľad).
+  const isSelfShare =
+    currentPost.shared_content?.owner?.id != null &&
+    currentPost.shared_content.owner.id === currentPost.author?.id;
+  const openSharedSource = buildSharedSourceHandler(currentPost, {
+    router,
+    // Preklik vedie preč – obrazovka nesmie ostať visieť nad cieľom, na ktorý
+    // sa používateľ práve dostal.
+    beforeNavigate: onClose,
+  });
 
   // Počty drží obrazovka; karta pod ňou o novom komentári inak nevie.
   useEffect(() => {
@@ -182,6 +221,7 @@ export default function FeedPostMobileDetail({
 
     const scroll = shouldAutoScrollToComments({
       hasPhoto,
+      hasSharedPreview,
       commentsCount: post.comments_count,
     });
     setAutoScrollDecision(scroll);
@@ -198,48 +238,7 @@ export default function FeedPostMobileDetail({
     // `portalNode` v závislostiach je podstatné: pri PRVOM renderi ešte portál
     // neexistuje, takže kotva nie je v DOM a efekt by sa bez neho už nikdy
     // nezopakoval.
-  }, [hasPhoto, portalNode, post.comments_count]);
-
-  const handleToggleLike = useCallback(async () => {
-    if (likePendingRef.current) return;
-    likePendingRef.current = true;
-
-    const previousLiked = isLiked;
-    const previousCount = likesCount;
-    const nextLiked = !previousLiked;
-    const optimisticCount = Math.max(0, previousCount + (nextLiked ? 1 : -1));
-    setIsLiked(nextLiked);
-    setLikesCount(optimisticCount);
-    emitFeedPostCounts({
-      postId: post.id,
-      likesCount: optimisticCount,
-      isLikedByMe: nextLiked,
-    });
-
-    try {
-      const payload = nextLiked
-        ? await likeFeedPost(post.id)
-        : await unlikeFeedPost(post.id);
-      setIsLiked(payload.is_liked_by_me);
-      setLikesCount(payload.likes_count);
-      emitFeedPostCounts({
-        postId: post.id,
-        likesCount: payload.likes_count,
-        isLikedByMe: payload.is_liked_by_me,
-      });
-    } catch (error) {
-      setIsLiked(previousLiked);
-      setLikesCount(previousCount);
-      emitFeedPostCounts({
-        postId: post.id,
-        likesCount: previousCount,
-        isLikedByMe: previousLiked,
-      });
-      toast.error(translateFeedActionError(t, error));
-    } finally {
-      likePendingRef.current = false;
-    }
-  }, [isLiked, likesCount, post.id, t]);
+  }, [hasPhoto, hasSharedPreview, portalNode, post.comments_count]);
 
   const handleDelete = useCallback(async () => {
     if (deleting) return;
@@ -301,6 +300,21 @@ export default function FeedPostMobileDetail({
         </div>
       ) : null}
 
+      {/* Zdieľaný obsah stojí presne tam, kde má voľný príspevok fotku – text
+          teda ostáva NAD ním, rovnaké pravidlo ako „text nad fotkou". */}
+      {hasSharedPreview ? (
+        <div className="pb-3" data-testid="feed-mobile-detail-shared">
+          <SharedContentPreview
+            post={currentPost}
+            hideOwner={isSelfShare}
+            onOpenSource={openSharedSource}
+            // Aj mini príspevok vedie na svoj zdroj – tu je náhľad hlavným
+            // obsahom obrazovky, takže musí byť dosiahnuteľný.
+            interactivePostPreview
+          />
+        </div>
+      ) : null}
+
       {/* Lajk, komentáre aj zdieľanie sú POKOPE – žiadne odsúvanie zdieľania
           na druhý koniec riadku. */}
       <div
@@ -309,7 +323,7 @@ export default function FeedPostMobileDetail({
       >
         <button
           type="button"
-          onClick={() => void handleToggleLike()}
+          onClick={() => void toggleLike()}
           data-testid="feed-mobile-detail-like"
           aria-label={t('feed.likes', 'Páči sa mi')}
           aria-pressed={isLiked}
@@ -523,7 +537,10 @@ export default function FeedPostMobileDetail({
           open
           post={currentPost}
           onClose={() => setEditOpen(false)}
-          onUpdated={setCurrentPost}
+          onUpdated={(updated) => {
+            setCurrentPost(updated);
+            onPostUpdated?.(updated);
+          }}
         />
       ) : null}
       <FeedDestructiveConfirm

@@ -424,6 +424,27 @@ describe('panel komentárov', () => {
     expect(screen.getByTestId('feed-photo-comments-sheet')).toBeInTheDocument();
   });
 
+  it('resets the drag when the system cancels the gesture', async () => {
+    await openSheet();
+
+    const drag = screen.getByTestId('feed-photo-comments-drag');
+    fireEvent.touchStart(drag, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(drag, { touches: [{ clientY: 300 }] });
+    // Zrušené gesto (hovor, gesto prehliadača, druhý prst) panel NEZATVÁRA…
+    fireEvent.touchCancel(drag);
+
+    const sheet = screen.getByTestId('feed-photo-comments-sheet');
+    expect(sheet).toBeInTheDocument();
+    // …a nesmie ho nechať odtiahnutý o poslednú nameranú vzdialenosť.
+    expect(sheet).not.toHaveAttribute('style', expect.stringContaining('translateY'));
+
+    // Ďalší dotyk začína odznova, nie od starého začiatku.
+    fireEvent.touchStart(drag, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(drag, { touches: [{ clientY: 120 }] });
+    fireEvent.touchEnd(drag);
+    expect(screen.getByTestId('feed-photo-comments-sheet')).toBeInTheDocument();
+  });
+
   it('closes from the drag handle as well', async () => {
     await openSheet();
 

@@ -64,6 +64,18 @@ export default function FeedPhotoCommentsSheet({
     if (dragged >= CLOSE_DRAG_DISTANCE_PX) onClose();
   }, [dragOffset, onClose]);
 
+  /**
+   * Systém gesto zrušil (prichádzajúci hovor, gesto prehliadača, viac prstov).
+   *
+   * Bez tohto by panel ostal odtiahnutý o poslednú nameranú vzdialenosť a
+   * `dragStartRef` by držal starý začiatok, takže ďalší dotyk by skočil.
+   * Zrušenie NIKDY nezatvára – to patrí len dokončenému gestu.
+   */
+  const handleTouchCancel = useCallback(() => {
+    dragStartRef.current = null;
+    setDragOffset(0);
+  }, []);
+
   if (!open) return null;
 
   return (
@@ -82,6 +94,7 @@ export default function FeedPhotoCommentsSheet({
         onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientY ?? 0)}
         onTouchMove={(event) => handleTouchMove(event.touches[0]?.clientY ?? 0)}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         className="shrink-0 cursor-grab px-4 pb-1 pt-2"
       >
         <button
