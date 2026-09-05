@@ -41,15 +41,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { deleteFeedPost, type FeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
-import { emitFeedPostCounts } from './feedPostCountEvents';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
-import { feedViewableImages } from './feedImageSources';
+import { feedViewableImages, sharedFeedPostPhoto } from './feedImageSources';
+import FeedSharedPhotoViewer from './FeedSharedPhotoViewer';
 import { formatRelativeTime } from './feedRelativeTime';
 import { shouldAutoScrollToComments } from './feedMobileDetailAutoScroll';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useFeedPostLike } from './useFeedPostLike';
+import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostCaption from './FeedPostCaption';
@@ -127,7 +128,10 @@ export default function FeedPostMobileDetail({
   const router = useRouter();
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   const [currentPost, setCurrentPost] = useState(post);
-  const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // Počet komentárov vysiela aj odoberá – táto vrstva predtým len vysielala,
+  // takže zmenu z karty pod ňou nikdy nezachytila.
+  const { commentsCount, publishCommentsCount, changeCommentsCount } =
+    useFeedPostCommentsCount(post.id, post.comments_count);
   // Optimistický lajk je spoločný pre kartu aj obe mobilné vrstvy.
   const { isLiked, likesCount, toggleLike } = useFeedPostLike({
     postId: post.id,
@@ -143,6 +147,7 @@ export default function FeedPostMobileDetail({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sharedPhotoOpen, setSharedPhotoOpen] = useState(false);
   /** Kotva „Komentáre" – sem sa doscrolluje pri otvorení, ak sa má. */
   const commentsAnchorRef = useRef<HTMLDivElement | null>(null);
   const autoScrolledRef = useRef(false);
@@ -190,6 +195,8 @@ export default function FeedPostMobileDetail({
    * komentáre.
    */
   const hasSharedPreview = Boolean(currentPost.shared_content);
+  /** Fotka pôvodného príspevku v reposte – otvára jeho fotoprehliadač. */
+  const sharedPhotoPostId = sharedFeedPostPhoto(currentPost)?.postId ?? null;
   // Self-share: zdieľajúci JE pôvodný autor. Bez toho by sa to isté meno
   // ukázalo dvakrát pod sebou (hlavička + náhľad).
   const isSelfShare =
@@ -202,43 +209,46 @@ export default function FeedPostMobileDetail({
     beforeNavigate: onClose,
   });
 
-  // Počty drží obrazovka; karta pod ňou o novom komentári inak nevie.
-  useEffect(() => {
-    emitFeedPostCounts({ postId: post.id, commentsCount });
-  }, [post.id, commentsCount]);
-
   /**
-   * Štartovacia pozícia: pri fotke a rozbehnutej diskusii sa obrazovka otvorí
-   * rovno pri komentároch, inak od vrchu. Beží NAJVIAC RAZ – ďalší render
-   * (donačítanie, nový komentár) už používateľovi pohľad nestrhne.
+   * Štartovacia pozícia: pri rozmernom obsahu a rozbehnutej diskusii sa
+   * obrazovka otvorí rovno pri komentároch, inak od vrchu.
+   *
+   * Spúšťa to AŽ signál `onCommentsReady`, nie prvý render. Predtým sa
+   * rozhodovalo hneď pri otvorení, keď bol zoznam ešte v stave „Načítavam…":
+   * obsah scrollovacej plochy bol vtedy KRATŠÍ než ona sama (na bežnom
+   * telefóne ~490 px proti ~707 px), takže sa nemal kam pohnúť – a jednorazová
+   * poistka sa už napriek tomu nastavila, takže sa to po dorazení komentárov
+   * nikdy nezopakovalo.
+   *
+   * Posúva sa `scrollTop` priamo, nie cez `scrollIntoView`: zámer je tým
+   * vyjadrený číslom (o koľko), takže sa dá overiť skutočná zmena pozície, nie
+   * len fakt, že sa nejaká funkcia zavolala.
    */
-  useEffect(() => {
-    if (autoScrolledRef.current) return;
-    const anchor = commentsAnchorRef.current;
-    // Portál ešte nie je hotový – rozhodnutie padne v ďalšom kole.
-    if (!anchor) return;
-    autoScrolledRef.current = true;
+  const handleCommentsReady = useCallback(
+    (scroller: HTMLElement | null) => {
+      if (autoScrolledRef.current) return;
+      const anchor = commentsAnchorRef.current;
+      if (!anchor || !scroller) return;
+      // Rozhodnutie padne raz; ďalšie prekreslenia (nový komentár z pollingu)
+      // už používateľovi pohľad nestrhnú.
+      autoScrolledRef.current = true;
 
-    const scroll = shouldAutoScrollToComments({
-      hasPhoto,
-      hasSharedPreview,
-      commentsCount: post.comments_count,
-    });
-    setAutoScrollDecision(scroll);
-    if (!scroll) return;
-    // `block: 'start'` posadí kotvu na vrch scrollovateľnej plochy, teda hneď
-    // pod pevnú hlavičku – fotka aj riadok akcií tým ostanú nad dohľadom.
-    //
-    // Kontrola typu je kvôli prostrediam bez `scrollIntoView` (jsdom ho
-    // neimplementuje): štartovacia pozícia je pohodlie, nie funkčnosť, takže
-    // jej absencia nesmie zhodiť celú obrazovku.
-    if (typeof anchor.scrollIntoView === 'function') {
-      anchor.scrollIntoView({ block: 'start' });
-    }
-    // `portalNode` v závislostiach je podstatné: pri PRVOM renderi ešte portál
-    // neexistuje, takže kotva nie je v DOM a efekt by sa bez neho už nikdy
-    // nezopakoval.
-  }, [hasPhoto, hasSharedPreview, portalNode, post.comments_count]);
+      const scroll = shouldAutoScrollToComments({
+        hasPhoto,
+        hasSharedPreview,
+        commentsCount: post.comments_count,
+      });
+      setAutoScrollDecision(scroll);
+      if (!scroll) return;
+
+      // Vzdialenosť kotvy od vrchu plochy. Cez `getBoundingClientRect`, nie
+      // `offsetTop`: to by záviselo od toho, ktorý predok je `offsetParent`.
+      const delta =
+        anchor.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      if (delta > 0) scroller.scrollTop += delta;
+    },
+    [hasPhoto, hasSharedPreview, post.comments_count],
+  );
 
   const handleDelete = useCallback(async () => {
     if (deleting) return;
@@ -308,9 +318,15 @@ export default function FeedPostMobileDetail({
             post={currentPost}
             hideOwner={isSelfShare}
             onOpenSource={openSharedSource}
-            // Aj mini príspevok vedie na svoj zdroj – tu je náhľad hlavným
-            // obsahom obrazovky, takže musí byť dosiahnuteľný.
-            interactivePostPreview
+            // Tu je náhľad hlavným obsahom obrazovky, takže naň vedie klik aj
+            // pri zdieľanom príspevku…
+            onOpenPostPreview={openSharedSource}
+            // …a fotka v ňom otvára fotoprehliadač PÔVODNÉHO príspevku.
+            onOpenPostPhoto={
+              sharedPhotoPostId != null
+                ? () => setSharedPhotoOpen(true)
+                : undefined
+            }
           />
         </div>
       ) : null}
@@ -508,12 +524,20 @@ export default function FeedPostMobileDetail({
           showTimestamp
           compactComposer
           listHeader={listHeader}
+          onCommentsReady={handleCommentsReady}
           onCountChange={(delta) =>
-            setCommentsCount((count) => Math.max(0, count + delta))
+            changeCommentsCount(delta)
           }
-          onTotalChange={setCommentsCount}
+          onTotalChange={publishCommentsCount}
         />
       </div>
+
+      {sharedPhotoOpen && sharedPhotoPostId != null ? (
+        <FeedSharedPhotoViewer
+          postId={sharedPhotoPostId}
+          onClose={() => setSharedPhotoOpen(false)}
+        />
+      ) : null}
 
       <FeedLikersDialog
         open={likersOpen}

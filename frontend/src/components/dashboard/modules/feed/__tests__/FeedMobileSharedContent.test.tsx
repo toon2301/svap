@@ -1,10 +1,12 @@
 /**
  * Zdieľaný obsah na MOBILE – smerovanie a vnorený náhľad.
  *
- * ROZHODNUTIE, ktoré tu strážime: zdieľaný príspevok (ponuka, portfólio,
- * pôvodný príspevok) NIKDY neotvára imerzný prehliadač fotky – ten patrí
- * skutočne nahranej fotke, nie odkazu. Ťuk kdekoľvek na takom príspevku vedie
- * do mobilnej obrazovky detailu a preklik na samotný zdroj sa robí až z nej.
+ * DVE pravidlá, ktoré tu strážime:
+ *  - Vnorená KARTA ponuky/portfólia je samostatný ovládací prvok so sľubom
+ *    konkrétneho cieľa – vedie naň PRIAMO, bez medzikroku cez detail.
+ *  - Ostatné časti zdieľaného príspevku (text, ikona komentárov, náhľad mini
+ *    príspevku) vedú do mobilnej obrazovky detailu; imerzný prehliadač fotky
+ *    sa z nich neotvára, ten patrí skutočne nahranej fotke.
  */
 
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -197,22 +199,57 @@ describe('smerovanie zo zdieľanej karty', () => {
     },
   );
 
-  it.each(variants)(
-    'opens the mobile detail from the nested preview on %s',
-    async (_name, overrides) => {
-      render(<FeedPostCard post={makeSharedPost(overrides)} />);
+  it('goes straight to the offer from the nested card, without a detour', async () => {
+    const seen: Array<Record<string, unknown>> = [];
+    const handler = (event: Event) => seen.push((event as CustomEvent).detail);
+    window.addEventListener('goToUserProfile', handler);
+    try {
+      render(<FeedPostCard post={makeSharedPost()} />);
 
-      // „Miesto, kde by bola fotka" je pri zdieľaní práve tento náhľad.
-      const preview =
-        screen.queryByTestId('feed-shared-compact-preview') ??
-        screen.getByTestId('feed-shared-post-preview');
-      await userEvent.click(preview);
+      await userEvent.click(screen.getByTestId('feed-shared-compact-preview'));
 
-      expect(await screen.findByTestId('feed-mobile-detail')).toBeInTheDocument();
-      // Na karte teda preklik NEVEDIE rovno na zdroj – ide cez detail.
-      expect(mockPush).not.toHaveBeenCalled();
-    },
-  );
+      // Vnorená karta ponuky sľubuje konkrétny cieľ – vedie naň PRIAMO,
+      // bez medzikroku cez detail zdieľajúceho príspevku.
+      expect(seen).toEqual([{ identifier: 'peter', offerId: 55 }]);
+      expect(screen.queryByTestId('feed-mobile-detail')).not.toBeInTheDocument();
+    } finally {
+      window.removeEventListener('goToUserProfile', handler);
+    }
+  });
+
+  it('goes straight to the portfolio item from the nested card', async () => {
+    render(
+      <FeedPostCard
+        post={makeSharedPost({
+          post_type: 'shared_portfolio_item',
+          shared_content: sharedContent({ type: 'portfolio_item', id: 88 }),
+        })}
+      />,
+    );
+
+    await userEvent.click(screen.getByTestId('feed-shared-compact-preview'));
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush.mock.calls[0][0]).toContain('88');
+    expect(screen.queryByTestId('feed-mobile-detail')).not.toBeInTheDocument();
+  });
+
+  it('opens the detail from a reposted post preview, which is not an offer card', async () => {
+    render(
+      <FeedPostCard
+        post={makeSharedPost({
+          post_type: 'shared_feed_post',
+          shared_content: sharedContent({ type: 'feed_post', id: 99, title: '' }),
+        })}
+      />,
+    );
+
+    await userEvent.click(screen.getByTestId('feed-shared-post-preview-open'));
+
+    // Mini príspevok nie je „karta ponuky" so sľubom konkrétneho cieľa, ale
+    // ukážka obsahu – na mobile teda ostáva cesta do detailu zdieľajúceho.
+    expect(await screen.findByTestId('feed-mobile-detail')).toBeInTheDocument();
+  });
 
   it.each(variants)(
     'opens the mobile detail from the comments button on %s',
@@ -322,15 +359,15 @@ describe('automatický scroll pri zdieľanom obsahu', () => {
       shouldAutoScrollToComments({
         hasPhoto: false,
         hasSharedPreview: true,
-        commentsCount: 2,
+        commentsCount: 3,
       }),
     ).toBe(true);
-    // …vrátane nezmeneného prahu dvoch komentárov.
+    // …vrátane spoločného prahu troch komentárov.
     expect(
       shouldAutoScrollToComments({
         hasPhoto: false,
         hasSharedPreview: true,
-        commentsCount: 1,
+        commentsCount: 2,
       }),
     ).toBe(false);
     expect(
@@ -351,8 +388,8 @@ describe('automatický scroll pri zdieľanom obsahu', () => {
   });
 
   it.each([
-    [2, 'true'],
-    [1, 'false'],
+    [3, 'true'],
+    [2, 'false'],
     [0, 'false'],
   ])(
     'decides %i comments as %s on a shared post',

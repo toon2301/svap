@@ -452,6 +452,44 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         return;
       }
 
+      // Sledovanie ponúk sa vykresľuje podľa `activeRightItem`, takže bez tejto
+      // vetvy sa obsah prepol, ale modul aj adresa ostali na profile – refresh
+      // či znovuotvorenie odkazu potom viedli späť na úpravu profilu namiesto
+      // sledovaných ponúk. Cesta sa berie z rovnakého zoznamu ako pri kliku
+      // vnútri nastavení, aby sa nepísala na dvoch miestach.
+      if (itemId === 'offer-watches') {
+        const watchesPath = getDesktopSettingsSectionPath(itemId);
+        if (!watchesPath) return;
+
+        setIsRightSidebarOpen(true);
+        setActiveModule('settings');
+        if (typeof window !== 'undefined') {
+          // Rovnaký návratový štítok, aký do histórie zapisuje
+          // `openDesktopSettings`. Bez neho by tento záznam vyzeral ako
+          // obyčajná adresa: `restoreDesktopSettingsFromHistory` obnovuje
+          // nastavenia pri `popstate` LEN podľa prítomnosti tohto štítku,
+          // takže krok dopredu späť na sledované ponuky by sekciu neobnovil.
+          //
+          // Cieľ sa berie z `getSettingsFallbackTarget()` – sem sa dá dostať
+          // iba mimo nastavení (vetva vyššie sa vracia skôr), takže starší
+          // štítok, ktorý by `openDesktopSettings` v nastaveniach prebral,
+          // tu existovať nemôže.
+          const historyState = withDesktopSettingsHistory(
+            window.history.state,
+            getSettingsFallbackTarget(),
+          );
+          // `pushState`, nie `replaceState`: prichádza sa sem z iného modulu,
+          // takže krok späť má vrátiť tam, odkiaľ používateľ prišiel.
+          window.history.pushState(historyState, '', watchesPath);
+          try {
+            localStorage.setItem('activeModule', 'settings');
+          } catch {
+            // ignore
+          }
+        }
+        return;
+      }
+
       if (itemId === 'edit-profile') {
         openOwnProfileEdit();
         return;
@@ -530,7 +568,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
     },
-    [activeModule, openOwnProfileEdit]
+    [activeModule, getSettingsFallbackTarget, openOwnProfileEdit]
   );
 
   const handleUserUpdate = useCallback(

@@ -620,3 +620,89 @@ describe('profile edit navigation flow', () => {
     pushStateSpy.mockRestore();
   });
 });
+
+describe('offer watches from outside settings', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    localStorage.clear();
+    sessionStorage.clear();
+    mockAuthUser = baseUser;
+    mockAuthLoading = false;
+    window.history.replaceState(null, '', '/dashboard/users/test-user');
+  });
+
+  it('moves the module and the URL to the watches section, not just the panel', () => {
+    const { result } = renderHook(() => useDashboardState(baseUser, 'profile'));
+
+    act(() => {
+      result.current.handleRightItemClick('offer-watches');
+    });
+
+    // Obsah sa vykresľuje podľa `activeRightItem`…
+    expect(result.current.activeRightItem).toBe('offer-watches');
+    expect(result.current.isRightSidebarOpen).toBe(true);
+    // …a adresa aj modul mu teraz zodpovedajú, takže refresh vráti sledované
+    // ponuky, nie úpravu profilu.
+    expect(result.current.activeModule).toBe('settings');
+    expect(window.location.pathname).toBe('/dashboard/settings/watches');
+    expect(localStorage.getItem('activeModule')).toBe('settings');
+  });
+
+  it('stamps the same return marker as openDesktopSettings', () => {
+    const { result } = renderHook(() => useDashboardState(baseUser, 'profile'));
+
+    act(() => {
+      result.current.handleRightItemClick('offer-watches');
+    });
+
+    // Bez štítku vyzerá záznam v histórii ako obyčajná adresa a
+    // `restoreDesktopSettingsFromHistory` (obnova pri `popstate`) sekciu
+    // neobnoví – krok dopredu späť na sledované ponuky by skončil inde.
+    const marker = readDesktopSettingsReturnTarget(window.history.state);
+    expect(marker).not.toBeNull();
+    expect(marker).toEqual({
+      moduleId: 'profile',
+      url: '/dashboard/users/test-user',
+    });
+  });
+
+  it('returns through history instead of rewriting the URL when closing', () => {
+    // `history.back()` je v jsdom asynchrónne, takže sa nekontroluje adresa,
+    // ale to, ČÍM sa návrat robí – a to je priamy dôsledok štítku.
+    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+    try {
+      const { result } = renderHook(() => useDashboardState(baseUser, 'profile'));
+
+      act(() => {
+        result.current.handleRightItemClick('offer-watches');
+      });
+      expect(window.location.pathname).toBe('/dashboard/settings/watches');
+
+      act(() => {
+        // Tlačidlo „späť" v sekcii sledovaných ponúk – `OfferWatchSettingsDesktop`
+        // dostáva presne túto funkciu.
+        result.current.closeOwnProfileEdit();
+      });
+
+      expect(result.current.activeModule).toBe('profile');
+      // Vetva pridala záznam cez `pushState`, takže zatvorenie ho má
+      // SPOTREBOVAŤ krokom späť. Bez štítku by `closeDesktopSettings` len
+      // prepísal adresu a záznam sledovaných ponúk by v histórii ostal visieť.
+      expect(backSpy).toHaveBeenCalled();
+    } finally {
+      backSpy.mockRestore();
+    }
+  });
+
+  it('still uses the settings path when clicked from inside settings', () => {
+    const { result } = renderHook(() => useDashboardState(baseUser, 'settings'));
+
+    act(() => {
+      result.current.handleRightItemClick('offer-watches');
+    });
+
+    expect(result.current.activeModule).toBe('settings');
+    expect(window.location.pathname).toBe('/dashboard/settings/watches');
+  });
+});

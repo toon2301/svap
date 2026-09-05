@@ -27,7 +27,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
@@ -36,9 +35,12 @@ import FeedPostComments from './FeedPostComments';
 import FeedPostDetailSplitLayout, {
   hasVisibleFeedPhoto,
 } from './FeedPostDetailSplitLayout';
+import { sharedFeedPostPhoto } from './feedImageSources';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
-import { emitFeedPostCounts } from './feedPostCountEvents';
+import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
+import { handleGoneFeedPost } from './feedPostGone';
+import { onFeedPostDeleted } from './feedPostDeletedEvents';
 
 type FeedPostDetailOverlayProps = {
   postId: number;
@@ -56,7 +58,14 @@ export default function FeedPostDetailOverlay({
   const [post, setPost] = useState<FeedPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [commentsCount, setCommentsCount] = useState(0);
+  // Počet komentárov vysiela aj odoberá – okno predtým len vysielalo, takže
+  // o zmene z karty pod ním (ani z inej otvorenej vrstvy) nevedelo.
+  const {
+    commentsCount,
+    publishCommentsCount,
+    changeCommentsCount,
+    countVersionRef,
+  } = useFeedPostCommentsCount(postId, 0);
 
   // Fokus, Tab trap aj Escape rieši spoločný hook feed dialógov – vrátane
   // poradia vrstiev, takže Escape nad otvoreným prehliadačom fotky (alebo nad
@@ -77,7 +86,9 @@ export default function FeedPostDetailOverlay({
 
   const goneRef = useRef<() => void>(() => {});
   goneRef.current = () => {
-    toast.error(t('feed.postUnavailable', 'Tento príspevok už nie je dostupný.'));
+    // Spoločné spracovanie: karta zmizne aj z feedu pod oknom (predtým tam
+    // ostávala) a toast padne najviac raz.
+    handleGoneFeedPost(postId, t);
     onClose();
   };
 
@@ -92,13 +103,19 @@ export default function FeedPostDetailOverlay({
   const load = useCallback(async () => {
     loadSeqRef.current += 1;
     const seq = loadSeqRef.current;
+    // Počet komentárov v momente ODOSLANIA požiadavky. Kým odpoveď cestuje,
+    // môže dorásť inde (komentár z karty pod oknom, dopytovanie počtov) –
+    // vtedy je snímka z odpovede staršia a nesmie novšie číslo prepísať.
+    const countVersion = countVersionRef.current;
     setLoading(true);
     setFailed(false);
     try {
       const loaded = await getFeedPost(postId);
       if (seq !== loadSeqRef.current) return;
       setPost(loaded);
-      setCommentsCount(loaded.comments_count ?? 0);
+      if (countVersionRef.current === countVersion) {
+        publishCommentsCount(loaded.comments_count ?? 0);
+      }
     } catch (err) {
       if (seq !== loadSeqRef.current) return;
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -113,21 +130,20 @@ export default function FeedPostDetailOverlay({
       // zhasla kostru, hoci nový príspevok sa ešte načítava.
       if (seq === loadSeqRef.current) setLoading(false);
     }
-  }, [postId]);
+  }, [countVersionRef, postId, publishCommentsCount]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // Počet komentárov drží okno; karta vo feede POD ním o novom komentári inak
-  // nevie a po zavretí by ukazovala staré číslo. Až po načítaní – dovtedy je
-  // v stave nula, ktorá by karte počet vynulovala.
-  useEffect(() => {
-    // `post.id !== postId` = v stave je ešte predošlý príspevok; jeho počet by
-    // sa poslal pod cudzím identifikátorom.
-    if (!post || post.id !== postId) return;
-    emitFeedPostCounts({ postId, commentsCount });
-  }, [post, postId, commentsCount]);
+  // Príspevok zmizol (zmazal ho niekto iný, alebo to zistila iná interakcia) –
+  // okno nad ním nemá čo zobrazovať.
+  useEffect(
+    () => onFeedPostDeleted((deletedId) => {
+      if (deletedId === postId) onClose();
+    }),
+    [postId, onClose],
+  );
 
   /**
    * ŽIVÝ stav fotiek – ten istý hook, akým si ich sleduje karta vo feede.
@@ -159,7 +175,17 @@ export default function FeedPostDetailOverlay({
    * pôvodné jednostĺpcové rozloženie.
    */
   const isMobile = useIsMobile();
-  const splitLayout = hasVisibleFeedPhoto(liveImages) && !isMobile;
+  /**
+   * Fotku „na šírku" má aj REPOSTOVANÝ foto príspevok – vo vnorenom náhľade.
+   * Vlastné `images` má prázdne (backend ich posiela len pri `free_post`),
+   * takže bez tejto vetvy by repost fotky spadol do jednostĺpcového
+   * rozloženia, hoci vyzerá ako bežný foto príspevok.
+   *
+   * Repost TEXTOVÉHO príspevku fotku nemá a jednostĺpcový ostáva správne.
+   */
+  const hasPhoto =
+    hasVisibleFeedPhoto(liveImages) || sharedFeedPostPhoto(post) !== null;
+  const splitLayout = hasPhoto && !isMobile;
 
   if (!portalNode) return null;
 
@@ -245,9 +271,9 @@ export default function FeedPostDetailOverlay({
               onDeleted={onClose}
               onPostUpdated={setPost}
               onCommentsCountChange={(delta) =>
-                setCommentsCount((count) => Math.max(0, count + delta))
+                changeCommentsCount(delta)
               }
-              onCommentsTotalChange={setCommentsCount}
+              onCommentsTotalChange={publishCommentsCount}
             />
           ) : (
           <>
@@ -287,9 +313,9 @@ export default function FeedPostDetailOverlay({
                 highlightCommentId={highlightCommentId}
                 fillHeight
                 onCountChange={(delta) =>
-                  setCommentsCount((count) => Math.max(0, count + delta))
+                  changeCommentsCount(delta)
                 }
-                onTotalChange={setCommentsCount}
+                onTotalChange={publishCommentsCount}
               />
             </div>
           </>

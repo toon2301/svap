@@ -27,6 +27,8 @@ describe('RightSidebar', () => {
 
     fireEvent.click(screen.getByText('Blokované'));
     expect(onItemClick).toHaveBeenCalledWith('blocked-users');
+    fireEvent.click(screen.getByText('Sledovanie'));
+    expect(onItemClick).toHaveBeenCalledWith('offer-watches');
     expect(screen.queryByText('Nahlásiť problém')).not.toBeInTheDocument();
   });
 
@@ -44,6 +46,7 @@ describe('RightSidebar', () => {
     );
     expect(screen.queryByText('Nastavenia účtu')).not.toBeInTheDocument();
     expect(screen.queryByText('Účet')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sledovanie')).not.toBeInTheDocument();
     // overlay exists
     const overlay = document.querySelector('.fixed.inset-0.bg-black');
     expect(overlay).toBeTruthy();

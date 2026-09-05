@@ -350,92 +350,229 @@ describe('text príspevku', () => {
   });
 });
 
+/**
+ * Rozmery, ktorými test simuluje skutočný layout telefónu.
+ *
+ * Dôvod: pôvodná chyba bola VÝLUČNE o rozmeroch v čase. Doscrollovanie sa
+ * spúšťalo, kým bol zoznam ešte v stave „Načítavam…" – obsah bol vtedy kratší
+ * než plocha, takže sa prehliadač nemal kam pohnúť a volanie ticho zapadlo.
+ * Test, ktorý len sleduje, či sa scrollovacia funkcia zavolala, to nemôže
+ * chytiť; preto sa tu meria skutočná zmena `scrollTop` proti výške, ktorá
+ * RASTIE s vykreslenými komentármi.
+ */
+const SCROLLER_HEIGHT = 707;
+/** Text + fotka + riadok akcií + nadpis, kým nie sú komentáre. */
+const HEADER_CONTENT_HEIGHT = 490;
+const COMMENT_HEIGHT = 220;
+/** Kotva „Komentáre" leží pod textom, fotkou a riadkom akcií. */
+const ANCHOR_OFFSET = 422;
+
+/** Napodobní layout prehliadača vrátane orezania `scrollTop` na maximum. */
+function installLayout(scroller: HTMLElement, anchor: HTMLElement) {
+  let top = 0;
+  const scrollHeight = () =>
+    HEADER_CONTENT_HEIGHT +
+    scroller.querySelectorAll('[data-comment-id]').length * COMMENT_HEIGHT;
+
+  Object.defineProperty(scroller, 'clientHeight', {
+    configurable: true,
+    get: () => SCROLLER_HEIGHT,
+  });
+  Object.defineProperty(scroller, 'scrollHeight', {
+    configurable: true,
+    get: scrollHeight,
+  });
+  Object.defineProperty(scroller, 'scrollTop', {
+    configurable: true,
+    get: () => top,
+    set: (value: number) => {
+      // Presne ako prehliadač: nad rámec obsahu sa posunúť nedá.
+      const max = Math.max(0, scrollHeight() - SCROLLER_HEIGHT);
+      top = Math.min(Math.max(0, value), max);
+    },
+  });
+  scroller.getBoundingClientRect = () => ({ top: 0 }) as DOMRect;
+  anchor.getBoundingClientRect = () => ({ top: ANCHOR_OFFSET - top }) as DOMRect;
+}
+
+function deferredPage<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+function commentPage(count: number) {
+  return {
+    results: Array.from({ length: count }, (_unused, index) => ({
+      id: 100 + index,
+      text: `Komentár ${index + 1}`,
+      author,
+      can_delete: false,
+      can_edit: false,
+      likes_count: 0,
+      is_liked_by_me: false,
+      replies: [],
+      replies_count: 0,
+      created_at: '2026-01-01T11:00:00Z',
+    })),
+    next: null,
+    previous: null,
+    count,
+  };
+}
+
 describe('automatický scroll pri otvorení', () => {
   describe('samotné pravidlo', () => {
-    it('needs a photo AND at least two comments', () => {
-      expect(AUTO_SCROLL_MIN_COMMENTS).toBe(2);
-      // Fotka × počet komentárov – všetky kombinácie naraz.
+    it('needs a photo AND at least three comments', () => {
+      expect(AUTO_SCROLL_MIN_COMMENTS).toBe(3);
       expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: 0 })).toBe(false);
-      expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: 1 })).toBe(false);
-      expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: 2 })).toBe(true);
+      expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: 2 })).toBe(false);
+      expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: 3 })).toBe(true);
       expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: 9 })).toBe(true);
-      expect(shouldAutoScrollToComments({ hasPhoto: false, commentsCount: 0 })).toBe(false);
-      expect(shouldAutoScrollToComments({ hasPhoto: false, commentsCount: 1 })).toBe(false);
-      expect(shouldAutoScrollToComments({ hasPhoto: false, commentsCount: 2 })).toBe(false);
+      expect(shouldAutoScrollToComments({ hasPhoto: false, commentsCount: 3 })).toBe(false);
       expect(shouldAutoScrollToComments({ hasPhoto: false, commentsCount: 99 })).toBe(false);
       // Chýbajúci počet nesmie skončiť skokom do prázdna.
-      expect(
-        shouldAutoScrollToComments({ hasPhoto: true, commentsCount: null }),
-      ).toBe(false);
+      expect(shouldAutoScrollToComments({ hasPhoto: true, commentsCount: null })).toBe(false);
     });
   });
 
   /**
-   * Počká, kým obrazovka o štartovacej pozícii ROZHODNE, a vráti, ako.
-   *
-   * Čaká sa na `data-auto-scrolled`, nie na uplynutie času: „nescrollovalo sa"
-   * a „efekt ešte nedobehol" vyzerajú inak úplne rovnako, takže by negatívne
-   * prípady prechádzali aj pri pokazenom pravidle.
+   * Otvorí obrazovku so ZADRŽANOU odpoveďou zoznamu, aby sa dal odmerať aj
+   * stav PRED dorazením komentárov – práve v ňom pôvodná chyba vznikala.
    */
-  async function autoScrollDecision(): Promise<{
-    decided: string | null;
-    scrolledToAnchor: boolean;
-  }> {
-    const anchor = await screen.findByTestId('feed-mobile-detail-comments-anchor');
-    await waitFor(() => expect(anchor).toHaveAttribute('data-auto-scrolled'));
-    return {
-      decided: anchor.getAttribute('data-auto-scrolled'),
-      scrolledToAnchor: scrollTargets.some((node) => node === anchor),
-    };
+  async function openWithHeldComments(post = makePost()) {
+    const page = deferredPage<ReturnType<typeof commentPage>>();
+    mockedListComments.mockReturnValue(page.promise);
+    render(<FeedPostCard post={post} />);
+    await userEvent.click(screen.getByTestId('feed-comments-button'));
+    await screen.findByTestId('feed-mobile-detail');
+
+    const scroller = screen.getByTestId('feed-comments-scroll');
+    const anchor = screen.getByTestId('feed-mobile-detail-comments-anchor');
+    installLayout(scroller, anchor);
+    return { page, scroller, anchor };
   }
 
-  it.each([2, 3, 12])(
-    'scrolls to the comments for a photo post with %i comments',
-    async (comments) => {
-      await openFromCommentsButton(makePost({ comments_count: comments }));
+  it('does not scroll while the list is still loading', async () => {
+    const { scroller } = await openWithHeldComments(makePost({ comments_count: 10 }));
 
-      // Kotva sedí na vrchu scrollovanej plochy, teda hneď pod pevnou
-      // hlavičkou – fotka aj riadok akcií tým ostanú nad dohľadom.
-      const decision = await autoScrollDecision();
-      expect(decision.decided).toBe('true');
-      expect(decision.scrolledToAnchor).toBe(true);
+    // Toto je presne moment, v ktorom sa to predtým spúšťalo naprázdno:
+    // obsah (490) je kratší než plocha (707), takže sa nedá pohnúť.
+    expect(scroller.scrollHeight).toBeLessThan(scroller.clientHeight);
+    expect(scroller.scrollTop).toBe(0);
+  });
+
+  it('scrolls the comments under the header once they are rendered', async () => {
+    const { page, scroller } = await openWithHeldComments(
+      makePost({ comments_count: 10 }),
+    );
+
+    await act(async () => {
+      page.resolve(commentPage(10));
+    });
+
+    // Merané ČÍSLOM: kotva sa naozaj posunula na vrch plochy, teda hneď pod
+    // pevnú hlavičku – fotka aj riadok akcií ostali nad dohľadom.
+    await waitFor(() => expect(scroller.scrollTop).toBe(ANCHOR_OFFSET));
+    expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+  });
+
+  it.each([3, 12])('scrolls for a photo post with %i comments', async (comments) => {
+    const { page, scroller } = await openWithHeldComments(
+      makePost({ comments_count: comments }),
+    );
+
+    await act(async () => {
+      page.resolve(commentPage(comments));
+    });
+
+    await waitFor(() => expect(scroller.scrollTop).toBe(ANCHOR_OFFSET));
+  });
+
+  it('scrolls for a shared preview post as well', async () => {
+    const shared = {
+      images: [],
+      comments_count: 4,
+      post_type: 'shared_feed_post',
+      shared_content: {
+        type: 'feed_post',
+        title: '',
+        category: '',
+        caption: 'Pôvodný text',
+        id: 9,
+        owner: author,
+        owner_display_name: 'Jana Nováková',
+        thumbnail_url: null,
+        is_seeking: null,
+        price_negotiable: null,
+        price_from: null,
+        price_currency: '',
+      },
+    } as unknown as Partial<FeedPost>;
+    const { page, scroller } = await openWithHeldComments(makePost(shared));
+
+    await act(async () => {
+      page.resolve(commentPage(4));
+    });
+
+    await waitFor(() => expect(scroller.scrollTop).toBe(ANCHOR_OFFSET));
+  });
+
+  it.each([0, 1, 2])(
+    'stays at the top for a photo post with %i comments',
+    async (comments) => {
+      const { page, scroller } = await openWithHeldComments(
+        makePost({ comments_count: comments }),
+      );
+
+      await act(async () => {
+        page.resolve(commentPage(comments));
+      });
+
+      const anchor = await screen.findByTestId('feed-mobile-detail-comments-anchor');
+      await waitFor(() => expect(anchor).toHaveAttribute('data-auto-scrolled'));
+      expect(anchor.getAttribute('data-auto-scrolled')).toBe('false');
+      expect(scroller.scrollTop).toBe(0);
     },
   );
 
-  it.each([0, 1])(
-    'does not scroll for a photo post with %i comments',
+  it.each([0, 3, 10])(
+    'stays at the top for a text-only post with %i comments',
     async (comments) => {
-      await openFromCommentsButton(makePost({ comments_count: comments }));
-
-      const decision = await autoScrollDecision();
-      expect(decision.decided).toBe('false');
-      expect(decision.scrolledToAnchor).toBe(false);
-    },
-  );
-
-  it.each([0, 1, 5])(
-    'does not scroll for a text-only post with %i comments',
-    async (comments) => {
-      await openFromCommentsButton(
+      const { page, scroller } = await openWithHeldComments(
         makePost({ images: [], comments_count: comments }),
       );
 
-      const decision = await autoScrollDecision();
-      expect(decision.decided).toBe('false');
-      expect(decision.scrolledToAnchor).toBe(false);
+      await act(async () => {
+        page.resolve(commentPage(comments));
+      });
+
+      const anchor = await screen.findByTestId('feed-mobile-detail-comments-anchor');
+      await waitFor(() => expect(anchor).toHaveAttribute('data-auto-scrolled'));
+      expect(anchor.getAttribute('data-auto-scrolled')).toBe('false');
+      expect(scroller.scrollTop).toBe(0);
     },
   );
 
-  it('keeps the whole post reachable by scrolling back up', async () => {
-    const detail = await openFromCommentsButton(makePost({ comments_count: 5 }));
+  it('does not scroll again on a later re-render', async () => {
+    const { page, scroller } = await openWithHeldComments(
+      makePost({ comments_count: 10 }),
+    );
+    await act(async () => {
+      page.resolve(commentPage(10));
+    });
+    await waitFor(() => expect(scroller.scrollTop).toBe(ANCHOR_OFFSET));
 
-    // Doscrollovanie je len štartovacia pozícia – text, fotka aj akcie ostávajú
-    // v tej istej ploche, takže sa k nim používateľ vždy vráti.
-    const scroller = within(detail).getByTestId('feed-comments-scroll');
-    expect(scroller.contains(within(detail).getByTestId('feed-mobile-detail-photo'))).toBe(true);
-    expect(
-      scroller.contains(within(detail).getByTestId('feed-mobile-detail-caption')),
-    ).toBe(true);
+    // Používateľ si odscrolloval späť hore…
+    scroller.scrollTop = 0;
+    // …a obrazovka sa prekreslí (lajk je najlacnejšia zmena stavu).
+    await userEvent.click(screen.getByTestId('feed-mobile-detail-like'));
+
+    // Rozhodnutie ostáva JEDNORAZOVÉ – opravovalo sa jeho časovanie, nie to,
+    // že padne raz. Ďalší komentár z pollingu nesmie strhnúť pohľad.
+    expect(scroller.scrollTop).toBe(0);
   });
 });
 

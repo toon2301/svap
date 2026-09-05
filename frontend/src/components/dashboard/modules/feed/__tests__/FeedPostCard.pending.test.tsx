@@ -159,10 +159,13 @@ describe('FeedPostCard – spracovanie fotiek a chybové hlášky', () => {
     render(<FeedPostCard post={makePost()} />);
     await userEvent.click(screen.getByTestId('feed-like-button'));
 
-    // Neutrálne a zámerne neprezrádzajúce, že ide o blokovanie.
+    // Neutrálne a zámerne neprezrádzajúce, že ide o blokovanie. Hláška je
+    // jednotná s ostatnými cestami, kde príspevok zmizol – karta sa pri nej
+    // odstraňuje zo zoznamu, takže „momentálne nie je možné reagovať" by
+    // odporovalo tomu, čo používateľ vidí.
     await waitFor(() =>
       expect(mockedToastError).toHaveBeenCalledWith(
-        'Na tento obsah momentálne nie je možné reagovať.',
+        'Tento príspevok už nie je dostupný.',
       ),
     );
   });

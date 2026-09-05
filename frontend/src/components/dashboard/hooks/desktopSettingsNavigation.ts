@@ -1,6 +1,7 @@
 export type DesktopSettingsSection =
   | 'edit-profile'
   | 'notifications'
+  | 'offer-watches'
   | 'account-type'
   | 'privacy'
   | 'language'
@@ -44,6 +45,7 @@ const RETURNABLE_MODULES = new Set([
 const SECTION_PATHS: Record<DesktopSettingsSection, string> = {
   'edit-profile': '/dashboard/settings',
   notifications: '/dashboard/settings/notifications',
+  'offer-watches': '/dashboard/settings/watches',
   'account-type': '/dashboard/account-type',
   privacy: '/dashboard/privacy',
   language: '/dashboard/language',
