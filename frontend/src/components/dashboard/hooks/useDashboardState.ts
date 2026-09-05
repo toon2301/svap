@@ -464,9 +464,23 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setIsRightSidebarOpen(true);
         setActiveModule('settings');
         if (typeof window !== 'undefined') {
+          // Rovnaký návratový štítok, aký do histórie zapisuje
+          // `openDesktopSettings`. Bez neho by tento záznam vyzeral ako
+          // obyčajná adresa: `restoreDesktopSettingsFromHistory` obnovuje
+          // nastavenia pri `popstate` LEN podľa prítomnosti tohto štítku,
+          // takže krok dopredu späť na sledované ponuky by sekciu neobnovil.
+          //
+          // Cieľ sa berie z `getSettingsFallbackTarget()` – sem sa dá dostať
+          // iba mimo nastavení (vetva vyššie sa vracia skôr), takže starší
+          // štítok, ktorý by `openDesktopSettings` v nastaveniach prebral,
+          // tu existovať nemôže.
+          const historyState = withDesktopSettingsHistory(
+            window.history.state,
+            getSettingsFallbackTarget(),
+          );
           // `pushState`, nie `replaceState`: prichádza sa sem z iného modulu,
           // takže krok späť má vrátiť tam, odkiaľ používateľ prišiel.
-          window.history.pushState(window.history.state, '', watchesPath);
+          window.history.pushState(historyState, '', watchesPath);
           try {
             localStorage.setItem('activeModule', 'settings');
           } catch {
@@ -554,7 +568,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
     },
-    [activeModule, openOwnProfileEdit]
+    [activeModule, getSettingsFallbackTarget, openOwnProfileEdit]
   );
 
   const handleUserUpdate = useCallback(
