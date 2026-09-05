@@ -7,15 +7,15 @@
  * vstupov naraz – v samotnej obrazovke by to bola podmienka schovaná v efekte.
  *
  * PRAVIDLO: doscrolluje sa LEN keď príspevok má nad komentármi ROZMERNÝ obsah
- * (fotku ALEBO vnorený náhľad zdieľaného obsahu) A ZÁROVEŇ aspoň dva komentáre.
+ * (fotku ALEBO vnorený náhľad zdieľaného obsahu) A ZÁROVEŇ aspoň tri komentáre.
  *
  * Prečo obe podmienky súčasne:
  *  - Bez rozmerného obsahu je nad komentármi len text, ktorý používateľ na
  *    karte práve videl – preskočiť ho by ho pripravilo o kontext a nič by tým
  *    nezískal.
  *  - Fotka aj zdieľaný náhľad zaberú veľkú časť obrazovky, takže pri živej
- *    diskusii je otváranie od vrchu skôr prekážkou. Pri jednom (alebo žiadnom)
- *    komentári ale niet čo ukazovať – skok by odhalil prázdno.
+ *    diskusii je otváranie od vrchu skôr prekážkou. Pri jednom či dvoch
+ *    komentároch ale niet čo ukazovať – skok by odhalil takmer prázdno.
  *
  * Náhľad sa počíta bez ohľadu na typ aj vtedy, keď je zdroj nedostupný: aj ten
  * stav je vykreslený blok, ktorý medzi text a komentáre patrí rovnako.
@@ -25,7 +25,7 @@
  */
 
 /** Odkedy sa diskusia oplatí ukázať rovno. */
-export const AUTO_SCROLL_MIN_COMMENTS = 2;
+export const AUTO_SCROLL_MIN_COMMENTS = 3;
 
 type AutoScrollInput = {
   /** Má príspevok fotku, ktorú je čo zobraziť? */

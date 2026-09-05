@@ -194,9 +194,26 @@ export function useDashboardUserProfile({
 
   // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
   useEffect(() => {
-    if (!user || !initialProfileSlug || !initialRightItem || initialRightItemAppliedRef.current) {
+    if (!user || !initialRightItem || initialRightItemAppliedRef.current) {
       return;
     }
+
+    // Priamy desktopový route nastavení nepotrebuje profilový slug. Držíme
+    // ho v existujúcom settings module, aby ostala zachovaná pravá navigácia
+    // aj jej návratová história bez rozširovania nadlimitného state hooku.
+    if (
+      initialRightItem === 'offer-watches'
+      && activeModule === 'settings'
+      && typeof window !== 'undefined'
+      && window.innerWidth >= 1024
+    ) {
+      initialRightItemAppliedRef.current = true;
+      setIsRightSidebarOpen(true);
+      setActiveRightItem('offer-watches');
+      return;
+    }
+
+    if (!initialProfileSlug) return;
 
     if (user.slug && user.slug === initialProfileSlug) {
       initialRightItemAppliedRef.current = true;
@@ -242,12 +259,13 @@ export function useDashboardUserProfile({
       }
     }
   }, [
-    user, 
-    initialProfileSlug, 
-    initialRightItem, 
-    setActiveModule, 
-    setIsRightSidebarOpen, 
-    setActiveRightItem
+    user,
+    activeModule,
+    initialProfileSlug,
+    initialRightItem,
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
   ]);
 
   // Aktualizácia URL na slug pre vlastný profil

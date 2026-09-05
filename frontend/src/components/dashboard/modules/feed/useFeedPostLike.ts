@@ -9,16 +9,18 @@
  * späť a ohlás chybu), takže oprava na jednom mieste sa na ďalšie dve
  * nedostala.
  *
- * Stav sa ohlasuje cez `feedPostCountEvents`, takže druhá karta toho istého
- * príspevku (feed pod otvorenou vrstvou) preblikne spolu s ňou, nie až po
- * odpovedi servera.
+ * Stav sa ohlasuje cez `feedPostCountEvents` a hook ho odtiaľ aj PRIJÍMA.
+ * Vďaka tomu je synchronizácia OBOJSMERNÁ na všetkých troch miestach naraz:
+ * predtým odoberala jediná `FeedPostCard`, takže lajk na karte sa do otvorenej
+ * vrstvy nad ňou nikdy nedostal.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { likeFeedPost, unlikeFeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
-import { emitFeedPostCounts } from './feedPostCountEvents';
+import { emitFeedPostCounts, onFeedPostCounts } from './feedPostCountEvents';
+import { handleFeedPostErrorIfGone } from './feedPostGone';
 
 type UseFeedPostLikeOptions = {
   postId: number;
@@ -72,6 +74,33 @@ export function useFeedPostLike({
   const countRef = useRef(likesCount);
   countRef.current = likesCount;
 
+  /**
+   * Lajk z iného miesta toho istého príspevku.
+   *
+   * `pendingRef` je tu KRITICKÝ: hook vysiela vlastnú optimistickú zmenu a
+   * `window` event doručí synchrónne, takže ho vzápätí prijme aj on sám.
+   * Bez tejto brzdy by si rozbehnutý lajk prepísal vlastnú hodnotu späť na
+   * tú, ktorá práve odchádza zo servera (alebo na predošlú).
+   *
+   * Prijatá hodnota sa ZÁMERNE nevysiela ďalej – inak by si dve otvorené
+   * vrstvy posielali to isté dokola.
+   *
+   * Zastaraná odpoveď zo servera sa nebrzdí tu, ale u ZDROJA: `seqRef` drží
+   * poradové číslo lajku a pravidelné dopytovanie počtov (`refreshCounts` na
+   * karte) podľa neho pozná, že jeho odpoveď je spred práve dokončeného lajku
+   * – a vtedy ju vôbec nerozposiela.
+   */
+  useEffect(
+    () =>
+      onFeedPostCounts((patch) => {
+        if (patch.postId !== postId) return;
+        if (pendingRef.current) return;
+        if (patch.likesCount !== undefined) setLikesCount(patch.likesCount);
+        if (patch.isLikedByMe !== undefined) setIsLiked(patch.isLikedByMe);
+      }),
+    [postId],
+  );
+
   const toggleLike = useCallback(async () => {
     if (pendingRef.current) return;
     pendingRef.current = true;
@@ -110,7 +139,11 @@ export function useFeedPostLike({
         likesCount: previousCount,
         isLikedByMe: previousLiked,
       });
-      toast.error(translateFeedActionError(tRef.current, error));
+      // Zmiznutý príspevok sa rieši spoločne (odstránenie zo zoznamov, jeden
+      // toast) – bežná hláška „akciu sa nepodarilo vykonať" by mýlila.
+      if (!handleFeedPostErrorIfGone(error, postId, tRef.current)) {
+        toast.error(translateFeedActionError(tRef.current, error));
+      }
     } finally {
       pendingRef.current = false;
     }

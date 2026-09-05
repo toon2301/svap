@@ -38,8 +38,11 @@ import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import { onFeedPostCounts } from './feedPostCountEvents';
-import { emitFeedPostDeleted } from './feedPostDeletedEvents';
+import { emitFeedPostCounts } from './feedPostCountEvents';
+import {
+  emitFeedPostDeleted,
+  onFeedPostDeleted,
+} from './feedPostDeletedEvents';
 import FeedAnchoredMenu from './FeedAnchoredMenu';
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
@@ -56,10 +59,13 @@ import { usePendingFeedImages } from './usePendingFeedImages';
 import { useCardInViewport } from './useCardInViewport';
 import { formatRelativeTime } from './feedRelativeTime';
 import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
+import { sharedFeedPostPhoto } from './feedImageSources';
+import FeedSharedPhotoViewer from './FeedSharedPhotoViewer';
 import FeedPhotoViewer from './FeedPhotoViewer';
 import FeedPostMobileDetail from './FeedPostMobileDetail';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
+import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 
 /**
  * Pozadie zdieľanej karty. Svetlý odtieň je presne #EEEDFE zo zadania (preto
@@ -295,7 +301,14 @@ export default function FeedPostCard({
   // nie je, takže `undefined` znamená „nezobrazuj", nie „neviem".
   const isEdited = currentPost.is_edited === true;
 
-  const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // Počet komentárov vysiela aj odoberá – karta predtým len odoberala, takže
+  // komentár pridaný priamo v nej (mobilný permalink) sa nikam nešíril.
+  const {
+    commentsCount,
+    publishCommentsCount,
+    changeCommentsCount,
+    setCommentsCountLocally,
+  } = useFeedPostCommentsCount(post.id, post.comments_count);
   // Optimistický lajk je spoločný pre kartu aj obe mobilné vrstvy – karta si
   // navyše berie `pendingRef`/`seqRef`, lebo počty ešte aj pollingom obnovuje.
   const {
@@ -333,6 +346,12 @@ export default function FeedPostCard({
    */
   const opensPhotoViewer = isMobile && !isDetail;
   const [photoViewerIndex, setPhotoViewerIndex] = useState<number | null>(null);
+  /**
+   * Fotoprehliadač PÔVODNÉHO príspevku, otvorený z fotky v repost náhľade.
+   * `null` = repost fotku nemá, takže sa nedá ani otvoriť.
+   */
+  const sharedPhotoPostId = sharedFeedPostPhoto(currentPost)?.postId ?? null;
+  const [sharedPhotoOpen, setSharedPhotoOpen] = useState(false);
   /**
    * Mobilná obrazovka detailu – otvára ju ikona komentárov a ťuk na TEXT
    * príspevku. Ťuk na FOTKU vedie inam (prehliadač fotky vyššie), desktop sa
@@ -382,8 +401,8 @@ export default function FeedPostCard({
   }, [likePendingRef, setIsLiked, setLikesCount, post.is_liked_by_me, post.likes_count]);
 
   useEffect(() => {
-    setCommentsCount(post.comments_count);
-  }, [post.comments_count]);
+    setCommentsCountLocally(post.comments_count);
+  }, [setCommentsCountLocally, post.comments_count]);
 
   useEffect(() => {
     setTaggedUsers(post.tagged_users ?? []);
@@ -393,6 +412,20 @@ export default function FeedPostCard({
   useEffect(() => {
     setCurrentPost(post);
   }, [post]);
+
+  // Príspevok zmizol (zmazal ho niekto iný, alebo to zistila iná interakcia).
+  // Kartu odstráni zoznam, ale otvorené vrstvy nad ňou treba zavrieť tu –
+  // karta sa vykresľuje aj tam, kde zoznam signál nespracúva (profil).
+  useEffect(
+    () =>
+      onFeedPostDeleted((deletedId) => {
+        if (deletedId !== post.id) return;
+        setMobileDetailOpen(false);
+        setPhotoViewerIndex(null);
+        setSharedPhotoOpen(false);
+      }),
+    [post.id],
+  );
 
   /**
    * Priebežné počty lajkov od iných používateľov.
@@ -415,28 +448,26 @@ export default function FeedPostCard({
     if (seq !== likeSeqRef.current || likePendingRef.current) return;
     setLikesCount(fresh.likes_count);
     setIsLiked(fresh.is_liked_by_me);
-    setCommentsCount(fresh.comments_count);
-  }, [likePendingRef, likeSeqRef, setIsLiked, setLikesCount, post.id]);
+    // Čerstvá serverová pravda musí ísť aj do otvorenej vrstvy NAD kartou –
+    // tá sama nepolluje, takže by inak držala číslo z momentu otvorenia.
+    // Rozposiela sa až TU, za oboma brzdami vyššie: odpoveď spred práve
+    // dokončeného lajku by inak prepísala čerstvý stav ostatným.
+    publishCommentsCount(fresh.comments_count);
+    emitFeedPostCounts({
+      postId: post.id,
+      likesCount: fresh.likes_count,
+      isLikedByMe: fresh.is_liked_by_me,
+    });
+  }, [
+    likePendingRef,
+    likeSeqRef,
+    publishCommentsCount,
+    setIsLiked,
+    setLikesCount,
+    post.id,
+  ]);
 
   useFeedCommentsPolling({ enabled: inViewport, onPoll: refreshCounts });
-
-  // Počty z inej karty toho istého príspevku (typicky okno detailu nad
-  // feedom). Vlastný prebiehajúci lajk má prednosť – rovnaká zásada ako pri
-  // pollovaní, inak by sa čerstvé kliknutie prepísalo starším číslom.
-  useEffect(
-    () =>
-      onFeedPostCounts((patch) => {
-        if (patch.postId !== post.id) return;
-        if (!likePendingRef.current) {
-          if (patch.likesCount !== undefined) setLikesCount(patch.likesCount);
-          if (patch.isLikedByMe !== undefined) setIsLiked(patch.isLikedByMe);
-        }
-        if (patch.commentsCount !== undefined) {
-          setCommentsCount(patch.commentsCount);
-        }
-      }),
-    [likePendingRef, setIsLiked, setLikesCount, post.id],
-  );
 
   // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
   // zobrazí dvakrát pod sebou (hlavička + vnorený náhľad), čo pôsobí ako chyba.
@@ -450,19 +481,29 @@ export default function FeedPostCard({
   const isOwnReshare = isSelfShare && post.post_type === 'shared_feed_post';
 
   /**
-   * Preklik na zdieľaný zdroj.
+   * Preklik na zdieľaný zdroj – VŽDY rovno na cieľ, aj vo feede.
    *
-   * Na MOBILE ho karta neponúka: tam vedie ťuk kdekoľvek na zdieľanom
-   * príspevku najprv do mobilnej obrazovky detailu a odtiaľ sa dá prekliknúť
-   * ďalej. Bez toho by mal ten istý príspevok dve rôzne cieľové obrazovky
-   * podľa toho, kam presne používateľ ťukol.
+   * Vnorená karta ponuky/portfólia je samostatný ovládací prvok s jasným
+   * sľubom: otvorí presne tú ponuku/portfólio. Medzikrok cez detail
+   * zdieľajúceho príspevku ten sľub porušoval a k cieľu bolo treba dva kliky.
+   * Do detailu vedú ostatné časti príspevku (text, avatar, akcie).
    */
-  const handleOpenSharedSource = opensMobileDetail
+  const handleOpenSharedSource = buildSharedSourceHandler(currentPost, {
+    router,
+    beforeNavigate: closeOverlayOnLeave,
+  });
+
+  /**
+   * Náhľad zdieľaného PRÍSPEVKU mimo jeho fotky.
+   *
+   * Tu medzikrok zmysel dáva: mini príspevok nie je „karta ponuky", ale
+   * ukážka obsahu, ku ktorému sa zdieľajúci vyjadril. Na mobile teda vedie do
+   * detailu zdieľajúceho príspevku, na desktope ostáva nekliknuteľný ako
+   * doteraz.
+   */
+  const handleOpenSharedPostPreview = opensMobileDetail
     ? () => setMobileDetailOpen(true)
-    : buildSharedSourceHandler(currentPost, {
-        router,
-        beforeNavigate: closeOverlayOnLeave,
-      });
+    : undefined;
 
   // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
   const sharedCaptionNode =
@@ -725,10 +766,14 @@ export default function FeedPostCard({
               post={post}
               hideOwner={isSelfShare}
               onOpenSource={handleOpenSharedSource}
-              // Na mobile vedie ťuk kdekoľvek na zdieľanom príspevku do
-              // obrazovky detailu – vrátane náhľadu mini príspevku, ktorý na
-              // desktope ostáva nekliknuteľný ako doteraz.
-              interactivePostPreview={opensMobileDetail}
+              onOpenPostPreview={handleOpenSharedPostPreview}
+              // Fotka vnútri repostu patrí PÔVODNÉMU príspevku – otvára jeho
+              // fotoprehliadač, nie detail zdieľajúceho.
+              onOpenPostPhoto={
+                sharedPhotoPostId != null
+                  ? () => setSharedPhotoOpen(true)
+                  : undefined
+              }
             />
           ) : null}
 
@@ -848,11 +893,19 @@ export default function FeedPostCard({
           highlightCommentId={highlightCommentId}
           postId={post.id}
           onCountChange={(delta) =>
-            setCommentsCount((count) => Math.max(0, count + delta))
+            changeCommentsCount(delta)
           }
           // Číslo pri ikone vychádza z toho istého načítania ako zoznam,
           // takže sa nemôže rozísť s tým, čo používateľ reálne vidí.
-          onTotalChange={setCommentsCount}
+          onTotalChange={publishCommentsCount}
+        />
+      ) : null}
+
+      {/* Fotoprehliadač pôvodného príspevku (klik na fotku v reposte). */}
+      {sharedPhotoOpen && sharedPhotoPostId != null ? (
+        <FeedSharedPhotoViewer
+          postId={sharedPhotoPostId}
+          onClose={() => setSharedPhotoOpen(false)}
         />
       ) : null}
 

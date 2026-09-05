@@ -13,6 +13,10 @@ interface CountrySelectProps {
   value: OfferCountryCode;
   onChange: (value: OfferCountryCode) => void;
   id?: string;
+  label?: string;
+  disabled?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
 }
 
 type DisplayCountry = {
@@ -28,7 +32,15 @@ const normalizeSearchText = (value: string) =>
     .toLocaleLowerCase()
     .trim();
 
-export default function CountrySelect({ value, onChange, id }: CountrySelectProps) {
+export default function CountrySelect({
+  value,
+  onChange,
+  id,
+  label,
+  disabled = false,
+  invalid = false,
+  describedBy,
+}: CountrySelectProps) {
   const { locale, t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -75,6 +87,7 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
     countries.find((country) => country.code === value)?.label ||
     getOfferCountryFallbackName(value) ||
     t('skills.countryPlaceholder', 'Vyber krajinu');
+  const accessibleLabel = label || t('skills.countryTitle', 'Krajina ponuky');
   const activeCountry = filteredCountries[activeIndex];
   const optionIdFor = useCallback(
     (code: OfferCountryCode) => `${listboxId}-option-${code}`,
@@ -100,12 +113,13 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
   }, [updatePosition]);
 
   const openListbox = useCallback(() => {
+    if (disabled) return;
     const selectedIndex = countries.findIndex((country) => country.code === value);
     setQuery('');
     setActiveIndex(Math.max(0, selectedIndex));
     setOpen(true);
     focusSearch();
-  }, [countries, focusSearch, value]);
+  }, [countries, disabled, focusSearch, value]);
 
   const closeListbox = useCallback((restoreFocus: boolean) => {
     setOpen(false);
@@ -114,6 +128,10 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
       requestAnimationFrame(() => triggerRef.current?.focus());
     }
   }, []);
+
+  useEffect(() => {
+    if (disabled && open) closeListbox(false);
+  }, [closeListbox, disabled, open]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -189,7 +207,10 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
-        aria-label={t('skills.countryTitle', 'Krajina ponuky')}
+        aria-label={accessibleLabel}
+        aria-describedby={describedBy}
+        data-invalid={invalid || undefined}
+        disabled={disabled}
         onClick={() => (open ? closeListbox(false) : openListbox())}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
@@ -197,7 +218,11 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
             if (!open) openListbox();
           }
         }}
-        className="w-full flex items-center justify-between gap-3 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white text-left focus:outline-none focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+        className={`w-full flex items-center justify-between gap-3 px-3 py-2 border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white text-left focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60 ${
+          invalid
+            ? 'border-red-400 focus:ring-red-300 dark:border-red-700'
+            : 'border-gray-300 dark:border-gray-700 focus:ring-purple-300 focus:border-transparent'
+        }`}
       >
         <span className="text-sm font-medium truncate">{selectedLabel}</span>
         <svg
@@ -240,7 +265,7 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
           <div
             id={listboxId}
             role="listbox"
-            aria-label={t('skills.countryTitle', 'Krajina ponuky')}
+            aria-label={accessibleLabel}
             className="max-h-64 overflow-y-auto overflow-x-hidden district-dropdown-scrollbar py-1"
           >
             {filteredCountries.map((country, index) => {

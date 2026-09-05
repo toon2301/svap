@@ -32,6 +32,7 @@ import OfferReviewsView from './modules/reviews/OfferReviewsView';
 import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
 import FeedPostDetailModule from './modules/feed/FeedPostDetailModule';
+import OfferWatchSettingsDesktop from './modules/offer-watch/settings/OfferWatchSettingsDesktop';
 
 interface ModuleRouterProps {
   user: User;
@@ -223,6 +224,10 @@ export default function ModuleRouter({
 
   if (isRightSidebarOpen && activeRightItem === 'blocked-users') {
     return <BlockedUsersModule onBack={closeOwnProfileEdit} />;
+  }
+
+  if (!isMobile && isRightSidebarOpen && activeRightItem === 'offer-watches') {
+    return <OfferWatchSettingsDesktop onBack={closeOwnProfileEdit} />;
   }
 
   switch (activeModule) {

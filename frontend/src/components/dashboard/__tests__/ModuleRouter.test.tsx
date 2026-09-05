@@ -38,6 +38,10 @@ jest.mock('../modules/NotificationSettingsModule', () => ({
   __esModule: true,
   default: () => <div data-testid="notification-settings-module">NotificationSettingsModule</div>,
 }));
+jest.mock('../modules/offer-watch/settings/OfferWatchSettingsDesktop', () => ({
+  __esModule: true,
+  default: () => <div data-testid="offer-watch-settings-desktop">OfferWatchSettingsDesktop</div>,
+}));
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
@@ -160,5 +164,28 @@ describe('ModuleRouter – home', () => {
 
     expect(screen.getByTestId('notification-settings-module')).toBeInTheDocument();
     expect(screen.queryByTestId('notifications-module')).not.toBeInTheDocument();
+  });
+
+  it('renders saved-watch settings only as a desktop right-sidebar section', () => {
+    const { rerender } = render(
+      <ModuleRouter
+        {...baseProps()}
+        activeModule="settings"
+        activeRightItem="offer-watches"
+        isRightSidebarOpen
+      />,
+    );
+    expect(screen.getByTestId('offer-watch-settings-desktop')).toBeInTheDocument();
+
+    mockIsMobile = true;
+    rerender(
+      <ModuleRouter
+        {...baseProps()}
+        activeModule="settings"
+        activeRightItem="offer-watches"
+        isRightSidebarOpen
+      />,
+    );
+    expect(screen.queryByTestId('offer-watch-settings-desktop')).not.toBeInTheDocument();
   });
 });

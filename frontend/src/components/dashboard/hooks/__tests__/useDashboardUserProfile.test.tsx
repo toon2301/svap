@@ -30,6 +30,30 @@ const dashboardState = {
 const stableUser = { id: 1 } as any;
 const setHighlightedSkillId = jest.fn();
 
+describe('useDashboardUserProfile – priame desktopové nastavenia sledovania', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+  });
+
+  it('aktivuje pravú položku aj bez profilového slugu', async () => {
+    renderHook(() =>
+      useDashboardUserProfile({
+        user: stableUser,
+        activeModule: 'settings',
+        dashboardState,
+        initialRightItem: 'offer-watches',
+        setHighlightedSkillId,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(dashboardState.setIsRightSidebarOpen).toHaveBeenCalledWith(true);
+      expect(dashboardState.setActiveRightItem).toHaveBeenCalledWith('offer-watches');
+    });
+  });
+});
+
 describe('useDashboardUserProfile – 404 handling (BOD 12a)', () => {
   beforeEach(() => (api.get as jest.Mock).mockReset());
 

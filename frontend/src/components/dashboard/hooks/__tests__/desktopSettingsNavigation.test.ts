@@ -76,5 +76,7 @@ describe('desktop settings navigation helpers', () => {
 
     expect(getDesktopSettingsSectionFromModule('messages')).toBeNull();
     expect(getDesktopSettingsSectionPath('unknown')).toBeNull();
+    expect(getDesktopSettingsSectionPath('offer-watches')).toBe('/dashboard/settings/watches');
+    expect(getDesktopSettingsSectionFromPath('/dashboard/settings/watches/')).toBe('offer-watches');
   });
 });

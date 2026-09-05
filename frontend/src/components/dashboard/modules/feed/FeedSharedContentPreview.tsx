@@ -11,6 +11,7 @@
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { FeedPost } from '@/lib/feedApi';
+import BlurredContainImage from '../shared/BlurredContainImage';
 import ExchangeIcon from './FeedExchangeIcon';
 import { formatOfferPriceLabel } from './offerPriceLabel';
 
@@ -18,20 +19,28 @@ export default function SharedContentPreview({
   post,
   hideOwner = false,
   onOpenSource,
-  interactivePostPreview = false,
+  onOpenPostPreview,
+  onOpenPostPhoto,
 }: {
   post: FeedPost;
   hideOwner?: boolean;
   onOpenSource?: () => void;
   /**
-   * Aj náhľad zdieľaného PRÍSPEVKU je cieľ kliku.
+   * Klik na náhľad zdieľaného PRÍSPEVKU MIMO jeho fotky.
    *
-   * Ponuka a portfólio sú klikateľné odjakživa; mini príspevok nie. Zapínajú
-   * si to mobilné obrazovky, kde ťuk kdekoľvek na zdieľanom príspevku niekam
-   * vedie. Na desktope ostáva náhľad nekliknuteľný ako doteraz, preto je to
-   * voľba volajúceho a nie automatika podľa `onOpenSource`.
+   * Ponuka a portfólio vedú rovno na zdroj (`onOpenSource`); mini príspevok je
+   * ukážka obsahu, ku ktorému sa zdieľajúci vyjadril, takže tu volajúci
+   * rozhoduje sám – na mobile detail zdieľajúceho, na desktope nič.
    */
-  interactivePostPreview?: boolean;
+  onOpenPostPreview?: () => void;
+  /**
+   * Klik PRIAMO na fotku vnútri repostu.
+   *
+   * Fotka patrí PÔVODNÉMU príspevku, takže vedie do jeho fotoprehliadača – nie
+   * do detailu zdieľajúceho. Preto samostatný cieľ kliku vedľa
+   * `onOpenPostPreview`, nie jeden spoločný na celom náhľade.
+   */
+  onOpenPostPhoto?: () => void;
 }) {
   const { t, locale } = useLanguage();
   const shared = post.shared_content;
@@ -77,24 +86,8 @@ export default function SharedContentPreview({
   // Zdieľaný VOĽNÝ príspevok – „mini príspevok" (autor + text + fotka),
   // nie „mini ponuka" (náhľad + názov + kategória).
   if (shared.type === 'feed_post') {
-    const clickablePostPreview = interactivePostPreview && Boolean(onOpenSource);
-    const Wrapper = clickablePostPreview ? 'button' : 'div';
-    return (
-      // Výraznejší rám než pri ponuke/portfóliu: tu sú „hore" aj „dole"
-      // PRÍSPEVKY OD ĽUDÍ, takže bez zreteľného predelu to môže vyzerať,
-      // akoby pôvodný autor zdieľal sám seba. Ponuka ani portfólio túto
-      // zámenu nevyvolávajú – náhľad je tam očividne iný typ obsahu.
-      <Wrapper
-        data-testid="feed-shared-post-preview"
-        {...(clickablePostPreview
-          ? { type: 'button' as const, onClick: onOpenSource }
-          : {})}
-        className={`w-full rounded-xl border-2 border-purple-300 bg-white/90 p-3 text-left shadow-sm dark:border-purple-700/70 dark:bg-black/30 ${
-          clickablePostPreview
-            ? 'transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60'
-            : ''
-        }`}
-      >
+    const meta = (
+      <>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80">
           {t('feed.originalPost', 'Pôvodný príspevok')}
         </p>
@@ -115,15 +108,58 @@ export default function SharedContentPreview({
             {shared.caption}
           </p>
         ) : null}
-        {shared.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={shared.thumbnail_url}
-            alt=""
-            className="mt-2 max-h-64 w-full rounded-lg object-cover"
-          />
-        ) : null}
-      </Wrapper>
+      </>
+    );
+
+    // Fotka a zvyšok náhľadu sú DVA samostatné ciele kliku, nie vnorené
+    // tlačidlá (tlačidlo v tlačidle je neplatné HTML). Obal preto ostáva
+    // `div` a klikateľné sú jeho časti.
+    const photo = shared.thumbnail_url ? (
+      // Rámec má PEVNÚ výšku a fotka sa doň vkladá cez `object-contain`
+      // s rozmazaným pozadím – ten istý `BlurredContainImage`, aký používa
+      // karusel príspevku. `object-cover` predtým fotku orezal.
+      //
+      // Rámec sa vykresľuje LEN keď náhľad naozaj fotku má; textový repost
+      // teda nemá čo rezervovať a jeho výška sedí s obsahom.
+      <div className="mt-2 h-64 w-full overflow-hidden rounded-lg">
+        {onOpenPostPhoto ? (
+          <button
+            type="button"
+            onClick={onOpenPostPhoto}
+            data-testid="feed-shared-post-photo"
+            aria-label={t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')}
+            className="block h-full w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+          >
+            <BlurredContainImage src={shared.thumbnail_url} alt="" loading="lazy" />
+          </button>
+        ) : (
+          <BlurredContainImage src={shared.thumbnail_url} alt="" loading="lazy" />
+        )}
+      </div>
+    ) : null;
+
+    return (
+      // Výraznejší rám než pri ponuke/portfóliu: tu sú „hore" aj „dole"
+      // PRÍSPEVKY OD ĽUDÍ, takže bez zreteľného predelu to môže vyzerať,
+      // akoby pôvodný autor zdieľal sám seba.
+      <div
+        data-testid="feed-shared-post-preview"
+        className="rounded-xl border-2 border-purple-300 bg-white/90 p-3 shadow-sm dark:border-purple-700/70 dark:bg-black/30"
+      >
+        {onOpenPostPreview ? (
+          <button
+            type="button"
+            onClick={onOpenPostPreview}
+            data-testid="feed-shared-post-preview-open"
+            className="block w-full rounded-lg text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+          >
+            {meta}
+          </button>
+        ) : (
+          meta
+        )}
+        {photo}
+      </div>
     );
   }
 

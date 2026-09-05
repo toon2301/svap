@@ -25,10 +25,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ImageLightbox } from '../shared/ImageLightbox';
 import { deleteFeedPost, type FeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
-import { emitFeedPostCounts } from './feedPostCountEvents';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import { feedViewableSources } from './feedImageSources';
 import { useFeedPostLike } from './useFeedPostLike';
+import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPhotoCommentsSheet from './FeedPhotoCommentsSheet';
@@ -66,7 +66,10 @@ export default function FeedPhotoViewer({
 }: FeedPhotoViewerProps) {
   const { t } = useLanguage();
   const [currentPost, setCurrentPost] = useState(post);
-  const [commentsCount, setCommentsCount] = useState(post.comments_count);
+  // Počet komentárov vysiela aj odoberá – táto vrstva predtým len vysielala,
+  // takže zmenu z karty pod ňou nikdy nezachytila.
+  const { commentsCount, publishCommentsCount, changeCommentsCount } =
+    useFeedPostCommentsCount(post.id, post.comments_count);
   // Optimistický lajk je spoločný pre kartu aj obe mobilné vrstvy.
   const { isLiked, likesCount, toggleLike } = useFeedPostLike({
     postId: post.id,
@@ -92,12 +95,6 @@ export default function FeedPhotoViewer({
   useEffect(() => {
     setCurrentPost(post);
   }, [post]);
-
-  // Prehliadač sa otvára nad kartou, ktorá si tie isté počty drží tiež –
-  // rovnaký mechanizmus ako medzi feedom a oknom detailu na desktope.
-  useEffect(() => {
-    emitFeedPostCounts({ postId: post.id, commentsCount });
-  }, [post.id, commentsCount]);
 
   const handleDelete = useCallback(async () => {
     if (deleting) return;
@@ -183,9 +180,9 @@ export default function FeedPhotoViewer({
               open={commentsOpen}
               onClose={() => setCommentsOpen(false)}
               onCountChange={(delta) =>
-                setCommentsCount((count) => Math.max(0, count + delta))
+                changeCommentsCount(delta)
               }
-              onTotalChange={setCommentsCount}
+              onTotalChange={publishCommentsCount}
             />
           </>
         }
