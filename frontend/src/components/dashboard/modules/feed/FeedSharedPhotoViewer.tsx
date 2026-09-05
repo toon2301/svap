@@ -61,15 +61,30 @@ export default function FeedSharedPhotoViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
+  /**
+   * Náhľad repostu má fotku, ale pôvodný príspevok už žiadnu zobraziteľnú
+   * nemá – prehliadač sa musí ZAVRIEŤ, nie len nič nevykresliť.
+   *
+   * Rodič si drží „otvorené" vo vlastnom stave. Keby sa tu len vrátilo `null`,
+   * ostal by ten stav natrvalo zapnutý: ďalší klik naň nastaví už pravdivú
+   * hodnotu, komponent sa nepremountuje a náhľad by bol do konca života karty
+   * mŕtvy. Zatvára sa v EFEKTE, nie počas renderu – zápis do stavu rodiča
+   * počas vykresľovania dieťaťa React zakazuje.
+   */
+  useEffect(() => {
+    if (!post) return;
+    if (feedViewableSources(post.images ?? []).length > 0) return;
+    closeRef.current();
+  }, [post]);
+
   // Kým sa príspevok načítava, nekreslí sa nič: je to jediný request a
   // medzistav v podobe prázdneho čierneho plátna by pôsobil ako chyba.
   if (!post) return null;
 
   const sources = feedViewableSources(post.images ?? []);
-  if (sources.length === 0) {
-    // Fotka medzitým zmizla (zamietnutá moderáciou, zmazaná pri úprave).
-    return null;
-  }
+  // Fotka medzitým zmizla (zamietnutá moderáciou, zmazaná pri úprave) –
+  // zatvorenie vybaví efekt vyššie, tu ostáva len nevykresliť nič.
+  if (sources.length === 0) return null;
 
   if (isMobile) {
     return (

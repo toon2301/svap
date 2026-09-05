@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { skillsCategories } from '@/constants/skillsCategories';
@@ -31,7 +31,14 @@ describe('OfferWatchCategoryField', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Podkategória' }));
-    await user.type(screen.getByRole('combobox'), `Preklad ${SUBCATEGORY}`);
+    // Jednorazový zápis namiesto písania znak po znaku: každý znak by nad
+    // celým katalógom kategórií prefiltroval zoznam nanovo a na zaťaženom CI
+    // sa to nezmestilo do limitu. Tento test overuje mapovanie preloženého
+    // názvu na kanonickú dvojicu, nie postupné písanie – to má vlastné
+    // pokrytie v `OfferWatchSearchSelect.test.tsx`.
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: `Preklad ${SUBCATEGORY}` },
+    });
     const translatedLabel = await screen.findByText(`Preklad ${SUBCATEGORY}`);
     await user.click(translatedLabel.closest('button')!);
 

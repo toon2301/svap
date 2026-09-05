@@ -223,10 +223,10 @@ export default function OfferWatchSearchSelect({
       {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={popupRef}
-          className='z-[10050] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-[#0f0f10]'
+          className='z-[10050] flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-[#0f0f10]'
           style={position}
         >
-          <div className='border-b border-gray-200 p-2 dark:border-gray-700'>
+          <div className='shrink-0 border-b border-gray-200 p-2 dark:border-gray-700'>
             <div className='relative'>
               <MagnifyingGlassIcon className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400' aria-hidden='true' />
               <input
@@ -253,8 +253,7 @@ export default function OfferWatchSearchSelect({
             id={listboxId}
             role='listbox'
             aria-label={label}
-            className='district-dropdown-scrollbar overflow-y-auto p-1'
-            style={{ maxHeight: position.maxHeight }}
+            className='district-dropdown-scrollbar min-h-0 flex-1 overflow-y-auto p-1'
           >
             {filteredOptions.map((option, index) => {
               const selected = option.key === valueKey;

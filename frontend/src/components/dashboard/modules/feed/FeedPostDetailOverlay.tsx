@@ -60,8 +60,12 @@ export default function FeedPostDetailOverlay({
   const [failed, setFailed] = useState(false);
   // Počet komentárov vysiela aj odoberá – okno predtým len vysielalo, takže
   // o zmene z karty pod ním (ani z inej otvorenej vrstvy) nevedelo.
-  const { commentsCount, publishCommentsCount, changeCommentsCount } =
-    useFeedPostCommentsCount(postId, 0);
+  const {
+    commentsCount,
+    publishCommentsCount,
+    changeCommentsCount,
+    countVersionRef,
+  } = useFeedPostCommentsCount(postId, 0);
 
   // Fokus, Tab trap aj Escape rieši spoločný hook feed dialógov – vrátane
   // poradia vrstiev, takže Escape nad otvoreným prehliadačom fotky (alebo nad
@@ -99,13 +103,19 @@ export default function FeedPostDetailOverlay({
   const load = useCallback(async () => {
     loadSeqRef.current += 1;
     const seq = loadSeqRef.current;
+    // Počet komentárov v momente ODOSLANIA požiadavky. Kým odpoveď cestuje,
+    // môže dorásť inde (komentár z karty pod oknom, dopytovanie počtov) –
+    // vtedy je snímka z odpovede staršia a nesmie novšie číslo prepísať.
+    const countVersion = countVersionRef.current;
     setLoading(true);
     setFailed(false);
     try {
       const loaded = await getFeedPost(postId);
       if (seq !== loadSeqRef.current) return;
       setPost(loaded);
-      publishCommentsCount(loaded.comments_count ?? 0);
+      if (countVersionRef.current === countVersion) {
+        publishCommentsCount(loaded.comments_count ?? 0);
+      }
     } catch (err) {
       if (seq !== loadSeqRef.current) return;
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -120,7 +130,7 @@ export default function FeedPostDetailOverlay({
       // zhasla kostru, hoci nový príspevok sa ešte načítava.
       if (seq === loadSeqRef.current) setLoading(false);
     }
-  }, [postId, publishCommentsCount]);
+  }, [countVersionRef, postId, publishCommentsCount]);
 
   useEffect(() => {
     void load();

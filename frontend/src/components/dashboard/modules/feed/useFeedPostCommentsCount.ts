@@ -37,6 +37,14 @@ export type FeedPostCommentsCount = {
    * inou cestou.
    */
   setCommentsCountLocally: (next: number) => void;
+  /**
+   * Poradové číslo zmien počtu – rastie pri KAŽDEJ zmene, nech príde odkiaľkoľvek.
+   *
+   * Pre volajúceho, ktorý má rozbehnutú pomalú požiadavku a po jej dobehnutí
+   * chce zverejniť počet z odpovede: keď sa číslo medzitým posunulo, jeho
+   * snímka je už zastaraná a nesmie prepísať to novšie.
+   */
+  countVersionRef: React.MutableRefObject<number>;
 };
 
 export function useFeedPostCommentsCount(
@@ -48,6 +56,7 @@ export function useFeedPostCommentsCount(
   // nasčítajú správne aj pred prekreslením.
   const countRef = useRef(commentsCount);
   countRef.current = commentsCount;
+  const countVersionRef = useRef(0);
 
   useEffect(
     () =>
@@ -55,6 +64,7 @@ export function useFeedPostCommentsCount(
         if (patch.postId !== postId) return;
         if (patch.commentsCount === undefined) return;
         countRef.current = patch.commentsCount;
+        countVersionRef.current += 1;
         setCommentsCount(patch.commentsCount);
       }),
     [postId],
@@ -63,6 +73,7 @@ export function useFeedPostCommentsCount(
   const setCommentsCountLocally = useCallback((next: number) => {
     const safe = Math.max(0, next);
     countRef.current = safe;
+    countVersionRef.current += 1;
     setCommentsCount(safe);
   }, []);
 
@@ -70,6 +81,7 @@ export function useFeedPostCommentsCount(
     (next: number) => {
       const safe = Math.max(0, next);
       countRef.current = safe;
+      countVersionRef.current += 1;
       setCommentsCount(safe);
       emitFeedPostCounts({ postId, commentsCount: safe });
     },
@@ -88,5 +100,6 @@ export function useFeedPostCommentsCount(
     publishCommentsCount,
     changeCommentsCount,
     setCommentsCountLocally,
+    countVersionRef,
   };
 }

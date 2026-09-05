@@ -620,3 +620,43 @@ describe('profile edit navigation flow', () => {
     pushStateSpy.mockRestore();
   });
 });
+
+describe('offer watches from outside settings', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    localStorage.clear();
+    sessionStorage.clear();
+    mockAuthUser = baseUser;
+    mockAuthLoading = false;
+    window.history.replaceState(null, '', '/dashboard/users/test-user');
+  });
+
+  it('moves the module and the URL to the watches section, not just the panel', () => {
+    const { result } = renderHook(() => useDashboardState(baseUser, 'profile'));
+
+    act(() => {
+      result.current.handleRightItemClick('offer-watches');
+    });
+
+    // Obsah sa vykresľuje podľa `activeRightItem`…
+    expect(result.current.activeRightItem).toBe('offer-watches');
+    expect(result.current.isRightSidebarOpen).toBe(true);
+    // …a adresa aj modul mu teraz zodpovedajú, takže refresh vráti sledované
+    // ponuky, nie úpravu profilu.
+    expect(result.current.activeModule).toBe('settings');
+    expect(window.location.pathname).toBe('/dashboard/settings/watches');
+    expect(localStorage.getItem('activeModule')).toBe('settings');
+  });
+
+  it('still uses the settings path when clicked from inside settings', () => {
+    const { result } = renderHook(() => useDashboardState(baseUser, 'settings'));
+
+    act(() => {
+      result.current.handleRightItemClick('offer-watches');
+    });
+
+    expect(result.current.activeModule).toBe('settings');
+    expect(window.location.pathname).toBe('/dashboard/settings/watches');
+  });
+});

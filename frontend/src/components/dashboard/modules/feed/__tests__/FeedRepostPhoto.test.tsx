@@ -310,3 +310,37 @@ describe('klik na fotku v reposte', () => {
     expect(screen.queryByTestId('feed-photo-viewer')).not.toBeInTheDocument();
   });
 });
+
+describe('pôvodný príspevok už nemá fotku', () => {
+  /** Pôvodný príspevok, ktorého fotky medzitým zmizli. */
+  function postWithoutPhotos(): FeedPost {
+    return {
+      ...originalPost(),
+      images: [{ id: 41, status: 'rejected' }],
+    } as unknown as FeedPost;
+  }
+
+  it('closes itself instead of leaving the preview permanently dead', async () => {
+    // Snapshot repostu ešte náhľad nesie, ale pôvodné fotky sú preč.
+    mockedGetPost.mockResolvedValue(postWithoutPhotos());
+    render(<FeedPostCard post={repost()} />);
+
+    await userEvent.click(screen.getByTestId('feed-shared-post-photo'));
+    await waitFor(() => expect(mockedGetPost).toHaveBeenCalledWith(9));
+
+    // Nič sa nevykreslí…
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-shared-photo-lightbox')).toBeNull(),
+    );
+
+    // …a hlavne: stav rodiča sa vynuloval, takže ovládací prvok žije ďalej.
+    // Keby sa len vrátilo `null`, ostal by „otvorené" natrvalo a ďalší klik
+    // by len nastavil už pravdivú hodnotu – náhľad by bol mŕtvy.
+    mockedGetPost.mockResolvedValue(originalPost());
+    await userEvent.click(screen.getByTestId('feed-shared-post-photo'));
+
+    expect(
+      await screen.findByTestId('feed-shared-photo-lightbox'),
+    ).toBeInTheDocument();
+  });
+});

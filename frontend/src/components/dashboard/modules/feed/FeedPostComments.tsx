@@ -284,6 +284,15 @@ export default function FeedPostComments({
   const [submitting, setSubmitting] = useState(false);
   const [text, setText] = useState('');
   const [failed, setFailed] = useState(false);
+  /**
+   * Príspevok už neexistuje.
+   *
+   * Nie je to to isté ako `failed`: pri zlyhaní sa oplatí skúsiť znova, tu už
+   * nie je čo skúšať. Zastavuje pravidelné dopytovanie – bez neho by sa
+   * odstránený príspevok dopytoval ďalej každých 8 sekúnd, kým je komponent
+   * namountovaný, a každé kolo by nanovo rozposielalo „príspevok zmizol".
+   */
+  const [gone, setGone] = useState(false);
   const nextUrlRef = useRef<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   // Guard cez REF, nie cez state: sentinel vie vystreliť dvakrát skôr, než
@@ -433,12 +442,20 @@ export default function FeedPostComments({
       if (seq !== loadSeqRef.current) return;
       // Príspevok medzitým zmizol – nemá zmysel ponúkať „skúsiť znova",
       // spoločné spracovanie ho odstráni zo zoznamov a zavrie otvorené vrstvy.
-      if (handleFeedPostErrorIfGone(error, postId, tRef.current)) return;
+      if (handleFeedPostErrorIfGone(error, postId, tRef.current)) {
+        setGone(true);
+        return;
+      }
       setFailed(true);
     } finally {
       if (seq === loadSeqRef.current) setLoading(false);
     }
   }, [postId, markSeen]);
+
+  // Nový príspevok začína s čistým štítom – „zmizol" patrí konkrétnemu id.
+  useEffect(() => {
+    setGone(false);
+  }, [postId]);
 
   useEffect(() => {
     void load();
@@ -588,7 +605,10 @@ export default function FeedPostComments({
 
   // Sekcia sa mountuje až pri rozbalení, takže „namountovaná" = „otvorená".
   // Každá otvorená karta má vlastnú inštanciu, teda aj vlastný polling.
-  useFeedCommentsPolling({ enabled: !loading && !failed, onPoll: refresh });
+  useFeedCommentsPolling({
+    enabled: !loading && !failed && !gone,
+    onPoll: refresh,
+  });
 
   /**
    * Ohlás, že zoznam je vykreslený.

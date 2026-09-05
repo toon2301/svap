@@ -7,7 +7,7 @@
  * – bez reloadu a bez odhlásenia.
  */
 
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import toast from 'react-hot-toast';
@@ -20,6 +20,7 @@ import {
   resetAnnouncedFeedPosts,
 } from '../feedPostGone';
 import { onFeedPostDeleted } from '../feedPostDeletedEvents';
+import { emitFeedPostCounts } from '../feedPostCountEvents';
 import { getFeedPost, type FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
@@ -310,5 +311,105 @@ describe('otvorenie detailu zmiznutého príspevku', () => {
     } finally {
       stop();
     }
+  });
+});
+
+describe('dopytovanie na pozadí pre zmiznutý príspevok', () => {
+  it('stops polling instead of asking every 8 seconds forever', async () => {
+    jest.useFakeTimers();
+    try {
+      // Komentáre rozbalené PRIAMO V KARTE – tak ich vykresľuje mobilný
+      // permalink (`FeedPostDetailModule`). Zoznam tam ostáva namountovaný aj
+      // po zistení, že príspevok zmizol: karta zatvára svoje vlastné vrstvy,
+      // ale rozbalené komentáre v sebe nie, a stránka pod nimi žiadny zoznam
+      // nemá, ktorý by kartu odstránil.
+      mockedListComments.mockRejectedValue({ response: { status: 404 } });
+      render(<FeedPostCard post={makePost()} initialCommentsOpen />);
+      await act(async () => {});
+
+      const callsAfterFirstLoad = mockedListComments.mock.calls.length;
+      expect(callsAfterFirstLoad).toBeGreaterThan(0);
+      expect(screen.getByTestId('feed-post-comments')).toBeInTheDocument();
+
+      // Tri celé kolá dopytovania (8 s každé).
+      await act(async () => {
+        jest.advanceTimersByTime(8000 * 3);
+      });
+
+      // Zmiznutý príspevok sa už nedopytuje – „zmizol" predtým nebolo to isté
+      // ako „zlyhalo", takže sa pýtal ďalej donekonečna.
+      expect(mockedListComments.mock.calls.length).toBe(callsAfterFirstLoad);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('keeps polling a post that merely failed to load', async () => {
+    jest.useFakeTimers();
+    try {
+      // Kontrast: výpadok siete NIE JE „zmizol". Tam sa oplatí skúsiť znova,
+      // takže sa dopytovanie zastaviť nesmie.
+      mockedListComments.mockRejectedValue(new Error('network'));
+      render(<FeedPostCard post={makePost()} initialCommentsOpen />);
+      await act(async () => {});
+
+      const callsAfterFirstLoad = mockedListComments.mock.calls.length;
+      await act(async () => {
+        jest.advanceTimersByTime(8000 * 3);
+      });
+
+      // Zlyhanie zapne „skúsiť znova" a dopytovanie sa pozastaví cez `failed`,
+      // takže ani tu nepribudnú kolá – rozdiel je v tom, že sa dá obnoviť.
+      expect(mockedListComments.mock.calls.length).toBe(callsAfterFirstLoad);
+      expect(
+        screen.getByText('Komentáre sa nepodarilo načítať.'),
+      ).toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('zastaraná odpoveď v okne detailu', () => {
+  it('does not overwrite a newer comments count with an older snapshot', async () => {
+    // Zoznam komentárov zámerne nikdy nedobehne: aj on po načítaní zverejní
+    // svoj celkový počet a test by potom meral jeho hodnotu, nie snímku
+    // z načítania príspevku.
+    mockedListComments.mockReturnValue(new Promise(() => {}));
+    // Načítanie príspevku sa zdrží; medzitým dorazí novší počet odinakiaľ.
+    let deliver!: (post: FeedPost) => void;
+    mockedGetPost.mockReturnValue(
+      new Promise<FeedPost>((resolve) => {
+        deliver = resolve;
+      }),
+    );
+    render(<FeedPostDetailOverlay postId={7} onClose={jest.fn()} />);
+
+    await act(async () => {
+      emitFeedPostCounts({ postId: 7, commentsCount: 42 });
+    });
+
+    // Odpoveď nesie STARŠIU snímku (2), lebo odišla pred tou zmenou.
+    await act(async () => {
+      deliver(makePost({ comments_count: 2 }));
+    });
+
+    const overlay = await screen.findByTestId('feed-post-overlay');
+    expect(
+      within(overlay).getByTestId('feed-comments-button'),
+    ).toHaveTextContent('42');
+  });
+
+  it('publishes the loaded count when nothing changed meanwhile', async () => {
+    mockedListComments.mockReturnValue(new Promise(() => {}));
+    mockedGetPost.mockResolvedValue(makePost({ comments_count: 6 }));
+    render(<FeedPostDetailOverlay postId={7} onClose={jest.fn()} />);
+
+    const overlay = await screen.findByTestId('feed-post-overlay');
+    await waitFor(() =>
+      expect(
+        within(overlay).getByTestId('feed-comments-button'),
+      ).toHaveTextContent('6'),
+    );
   });
 });
