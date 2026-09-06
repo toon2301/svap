@@ -24,23 +24,39 @@ jest.mock('./OfferWatchSettingsMobile', () => ({
 }));
 
 let mobileViewport = true;
+/** Zachytene listenery na prekrocenie hranice 1024 px. */
+let mediaListeners: Array<() => void> = [];
 
 function installMatchMedia() {
   window.matchMedia = jest.fn().mockImplementation(() => ({
-      matches: mobileViewport,
+      get matches() {
+        return mobileViewport;
+      },
       media: '(max-width: 1023px)',
       onchange: null,
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
+      // Zachytene, nie zahodene: prechod cez hranicu sa inak neda vyvolat.
+      addEventListener: (_type: string, listener: () => void) => {
+        mediaListeners.push(listener);
+      },
+      removeEventListener: (_type: string, listener: () => void) => {
+        mediaListeners = mediaListeners.filter((entry) => entry !== listener);
+      },
       addListener: jest.fn(),
       removeListener: jest.fn(),
       dispatchEvent: jest.fn(),
     }));
 }
 
+/** Prekroc hranicu 1024 px smerom na desktop. */
+function growToDesktop() {
+  mobileViewport = false;
+  act(() => mediaListeners.forEach((listener) => listener()));
+}
+
 describe('OfferWatchSettingsMobileHost', () => {
   beforeEach(() => {
     mobileViewport = true;
+    mediaListeners = [];
     installMatchMedia();
     window.history.replaceState(null, '', '/dashboard/settings');
   });
@@ -67,7 +83,8 @@ describe('OfferWatchSettingsMobileHost', () => {
 
     act(() => window.history.back());
     await waitFor(() => expect(screen.queryByTestId('mobile-watch-host-view')).not.toBeInTheDocument());
-    expect(onReturnToSettings).toHaveBeenCalledTimes(1);
+    // Otvorenie panelu nastaveni je odlozene za ostatne popstate handlery.
+    await waitFor(() => expect(onReturnToSettings).toHaveBeenCalledTimes(1));
   });
 
   it('opens a direct mobile URL and returns to settings without leaving a stale marker', async () => {
@@ -94,5 +111,77 @@ describe('OfferWatchSettingsMobileHost', () => {
 
     expect(screen.queryByTestId('mobile-watch-host-view')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe('/dashboard/settings');
+  });
+
+    describe('spolupraca s nadradenym popstate handlerom', () => {
+    it('opens the settings panel only after every other popstate handler ran', async () => {
+      const order: string[] = [];
+      const onReturnToSettings = jest.fn(() => {
+        order.push('return');
+      });
+      render(<OfferWatchSettingsMobileHost onReturnToSettings={onReturnToSettings} />);
+
+      act(() => window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT)));
+      expect(screen.getByTestId('mobile-watch-host-view')).toBeInTheDocument();
+
+      // Nadradeny listener sa registruje AZ PO tomto komponente – presne ako
+      // v appke, kde efekty dietata bezia skor nez rodicove. Pri rozpoznanej
+      // ceste konci zatvorenim mobilneho menu, takze synchronne otvorenie by
+      // hned zase zhaslo.
+      const parentHandler = () => {
+        order.push('parent');
+      };
+      window.addEventListener('popstate', parentHandler);
+
+      act(() => window.history.back());
+      await waitFor(() => expect(onReturnToSettings).toHaveBeenCalledTimes(1));
+
+      expect(order).toEqual(['parent', 'return']);
+      window.removeEventListener('popstate', parentHandler);
+    });
+  });
+
+  describe('prechod cez hranicu 1024 px', () => {
+    it('hands the open section over to the desktop layout', () => {
+      const onOpenDesktop = jest.fn();
+      render(
+        <OfferWatchSettingsMobileHost
+          onReturnToSettings={jest.fn()}
+          onOpenDesktop={onOpenDesktop}
+        />,
+      );
+
+      act(() => window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT)));
+      expect(screen.getByTestId('mobile-watch-host-view')).toBeInTheDocument();
+
+      growToDesktop();
+
+      // Panel zhasne…
+      expect(screen.queryByTestId('mobile-watch-host-view')).not.toBeInTheDocument();
+      // …adresa ostava na sledovanych ponukach…
+      expect(window.location.pathname).toBe(OFFER_WATCH_SETTINGS_PATH);
+      // …a desktopovy stav sa dotiahne za nou. Bez toho by na obrazovke ostal
+      // modul, ktory bol POD mobilnym panelom.
+      expect(onOpenDesktop).toHaveBeenCalledTimes(1);
+      // Mobilny stitok v historii uz nema co robit.
+      expect(readOfferWatchMobileHistory(window.history.state)).toBeNull();
+    });
+
+    it('leaves a desktop mount alone when no mobile panel was open', () => {
+      mobileViewport = false;
+      window.history.replaceState(null, '', OFFER_WATCH_SETTINGS_PATH);
+      const onOpenDesktop = jest.fn();
+
+      render(
+        <OfferWatchSettingsMobileHost
+          onReturnToSettings={jest.fn()}
+          onOpenDesktop={onOpenDesktop}
+        />,
+      );
+
+      // Priame otvorenie na desktope si pociatocny stav sekcie riesi samotna
+      // stranka route-u; druhe otvorenie by len pridalo krok do historie.
+      expect(onOpenDesktop).not.toHaveBeenCalled();
+    });
   });
 });

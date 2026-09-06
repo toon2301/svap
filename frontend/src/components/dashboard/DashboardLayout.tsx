@@ -243,7 +243,13 @@ export default function DashboardLayout({
       style={mobileMessagesViewportStyle}
     >
       <BugReportDialogHost />
-      <OfferWatchSettingsMobileHost onReturnToSettings={onMobileMenuOpen} />
+      {/* Po zväčšení okna nad 1024 px mobilný panel zhasne, ale adresa ostáva
+          na sledovaných ponukách – rovnaké volanie ako klik v pravom paneli
+          dotiahne desktopový stav za ňou. */}
+      <OfferWatchSettingsMobileHost
+        onReturnToSettings={onMobileMenuOpen}
+        onOpenDesktop={() => onRightItemClick('offer-watches')}
+      />
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && !isMobileOfferDetailOpen && (
         <MobileTopBar

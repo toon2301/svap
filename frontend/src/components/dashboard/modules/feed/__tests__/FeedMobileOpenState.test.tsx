@@ -161,6 +161,9 @@ describe('počítadlo fotiek v prehliadači', () => {
     expect(counter.className).not.toContain('left-1/2');
     // Jemné tmavé pozadie kvôli čitateľnosti na svetlej fotke.
     expect(counter.className).toContain('bg-black/55');
+    // A NAD ovládacou vrstvou: jej spodný pás má `z-20` a kreslí sa až za
+    // počítadlom, takže bez vlastného `z-30` by ho prekryl.
+    expect(counter.className).toContain('z-30');
   });
 
   it('keeps the plain viewer counter centered at the bottom', async () => {

@@ -8,6 +8,7 @@
  */
 
 import FeedShareDialog, { type FeedSharePreview } from './FeedShareDialog';
+import { sharedContentCardFromPost } from './sharedContentCard';
 import { shareFeedPost, type FeedPost } from '@/lib/feedApi';
 
 type FeedPostShareModalProps = {
@@ -24,20 +25,27 @@ export default function FeedPostShareModal({
   onShared,
 }: FeedPostShareModalProps) {
   // Pri zdieľaní zdieľania ukazujeme koreňový obsah, ktorý sa reálne prevezme
-  // (backend reťazec sploští), nie medzičlánok.
-  const shared = post.shared_content;
-  const preview: FeedSharePreview = {
+  // (backend reťazec sploští v `_flatten_reshare`), nie medzičlánok. Nový
+  // príspevok pritom preberá aj TYP medzičlánku – zdieľanie ponuky ostane
+  // ponukou – takže náhľad musí vychádzať zo skutočného snapshotu, nie
+  // z predpokladu „vždy príspevok". Inak dialóg ukáže názov ponuky ako
+  // obyčajný text, bez Ponúkam/Hľadám a bez ceny, hoci po potvrdení pristane
+  // vo feede plnohodnotná karta ponuky.
+  //
+  // Ten istý mapper, aký kŕmi kartu vo feede – náhľad a výsledok tak nemajú
+  // ako povedať dve rôzne veci.
+  const shared = sharedContentCardFromPost(post);
+  const preview: FeedSharePreview = shared ?? {
+    // Bez snapshotu ide o naozaj voľný príspevok: koreňom je on sám.
     type: 'feed_post',
-    caption: shared ? shared.caption || shared.title : post.caption,
+    caption: post.caption,
     // Prvá fotka nemusí mať náhľad (autor vidí aj pending/rejected, tie ho
     // nemajú) – hľadá sa teda prvá SPRACOVANÁ, nie doslova images[0].
     thumbnailUrl:
-      shared?.thumbnail_url ||
-      post.images?.find((image) => image.thumbnail_url)?.thumbnail_url ||
-      null,
+      post.images?.find((image) => image.thumbnail_url)?.thumbnail_url ?? null,
     owner: {
-      displayName: shared?.owner_display_name || post.author?.display_name || '',
-      avatarUrl: shared?.owner?.avatar_url ?? post.author?.avatar_url ?? null,
+      displayName: post.author?.display_name || '',
+      avatarUrl: post.author?.avatar_url ?? null,
     },
   };
 

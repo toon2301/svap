@@ -314,7 +314,10 @@ export function ImageLightbox({
       {hasMultiple && (
         <div
           data-testid={`${testId}-counter`}
-          className={`absolute rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white ${
+          // `z-30`: ovládacia vrstva volajúceho sa kreslí AŽ ZA počítadlom
+          // a jej spodný pás má `z-20`, takže bez toho by počítadlo skončilo
+          // pod ním. Vlastná vrstva prehliadača nič vyššie nemá.
+          className={`absolute z-30 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white ${
             chrome
               // NA fotke, vpravo dole. Odsadenie zdola drží počítadlo tesne
               // NAD riadkom akcií, ktorý vo vlastnej vrstve sedí na spodku –

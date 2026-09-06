@@ -7,11 +7,12 @@
  * že chybu z BE FE zobrazí.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import toast from 'react-hot-toast';
 import FeedShareDialog from '../FeedShareDialog';
+import FeedPostShareModal from '../FeedPostShareModal';
 import {
   FEED_POST_CREATED_EVENT,
   onFeedPostCreated,
@@ -21,6 +22,7 @@ import { shareOfferToFeed, sharePortfolioItemToFeed, type FeedPost } from '@/lib
 jest.mock('@/lib/feedApi', () => ({
   shareOfferToFeed: jest.fn(),
   sharePortfolioItemToFeed: jest.fn(),
+  shareFeedPost: jest.fn(),
 }));
 
 jest.mock('react-hot-toast', () => ({
@@ -194,5 +196,85 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
 
     expect(received).toEqual([]);
     stop();
+  });
+});
+
+describe('Zdieľanie príspevku, ktorý je sám zdieľaním', () => {
+  const owner = {
+    id: 30,
+    display_name: 'Peter Malý',
+    slug: 'peter',
+    user_type: 'individual',
+    avatar_url: null,
+  };
+
+  /** Medzičlánok: príspevok, ktorý je zdieľaním ponuky. */
+  const resharedOffer = {
+    id: 11,
+    post_type: 'shared_offer',
+    caption: 'Odporúčam.',
+    author: { ...owner, id: 10, display_name: 'Jana Nováková', slug: 'jana' },
+    images: [],
+    shared_content: {
+      type: 'offer',
+      title: 'Programovanie',
+      category: 'it-a-technologie',
+      caption: '',
+      id: 42,
+      owner,
+      owner_display_name: owner.display_name,
+      thumbnail_url: null,
+      is_seeking: false,
+      price_negotiable: false,
+      price_from: '25',
+      price_currency: '€',
+    },
+    shared_content_unavailable: false,
+  } as unknown as FeedPost;
+
+  it('previews the flattened OFFER, not a plain text post', () => {
+    render(<FeedPostShareModal open onClose={jest.fn()} post={resharedOffer} />);
+
+    // Backend zdieľanie sploští priamo na ponuku (`_flatten_reshare`), takže
+    // vo feede pristane karta ponuky. Náhľad pred potvrdením musí ukázať to
+    // isté – inak sa používateľ rozhoduje podľa niečoho iného, než odošle.
+    const preview = screen.getByTestId('feed-share-preview');
+    const card = within(preview).getByTestId('feed-shared-card');
+    expect(card).toHaveAttribute('data-shared-type', 'offer');
+    expect(within(card).getByTestId('feed-shared-card-kind')).toHaveTextContent('Ponúkam');
+    expect(within(card).getByTestId('feed-shared-card-price')).toHaveTextContent('25 €');
+    expect(within(card).getByText('Programovanie')).toBeInTheDocument();
+    // Názov ponuky ako obyčajný text príspevku – presne to, čo tu bolo zle.
+    expect(within(preview).queryByTestId('feed-shared-post-preview')).toBeNull();
+  });
+
+  it('names the original owner above the previewed card', () => {
+    render(<FeedPostShareModal open onClose={jest.fn()} post={resharedOffer} />);
+
+    const preview = screen.getByTestId('feed-share-preview');
+    expect(
+      within(within(preview).getByTestId('feed-shared-card-owner')).getByText('Peter Malý'),
+    ).toBeInTheDocument();
+  });
+
+  it('still previews a genuinely free post as a post', () => {
+    const freePost = {
+      id: 12,
+      post_type: 'free_post',
+      caption: 'Ahoj feed!',
+      author: { ...owner, id: 10, display_name: 'Jana Nováková', slug: 'jana' },
+      images: [],
+      shared_content: null,
+      shared_content_unavailable: false,
+    } as unknown as FeedPost;
+
+    render(<FeedPostShareModal open onClose={jest.fn()} post={freePost} />);
+
+    const card = within(screen.getByTestId('feed-share-preview')).getByTestId(
+      'feed-shared-card',
+    );
+    expect(card).toHaveAttribute('data-shared-type', 'feed_post');
+    expect(card).toHaveTextContent('Ahoj feed!');
+    expect(within(card).queryByTestId('feed-shared-card-kind')).toBeNull();
   });
 });
