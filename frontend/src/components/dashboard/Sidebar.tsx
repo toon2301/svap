@@ -21,12 +21,14 @@ import {
   ShareIcon,
   UserGroupIcon,
   NoSymbolIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { User } from '@/types';
 import DesktopUtilityMenu from './DesktopUtilityMenu';
 import MobileUtilityMenu from './MobileUtilityMenu';
 import { shareOwnProfileLink } from './modules/profile/shareOwnProfileLink';
+import { requestOfferWatchMobile } from './modules/offer-watch/mobile/offerWatchMobileNavigation';
 import {
   useMessagesNotifications,
   useNotificationsUnread,
@@ -108,12 +110,18 @@ type MobileSettingsRowProps = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   onClick: () => void;
+  itemId?: string;
 };
 
-function MobileSettingsRow({ label, icon: Icon, onClick }: MobileSettingsRowProps) {
+function MobileSettingsRow({ label, icon: Icon, onClick, itemId }: MobileSettingsRowProps) {
   return (
     <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
-      <button type="button" onClick={onClick} className="w-full flex items-center justify-between group">
+      <button
+        type="button"
+        onClick={onClick}
+        data-mobile-settings-item={itemId}
+        className="w-full flex items-center justify-between group"
+      >
         <div className="flex items-center">
           <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
             <Icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -234,6 +242,15 @@ export default function Sidebar({
         icon={Cog6ToothIcon}
         label={t('rightSidebar.notifications', 'Upozornenia')}
         onClick={() => handleItemClick('notification-settings')}
+      />
+      <MobileSettingsRow
+        icon={EyeIcon}
+        label={t('rightSidebar.offerWatch', 'Sledovanie')}
+        itemId="offer-watches"
+        onClick={() => {
+          requestOfferWatchMobile();
+          onClose?.();
+        }}
       />
       <MobileSettingsRow
         icon={UserGroupIcon}

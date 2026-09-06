@@ -1082,6 +1082,8 @@
   "offerWatch": {
     "title": "Beobachtungen",
     "description": "Wähle aus, welche Angebote oder Gesuche du beobachten möchtest. Wir benachrichtigen dich über neue Treffer.",
+    "createAction": "Beobachtung erstellen",
+    "createDescription": "Lege die Filter fest, anhand derer wir dich über neue Treffer informieren.",
     "formLabel": "Beobachtung einstellen",
     "categoryLabel": "Unterkategorie",
     "categoryPlaceholder": "Unterkategorie auswählen",
@@ -1110,6 +1112,7 @@
     "countLabel": "Anzahl gespeicherter Beobachtungen",
     "emptyTitle": "Du hast noch keine Beobachtungen",
     "emptyDescription": "Fülle die Filter oben aus und speichere deine erste Beobachtung.",
+    "emptyMobileDescription": "Erstelle deine erste Beobachtung über die Schaltfläche oben.",
     "wholeCountry": "gesamtes Land",
     "edit": "Beobachtung bearbeiten",
     "delete": "Beobachtung löschen",

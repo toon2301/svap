@@ -53,7 +53,8 @@ import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
 import ShareIcon from './ShareIcon';
 import ExchangeIcon from './FeedExchangeIcon';
-import SharedContentPreview from './FeedSharedContentPreview';
+import SharedContentPreviewCard from './SharedContentPreviewCard';
+import { sharedContentCardFromPost } from './sharedContentCard';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useCardInViewport } from './useCardInViewport';
@@ -413,6 +414,23 @@ export default function FeedPostCard({
     setCurrentPost(post);
   }, [post]);
 
+  /**
+   * Živý stav lajku sa premietne aj do `currentPost`.
+   *
+   * Karta ho drží v hooku, ale mobilným vrstvám podáva `currentPost` – a ten
+   * niesol hodnotu z posledného načítania zo servera. Po lajku na karte tak
+   * prehliadač fotky aj obrazovka detailu naskočili na ZASTARANÝ stav a
+   * správny sa ukázal až po prvom rozposlaní počtov. Obe sa nasadzujú z toho
+   * istého objektu, takže stačí zosúladiť ten.
+   */
+  useEffect(() => {
+    setCurrentPost((previous) =>
+      previous.is_liked_by_me === isLiked && previous.likes_count === likesCount
+        ? previous
+        : { ...previous, is_liked_by_me: isLiked, likes_count: likesCount },
+    );
+  }, [isLiked, likesCount]);
+
   // Príspevok zmizol (zmazal ho niekto iný, alebo to zistila iná interakcia).
   // Kartu odstráni zoznam, ale otvorené vrstvy nad ňou treba zavrieť tu –
   // karta sa vykresľuje aj tam, kde zoznam signál nespracúva (profil).
@@ -762,8 +780,8 @@ export default function FeedPostCard({
           {isDetail ? sharedCaptionNode : null}
 
           {isShared ? (
-            <SharedContentPreview
-              post={post}
+            <SharedContentPreviewCard
+              data={sharedContentCardFromPost(post)}
               hideOwner={isSelfShare}
               onOpenSource={handleOpenSharedSource}
               onOpenPostPreview={handleOpenSharedPostPreview}

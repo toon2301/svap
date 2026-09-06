@@ -405,8 +405,9 @@ export default function ProfilePortfolioSection({
           open
           onClose={() => setSharedItem(null)}
           preview={{
-            heading: sharedItem.title,
-            text: getCategoryLabel(sharedItem.category),
+            type: 'portfolio_item',
+            title: sharedItem.title,
+            meta: getCategoryLabel(sharedItem.category),
             thumbnailUrl: sharedItem.cover_image?.thumbnail_url ?? null,
           }}
           onShare={(caption, taggedUserIds) =>

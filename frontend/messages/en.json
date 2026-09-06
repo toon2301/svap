@@ -1082,6 +1082,8 @@
   "offerWatch": {
     "title": "Watching",
     "description": "Choose which offers or requests you want to watch. We will notify you about new matches.",
+    "createAction": "Create watch",
+    "createDescription": "Set the filters we will use to notify you about new matches.",
     "formLabel": "Watch settings",
     "categoryLabel": "Subcategory",
     "categoryPlaceholder": "Select a subcategory",
@@ -1110,6 +1112,7 @@
     "countLabel": "Number of saved watches",
     "emptyTitle": "You do not have any watches yet",
     "emptyDescription": "Complete the filters above and save your first watch.",
+    "emptyMobileDescription": "Create your first watch using the button above.",
     "wholeCountry": "entire country",
     "edit": "Edit watch",
     "delete": "Delete watch",

@@ -58,7 +58,8 @@ import FeedPostComments from './FeedPostComments';
 import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
-import SharedContentPreview from './FeedSharedContentPreview';
+import SharedContentPreviewCard from './SharedContentPreviewCard';
+import { sharedContentCardFromPost } from './sharedContentCard';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import FeedPostShareModal from './FeedPostShareModal';
 import ShareIcon from './ShareIcon';
@@ -190,7 +191,7 @@ export default function FeedPostMobileDetail({
    * Zdieľaný obsah zaberá miesto, kde má voľný príspevok fotku.
    *
    * Backend posiela `images` len pri `free_post`, takže sa tieto dve vetvy
-   * nemôžu stretnúť. Nedostupný zdroj sa kreslí tiež – `SharedContentPreview`
+   * nemôžu stretnúť. Nedostupný zdroj sa kreslí tiež – `SharedContentPreviewCard`
    * si stav „už nie je dostupné" rieši sám a aj ten patrí medzi text a
    * komentáre.
    */
@@ -220,7 +221,7 @@ export default function FeedPostMobileDetail({
    * poistka sa už napriek tomu nastavila, takže sa to po dorazení komentárov
    * nikdy nezopakovalo.
    *
-   * Posúva sa `scrollTop` priamo, nie cez `scrollIntoView`: zámer je tým
+   * Posúva sa o vypočítanú vzdialenosť, nie cez `scrollIntoView`: zámer je tým
    * vyjadrený číslom (o koľko), takže sa dá overiť skutočná zmena pozície, nie
    * len fakt, že sa nejaká funkcia zavolala.
    */
@@ -245,7 +246,18 @@ export default function FeedPostMobileDetail({
       // `offsetTop`: to by záviselo od toho, ktorý predok je `offsetParent`.
       const delta =
         anchor.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
-      if (delta > 0) scroller.scrollTop += delta;
+      if (delta <= 0) return;
+
+      const target = scroller.scrollTop + delta;
+      // Plynulo, nie skokom – skok pôsobil trhane. `scrollTo` ale nie je
+      // všade (jsdom ho nemá vôbec), a štartovacia pozícia je pohodlie, nie
+      // funkčnosť: bez neho sa posunie rovno, len bez animácie. Rovnaká
+      // kontrola typu, akú appka používa pri `scrollIntoView`.
+      if (typeof scroller.scrollTo === 'function') {
+        scroller.scrollTo({ top: target, behavior: 'smooth' });
+      } else {
+        scroller.scrollTop = target;
+      }
     },
     [hasPhoto, hasSharedPreview, post.comments_count],
   );
@@ -314,8 +326,8 @@ export default function FeedPostMobileDetail({
           teda ostáva NAD ním, rovnaké pravidlo ako „text nad fotkou". */}
       {hasSharedPreview ? (
         <div className="pb-3" data-testid="feed-mobile-detail-shared">
-          <SharedContentPreview
-            post={currentPost}
+          <SharedContentPreviewCard
+            data={sharedContentCardFromPost(currentPost)}
             hideOwner={isSelfShare}
             onOpenSource={openSharedSource}
             // Tu je náhľad hlavným obsahom obrazovky, takže naň vedie klik aj

@@ -12,6 +12,7 @@ import type { AccountSettingsMobileView } from './modules/AccountSettingsModule'
 import type { User } from '@/types';
 import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelContext';
 import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
+import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatchSettingsMobileHost';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -242,6 +243,7 @@ export default function DashboardLayout({
       style={mobileMessagesViewportStyle}
     >
       <BugReportDialogHost />
+      <OfferWatchSettingsMobileHost onReturnToSettings={onMobileMenuOpen} />
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && !isMobileOfferDetailOpen && (
         <MobileTopBar

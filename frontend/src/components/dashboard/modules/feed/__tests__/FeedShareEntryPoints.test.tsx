@@ -82,7 +82,7 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
     const shareProps = {
       open: true as const,
       onClose: jest.fn(),
-      preview: { heading: 'Moja ponuka', text: 'Bratislava' },
+      preview: { type: 'offer', title: 'Moja ponuka', meta: 'Bratislava' },
       onShare: jest.fn(),
     };
 
@@ -107,7 +107,7 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
       <FeedShareDialog
         open
         onClose={onClose}
-        preview={{ heading: 'Moja ponuka', text: 'Bratislava' }}
+        preview={{ type: 'offer', title: 'Moja ponuka', meta: 'Bratislava' }}
         onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
       />,
     );
@@ -129,7 +129,7 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
       <FeedShareDialog
         open
         onClose={jest.fn()}
-        preview={{ heading: 'Moja práca' }}
+        preview={{ type: 'portfolio_item', title: 'Moja práca' }}
         onShare={(caption, tags) => sharePortfolioItemToFeed(9, caption, tags)}
       />,
     );
@@ -153,7 +153,7 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
       <FeedShareDialog
         open
         onClose={onClose}
-        preview={{ heading: 'Skrytá ponuka' }}
+        preview={{ type: 'offer', title: 'Skrytá ponuka' }}
         onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
       />,
     );
@@ -167,12 +167,12 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('shows the preview without an avatar for non-person headings', () => {
+  it('shows an offer card without any avatar when no owner is given', () => {
     render(
       <FeedShareDialog
         open
         onClose={jest.fn()}
-        preview={{ heading: 'Moja ponuka', text: 'Bratislava' }}
+        preview={{ type: 'offer', title: 'Moja ponuka', meta: 'Bratislava' }}
         onShare={jest.fn()}
       />,
     );
@@ -180,7 +180,8 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
     const preview = screen.getByTestId('feed-share-preview');
     expect(preview).toHaveTextContent('Moja ponuka');
     expect(preview).toHaveTextContent('Bratislava');
-    // Názov ponuky nie je meno človeka – avatar by pôsobil ako cudzí profil.
+    // Bez vlastníka nie je nad kartou riadok s avatarom – a názov ponuky nie je
+    // meno človeka, takže by tam avatar pôsobil ako cudzí profil.
     expect(preview.querySelector('[data-testid="initials-avatar"]')).toBeNull();
     expect(preview.querySelector('img')).toBeNull();
   });

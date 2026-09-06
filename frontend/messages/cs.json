@@ -1082,6 +1082,8 @@
   "offerWatch": {
     "title": "Sledování",
     "description": "Vyber, jaké nabídky nebo poptávky chceš sledovat. Na nové shody tě upozorníme.",
+    "createAction": "Vytvořit sledování",
+    "createDescription": "Nastav filtry, podle kterých tě upozorníme na nové shody.",
     "formLabel": "Nastavení sledování",
     "categoryLabel": "Podkategorie",
     "categoryPlaceholder": "Vyber podkategorii",
@@ -1110,6 +1112,7 @@
     "countLabel": "Počet uložených sledování",
     "emptyTitle": "Zatím nemáš žádné sledování",
     "emptyDescription": "Vyplň filtry výše a ulož si první sledování.",
+    "emptyMobileDescription": "Vytvoř si první sledování tlačítkem výše.",
     "wholeCountry": "celá země",
     "edit": "Upravit sledování",
     "delete": "Smazat sledování",

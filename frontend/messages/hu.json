@@ -1082,6 +1082,8 @@
   "offerWatch": {
     "title": "Figyelések",
     "description": "Válaszd ki, mely ajánlatokat vagy kereséseket szeretnéd figyelni. Az új találatokról értesítünk.",
+    "createAction": "Figyelés létrehozása",
+    "createDescription": "Állítsd be a szűrőket, amelyek alapján értesítünk az új találatokról.",
     "formLabel": "Figyelés beállítása",
     "categoryLabel": "Alkategória",
     "categoryPlaceholder": "Válassz alkategóriát",
@@ -1110,6 +1112,7 @@
     "countLabel": "Mentett figyelések száma",
     "emptyTitle": "Még nincs figyelésed",
     "emptyDescription": "Töltsd ki a fenti szűrőket, és mentsd el az első figyelésedet.",
+    "emptyMobileDescription": "Hozd létre az első figyelésedet a fenti gombbal.",
     "wholeCountry": "teljes ország",
     "edit": "Figyelés szerkesztése",
     "delete": "Figyelés törlése",

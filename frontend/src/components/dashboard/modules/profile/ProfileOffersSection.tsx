@@ -950,6 +950,7 @@ export default function ProfileOffersSection({
               title,
               imageUrl: getOfferShareImageUrl(shareOffer),
               location: getOfferShareLocation(shareOffer),
+              is_seeking: shareOffer.is_seeking,
               price_negotiable: shareOffer.price_negotiable,
               price_from: shareOffer.price_from,
               price_currency: shareOffer.price_currency,

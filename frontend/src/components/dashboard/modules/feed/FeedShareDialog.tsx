@@ -19,8 +19,8 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { useFeedDialog } from './useFeedDialog';
-import InitialsAvatar from '@/components/shared/InitialsAvatar';
-import BlurredContainImage from '../shared/BlurredContainImage';
+import SharedContentPreviewCard from './SharedContentPreviewCard';
+import type { SharedContentCard } from './sharedContentCard';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import { GroupUserPicker } from '../messages/GroupUserPicker';
 import type { GroupMemberCandidate } from '../messages/types';
@@ -33,19 +33,11 @@ const SHARE_CAPTION_MAX_LENGTH = 500;
 /** Zhodné s MAX_FEED_POST_TAGS na backende – limit validuje aj BE. */
 const MAX_FEED_POST_TAGS = 10;
 
-export type FeedSharePreview = {
-  /**
-   * Hlavný riadok náhľadu: meno vlastníka (príspevok) alebo názov
-   * (ponuka, portfólio) – podľa toho, čo obsah v skutočnosti identifikuje.
-   */
-  heading: string;
-  text?: string | null;
-  thumbnailUrl?: string | null;
-  /** Avatar dáva zmysel len keď je `heading` meno človeka. */
-  showAvatar?: boolean;
-  /** Hotový text ceny (viď formatOfferPriceLabel) - len pri ponuke. */
-  priceLabel?: string;
-};
+/**
+ * Náhľad v dialógu je TÁ ISTÁ karta, aká o chvíľu pristane vo feede – preto
+ * spoločný dátový tvar, nie vlastný. Viď sharedContentCard.ts.
+ */
+export type FeedSharePreview = SharedContentCard;
 
 type FeedShareDialogProps = {
   open: boolean;
@@ -199,39 +191,11 @@ export default function FeedShareDialog({
             />
           </div>
 
-          {/* Náhľad zdieľaného obsahu – rovnaký fialový obal ako na karte. */}
-          <div
-            data-testid="feed-share-preview"
-            className="mt-3 rounded-xl border border-purple-200 bg-[#EEEDFE] p-3 dark:border-purple-800/60 dark:bg-purple-950/30"
-          >
-            <div className="flex items-center gap-2">
-              {preview.showAvatar ? (
-                <InitialsAvatar name={preview.heading} size="xs" />
-              ) : null}
-              <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                {preview.heading}
-              </span>
-            </div>
-            {preview.text ? (
-              <p className="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">
-                {preview.text}
-              </p>
-            ) : null}
-            {preview.priceLabel ? (
-              <span
-                data-testid="feed-share-preview-price"
-                className="mt-2 inline-block rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-purple-700 dark:border-purple-800/30 dark:bg-purple-900/20 dark:text-purple-300"
-              >
-                {preview.priceLabel}
-              </span>
-            ) : null}
-            {preview.thumbnailUrl ? (
-              // Rovnaké letterbox ošetrenie ako karta vo feede - náhľad tu
-              // musí vyzerať tak, ako bude vyzerať po zdieľaní.
-              <div className="mt-2 h-40 w-full overflow-hidden rounded-lg">
-                <BlurredContainImage src={preview.thumbnailUrl} alt="" />
-              </div>
-            ) : null}
+          {/* Presne tá karta, akú používateľ o chvíľu uvidí vo feede – žiadna
+              druhá implementácia náhľadu. Bez `onOpen*`: v dialógu sa nikam
+              neodchádza, karta je len ukážka. */}
+          <div data-testid="feed-share-preview" className="mt-3">
+            <SharedContentPreviewCard data={preview} />
           </div>
 
           <div className="mt-6 flex justify-end gap-3">

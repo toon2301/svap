@@ -314,10 +314,13 @@ export function ImageLightbox({
       {hasMultiple && (
         <div
           data-testid={`${testId}-counter`}
-          className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white ${
-            // S vlastnou vrstvou sedí dole riadok akcií – počítadlo by naň
-            // sadlo, tak sa presunie nad fotku hore.
-            chrome ? 'top-20' : 'bottom-4'
+          className={`absolute rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white ${
+            chrome
+              // NA fotke, vpravo dole. Odsadenie zdola drží počítadlo tesne
+              // NAD riadkom akcií, ktorý vo vlastnej vrstve sedí na spodku –
+              // bez neho by si sadli na seba.
+              ? 'bottom-16 right-3'
+              : 'bottom-4 left-1/2 -translate-x-1/2'
           }`}
         >
           {labels.counter(
