@@ -133,6 +133,30 @@ describe('Sidebar', () => {
     window.removeEventListener('svaply:bug-report-dialog-request', onBugReportRequest);
   });
 
+  it('opens mobile watch management from app settings and closes the menu', () => {
+    const onOfferWatchRequest = jest.fn();
+    window.addEventListener('svaply:offer-watch-mobile-request', onOfferWatchRequest);
+    render(
+      <ThemeProvider>
+        <Sidebar
+          {...defaultProps}
+          onLogout={() => {}}
+          isMobile
+          isOpen
+          onClose={mockOnClose}
+        />
+      </ThemeProvider>,
+    );
+
+    const watchButton = screen.getByText('Sledovanie').closest('button')!;
+    expect(watchButton).toHaveAttribute('data-mobile-settings-item', 'offer-watches');
+    fireEvent.click(watchButton);
+
+    expect(onOfferWatchRequest).toHaveBeenCalledTimes(1);
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+    window.removeEventListener('svaply:offer-watch-mobile-request', onOfferWatchRequest);
+  });
+
   it('moves theme and logout into the mobile More menu', () => {
     render(
       <ThemeProvider>

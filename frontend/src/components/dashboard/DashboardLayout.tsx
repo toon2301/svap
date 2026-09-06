@@ -12,6 +12,7 @@ import type { AccountSettingsMobileView } from './modules/AccountSettingsModule'
 import type { User } from '@/types';
 import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelContext';
 import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
+import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatchSettingsMobileHost';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -242,6 +243,13 @@ export default function DashboardLayout({
       style={mobileMessagesViewportStyle}
     >
       <BugReportDialogHost />
+      {/* Po zväčšení okna nad 1024 px mobilný panel zhasne, ale adresa ostáva
+          na sledovaných ponukách – rovnaké volanie ako klik v pravom paneli
+          dotiahne desktopový stav za ňou. */}
+      <OfferWatchSettingsMobileHost
+        onReturnToSettings={onMobileMenuOpen}
+        onOpenDesktop={() => onRightItemClick('offer-watches')}
+      />
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && !isMobileOfferDetailOpen && (
         <MobileTopBar

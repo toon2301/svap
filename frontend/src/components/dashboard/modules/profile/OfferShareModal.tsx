@@ -24,7 +24,6 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import FeedShareDialog from '../feed/FeedShareDialog';
 import { shareOfferToFeed } from '@/lib/feedApi';
-import { formatOfferPriceLabel } from '../feed/offerPriceLabel';
 import { GroupUserPicker } from '../messages/GroupUserPicker';
 import {
   getMessagingErrorMessage,
@@ -43,6 +42,8 @@ type OfferSharePreview = {
   title: string;
   imageUrl?: string | null;
   location?: string | null;
+  /** Ponúkam vs. Hľadám – náhľad to musí povedať rovnako ako karta vo feede. */
+  is_seeking?: boolean | null;
   /** Cena – náhľad ju musí ukázať rovnako ako karta vo feede. */
   price_negotiable?: boolean | null;
   price_from?: string | number | null;
@@ -98,7 +99,7 @@ export function OfferShareModal({
   offerUrl,
   offer,
 }: OfferShareModalProps) {
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'share' | 'message'>('share');
   const [boardShareOpen, setBoardShareOpen] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<GroupMemberCandidate[]>([]);
@@ -476,10 +477,13 @@ export function OfferShareModal({
         open={boardShareOpen}
         onClose={() => setBoardShareOpen(false)}
         preview={{
-          heading: offer.title,
-          text: offer.location,
+          type: 'offer',
+          title: offer.title,
+          meta: offer.location,
           thumbnailUrl: offer.imageUrl,
-          priceLabel: formatOfferPriceLabel(t, locale, offer),
+          isSeeking: offer.is_seeking ?? null,
+          // Surové polia ceny – text z nich zloží tá istá karta ako vo feede.
+          price: offer,
         }}
         onShare={(caption, taggedUserIds) =>
           shareOfferToFeed(offer.id, caption, taggedUserIds)

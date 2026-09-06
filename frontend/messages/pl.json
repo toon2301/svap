@@ -1082,6 +1082,8 @@
   "offerWatch": {
     "title": "Śledzenie",
     "description": "Wybierz oferty lub zapytania, które chcesz śledzić. Powiadomimy Cię o nowych dopasowaniach.",
+    "createAction": "Utwórz śledzenie",
+    "createDescription": "Ustaw filtry, według których powiadomimy Cię o nowych dopasowaniach.",
     "formLabel": "Ustawienia śledzenia",
     "categoryLabel": "Podkategoria",
     "categoryPlaceholder": "Wybierz podkategorię",
@@ -1110,6 +1112,7 @@
     "countLabel": "Liczba zapisanych śledzeń",
     "emptyTitle": "Nie masz jeszcze żadnych śledzeń",
     "emptyDescription": "Uzupełnij filtry powyżej i zapisz pierwsze śledzenie.",
+    "emptyMobileDescription": "Utwórz pierwsze śledzenie za pomocą przycisku powyżej.",
     "wholeCountry": "cały kraj",
     "edit": "Edytuj śledzenie",
     "delete": "Usuń śledzenie",

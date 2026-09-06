@@ -464,14 +464,19 @@ describe('FeedPostCard – kompaktný náhľad ponuky', () => {
     },
   });
 
-  it('shows type, title, owner and price in one compact row', () => {
+  it('shows type, title and price on the card, owner above it', () => {
     render(<FeedPostCard post={offerPost} />);
 
     const preview = screen.getByTestId('feed-shared-compact-preview');
     expect(within(preview).getByText('Ponúkam')).toBeInTheDocument();
     expect(within(preview).getByText('Programovanie')).toBeInTheDocument();
-    expect(within(preview).getByText('Peter Malý')).toBeInTheDocument();
     expect(within(preview).getByText(/25/)).toBeInTheDocument();
+
+    // Vlastník stojí NAD kartou, nie v nej: obsah patrí jemu, nie tomu, kto ho
+    // zdieľa – karta sama je ponuka, hlavička nad ňou hovorí čia.
+    const owner = screen.getByTestId('feed-shared-card-owner');
+    expect(within(owner).getByText('Peter Malý')).toBeInTheDocument();
+    expect(within(preview).queryByText('Peter Malý')).toBeNull();
   });
 
   it('renders the seeking label and negotiable price', () => {
@@ -584,8 +589,10 @@ describe('FeedPostCard – zdieľaný príspevok (feed_post)', () => {
     render(<FeedPostCard post={sharedPost} />);
 
     const preview = screen.getByTestId('feed-shared-post-preview');
-    expect(within(preview).getByText('Peter Malý')).toBeInTheDocument();
     expect(within(preview).getByText('Pôvodný text príspevku')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('feed-shared-card-owner')).getByText('Peter Malý'),
+    ).toBeInTheDocument();
     expect(
       screen.getByText('Jana Nováková zdieľa príspevok ďalej'),
     ).toBeInTheDocument();
