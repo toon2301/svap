@@ -45,6 +45,9 @@ describe('ProfileModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    // Záložka odteraz žije v adrese (`?tab=`), a tá v jsdom prežíva medzi
+    // testami – bez vyčistenia by si test zobral záložku po tom predošlom.
+    window.history.replaceState(null, '', '/dashboard/profile');
   });
 
   it('renders without crashing', () => {

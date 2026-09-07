@@ -215,6 +215,69 @@ class PortfolioApiTests(APITestCase):
         self.assertNotIn("rejected_reason", detail.data["images"][0])
         self.assertNotIn("status", detail.data["images"][0])
 
+    def test_visitor_sees_item_without_any_cover_image(self):
+        """Polozka bez titulnej fotky nie je polozka cakajuca na moderaciu.
+
+        ``cover_image`` je volitelne a pri zmazani fotky sa vynuluje cez
+        SET_NULL, takze podmienka na schvalenu titulnu fotku skryvala aj
+        polozky, ktore ziadnu nikdy nemali – tie potom videl iba vlastnik.
+        """
+        item = self._item(title="No cover at all")
+        self.assertIsNone(item.cover_image_id)
+
+        self.client.force_authenticate(user=self.visitor)
+        response = self.client.get(
+            reverse("accounts:dashboard_user_portfolio", args=[self.owner.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [entry["title"] for entry in response.data]
+        self.assertIn("No cover at all", titles)
+
+    def test_visitor_opens_detail_of_item_without_cover_image(self):
+        """Detail bez titulnej fotky sa cudziemu divakovi otvori rovnako."""
+        item = self._item(title="No cover at all")
+
+        self.client.force_authenticate(user=self.visitor)
+        response = self.client.get(
+            reverse("accounts:portfolio_detail", args=[item.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "No cover at all")
+        self.assertIsNone(response.data["cover_image"])
+
+    def test_visitor_still_cannot_see_item_whose_cover_was_never_approved(self):
+        """Moderacia ostava: cakajuca titulna fotka polozku dalej skryva.
+
+        Poistka proti tomu, aby sa z opravy „bez fotky" nestala diera, cez
+        ktoru presiel aj neschvaleny obsah.
+        """
+        item = self._item(title="Pending cover")
+        self._set_cover(
+            item,
+            self._image(
+                item,
+                status=PortfolioImage.Status.PENDING,
+                approved_key="",
+                pending_key="uploads/portfolio/cover.jpg",
+            ),
+        )
+
+        self.client.force_authenticate(user=self.visitor)
+        listing = self.client.get(
+            reverse("accounts:dashboard_user_portfolio", args=[self.owner.id])
+        )
+        detail = self.client.get(
+            reverse("accounts:portfolio_detail", args=[item.id])
+        )
+
+        self.assertEqual(listing.status_code, status.HTTP_200_OK)
+        self.assertNotIn(
+            "Pending cover", [entry["title"] for entry in listing.data]
+        )
+        self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_private_profile_portfolio_is_not_visible_to_visitor(self):
         self.owner.is_public = False
         self.owner.save(update_fields=["is_public"])

@@ -186,6 +186,14 @@ export default function FeedPostDetailOverlay({
   const hasPhoto =
     hasVisibleFeedPhoto(liveImages) || sharedFeedPostPhoto(post) !== null;
   const splitLayout = hasPhoto && !isMobile;
+  /**
+   * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?
+   *
+   * Platí pre KAŽDÝ zdieľaný obsah, nie len pre ten s fotkou: práve rozdiel
+   * medzi „s fotkou" a „bez fotky" spôsoboval, že sa hlavička raz hýbala
+   * a inokedy nie. Dvojstĺpcové rozloženie si pružnú časť rieši samo.
+   */
+  const sharedFillsColumn = Boolean(post?.shared_content);
 
   if (!portalNode) return null;
 
@@ -281,17 +289,32 @@ export default function FeedPostDetailOverlay({
                 okolností sa nescrolluje: komentáre pod ním majú `flex-1` so
                 základom 0, takže si berú až to, čo zvýši.
 
-                `overflow-y-auto` je POISTKA pre krajný prípad (nízke okno,
-                dlhý rozbalený text): až keď by sa blok sám nezmestil, zmrští
-                sa a doscrolluje sa v ňom, takže nič neostane nedosiahnuteľné
-                za orezanou hranou okna. */}
+                DVA režimy podľa toho, čo je vnútri pružné:
+
+                - ZDIEĽANÝ obsah: náhľad vie byť vysoký (ponuka s fotkou), tak
+                  sa scrolluje ON a hlavička s akciami stoja. Blok je preto
+                  ohraničený flex stĺpec (`overflow-hidden`) a karta dostane
+                  `fillHeight`, ktorý náhľadu pridelí zvyšok výšky. Bez toho sa
+                  pri ponuke S fotkou rozhýbala celá karta, kým pri ponuke BEZ
+                  fotky stála – rozdiel, ktorý používateľ nemá ako pochopiť.
+
+                - Voľný príspevok: nemá čo pružné pohltiť zvyšok, takže ostáva
+                  pôvodná POISTKA `overflow-y-auto` pre krajný prípad (nízke
+                  okno, dlhý rozbalený text): až keď by sa blok sám nezmestil,
+                  zmrští sa a doscrolluje sa v ňom, takže nič neostane
+                  nedosiahnuteľné za orezanou hranou okna. */}
             <div
-              className="subtle-scrollbar min-h-0 overflow-y-auto"
+              className={`subtle-scrollbar min-h-0 ${
+                sharedFillsColumn
+                  ? 'flex flex-col overflow-hidden'
+                  : 'overflow-y-auto'
+              }`}
               data-testid="feed-post-overlay-fixed"
             >
               <FeedPostCard
                 post={post}
                 variant="detail"
+                fillHeight={sharedFillsColumn}
                 liveImages={liveImages}
                 commentsCount={commentsCount}
                 onDeleted={onClose}

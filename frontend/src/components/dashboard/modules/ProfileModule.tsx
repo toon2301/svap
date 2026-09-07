@@ -15,6 +15,7 @@ import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
 import ProfileWebsitesModal from './profile/ProfileWebsitesModal';
 import type { Offer } from './profile/profileOffersTypes';
 import type { ProfileTab } from './profile/profileTypes';
+import { useProfileTabQuery } from './profile/profileTabQuery';
 
 /** Hlboká kópia user objektu (1 level, arrays cez spread). */
 function deepCloneUser(u: User): User {
@@ -147,19 +148,18 @@ export default function ProfileModule({
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+  // Zdrojom pravdy je adresa (`?tab=`), nie lokálny stav – inak by záložku
+  // zhodilo F5 aj krok späť. `initialTab` ostáva ako východzia hodnota pre
+  // adresu bez parametra (napr. `/dashboard/users/x/portfolio`).
+  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab);
 
   const handleTabChange = useCallback(
     (tab: ProfileTab) => {
       setActiveTab(tab);
       onTabChange?.(tab);
     },
-    [onTabChange],
+    [onTabChange, setActiveTab],
   );
-
-  useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
 
   useEffect(() => {
     if (highlightedSkillId != null) {

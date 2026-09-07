@@ -163,7 +163,7 @@ describe('poradie textu a fotiek', () => {
     expect(nodes).toContain('feed-post-image');
   });
 
-  it('keeps the shared preview above the caption', () => {
+  it('keeps the sharer caption above the shared preview', () => {
     setTextHeights({ visible: 60, full: 60 });
     render(
       <FeedPostCard
@@ -190,10 +190,11 @@ describe('poradie textu a fotiek', () => {
 
     const card = screen.getByTestId('feed-post-card');
     const html = card.innerHTML;
-    // Poradie zdieľaní ostáva nezmenené: náhľad zdieľaného obsahu, potom
-    // komentár autora k nemu.
-    expect(html.indexOf('Pôvodný text')).toBeLessThan(
-      html.indexOf('Môj komentár k zdieľaniu'),
+    // Text zdieľajúceho je jeho komentár k obsahu, takže sa číta PRV než
+    // obsah – rovnaké pravidlo ako „text nad fotkou" pri voľnom príspevku
+    // a rovnaké vo feede, v okne detailu aj na mobile.
+    expect(html.indexOf('Môj komentár k zdieľaniu')).toBeLessThan(
+      html.indexOf('Pôvodný text'),
     );
   });
 });

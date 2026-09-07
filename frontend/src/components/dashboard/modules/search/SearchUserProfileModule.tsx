@@ -21,6 +21,7 @@ import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
 import { setProfileLikeState, type ProfileLikeResponse } from "../profile/profileLikesApi";
 import OfferImageGalleryLightbox from "../shared/OfferImageGalleryLightbox";
 import type { ProfileTab } from "../profile/profileTypes";
+import { useProfileTabQuery } from "../profile/profileTabQuery";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
 import { buildMessagesUrl } from "../messages/messagesRouting";
 
@@ -79,7 +80,10 @@ export function SearchUserProfileModule({
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? "offers");
+  // Rovnaké naviazanie na adresu ako pri vlastnom profile – bez neho záložku
+  // cudzieho profilu zhodilo F5 aj krok späť a pri návrate na profil ostávala
+  // visieť tá, ktorú si používateľ pozeral naposledy.
+  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab ?? "offers");
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [isAvatarLightboxOpen, setIsAvatarLightboxOpen] = useState(false);
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
