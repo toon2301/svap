@@ -532,3 +532,56 @@ describe('repost obycajneho prispevku', () => {
     expect(tile.className).toContain('border');
   });
 });
+
+describe('nedostupny repost obycajneho prispevku', () => {
+  function goneRepost() {
+    return offerPost(
+      {
+        type: 'feed_post',
+        title: '',
+        caption: 'Pôvodný text príspevku',
+        id: null,
+        owner: null,
+        owner_display_name: '',
+        thumbnail_url: null,
+        is_seeking: null,
+        price_negotiable: null,
+        price_from: null,
+        price_currency: '',
+      },
+      { post_type: 'shared_feed_post', shared_content_unavailable: true },
+    );
+  }
+
+  it('stays frameless, just muted', () => {
+    render(<FeedPostCard post={goneRepost()} />);
+
+    const gone = screen.getByTestId('feed-shared-unavailable');
+    // Stlmenie je JEDINY rozdiel oproti dostupnemu repostu…
+    expect(gone.className).toContain('opacity-60');
+    expect(gone.className).toContain('saturate-50');
+    // …ram sa nepridava. Repost je pokracovanie karty, nie bublina v bubline,
+    // a to sa zmiznutim zdroja nemeni.
+    expect(gone.className).not.toContain('rounded-2xl');
+    expect(gone.className).not.toContain('border');
+    expect(gone.className).not.toContain('shadow-sm');
+    expect(gone).toHaveTextContent('Tento príspevok už nie je dostupný');
+  });
+
+  it('is not a click target any more', () => {
+    render(<FeedPostCard post={goneRepost()} />);
+
+    const card = screen.getByTestId('feed-shared-card');
+    expect(within(card).queryByTestId('feed-shared-post-preview-open')).toBeNull();
+    expect(within(card).queryByRole('button')).toBeNull();
+  });
+
+  it('keeps the frame for an unavailable OFFER', () => {
+    render(<FeedPostCard post={offerPost({}, { shared_content_unavailable: true })} />);
+
+    // Ponuka je dlazdica, na ktoru sa preklikava – ram si drzi aj bez zdroja.
+    const gone = screen.getByTestId('feed-shared-unavailable');
+    expect(gone.className).toContain('rounded-2xl');
+    expect(gone.className).toContain('opacity-60');
+  });
+});

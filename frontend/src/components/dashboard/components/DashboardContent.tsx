@@ -48,7 +48,11 @@ import {
 } from '../modules/profile/profileOfferDetailEvents';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
 import { invalidateOffersCache } from '../modules/profile/profileOffersCache';
-import { buildPortfolioCreatePath, buildPortfolioListPath } from '../modules/profile/portfolioRouting';
+import {
+  buildPortfolioCreatePath,
+  navigateBackFromPortfolioDetail,
+  portfolioDetailBackTarget,
+} from '../modules/profile/portfolioRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -957,8 +961,7 @@ export default function DashboardContent({
 
   const handlePortfolioDetailBack = useCallback(() => {
     const identifier = String(effectivePortfolioOwnerIdentifier || '').trim();
-    const target = identifier ? buildPortfolioListPath(identifier) : '/dashboard/profile';
-    const targetModule = identifier ? 'user-profile' : 'profile';
+    const { target, module: targetModule } = portfolioDetailBackTarget(identifier);
 
     setActiveModule(targetModule);
     setIsRightSidebarOpen(false);
@@ -988,7 +991,8 @@ export default function DashboardContent({
       // ignore
     }
 
-    router.push(target);
+    // `replace`, nie `push` – odôvodnenie voľby je pri samotnom helperi.
+    navigateBackFromPortfolioDetail(router, target);
   }, [
     effectivePortfolioOwnerIdentifier,
     router,

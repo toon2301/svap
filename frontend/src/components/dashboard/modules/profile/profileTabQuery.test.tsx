@@ -54,6 +54,24 @@ describe('zápis záložky do adresy', () => {
     );
   });
 
+  it('keeps a query and a fragment side by side', () => {
+    expect(
+      buildProfileTabUrl('/dashboard/users/peter?offer=5#sekcia', 'posts'),
+    ).toBe('/dashboard/users/peter?offer=5&tab=posts#sekcia');
+  });
+
+  it('splits on the FIRST separator only', () => {
+    // Fragment smie obsahovat dalsie `#`…
+    expect(buildProfileTabUrl('/dashboard/users/peter#a#b', 'offers')).toBe(
+      '/dashboard/users/peter?tab=offers#a#b',
+    );
+    // …a hodnota v query dalsie `?`. Delenie na kazdom vyskyte adresu ticho
+    // skratilo: z `redirect` ostalo len `/x`.
+    expect(
+      buildProfileTabUrl('/dashboard/users/peter?redirect=/x?y=1', 'offers'),
+    ).toBe('/dashboard/users/peter?redirect=%2Fx%3Fy%3D1&tab=offers');
+  });
+
   it('replaces an existing tab instead of stacking it', () => {
     expect(
       buildProfileTabUrl('/dashboard/users/peter?tab=posts', 'offers'),
@@ -113,6 +131,55 @@ describe('useProfileTabQuery', () => {
     await waitFor(() => expect(window.location.search).toBe('?tab=portfolio'));
 
     expect(result.current[0]).toBe('portfolio');
+  });
+
+  it('writes nothing when the tab does not actually change', () => {
+    const { result } = renderHook(() => useProfileTabQuery('offers'));
+    const lengthBefore = window.history.length;
+    const urlBefore = window.location.href;
+
+    // Klik na UZ AKTIVNU zalozku. Predtym pridal prazdny krok do historie,
+    // cez ktory sa pouzivatel musel preklikat spat.
+    act(() => result.current[1]('offers'));
+
+    expect(result.current[0]).toBe('offers');
+    expect(window.history.length).toBe(lengthBefore);
+    expect(window.location.href).toBe(urlBefore);
+  });
+
+  it('writes nothing on a derived no-op either', () => {
+    const { result } = renderHook(() => useProfileTabQuery('offers'));
+    const lengthBefore = window.history.length;
+
+    // Odvodena zmena na tu istu hodnotu (highlight efekt, ked su ponuky uz
+    // aktivne) tiez nema co zapisovat.
+    act(() => result.current[1]('offers', { replace: true }));
+
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('replaces the current entry instead of adding one', () => {
+    const { result } = renderHook(() => useProfileTabQuery('offers'));
+    const lengthBefore = window.history.length;
+
+    act(() => result.current[1]('posts', { replace: true }));
+
+    expect(result.current[0]).toBe('posts');
+    expect(window.location.search).toBe('?tab=posts');
+    // Odvodena zmena si nekonzumuje krok spat ako vlastna navigacia.
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('still adds an entry for a direct tab click', () => {
+    const { result } = renderHook(() => useProfileTabQuery('offers'));
+    // Ustalenie pozicie: jsdom ma jednu historiu na cely subor a predosly test
+    // ju nechal uprostred zasobnika, kde `push` zahadzuje zaznamy pred sebou.
+    window.history.pushState(null, '', window.location.href);
+    const lengthBefore = window.history.length;
+
+    act(() => result.current[1]('posts'));
+
+    expect(window.history.length).toBe(lengthBefore + 1);
   });
 
   it('keeps the history state other features rely on', () => {

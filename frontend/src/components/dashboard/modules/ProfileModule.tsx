@@ -15,7 +15,10 @@ import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
 import ProfileWebsitesModal from './profile/ProfileWebsitesModal';
 import type { Offer } from './profile/profileOffersTypes';
 import type { ProfileTab } from './profile/profileTypes';
-import { useProfileTabQuery } from './profile/profileTabQuery';
+import {
+  useProfileTabQuery,
+  type ProfileTabChangeOptions,
+} from './profile/profileTabQuery';
 
 /** Hlboká kópia user objektu (1 level, arrays cez spread). */
 function deepCloneUser(u: User): User {
@@ -154,8 +157,8 @@ export default function ProfileModule({
   const [activeTab, setActiveTab] = useProfileTabQuery(initialTab);
 
   const handleTabChange = useCallback(
-    (tab: ProfileTab) => {
-      setActiveTab(tab);
+    (tab: ProfileTab, options?: ProfileTabChangeOptions) => {
+      setActiveTab(tab, options);
       onTabChange?.(tab);
     },
     [onTabChange, setActiveTab],
@@ -163,7 +166,10 @@ export default function ProfileModule({
 
   useEffect(() => {
     if (highlightedSkillId != null) {
-      handleTabChange('offers');
+      // `replace`: záložku si prepína appka podľa cieľa preklikru, nie
+      // používateľ. Krok späť má viesť tam, odkiaľ prišiel, nie do záložky,
+      // ktorú mu appka po ceste prehodila.
+      handleTabChange('offers', { replace: true });
     }
   }, [handleTabChange, highlightedSkillId]);
 

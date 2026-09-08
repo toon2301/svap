@@ -1,14 +1,17 @@
 'use client';
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import toast from 'react-hot-toast';
 
 import { SearchUserProfileModule } from './SearchUserProfileModule';
 import { setFavoriteUserState } from '../favoritesApi';
 import { api } from '@/lib/api';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
-import { invalidateUserProfileCache } from '../profile/profileUserCache';
+import {
+  invalidateUserProfileCache,
+  setUserProfileToCache,
+} from '../profile/profileUserCache';
 
 const pushMock = jest.fn();
 const replaceMock = jest.fn();
@@ -80,6 +83,8 @@ jest.mock('../profile/ProfileDesktopView', () => ({
     isFavorited,
     isFavoritePending,
     onBlockClick,
+    activeTab,
+    onChangeTab,
   }: {
     onAvatarClick?: () => void;
     onSendMessage?: () => void;
@@ -88,8 +93,14 @@ jest.mock('../profile/ProfileDesktopView', () => ({
     isFavorited?: boolean;
     isFavoritePending?: boolean;
     onBlockClick?: () => void;
+    activeTab?: string;
+    onChangeTab?: (tab: string) => void;
   }) => (
     <div>
+      <span data-testid="active-tab">{activeTab}</span>
+      <button type="button" onClick={() => onChangeTab?.('portfolio')}>
+        go portfolio
+      </button>
       <button type="button" onClick={onAvatarClick}>
         open avatar
       </button>
@@ -144,6 +155,8 @@ jest.mock('../shared/OfferImageGalleryLightbox', () => ({
 describe('SearchUserProfileModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Zalozka zije v adrese (`?tab=`) a jsdom si ju drzi medzi testami.
+    window.history.replaceState(null, '', '/dashboard/users/42');
     invalidateUserProfileCache(42);
     pushMock.mockReset();
     replaceMock.mockReset();
@@ -278,5 +291,248 @@ describe('SearchUserProfileModule', () => {
       expect(screen.getByTestId('block-user-confirm-dialog')).toBeInTheDocument();
       expect(replaceMock).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('SearchUserProfileModule – zalozka pri prekliku na ponuku', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    window.history.replaceState(null, '', '/dashboard/users/42');
+    invalidateUserProfileCache(42);
+    (api.get as jest.Mock).mockResolvedValue({
+      data: {
+        id: 42,
+        user_type: 'personal',
+        first_name: 'Test',
+        last_name: 'User',
+        is_favorited: false,
+      },
+    });
+  });
+
+  it('forces the offers tab when a specific offer is highlighted', async () => {
+    const { rerender } = render(
+      <SearchUserProfileModule userId={42} currentUserId={7} />,
+    );
+
+    // Pouzivatel si najprv pozrie portfolio ciezieho profilu.
+    fireEvent.click(await screen.findByRole('button', { name: 'go portfolio' }));
+    expect(screen.getByTestId('active-tab')).toHaveTextContent('portfolio');
+
+    // Klik na zdielanu ponuku: `goToUserProfile` posle highlight. Adresu meni
+    // cez `history.pushState`, takze ziadny `popstate` ani zmena pathname
+    // nepride – jedinym signalom je prave `highlightedSkillId`.
+    rerender(
+      <SearchUserProfileModule userId={42} currentUserId={7} highlightedSkillId={55} />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('active-tab')).toHaveTextContent('offers'),
+    );
+  });
+
+  it('writes the forced tab into the URL, same as the own profile does', async () => {
+    const { rerender } = render(
+      <SearchUserProfileModule userId={42} currentUserId={7} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'go portfolio' }));
+    expect(window.location.search).toBe('?tab=portfolio');
+
+    rerender(
+      <SearchUserProfileModule userId={42} currentUserId={7} highlightedSkillId={55} />,
+    );
+
+    // Rovnaka cesta zapisu ako v ProfileModule – cez `useProfileTabQuery`,
+    // takze zalozka prezije aj F5 na tejto adrese.
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+  });
+
+  it('leaves the tab alone when no offer is highlighted', async () => {
+    const { rerender } = render(
+      <SearchUserProfileModule userId={42} currentUserId={7} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'go portfolio' }));
+    expect(screen.getByTestId('active-tab')).toHaveTextContent('portfolio');
+
+    // Bezne prekreslenie nesmie pouzivatelovi zalozku prepnut pod rukami.
+    rerender(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    expect(screen.getByTestId('active-tab')).toHaveTextContent('portfolio');
+  });
+});
+
+describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    invalidateUserProfileCache(42);
+    pushMock.mockReset();
+    (api.get as jest.Mock).mockResolvedValue({
+      data: {
+        id: 42,
+        slug: 'test-user',
+        user_type: 'personal',
+        first_name: 'Test',
+        last_name: 'User',
+        is_favorited: false,
+      },
+    });
+  });
+
+  it('carries the query over to the canonical slug URL', async () => {
+    // Stary odkaz s ciselnym ID a zaroven aktivnou zalozkou.
+    window.history.replaceState(null, '', '/dashboard/users/42?tab=posts');
+
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=posts'),
+    );
+    // Adresa sa meni aj priamo (bez reloadu) – zalozka musi prezit oboje.
+    expect(window.location.pathname).toBe('/dashboard/users/test-user');
+    expect(window.location.search).toBe('?tab=posts');
+  });
+
+  it('carries the highlight parameters and the fragment too', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/42?offer=55#sekcia');
+
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith(
+        '/dashboard/users/test-user?offer=55#sekcia',
+      ),
+    );
+  });
+
+  it('produces a bare URL when there was nothing to carry', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/42');
+
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/users/test-user'),
+    );
+  });
+});
+
+describe('SearchUserProfileModule – historia pri odvodenej zmene zalozky', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    invalidateUserProfileCache(42);
+    pushMock.mockReset();
+    (api.get as jest.Mock).mockResolvedValue({
+      data: {
+        id: 42,
+        user_type: 'personal',
+        first_name: 'Test',
+        last_name: 'User',
+        is_favorited: false,
+      },
+    });
+  });
+
+  it('adds no history entry when offers is already active', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/42');
+    const { rerender } = render(
+      <SearchUserProfileModule userId={42} currentUserId={7} />,
+    );
+    await screen.findByTestId('active-tab');
+    expect(screen.getByTestId('active-tab')).toHaveTextContent('offers');
+    const lengthBefore = window.history.length;
+
+    // Odkaz s highlightom, ale zalozka uz sedi – nie je co menit.
+    rerender(
+      <SearchUserProfileModule userId={42} currentUserId={7} highlightedSkillId={55} />,
+    );
+
+    expect(screen.getByTestId('active-tab')).toHaveTextContent('offers');
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('replaces the entry when the tab really has to change', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/42');
+    const { rerender } = render(
+      <SearchUserProfileModule userId={42} currentUserId={7} />,
+    );
+
+    // Pouzivatel si sam otvoril portfolio – to je jeho navigacia, teda push.
+    fireEvent.click(await screen.findByRole('button', { name: 'go portfolio' }));
+    expect(window.location.search).toBe('?tab=portfolio');
+    const lengthAtPortfolio = window.history.length;
+
+    // Preklik na konkretnu ponuku zalozku prepne, ale je to oprava appky.
+    rerender(
+      <SearchUserProfileModule userId={42} currentUserId={7} highlightedSkillId={55} />,
+    );
+
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+    expect(window.history.length).toBe(lengthAtPortfolio);
+
+    // A krok spat NEVEDIE do portfolia – ten zaznam bol prepisany, nie pridany.
+    let popped = false;
+    const onPopState = () => {
+      popped = true;
+    };
+    window.addEventListener('popstate', onPopState);
+    window.history.back();
+    await waitFor(() => expect(popped).toBe(true));
+    window.removeEventListener('popstate', onPopState);
+
+    expect(window.location.search).not.toBe('?tab=portfolio');
+  });
+});
+
+describe('SearchUserProfileModule – kanonizacia pocas rozbehnuteho fetchu', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    invalidateUserProfileCache(42);
+    pushMock.mockReset();
+  });
+
+  it('canonicalises with the tab active AT THAT MOMENT, not the one from mount', async () => {
+    // Fetch drzime otvoreny, nech sa da zalozka prepnut este pred odpovedou.
+    let resolveProfile!: (value: { data: Record<string, unknown> }) => void;
+    (api.get as jest.Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveProfile = resolve;
+      }),
+    );
+
+    // Z cache sa profil vykresli hned, takze view zije uz POCAS fetchu –
+    // presne to je situacia, v ktorej sa zalozka da prepnut skor, nez odpoved
+    // dorazi. (Bez cache je na obrazovke len loading a klikat nie je na co.)
+    setUserProfileToCache(42, {
+      id: 42,
+      user_type: 'personal',
+      first_name: 'Test',
+      last_name: 'User',
+    } as never);
+
+    window.history.replaceState(null, '', '/dashboard/users/42?tab=posts');
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    // Pocas cakania na profil sa zalozka prepne.
+    fireEvent.click(await screen.findByRole('button', { name: 'go portfolio' }));
+    expect(window.location.search).toBe('?tab=portfolio');
+
+    await act(async () => {
+      resolveProfile({
+        data: {
+          id: 42,
+          slug: 'test-user',
+          user_type: 'personal',
+          first_name: 'Test',
+          last_name: 'User',
+          is_favorited: false,
+        },
+      });
+    });
+
+    // Kanonizacia cita adresu az v momente odpovede, takze prenesie AKTUALNU
+    // zalozku – nie tu, s ktorou sa stranka mountovala.
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=portfolio'),
+    );
+    expect(window.location.search).toBe('?tab=portfolio');
   });
 });

@@ -237,26 +237,13 @@ export default function SharedContentPreviewCard({
   );
 
   // Stlmenie je JEDINÝ rozdiel nedostupného zdroja – layout ostáva ten istý,
-  // takže sa karta pod rukami nepremení na iný blok.
-  const frameClass = `overflow-hidden rounded-2xl border border-purple-200/70 bg-white/80 shadow-sm dark:border-purple-800/40 dark:bg-black/20 ${
-    unavailable ? 'opacity-60 saturate-50' : ''
-  }`;
+  // takže sa karta pod rukami nepremení na iný blok. Platí to pre KAŽDÝ typ:
+  // zdieľaný príspevok teda ostáva bez rámu aj keď zdroj zmizol, len stlmený.
+  const mutedClass = unavailable ? 'opacity-60 saturate-50' : '';
+  const frameClass = `overflow-hidden rounded-2xl border border-purple-200/70 bg-white/80 shadow-sm dark:border-purple-800/40 dark:bg-black/20 ${mutedClass}`;
 
   let frame;
-  if (unavailable) {
-    frame = (
-      <div data-testid="feed-shared-unavailable" className={frameClass}>
-        {photo ?? (
-          <div className={`relative w-full ${PHOTO_FRAME}`}>
-            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500">
-              <UnavailableIcon />
-            </div>
-          </div>
-        )}
-        {body}
-      </div>
-    );
-  } else if (isPost) {
+  if (isPost) {
     // BEZ rámu: pôvodný príspevok je pokračovanie karty, nie bublina v bubline.
     // Text a fotka ostávajú DVA samostatné ciele kliku (tlačidlo v tlačidle je
     // neplatné HTML), preto obal `div`.
@@ -264,8 +251,12 @@ export default function SharedContentPreviewCard({
     // Poradie „text nad fotkou" je rovnaké pravidlo, aké platí pre voľný
     // príspevok – repost sa tak číta ako pôvodný príspevok.
     frame = (
-      <div data-testid="feed-shared-post-preview" className="space-y-2">
-        {onOpenPostPreview && caption ? (
+      <div
+        data-testid={unavailable ? 'feed-shared-unavailable' : 'feed-shared-post-preview'}
+        className={`space-y-2 ${mutedClass}`}
+      >
+        {/* Zmiznutý zdroj nie je cieľ kliku – nie je kam ísť. */}
+        {onOpenPostPreview && caption && !unavailable ? (
           <button
             type="button"
             onClick={onOpenPostPreview}
@@ -278,6 +269,21 @@ export default function SharedContentPreviewCard({
           body
         )}
         {photo}
+      </div>
+    );
+  } else if (unavailable) {
+    // Ponuka a portfólio sú dlaždice, takže si rám držia aj bez zdroja –
+    // mení sa len stlmenie a náhrada za náhľad, ktorý sa už nedá načítať.
+    frame = (
+      <div data-testid="feed-shared-unavailable" className={frameClass}>
+        {photo ?? (
+          <div className={`relative w-full ${PHOTO_FRAME}`}>
+            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500">
+              <UnavailableIcon />
+            </div>
+          </div>
+        )}
+        {body}
       </div>
     );
   } else {

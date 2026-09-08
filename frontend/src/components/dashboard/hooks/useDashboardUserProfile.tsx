@@ -385,13 +385,12 @@ export function useDashboardUserProfile({
       
       // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
       if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== slug) {
-        let newUrl = `/dashboard/users/${slug}`;
-        
-        // Zachovať highlight parameter ak existuje
-        if (window.location.search) {
-          newUrl += window.location.search;
-        }
-        
+        // Kanonizácia mení IBA identifikátor v ceste – query aj fragment patria
+        // stránke, na ktorú sa práve pozeráme (`?tab=`, `?offer=`,
+        // `?highlight=`), takže idú so sebou. Query sa tu zachovávalo už
+        // predtým, fragment nie.
+        const newUrl = `/dashboard/users/${slug}${window.location.search}${window.location.hash}`;
+
         // Aktualizovať URL bez reloadu - window.history.replaceState je konzistentnejšie
         window.history.replaceState(null, '', newUrl);
         
