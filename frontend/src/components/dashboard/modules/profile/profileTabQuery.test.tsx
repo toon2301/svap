@@ -182,6 +182,37 @@ describe('useProfileTabQuery', () => {
     expect(window.history.length).toBe(lengthBefore + 1);
   });
 
+  it('re-reads the tab when the profile identity changes', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?tab=portfolio');
+    const { result, rerender } = renderHook(
+      ({ key }: { key: string }) => useProfileTabQuery('offers', key),
+      { initialProps: { key: 'peter' } },
+    );
+    expect(result.current[0]).toBe('portfolio');
+
+    // Klik na avatara vo feede: `goToUserProfile` prepise adresu cez
+    // `pushState` (ziadny `popstate`, ziadny remount) a modul dostane INE id.
+    window.history.pushState(null, '', '/dashboard/users/jana');
+    rerender({ key: 'jana' });
+
+    // Novy profil `?tab=` nema, takze plati vychodzia zalozka. Bez identity
+    // v deps by tu ostalo svietit `portfolio` z profilu, ktory uz nepozerame.
+    expect(result.current[0]).toBe('offers');
+  });
+
+  it('lets the new profile URL decide when it carries a tab', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?tab=portfolio');
+    const { result, rerender } = renderHook(
+      ({ key }: { key: string }) => useProfileTabQuery('offers', key),
+      { initialProps: { key: 'peter' } },
+    );
+
+    window.history.pushState(null, '', '/dashboard/users/jana?tab=posts');
+    rerender({ key: 'jana' });
+
+    expect(result.current[0]).toBe('posts');
+  });
+
   it('keeps the history state other features rely on', () => {
     window.history.replaceState({ marker: 'keep-me' }, '', '/dashboard/users/peter');
     const { result } = renderHook(() => useProfileTabQuery('offers'));

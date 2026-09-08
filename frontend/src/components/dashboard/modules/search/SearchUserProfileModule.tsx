@@ -83,7 +83,7 @@ export function SearchUserProfileModule({
   // Rovnaké naviazanie na adresu ako pri vlastnom profile – bez neho záložku
   // cudzieho profilu zhodilo F5 aj krok späť a pri návrate na profil ostávala
   // visieť tá, ktorú si používateľ pozeral naposledy.
-  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab ?? "offers");
+  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab ?? "offers", userId);
 
   // Preklik na KONKRÉTNU ponuku musí skončiť na záložke ponúk.
   //

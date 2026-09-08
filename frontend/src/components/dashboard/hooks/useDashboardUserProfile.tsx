@@ -22,6 +22,22 @@ export interface DashboardUserProfileProps {
   initialRightItemAppliedRef: React.MutableRefObject<boolean>;
 }
 
+/**
+ * Adresa profilu so zachovaným query a fragmentom AKTUÁLNEJ stránky.
+ *
+ * Kanonizácia mení iba identifikátor v ceste (číselné ID → slug, starý slug →
+ * nový), takže `?tab=`, `?offer=` aj `?highlight=` patria ďalej tej istej
+ * stránke a musia prejsť so sebou. Jedna implementácia pre celý hook – aby
+ * nevznikli dve, ktoré sa časom rozídu.
+ *
+ * NEPOUŽÍVAŤ pri prechode z inej stránky na profil: tam query patrí tomu,
+ * odkiaľ sa odchádza, a preniesť ho by bola chyba.
+ */
+function profileUrlKeepingQuery(path: string): string {
+  if (typeof window === 'undefined') return path;
+  return `${path}${window.location.search}${window.location.hash}`;
+}
+
 interface UseDashboardUserProfileParams {
   user: User | null;
   activeModule: string;
@@ -313,7 +329,7 @@ export function useDashboardUserProfile({
       // Ak sme v edit móde a slug sa zmenil, aktualizovať URL s novým slugom a zachovať /edit
       if (isEditMode && currentIdentifier !== user.slug) {
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', expectedPathWithEdit);
+          window.history.replaceState(null, '', profileUrlKeepingQuery(expectedPathWithEdit));
         }
         return;
       }
@@ -322,15 +338,17 @@ export function useDashboardUserProfile({
       if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== user.slug) {
         const newUrl = isEditMode ? expectedPathWithEdit : expectedPath;
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', newUrl);
+          window.history.replaceState(null, '', profileUrlKeepingQuery(newUrl));
         }
       } else if (currentIdentifier !== user.slug) {
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', expectedPathForCurrentMode);
+          window.history.replaceState(null, '', profileUrlKeepingQuery(expectedPathForCurrentMode));
         }
       }
     } else {
-      // Sme mimo user profile URL štruktúry
+      // Sme mimo user profile URL štruktúry – teda prichádzame z INEJ stránky.
+      // Query ani fragment sa tu ZÁMERNE neprenášajú: patria tomu, odkiaľ sa
+      // odchádza, nie profilu, na ktorý sa ide.
       if (typeof window !== 'undefined') {
         window.history.replaceState(null, '', expectedPathForCurrentMode);
       }
@@ -389,7 +407,7 @@ export function useDashboardUserProfile({
         // stránke, na ktorú sa práve pozeráme (`?tab=`, `?offer=`,
         // `?highlight=`), takže idú so sebou. Query sa tu zachovávalo už
         // predtým, fragment nie.
-        const newUrl = `/dashboard/users/${slug}${window.location.search}${window.location.hash}`;
+        const newUrl = profileUrlKeepingQuery(`/dashboard/users/${slug}`);
 
         // Aktualizovať URL bez reloadu - window.history.replaceState je konzistentnejšie
         window.history.replaceState(null, '', newUrl);

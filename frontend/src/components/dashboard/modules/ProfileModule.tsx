@@ -154,7 +154,7 @@ export default function ProfileModule({
   // Zdrojom pravdy je adresa (`?tab=`), nie lokálny stav – inak by záložku
   // zhodilo F5 aj krok späť. `initialTab` ostáva ako východzia hodnota pre
   // adresu bez parametra (napr. `/dashboard/users/x/portfolio`).
-  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab);
+  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab, user?.id);
 
   const handleTabChange = useCallback(
     (tab: ProfileTab, options?: ProfileTabChangeOptions) => {

@@ -160,7 +160,13 @@ export function useDashboardHighlighting({
           // Odstrániť parametre zvýraznenia z URL
           const currentUrl = new URL(window.location.href);
           if (clearHighlightSearchParams(currentUrl)) {
-            window.history.replaceState(null, '', currentUrl.pathname + currentUrl.search);
+            // Odstraňujú sa VÝHRADNE parametre zvýraznenia – fragment patrí
+            // stránke rovnako ako zvyšok query, takže ostáva.
+            window.history.replaceState(
+              null,
+              '',
+              currentUrl.pathname + currentUrl.search + currentUrl.hash,
+            );
           }
         }
       } catch {

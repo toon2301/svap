@@ -100,9 +100,14 @@ function currentTab(): ProfileTab | null {
  *
  * `fallbackTab` je to, čo platí, keď adresa `?tab=` nemá – teda hodnota
  * odvodená z cesty (`/portfolio` → `portfolio`) alebo východzia záložka.
+ *
+ * `profileKey` identifikuje, ČÍ profil sa práve zobrazuje. Keď sa zmení,
+ * záložka sa prečíta nanovo z adresy – pri prechode z profilu na profil totiž
+ * `fallbackTab` ostáva rovnaký a inak by sa nemalo čo prepočítať.
  */
 export function useProfileTabQuery(
   fallbackTab: ProfileTab,
+  profileKey?: string | number | null,
 ): [ProfileTab, ProfileTabChange] {
   const [activeTab, setActiveTab] = useState<ProfileTab>(
     () => currentTab() ?? fallbackTab,
@@ -112,10 +117,15 @@ export function useProfileTabQuery(
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
 
-  // Zmenil sa východzí kontext (iná cesta, iný profil) – adresa má prednosť.
+  // Zmenil sa východzí kontext – adresa má prednosť.
+  //
+  // `profileKey` je tu KĽÚČOVÝ: z profilu na profil sa dá prejsť klientsky
+  // (`goToUserProfile` → `pushState`, modul sa neodmountuje), pričom sa
+  // `fallbackTab` nemení. Bez identity profilu by sa efekt neprepočítal a na
+  // novom profile by ostala svietiť záložka z toho predošlého.
   useEffect(() => {
     setActiveTab(currentTab() ?? fallbackTab);
-  }, [fallbackTab]);
+  }, [fallbackTab, profileKey]);
 
   // Krok späť/dopredu prepne záložku spolu s adresou.
   useEffect(() => {

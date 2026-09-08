@@ -91,3 +91,63 @@ describe('kanonizácia ID na slug', () => {
     expect(window.location.hash).toBe('');
   });
 });
+
+describe('kanonizácia VLASTNÉHO profilu', () => {
+  const owner = { id: 1, slug: 'me' } as never;
+
+  function renderOwnProfile(url: string, editMode = false) {
+    window.history.replaceState(null, '', url);
+    const state = {
+      setActiveModule: jest.fn(),
+      setIsRightSidebarOpen: jest.fn(),
+      setActiveRightItem: jest.fn(),
+      isRightSidebarOpen: editMode,
+      activeRightItem: editMode ? 'edit-profile' : '',
+    } as never;
+    return renderHook(() =>
+      useDashboardUserProfile({
+        // Vlastny profil sa vykresluje modulom `profile`, nie `user-profile` –
+        // efekt kanonizacie sa spusta prave podla toho.
+        user: owner,
+        activeModule: 'profile',
+        dashboardState: state,
+        setHighlightedSkillId,
+      }),
+    );
+  }
+
+  it('carries the query and the fragment when swapping id for slug', async () => {
+    renderOwnProfile('/dashboard/users/1?tab=posts#sekcia');
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/users/me'));
+    expect(window.location.search).toBe('?tab=posts');
+    expect(window.location.hash).toBe('#sekcia');
+  });
+
+  it('carries them on the edit branch too', async () => {
+    renderOwnProfile('/dashboard/users/1?tab=posts#sekcia', true);
+
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/dashboard/users/me/edit'),
+    );
+    expect(window.location.search).toBe('?tab=posts');
+    expect(window.location.hash).toBe('#sekcia');
+  });
+
+  it('carries them when a stale slug is corrected', async () => {
+    renderOwnProfile('/dashboard/users/old-slug?offer=55');
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/users/me'));
+    expect(window.location.search).toBe('?offer=55');
+  });
+
+  it('does NOT carry them when arriving from another page', async () => {
+    // Query patri stranke, z ktorej sa odchadza – preniest ho na profil by
+    // bola chyba, nie oprava.
+    renderOwnProfile('/dashboard/settings/watches?tab=posts#nastavenia');
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/users/me'));
+    expect(window.location.search).toBe('');
+    expect(window.location.hash).toBe('');
+  });
+});
