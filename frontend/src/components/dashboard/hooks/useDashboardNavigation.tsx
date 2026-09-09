@@ -6,7 +6,11 @@ import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { primeUserSlugId } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
-import { createDesktopSettingsReturnTarget } from './desktopSettingsNavigation';
+import {
+  createDesktopSettingsReturnTarget,
+  withDesktopSettingsOriginHistory,
+} from './desktopSettingsNavigation';
+import { useDesktopSettingsOriginRestore } from './useDesktopSettingsOriginRestore';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 
 /**
@@ -79,6 +83,14 @@ export function useDashboardNavigation({
     setIsMobileMenuOpen,
   } = dashboardState;
 
+  useDesktopSettingsOriginRestore({
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsSearchOpen,
+  });
+
   // Hlavná navigačná logika pre zmenu modulov
   const handleMainModuleChange = useCallback((moduleId: string) => {
     // Pri zmene modulu zrušiť zvýraznenie karty
@@ -104,9 +116,15 @@ export function useDashboardNavigation({
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
     if (moduleId === 'settings' && isDesktop) {
       const currentUrl = currentBrowserUrl('/dashboard');
-      openDesktopSettings(
-        createDesktopSettingsReturnTarget(activeModule, currentUrl),
-      );
+      const returnTarget = createDesktopSettingsReturnTarget(activeModule, currentUrl);
+      if (returnTarget && typeof window !== 'undefined') {
+        window.history.replaceState(
+          withDesktopSettingsOriginHistory(window.history.state, returnTarget),
+          '',
+          returnTarget.url,
+        );
+      }
+      openDesktopSettings(returnTarget);
       return;
     }
 
@@ -178,6 +196,8 @@ export function useDashboardNavigation({
       url = '/dashboard/messages';
     } else if (moduleId === 'requests') {
       url = '/dashboard/requests';
+    } else if (moduleId === 'skills') {
+      url = '/dashboard/skills';
     } else if (moduleId === 'skills-offer') {
       url = '/dashboard/skills/offer';
     } else if (moduleId === 'skills-search') {

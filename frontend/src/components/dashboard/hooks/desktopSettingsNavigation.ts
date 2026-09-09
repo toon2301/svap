@@ -18,9 +18,15 @@ interface DesktopSettingsHistoryMarker {
   returnTarget: DesktopSettingsReturnTarget;
 }
 
+interface DesktopSettingsOriginHistoryMarker {
+  version: 1;
+  returnTarget: DesktopSettingsReturnTarget;
+}
+
 type HistoryStateRecord = Record<string, unknown>;
 
 const HISTORY_KEY = '__svaplyDesktopSettings';
+const ORIGIN_HISTORY_KEY = '__svaplyDesktopSettingsOrigin';
 
 const RETURNABLE_MODULES = new Set([
   'home',
@@ -90,8 +96,36 @@ export function createDesktopSettingsReturnTarget(
 ): DesktopSettingsReturnTarget | null {
   if (!RETURNABLE_MODULES.has(moduleId)) return null;
 
-  const url = normalizeDashboardUrl(currentUrl);
-  return url ? { moduleId, url } : null;
+  const normalizedUrl = normalizeDashboardUrl(currentUrl);
+  if (!normalizedUrl) return null;
+
+  const parsed = new URL(normalizedUrl, 'https://swaply.local');
+  const path = parsed.pathname.replace(/\/+$/, '') || '/';
+  let resolvedModuleId = moduleId;
+
+  // Vnorená route je presnejší zdroj než krátko oneskorený React state. Toto
+  // okno vzniká najmä pri client-side prechode na detail portfólia a okamžitom
+  // otvorení Nastavení.
+  if (/^\/dashboard\/users\/[^/]+\/portfolio\/\d+$/.test(path)) {
+    resolvedModuleId = 'portfolio-detail';
+  } else if (/^\/dashboard\/users\/[^/]+\/portfolio\/create$/.test(path)) {
+    resolvedModuleId = 'portfolio-create';
+  } else if (path === '/dashboard/skills/offer') {
+    resolvedModuleId = 'skills-offer';
+  } else if (path === '/dashboard/skills/search') {
+    resolvedModuleId = 'skills-search';
+  } else if (path === '/dashboard/skills') {
+    resolvedModuleId = 'skills';
+  }
+
+  // Starší flow zobrazoval výber Ponúkam/Hľadám pod všeobecnou adresou
+  // `/dashboard`. Pred uložením návratu mu priraď kanonickú route, aby browser
+  // Back nemohol tú istú adresu vyhodnotiť ako Nástenku.
+  const url = resolvedModuleId === 'skills' && path === '/dashboard'
+    ? `/dashboard/skills${parsed.search}${parsed.hash}`
+    : normalizedUrl;
+
+  return { moduleId: resolvedModuleId, url };
 }
 
 export function isDesktopSettingsReturnTarget(
@@ -111,13 +145,37 @@ export function withDesktopSettingsHistory(
   historyState: unknown,
   returnTarget: DesktopSettingsReturnTarget,
 ): HistoryStateRecord {
+  const nextState = withoutDesktopSettingsOriginHistory(historyState);
   return {
-    ...asHistoryStateRecord(historyState),
+    ...nextState,
     [HISTORY_KEY]: {
       version: 1,
       returnTarget,
     } satisfies DesktopSettingsHistoryMarker,
   };
+}
+
+/** Označí pôvodný history záznam presným vnoreným stavom pred otvorením Nastavení. */
+export function withDesktopSettingsOriginHistory(
+  historyState: unknown,
+  returnTarget: DesktopSettingsReturnTarget,
+): HistoryStateRecord {
+  return {
+    ...asHistoryStateRecord(historyState),
+    [ORIGIN_HISTORY_KEY]: {
+      version: 1,
+      returnTarget,
+    } satisfies DesktopSettingsOriginHistoryMarker,
+  };
+}
+
+/** Odstráni interný marker pôvodu bez zásahu do Next.js history údajov. */
+export function withoutDesktopSettingsOriginHistory(
+  historyState: unknown,
+): HistoryStateRecord {
+  const nextState = { ...asHistoryStateRecord(historyState) };
+  delete nextState[ORIGIN_HISTORY_KEY];
+  return nextState;
 }
 
 export function withoutDesktopSettingsHistory(historyState: unknown): HistoryStateRecord {
@@ -133,6 +191,21 @@ export function readDesktopSettingsReturnTarget(
   if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return null;
 
   const candidate = marker as Partial<DesktopSettingsHistoryMarker>;
+  if (candidate.version !== 1 || !isDesktopSettingsReturnTarget(candidate.returnTarget)) {
+    return null;
+  }
+
+  return candidate.returnTarget;
+}
+
+/** Načíta validovaný vnorený cieľ uložený na pôvodnom history zázname. */
+export function readDesktopSettingsOriginTarget(
+  historyState: unknown,
+): DesktopSettingsReturnTarget | null {
+  const marker = asHistoryStateRecord(historyState)[ORIGIN_HISTORY_KEY];
+  if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return null;
+
+  const candidate = marker as Partial<DesktopSettingsOriginHistoryMarker>;
   if (candidate.version !== 1 || !isDesktopSettingsReturnTarget(candidate.returnTarget)) {
     return null;
   }

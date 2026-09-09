@@ -6,6 +6,7 @@ import {
   profileIdentifier,
 } from '../useDashboardNavigation';
 import {
+  readDesktopSettingsOriginTarget,
   readDesktopSettingsReturnTarget,
   withDesktopSettingsHistory,
 } from '../desktopSettingsNavigation';
@@ -344,8 +345,66 @@ describe('profile edit navigation flow', () => {
       moduleId: 'messages',
       url: '/dashboard/messages/55?focus=latest',
     });
+    expect(readDesktopSettingsOriginTarget(window.history.state)).toEqual({
+      moduleId: 'messages',
+      url: '/dashboard/messages/55?focus=latest',
+    });
     expect(setIsSearchOpen).toHaveBeenCalledWith(false);
     expect(handleModuleChange).not.toHaveBeenCalled();
+  });
+
+  it('canonicalizes the Ponúkam/Hľadám chooser before opening desktop settings', () => {
+    const openDesktopSettings = jest.fn();
+    const dashboardState = {
+      activeModule: 'skills',
+      activeRightItem: '',
+      setActiveModule: jest.fn(),
+      setIsRightSidebarOpen: jest.fn(),
+      setActiveRightItem: jest.fn(),
+      openOwnProfileEdit: jest.fn(),
+      openDesktopSettings,
+      closeOwnProfileEdit: jest.fn(),
+      handleModuleChange: jest.fn(),
+      setIsMobileMenuOpen: jest.fn(),
+    } as unknown as ReturnType<typeof useDashboardState>;
+    window.history.replaceState(null, '', '/dashboard');
+
+    const { result } = renderHook(() =>
+      useDashboardNavigation({
+        user: baseUser,
+        dashboardState,
+        setIsSearchOpen: jest.fn(),
+        setViewedUserId: jest.fn(),
+        setViewedUserSlug: jest.fn(),
+        setViewedUserSummary: jest.fn(),
+        setHighlightedSkillId: jest.fn(),
+        highlightTimeoutRef: { current: null },
+      }),
+    );
+
+    act(() => {
+      result.current.handleMainModuleChange('settings');
+    });
+
+    const expectedTarget = {
+      moduleId: 'skills',
+      url: '/dashboard/skills',
+    };
+    expect(window.location.pathname).toBe('/dashboard/skills');
+    expect(readDesktopSettingsOriginTarget(window.history.state)).toEqual(expectedTarget);
+    expect(openDesktopSettings).toHaveBeenCalledWith(expectedTarget);
+  });
+
+  it('uses the dedicated URL when opening the Ponúkam/Hľadám chooser', () => {
+    const handleModuleChange = jest.fn();
+    const { result } = renderNav(baseUser, navState({ handleModuleChange }));
+
+    act(() => {
+      result.current.handleSkillsClick();
+    });
+
+    expect(window.location.pathname).toBe('/dashboard/skills');
+    expect(handleModuleChange).toHaveBeenCalledWith('skills');
   });
 
   it('opens Statistics as a dedicated desktop window and route', () => {

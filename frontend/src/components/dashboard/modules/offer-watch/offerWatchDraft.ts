@@ -14,6 +14,7 @@ import {
   type OfferWatchValidationErrors,
   type OfferWatchValidationResult,
 } from './types';
+import { defaultOfferWatchCurrency } from './offerWatchCurrency';
 
 const DECIMAL_PATTERN = /^\d+(?:[.,]\d{1,2})?$/;
 
@@ -97,7 +98,15 @@ export function selectOfferWatchCountry(
 ): OfferWatchDraft {
   const normalized = normalizeOfferCountryCode(countryCode);
   if (normalized === draft.countryCode) return draft;
-  return { ...draft, countryCode: normalized, districtCode: '' };
+  const hasPrice = Boolean(draft.priceMin.trim() || draft.priceMax.trim());
+  return {
+    ...draft,
+    countryCode: normalized,
+    districtCode: '',
+    priceCurrency: hasPrice && !draft.priceCurrency
+      ? defaultOfferWatchCurrency(normalized)
+      : draft.priceCurrency,
+  };
 }
 
 export function selectOfferWatchDistrict(

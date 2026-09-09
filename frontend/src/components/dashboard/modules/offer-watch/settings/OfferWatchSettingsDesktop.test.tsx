@@ -62,9 +62,9 @@ function hookResult(overrides: Partial<UseOfferWatchesResult> = {}): UseOfferWat
 }
 
 async function selectCategory(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Podkategória' }));
-  const search = screen.getByRole('combobox', { name: 'Začni písať názov podkategórie' });
-  await user.type(search, SUBCATEGORY);
+  const category = screen.getByRole('combobox', { name: 'Podkategória' });
+  await user.click(category);
+  await user.type(category, SUBCATEGORY);
   const resultLabel = await screen.findByText(SUBCATEGORY, { selector: 'span' });
   await user.click(resultLabel.closest('button')!);
 }
@@ -77,6 +77,47 @@ describe('OfferWatchSettingsDesktop', () => {
   });
 
   afterEach(() => window.localStorage.clear());
+
+  it('shows an immediately visible page skeleton during the initial load', () => {
+    mockedUseOfferWatches.mockReturnValue(hookResult({ isLoading: true }));
+
+    render(<OfferWatchSettingsDesktop />);
+
+    const loadingState = screen.getByRole('status');
+    expect(loadingState).toHaveAttribute('aria-busy', 'true');
+    expect(within(loadingState).getByText('Načítavam...')).toHaveClass('sr-only');
+    expect(screen.getByTestId('offer-watch-form-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('offer-watch-list-skeleton')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Uložiť sledovanie' })).not.toBeInTheDocument();
+    expect(screen.queryByText('0 / 5')).not.toBeInTheDocument();
+  });
+
+  it('replaces the initial skeleton with the form and real empty state after loading', () => {
+    mockedUseOfferWatches.mockReturnValue(hookResult({ isLoading: true }));
+    const { rerender } = render(<OfferWatchSettingsDesktop />);
+
+    mockedUseOfferWatches.mockReturnValue(hookResult());
+    rerender(<OfferWatchSettingsDesktop />);
+
+    expect(screen.queryByTestId('offer-watch-settings-skeleton')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uložiť sledovanie' })).toBeEnabled();
+    expect(screen.getByText('0 / 5')).toBeInTheDocument();
+    expect(screen.getByText('Zatiaľ nemáš žiadne sledovanie')).toBeInTheDocument();
+  });
+
+  it('keeps the known count and form visible during a later reload', () => {
+    mockedUseOfferWatches.mockReturnValue(hookResult({
+      watches: [watch(1)],
+      isLoading: true,
+    }));
+
+    render(<OfferWatchSettingsDesktop />);
+
+    expect(screen.queryByTestId('offer-watch-settings-skeleton')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uložiť sledovanie' })).toBeDisabled();
+    expect(screen.getByText('1 / 5')).toBeInTheDocument();
+    expect(screen.getByTestId('offer-watch-list-skeleton')).toBeInTheDocument();
+  });
 
   it('validates locally, creates a canonical watch and resets the form after success', async () => {
     const user = userEvent.setup();
@@ -91,7 +132,7 @@ describe('OfferWatchSettingsDesktop', () => {
     await selectCategory(user);
     await user.click(screen.getByRole('button', { name: 'Dopyty' }));
     await user.type(screen.getByPlaceholderText('Cena od'), '10,50');
-    await user.selectOptions(screen.getByLabelText('Mena'), '€');
+    expect(screen.getByRole('combobox', { name: 'Mena' })).toHaveValue('€');
     await user.click(screen.getByRole('button', { name: 'Uložiť sledovanie' }));
 
     await waitFor(() => expect(state.createWatch).toHaveBeenCalledWith({
@@ -105,7 +146,8 @@ describe('OfferWatchSettingsDesktop', () => {
       priceCurrency: '€',
     }));
     expect(toast.success).toHaveBeenCalledWith('Sledovanie bolo uložené.');
-    expect(screen.getByRole('button', { name: 'Podkategória' })).toHaveTextContent('Vyber podkategóriu');
+    expect(screen.getByRole('combobox', { name: 'Podkategória' })).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'Podkategória' })).toHaveAttribute('placeholder', 'Vyber podkategóriu');
   });
 
   it('keeps the draft usable when the server rejects a duplicate', async () => {
@@ -123,7 +165,7 @@ describe('OfferWatchSettingsDesktop', () => {
     await user.click(screen.getByRole('button', { name: 'Uložiť sledovanie' }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Takéto sledovanie už máš vytvorené.'));
-    expect(screen.getByRole('button', { name: 'Podkategória' })).toHaveTextContent(SUBCATEGORY);
+    expect(screen.getByRole('combobox', { name: 'Podkategória' })).toHaveValue(SUBCATEGORY);
     expect(screen.getByRole('button', { name: 'Uložiť sledovanie' })).toBeEnabled();
   });
 

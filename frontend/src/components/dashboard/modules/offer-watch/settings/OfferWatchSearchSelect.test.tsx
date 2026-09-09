@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
@@ -9,6 +10,35 @@ const options = [
 ];
 
 describe('OfferWatchSearchSelect', () => {
+  it('keeps the selected value in the same input', async () => {
+    const user = userEvent.setup();
+    function ControlledSelect() {
+      const [selected, setSelected] = useState<(typeof options)[number] | null>(null);
+      return (
+        <OfferWatchSearchSelect
+          id='watch-picker'
+          label='Výber'
+          valueKey={selected?.key || ''}
+          valueLabel={selected?.label || ''}
+          placeholder='Vyber'
+          searchPlaceholder='Hľadaj'
+          emptyMessage='Nič sa nenašlo'
+          options={options}
+          onSelect={setSelected}
+        />
+      );
+    }
+    render(<ControlledSelect />);
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
+    await user.type(combobox, 'dru');
+    await user.click(screen.getByRole('option', { name: /Druhá možnosť/ }));
+
+    expect(combobox).toHaveValue('Druhá možnosť');
+    expect(combobox).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('supports keyboard selection and restores focus to its trigger', async () => {
     const user = userEvent.setup();
     const onSelect = jest.fn();
@@ -26,15 +56,14 @@ describe('OfferWatchSearchSelect', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', { name: 'Výber' });
-    await user.click(trigger);
-    const search = screen.getByRole('combobox', { name: 'Hľadaj' });
-    await user.type(search, 'dru');
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
+    await user.type(combobox, 'dru');
     await user.keyboard('{Enter}');
 
     expect(onSelect).toHaveBeenCalledWith(options[1]);
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
+    expect(combobox).toHaveFocus();
   });
 
   it('closes with Escape without changing the selection', async () => {
@@ -54,13 +83,105 @@ describe('OfferWatchSearchSelect', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', { name: 'Výber' });
-    await user.click(trigger);
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
     await user.keyboard('{Escape}');
 
     expect(onSelect).not.toHaveBeenCalled();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
+    expect(combobox).toHaveFocus();
+    expect(combobox).toHaveValue('Prvá možnosť');
+  });
+
+  it('does not visually activate the first result until keyboard or pointer navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        emptyMessage='Nič sa nenašlo'
+        options={options}
+        onSelect={jest.fn()}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
+    expect(screen.getAllByRole('option').every((option) => !option.hasAttribute('data-active'))).toBe(true);
+
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getAllByRole('option')[0]).toHaveAttribute('data-active', 'true');
+  });
+
+  it('clears previous results and leaves only the empty state for an invalid query', async () => {
+    const user = userEvent.setup();
+    render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        startTypingMessage='Začni písať'
+        emptyMessage='Nič sa nenašlo'
+        options={options}
+        onSelect={jest.fn()}
+        requireQuery
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
+    await user.type(combobox, 'prva');
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+
+    await user.clear(combobox);
+    await user.type(combobox, 'xyzabc123');
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    expect(screen.getByRole('status')).toHaveTextContent('Nič sa nenašlo');
+    expect(screen.queryByText('Prvá možnosť')).not.toBeInTheDocument();
+  });
+
+  it('keeps only one portalled popup open across multiple fields', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <OfferWatchSearchSelect
+          id='first-picker'
+          label='Prvý výber'
+          valueKey=''
+          valueLabel=''
+          placeholder='Vyber'
+          searchPlaceholder='Hľadaj'
+          emptyMessage='Nič sa nenašlo'
+          options={options}
+          onSelect={jest.fn()}
+        />
+        <OfferWatchSearchSelect
+          id='second-picker'
+          label='Druhý výber'
+          valueKey=''
+          valueLabel=''
+          placeholder='Vyber'
+          searchPlaceholder='Hľadaj'
+          emptyMessage='Nič sa nenašlo'
+          options={options}
+          onSelect={jest.fn()}
+        />
+      </>,
+    );
+
+    await user.click(screen.getByRole('combobox', { name: 'Prvý výber' }));
+    await user.click(screen.getByRole('combobox', { name: 'Druhý výber' }));
+
+    expect(screen.getAllByRole('listbox')).toHaveLength(1);
+    expect(screen.getByRole('combobox', { name: 'Prvý výber' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('combobox', { name: 'Druhý výber' })).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
@@ -86,7 +207,7 @@ describe('výška vysúvacieho okienka', () => {
         onSelect={jest.fn()}
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Výber' }));
+    await user.click(screen.getByRole('combobox', { name: 'Výber' }));
     const list = screen.getByRole('listbox');
     const popup = list.parentElement as HTMLElement;
     return { list, popup };
@@ -98,22 +219,18 @@ describe('výška vysúvacieho okienka', () => {
     // Strop patrí VÝHRADNE vonkajšiemu okienku…
     expect(popup.style.maxHeight).not.toBe('');
     expect(popup.className).toContain('overflow-hidden');
-    // …zoznam si ten istý strop nesmie zobrať druhýkrát: potom by spolu
-    // s pevnou hlavičkou presiahol okienko a spodok by sa odrezal.
+    // …zoznam si ten istý strop nesmie zobrať druhýkrát. Vonkajší popup
+    // zostáva jediným vlastníkom výškového obmedzenia aj orezania.
     expect(list.style.maxHeight).toBe('');
   });
 
-  it('gives the list the space left after the search header', async () => {
+  it('gives the list the available constrained flex space', async () => {
     const { list, popup } = await openPopup();
 
     // Okienko je ohraničený flex stĺpec…
     expect(popup.className).toContain('flex');
     expect(popup.className).toContain('flex-col');
-    // …hlavička si drží svoju výšku…
-    const header = popup.firstElementChild as HTMLElement;
-    expect(header.className).toContain('shrink-0');
-    expect(header).toContainElement(screen.getByRole('combobox', { name: 'Hľadaj' }));
-    // …a zoznam dostane presne zvyšok (`min-h-0` ruší automatické minimum
+    // Zoznam dostane presne dostupný priestor (`min-h-0` ruší automatické minimum
     // flex položky, bez neho by ho obsah roztiahol späť cez okienko).
     expect(list.className).toContain('flex-1');
     expect(list.className).toContain('min-h-0');

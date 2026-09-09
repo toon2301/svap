@@ -4,20 +4,20 @@ import type { FormEvent } from 'react';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getDistrictOptions, isInactiveOfferDistrictCode } from '@/shared/districtRegistry';
-import CountrySelect from '../../skills/skillDescriptionModal/CountrySelect';
+import { changeOfferWatchPrice } from '../offerWatchCurrency';
 import {
   selectOfferWatchCategory,
   selectOfferWatchCountry,
   selectOfferWatchDistrict,
 } from '../offerWatchDraft';
 import {
-  OFFER_WATCH_PRICE_CURRENCIES,
   type OfferWatchDraft,
   type OfferWatchDraftField,
-  type OfferWatchPriceCurrency,
   type OfferWatchValidationErrors,
 } from '../types';
 import OfferWatchCategoryField from './OfferWatchCategoryField';
+import OfferWatchCountryField from './OfferWatchCountryField';
+import OfferWatchCurrencyField from './OfferWatchCurrencyField';
 import OfferWatchDistrictField from './OfferWatchDistrictField';
 import { offerWatchValidationMessage } from './offerWatchUi';
 
@@ -92,11 +92,7 @@ export default function OfferWatchForm({
   };
 
   const changePrice = (field: 'priceMin' | 'priceMax', value: string) => {
-    const nextDraft = { ...draft, [field]: value };
-    if (!nextDraft.priceMin.trim() && !nextDraft.priceMax.trim()) {
-      nextDraft.priceCurrency = '';
-    }
-    onChange(nextDraft, [field, 'priceCurrency']);
+    onChange(changeOfferWatchPrice(draft, field, value), [field, 'priceCurrency']);
   };
 
   return (
@@ -173,10 +169,9 @@ export default function OfferWatchForm({
             <label htmlFor={`${idPrefix}-country`} className='mb-1.5 block text-sm font-medium text-gray-800 dark:text-gray-200'>
               {t('offerWatch.countryLabel', 'Krajina')}
             </label>
-            <CountrySelect
+            <OfferWatchCountryField
               id={`${idPrefix}-country`}
-              value={draft.countryCode}
-              label={t('offerWatch.countryLabel', 'Krajina')}
+              countryCode={draft.countryCode}
               onChange={(countryCode) => {
                 if (persistCountrySelection) setCountry(countryCode);
                 onChange(selectOfferWatchCountry(draft, countryCode), ['countryCode', 'districtCode']);
@@ -261,27 +256,17 @@ export default function OfferWatchForm({
             </div>
             <div>
               <label htmlFor={`${idPrefix}-currency`} className='sr-only'>{t('offerWatch.currency', 'Mena')}</label>
-              <select
+              <OfferWatchCurrencyField
                 id={`${idPrefix}-currency`}
-                value={draft.priceCurrency}
-                onChange={(event) => onChange(
-                  { ...draft, priceCurrency: event.target.value as OfferWatchPriceCurrency | '' },
+                currency={draft.priceCurrency}
+                onChange={(priceCurrency) => onChange(
+                  { ...draft, priceCurrency },
                   ['priceCurrency'],
                 )}
                 disabled={controlsDisabled || (!draft.priceMin.trim() && !draft.priceMax.trim())}
-                aria-invalid={Boolean(errors.priceCurrency) || undefined}
-                aria-describedby={errors.priceCurrency ? currencyErrorId : undefined}
-                className={`min-h-11 w-full rounded-xl border bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black dark:text-white ${
-                  errors.priceCurrency
-                    ? 'border-red-400 focus:ring-red-400/25 dark:border-red-700'
-                    : 'border-gray-300 focus:border-purple-400 focus:ring-purple-400/25 dark:border-gray-700'
-                }`}
-              >
-                <option value=''>{t('offerWatch.currency', 'Mena')}</option>
-                {OFFER_WATCH_PRICE_CURRENCIES.map((currency) => (
-                  <option key={currency} value={currency}>{currency}</option>
-                ))}
-              </select>
+                invalid={Boolean(errors.priceCurrency)}
+                describedBy={errors.priceCurrency ? currencyErrorId : undefined}
+              />
               <FieldError id={currencyErrorId} field='priceCurrency' errors={errors} />
             </div>
           </div>

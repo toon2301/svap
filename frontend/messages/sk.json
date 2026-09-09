@@ -1103,6 +1103,8 @@
     "priceMin": "Cena od",
     "priceMax": "Cena do",
     "currency": "Mena",
+    "currencySearchPlaceholder": "Vyhľadaj menu",
+    "currencyNoResults": "Nenašla sa žiadna mena.",
     "priceFromPrefix": "Od",
     "priceToPrefix": "Do",
     "anyPrice": "Bez cenového obmedzenia",

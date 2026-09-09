@@ -11,7 +11,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckIcon, ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { normalizeOfferWatchSearch } from './offerWatchUi';
 
 export type OfferWatchSearchOption = {
@@ -41,6 +41,7 @@ type OfferWatchSearchSelectProps = {
 const VIEWPORT_PADDING = 16;
 const LIST_GAP = 8;
 const LIST_MAX_HEIGHT = 304;
+const OPEN_EVENT = 'svaply:offer-watch-search-select-open';
 
 function popupPosition(trigger: HTMLElement): CSSProperties {
   const rect = trigger.getBoundingClientRect();
@@ -64,6 +65,11 @@ function popupPosition(trigger: HTMLElement): CSSProperties {
   };
 }
 
+function isRendered(element: HTMLElement): boolean {
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
 export default function OfferWatchSearchSelect({
   id,
   label,
@@ -80,13 +86,13 @@ export default function OfferWatchSearchSelect({
   describedBy,
   requireQuery = false,
 }: OfferWatchSearchSelectProps) {
+  const instanceId = useId();
   const listboxId = useId();
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
-  const searchRef = useRef<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [position, setPosition] = useState<CSSProperties>({});
 
   const filteredOptions = useMemo(() => {
@@ -99,126 +105,176 @@ export default function OfferWatchSearchSelect({
     );
   }, [options, query, requireQuery]);
 
-  const updatePosition = useCallback(() => {
-    if (triggerRef.current) setPosition(popupPosition(triggerRef.current));
-  }, []);
-
   const close = useCallback((restoreFocus: boolean) => {
     setOpen(false);
     setQuery('');
-    if (restoreFocus) triggerRef.current?.focus();
+    setActiveIndex(null);
+    if (restoreFocus) inputRef.current?.focus();
+  }, []);
+
+  const updatePosition = useCallback(() => {
+    if (inputRef.current) setPosition(popupPosition(inputRef.current));
   }, []);
 
   const openPopup = useCallback(() => {
-    if (disabled || !triggerRef.current) return;
-    setPosition(popupPosition(triggerRef.current));
+    if (disabled || !inputRef.current) return;
+    window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: instanceId }));
+    setPosition(popupPosition(inputRef.current));
     setQuery('');
-    setActiveIndex(Math.max(0, options.findIndex((option) => option.key === valueKey)));
+    setActiveIndex(null);
     setOpen(true);
-    requestAnimationFrame(() => searchRef.current?.focus());
-  }, [disabled, options, valueKey]);
+  }, [disabled, instanceId]);
+
+  useEffect(() => {
+    const closeWhenPeerOpens = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== instanceId) close(false);
+    };
+    window.addEventListener(OPEN_EVENT, closeWhenPeerOpens);
+    return () => window.removeEventListener(OPEN_EVENT, closeWhenPeerOpens);
+  }, [close, instanceId]);
 
   useEffect(() => {
     if (disabled && open) close(false);
   }, [close, disabled, open]);
 
   useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: MouseEvent) => {
+    if (!open) return undefined;
+    const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (triggerRef.current?.contains(target) || popupRef.current?.contains(target)) return;
+      if (inputRef.current?.contains(target) || popupRef.current?.contains(target)) return;
       close(false);
     };
     const handleReflow = (event: Event) => {
-      if (event.type === 'scroll' && event.target instanceof Node && popupRef.current?.contains(event.target)) {
+      if (
+        event.type === 'scroll'
+        && event.target instanceof Node
+        && popupRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      if (!inputRef.current || !isRendered(inputRef.current)) {
+        close(false);
         return;
       }
       updatePosition();
     };
-    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('resize', handleReflow);
     window.addEventListener('scroll', handleReflow, true);
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('resize', handleReflow);
       window.removeEventListener('scroll', handleReflow, true);
     };
   }, [close, open, updatePosition]);
 
   useEffect(() => {
-    setActiveIndex((current) => Math.min(current, Math.max(0, filteredOptions.length - 1)));
+    setActiveIndex((current) => {
+      if (current === null || filteredOptions.length === 0) return null;
+      return Math.min(current, filteredOptions.length - 1);
+    });
   }, [filteredOptions.length]);
+
+  const activeOption = activeIndex === null ? undefined : filteredOptions[activeIndex];
+  const activeOptionId = activeOption && activeIndex !== null
+    ? `${listboxId}-option-${activeIndex}`
+    : undefined;
+
+  useEffect(() => {
+    if (!open || !activeOptionId) return;
+    document.getElementById(activeOptionId)?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeOptionId, open]);
 
   const choose = (option: OfferWatchSearchOption) => {
     onSelect(option);
     close(true);
   };
 
-  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      close(true);
+      return;
+    }
+    if (!open && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+      event.preventDefault();
+      openPopup();
+      return;
+    }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       if (filteredOptions.length) {
-        setActiveIndex((current) => (current + 1) % filteredOptions.length);
+        setActiveIndex((current) => current === null
+          ? 0
+          : (current + 1) % filteredOptions.length);
       }
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       if (filteredOptions.length) {
-        setActiveIndex((current) => (current - 1 + filteredOptions.length) % filteredOptions.length);
+        setActiveIndex((current) => current === null
+          ? filteredOptions.length - 1
+          : (current - 1 + filteredOptions.length) % filteredOptions.length);
       }
-    } else if (event.key === 'Home') {
+    } else if (event.key === 'Home' && filteredOptions.length) {
       event.preventDefault();
       setActiveIndex(0);
-    } else if (event.key === 'End') {
+    } else if (event.key === 'End' && filteredOptions.length) {
       event.preventDefault();
-      setActiveIndex(Math.max(0, filteredOptions.length - 1));
-    } else if (event.key === 'Enter' && filteredOptions[activeIndex]) {
-      event.preventDefault();
-      choose(filteredOptions[activeIndex]);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      close(true);
+      setActiveIndex(filteredOptions.length - 1);
+    } else if (event.key === 'Enter') {
+      const enterOption = activeOption
+        || (filteredOptions.length === 1 ? filteredOptions[0] : undefined);
+      if (enterOption) {
+        event.preventDefault();
+        choose(enterOption);
+      }
     }
   };
 
-  const activeOption = filteredOptions[activeIndex];
-  const activeOptionId = activeOption
-    ? `${listboxId}-option-${activeIndex}`
-    : undefined;
-
   return (
     <div className='relative w-full'>
-      <button
-        ref={triggerRef}
+      <input
+        ref={inputRef}
         id={id}
-        type='button'
+        type='search'
+        role='combobox'
         aria-label={label}
         aria-haspopup='listbox'
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
+        aria-activedescendant={activeOptionId}
+        aria-autocomplete='list'
         aria-describedby={describedBy}
-        data-invalid={invalid || undefined}
+        aria-invalid={invalid || undefined}
+        autoComplete='off'
+        spellCheck={false}
         disabled={disabled}
-        onClick={() => (open ? close(false) : openPopup())}
-        onKeyDown={(event) => {
-          if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            if (!open) openPopup();
-          } else if (event.key === 'Escape' && open) {
-            event.preventDefault();
-            close(true);
-          }
+        value={open ? query : valueLabel}
+        placeholder={open ? searchPlaceholder : placeholder}
+        onFocus={() => {
+          if (!open) openPopup();
         }}
-        className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2 text-left text-sm outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black ${
+        onChange={(event) => {
+          if (!open) openPopup();
+          setQuery(event.target.value);
+          setActiveIndex(null);
+        }}
+        onKeyDown={handleKeyDown}
+        onBlur={() => {
+          requestAnimationFrame(() => {
+            if (!popupRef.current?.contains(document.activeElement)) close(false);
+          });
+        }}
+        className={`min-h-11 w-full rounded-xl border bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black dark:text-white dark:placeholder:text-gray-400 ${
           invalid
             ? 'border-red-400 focus:border-red-400 focus:ring-red-400/25 dark:border-red-700'
             : 'border-gray-300 focus:border-purple-400 focus:ring-purple-400/25 dark:border-gray-700'
         }`}
-      >
-        <span className={valueLabel ? 'truncate text-gray-900 dark:text-white' : 'truncate text-gray-500 dark:text-gray-400'}>
-          {valueLabel || placeholder}
-        </span>
-        <ChevronDownIcon className={`h-5 w-5 shrink-0 text-gray-400 transition ${open ? 'rotate-180' : ''}`} aria-hidden='true' />
-      </button>
+      />
+      <ChevronDownIcon
+        className={`pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition ${open ? 'rotate-180' : ''}`}
+        aria-hidden='true'
+      />
 
       {open && typeof document !== 'undefined' && createPortal(
         <div
@@ -226,29 +282,6 @@ export default function OfferWatchSearchSelect({
           className='z-[10050] flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-[#0f0f10]'
           style={position}
         >
-          <div className='shrink-0 border-b border-gray-200 p-2 dark:border-gray-700'>
-            <div className='relative'>
-              <MagnifyingGlassIcon className='pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400' aria-hidden='true' />
-              <input
-                ref={searchRef}
-                type='search'
-                role='combobox'
-                aria-label={searchPlaceholder}
-                aria-expanded='true'
-                aria-controls={listboxId}
-                aria-activedescendant={activeOptionId}
-                aria-autocomplete='list'
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setActiveIndex(0);
-                }}
-                onKeyDown={handleSearchKeyDown}
-                placeholder={searchPlaceholder}
-                className='w-full rounded-xl border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/25 dark:border-gray-700 dark:bg-black dark:text-white'
-              />
-            </div>
-          </div>
           <div
             id={listboxId}
             role='listbox'
@@ -266,7 +299,8 @@ export default function OfferWatchSearchSelect({
                   role='option'
                   tabIndex={-1}
                   aria-selected={selected}
-                  onMouseDown={(event) => event.preventDefault()}
+                  data-active={active || undefined}
+                  onPointerDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => choose(option)}
                   className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${

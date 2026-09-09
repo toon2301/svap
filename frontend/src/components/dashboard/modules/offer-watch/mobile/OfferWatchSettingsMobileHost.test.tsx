@@ -4,6 +4,7 @@ import OfferWatchSettingsMobileHost from './OfferWatchSettingsMobileHost';
 import {
   OFFER_WATCH_MOBILE_REQUEST_EVENT,
   OFFER_WATCH_SETTINGS_PATH,
+  hasOfferWatchSettingsReturnHistory,
   readOfferWatchMobileHistory,
 } from './offerWatchMobileNavigation';
 
@@ -69,7 +70,7 @@ describe('OfferWatchSettingsMobileHost', () => {
     expect(screen.getByTestId('mobile-watch-host-view')).toHaveTextContent('list');
     expect(window.location.pathname).toBe(OFFER_WATCH_SETTINGS_PATH);
     expect(readOfferWatchMobileHistory(window.history.state)).toEqual({
-      version: 1,
+      version: 2,
       origin: 'settings',
       view: { kind: 'list' },
     });
@@ -93,14 +94,90 @@ describe('OfferWatchSettingsMobileHost', () => {
     render(<OfferWatchSettingsMobileHost onReturnToSettings={onReturnToSettings} />);
 
     expect(await screen.findByTestId('mobile-watch-host-view')).toHaveTextContent('list');
-    expect(readOfferWatchMobileHistory(window.history.state)?.origin).toBe('direct');
+    expect(readOfferWatchMobileHistory(window.history.state)).toEqual({
+      version: 2,
+      origin: 'direct',
+      view: { kind: 'list' },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'back' }));
 
-    expect(screen.queryByTestId('mobile-watch-host-view')).not.toBeInTheDocument();
-    expect(window.location.pathname).toBe('/dashboard/settings');
+    await waitFor(() => {
+      expect(screen.queryByTestId('mobile-watch-host-view')).not.toBeInTheDocument();
+      expect(window.location.pathname).toBe('/dashboard/settings');
+    });
     expect(readOfferWatchMobileHistory(window.history.state)).toBeNull();
-    expect(onReturnToSettings).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onReturnToSettings).toHaveBeenCalledTimes(1));
+  });
+
+  it('recovers the settings return after the dashboard host remounts', async () => {
+    const firstReturn = jest.fn();
+    const first = render(
+      <OfferWatchSettingsMobileHost onReturnToSettings={firstReturn} />,
+    );
+    act(() => window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT)));
+    expect(screen.getByTestId('mobile-watch-host-view')).toBeInTheDocument();
+
+    first.unmount();
+    act(() => window.history.back());
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/settings'));
+
+    const restoredReturn = jest.fn();
+    render(<OfferWatchSettingsMobileHost onReturnToSettings={restoredReturn} />);
+
+    await waitFor(() => expect(restoredReturn).toHaveBeenCalledTimes(1));
+    expect(firstReturn).not.toHaveBeenCalled();
+  });
+
+  it('handles browser Back from a directly opened URL', async () => {
+    window.history.replaceState(null, '', OFFER_WATCH_SETTINGS_PATH);
+    const onReturnToSettings = jest.fn();
+    render(<OfferWatchSettingsMobileHost onReturnToSettings={onReturnToSettings} />);
+    expect(await screen.findByTestId('mobile-watch-host-view')).toBeInTheDocument();
+
+    act(() => window.history.back());
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/settings'));
+    await waitFor(() => expect(onReturnToSettings).toHaveBeenCalledTimes(1));
+  });
+
+  it('preserves the underlying route and consumes its return marker after settings open', async () => {
+    window.history.replaceState(null, '', '/dashboard/messages/17?source=watch-test');
+    const onReturnToSettings = jest.fn();
+    const { rerender } = render(
+      <OfferWatchSettingsMobileHost
+        onReturnToSettings={onReturnToSettings}
+        isSettingsOpen={false}
+      />,
+    );
+    act(() => window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT)));
+
+    act(() => window.history.back());
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/messages/17'));
+    expect(window.location.search).toBe('?source=watch-test');
+    await waitFor(() => expect(onReturnToSettings).toHaveBeenCalledTimes(1));
+    expect(hasOfferWatchSettingsReturnHistory(window.history.state)).toBe(true);
+
+    rerender(
+      <OfferWatchSettingsMobileHost
+        onReturnToSettings={onReturnToSettings}
+        isSettingsOpen
+      />,
+    );
+    expect(hasOfferWatchSettingsReturnHistory(window.history.state)).toBe(false);
+  });
+
+  it('queues only one browser traversal for repeated back clicks', () => {
+    render(<OfferWatchSettingsMobileHost onReturnToSettings={jest.fn()} />);
+    act(() => window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT)));
+    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => undefined);
+
+    fireEvent.click(screen.getByRole('button', { name: 'back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'back' }));
+
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    backSpy.mockRestore();
   });
 
   it('ignores the mobile open event on a desktop viewport', () => {
