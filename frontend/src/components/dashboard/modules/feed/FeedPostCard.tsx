@@ -4,9 +4,10 @@
  * Karta príspevku na Nástenke (Smer B).
  *
  * - free_post: neutrálna biela karta, fialové akcenty (avatar, tagy, lajk).
- * - shared_*: CELÁ karta jemne fialová (#EEEDFE) + „výmena ďalej" hlavička
- *   a vnorený náhľad zdieľaného obsahu. Zdieľaný VOĽNÝ príspevok má vlastný
- *   variant náhľadu („mini príspevok" – autor, text, fotka).
+ * - shared_*: TEN ISTÝ podklad ako voľný príspevok – zdieľanie hlási hlavička
+ *   „zdieľa ďalej" a vnorená karta obsahu (`SharedContentPreviewCard`), nie
+ *   odlišná farba dlaždice. Zdieľaný VOĽNÝ príspevok sa v nej kreslí bez rámu,
+ *   ponuka a portfólio ako dlaždica s náhľadom.
  *
  * Akcie (lajk, komentáre, zdieľanie, nahlásenie) sú živé; lajk beží
  * optimisticky a pri zlyhaní sa vráti do pôvodného stavu.
@@ -67,17 +68,6 @@ import FeedPostMobileDetail from './FeedPostMobileDetail';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
-
-/**
- * Pozadie zdieľanej karty. Svetlý odtieň je presne #EEEDFE zo zadania (preto
- * arbitrary hodnota, nie purple-50 – to je iný, ružovejší tón), tmavý variant
- * ide podľa zavedeného vzoru appky pre fialové plochy (`dark:bg-purple-950/30`,
- * viď AboutPage). Zámerne ako TRIEDA, nie inline style: inline farba sa
- * neprepína podľa režimu, takže by v tmavom režime ostal svetlý podklad pod
- * svetlým textom.
- */
-const SHARED_CARD_SURFACE =
-  'bg-[#EEEDFE] dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60';
 
 function ActionButton({
   label,
@@ -563,11 +553,11 @@ export default function FeedPostCard({
         // `overflow-hidden` vyššie + pevné bloky + pružná fotka = stĺpec, ktorý
         // sa NEDÁ doscrollovať. `min-h-0` ruší automatické minimum flex položky.
         fillHeight ? 'flex min-h-0 flex-1 flex-col' : '',
-        isShared && !isDetail
-          ? SHARED_CARD_SURFACE
-          : isDetail
-            ? ''
-            : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202223]',
+        // Zdieľaný príspevok má ROVNAKÝ podklad ako každý iný – je to príspevok
+        // ako každý druhý. Že ide o zdieľanie, hovorí hlavička „zdieľa ďalej"
+        // a vnorená karta; odlišná farba celej dlaždice navyše rozbíjala
+        // jednotný feed.
+        isDetail ? '' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202223]',
       ].join(' ')}
     >
       {isShared ? (
@@ -772,12 +762,25 @@ export default function FeedPostCard({
       ) : null}
 
       {isShared || taggedUsers.length ? (
-        <div className={`space-y-3 px-4 py-3 ${fixedBlock}`}>
-          {/* V OKNE ide text autora nad náhľad – rovnaké pravidlo ako „text
-              nad fotkou" pri voľnom príspevku. Na karte vo feede ostáva
-              poradie zámerne opačné: tam je hlavným obsahom náhľad a caption
-              je komentár k nemu. */}
-          {isDetail ? sharedCaptionNode : null}
+        <div
+          className={`space-y-3 px-4 py-3 ${
+            // V okne detailu je náhľad JEDINÁ pružná časť stĺpca: keď sa
+            // nezmestí, scrolluje sa on, nie karta. Bez toho by sa pri vyššom
+            // náhľade (ponuka s fotkou) rozhýbala aj hlavička a riadok akcií –
+            // tie musia stáť bez ohľadu na to, či náhľad fotku má.
+            //
+            // Zdieľaný príspevok a vlastné fotky sa nikdy nestretnú (backend
+            // posiela `images` len pri `free_post`), takže o `flex-1` tu nie je
+            // s čím súperiť.
+            fillHeight
+              ? 'subtle-scrollbar min-h-0 flex-1 overflow-y-auto'
+              : fixedBlock
+          }`}
+        >
+          {/* Sprievodný text zdieľajúceho ide VŽDY nad náhľad – rovnaké
+              pravidlo ako „text nad fotkou" pri voľnom príspevku. Je to jeho
+              komentár k obsahu, takže sa má prečítať skôr než obsah sám. */}
+          {sharedCaptionNode}
 
           {isShared ? (
             <SharedContentPreviewCard
@@ -794,8 +797,6 @@ export default function FeedPostCard({
               }
             />
           ) : null}
-
-          {isDetail ? null : sharedCaptionNode}
 
           {taggedUsers.length ? (
             <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">

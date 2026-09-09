@@ -239,7 +239,16 @@ describe('smerovanie zo zdieľanej karty', () => {
       <FeedPostCard
         post={makeSharedPost({
           post_type: 'shared_feed_post',
-          shared_content: sharedContent({ type: 'feed_post', id: 99, title: '' }),
+          // Text pôvodného príspevku je zároveň cieľ kliku: repost sa kreslí
+          // bez rámu a bez nadpisu, takže klikateľné je to, čo je vidieť.
+          // Voľný príspevok bez textu AJ bez fotky backend nepustí, takže
+          // prázdny repost v appke neexistuje.
+          shared_content: sharedContent({
+            type: 'feed_post',
+            id: 99,
+            title: '',
+            caption: 'Pôvodný text príspevku',
+          }),
         })}
       />,
     );

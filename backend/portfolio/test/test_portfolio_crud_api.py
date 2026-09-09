@@ -665,7 +665,23 @@ class PortfolioCrudApiTests(APITestCase):
         self.assertNotIn("images", response.data[0])
 
     def test_visitor_list_hides_portfolio_item_without_approved_cover(self):
-        self._item(title="No public cover")
+        """Titulna fotka cakajuca na moderaciu polozku skryva.
+
+        Test drzi to, co ma v nazve – NESCHVALENU titulnu fotku. Polozka bez
+        titulnej fotky je iny pripad a zostava viditelna (viz
+        ``test_visitor_list_shows_portfolio_item_without_any_cover``): predtym
+        tu bola polozka bez fotky, takze sa tym omylom drzelo skryvanie
+        verejneho obsahu, ktory ziadnu moderaciu necaka.
+        """
+        item = self._item(title="No public cover")
+        pending_cover = self._image(
+            item,
+            status=PortfolioImage.Status.PENDING,
+            approved_key="",
+            pending_key="uploads/portfolio/cover.jpg",
+        )
+        item.cover_image = pending_cover
+        item.save(update_fields=["cover_image", "updated_at"])
 
         self.client.force_authenticate(user=self.visitor)
         response = self.client.get(
@@ -674,3 +690,17 @@ class PortfolioCrudApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
+
+    def test_visitor_list_shows_portfolio_item_without_any_cover(self):
+        """Verejna polozka bez titulnej fotky nesmie zmiznut cudziemu divakovi."""
+        self._item(title="No cover at all")
+
+        self.client.force_authenticate(user=self.visitor)
+        response = self.client.get(
+            reverse("accounts:dashboard_user_portfolio", args=[self.owner.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [entry["title"] for entry in response.data], ["No cover at all"]
+        )

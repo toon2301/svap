@@ -409,3 +409,179 @@ describe('nedostupný zdroj', () => {
     expect(within(goneCard).queryByTestId('feed-shared-compact-preview')).toBeNull();
   });
 });
+
+describe('podklad karty prispevku', () => {
+  it('gives a shared post the same surface as an ordinary one', () => {
+    const shared = render(<FeedPostCard post={offerPost()} />);
+    const sharedClass = shared.container.querySelector(
+      '[data-testid="feed-post-card"]',
+    )!.className;
+    shared.unmount();
+
+    const free = render(
+      <FeedPostCard
+        post={
+          {
+            ...offerPost(),
+            post_type: 'free_post',
+            shared_content: null,
+          } as unknown as FeedPost
+        }
+      />,
+    );
+    const freeClass = free.container.querySelector(
+      '[data-testid="feed-post-card"]',
+    )!.className;
+
+    // Ze ide o zdielanie, hovori hlavicka „zdiela dalej" a vnorena karta –
+    // nie ina farba celej dlazdice. Fialovy podklad rozbijal jednotny feed.
+    expect(sharedClass).toBe(freeClass);
+    expect(sharedClass).toContain('bg-white');
+    expect(sharedClass).not.toContain('#EEEDFE');
+  });
+});
+
+describe('nahrada za chybajuci obrazok', () => {
+  it('uses the offer card fallback for an offer without a photo', () => {
+    render(<FeedPostCard post={offerPost({ thumbnail_url: null })} />);
+
+    const card = screen.getByTestId('feed-shared-card');
+    // Ten isty popisok, aky ma ponuka bez fotky na profile.
+    expect(within(card).getByText('Bez fotografie')).toBeInTheDocument();
+    // Stitok Ponukam/Hladam ostava citatelny aj nad nahradou.
+    expect(within(card).getByTestId('feed-shared-card-kind')).toHaveTextContent(
+      'Ponúkam',
+    );
+  });
+
+  it('uses the portfolio card fallback for a portfolio item without a cover', () => {
+    render(
+      <FeedPostCard
+        post={offerPost(
+          {
+            type: 'portfolio_item',
+            title: 'Weby',
+            thumbnail_url: null,
+            is_seeking: null,
+            price_negotiable: null,
+            price_from: null,
+            price_currency: '',
+          },
+          { post_type: 'shared_portfolio_item' },
+        )}
+      />,
+    );
+
+    const card = screen.getByTestId('feed-shared-card');
+    expect(within(card).getByText('Bez titulnej fotky')).toBeInTheDocument();
+    // Ponuka a portfolio maju kazde svoju nahradu – nie jednu spolocnu.
+    expect(within(card).queryByText('Bez fotografie')).toBeNull();
+  });
+});
+
+describe('repost obycajneho prispevku', () => {
+  function repost() {
+    return offerPost(
+      {
+        type: 'feed_post',
+        title: '',
+        caption: 'Pôvodný text príspevku',
+        thumbnail_url: null,
+        is_seeking: null,
+        price_negotiable: null,
+        price_from: null,
+        price_currency: '',
+      },
+      { post_type: 'shared_feed_post' },
+    );
+  }
+
+  it('drops the label and the inner frame', () => {
+    render(<FeedPostCard post={repost()} />);
+
+    const preview = screen.getByTestId('feed-shared-post-preview');
+    // Ziadny nadpis nad obsahom…
+    expect(screen.queryByText('Pôvodný príspevok')).toBeNull();
+    // …a ziadna bublina v bubline: repost sa cita ako pokracovanie karty.
+    expect(preview.className).not.toContain('rounded-2xl');
+    expect(preview.className).not.toContain('border');
+    expect(preview.className).not.toContain('shadow-sm');
+  });
+
+  it('still names the original author above it', () => {
+    render(<FeedPostCard post={repost()} />);
+
+    const owner = screen.getByTestId('feed-shared-card-owner');
+    expect(owner).toHaveTextContent('Peter Malý');
+    // Meno stoji NAD obsahom, nie v ramceku okolo neho.
+    const preview = screen.getByTestId('feed-shared-post-preview');
+    expect(preview.contains(owner)).toBe(false);
+    expect(owner.compareDocumentPosition(preview)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(preview).toHaveTextContent('Pôvodný text príspevku');
+  });
+
+  it('keeps the offer tile framed – only the post loses its frame', () => {
+    render(<FeedPostCard post={offerPost()} />);
+
+    // Ponuka JE samostatna vec, na ktoru sa preklikava, takze dlazdicu
+    // s ramom si drzi.
+    const tile = screen.getByTestId('feed-shared-compact-preview');
+    expect(tile.className).toContain('rounded-2xl');
+    expect(tile.className).toContain('border');
+  });
+});
+
+describe('nedostupny repost obycajneho prispevku', () => {
+  function goneRepost() {
+    return offerPost(
+      {
+        type: 'feed_post',
+        title: '',
+        caption: 'Pôvodný text príspevku',
+        id: null,
+        owner: null,
+        owner_display_name: '',
+        thumbnail_url: null,
+        is_seeking: null,
+        price_negotiable: null,
+        price_from: null,
+        price_currency: '',
+      },
+      { post_type: 'shared_feed_post', shared_content_unavailable: true },
+    );
+  }
+
+  it('stays frameless, just muted', () => {
+    render(<FeedPostCard post={goneRepost()} />);
+
+    const gone = screen.getByTestId('feed-shared-unavailable');
+    // Stlmenie je JEDINY rozdiel oproti dostupnemu repostu…
+    expect(gone.className).toContain('opacity-60');
+    expect(gone.className).toContain('saturate-50');
+    // …ram sa nepridava. Repost je pokracovanie karty, nie bublina v bubline,
+    // a to sa zmiznutim zdroja nemeni.
+    expect(gone.className).not.toContain('rounded-2xl');
+    expect(gone.className).not.toContain('border');
+    expect(gone.className).not.toContain('shadow-sm');
+    expect(gone).toHaveTextContent('Tento príspevok už nie je dostupný');
+  });
+
+  it('is not a click target any more', () => {
+    render(<FeedPostCard post={goneRepost()} />);
+
+    const card = screen.getByTestId('feed-shared-card');
+    expect(within(card).queryByTestId('feed-shared-post-preview-open')).toBeNull();
+    expect(within(card).queryByRole('button')).toBeNull();
+  });
+
+  it('keeps the frame for an unavailable OFFER', () => {
+    render(<FeedPostCard post={offerPost({}, { shared_content_unavailable: true })} />);
+
+    // Ponuka je dlazdica, na ktoru sa preklikava – ram si drzi aj bez zdroja.
+    const gone = screen.getByTestId('feed-shared-unavailable');
+    expect(gone.className).toContain('rounded-2xl');
+    expect(gone.className).toContain('opacity-60');
+  });
+});

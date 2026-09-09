@@ -120,7 +120,11 @@ export function useDashboardHighlighting({
                 !currentUrl.searchParams.has('offer')
               ) {
                  currentUrl.searchParams.set('highlight', storedId);
-                 router.replace(currentUrl.pathname + currentUrl.search);
+                 // Dopĺňa sa VÝHRADNE parameter zvýraznenia – fragment patrí
+                 // stránke rovnako ako zvyšok adresy, takže ostáva.
+                 router.replace(
+                   currentUrl.pathname + currentUrl.search + currentUrl.hash,
+                 );
               }
               return; // Koniec, obnovili sme
             } else {
@@ -160,7 +164,13 @@ export function useDashboardHighlighting({
           // Odstrániť parametre zvýraznenia z URL
           const currentUrl = new URL(window.location.href);
           if (clearHighlightSearchParams(currentUrl)) {
-            window.history.replaceState(null, '', currentUrl.pathname + currentUrl.search);
+            // Odstraňujú sa VÝHRADNE parametre zvýraznenia – fragment patrí
+            // stránke rovnako ako zvyšok query, takže ostáva.
+            window.history.replaceState(
+              null,
+              '',
+              currentUrl.pathname + currentUrl.search + currentUrl.hash,
+            );
           }
         }
       } catch {
@@ -205,7 +215,10 @@ export function useDashboardHighlighting({
             
             const currentUrl = new URL(window.location.href);
             if (clearHighlightSearchParams(currentUrl)) {
-              router.replace(currentUrl.pathname + currentUrl.search);
+              // Odstraňujú sa VÝHRADNE parametre zvýraznenia; fragment ostáva.
+              router.replace(
+                currentUrl.pathname + currentUrl.search + currentUrl.hash,
+              );
             }
           }
         } catch {

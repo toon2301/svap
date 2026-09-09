@@ -218,6 +218,81 @@ beforeEach(() => {
   });
 });
 
+/** Zdielana ponuka – jednostlpcove okno, nahlad ako hlavny obsah. */
+function sharedOfferPost(sharedOverrides: Record<string, unknown> = {}): FeedPost {
+  return makePost({
+    images: [],
+    post_type: 'shared_offer',
+    caption: 'Odporucam.',
+    shared_content: {
+      type: 'offer',
+      title: 'Programovanie',
+      category: 'it',
+      caption: '',
+      id: 42,
+      owner: { ...author, id: 30, display_name: 'Peter Maly', slug: 'peter' },
+      owner_display_name: 'Peter Maly',
+      thumbnail_url: 'http://api.test/offer-t.webp',
+      is_seeking: false,
+      price_negotiable: false,
+      price_from: '25',
+      price_currency: '\u20ac',
+      ...sharedOverrides,
+    },
+  } as Partial<FeedPost>);
+}
+
+describe('zdielany obsah v jednostlpcovom okne', () => {
+  /** Hlavicka a riadok akcii nesmu byt v scrollovanej ploche. */
+  function expectHeaderPinned() {
+    const fixed = screen.getByTestId('feed-post-overlay-fixed');
+    // Pevny blok sa uz nescrolluje ako celok…
+    expect(fixed.className).toContain('flex');
+    expect(fixed.className).toContain('flex-col');
+    expect(fixed.className).toContain('overflow-hidden');
+    expect(fixed.className).not.toContain('overflow-y-auto');
+
+    // …hlavicka aj akcie si drzia vysku…
+    const header = fixed.querySelector('header');
+    const footer = fixed.querySelector('footer');
+    expect(header?.className).toContain('shrink-0');
+    expect(footer?.className).toContain('shrink-0');
+
+    // …a scrolluje sa VYHRADNE nahlad medzi nimi.
+    const shared = screen.getByTestId('feed-shared-card').parentElement as HTMLElement;
+    expect(shared.className).toContain('flex-1');
+    expect(shared.className).toContain('min-h-0');
+    expect(shared.className).toContain('overflow-y-auto');
+    return { fixed, header, shared };
+  }
+
+  it('pins the header and actions when the shared offer HAS a photo', async () => {
+    await renderLoadedOverlay(sharedOfferPost());
+
+    const { fixed, header, shared } = expectHeaderPinned();
+    expect(fixed.contains(header)).toBe(true);
+    expect(shared.contains(header)).toBe(false);
+  });
+
+  it('pins them the same way when the shared offer has NO photo', async () => {
+    // Prave tento rozdiel bol chybou: s fotkou sa horna cast hybala, bez nej
+    // stala. Rozlozenie sa o fotku nesmie opierat vobec.
+    await renderLoadedOverlay(sharedOfferPost({ thumbnail_url: null }));
+
+    expectHeaderPinned();
+  });
+
+  it('leaves a free post on the original safety-valve behaviour', async () => {
+    await renderLoadedOverlay(textOnlyPost());
+
+    // Volny prispevok nema co pruzne pohltit zvysok, takze mu ostava poistka
+    // „az ked sa neszmesti, doscrolluje sa v nom".
+    expect(
+      screen.getByTestId('feed-post-overlay-fixed').className,
+    ).toContain('overflow-y-auto');
+  });
+});
+
 describe('obsah okna', () => {
   it('shows the fixed block in order and the comments below it', async () => {
     await renderLoadedOverlay(textOnlyPost());

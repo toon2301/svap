@@ -10,15 +10,21 @@
  *
  * Sprievodný text ide vždy do `caption` (je to text NOVÉHO príspevku) –
  * snapshot pôvodného obsahu si backend dopĺňa sám.
+ *
+ * Po úspechu dialóg naviguje na nový príspevok. Je to jediné miesto, ktorým
+ * prejdú všetky tri zdroje, takže sa správanie nedá rozísť podľa toho, odkiaľ
+ * sa zdieľalo.
  */
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { useFeedDialog } from './useFeedDialog';
+import { buildFeedPostPath } from './feedPostRouting';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import type { SharedContentCard } from './sharedContentCard';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
@@ -45,7 +51,12 @@ type FeedShareDialogProps = {
   preview: FeedSharePreview;
   /** Vlastné volanie API – rozhoduje, ktorý `shared_*_id` sa pošle. */
   onShare: (caption: string, taggedUserIds: number[]) => Promise<FeedPost>;
-  /** Volá sa PO úspechu; feed sa notifikuje aj eventom (viď feedShareEvents). */
+  /**
+   * Volá sa PO úspechu; feed sa notifikuje aj eventom (viď feedShareEvents).
+   *
+   * Na upratanie po volajúcom (zavrieť jeho modal, vyčistiť výber) – NIE na
+   * navigáciu. Tú robí dialóg sám a pre všetky vstupné body rovnako.
+   */
   onShared?: (created: FeedPost) => void;
 };
 
@@ -57,6 +68,7 @@ export default function FeedShareDialog({
   onShared,
 }: FeedShareDialogProps) {
   const { t } = useLanguage();
+  const router = useRouter();
   // Mobil má emoji priamo na systémovej klávesnici – appkové
   // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
   const isMobile = useIsMobile();
@@ -93,6 +105,22 @@ export default function FeedShareDialog({
       emitFeedPostCreated(created);
       onShared?.(created);
       onClose();
+
+      // Rovno na nový príspevok – pre KAŽDÝ vstupný bod rovnako.
+      //
+      // Presmerovanie sedí tu, nie u volajúcich: dialóg je jediné miesto,
+      // ktorým prejde zdieľanie príspevku, ponuky aj portfólia, a jediné,
+      // ktoré má odpoveď servera. Volajúci si predtým riešili len zatvorenie
+      // svojich modalov, takže zo zdieľania ponuky a portfólia sa nikam
+      // nešlo a používateľ ostal stáť tam, kde bol.
+      //
+      // `created.id` je z odpovede POST-u, takže je k dispozícii ešte pred
+      // navigáciou – čakať na feed netreba. Kontrola je poistka proti
+      // neúplnej odpovedi: bez nej by sa navigovalo na `/dashboard/feed/NaN`.
+      const createdId = Number(created?.id);
+      if (Number.isSafeInteger(createdId) && createdId > 0) {
+        router.push(buildFeedPostPath(createdId));
+      }
     } catch (err) {
       // Skrytá/nedostupná ponuka či portfólio vracia z BE zrozumiteľnú hlášku –
       // FE ju len zobrazí, validáciu neduplikuje. Sieťové a rate-limit chyby

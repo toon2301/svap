@@ -9,15 +9,22 @@
  * zdieľa niečo, čo príspevkom ešte len bude, a napriek tomu má ukázať presne
  * tú istú kartu.
  *
+ * DVA TVARY, nie dva komponenty:
+ *  - ponuka/portfólio = dlaždica s náhľadom a rámom (samostatná vec, na ktorú
+ *    sa preklikáva),
+ *  - zdieľaný PRÍSPEVOK = holý obsah bez rámu. Pôvodného autora už nesie
+ *    riadok nad ním, takže rám by do karty pridal len druhé orámovanie.
+ *
  * Karty MIMO Nástenky (ProfileOfferCard, ProfileOfferCardMobile, PortfolioCard)
  * s týmto nemajú nič spoločné a zámerne ostávajú nezmenené: stoja na dátach
  * (galéria, recenzie, otváracie hodiny), ktoré snapshot vo feede nenesie.
+ * Náhradu za chýbajúci obrázok si však táto karta požičiava od nich, nech
+ * zdieľaná ponuka bez fotky vyzerá ako ponuka bez fotky na profile.
  */
 
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
-import ExchangeIcon from './FeedExchangeIcon';
 import { formatOfferPriceLabel } from './offerPriceLabel';
 import type { SharedContentCard } from './sharedContentCard';
 
@@ -40,6 +47,55 @@ function UnavailableIcon() {
   );
 }
 
+/**
+ * Náhrada za chýbajúci obrázok.
+ *
+ * Prevzatá z PÔVODNÝCH kariet, nie vymyslená nanovo: ponuka a dopyt dostanú
+ * plochu z `OfferImageCarousel`, portfólio popisok z `PortfolioCard`. Zdieľaná
+ * položka bez fotky tak vyzerá rovnako ako tá istá položka na profile.
+ */
+function MissingImage({ type }: { type: SharedContentCard['type'] }) {
+  const { t } = useLanguage();
+
+  if (type === 'portfolio_item') {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-500 dark:bg-[#0e0e0f] dark:text-gray-400">
+        <span>{t('portfolio.noCoverImage', 'Bez titulnej fotky')}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-[#141415] dark:via-[#0f0f10] dark:to-[#0a0a0b]">
+      <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          className="mb-1.5 h-10 w-10 opacity-60"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6.75 7.5l1.027-1.37A1.5 1.5 0 0 1 9 5.5h6a1.5 1.5 0 0 1 1.223.63L17.25 7.5H19.5A1.5 1.5 0 0 1 21 9v7.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5V9A1.5 1.5 0 0 1 4.5 7.5h2.25Z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+          />
+        </svg>
+        <span className="text-[11px] uppercase tracking-wide opacity-70">
+          {t('skills.noPhoto', 'Bez fotografie')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function SharedContentPreviewCard({
   data,
   hideOwner = false,
@@ -53,7 +109,7 @@ export default function SharedContentPreviewCard({
   /** Klik na kartu ponuky/portfólia – vedie rovno na zdroj. */
   onOpenSource?: () => void;
   /**
-   * Klik na kartu zdieľaného PRÍSPEVKU mimo jeho fotky.
+   * Klik na zdieľaný PRÍSPEVOK mimo jeho fotky.
    *
    * Ponuka a portfólio vedú rovno na zdroj; mini príspevok je ukážka obsahu,
    * ku ktorému sa zdieľajúci vyjadril, takže tu volajúci rozhoduje sám – na
@@ -124,12 +180,12 @@ export default function SharedContentPreviewCard({
       </div>
     );
   } else if (!isPost) {
-    // Ponuka a portfólio bez obrázka dostanú nízky pásik: tvar karty ostáva,
-    // ale prázdne miesto na celú výšku náhľadu nevzniká. Textový repost
-    // nerezervuje nič – prázdny rámec by kartu len natiahol.
+    // Ponuka a portfólio si držia tvar dlaždice aj bez fotky – náhrada je tá
+    // istá ako na pôvodnej karte. Zdieľaný príspevok nerezervuje nič: prázdny
+    // rámec by ho len natiahol.
     photo = (
-      <div className="relative flex h-32 w-full items-center justify-center bg-purple-50 text-purple-400 dark:bg-purple-950/30 dark:text-purple-500/70">
-        {unavailable ? <UnavailableIcon /> : <ExchangeIcon />}
+      <div className={`relative w-full ${PHOTO_FRAME}`}>
+        <MissingImage type={data.type} />
         {typeBadge}
       </div>
     );
@@ -145,13 +201,9 @@ export default function SharedContentPreviewCard({
   ) : null;
 
   const body = (
-    <div className="space-y-1 p-3 text-left">
-      {isPost ? (
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80">
-          {t('feed.originalPost', 'Pôvodný príspevok')}
-        </p>
-      ) : null}
-
+    // Zdieľaný príspevok nemá rám, takže ani vnútorné odsadenie – text má
+    // začínať tam, kde text karty, nie o kúsok vpravo.
+    <div className={`space-y-1 text-left ${isPost ? '' : 'p-3'}`}>
       {unavailable ? (
         <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
           {unavailableText}
@@ -185,37 +237,53 @@ export default function SharedContentPreviewCard({
   );
 
   // Stlmenie je JEDINÝ rozdiel nedostupného zdroja – layout ostáva ten istý,
-  // takže sa karta pod rukami nepremení na iný blok.
-  const frameClass = `overflow-hidden rounded-2xl border border-purple-200/70 bg-white/80 shadow-sm dark:border-purple-800/40 dark:bg-black/20 ${
-    unavailable ? 'opacity-60 saturate-50' : ''
-  }`;
+  // takže sa karta pod rukami nepremení na iný blok. Platí to pre KAŽDÝ typ:
+  // zdieľaný príspevok teda ostáva bez rámu aj keď zdroj zmizol, len stlmený.
+  const mutedClass = unavailable ? 'opacity-60 saturate-50' : '';
+  const frameClass = `overflow-hidden rounded-2xl border border-purple-200/70 bg-white/80 shadow-sm dark:border-purple-800/40 dark:bg-black/20 ${mutedClass}`;
 
   let frame;
-  if (unavailable) {
+  if (isPost) {
+    // BEZ rámu: pôvodný príspevok je pokračovanie karty, nie bublina v bubline.
+    // Text a fotka ostávajú DVA samostatné ciele kliku (tlačidlo v tlačidle je
+    // neplatné HTML), preto obal `div`.
+    //
+    // Poradie „text nad fotkou" je rovnaké pravidlo, aké platí pre voľný
+    // príspevok – repost sa tak číta ako pôvodný príspevok.
     frame = (
-      <div data-testid="feed-shared-unavailable" className={frameClass}>
-        {photo}
-        {body}
-      </div>
-    );
-  } else if (isPost) {
-    // Fotka a zvyšok karty sú DVA samostatné ciele kliku, nie vnorené tlačidlá
-    // (tlačidlo v tlačidle je neplatné HTML). Obal preto ostáva `div`.
-    frame = (
-      <div data-testid="feed-shared-post-preview" className={frameClass}>
-        {photo}
-        {onOpenPostPreview ? (
+      <div
+        data-testid={unavailable ? 'feed-shared-unavailable' : 'feed-shared-post-preview'}
+        className={`space-y-2 ${mutedClass}`}
+      >
+        {/* Zmiznutý zdroj nie je cieľ kliku – nie je kam ísť. */}
+        {onOpenPostPreview && caption && !unavailable ? (
           <button
             type="button"
             onClick={onOpenPostPreview}
             data-testid="feed-shared-post-preview-open"
-            className="block w-full text-left transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-purple-400/60 dark:hover:bg-black/30"
+            className="block w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
           >
             {body}
           </button>
         ) : (
           body
         )}
+        {photo}
+      </div>
+    );
+  } else if (unavailable) {
+    // Ponuka a portfólio sú dlaždice, takže si rám držia aj bez zdroja –
+    // mení sa len stlmenie a náhrada za náhľad, ktorý sa už nedá načítať.
+    frame = (
+      <div data-testid="feed-shared-unavailable" className={frameClass}>
+        {photo ?? (
+          <div className={`relative w-full ${PHOTO_FRAME}`}>
+            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500">
+              <UnavailableIcon />
+            </div>
+          </div>
+        )}
+        {body}
       </div>
     );
   } else {

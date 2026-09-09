@@ -34,6 +34,15 @@ jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fallback: string) => fallback }),
 }));
 
+// Globalny mock v jest.setup.js vracia pri kazdom volani novy `jest.fn()`,
+// takze sa nan neda tvrdit – tu potrebujeme jednu stabilnu referenciu.
+const mockRouterPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+  usePathname: () => '/dashboard',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const mockIsMobile = jest.fn(() => false);
 jest.mock('@/hooks', () => ({
   useIsMobile: () => mockIsMobile(),
@@ -77,6 +86,7 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
     mockedShareOffer.mockReset();
     mockedSharePortfolio.mockReset();
     mockedToastError.mockReset();
+    mockRouterPush.mockReset();
     mockIsMobile.mockReturnValue(false);
   });
 
@@ -276,5 +286,144 @@ describe('Zdieľanie príspevku, ktorý je sám zdieľaním', () => {
     expect(card).toHaveAttribute('data-shared-type', 'feed_post');
     expect(card).toHaveTextContent('Ahoj feed!');
     expect(within(card).queryByTestId('feed-shared-card-kind')).toBeNull();
+  });
+});
+
+describe('navigacia po uspesnom zdielani', () => {
+  const mockedShareFeedPost = jest.requireMock('@/lib/feedApi')
+    .shareFeedPost as jest.Mock;
+
+  const sourcePost = {
+    id: 3,
+    post_type: 'free_post',
+    caption: 'Ahoj feed!',
+    author: { id: 10, display_name: 'Jana', slug: 'jana', avatar_url: null },
+    images: [],
+    shared_content: null,
+    shared_content_unavailable: false,
+  } as unknown as FeedPost;
+
+  beforeEach(() => {
+    mockedShareOffer.mockReset();
+    mockedSharePortfolio.mockReset();
+    mockedShareFeedPost.mockReset();
+    mockedToastError.mockReset();
+    mockRouterPush.mockReset();
+    mockIsMobile.mockReturnValue(false);
+  });
+
+  /** Odosle dialog a pocka na dokoncenie volania. */
+  async function submitShare() {
+    await userEvent.click(screen.getByTestId('feed-share-submit'));
+  }
+
+  it('goes to the new post after sharing an OFFER', async () => {
+    mockedShareOffer.mockResolvedValue({ ...created, id: 101 });
+
+    render(
+      <FeedShareDialog
+        open
+        onClose={jest.fn()}
+        preview={{ type: 'offer', title: 'Moja ponuka' }}
+        onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
+      />,
+    );
+    await submitShare();
+
+    // Zdielanie ponuky predtym len zavrelo modal a pouzivatel ostal stat na
+    // profile – nemal ako zistit, ze prispevok vobec vznikol.
+    await waitFor(() =>
+      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/feed/101'),
+    );
+  });
+
+  it('goes to the new post after sharing a PORTFOLIO item', async () => {
+    mockedSharePortfolio.mockResolvedValue({ ...created, id: 102 });
+
+    render(
+      <FeedShareDialog
+        open
+        onClose={jest.fn()}
+        preview={{ type: 'portfolio_item', title: 'Moja práca' }}
+        onShare={(caption, tags) => sharePortfolioItemToFeed(9, caption, tags)}
+      />,
+    );
+    await submitShare();
+
+    await waitFor(() =>
+      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/feed/102'),
+    );
+  });
+
+  it('goes to the new post after sharing a POST', async () => {
+    mockedShareFeedPost.mockResolvedValue({ ...created, id: 103 });
+
+    render(
+      <FeedPostShareModal open onClose={jest.fn()} post={sourcePost} />,
+    );
+    await submitShare();
+
+    await waitFor(() =>
+      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/feed/103'),
+    );
+  });
+
+  it('closes the callers own modal BEFORE navigating away', async () => {
+    mockedShareOffer.mockResolvedValue({ ...created, id: 104 });
+    const order: string[] = [];
+    mockRouterPush.mockImplementation(() => order.push('navigate'));
+
+    render(
+      <FeedShareDialog
+        open
+        onClose={() => order.push('close')}
+        preview={{ type: 'offer', title: 'Moja ponuka' }}
+        onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
+        onShared={() => order.push('onShared')}
+      />,
+    );
+    await submitShare();
+
+    // Volajuci si najprv upratal (zavrel svoj modal), az potom sa odchadza –
+    // inak by nad novym prispevkom ostal visiet otvoreny dialog.
+    await waitFor(() => expect(order).toContain('navigate'));
+    expect(order).toEqual(['onShared', 'close', 'navigate']);
+  });
+
+  it('stays put when the share fails', async () => {
+    mockedShareOffer.mockRejectedValue({
+      response: { data: { error: 'Zdielany obsah nie je dostupny.' } },
+    });
+
+    render(
+      <FeedShareDialog
+        open
+        onClose={jest.fn()}
+        preview={{ type: 'offer', title: 'Skrytá ponuka' }}
+        onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
+      />,
+    );
+    await submitShare();
+
+    await waitFor(() => expect(mockedToastError).toHaveBeenCalled());
+    expect(mockRouterPush).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate to a broken path when the response carries no id', async () => {
+    mockedShareOffer.mockResolvedValue({ post_type: 'shared_offer' } as unknown as FeedPost);
+
+    render(
+      <FeedShareDialog
+        open
+        onClose={jest.fn()}
+        preview={{ type: 'offer', title: 'Moja ponuka' }}
+        onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
+      />,
+    );
+    await submitShare();
+
+    // Bez kontroly by tu vzniklo `/dashboard/feed/NaN`.
+    await waitFor(() => expect(mockedShareOffer).toHaveBeenCalled());
+    expect(mockRouterPush).not.toHaveBeenCalled();
   });
 });

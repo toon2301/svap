@@ -21,6 +21,7 @@ import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
 import { setProfileLikeState, type ProfileLikeResponse } from "../profile/profileLikesApi";
 import OfferImageGalleryLightbox from "../shared/OfferImageGalleryLightbox";
 import type { ProfileTab } from "../profile/profileTypes";
+import { useProfileTabQuery } from "../profile/profileTabQuery";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
 import { buildMessagesUrl } from "../messages/messagesRouting";
 
@@ -79,7 +80,25 @@ export function SearchUserProfileModule({
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? "offers");
+  // Rovnaké naviazanie na adresu ako pri vlastnom profile – bez neho záložku
+  // cudzieho profilu zhodilo F5 aj krok späť a pri návrate na profil ostávala
+  // visieť tá, ktorú si používateľ pozeral naposledy.
+  const [activeTab, setActiveTab] = useProfileTabQuery(initialTab ?? "offers", userId);
+
+  // Preklik na KONKRÉTNU ponuku musí skončiť na záložke ponúk.
+  //
+  // Adresu mení `goToUserProfile` cez `history.pushState`, čo nevyvolá
+  // `popstate` ani zmenu `usePathname` – modul teda nemá z čoho spoznať, že
+  // sa cieľ zmenil, a ostala by svietiť záložka z predošlej návštevy
+  // (typicky portfólio). `highlightedSkillId` je jediný signál, ktorý sem
+  // o tomto preklike dorazí. Vlastný profil to takto rieši v `ProfileModule`
+  // od začiatku; cudzí profil na to vetvu nemal.
+  useEffect(() => {
+    // `replace`: zalozku prepina appka podla ciela prekliku, nie pouzivatel –
+    // rovnako ako v ProfileModule. Krok spat teda nema viest do zalozky, ktoru
+    // si nevybral.
+    if (highlightedSkillId != null) setActiveTab("offers", { replace: true });
+  }, [highlightedSkillId, setActiveTab]);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [isAvatarLightboxOpen, setIsAvatarLightboxOpen] = useState(false);
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
@@ -158,8 +177,15 @@ export function SearchUserProfileModule({
             const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
             // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL.
             if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== data.slug) {
-              const newUrl = `/dashboard/users/${data.slug}`;
-              
+              // Query aj fragment idú so sebou. Kanonizácia mení IBA
+              // identifikátor v ceste – všetko ostatné patrí stránke, na ktorú
+              // sa práve pozeráme: `?tab=` (aktívna záložka), `?offer=`
+              // a `?highlight=` (preklik na konkrétnu ponuku). Bez toho ich
+              // toto presmerovanie ticho zahodilo.
+              const search = typeof window !== 'undefined' ? window.location.search : '';
+              const hash = typeof window !== 'undefined' ? window.location.hash : '';
+              const newUrl = `/dashboard/users/${data.slug}${search}${hash}`;
+
               // Okamžitá aktualizácia URL bez reloadu.
               if (typeof window !== 'undefined') {
                 window.history.pushState(null, '', newUrl);

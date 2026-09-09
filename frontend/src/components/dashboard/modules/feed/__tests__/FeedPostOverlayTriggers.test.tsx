@@ -277,14 +277,15 @@ describe('zdieľaný obsah', () => {
     expect(navigations).toHaveLength(1);
   });
 
-  it('keeps the sharer text below the preview on the feed card', async () => {
+  it('keeps the sharer text above the preview on the feed card', async () => {
     renderWithOverlay(sharedPost());
 
     const caption = screen.getByTestId('feed-post-caption');
     const preview = screen.getByTestId('feed-shared-compact-preview');
-    // Na karte je hlavným obsahom náhľad a text je komentár k nemu – toto
-    // poradie sa zámerne nemení, otáča sa len v okne detailu.
-    expect(preview.compareDocumentPosition(caption)).toBe(
+    // Text zdieľajúceho je jeho komentár k obsahu, takže stojí NAD ním –
+    // rovnako vo feede, v okne detailu aj na mobilnej obrazovke. Predtým sa
+    // poradie na karte otáčalo, takže sa komentár čítal až po obsahu.
+    expect(caption.compareDocumentPosition(preview)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });

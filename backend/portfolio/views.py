@@ -56,6 +56,12 @@ def _enforce_public_or_owner(request, user) -> Response | None:
 
 
 def _public_image_file_q(prefix: str = ""):
+    """Podmienka „obrázok má súbor, ktorý sa smie servírovať verejne".
+
+    Stačí jedno z dvoch: schválený kľúč v úložisku, alebo neprázdne pole
+    ``image`` (lokálny upload). Prefix dovoľuje tú istú podmienku poskladať aj
+    pre vzťah (napr. ``cover_image__``).
+    """
     approved_key = f"{prefix}approved_key__gt"
     image_isnull = f"{prefix}image__isnull"
     image_exact = f"{prefix}image"
@@ -65,9 +71,20 @@ def _public_image_file_q(prefix: str = ""):
 
 
 def _visible_cover_q():
-    return Q(cover_image__status=PortfolioImage.Status.APPROVED) & (
-        Q(cover_image__approved_key__gt="")
-        | (Q(cover_image__image__isnull=False) & ~Q(cover_image__image=""))
+    """Podmienka „titulnú fotku položky smie vidieť aj cudzí návštevník".
+
+    Položka BEZ titulnej fotky prejde. ``cover_image`` je voliteľné pole
+    (``null=True``) a pri zmazaní fotky sa navyše vynuluje cez ``SET_NULL``,
+    takže „žiadna titulná fotka" nesmie znamenať to isté čo „fotka čaká na
+    moderáciu" – inak taká položka zmizne všetkým okrem vlastníka. Karta si pre
+    ňu vykresľuje vlastný náhradný vzhľad.
+
+    Keď titulná fotka JE, musí byť schválená a mať verejne servírovateľný
+    súbor – moderácia ostáva nedotknutá.
+    """
+    return Q(cover_image__isnull=True) | (
+        Q(cover_image__status=PortfolioImage.Status.APPROVED)
+        & _public_image_file_q("cover_image__")
     )
 
 

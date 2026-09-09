@@ -7,6 +7,7 @@ import { type SearchUserResult } from '../modules/search/types';
 import { primeUserSlugId } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
 import { createDesktopSettingsReturnTarget } from './desktopSettingsNavigation';
+import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 
 /**
  * Identifikátor profilu pre URL `/dashboard/users/{identifier}`.
@@ -102,10 +103,7 @@ export function useDashboardNavigation({
 
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
     if (moduleId === 'settings' && isDesktop) {
-      const currentUrl =
-        typeof window !== 'undefined'
-          ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-          : '/dashboard';
+      const currentUrl = currentBrowserUrl('/dashboard');
       openDesktopSettings(
         createDesktopSettingsReturnTarget(activeModule, currentUrl),
       );
