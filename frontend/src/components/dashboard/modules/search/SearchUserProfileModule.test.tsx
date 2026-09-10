@@ -160,6 +160,7 @@ describe('SearchUserProfileModule', () => {
     invalidateUserProfileCache(42);
     pushMock.mockReset();
     replaceMock.mockReset();
+    replaceMock.mockReset();
     (api.get as jest.Mock).mockResolvedValue({
       data: {
         id: 42,
@@ -366,6 +367,7 @@ describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
     jest.clearAllMocks();
     invalidateUserProfileCache(42);
     pushMock.mockReset();
+    replaceMock.mockReset();
     (api.get as jest.Mock).mockResolvedValue({
       data: {
         id: 42,
@@ -385,7 +387,7 @@ describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=posts'),
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=posts'),
     );
     // Adresa sa meni aj priamo (bez reloadu) – zalozka musi prezit oboje.
     expect(window.location.pathname).toBe('/dashboard/users/test-user');
@@ -398,7 +400,7 @@ describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith(
+      expect(replaceMock).toHaveBeenCalledWith(
         '/dashboard/users/test-user?offer=55#sekcia',
       ),
     );
@@ -410,7 +412,7 @@ describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith('/dashboard/users/test-user'),
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user'),
     );
   });
 });
@@ -420,6 +422,7 @@ describe('SearchUserProfileModule – historia pri odvodenej zmene zalozky', () 
     jest.clearAllMocks();
     invalidateUserProfileCache(42);
     pushMock.mockReset();
+    replaceMock.mockReset();
     (api.get as jest.Mock).mockResolvedValue({
       data: {
         id: 42,
@@ -487,6 +490,7 @@ describe('SearchUserProfileModule – kanonizacia pocas rozbehnuteho fetchu', ()
     jest.clearAllMocks();
     invalidateUserProfileCache(42);
     pushMock.mockReset();
+    replaceMock.mockReset();
   });
 
   it('canonicalises with the tab active AT THAT MOMENT, not the one from mount', async () => {
@@ -531,7 +535,7 @@ describe('SearchUserProfileModule – kanonizacia pocas rozbehnuteho fetchu', ()
     // Kanonizacia cita adresu az v momente odpovede, takze prenesie AKTUALNU
     // zalozku – nie tu, s ktorou sa stranka mountovala.
     await waitFor(() =>
-      expect(pushMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=portfolio'),
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=portfolio'),
     );
     expect(window.location.search).toBe('?tab=portfolio');
   });

@@ -9,6 +9,10 @@
  */
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  emitFeedShareLanding,
+  resetFeedShareLanding,
+} from '../feedShareLanding';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostDetailOverlay from '../FeedPostDetailOverlay';
@@ -291,6 +295,22 @@ describe('zdielany obsah v jednostlpcovom okne', () => {
       screen.getByTestId('feed-post-overlay-fixed').className,
     ).toContain('overflow-y-auto');
   });
+});
+
+describe('pristátie po zdieľaní', () => {
+  it('closes the detail window – no detail stays open', async () => {
+    const { onClose } = await renderLoadedOverlay(textOnlyPost());
+    expect(screen.getByTestId('feed-post-overlay')).toBeInTheDocument();
+
+    // Po zdieľaní sa pristáva na Nástenku, nie do detailu. Okno sa zatvára
+    // VLASTNÝM `onClose`, takže si odoberie aj svoj záznam histórie –
+    // volajúci o jeho vnútornom účtovníctve vedieť nemusí.
+    act(() => emitFeedShareLanding(999));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  afterEach(() => resetFeedShareLanding());
 });
 
 describe('obsah okna', () => {

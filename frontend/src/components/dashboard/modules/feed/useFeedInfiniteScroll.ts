@@ -21,10 +21,18 @@ type UseFeedInfiniteScrollOptions = {
   pageSize?: number;
   /** Vlastný zdroj dát (profilové zoznamy vo Fáze 4.5); default = hlavný feed. */
   loader?: FeedLoader;
+  /**
+   * Obnova stavu NAMIESTO prvého načítania.
+   *
+   * Volá sa raz pri mounte. Keď vráti príspevky, zoznam aj kurzor sa nasadia
+   * z nich a request na server sa vôbec nepošle – práve to drží obsah na
+   * mieste pri návrate. `null` = načítaj normálne.
+   */
+  restore?: () => { posts: FeedPost[]; nextUrl: string | null } | null;
 };
 
 export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}) {
-  const { pageSize, loader } = options;
+  const { pageSize, loader, restore } = options;
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -42,6 +50,10 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
   // rendri rodiča (inline funkcia by inak menila identitu).
   const loaderRef = useRef<FeedLoader | undefined>(loader);
   loaderRef.current = loader;
+  // Rovnaký dôvod ako pri loaderi: inline funkcia by menila identitu a efekt
+  // prvého načítania by sa reštartoval.
+  const restoreRef = useRef(restore);
+  restoreRef.current = restore;
 
   const fetchPage = useCallback(
     (params: ListFeedPostsParams) => {
@@ -142,11 +154,35 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
   }, []);
 
   useEffect(() => {
+    // Návrat na Nástenku: stav je uložený, takže sa nič nedoťahuje. Bez tejto
+    // vetvy by refetch prvej stránky zahodil donačítané stránky a obsah by sa
+    // používateľovi pod rukami posunul.
+    const restored = restoreRef.current?.();
+    if (restored && restored.posts.length) {
+      setPosts(restored.posts);
+      nextUrlRef.current = restored.nextUrl;
+      setHasMore(Boolean(restored.nextUrl));
+      setLoading(false);
+      return;
+    }
     void load();
   }, [load]);
 
   return {
     posts,
+    /**
+     * Stav pre uloženie pri odchode: zoznam aj kurzor ďalšej stránky.
+     * Kurzor žije v refe, takže sa inak zvonka prečítať nedá.
+     *
+     * Zoznam sa berie z AKTUÁLNEHO renderu, nie zo zrkadla `postsRef`: to sa
+     * dopĺňa až v efekte, takže tesne po commite ešte drží predošlú hodnotu.
+     * Volajúci si drží najnovšiu verziu tejto funkcie, takže vidí posledný
+     * vykreslený stav.
+     */
+    getSnapshot: () => ({
+      posts,
+      nextUrl: nextUrlRef.current,
+    }),
     removePost,
     loading,
     loadingMore,

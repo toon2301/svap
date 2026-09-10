@@ -11,6 +11,10 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostCard from '../FeedPostCard';
 import { resetOverlayLayers } from '../../shared/overlayLayers';
+import {
+  emitFeedShareLanding,
+  resetFeedShareLanding,
+} from '../feedShareLanding';
 import { type FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
@@ -320,5 +324,35 @@ describe('plynulé doscrollovanie ku komentárom', () => {
     });
     // Skok priamym zápisom sa už nerobí – o pozíciu sa stará prehliadač.
     expect(scroller.scrollTop).toBe(0);
+  });
+});
+
+describe('pristátie po zdieľaní zatvorí mobilné vrstvy', () => {
+  afterEach(() => resetFeedShareLanding());
+
+  it('closes the photo viewer', async () => {
+    render(<FeedPostCard post={makePost()} />);
+    await userEvent.click(screen.getByTestId('feed-image-open-11'));
+    expect(await screen.findByTestId('feed-photo-viewer')).toBeInTheDocument();
+
+    // Po zdieľaní sa pristáva na Nástenku – žiadna vrstva nad kartou nesmie
+    // ostať otvorená, ani tá, z ktorej sa zdieľalo.
+    act(() => emitFeedShareLanding(999));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-photo-viewer')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('closes the mobile detail screen', async () => {
+    render(<FeedPostCard post={makePost()} />);
+    await userEvent.click(screen.getByTestId('feed-comments-button'));
+    expect(await screen.findByTestId('feed-mobile-detail')).toBeInTheDocument();
+
+    act(() => emitFeedShareLanding(999));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-mobile-detail')).not.toBeInTheDocument(),
+    );
   });
 });

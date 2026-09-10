@@ -12,6 +12,7 @@
 
 import type { FeedPost } from '@/lib/feedApi';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
+import { requestFeedReturnCapture } from './feedReturnState';
 
 type Router = { push: (href: string) => void };
 
@@ -47,6 +48,9 @@ export function buildSharedSourceHandler(
 
   return () => {
     beforeNavigate?.();
+    // Rovnako ako pri preklik na profil: uloženie stavu Nástenky ešte pred
+    // odchodom, nech sa dá vrátiť presne tam, kde používateľ skončil.
+    requestFeedReturnCapture();
     if (sharedType === 'portfolio_item') {
       router.push(buildPortfolioDetailPath(ownerIdentifier, sourceId));
       return;

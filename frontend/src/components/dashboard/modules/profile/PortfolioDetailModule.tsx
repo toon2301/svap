@@ -13,7 +13,9 @@ import {
   getPortfolioCategoryLabel,
   preparePortfolioDisplayImages,
 } from './portfolioDisplay';
-import { buildPortfolioListPath } from './portfolioRouting';
+import { buildPortfolioListPath,
+  navigateBackFromPortfolioDetail,
+} from './portfolioRouting';
 import { PortfolioDetailErrorState } from './PortfolioDetailErrorState';
 import { PortfolioDetailHero } from './PortfolioDetailHero';
 import { PortfolioDetailSkeleton } from './PortfolioDetailSkeleton';
@@ -223,7 +225,11 @@ export default function PortfolioDetailModule({
   }, [item, toggleLike]);
 
   const handleBack = useCallback(() => {
-    router.push(backPath);
+    // `replace`, nie `push`: cieľom je VRÁTIŤ SA na zoznam, nie ísť ďalej.
+    // Push pridával nový záznam, takže prehliadačové Späť viedlo naspäť na
+    // položku a appkové „späť" ju znova prekrylo zoznamom – používateľ medzi
+    // nimi len osciloval. Ten istý helper používa aj mobilná vetva.
+    navigateBackFromPortfolioDetail(router, backPath);
   }, [backPath, router]);
 
   const handleEditClick = useCallback(() => {
@@ -256,7 +262,9 @@ export default function PortfolioDetailModule({
       dispatchProfilePortfolioRefresh();
       setIsDeleteOpen(false);
       toast.success(t('portfolio.deleteSuccess'));
-      router.push(backPath);
+      // Položka už neexistuje – nechať ju v histórii by znamenalo, že Späť
+      // vedie na mŕtvu adresu.
+      navigateBackFromPortfolioDetail(router, backPath);
     } catch (error) {
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (status === 404) {
@@ -265,7 +273,7 @@ export default function PortfolioDetailModule({
         dispatchProfilePortfolioRefresh();
         setIsDeleteOpen(false);
         toast.success(t('portfolio.deleteSuccess'));
-        router.push(backPath);
+        navigateBackFromPortfolioDetail(router, backPath);
         return;
       }
       setIsDeleteOpen(false);
@@ -281,7 +289,7 @@ export default function PortfolioDetailModule({
   const handleItemGone = useCallback(() => {
     dispatchProfilePortfolioRefresh();
     toast.error(t('portfolio.itemNoLongerExists'));
-    router.push(backPath);
+    navigateBackFromPortfolioDetail(router, backPath);
   }, [backPath, router, t]);
 
   if (item && canManage && isMobile && isEditing) {

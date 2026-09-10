@@ -41,6 +41,7 @@ import { usePendingFeedImages } from './usePendingFeedImages';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import { handleGoneFeedPost } from './feedPostGone';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
+import { onFeedShareLanding } from './feedShareLanding';
 
 type FeedPostDetailOverlayProps = {
   postId: number;
@@ -144,6 +145,11 @@ export default function FeedPostDetailOverlay({
     }),
     [postId, onClose],
   );
+
+  // Po zdieľaní sa pristáva na Nástenku, nie do detailu – okno sa preto zavrie
+  // samo. Robí to VLASTNÝM `onClose`, takže si odoberie aj svoj záznam
+  // histórie; volajúci o jeho vnútornom účtovníctve nemusí vedieť.
+  useEffect(() => onFeedShareLanding(() => onClose()), [onClose]);
 
   /**
    * ŽIVÝ stav fotiek – ten istý hook, akým si ich sleduje karta vo feede.

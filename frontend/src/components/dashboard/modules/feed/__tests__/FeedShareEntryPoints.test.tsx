@@ -17,6 +17,11 @@ import {
   FEED_POST_CREATED_EVENT,
   onFeedPostCreated,
 } from '../feedShareEvents';
+import {
+  onFeedShareLanding,
+  registerFeedLandingTarget,
+  resetFeedShareLanding,
+} from '../feedShareLanding';
 import { shareOfferToFeed, sharePortfolioItemToFeed, type FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
@@ -289,7 +294,7 @@ describe('Zdieľanie príspevku, ktorý je sám zdieľaním', () => {
   });
 });
 
-describe('navigacia po uspesnom zdielani', () => {
+describe('pristátie po úspešnom zdieľaní', () => {
   const mockedShareFeedPost = jest.requireMock('@/lib/feedApi')
     .shareFeedPost as jest.Mock;
 
@@ -303,6 +308,66 @@ describe('navigacia po uspesnom zdielani', () => {
     shared_content_unavailable: false,
   } as unknown as FeedPost;
 
+  /** Štyri druhy obsahu, ktoré sa dajú zdieľať. */
+  const variants: Array<[string, () => void, jest.Mock]> = [
+    [
+      'obyčajný príspevok',
+      () => {
+        mockedShareFeedPost.mockResolvedValue({ ...created, id: 201 });
+        render(<FeedPostShareModal open onClose={jest.fn()} post={sourcePost} />);
+      },
+      mockedShareFeedPost,
+    ],
+    [
+      'ponuka Ponúkam',
+      () => {
+        mockedShareOffer.mockResolvedValue({ ...created, id: 202 });
+        render(
+          <FeedShareDialog
+            open
+            onClose={jest.fn()}
+            preview={{ type: 'offer', title: 'Kurz gitary', isSeeking: false }}
+            onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
+          />,
+        );
+      },
+      mockedShareOffer,
+    ],
+    [
+      'ponuka Hľadám',
+      () => {
+        mockedShareOffer.mockResolvedValue({ ...created, id: 203 });
+        render(
+          <FeedShareDialog
+            open
+            onClose={jest.fn()}
+            preview={{ type: 'offer', title: 'Hľadám lektora', isSeeking: true }}
+            onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
+          />,
+        );
+      },
+      mockedShareOffer,
+    ],
+    [
+      'portfólio',
+      () => {
+        mockedSharePortfolio.mockResolvedValue({ ...created, id: 204 });
+        render(
+          <FeedShareDialog
+            open
+            onClose={jest.fn()}
+            preview={{ type: 'portfolio_item', title: 'Moja práca' }}
+            onShare={(caption, tags) => sharePortfolioItemToFeed(9, caption, tags)}
+          />,
+        );
+      },
+      mockedSharePortfolio,
+    ],
+  ];
+
+  let landed: number[];
+  let stopLanding: () => void;
+
   beforeEach(() => {
     mockedShareOffer.mockReset();
     mockedSharePortfolio.mockReset();
@@ -310,84 +375,77 @@ describe('navigacia po uspesnom zdielani', () => {
     mockedToastError.mockReset();
     mockRouterPush.mockReset();
     mockIsMobile.mockReturnValue(false);
+    resetFeedShareLanding();
+    landed = [];
+    stopLanding = onFeedShareLanding((postId) => landed.push(postId));
   });
 
-  /** Odosle dialog a pocka na dokoncenie volania. */
+  afterEach(() => {
+    stopLanding();
+    resetFeedShareLanding();
+  });
+
   async function submitShare() {
     await userEvent.click(screen.getByTestId('feed-share-submit'));
   }
 
-  it('goes to the new post after sharing an OFFER', async () => {
-    mockedShareOffer.mockResolvedValue({ ...created, id: 101 });
+  it.each(variants)(
+    'lands on the feed after sharing %s',
+    async (_name, renderShare, api) => {
+      renderShare();
+      await submitShare();
+
+      await waitFor(() => expect(api).toHaveBeenCalled());
+      // Žiadny detail sa neotvára – ohlási sa pristátie na Nástenke…
+      await waitFor(() => expect(landed).toHaveLength(1));
+      // …a keďže Nástenka na obrazovke nie je, naviguje sa na ňu.
+      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
+      // Presmerovanie na detail príspevku je preč úplne.
+      expect(mockRouterPush).not.toHaveBeenCalledWith(
+        expect.stringContaining('/dashboard/feed/'),
+      );
+    },
+  );
+
+  it('does NOT navigate when the feed is already on screen', async () => {
+    const release = registerFeedLandingTarget();
+    mockedShareOffer.mockResolvedValue({ ...created, id: 205 });
 
     render(
       <FeedShareDialog
         open
         onClose={jest.fn()}
-        preview={{ type: 'offer', title: 'Moja ponuka' }}
+        preview={{ type: 'offer', title: 'Kurz gitary' }}
         onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
       />,
     );
     await submitShare();
 
-    // Zdielanie ponuky predtym len zavrelo modal a pouzivatel ostal stat na
-    // profile – nemal ako zistit, ze prispevok vobec vznikol.
-    await waitFor(() =>
-      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/feed/101'),
-    );
+    await waitFor(() => expect(landed).toEqual([205]));
+    // Používateľ na Nástenke už je – navigácia by len pridala krok histórie.
+    expect(mockRouterPush).not.toHaveBeenCalled();
+    release();
   });
 
-  it('goes to the new post after sharing a PORTFOLIO item', async () => {
-    mockedSharePortfolio.mockResolvedValue({ ...created, id: 102 });
-
-    render(
-      <FeedShareDialog
-        open
-        onClose={jest.fn()}
-        preview={{ type: 'portfolio_item', title: 'Moja práca' }}
-        onShare={(caption, tags) => sharePortfolioItemToFeed(9, caption, tags)}
-      />,
-    );
-    await submitShare();
-
-    await waitFor(() =>
-      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/feed/102'),
-    );
-  });
-
-  it('goes to the new post after sharing a POST', async () => {
-    mockedShareFeedPost.mockResolvedValue({ ...created, id: 103 });
-
-    render(
-      <FeedPostShareModal open onClose={jest.fn()} post={sourcePost} />,
-    );
-    await submitShare();
-
-    await waitFor(() =>
-      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/feed/103'),
-    );
-  });
-
-  it('closes the callers own modal BEFORE navigating away', async () => {
-    mockedShareOffer.mockResolvedValue({ ...created, id: 104 });
+  it('closes the caller and the dialog BEFORE the landing', async () => {
+    mockedShareOffer.mockResolvedValue({ ...created, id: 206 });
     const order: string[] = [];
-    mockRouterPush.mockImplementation(() => order.push('navigate'));
+    stopLanding();
+    stopLanding = onFeedShareLanding(() => order.push('landing'));
 
     render(
       <FeedShareDialog
         open
         onClose={() => order.push('close')}
-        preview={{ type: 'offer', title: 'Moja ponuka' }}
+        preview={{ type: 'offer', title: 'Kurz gitary' }}
         onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
         onShared={() => order.push('onShared')}
       />,
     );
     await submitShare();
 
-    // Volajuci si najprv upratal (zavrel svoj modal), az potom sa odchadza –
-    // inak by nad novym prispevkom ostal visiet otvoreny dialog.
-    await waitFor(() => expect(order).toContain('navigate'));
-    expect(order).toEqual(['onShared', 'close', 'navigate']);
+    await waitFor(() => expect(order).toContain('landing'));
+    expect(order).toEqual(['onShared', 'close', 'landing']);
   });
 
   it('stays put when the share fails', async () => {
@@ -406,24 +464,25 @@ describe('navigacia po uspesnom zdielani', () => {
     await submitShare();
 
     await waitFor(() => expect(mockedToastError).toHaveBeenCalled());
+    expect(landed).toEqual([]);
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
-  it('does not navigate to a broken path when the response carries no id', async () => {
+  it('announces nothing when the response carries no id', async () => {
     mockedShareOffer.mockResolvedValue({ post_type: 'shared_offer' } as unknown as FeedPost);
 
     render(
       <FeedShareDialog
         open
         onClose={jest.fn()}
-        preview={{ type: 'offer', title: 'Moja ponuka' }}
+        preview={{ type: 'offer', title: 'Kurz gitary' }}
         onShare={(caption, tags) => shareOfferToFeed(5, caption, tags)}
       />,
     );
     await submitShare();
 
-    // Bez kontroly by tu vzniklo `/dashboard/feed/NaN`.
     await waitFor(() => expect(mockedShareOffer).toHaveBeenCalled());
+    expect(landed).toEqual([]);
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 });

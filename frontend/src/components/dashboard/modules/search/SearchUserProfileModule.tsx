@@ -22,6 +22,7 @@ import { setProfileLikeState, type ProfileLikeResponse } from "../profile/profil
 import OfferImageGalleryLightbox from "../shared/OfferImageGalleryLightbox";
 import type { ProfileTab } from "../profile/profileTypes";
 import { useProfileTabQuery } from "../profile/profileTabQuery";
+import { useProfileFreshEntry } from "../profile/useProfileFreshEntry";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
 import { buildMessagesUrl } from "../messages/messagesRouting";
 
@@ -84,6 +85,14 @@ export function SearchUserProfileModule({
   // cudzieho profilu zhodilo F5 aj krok späť a pri návrate na profil ostávala
   // visieť tá, ktorú si používateľ pozeral naposledy.
   const [activeTab, setActiveTab] = useProfileTabQuery(initialTab ?? "offers", userId);
+
+  // Nový vstup cez preklik: od vrchu a na Ponukách – rovnako ako na vlastnom
+  // profile. F5 ani krok späť/dopredu to nespúšťa.
+  const isFreshEntry = useProfileFreshEntry(userId);
+  useEffect(() => {
+    if (!isFreshEntry) return;
+    setActiveTab("offers", { replace: true });
+  }, [isFreshEntry, setActiveTab]);
 
   // Preklik na KONKRÉTNU ponuku musí skončiť na záložke ponúk.
   //
@@ -186,13 +195,15 @@ export function SearchUserProfileModule({
               const hash = typeof window !== 'undefined' ? window.location.hash : '';
               const newUrl = `/dashboard/users/${data.slug}${search}${hash}`;
 
-              // Okamžitá aktualizácia URL bez reloadu.
+              // `replace`, nie `push`: kanonizácia je TÁ ISTÁ stránka s iným
+              // tvarom identifikátora, nie nový krok. Push tu pridával dva
+              // záznamy naraz (priamy zápis + router), takže cudzí profil mal
+              // v histórii duplicitný krok navyše oproti vlastnému – ten sa
+              // kanonizuje jediným `replaceState`.
               if (typeof window !== 'undefined') {
-                window.history.pushState(null, '', newUrl);
+                window.history.replaceState(null, '', newUrl);
               }
-              
-              // Aktualizovať aj cez Next.js router.
-              router.push(newUrl);
+              router.replace(newUrl);
             }
           }
         }

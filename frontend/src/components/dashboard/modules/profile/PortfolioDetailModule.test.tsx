@@ -11,10 +11,14 @@ jest.mock('react-hot-toast', () => ({
 }));
 
 const mockPush = jest.fn();
+// Návrat na zoznam (späť, zmazanie, zmiznutá položka) ide cez `replace` –
+// je to návrat, nie krok dopredu, takže nesmie pribudnúť záznam histórie.
+const mockReplace = jest.fn();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
+    replace: mockReplace,
   }),
 }));
 
@@ -169,6 +173,7 @@ describe('PortfolioDetailModule', () => {
     jest.clearAllMocks();
     mockMobileViewport(false);
     mockPush.mockClear();
+    mockReplace.mockClear();
     // Reset every request mock, not just their call records: clearAllMocks
     // leaves mockResolvedValueOnce queues and implementations in place, so an
     // unconsumed api.get once-value from one test could leak into the next and
@@ -258,7 +263,9 @@ describe('PortfolioDetailModule', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /Späť/ }));
 
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    expect(mockReplace).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    // Krok dopredu sa nepridáva – práve tým vznikala slučka so Späť.
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('does not show owner actions to visitors', async () => {
@@ -376,12 +383,13 @@ describe('PortfolioDetailModule', () => {
 
     // Izoluj efekt samotného mazania (vstup do edit módu môže volať router).
     mockPush.mockClear();
+    mockReplace.mockClear();
     await act(async () => {
       fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
     });
 
     // Rovnaké správanie ako desktop: jasný stav + návrat na zoznam.
-    await waitFor(() => expect(mockPush).toHaveBeenCalled());
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
     expect(toast.error).toHaveBeenCalled();
     expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/neexistuje/i);
   });
@@ -397,6 +405,7 @@ describe('PortfolioDetailModule', () => {
     fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-photos'));
 
     mockPush.mockClear();
+    mockReplace.mockClear();
     await act(async () => {
       fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
     });
@@ -407,6 +416,7 @@ describe('PortfolioDetailModule', () => {
     // Tichý úspech: reload bez presmerovania a bez chyby.
     await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
     expect(mockPush).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });
 
@@ -423,6 +433,7 @@ describe('PortfolioDetailModule', () => {
     fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-photos'));
 
     mockPush.mockClear();
+    mockReplace.mockClear();
     await act(async () => {
       fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
     });
@@ -434,6 +445,7 @@ describe('PortfolioDetailModule', () => {
     // chybový text, žiadne presmerovanie (ako desktop, nie photoDeleteFailed).
     await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
     expect(mockPush).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
     expect(screen.queryByText(/nepodarilo.*vymaza/i)).not.toBeInTheDocument();
   });
@@ -610,7 +622,7 @@ describe('PortfolioDetailModule', () => {
     });
 
     // Nie tichý úspech – používateľ dostane jasný stav a je vrátený na zoznam.
-    await waitFor(() => expect(mockPush).toHaveBeenCalled());
+    await waitFor(() => expect(mockReplace).toHaveBeenCalled());
     expect(toast.error).toHaveBeenCalled();
     expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/neexistuje/i);
     expect(toast.success).not.toHaveBeenCalled();
@@ -636,6 +648,7 @@ describe('PortfolioDetailModule', () => {
     expect(api.get).toHaveBeenCalledTimes(2);
     expect(toast.error).not.toHaveBeenCalled();
     expect(mockPush).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
@@ -990,7 +1003,9 @@ describe('PortfolioDetailModule', () => {
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/');
     });
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    expect(mockReplace).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    // Krok dopredu sa nepridáva – práve tým vznikala slučka so Späť.
+    expect(mockPush).not.toHaveBeenCalled();
     // Success toast po zmazaní.
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/vymazan/i);
@@ -1011,7 +1026,9 @@ describe('PortfolioDetailModule', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať' }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+      expect(mockReplace).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    // Krok dopredu sa nepridáva – práve tým vznikala slučka so Späť.
+    expect(mockPush).not.toHaveBeenCalled();
     });
     // 404 = tichý úspech: success toast, žiadny error toast.
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -1032,6 +1049,7 @@ describe('PortfolioDetailModule', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nepodarilo.*vymaza/i);
     expect(mockPush).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
   });
 
