@@ -236,7 +236,7 @@ export default function OfferWatchSearchSelect({
       <input
         ref={inputRef}
         id={id}
-        type='search'
+        type='text'
         role='combobox'
         aria-label={label}
         aria-haspopup='listbox'

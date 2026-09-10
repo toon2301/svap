@@ -31,6 +31,7 @@ describe('OfferWatchSearchSelect', () => {
     render(<ControlledSelect />);
 
     const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    expect(combobox).toHaveAttribute('type', 'text');
     await user.click(combobox);
     await user.type(combobox, 'dru');
     await user.click(screen.getByRole('option', { name: /Druhá možnosť/ }));

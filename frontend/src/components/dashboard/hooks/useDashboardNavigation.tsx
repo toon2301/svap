@@ -11,6 +11,7 @@ import {
   withDesktopSettingsOriginHistory,
 } from './desktopSettingsNavigation';
 import { useDesktopSettingsOriginRestore } from './useDesktopSettingsOriginRestore';
+import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 
 /**
@@ -89,6 +90,14 @@ export function useDashboardNavigation({
     setActiveRightItem,
     setIsMobileMenuOpen,
     setIsSearchOpen,
+  });
+
+  useSkillsRouteSynchronization({
+    onModuleChange: handleModuleChange,
+    setIsSearchOpen,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
   });
 
   // Hlavná navigačná logika pre zmenu modulov

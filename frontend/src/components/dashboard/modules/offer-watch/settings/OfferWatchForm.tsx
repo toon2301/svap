@@ -174,7 +174,12 @@ export default function OfferWatchForm({
               countryCode={draft.countryCode}
               onChange={(countryCode) => {
                 if (persistCountrySelection) setCountry(countryCode);
-                onChange(selectOfferWatchCountry(draft, countryCode), ['countryCode', 'districtCode']);
+                const nextDraft = selectOfferWatchCountry(draft, countryCode);
+                const clearFields: OfferWatchDraftField[] = ['countryCode', 'districtCode'];
+                if (nextDraft.priceCurrency !== draft.priceCurrency) {
+                  clearFields.push('priceCurrency');
+                }
+                onChange(nextDraft, clearFields);
               }}
               disabled={controlsDisabled}
               invalid={Boolean(errors.countryCode)}
