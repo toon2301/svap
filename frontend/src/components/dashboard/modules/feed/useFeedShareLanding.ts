@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * Pristátie nového príspevku vo feede – doscrollovanie a zvýraznenie.
+ * Pristátie nového príspevku vo feede – doscrollovanie naň.
  *
  * Feed sa registruje ako cieľ pristátia, prevezme prípadné čakajúce zdieľanie
  * (to nastane, keď sa naň navigovalo z profilu) a počúva na živý signál, keď
  * už na obrazovke bol.
  *
- * Zvýraznenie po chvíli zhasne samo: je to navedenie oka, nie stav príspevku.
+ * Príspevok sa len dostane do viewportu – žiadne zvýraznenie navyše.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,14 +17,10 @@ import {
   takePendingFeedShareLanding,
 } from './feedShareLanding';
 
-/** Ako dlho po doscrollovaní ostane príspevok zvýraznený. */
-export const FEED_LANDING_HIGHLIGHT_MS = 2500;
-
 export function useFeedShareLanding<TElement extends HTMLElement>() {
   const [landedPostId, setLandedPostId] = useState<number | null>(null);
   const elements = useRef<Map<number, TElement>>(new Map());
   const scrolledRef = useRef<number | null>(null);
-  const fadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Karta sa hlási svojím uzlom – bez neho nie je kam doscrollovať. */
   const registerPostElement = useCallback(
@@ -74,22 +70,8 @@ export function useFeedShareLanding<TElement extends HTMLElement>() {
       }
     });
 
-    if (fadeRef.current) clearTimeout(fadeRef.current);
-    fadeRef.current = setTimeout(() => {
-      setLandedPostId(null);
-      scrolledRef.current = null;
-      fadeRef.current = null;
-    }, FEED_LANDING_HIGHLIGHT_MS);
-
     return () => cancelAnimationFrame(frame);
   });
-
-  useEffect(
-    () => () => {
-      if (fadeRef.current) clearTimeout(fadeRef.current);
-    },
-    [],
-  );
 
   return { landedPostId, registerPostElement };
 }

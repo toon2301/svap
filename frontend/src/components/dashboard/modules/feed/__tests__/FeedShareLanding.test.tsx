@@ -15,7 +15,6 @@ import {
   isFeedLandingTargetMounted,
   resetFeedShareLanding,
 } from '../feedShareLanding';
-import { FEED_LANDING_HIGHLIGHT_MS } from '../useFeedShareLanding';
 
 jest.mock('@/lib/feedApi', () => ({
   listFeedPosts: jest.fn(),
@@ -138,7 +137,7 @@ describe('feed ako cieľ pristátia', () => {
 });
 
 describe('zdieľanie, keď je Nástenka na obrazovke', () => {
-  it('highlights and scrolls to the new post', async () => {
+  it('scrolls to the new post', async () => {
     render(<FeedList />);
     await screen.findByTestId('feed-list');
 
@@ -146,8 +145,6 @@ describe('zdieľanie, keď je Nástenka na obrazovke', () => {
 
     const landed = await screen.findByTestId('feed-landed-post');
     expect(landed).toHaveTextContent('Príspevok 2');
-    // Zvýraznenie navedie oko – prstenec okolo karty.
-    expect(landed.className).toContain('ring-2');
     await waitFor(() => expect(scrollSpy).toHaveBeenCalled());
     expect(scrollSpy).toHaveBeenCalledWith({
       behavior: 'smooth',
@@ -155,23 +152,15 @@ describe('zdieľanie, keď je Nástenka na obrazovke', () => {
     });
   });
 
-  it('lets the highlight fade on its own', async () => {
-    jest.useFakeTimers();
+  it('adds no visual highlight to the card', async () => {
     render(<FeedList />);
-    await act(async () => {
-      await Promise.resolve();
-    });
+    await screen.findByTestId('feed-list');
 
     act(() => emitFeedShareLanding(2));
-    expect(screen.queryByTestId('feed-landed-post')).not.toBeNull();
 
-    // Zvýraznenie je navedenie, nie stav príspevku – po chvíli zhasne.
-    act(() => {
-      jest.advanceTimersByTime(FEED_LANDING_HIGHLIGHT_MS + 100);
-    });
-
-    expect(screen.queryByTestId('feed-landed-post')).toBeNull();
-    jest.useRealTimers();
+    // Pristátie je LEN doscrollovanie – žiadny prstenec ani iné zvýraznenie.
+    const landed = await screen.findByTestId('feed-landed-post');
+    expect(landed.className).not.toContain('ring');
   });
 });
 

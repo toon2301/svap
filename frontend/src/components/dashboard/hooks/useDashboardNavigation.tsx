@@ -109,7 +109,13 @@ export function useDashboardNavigation({
     // otvoreného z Nástenky. Bez tohto by prežila aj odbočku do Štatistík či
     // Správ a pri ďalšom otvorení Nástenky by obnovila starú pozíciu aj starý
     // zoznam – používateľ by dostal feed, ktorý si nevypýtal.
-    if (moduleId !== 'home') clearFeedReturn();
+    //
+    // Prepnutie na `profile` bez platného identifikátora sa NEUSKUTOČNÍ
+    // (vetvy nižšie sa vrátia bez zmeny), takže by sa snímka zahodila za nič.
+    const changesModule =
+      moduleId !== 'home' &&
+      (moduleId !== 'profile' || profileIdentifier(user) != null);
+    if (changesModule) clearFeedReturn();
 
     // Pri zmene modulu zrušiť zvýraznenie karty
     setHighlightedSkillId(null);

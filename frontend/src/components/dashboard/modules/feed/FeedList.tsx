@@ -191,8 +191,8 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   // Zdieľanie z profilu (ponuka/portfólio) beží mimo tohto stromu, takže
   // nový príspevok príde eventom, nie callbackom. Ten istý prependPosts
   // ako composer – žiadny refetch.
-  // Po zdieľaní sa sem pristáva: doscrollovanie a zvýraznenie nového
-  // príspevku rieši vlastný hook, feed mu len podáva uzly kariet.
+  // Po zdieľaní sa sem pristáva: doscrollovanie na nový príspevok rieši
+  // vlastný hook, feed mu len podáva uzly kariet.
   const { landedPostId, registerPostElement } = useFeedShareLanding<HTMLDivElement>();
 
   useEffect(() => onFeedPostCreated((created) => prependPosts([created])), [
@@ -288,15 +288,10 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
           <motion.div
             key={post.id}
             ref={(node: HTMLDivElement | null) => registerPostElement(post.id, node)}
+            // Po zdieľaní sa sem doscrolluje – karta sa označí, aby ju mal test
+            // (a prípadné budúce správanie) ako sa chytiť. Vizuálne nič navyše.
             data-testid={
               landedPostId === post.id ? 'feed-landed-post' : undefined
-            }
-            // Zvýraznenie po zdieľaní: navedie oko na čerstvý príspevok a samo
-            // zhasne. `rounded-2xl` sedí s tvarom karty od `sm:` vyššie.
-            className={
-              landedPostId === post.id
-                ? 'rounded-2xl ring-2 ring-purple-400 ring-offset-2 ring-offset-white transition-shadow dark:ring-offset-black'
-                : undefined
             }
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}

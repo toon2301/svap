@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import FeedList from '../FeedList';
 import {
@@ -19,6 +19,10 @@ import {
   takeFeedReturn,
 } from '../feedReturnState';
 import { openUserProfile } from '../feedProfileNavigation';
+import {
+  emitFeedShareLanding,
+  resetFeedShareLanding,
+} from '../feedShareLanding';
 
 jest.mock('@/lib/feedApi', () => ({
   listFeedPosts: jest.fn(),
@@ -113,6 +117,7 @@ function mountDashboardMain(): HTMLElement {
 beforeEach(() => {
   jest.clearAllMocks();
   resetFeedReturnState();
+  resetFeedShareLanding();
   document.querySelectorAll('[data-dashboard-main]').forEach((node) => node.remove());
   mockedList.mockResolvedValue({
     results: [post(1), post(2)],
@@ -122,6 +127,7 @@ beforeEach(() => {
 
 afterEach(() => {
   resetFeedReturnState();
+  resetFeedShareLanding();
 });
 
 describe('snímka stavu Nástenky', () => {
@@ -219,7 +225,7 @@ describe('návrat na Nástenku', () => {
     expect(mockedList).not.toHaveBeenCalled();
   });
 
-  it('keeps the loaded pages and the cursor', async () => {
+  it('keeps the loaded pages and loads more from the restored cursor', async () => {
     // Tri príspevky = viac než jedna stránka; kurzor musí prežiť, inak by
     // donačítavanie začalo odznova.
     saveFeedReturn({
@@ -230,10 +236,18 @@ describe('návrat na Nástenku', () => {
 
     render(<FeedList />);
     await screen.findByText('Príspevok 7');
-
-    // Kurzor je k dispozícii, takže feed ponúka donačítanie ďalšej stránky.
-    expect(screen.getByTestId('feed-sentinel')).toBeInTheDocument();
     expect(mockedList).not.toHaveBeenCalled();
+
+    // Donačítanie pokračuje TAM, kde používateľ skončil – nie od začiatku.
+    mockedList.mockResolvedValue({ results: [post(10)], next: null });
+    fireEvent.click(screen.getByRole('button', { name: /ďalšie/i }));
+
+    await waitFor(() =>
+      expect(mockedList).toHaveBeenCalledWith({
+        cursorUrl: 'http://api.test/feed?cursor=9',
+      }),
+    );
+    expect(await screen.findByText('Príspevok 10')).toBeInTheDocument();
   });
 
   it('puts the scroll position back', async () => {
@@ -256,5 +270,48 @@ describe('návrat na Nástenku', () => {
     await screen.findByText('Príspevok 1');
     // Bežné otvorenie Nástenky sa nemení.
     expect(mockedList).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('zdieľanie z profilu, na ktorý sa prišlo z Nástenky', () => {
+  it('drops the snapshot so the new post can be found', async () => {
+    // 1. Nástenka → profil: snímka sa uloží.
+    const main = mountDashboardMain();
+    const feed = render(<FeedList />);
+    await screen.findByText('Príspevok 1');
+    main.scrollTop = 600;
+    act(() => openUserProfile({ id: 21, slug: 'peter' }));
+    feed.unmount();
+
+    // 2. Z profilu sa zdieľa ponuka. Nástenka nie je na obrazovke, takže
+    //    `emitFeedPostCreated` nemá poslucháča – ostáva len čakajúce
+    //    pristátie so samotným ID.
+    act(() => emitFeedShareLanding(99));
+
+    // Snímka je od tejto chvíle zastaraná: vznikla PRED zdieľaním, takže
+    // nový príspevok neobsahuje a obnovuje sa bez fetchu.
+    expect(takeFeedReturn()).toBeNull();
+  });
+
+  it('loads the feed fresh on return, so the new post is there', async () => {
+    const main = mountDashboardMain();
+    const feed = render(<FeedList />);
+    await screen.findByText('Príspevok 1');
+    main.scrollTop = 600;
+    act(() => openUserProfile({ id: 21, slug: 'peter' }));
+    feed.unmount();
+
+    act(() => emitFeedShareLanding(99));
+
+    // Server už nový príspevok vracia (chronologicky na vrchu).
+    mockedList.mockResolvedValue({
+      results: [post(99), post(1), post(2)],
+      next: null,
+    });
+    render(<FeedList />);
+
+    // Nástenka sa namountuje „na čisto" – načíta sa a nový príspevok je tam.
+    await screen.findByText('Príspevok 99');
+    expect(mockedList).toHaveBeenCalled();
   });
 });

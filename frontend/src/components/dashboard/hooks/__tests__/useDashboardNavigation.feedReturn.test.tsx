@@ -31,7 +31,10 @@ const post = {
   caption: 'Príspevok',
 } as never;
 
-function renderNavigation(activeModule = 'home') {
+function renderNavigation(
+  activeModule = 'home',
+  user: unknown = { id: 1, slug: 'me' },
+) {
   const dashboardState = {
     activeModule,
     setActiveModule: jest.fn(),
@@ -46,7 +49,7 @@ function renderNavigation(activeModule = 'home') {
 
   return renderHook(() =>
     useDashboardNavigation({
-      user: { id: 1, slug: 'me' } as never,
+      user: user as never,
       dashboardState,
       setIsSearchOpen: jest.fn(),
       setViewedUserId: jest.fn(),
@@ -96,6 +99,29 @@ describe('odchod do inej sekcie', () => {
     const { result } = renderNavigation();
 
     act(() => result.current.handleMobileProfileClick());
+
+    expect(takeFeedReturn()).toBeNull();
+  });
+});
+
+describe('neúspešný pokus o prepnutie', () => {
+  it('keeps the snapshot when the profile switch is a no-op', () => {
+    captureSnapshot();
+    // Profilové dáta ešte nie sú načítané – `profileIdentifier` vráti `null`
+    // a vetva pre `profile` sa vráti bez toho, aby čokoľvek prepla. Snímku
+    // teda niet dôvodu zahadzovať.
+    const { result } = renderNavigation('home', null);
+
+    act(() => result.current.handleMainModuleChange('profile'));
+
+    expect(takeFeedReturn()?.scrollTop).toBe(500);
+  });
+
+  it('still drops it when the profile switch really happens', () => {
+    captureSnapshot();
+    const { result } = renderNavigation();
+
+    act(() => result.current.handleMainModuleChange('profile'));
 
     expect(takeFeedReturn()).toBeNull();
   });

@@ -88,14 +88,15 @@ function OverlayHarness({ open }: { open: boolean }) {
   return <FeedPostComments postId={7} />;
 }
 
-let navigations: unknown[];
-let closes: unknown[];
+/** Zatvorenie okna aj navigácia idú do JEDNEJ postupnosti – poradie je to,
+ *  na čom tu záleží. */
+let events: Array<{ type: 'close' | 'navigate'; detail?: unknown }>;
 
 function renderComments(open: boolean) {
   return render(
     <FeedPostOverlayProvider
       onTargetChange={(target, options) => {
-        if (target === null) closes.push(options ?? {});
+        if (target === null) events.push({ type: 'close', detail: options ?? {} });
       }}
     >
       <OverlayHarness open={open} />
@@ -108,10 +109,9 @@ let navigationListener: (event: Event) => void;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  navigations = [];
-  closes = [];
+  events = [];
   navigationListener = (event: Event) =>
-    navigations.push((event as CustomEvent).detail);
+    events.push({ type: 'navigate', detail: (event as CustomEvent).detail });
   window.addEventListener('goToUserProfile', navigationListener);
   mockedListComments.mockResolvedValue({
     results: [comment(100)],
@@ -133,13 +133,13 @@ describe('preklik z komentára v otvorenom okne detailu', () => {
     renderComments(true);
     fireEvent.click(await screen.findByTestId(testId));
 
-    // Okno sa zavrie ako súčasť prechodu…
-    expect(closes).toHaveLength(1);
-    // …a `keepHistory`, lebo adresu si rieši samotná navigácia – krok späť by
-    // ju vzápätí zrušil.
-    expect(closes[0]).toEqual({ keepHistory: true });
-    // …a až potom sa naviguje.
-    expect(navigations).toEqual([{ identifier: 'peter' }]);
+    // Jedna postupnosť: najprv sa okno zavrie, až POTOM sa naviguje.
+    // `keepHistory`, lebo adresu si rieši samotná navigácia – krok späť by ju
+    // vzápätí zrušil.
+    expect(events).toEqual([
+      { type: 'close', detail: { keepHistory: true } },
+      { type: 'navigate', detail: { identifier: 'peter' } },
+    ]);
   });
 });
 
@@ -150,7 +150,8 @@ describe('preklik z komentára mimo okna', () => {
 
     // Komentáre sa kreslia aj v karte, na mobilnej obrazovke a v paneli nad
     // fotkou – zatváranie niečoho neotvoreného by len pomiešalo históriu.
-    expect(closes).toEqual([]);
-    expect(navigations).toEqual([{ identifier: 'peter' }]);
+    expect(events).toEqual([
+      { type: 'navigate', detail: { identifier: 'peter' } },
+    ]);
   });
 });
