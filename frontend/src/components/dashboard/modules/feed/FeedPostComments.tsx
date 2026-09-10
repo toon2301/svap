@@ -24,6 +24,7 @@ import FeedRepliesAutoLoader from './FeedRepliesAutoLoader';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
+import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
 import { handleFeedPostErrorIfGone } from './feedPostGone';
 import { formatRelativeTime } from './feedRelativeTime';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
@@ -301,6 +302,33 @@ export default function FeedPostComments({
   // prepísala nextUrlRef späť (opakované requesty / preskočená stránka).
   // Rovnaký vzor ako loadingMoreRef v useFeedInfiniteScroll.
   const loadingMoreRef = useRef(false);
+  // Okno detailu vie o sebe cez kontext – komentáre sa v ňom vykresľujú tiež,
+  // takže ho vedia zavrieť rovnako ako hlavička príspevku.
+  const postOverlay = useFeedPostOverlay();
+
+  /**
+   * Preklik na profil autora komentára.
+   *
+   * V otvorenom okne detailu musí okno zmiznúť, inak ostane visieť nad
+   * profilom, na ktorý sa práve prešlo. `keepHistory`: adresu si rieši
+   * samotná navigácia, krok späť by ju vzápätí zrušil – rovnaká úvaha ako
+   * pri preklikoch z hlavičky príspevku.
+   *
+   * Kontrola `target` je podstatná: komentáre sa kreslia aj mimo okna
+   * (rozbalené v karte, mobilná obrazovka, panel nad fotkou) a zatváranie
+   * niečoho, čo otvorené nie je, by len pomiešalo účtovníctvo histórie.
+   */
+  const openCommentAuthorProfile = useCallback(
+    (author: FeedPostComment['author']) => {
+      openUserProfile(author, {
+        beforeNavigate: () => {
+          if (postOverlay?.target) postOverlay.close({ keepHistory: true });
+        },
+      });
+    },
+    [postOverlay],
+  );
+
   const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -1073,7 +1101,7 @@ export default function FeedPostComments({
           ako v hlavičke príspevku, aby sa preklik správal všade rovnako. */}
       <button
         type="button"
-        onClick={() => openUserProfile(comment.author)}
+        onClick={() => openCommentAuthorProfile(comment.author)}
         disabled={!canOpenUserProfile(comment.author)}
         data-testid={`feed-comment-avatar-${comment.id}`}
         aria-label={t('feed.openProfile', 'Otvoriť profil')}
@@ -1094,7 +1122,7 @@ export default function FeedPostComments({
             neho, nie vedľa. */}
         <button
           type="button"
-          onClick={() => openUserProfile(comment.author)}
+          onClick={() => openCommentAuthorProfile(comment.author)}
           disabled={!canOpenUserProfile(comment.author)}
           data-testid={`feed-comment-author-${comment.id}`}
           className="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"

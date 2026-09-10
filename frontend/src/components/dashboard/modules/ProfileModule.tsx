@@ -19,6 +19,7 @@ import {
   useProfileTabQuery,
   type ProfileTabChangeOptions,
 } from './profile/profileTabQuery';
+import { useProfileFreshEntry } from './profile/useProfileFreshEntry';
 
 /** Hlboká kópia user objektu (1 level, arrays cez spread). */
 function deepCloneUser(u: User): User {
@@ -163,6 +164,14 @@ export default function ProfileModule({
     },
     [onTabChange, setActiveTab],
   );
+
+  // Nový vstup cez preklik: od vrchu a na Ponukách. Pri F5 ani pri kroku
+  // späť/dopredu vnútri profilu sa nespúšťa – tam sa obnovuje adresa.
+  const isFreshEntry = useProfileFreshEntry(user?.id);
+  useEffect(() => {
+    if (!isFreshEntry) return;
+    handleTabChange('offers', { replace: true });
+  }, [handleTabChange, isFreshEntry]);
 
   useEffect(() => {
     if (highlightedSkillId != null) {

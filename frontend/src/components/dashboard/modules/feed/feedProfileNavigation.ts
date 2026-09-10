@@ -11,6 +11,8 @@
  */
 
 import type { FeedUserSummary } from '@/lib/feedApi';
+import { requestFeedReturnCapture } from './feedReturnState';
+import { markProfileFreshEntry } from '../profile/profileFreshEntry';
 
 /** Koho vieme otvoriť: čokoľvek so slugom alebo id (autor, komentujúci…). */
 type ProfileTarget = Pick<FeedUserSummary, 'id' | 'slug'> | null | undefined;
@@ -41,6 +43,12 @@ export function openUserProfile(
   const identifier = profileIdentifier(user);
   if (!identifier || typeof window === 'undefined') return;
   options.beforeNavigate?.();
+  // Nástenka sa odchodom odmountuje – nech si stihne uložiť stav, kým je
+  // ešte v DOM. Keď na obrazovke nie je, žiadosť sa ticho stratí.
+  requestFeedReturnCapture();
+  // Preklik je vstup do NIEČOHO INÉHO – profil sa má otvoriť od vrchu a na
+  // východzej záložke, nie tam, kde používateľ skončil na predošlom profile.
+  markProfileFreshEntry();
   window.dispatchEvent(
     new CustomEvent('goToUserProfile', { detail: { identifier } }),
   );

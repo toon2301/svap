@@ -19,6 +19,9 @@ import FeedCardSkeleton from './FeedCardSkeleton';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComposerModal from './FeedPostComposerModal';
 import { onFeedPostCreated } from './feedShareEvents';
+import { useFeedShareLanding } from './useFeedShareLanding';
+import { takeFeedReturn } from './feedReturnState';
+import { useFeedReturn } from './useFeedReturn';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import { useFeedPullToRefresh } from './useFeedPullToRefresh';
 import {
@@ -146,6 +149,9 @@ type FeedListProps = {
 
 export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   const { t } = useLanguage();
+  // Návrat z profilu/ponuky/portfólia: snímka sa preberá RAZ pri mounte
+  // (lazy inicializátor `useState`), inak by ju každé prekreslenie spotrebovalo.
+  const [restored] = useState(() => takeFeedReturn());
   const {
     posts,
     loading,
@@ -158,7 +164,18 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
     reload,
     removePost,
     isEmpty,
-  } = useFeedInfiniteScroll();
+    getSnapshot,
+  } = useFeedInfiniteScroll({
+    restore: () =>
+      restored ? { posts: restored.posts, nextUrl: restored.nextUrl } : null,
+  });
+
+  // Uloženie stavu pri odchode a scroll späť na pôvodné miesto.
+  useFeedReturn({
+    getPosts: getSnapshot,
+    restoredScrollTop: restored?.scrollTop ?? null,
+    restoredPostsRendered: posts.length > 0,
+  });
   const [composerOpen, setComposerOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -174,6 +191,10 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   // Zdieľanie z profilu (ponuka/portfólio) beží mimo tohto stromu, takže
   // nový príspevok príde eventom, nie callbackom. Ten istý prependPosts
   // ako composer – žiadny refetch.
+  // Po zdieľaní sa sem pristáva: doscrollovanie na nový príspevok rieši
+  // vlastný hook, feed mu len podáva uzly kariet.
+  const { landedPostId, registerPostElement } = useFeedShareLanding<HTMLDivElement>();
+
   useEffect(() => onFeedPostCreated((created) => prependPosts([created])), [
     prependPosts,
   ]);
@@ -266,6 +287,12 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
           // key zachová, takže „priplávajú" len tie čerstvo vložené na vrch.
           <motion.div
             key={post.id}
+            ref={(node: HTMLDivElement | null) => registerPostElement(post.id, node)}
+            // Po zdieľaní sa sem doscrolluje – karta sa označí, aby ju mal test
+            // (a prípadné budúce správanie) ako sa chytiť. Vizuálne nič navyše.
+            data-testid={
+              landedPostId === post.id ? 'feed-landed-post' : undefined
+            }
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.25 }}

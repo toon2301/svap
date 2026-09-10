@@ -11,9 +11,10 @@
  * Sprievodný text ide vždy do `caption` (je to text NOVÉHO príspevku) –
  * snapshot pôvodného obsahu si backend dopĺňa sám.
  *
- * Po úspechu dialóg naviguje na nový príspevok. Je to jediné miesto, ktorým
- * prejdú všetky tri zdroje, takže sa správanie nedá rozísť podľa toho, odkiaľ
- * sa zdieľalo.
+ * Po úspechu dialóg zavrie seba aj vrstvy nad sebou, dostane používateľa na
+ * Nástenku a nechá tam nový príspevok zvýrazniť. Je to jediné miesto, ktorým
+ * prejdú všetky zdroje, takže sa správanie nedá rozísť podľa toho, odkiaľ sa
+ * zdieľalo.
  */
 
 import { useEffect, useState } from 'react';
@@ -24,7 +25,10 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { useFeedDialog } from './useFeedDialog';
-import { buildFeedPostPath } from './feedPostRouting';
+import {
+  emitFeedShareLanding,
+  isFeedLandingTargetMounted,
+} from './feedShareLanding';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import type { SharedContentCard } from './sharedContentCard';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
@@ -34,6 +38,9 @@ import { useEmojiInsertion } from './useEmojiInsertion';
 import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostCreated } from './feedShareEvents';
 import type { FeedPost } from '@/lib/feedApi';
+
+/** Nástenka – sem sa po zdieľaní pristáva. */
+const FEED_PATH = '/dashboard';
 
 const SHARE_CAPTION_MAX_LENGTH = 500;
 /** Zhodné s MAX_FEED_POST_TAGS na backende – limit validuje aj BE. */
@@ -106,20 +113,29 @@ export default function FeedShareDialog({
       onShared?.(created);
       onClose();
 
-      // Rovno na nový príspevok – pre KAŽDÝ vstupný bod rovnako.
+      // Pristátie na Nástenke – pre KAŽDÝ vstupný bod rovnako.
       //
-      // Presmerovanie sedí tu, nie u volajúcich: dialóg je jediné miesto,
-      // ktorým prejde zdieľanie príspevku, ponuky aj portfólia, a jediné,
-      // ktoré má odpoveď servera. Volajúci si predtým riešili len zatvorenie
-      // svojich modalov, takže zo zdieľania ponuky a portfólia sa nikam
-      // nešlo a používateľ ostal stáť tam, kde bol.
+      // Rieši sa tu, nie u volajúcich: dialóg je jediné miesto, ktorým prejde
+      // zdieľanie príspevku, ponuky aj portfólia, a jediné, ktoré má odpoveď
+      // servera. Žiadny detail sa neotvára – ani mobilný, ani desktopový.
       //
-      // `created.id` je z odpovede POST-u, takže je k dispozícii ešte pred
-      // navigáciou – čakať na feed netreba. Kontrola je poistka proti
-      // neúplnej odpovedi: bez nej by sa navigovalo na `/dashboard/feed/NaN`.
+      // `created.id` je z odpovede POST-u, takže je k dispozícii hneď. Kontrola
+      // je poistka proti neúplnej odpovedi: bez nej by sa zvýrazňovalo `NaN`.
       const createdId = Number(created?.id);
-      if (Number.isSafeInteger(createdId) && createdId > 0) {
-        router.push(buildFeedPostPath(createdId));
+      if (!Number.isSafeInteger(createdId) || createdId <= 0) return;
+
+      // Otvorené vrstvy sa zatvárajú SAMY na tento signál – každá vie o svojej
+      // histórii najlepšie (okno detailu si napríklad odoberá vlastný záznam).
+      // Feed si podľa toho istého signálu zvýrazní nový príspevok.
+      emitFeedShareLanding(createdId);
+
+      // Navigácia LEN keď Nástenka na obrazovke nie je (zdieľanie z profilu).
+      // Nedá sa to čítať z adresy: okno detailu sa zatvára krokom späť, ktorý
+      // dobehne až po tomto rozhodnutí, takže `location.pathname` je tu ešte
+      // stará. `push`, nie `replace`: presun na Nástenku je dôsledok akcie
+      // používateľa, takže krok späť ho má vrátiť tam, odkiaľ zdieľal.
+      if (!isFeedLandingTargetMounted()) {
+        router.push(FEED_PATH);
       }
     } catch (err) {
       // Skrytá/nedostupná ponuka či portfólio vracia z BE zrozumiteľnú hlášku –

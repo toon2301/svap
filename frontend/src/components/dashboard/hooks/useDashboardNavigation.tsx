@@ -13,6 +13,7 @@ import {
 import { useDesktopSettingsOriginRestore } from './useDesktopSettingsOriginRestore';
 import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
+import { clearFeedReturn } from '../modules/feed/feedReturnState';
 
 /**
  * Identifikátor profilu pre URL `/dashboard/users/{identifier}`.
@@ -102,6 +103,20 @@ export function useDashboardNavigation({
 
   // Hlavná navigačná logika pre zmenu modulov
   const handleMainModuleChange = useCallback((moduleId: string) => {
+    // Odchod do INEJ sekcie zahodí návratovú snímku Nástenky.
+    //
+    // Snímka patrí VÝHRADNE návratu z profilu, ponuky/dopytu alebo portfólia
+    // otvoreného z Nástenky. Bez tohto by prežila aj odbočku do Štatistík či
+    // Správ a pri ďalšom otvorení Nástenky by obnovila starú pozíciu aj starý
+    // zoznam – používateľ by dostal feed, ktorý si nevypýtal.
+    //
+    // Prepnutie na `profile` bez platného identifikátora sa NEUSKUTOČNÍ
+    // (vetvy nižšie sa vrátia bez zmeny), takže by sa snímka zahodila za nič.
+    const changesModule =
+      moduleId !== 'home' &&
+      (moduleId !== 'profile' || profileIdentifier(user) != null);
+    if (changesModule) clearFeedReturn();
+
     // Pri zmene modulu zrušiť zvýraznenie karty
     setHighlightedSkillId(null);
     
@@ -363,6 +378,9 @@ export function useDashboardNavigation({
     const identifier = profileIdentifier(user);
     // Bez platného slug/id nemáme kam navigovať → odlož (nič nemeníme).
     if (identifier == null) return;
+    // Vlastný profil z mobilnej lišty je tiež „iná sekcia" – nejde sa oň
+    // z Nástenky preklikom, takže návratová snímka tu neplatí.
+    clearFeedReturn();
     setActiveModule('profile');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');

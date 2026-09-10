@@ -44,6 +44,7 @@ import {
   emitFeedPostDeleted,
   onFeedPostDeleted,
 } from './feedPostDeletedEvents';
+import { onFeedShareLanding } from './feedShareLanding';
 import FeedAnchoredMenu from './FeedAnchoredMenu';
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
@@ -420,6 +421,19 @@ export default function FeedPostCard({
         : { ...previous, is_liked_by_me: isLiked, likes_count: likesCount },
     );
   }, [isLiked, likesCount]);
+
+  // Po zdieľaní sa pristáva na Nástenku, takže žiadna vrstva nad kartou nesmie
+  // ostať otvorená – ani tá, z ktorej sa zdieľalo. Zatvárajú sa tu spoločne,
+  // rovnako ako pri zmiznutom príspevku nižšie.
+  useEffect(
+    () =>
+      onFeedShareLanding(() => {
+        setMobileDetailOpen(false);
+        setPhotoViewerIndex(null);
+        setSharedPhotoOpen(false);
+      }),
+    [],
+  );
 
   // Príspevok zmizol (zmazal ho niekto iný, alebo to zistila iná interakcia).
   // Kartu odstráni zoznam, ale otvorené vrstvy nad ňou treba zavrieť tu –
