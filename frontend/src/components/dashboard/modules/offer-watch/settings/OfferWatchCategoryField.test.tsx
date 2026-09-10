@@ -30,13 +30,13 @@ describe('OfferWatchCategoryField', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Podkategória' }));
+    await user.click(screen.getByRole('combobox', { name: 'Podkategória' }));
     // Jednorazový zápis namiesto písania znak po znaku: každý znak by nad
     // celým katalógom kategórií prefiltroval zoznam nanovo a na zaťaženom CI
     // sa to nezmestilo do limitu. Tento test overuje mapovanie preloženého
     // názvu na kanonickú dvojicu, nie postupné písanie – to má vlastné
     // pokrytie v `OfferWatchSearchSelect.test.tsx`.
-    fireEvent.change(screen.getByRole('combobox'), {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Podkategória' }), {
       target: { value: `Preklad ${SUBCATEGORY}` },
     });
     const translatedLabel = await screen.findByText(`Preklad ${SUBCATEGORY}`);

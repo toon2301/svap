@@ -2,6 +2,7 @@ export const OFFER_WATCH_MOBILE_REQUEST_EVENT = 'svaply:offer-watch-mobile-reque
 export const OFFER_WATCH_SETTINGS_PATH = '/dashboard/settings/watches';
 
 const HISTORY_KEY = '__svaplyOfferWatchMobile';
+const SETTINGS_RETURN_KEY = '__svaplyOfferWatchSettingsReturn';
 
 export type OfferWatchMobileView =
   | { kind: 'list' }
@@ -9,9 +10,13 @@ export type OfferWatchMobileView =
   | { kind: 'edit'; watchId: number };
 
 export type OfferWatchMobileHistory = {
-  version: 1;
+  version: 2;
   origin: 'settings' | 'direct';
   view: OfferWatchMobileView;
+};
+
+type OfferWatchSettingsReturnHistory = {
+  version: 1;
 };
 
 type HistoryRecord = Record<string, unknown>;
@@ -45,7 +50,7 @@ export function readOfferWatchMobileHistory(state: unknown): OfferWatchMobileHis
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const candidate = value as Partial<OfferWatchMobileHistory>;
   if (
-    candidate.version !== 1
+    candidate.version !== 2
     || (candidate.origin !== 'settings' && candidate.origin !== 'direct')
     || !isValidView(candidate.view)
   ) {
@@ -67,3 +72,21 @@ export function withoutOfferWatchMobileHistory(state: unknown): HistoryRecord {
   return next;
 }
 
+export function hasOfferWatchSettingsReturnHistory(state: unknown): boolean {
+  const value = asHistoryRecord(state)[SETTINGS_RETURN_KEY];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return (value as Partial<OfferWatchSettingsReturnHistory>).version === 1;
+}
+
+export function withOfferWatchSettingsReturnHistory(state: unknown): HistoryRecord {
+  return {
+    ...asHistoryRecord(state),
+    [SETTINGS_RETURN_KEY]: { version: 1 } satisfies OfferWatchSettingsReturnHistory,
+  };
+}
+
+export function withoutOfferWatchSettingsReturnHistory(state: unknown): HistoryRecord {
+  const next = { ...asHistoryRecord(state) };
+  delete next[SETTINGS_RETURN_KEY];
+  return next;
+}

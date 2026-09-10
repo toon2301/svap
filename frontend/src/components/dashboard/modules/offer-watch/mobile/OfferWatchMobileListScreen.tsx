@@ -53,15 +53,17 @@ export default function OfferWatchMobileListScreen({
       initialFocusRef={backButtonRef}
     >
       <div className='px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))] pt-5 sm:px-6'>
-        <button
-          type='button'
-          onClick={onCreate}
-          disabled={isLoading || hasLoadError || atLimit || mutation !== null}
-          className='inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-600'
-        >
-          <PlusIcon className='h-5 w-5' aria-hidden='true' />
-          {t('offerWatch.createAction', 'Vytvoriť sledovanie')}
-        </button>
+        {!atLimit ? (
+          <button
+            type='button'
+            onClick={onCreate}
+            disabled={isLoading || hasLoadError || mutation !== null}
+            className='inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-600'
+          >
+            <PlusIcon className='h-5 w-5' aria-hidden='true' />
+            {t('offerWatch.createAction', 'Vytvoriť sledovanie')}
+          </button>
+        ) : null}
 
         {atLimit ? (
           <p className='mt-3 rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800 dark:border-purple-900/60 dark:bg-purple-950/25 dark:text-purple-200' role='status'>

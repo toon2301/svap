@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useMobileViewportHeight } from '../../../hooks/useMobileViewportHeight';
 import { useModalFocusTrap } from '../../profile/useModalFocusTrap';
 import { MAX_OFFER_WATCHES, type OfferWatch, type OfferWatchInput } from '../types';
 import { useOfferWatches } from '../useOfferWatches';
@@ -26,6 +27,7 @@ export default function OfferWatchSettingsMobile({
   const { t } = useLanguage();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const unavailableViewRef = useRef<string | null>(null);
+  const createWasAvailableRef = useRef<boolean | null>(null);
   const [deletingWatch, setDeletingWatch] = useState<OfferWatch | null>(null);
   const {
     watches,
@@ -45,6 +47,10 @@ export default function OfferWatchSettingsMobile({
       : null
   ), [view, watches]);
   const deleteDialogOpen = deletingWatch !== null;
+  const mobileViewportHeight = useMobileViewportHeight(view.kind !== 'list');
+  const mobileViewportStyle = mobileViewportHeight
+    ? { height: `${mobileViewportHeight}px` }
+    : undefined;
 
   useModalFocusTrap(!deleteDialogOpen, rootRef);
 
@@ -74,12 +80,17 @@ export default function OfferWatchSettingsMobile({
   }, [deleteDialogOpen, mutation, onBack]);
 
   useEffect(() => {
+    if (view.kind !== 'create') createWasAvailableRef.current = null;
     if (isLoading || hasLoadError) return;
-    const unavailableKey = view.kind === 'edit'
-      ? `edit-${view.watchId}`
-      : view.kind === 'create' && watches.length >= MAX_OFFER_WATCHES
-        ? 'create-limit'
-        : null;
+    let unavailableKey: string | null = null;
+    if (view.kind === 'edit') {
+      unavailableKey = `edit-${view.watchId}`;
+    } else if (view.kind === 'create') {
+      if (createWasAvailableRef.current === null) {
+        createWasAvailableRef.current = watches.length < MAX_OFFER_WATCHES;
+      }
+      if (!createWasAvailableRef.current) unavailableKey = 'create-limit';
+    }
     if (!unavailableKey || (view.kind === 'edit' && selectedWatch)) {
       unavailableViewRef.current = null;
       return;
@@ -152,7 +163,8 @@ export default function OfferWatchSettingsMobile({
     <>
       <div
         ref={rootRef}
-        className='fixed inset-0 z-[9000] lg:hidden'
+        className='fixed inset-0 z-[9000] overflow-hidden lg:hidden'
+        style={mobileViewportStyle}
         role='dialog'
         aria-modal='true'
         aria-label={t('offerWatch.title', 'Sledovanie')}

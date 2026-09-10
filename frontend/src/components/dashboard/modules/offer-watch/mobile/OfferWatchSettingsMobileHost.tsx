@@ -6,22 +6,23 @@ import OfferWatchSettingsMobile from './OfferWatchSettingsMobile';
 import {
   OFFER_WATCH_MOBILE_REQUEST_EVENT,
   OFFER_WATCH_SETTINGS_PATH,
+  hasOfferWatchSettingsReturnHistory,
   isOfferWatchSettingsPath,
   readOfferWatchMobileHistory,
   withOfferWatchMobileHistory,
+  withOfferWatchSettingsReturnHistory,
   withoutOfferWatchMobileHistory,
+  withoutOfferWatchSettingsReturnHistory,
   type OfferWatchMobileHistory,
   type OfferWatchMobileView,
 } from './offerWatchMobileNavigation';
 
 type OfferWatchSettingsMobileHostProps = {
   onReturnToSettings: () => void;
+  isSettingsOpen?: boolean;
   /**
-   * Otvor sledované ponuky v DESKTOPOVOM rozložení.
-   *
-   * Volá sa jedine pri prechode cez hranicu 1024 px s otvoreným mobilným
-   * panelom: panel zhasne, ale adresa ostáva na sledovaných ponukách, takže
-   * desktopový stav treba dotiahnuť za ňou.
+   * Otvor sledované ponuky v desktopovom rozložení po prekročení hranice
+   * 1024 px s otvoreným mobilným panelom.
    */
   onOpenDesktop?: () => void;
 };
@@ -39,29 +40,36 @@ function markerFor(
   origin: OfferWatchMobileHistory['origin'],
   view: OfferWatchMobileView,
 ): OfferWatchMobileHistory {
-  return { version: 1, origin, view };
+  return { version: 2, origin, view };
 }
 
 export default function OfferWatchSettingsMobileHost({
   onReturnToSettings,
+  isSettingsOpen = false,
   onOpenDesktop,
 }: OfferWatchSettingsMobileHostProps) {
   const [marker, setMarker] = useState<OfferWatchMobileHistory | null>(null);
   const markerRef = useRef<OfferWatchMobileHistory | null>(null);
-  // Sleduje sa cez ref: listener na zmenu šírky sa registruje raz pri mounte,
-  // takže by inak natrvalo držal prvú verziu callbacku.
+  const returnToSettingsRef = useRef(onReturnToSettings);
   const openDesktopRef = useRef(onOpenDesktop);
+  const navigationPendingRef = useRef(false);
+  const settingsReturnRequestedRef = useRef(false);
+  const settingsReturnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     markerRef.current = marker;
   }, [marker]);
 
   useEffect(() => {
+    returnToSettingsRef.current = onReturnToSettings;
+  }, [onReturnToSettings]);
+
+  useEffect(() => {
     openDesktopRef.current = onOpenDesktop;
   }, [onOpenDesktop]);
 
   const returnToSettings = useCallback(() => {
-    onReturnToSettings();
+    returnToSettingsRef.current();
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         document.querySelector<HTMLButtonElement>(
@@ -69,13 +77,57 @@ export default function OfferWatchSettingsMobileHost({
         )?.focus();
       });
     });
-  }, [onReturnToSettings]);
+  }, []);
+
+  const scheduleSettingsReturn = useCallback(() => {
+    if (settingsReturnRequestedRef.current) return;
+    settingsReturnRequestedRef.current = true;
+    settingsReturnTimerRef.current = setTimeout(() => {
+      settingsReturnTimerRef.current = null;
+      if (!isMobileViewport()) {
+        settingsReturnRequestedRef.current = false;
+        return;
+      }
+      returnToSettings();
+    }, 0);
+  }, [returnToSettings]);
+
+  useEffect(() => () => {
+    if (settingsReturnTimerRef.current !== null) {
+      clearTimeout(settingsReturnTimerRef.current);
+    }
+  }, []);
+
+  // Návratový marker sa odstráni až po tom, čo rodič skutočne vykreslí
+  // Nastavenia. Ak sa Dashboard počas zmeny URL remountne, marker ostane v
+  // histórii a nová inštancia dokončí návrat namiesto straty callbacku.
+  useEffect(() => {
+    if (!isSettingsOpen || !settingsReturnRequestedRef.current) return;
+    if (
+      !isOfferWatchSettingsPath(window.location.pathname)
+      && hasOfferWatchSettingsReturnHistory(window.history.state)
+    ) {
+      window.history.replaceState(
+        withoutOfferWatchSettingsReturnHistory(window.history.state),
+        '',
+      );
+    }
+    settingsReturnRequestedRef.current = false;
+  }, [isSettingsOpen]);
 
   const openFromSettings = useCallback(() => {
     if (!isMobileViewport() || markerRef.current) return;
     const nextMarker = markerFor('settings', { kind: 'list' });
+    const returnState = withOfferWatchSettingsReturnHistory(window.history.state);
+
+    // Nastavenia sú iba React overlay, nie samostatný history záznam. Označenie
+    // pôvodného záznamu umožní ich obnoviť aj po remounte celej route.
+    window.history.replaceState(returnState, '');
     window.history.pushState(
-      withOfferWatchMobileHistory(window.history.state, nextMarker),
+      withOfferWatchMobileHistory(
+        withoutOfferWatchSettingsReturnHistory(returnState),
+        nextMarker,
+      ),
       '',
       OFFER_WATCH_SETTINGS_PATH,
     );
@@ -89,18 +141,11 @@ export default function OfferWatchSettingsMobileHost({
   }, [openFromSettings]);
 
   useEffect(() => {
-    const restoreDirectRoute = () => {
+    const restoreRoute = () => {
       if (!isMobileViewport()) {
         const hadOverlay = markerRef.current !== null;
         markerRef.current = null;
         setMarker(null);
-        // Panel zhasol, ale adresa ostala na sledovaných ponukách. Desktopové
-        // rozloženie ich vykresľuje podľa stavu (`activeRightItem`), nie podľa
-        // cesty, takže bez tohto by po zväčšení okna ostal na obrazovke modul,
-        // ktorý bol POD mobilným panelom.
-        //
-        // Len pri skutočnom PRECHODE s otvoreným panelom: pri mounte rovno na
-        // desktope si počiatočný stav sekcie rieši samotná stránka route-u.
         if (hadOverlay && isOfferWatchSettingsPath(window.location.pathname)) {
           window.history.replaceState(
             withoutOfferWatchMobileHistory(window.history.state),
@@ -111,16 +156,33 @@ export default function OfferWatchSettingsMobileHost({
         }
         return;
       }
-      if (!isOfferWatchSettingsPath(window.location.pathname)) return;
+
+      if (!isOfferWatchSettingsPath(window.location.pathname)) {
+        if (hasOfferWatchSettingsReturnHistory(window.history.state)) {
+          scheduleSettingsReturn();
+        }
+        return;
+      }
+
       const savedMarker = readOfferWatchMobileHistory(window.history.state);
       if (savedMarker) {
         markerRef.current = savedMarker;
         setMarker(savedMarker);
         return;
       }
+
+      // Priamy odkaz nemá pod sebou záznam Nastavení. Aktuálny záznam sa preto
+      // bezpečne zmení na návratový bod a obrazovka zoznamu dostane nový záznam.
       const directMarker = markerFor('direct', { kind: 'list' });
-      window.history.replaceState(
-        withOfferWatchMobileHistory(window.history.state, directMarker),
+      const settingsState = withOfferWatchSettingsReturnHistory(
+        withoutOfferWatchMobileHistory(window.history.state),
+      );
+      window.history.replaceState(settingsState, '', '/dashboard/settings');
+      window.history.pushState(
+        withOfferWatchMobileHistory(
+          withoutOfferWatchSettingsReturnHistory(settingsState),
+          directMarker,
+        ),
         '',
         OFFER_WATCH_SETTINGS_PATH,
       );
@@ -128,15 +190,14 @@ export default function OfferWatchSettingsMobileHost({
       setMarker(directMarker);
     };
 
-    restoreDirectRoute();
+    restoreRoute();
     if (typeof window.matchMedia !== 'function') return;
     const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
-    mediaQuery.addEventListener('change', restoreDirectRoute);
-    return () => mediaQuery.removeEventListener('change', restoreDirectRoute);
-  }, []);
+    mediaQuery.addEventListener('change', restoreRoute);
+    return () => mediaQuery.removeEventListener('change', restoreRoute);
+  }, [scheduleSettingsReturn]);
 
   useEffect(() => {
-    let returnTimer: ReturnType<typeof setTimeout> | null = null;
     const handlePopState = () => {
       const previousMarker = markerRef.current;
       const nextMarker = isMobileViewport()
@@ -145,22 +206,22 @@ export default function OfferWatchSettingsMobileHost({
         : null;
       markerRef.current = nextMarker;
       setMarker(nextMarker);
-      if (!nextMarker && previousMarker?.origin === 'settings') {
-        // Na tom istom `popstate` visí aj nadradený `syncModuleFromPath`, ktorý
-        // pri rozpoznanej ceste (`/dashboard`, `/dashboard/profile`, …) končí
-        // zatvorením mobilného menu. Listener dieťaťa sa registruje SKÔR, takže
-        // synchrónne otvorenie by rodič vzápätí zase zavrel a naplánovaný fokus
-        // by nemal na čom pristáť. Odloženie o tick posunie otvorenie za všetky
-        // ostatné popstate handlery.
-        returnTimer = setTimeout(returnToSettings, 0);
+      navigationPendingRef.current = false;
+
+      if (!nextMarker && previousMarker) {
+        if (!hasOfferWatchSettingsReturnHistory(window.history.state)) {
+          window.history.replaceState(
+            withOfferWatchSettingsReturnHistory(window.history.state),
+            '',
+          );
+        }
+        scheduleSettingsReturn();
       }
     };
+
     window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (returnTimer !== null) clearTimeout(returnTimer);
-    };
-  }, [returnToSettings]);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [scheduleSettingsReturn]);
 
   const pushView = useCallback((view: OfferWatchMobileView) => {
     const current = markerRef.current;
@@ -176,21 +237,10 @@ export default function OfferWatchSettingsMobileHost({
   }, []);
 
   const navigateBack = useCallback(() => {
-    const current = markerRef.current;
-    if (!current) return;
-    if (current.view.kind !== 'list' || current.origin === 'settings') {
-      window.history.back();
-      return;
-    }
-    window.history.replaceState(
-      withoutOfferWatchMobileHistory(window.history.state),
-      '',
-      '/dashboard/settings',
-    );
-    markerRef.current = null;
-    setMarker(null);
-    returnToSettings();
-  }, [returnToSettings]);
+    if (!markerRef.current || navigationPendingRef.current) return;
+    navigationPendingRef.current = true;
+    window.history.back();
+  }, []);
 
   if (!marker || typeof document === 'undefined') return null;
   return createPortal(

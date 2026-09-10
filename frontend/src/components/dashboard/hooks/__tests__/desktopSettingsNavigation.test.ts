@@ -4,7 +4,9 @@ import {
   getDesktopSettingsSectionFromPath,
   getDesktopSettingsSectionPath,
   normalizeDashboardUrl,
+  readDesktopSettingsOriginTarget,
   readDesktopSettingsReturnTarget,
+  withDesktopSettingsOriginHistory,
   withDesktopSettingsHistory,
   withoutDesktopSettingsHistory,
 } from '../desktopSettingsNavigation';
@@ -26,6 +28,23 @@ describe('desktop settings navigation helpers', () => {
     ).toEqual({
       moduleId: 'statistics',
       url: '/dashboard/statistics',
+    });
+
+    expect(
+      createDesktopSettingsReturnTarget('skills', '/dashboard'),
+    ).toEqual({
+      moduleId: 'skills',
+      url: '/dashboard/skills',
+    });
+
+    expect(
+      createDesktopSettingsReturnTarget(
+        'profile',
+        '/dashboard/users/anton/portfolio/42?photo=2#gallery',
+      ),
+    ).toEqual({
+      moduleId: 'portfolio-detail',
+      url: '/dashboard/users/anton/portfolio/42?photo=2#gallery',
     });
 
     expect(createDesktopSettingsReturnTarget('search', '/dashboard/search')).toBeNull();
@@ -55,6 +74,25 @@ describe('desktop settings navigation helpers', () => {
     expect(markedState.nextInternal).toBe('kept');
     expect(readDesktopSettingsReturnTarget(markedState)).toEqual(target);
     expect(readDesktopSettingsReturnTarget(withoutDesktopSettingsHistory(markedState))).toBeNull();
+  });
+
+  it('keeps a durable nested origin only on the origin history entry', () => {
+    const target = {
+      moduleId: 'portfolio-detail',
+      url: '/dashboard/users/anton/portfolio/42',
+    };
+    const originState = withDesktopSettingsOriginHistory(
+      { nextInternal: 'kept' },
+      target,
+    );
+
+    expect(originState.nextInternal).toBe('kept');
+    expect(readDesktopSettingsOriginTarget(originState)).toEqual(target);
+
+    const settingsState = withDesktopSettingsHistory(originState, target);
+    expect(readDesktopSettingsReturnTarget(settingsState)).toEqual(target);
+    expect(readDesktopSettingsOriginTarget(settingsState)).toBeNull();
+    expect(settingsState.nextInternal).toBe('kept');
   });
 
   it('maps settings modules and paths to right-sidebar sections', () => {

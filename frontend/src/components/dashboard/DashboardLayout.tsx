@@ -248,6 +248,7 @@ export default function DashboardLayout({
           dotiahne desktopový stav za ňou. */}
       <OfferWatchSettingsMobileHost
         onReturnToSettings={onMobileMenuOpen}
+        isSettingsOpen={isMobileMenuOpen}
         onOpenDesktop={() => onRightItemClick('offer-watches')}
       />
       {/* Mobile Top Bar - skryť pre search modul */}

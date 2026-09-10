@@ -1103,6 +1103,8 @@
     "priceMin": "Ár ettől",
     "priceMax": "Ár eddig",
     "currency": "Pénznem",
+    "currencySearchPlaceholder": "Pénznem keresése",
+    "currencyNoResults": "Nem található pénznem.",
     "priceFromPrefix": "Ettől",
     "priceToPrefix": "Eddig",
     "anyPrice": "Árkorlátozás nélkül",

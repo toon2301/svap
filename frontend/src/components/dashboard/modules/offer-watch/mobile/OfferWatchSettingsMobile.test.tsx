@@ -7,9 +7,13 @@ import { OfferWatchApiError } from '../offerWatchApi';
 import type { OfferWatch } from '../types';
 import type { UseOfferWatchesResult } from '../useOfferWatches';
 import { useOfferWatches } from '../useOfferWatches';
+import { useMobileViewportHeight } from '../../../hooks/useMobileViewportHeight';
 import OfferWatchSettingsMobile from './OfferWatchSettingsMobile';
 
 jest.mock('../useOfferWatches', () => ({ useOfferWatches: jest.fn() }));
+jest.mock('../../../hooks/useMobileViewportHeight', () => ({
+  useMobileViewportHeight: jest.fn(),
+}));
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
   default: { success: jest.fn(), error: jest.fn() },
@@ -26,6 +30,7 @@ jest.mock('@/contexts/LanguageContext', () => ({
 const [CATEGORY, SUBCATEGORIES] = Object.entries(skillsCategories)[0]!;
 const SUBCATEGORY = SUBCATEGORIES[0]!;
 const mockedUseOfferWatches = jest.mocked(useOfferWatches);
+const mockedUseMobileViewportHeight = jest.mocked(useMobileViewportHeight);
 
 function watch(id: number, overrides: Partial<OfferWatch> = {}): OfferWatch {
   return {
@@ -72,8 +77,9 @@ function renderMobile(
 }
 
 function selectCategory() {
-  fireEvent.click(screen.getByRole('button', { name: /Podkateg/ }));
-  fireEvent.change(screen.getByRole('combobox', { name: /Za.*p.*sa.*n.*zov podkateg/ }), {
+  const category = screen.getByRole('combobox', { name: /Podkateg/ });
+  fireEvent.focus(category);
+  fireEvent.change(category, {
     target: { value: SUBCATEGORY },
   });
   const result = screen.getByText(SUBCATEGORY, { selector: 'span' });
@@ -85,6 +91,7 @@ describe('OfferWatchSettingsMobile', () => {
     jest.clearAllMocks();
     window.localStorage.setItem(LAST_MANUAL_OFFER_COUNTRY_KEY, 'SK');
     mockedUseOfferWatches.mockReturnValue(hookResult());
+    mockedUseMobileViewportHeight.mockReturnValue(null);
   });
 
   afterEach(() => window.localStorage.clear());
@@ -137,6 +144,99 @@ describe('OfferWatchSettingsMobile', () => {
     expect(toast.success).toHaveBeenCalled();
   });
 
+  it('fits create and edit forms into the visible viewport above the keyboard', () => {
+    mockedUseMobileViewportHeight.mockReturnValue(612);
+
+    const { unmount } = render(
+      <OfferWatchSettingsMobile
+        view={{ kind: 'create' }}
+        onBack={jest.fn()}
+        onPushView={jest.fn()}
+      />,
+    );
+
+    expect(mockedUseMobileViewportHeight).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveStyle({ height: '612px' });
+    unmount();
+
+    mockedUseOfferWatches.mockReturnValue(hookResult({ watches: [watch(7)] }));
+    render(
+      <OfferWatchSettingsMobile
+        view={{ kind: 'edit', watchId: 7 }}
+        onBack={jest.fn()}
+        onPushView={jest.fn()}
+      />,
+    );
+    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveStyle({ height: '612px' });
+  });
+
+  it('keeps both form actions inside the remaining scrollable viewport', () => {
+    mockedUseMobileViewportHeight.mockReturnValue(480);
+    renderMobile({ kind: 'create' });
+
+    const saveButton = screen.getByRole('button', { name: /Ulo.*sledovanie/ });
+    const cancelButton = screen.getByRole('button', { name: /Zru/ });
+    const scrollArea = saveButton.closest('.overflow-y-auto');
+
+    expect(scrollArea).not.toBeNull();
+    expect(scrollArea).toContainElement(cancelButton);
+    expect(scrollArea).toContainElement(saveButton);
+    expect(scrollArea?.firstElementChild).toHaveClass(
+      'pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]',
+    );
+  });
+
+  it('does not opt the non-editable list screen into keyboard viewport sizing', () => {
+    renderMobile({ kind: 'list' });
+
+    expect(mockedUseMobileViewportHeight).toHaveBeenCalledWith(false);
+    expect(screen.getByTestId('offer-watch-mobile-screen')).not.toHaveAttribute('style');
+  });
+
+  it('returns only once and does not report a limit after saving the fifth watch', async () => {
+    const existing = Array.from({ length: 4 }, (_, index) => watch(index + 1));
+    const created = watch(5);
+    const createWatch = jest.fn().mockResolvedValue({ ok: true, value: created });
+    mockedUseOfferWatches.mockReturnValue(hookResult({
+      watches: existing,
+      createWatch,
+    }));
+    const onBack = jest.fn();
+    const props = {
+      view: { kind: 'create' } as const,
+      onBack,
+      onPushView: jest.fn(),
+    };
+    const { rerender } = render(<OfferWatchSettingsMobile {...props} />);
+
+    selectCategory();
+    fireEvent.click(screen.getByRole('button', { name: /Ulo.*sledovanie/ }));
+
+    await waitFor(() => expect(createWatch).toHaveBeenCalledTimes(1));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(toast.error).not.toHaveBeenCalled();
+
+    mockedUseOfferWatches.mockReturnValue(hookResult({
+      watches: [created, ...existing],
+      createWatch,
+    }));
+    rerender(<OfferWatchSettingsMobile {...props} />);
+
+    await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('rejects a restored create screen when five watches already exist', async () => {
+    mockedUseOfferWatches.mockReturnValue(hookResult({
+      watches: Array.from({ length: 5 }, (_, index) => watch(index + 1)),
+    }));
+
+    const callbacks = renderMobile({ kind: 'create' });
+
+    await waitFor(() => expect(callbacks.onBack).toHaveBeenCalledTimes(1));
+    expect(toast.error).toHaveBeenCalledWith('Môžeš mať maximálne 5 sledovaní.');
+  });
+
   it('cancels editing without a write and saves the prefilled edit explicitly', async () => {
     const savedWatch = watch(11, { isSeeking: true });
     const state = hookResult({ watches: [savedWatch] });
@@ -164,7 +264,7 @@ describe('OfferWatchSettingsMobile', () => {
     mockedUseOfferWatches.mockReturnValue(fullState);
     const listCallbacks = renderMobile({ kind: 'list' });
 
-    expect(screen.getByRole('button', { name: /Vytvori.*sledovanie/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Vytvori.*sledovanie/ })).not.toBeInTheDocument();
     expect(screen.getByText(/limit 5/)).toBeInTheDocument();
     expect(listCallbacks.onPushView).not.toHaveBeenCalled();
   });

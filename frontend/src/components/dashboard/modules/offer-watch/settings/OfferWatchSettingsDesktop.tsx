@@ -20,6 +20,7 @@ import OfferWatchDeleteDialog from './OfferWatchDeleteDialog';
 import OfferWatchEditDialog from './OfferWatchEditDialog';
 import OfferWatchForm from './OfferWatchForm';
 import OfferWatchSavedList, { OfferWatchListSkeleton } from './OfferWatchSavedList';
+import OfferWatchSettingsSkeleton from './OfferWatchSettingsSkeleton';
 import {
   focusFirstOfferWatchError,
   offerWatchErrorMessage,
@@ -59,6 +60,7 @@ export default function OfferWatchSettingsDesktop({
   const isUpdating = mutation?.kind === 'update';
   const isDeleting = mutation?.kind === 'delete';
   const hasLoadError = Boolean(error && !mutation && !isLoading);
+  const isInitialLoading = isLoading && watches.length === 0;
 
   useEffect(() => {
     if (draft.countryCode || !country) return;
@@ -172,56 +174,64 @@ export default function OfferWatchSettingsDesktop({
         {t('offerWatch.description', 'Vyber, aké ponuky alebo dopyty chceš sledovať. O nových zhodách ťa upozorníme.')}
       </p>
 
-      <section className='rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#101011] sm:p-6' aria-label={t('offerWatch.formLabel', 'Nastavenie sledovania')}>
-        <OfferWatchForm
-          idPrefix={CREATE_FORM_ID}
-          draft={draft}
-          errors={errors}
-          onChange={handleDraftChange}
-          onSubmit={handleCreate}
-          submitLabel={t('offerWatch.save', 'Uložiť sledovanie')}
-          submittingLabel={t('offerWatch.saving', 'Ukladám sledovanie...')}
-          isSubmitting={Boolean(isCreating)}
-          disabled={isLoading || hasLoadError || atLimit || Boolean(mutation && !isCreating)}
-          disabledMessage={disabledMessage}
+      {isInitialLoading ? (
+        <OfferWatchSettingsSkeleton
+          loadingLabel={t('common.loading', 'Načítavam...')}
         />
-      </section>
+      ) : (
+        <>
+          <section className='rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#101011] sm:p-6' aria-label={t('offerWatch.formLabel', 'Nastavenie sledovania')}>
+            <OfferWatchForm
+              idPrefix={CREATE_FORM_ID}
+              draft={draft}
+              errors={errors}
+              onChange={handleDraftChange}
+              onSubmit={handleCreate}
+              submitLabel={t('offerWatch.save', 'Uložiť sledovanie')}
+              submittingLabel={t('offerWatch.saving', 'Ukladám sledovanie...')}
+              isSubmitting={Boolean(isCreating)}
+              disabled={isLoading || hasLoadError || atLimit || Boolean(mutation && !isCreating)}
+              disabledMessage={disabledMessage}
+            />
+          </section>
 
-      <section className='mt-8' aria-labelledby='offer-watch-saved-title'>
-        <div className='mb-4 flex items-center justify-between gap-4'>
-          <h2 id='offer-watch-saved-title' className='text-xl font-semibold text-gray-900 dark:text-white'>
-            {t('offerWatch.savedTitle', 'Uložené sledovania')}
-          </h2>
-          <span className='rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700 dark:bg-gray-900 dark:text-gray-300' aria-label={t('offerWatch.countLabel', 'Počet uložených sledovaní')}>
-            {watches.length} / {MAX_OFFER_WATCHES}
-          </span>
-        </div>
+          <section className='mt-8' aria-labelledby='offer-watch-saved-title'>
+            <div className='mb-4 flex items-center justify-between gap-4'>
+              <h2 id='offer-watch-saved-title' className='text-xl font-semibold text-gray-900 dark:text-white'>
+                {t('offerWatch.savedTitle', 'Uložené sledovania')}
+              </h2>
+              <span className='rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700 dark:bg-gray-900 dark:text-gray-300' aria-label={t('offerWatch.countLabel', 'Počet uložených sledovaní')}>
+                {watches.length} / {MAX_OFFER_WATCHES}
+              </span>
+            </div>
 
-        {hasLoadError ? (
-          <div className='rounded-2xl border border-red-200 bg-red-50 px-5 py-6 text-center dark:border-red-900/60 dark:bg-red-950/20' role='alert'>
-            <p className='text-sm font-medium text-red-800 dark:text-red-200'>
-              {t('offerWatch.loadFailed', 'Sledovania sa nepodarilo načítať.')}
-            </p>
-            <button
-              type='button'
-              onClick={retryLoad}
-              className='mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400/30 dark:border-red-800 dark:bg-[#101011] dark:text-red-200 dark:hover:bg-red-950/40'
-            >
-              <ArrowPathIcon className='h-4 w-4' aria-hidden='true' />
-              {t('offerWatch.retry', 'Skúsiť znova')}
-            </button>
-          </div>
-        ) : isLoading ? (
-          <OfferWatchListSkeleton />
-        ) : (
-          <OfferWatchSavedList
-            watches={watches}
-            mutation={mutation}
-            onEdit={setEditingWatch}
-            onDelete={setDeletingWatch}
-          />
-        )}
-      </section>
+            {hasLoadError ? (
+              <div className='rounded-2xl border border-red-200 bg-red-50 px-5 py-6 text-center dark:border-red-900/60 dark:bg-red-950/20' role='alert'>
+                <p className='text-sm font-medium text-red-800 dark:text-red-200'>
+                  {t('offerWatch.loadFailed', 'Sledovania sa nepodarilo načítať.')}
+                </p>
+                <button
+                  type='button'
+                  onClick={retryLoad}
+                  className='mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400/30 dark:border-red-800 dark:bg-[#101011] dark:text-red-200 dark:hover:bg-red-950/40'
+                >
+                  <ArrowPathIcon className='h-4 w-4' aria-hidden='true' />
+                  {t('offerWatch.retry', 'Skúsiť znova')}
+                </button>
+              </div>
+            ) : isLoading ? (
+              <OfferWatchListSkeleton />
+            ) : (
+              <OfferWatchSavedList
+                watches={watches}
+                mutation={mutation}
+                onEdit={setEditingWatch}
+                onDelete={setDeletingWatch}
+              />
+            )}
+          </section>
+        </>
+      )}
 
       <OfferWatchEditDialog
         watch={editingWatch}
