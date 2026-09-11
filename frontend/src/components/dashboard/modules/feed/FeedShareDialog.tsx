@@ -19,7 +19,6 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -29,6 +28,7 @@ import {
   emitFeedShareLanding,
   isFeedLandingTargetMounted,
 } from './feedShareLanding';
+import { requestFeedHomeNavigation } from './feedHomeNavigation';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import type { SharedContentCard } from './sharedContentCard';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
@@ -38,9 +38,6 @@ import { useEmojiInsertion } from './useEmojiInsertion';
 import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostCreated } from './feedShareEvents';
 import type { FeedPost } from '@/lib/feedApi';
-
-/** Nástenka – sem sa po zdieľaní pristáva. */
-const FEED_PATH = '/dashboard';
 
 const SHARE_CAPTION_MAX_LENGTH = 500;
 /** Zhodné s MAX_FEED_POST_TAGS na backende – limit validuje aj BE. */
@@ -75,7 +72,6 @@ export default function FeedShareDialog({
   onShared,
 }: FeedShareDialogProps) {
   const { t } = useLanguage();
-  const router = useRouter();
   // Mobil má emoji priamo na systémovej klávesnici – appkové
   // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
   const isMobile = useIsMobile();
@@ -132,10 +128,14 @@ export default function FeedShareDialog({
       // Navigácia LEN keď Nástenka na obrazovke nie je (zdieľanie z profilu).
       // Nedá sa to čítať z adresy: okno detailu sa zatvára krokom späť, ktorý
       // dobehne až po tomto rozhodnutí, takže `location.pathname` je tu ešte
-      // stará. `push`, nie `replace`: presun na Nástenku je dôsledok akcie
-      // používateľa, takže krok späť ho má vrátiť tam, odkiaľ zdieľal.
+      // stará.
+      //
+      // Ide to cez modulovú navigáciu dashboardu, nie cez `router.push`:
+      // Next router je celý čas na route `/dashboard` (adresu si appka
+      // prepisuje sama), takže push na tú istú route neprepne `activeModule`
+      // a navonok sa nestane nič. Viď feedHomeNavigation.
       if (!isFeedLandingTargetMounted()) {
-        router.push(FEED_PATH);
+        requestFeedHomeNavigation();
       }
     } catch (err) {
       // Skrytá/nedostupná ponuka či portfólio vracia z BE zrozumiteľnú hlášku –

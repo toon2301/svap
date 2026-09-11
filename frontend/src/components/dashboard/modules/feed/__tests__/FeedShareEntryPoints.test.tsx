@@ -22,6 +22,7 @@ import {
   registerFeedLandingTarget,
   resetFeedShareLanding,
 } from '../feedShareLanding';
+import { onFeedHomeNavigation } from '../feedHomeNavigation';
 import { shareOfferToFeed, sharePortfolioItemToFeed, type FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
@@ -367,6 +368,15 @@ describe('pristátie po úspešnom zdieľaní', () => {
 
   let landed: number[];
   let stopLanding: () => void;
+  /**
+   * Žiadosti o prepnutie na Nástenku.
+   *
+   * Tvrdí sa TOTO, nie `router.push`: dashboard prepína moduly stavom a Next
+   * router je celý čas na `/dashboard`, takže push na tú istú route by nič
+   * neprepol – a test by aj tak svietil zeleno.
+   */
+  let homeRequests: number;
+  let stopHomeRequests: () => void;
 
   beforeEach(() => {
     mockedShareOffer.mockReset();
@@ -378,10 +388,15 @@ describe('pristátie po úspešnom zdieľaní', () => {
     resetFeedShareLanding();
     landed = [];
     stopLanding = onFeedShareLanding((postId) => landed.push(postId));
+    homeRequests = 0;
+    stopHomeRequests = onFeedHomeNavigation(() => {
+      homeRequests += 1;
+    });
   });
 
   afterEach(() => {
     stopLanding();
+    stopHomeRequests();
     resetFeedShareLanding();
   });
 
@@ -398,12 +413,10 @@ describe('pristátie po úspešnom zdieľaní', () => {
       await waitFor(() => expect(api).toHaveBeenCalled());
       // Žiadny detail sa neotvára – ohlási sa pristátie na Nástenke…
       await waitFor(() => expect(landed).toHaveLength(1));
-      // …a keďže Nástenka na obrazovke nie je, naviguje sa na ňu.
-      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
-      // Presmerovanie na detail príspevku je preč úplne.
-      expect(mockRouterPush).not.toHaveBeenCalledWith(
-        expect.stringContaining('/dashboard/feed/'),
-      );
+      // …a keďže Nástenka na obrazovke nie je, vyžiada sa prepnutie na ňu.
+      await waitFor(() => expect(homeRequests).toBe(1));
+      // Router sa na to NEPOUŽÍVA – na route `/dashboard` appka celý čas je.
+      expect(mockRouterPush).not.toHaveBeenCalled();
     },
   );
 
@@ -422,7 +435,8 @@ describe('pristátie po úspešnom zdieľaní', () => {
     await submitShare();
 
     await waitFor(() => expect(landed).toEqual([205]));
-    // Používateľ na Nástenke už je – navigácia by len pridala krok histórie.
+    // Používateľ na Nástenke už je – prepínať sa nemá kam.
+    expect(homeRequests).toBe(0);
     expect(mockRouterPush).not.toHaveBeenCalled();
     release();
   });
@@ -465,7 +479,7 @@ describe('pristátie po úspešnom zdieľaní', () => {
 
     await waitFor(() => expect(mockedToastError).toHaveBeenCalled());
     expect(landed).toEqual([]);
-    expect(mockRouterPush).not.toHaveBeenCalled();
+    expect(homeRequests).toBe(0);
   });
 
   it('announces nothing when the response carries no id', async () => {
@@ -483,6 +497,6 @@ describe('pristátie po úspešnom zdieľaní', () => {
 
     await waitFor(() => expect(mockedShareOffer).toHaveBeenCalled());
     expect(landed).toEqual([]);
-    expect(mockRouterPush).not.toHaveBeenCalled();
+    expect(homeRequests).toBe(0);
   });
 });
