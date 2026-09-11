@@ -13,6 +13,7 @@ import type { User } from '@/types';
 import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelContext';
 import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
 import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatchSettingsMobileHost';
+import { onFeedHomeNavigation } from './modules/feed/feedHomeNavigation';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -147,6 +148,14 @@ export default function DashboardLayout({
     shouldUseDynamicMobileMessagesHeight && mobileViewportHeight
       ? { height: `${mobileViewportHeight}px` }
       : undefined;
+
+  // Žiadosť „prepni ma na Nástenku" (po zdieľaní z profilu). Prepošle sa do
+  // TOHO ISTÉHO lievika, akým prepína bočné menu – prepne modul aj adresu.
+  // Hlbšie v strome sa to spraviť nedá: modul drží dashboard, nie router.
+  useEffect(
+    () => onFeedHomeNavigation(() => onModuleChange('home')),
+    [onModuleChange],
+  );
 
   // Zatvor vedľajší panel pri kliknutí mimo neho alebo pri stlačení Esc
   useEffect(() => {

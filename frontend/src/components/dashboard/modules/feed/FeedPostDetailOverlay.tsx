@@ -41,7 +41,11 @@ import { usePendingFeedImages } from './usePendingFeedImages';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import { handleGoneFeedPost } from './feedPostGone';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
-import { onFeedShareLanding } from './feedShareLanding';
+import {
+  isFeedLandingTargetMounted,
+  onFeedShareLanding,
+} from './feedShareLanding';
+import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
 
 type FeedPostDetailOverlayProps = {
   postId: number;
@@ -147,9 +151,32 @@ export default function FeedPostDetailOverlay({
   );
 
   // Po zdieľaní sa pristáva na Nástenku, nie do detailu – okno sa preto zavrie
-  // samo. Robí to VLASTNÝM `onClose`, takže si odoberie aj svoj záznam
-  // histórie; volajúci o jeho vnútornom účtovníctve nemusí vedieť.
-  useEffect(() => onFeedShareLanding(() => onClose()), [onClose]);
+  // samo.
+  //
+  // Ako presne, závisí od toho, či po tomto signáli nasleduje prepnutie na
+  // Nástenku (`FeedShareDialog` ho spúšťa práve vtedy, keď feed na obrazovke
+  // nie je):
+  //
+  //  - Feed JE na obrazovke: nikam sa nenaviguje, takže okno odoberie svoj
+  //    záznam histórie bežným `onClose` – presne ako pri „X" či Escape.
+  //  - Feed na obrazovke NIE JE: hneď po tomto signáli príde prepnutie modulu,
+  //    ktoré si adresu rieši samo (`pushState`). Vlastný krok späť je pritom
+  //    ASYNCHRÓNNY, takže by dobehol až PO ňom a buď by ho zrušil, alebo by
+  //    nechal adresu na ceste už zavretého okna. `keepHistory` ho vynechá –
+  //    ostane jediná operácia s históriou. Ten istý parameter používa aj
+  //    preklik na autora komentára, ktorý má rovnaký dôvod.
+  const postOverlay = useFeedPostOverlay();
+  useEffect(
+    () =>
+      onFeedShareLanding(() => {
+        if (!isFeedLandingTargetMounted() && postOverlay) {
+          postOverlay.close({ keepHistory: true });
+          return;
+        }
+        onClose();
+      }),
+    [onClose, postOverlay],
+  );
 
   /**
    * ŽIVÝ stav fotiek – ten istý hook, akým si ich sleduje karta vo feede.
