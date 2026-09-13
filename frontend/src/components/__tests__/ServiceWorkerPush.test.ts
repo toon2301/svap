@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-type RegisteredHandlers = Record<string, (event: any) => void>;
+type RegisteredHandlers = Record<string, (event: unknown) => void>;
 
 function createWaitUntilEvent(overrides: Record<string, unknown> = {}) {
   const pending: Promise<unknown>[] = [];
@@ -24,11 +24,16 @@ function loadServiceWorker() {
   const showNotification = jest.fn().mockResolvedValue(undefined);
   const matchAll = jest.fn().mockResolvedValue([]);
   const openWindow = jest.fn().mockResolvedValue(undefined);
+  const fetchMock = jest.fn().mockResolvedValue({
+    status: 200,
+    type: 'basic',
+    clone: jest.fn(),
+  });
 
   const selfScope = {
     skipWaiting: jest.fn(),
     addEventListener: jest.fn(
-      (type: string, handler: (event: any) => void) => {
+      (type: string, handler: (event: unknown) => void) => {
         handlers[type] = handler;
       },
     ),
@@ -46,10 +51,12 @@ function loadServiceWorker() {
   };
 
   const cacheStorage = {
-    open: jest.fn(),
+    open: jest.fn().mockResolvedValue({
+      put: jest.fn().mockResolvedValue(undefined),
+    }),
     keys: jest.fn(),
     delete: jest.fn(),
-    match: jest.fn(),
+    match: jest.fn().mockResolvedValue(undefined),
   };
   const logger = {
     log: jest.fn(),
@@ -75,6 +82,7 @@ function loadServiceWorker() {
     'Response',
     'URL',
     'Promise',
+    'fetch',
     source,
   );
 
@@ -87,6 +95,7 @@ function loadServiceWorker() {
     ResponseCtor,
     URL,
     Promise,
+    fetchMock,
   );
 
   return {
@@ -94,8 +103,58 @@ function loadServiceWorker() {
     showNotification,
     matchAll,
     openWindow,
+    fetchMock,
+    cacheStorage,
   };
 }
+
+describe('service worker media flow', () => {
+  it('loads same-origin avatars from the network without reading or writing a cache', async () => {
+    const { handlers, fetchMock, cacheStorage } = loadServiceWorker();
+    const request = {
+      url: 'https://svaply.com/media/avatars/immutable-id.webp',
+      method: 'GET',
+      destination: 'image',
+      headers: { get: jest.fn().mockReturnValue('image/webp') },
+    };
+    const responsePromises: Promise<unknown>[] = [];
+    const fetchEvent = {
+      request,
+      respondWith: jest.fn((response: Promise<unknown>) => {
+        responsePromises.push(Promise.resolve(response));
+      }),
+    };
+
+    handlers.fetch(fetchEvent);
+    await Promise.all(responsePromises);
+
+    expect(fetchMock).toHaveBeenCalledWith(request);
+    expect(cacheStorage.match).not.toHaveBeenCalled();
+    expect(cacheStorage.open).not.toHaveBeenCalled();
+  });
+
+  it('keeps the existing cache flow for non-avatar media', async () => {
+    const { handlers, cacheStorage } = loadServiceWorker();
+    const request = {
+      url: 'https://svaply.com/media/offers/photo.webp',
+      method: 'GET',
+      destination: 'image',
+      headers: { get: jest.fn().mockReturnValue('image/webp') },
+    };
+    const responsePromises: Promise<unknown>[] = [];
+    const fetchEvent = {
+      request,
+      respondWith: jest.fn((response: Promise<unknown>) => {
+        responsePromises.push(Promise.resolve(response));
+      }),
+    };
+
+    handlers.fetch(fetchEvent);
+    await Promise.all(responsePromises);
+
+    expect(cacheStorage.match).toHaveBeenCalledWith(request);
+  });
+});
 
 describe('service worker message push flow', () => {
   it('shows a grouped message notification and sanitizes external URLs', async () => {

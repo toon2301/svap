@@ -41,11 +41,13 @@ describe('OfferWatchMobileFormScreen', () => {
     fireEvent.click(screen.getByText(SUBCATEGORY, { selector: 'span' }).closest('button')!);
 
     const currency = screen.getByRole('combobox', { name: 'Mena' });
+    expect(currency.tagName).toBe('SELECT');
     expect(currency).toBeDisabled();
     const price = screen.getByPlaceholderText('Cena od');
     fireEvent.change(price, { target: { value: '10.565' } });
     expect(currency).toBeEnabled();
     expect(currency).toHaveValue('€');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Uložiť sledovanie' }));
 
     expect(onSave).not.toHaveBeenCalled();

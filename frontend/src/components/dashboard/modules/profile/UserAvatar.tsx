@@ -19,13 +19,6 @@ const sizeClasses = {
   large: 'w-28 h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 text-3xl xl:text-5xl'
 };
 
-function withStableAvatarVersion(url: string, version?: string | null): string {
-  const v = String(version || '').trim();
-  if (!v) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}v=${encodeURIComponent(v)}`;
-}
-
 export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUploading = false, onAvatarClick }: UserAvatarProps) {
   const [imageError, setImageError] = useState(false);
   const getInitials = (firstName: string, lastName: string): string => {
@@ -47,8 +40,9 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
   
   // Preferuj plnú URL z backendu; fallback na relative path
   const rawUrl: string | undefined = (user.avatar_url as string | undefined) || (user.avatar as string | undefined);
-  // Stabilný cache-busting: mení sa iba keď sa zmení user.updated_at (t.j. po update profilu/avatara)
-  const avatarUrl: string | undefined = rawUrl ? withStableAvatarVersion(rawUrl, user.updated_at) : undefined;
+  // Backend vracia pre každý nový avatar nemennú, jedinečnú URL. Neupravuj ju tu:
+  // blob/data náhľady musia zostať platné a updated_at sa mení aj pri úprave textu profilu.
+  const avatarUrl: string | undefined = rawUrl;
 
   const handleImageError = () => {
     setImageError(true);

@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from swaply.validators import validate_image_file
+from ..avatar_images import avatar_upload_to
 from ..name_normalization import get_canonical_display_name
 from .enums import (
     DesktopOnboardingStep,
@@ -48,7 +49,7 @@ class User(AbstractUser):
     bio = models.TextField(_("O mne"), blank=True)
     avatar = models.ImageField(
         _("Profilová fotka"),
-        upload_to="avatars/",
+        upload_to=avatar_upload_to,
         blank=True,
         null=True,
         validators=[validate_image_file],
@@ -361,5 +362,4 @@ class UserProfile(models.Model):
         if self.mfa_secret:
             self.mfa_secret = encrypt_mfa_secret(decrypt_mfa_secret(self.mfa_secret))
         super().save(*args, **kwargs)
-
 

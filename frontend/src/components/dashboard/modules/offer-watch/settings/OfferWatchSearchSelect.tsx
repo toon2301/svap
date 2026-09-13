@@ -95,15 +95,24 @@ export default function OfferWatchSearchSelect({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [position, setPosition] = useState<CSSProperties>({});
 
+  const uniqueOptions = useMemo(() => {
+    const seenKeys = new Set<string>();
+    return options.filter((option) => {
+      if (seenKeys.has(option.key)) return false;
+      seenKeys.add(option.key);
+      return true;
+    });
+  }, [options]);
+
   const filteredOptions = useMemo(() => {
     const normalizedQuery = normalizeOfferWatchSearch(query);
-    if (!normalizedQuery) return requireQuery ? [] : options;
-    return options.filter((option) =>
+    if (!normalizedQuery) return requireQuery ? [] : uniqueOptions;
+    return uniqueOptions.filter((option) =>
       normalizeOfferWatchSearch(
         `${option.label} ${option.secondaryLabel || ''} ${option.searchText || ''}`,
       ).includes(normalizedQuery),
     );
-  }, [options, query, requireQuery]);
+  }, [query, requireQuery, uniqueOptions]);
 
   const close = useCallback((restoreFocus: boolean) => {
     setOpen(false);

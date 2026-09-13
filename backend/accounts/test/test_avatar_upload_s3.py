@@ -1,5 +1,6 @@
-import os
 import json
+import os
+import re
 from io import BytesIO
 
 import pytest
@@ -14,7 +15,6 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from swaply.validators import validate_image_file
-from django.test import override_settings
 
 
 User = get_user_model()
@@ -138,6 +138,103 @@ class TestAvatarUploadIntegration(APITestCase):
         r = self.client.patch(self.url, {"avatar": file}, format="multipart")
         url = r.data["user"].get("avatar_url")
         assert url and url.startswith("http://testserver/")
+
+    def test_empty_multipart_patch_is_rejected_without_changing_avatar(self):
+        """Prázdny FormData upload nesmie vrátiť falošný úspech."""
+        original = generate_image_file("JPEG", "original.jpg")
+        assert self.client.patch(
+            self.url, {"avatar": original}, format="multipart"
+        ).status_code == status.HTTP_200_OK
+        self.user.refresh_from_db()
+        original_name = self.user.avatar.name
+
+        response = self.client.patch(self.url, {}, format="multipart")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data == {"code": "empty_avatar_upload"}
+        self.user.refresh_from_db()
+        assert self.user.avatar.name == original_name
+
+    def test_json_profile_patch_and_avatar_removal_remain_supported(self):
+        """Multipart guard nesmie blokovať JSON profil ani explicitné zmazanie."""
+        original = generate_image_file("JPEG", "original.jpg")
+        assert self.client.patch(
+            self.url, {"avatar": original}, format="multipart"
+        ).status_code == status.HTTP_200_OK
+
+        profile_response = self.client.patch(
+            self.url, {"bio": "Aktualizované bio"}, format="json"
+        )
+        assert profile_response.status_code == status.HTTP_200_OK
+        assert profile_response.data["user"]["bio"] == "Aktualizované bio"
+
+        removal_response = self.client.patch(
+            self.url, {"avatar": None}, format="json"
+        )
+        assert removal_response.status_code == status.HTTP_200_OK
+        assert removal_response.data["user"]["avatar_url"] is None
+        self.user.refresh_from_db()
+        assert not self.user.avatar
+
+    def test_multipart_profile_fields_without_avatar_remain_supported(self):
+        """Neprázdny multipart PATCH môže ďalej upravovať bežné polia profilu."""
+        response = self.client.patch(
+            self.url, {"bio": "Multipart bio"}, format="multipart"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["user"]["bio"] == "Multipart bio"
+        self.user.refresh_from_db()
+        assert self.user.bio == "Multipart bio"
+
+    def test_reusing_client_filename_always_creates_a_new_opaque_key(self):
+        """Každá výmena musí mať inú URL bez pôvodného používateľského názvu."""
+        first = generate_image_file("JPEG", "my-private-name.jpg", color=(1, 2, 3))
+        first_response = self.client.patch(
+            self.url, {"avatar": first}, format="multipart"
+        )
+        assert first_response.status_code == status.HTTP_200_OK
+        self.user.refresh_from_db()
+        first_name = self.user.avatar.name
+        first_url = first_response.data["user"]["avatar_url"]
+
+        second = generate_image_file("JPEG", "my-private-name.jpg", color=(4, 5, 6))
+        second_response = self.client.patch(
+            self.url, {"avatar": second}, format="multipart"
+        )
+        assert second_response.status_code == status.HTTP_200_OK
+        self.user.refresh_from_db()
+        second_name = self.user.avatar.name
+
+        assert first_name != second_name
+        assert first_url != second_response.data["user"]["avatar_url"]
+        assert re.fullmatch(r"avatars/[0-9a-f]{32}\.jpg", first_name)
+        assert re.fullmatch(r"avatars/[0-9a-f]{32}\.jpg", second_name)
+        assert "my-private-name" not in first_name
+        assert "my-private-name" not in second_name
+
+    def test_large_oriented_avatar_is_resized_and_metadata_is_removed(self):
+        """Avatar zmenši po otočení a neuloží EXIF ani GPS údaje."""
+        image = Image.new("RGB", (1600, 800), (10, 20, 30))
+        exif = _build_gps_exif()
+        exif[0x0112] = 6  # Orientation: 90° clockwise
+        buffer = BytesIO()
+        image.save(buffer, "JPEG", exif=exif)
+        upload = SimpleUploadedFile(
+            "large-camera-photo.jpg", buffer.getvalue(), content_type="image/jpeg"
+        )
+
+        with override_settings(SAFESEARCH_ENABLED=False):
+            response = self.client.patch(
+                self.url, {"avatar": upload}, format="multipart"
+            )
+        assert response.status_code == status.HTTP_200_OK
+
+        self.user.refresh_from_db()
+        with Image.open(self.user.avatar.path) as stored:
+            assert stored.size == (512, 1024)
+            assert len(stored.getexif()) == 0
+            assert not stored.getexif().get_ifd(0x8825)
 
     def test_handles_storage_save_failure_gracefully(self):
         # Simulate storage (e.g., S3) failure by forcing default_storage.save to raise

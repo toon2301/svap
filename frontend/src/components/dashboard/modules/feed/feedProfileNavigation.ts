@@ -13,9 +13,12 @@
 import type { FeedUserSummary } from '@/lib/feedApi';
 import { requestFeedReturnCapture } from './feedReturnState';
 import { markProfileFreshEntry } from '../profile/profileFreshEntry';
+import { preloadProfileAvatar } from '../profile/preloadAvatar';
 
 /** Koho vieme otvoriť: čokoľvek so slugom alebo id (autor, komentujúci…). */
-type ProfileTarget = Pick<FeedUserSummary, 'id' | 'slug'> | null | undefined;
+type ProfileTarget = (Pick<FeedUserSummary, 'id' | 'slug'> & {
+  avatar_url?: string | null;
+}) | null | undefined;
 
 /** Adresa profilu: slug má prednosť, id je záloha pre účty bez slugu. */
 export function profileIdentifier(user: ProfileTarget): string {
@@ -42,6 +45,7 @@ export function openUserProfile(
 ): void {
   const identifier = profileIdentifier(user);
   if (!identifier || typeof window === 'undefined') return;
+  preloadProfileAvatar(user?.avatar_url);
   options.beforeNavigate?.();
   // Nástenka sa odchodom odmountuje – nech si stihne uložiť stav, kým je
   // ešte v DOM. Keď na obrazovke nie je, žiadosť sa ticho stratí.

@@ -1103,8 +1103,6 @@
     "priceMin": "Cena od",
     "priceMax": "Cena do",
     "currency": "Waluta",
-    "currencySearchPlaceholder": "Wyszukaj walutę",
-    "currencyNoResults": "Nie znaleziono waluty.",
     "priceFromPrefix": "Od",
     "priceToPrefix": "Do",
     "anyPrice": "Bez ograniczenia ceny",

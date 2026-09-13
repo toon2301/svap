@@ -1103,8 +1103,6 @@
     "priceMin": "Cena od",
     "priceMax": "Cena do",
     "currency": "Měna",
-    "currencySearchPlaceholder": "Vyhledej měnu",
-    "currencyNoResults": "Nebyla nalezena žádná měna.",
     "priceFromPrefix": "Od",
     "priceToPrefix": "Do",
     "anyPrice": "Bez cenového omezení",

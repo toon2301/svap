@@ -60,4 +60,29 @@ describe('OfferWatchForm', () => {
       ['countryCode', 'districtCode', 'priceCurrency'],
     );
   });
+
+  it('passes a manually selected supported currency through the controlled draft', () => {
+    const onChange = jest.fn();
+    render(
+      <OfferWatchForm
+        idPrefix='watch-form'
+        draft={pricedDraft({ priceCurrency: '€' })}
+        errors={{}}
+        onChange={onChange}
+        onSubmit={jest.fn()}
+        submitLabel='Uložiť'
+        submittingLabel='Ukladám'
+        isSubmitting={false}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Mena' }), {
+      target: { value: '$' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ priceCurrency: '$' }),
+      ['priceCurrency'],
+    );
+  });
 });

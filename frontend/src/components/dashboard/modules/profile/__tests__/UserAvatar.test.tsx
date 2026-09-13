@@ -36,7 +36,36 @@ describe('UserAvatar', () => {
     render(<UserAvatar user={userWithAvatar} />);
     const img = screen.getByAltText('John Doe');
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src');
+    expect(img).toHaveAttribute('src', 'https://example.com/avatar.jpg');
+  });
+
+  it.each([
+    'blob:https://svaply.com/2e084bd7-a0e4-44aa-a6e9-075f03af6ec1',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB',
+  ])('keeps an in-memory avatar URL byte-for-byte unchanged', (avatarUrl) => {
+    render(<UserAvatar user={{ ...mockUser, avatar_url: avatarUrl }} />);
+
+    expect(screen.getByAltText('John Doe')).toHaveAttribute('src', avatarUrl);
+  });
+
+  it('does not reload an immutable avatar URL after an unrelated profile update', () => {
+    const avatarUrl = 'https://cdn.example.com/avatars/immutable-id.webp';
+    const { rerender } = render(
+      <UserAvatar user={{ ...mockUser, avatar_url: avatarUrl }} />,
+    );
+
+    rerender(
+      <UserAvatar
+        user={{
+          ...mockUser,
+          avatar_url: avatarUrl,
+          bio: 'Updated biography',
+          updated_at: '2026-09-13T12:00:00Z',
+        }}
+      />,
+    );
+
+    expect(screen.getByAltText('John Doe')).toHaveAttribute('src', avatarUrl);
   });
 
   it('renders correct size classes', () => {

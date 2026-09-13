@@ -91,7 +91,6 @@ export const IT_A_TECHNOLOGIE: string[] = [
   'Release management',
   'ITIL procesy',
   'IT školenia',
-  'Technická dokumentácia',
   'Mentoring juniorov',
   'Výskum technológií',
   'Online kurzy, tutoring',

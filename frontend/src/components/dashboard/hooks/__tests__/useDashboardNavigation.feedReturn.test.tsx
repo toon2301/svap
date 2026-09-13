@@ -18,7 +18,12 @@ jest.mock('../../modules/profile/profileUserCache', () => ({
   primeUserSlugId: jest.fn(),
 }));
 
+jest.mock('../../modules/profile/preloadAvatar', () => ({
+  preloadProfileAvatar: jest.fn(),
+}));
+
 import { useDashboardNavigation } from '../useDashboardNavigation';
+import { preloadProfileAvatar } from '../../modules/profile/preloadAvatar';
 import {
   resetFeedReturnState,
   saveFeedReturn,
@@ -137,5 +142,23 @@ describe('návrat na Nástenku', () => {
     act(() => result.current.handleMainModuleChange('home'));
 
     expect(takeFeedReturn()?.scrollTop).toBe(500);
+  });
+});
+
+describe('otvorenie cudzieho profilu', () => {
+  it('starts loading the known avatar before navigating to the profile', () => {
+    const { result } = renderNavigation();
+
+    act(() => {
+      result.current.handleViewUserProfileFromSearch(2, 'jana', {
+        id: 2,
+        display_name: 'Jana',
+        avatar_url: 'https://media.example.com/avatars/jana.webp',
+      } as never);
+    });
+
+    expect(preloadProfileAvatar).toHaveBeenCalledWith(
+      'https://media.example.com/avatars/jana.webp',
+    );
   });
 });
