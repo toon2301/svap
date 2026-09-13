@@ -14,6 +14,7 @@ from PIL.TiffImagePlugin import IFDRational
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from swaply.image_metadata import strip_image_metadata
 from swaply.validators import validate_image_file
 
 
@@ -70,6 +71,38 @@ def generate_image_with_gps_exif(fmt: str, name: str, content_type: str) -> Simp
     image.save(buffer, fmt, exif=_build_gps_exif().tobytes())
     buffer.seek(0)
     return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
+
+
+def generate_heic_file(
+    name: str = "avatar.heic", *, include_gps: bool = False
+) -> SimpleUploadedFile:
+    """Vytvor platný HEIC upload, voliteľne s citlivými GPS metadátami."""
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+    buffer = BytesIO()
+    save_kwargs = {"exif": _build_gps_exif().tobytes()} if include_gps else {}
+    Image.new("RGB", (32, 32), (10, 20, 30)).save(
+        buffer,
+        format="HEIF",
+        **save_kwargs,
+    )
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/heic")
+
+
+def generate_corrupted_heic_with_gps() -> SimpleUploadedFile:
+    """Vytvor HEIC s GPS, ktorého obrazové dáta aktuálny kodek nedekóduje."""
+    upload = generate_heic_file("corrupted-location.heic", include_gps=True)
+    content = bytearray(upload.read())
+    media_data_offset = content.find(b"mdat") + 4
+    if media_data_offset < 4 or media_data_offset >= len(content):
+        raise AssertionError("HEIC test fixture does not contain an mdat payload")
+    content[media_data_offset] ^= 0xFF
+    return SimpleUploadedFile(
+        "corrupted-location.heic",
+        bytes(content),
+        content_type="image/heic",
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -301,6 +334,90 @@ class TestAvatarUploadIntegration(APITestCase):
             r = self.client.patch(self.url, {"avatar": file}, format="multipart")
         assert r.status_code == status.HTTP_200_OK
         assert r.data["user"].get("avatar_url")
+
+    def test_upload_valid_heic_is_safely_converted(self):
+        """Spracovateľný HEIC sa očistí a verejne uloží ako JPEG."""
+        with override_settings(SAFESEARCH_ENABLED=False):
+            response = self.client.patch(
+                self.url,
+                {"avatar": generate_heic_file()},
+                format="multipart",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        self.user.refresh_from_db()
+        assert self.user.avatar.name.endswith(".jpg")
+        with Image.open(self.user.avatar.path) as stored:
+            assert stored.format == "JPEG"
+            assert len(stored.getexif()) == 0
+
+    def test_heic_processing_failure_is_rejected_without_storage(self):
+        """HEIC bez bezpečného spracovania nesmie uložiť pôvodné bajty."""
+        from unittest.mock import patch
+
+        for filename in ("private-location.heic", "private-location.heif"):
+            upload = generate_heic_file(filename, include_gps=True)
+            with Image.open(BytesIO(upload.read())) as source:
+                assert source.getexif().get_ifd(0x8825)
+            upload.seek(0)
+
+            with (
+                override_settings(SAFESEARCH_ENABLED=False),
+                patch("accounts.avatar_images.strip_image_metadata", return_value=None),
+            ):
+                response = self.client.patch(
+                    self.url,
+                    {"avatar": upload},
+                    format="multipart",
+                )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert "avatar" in response.data["details"]
+            self.user.refresh_from_db()
+            assert not self.user.avatar
+
+    def test_real_corrupted_heic_never_exposes_its_gps_metadata(self):
+        """Reálny HEIC decode edge case sa buď očistí, alebo odmietne."""
+        probe = generate_corrupted_heic_with_gps()
+        with Image.open(BytesIO(probe.read())) as source:
+            assert source.getexif().get_ifd(0x8825)
+        probe.seek(0)
+        processed_probe = strip_image_metadata(probe, max_side=1024)
+
+        with override_settings(SAFESEARCH_ENABLED=False):
+            response = self.client.patch(
+                self.url,
+                {"avatar": generate_corrupted_heic_with_gps()},
+                format="multipart",
+            )
+
+        self.user.refresh_from_db()
+        if processed_probe is None:
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert not self.user.avatar
+            return
+
+        assert response.status_code == status.HTTP_200_OK
+        with Image.open(self.user.avatar.path) as stored:
+            assert not stored.getexif().get_ifd(0x8825)
+
+    def test_gif_keeps_the_original_bytes_when_processing_is_skipped(self):
+        """Platný GIF si zachová animáciu cez jediný povolený fallback."""
+        upload = generate_image_file("GIF", "avatar.gif")
+        original_bytes = upload.read()
+        upload.seek(0)
+
+        with override_settings(SAFESEARCH_ENABLED=False):
+            response = self.client.patch(
+                self.url,
+                {"avatar": upload},
+                format="multipart",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        self.user.refresh_from_db()
+        with self.user.avatar.open("rb") as stored:
+            assert stored.read() == original_bytes
 
     def test_replaces_old_avatar_and_deletes_file(self):
         first = generate_image_file("JPEG", "first.jpg", color=(0, 255, 0))

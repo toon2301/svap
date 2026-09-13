@@ -5,6 +5,10 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
+from swaply.image_signature import read_file_header, sniff_image_format
 from swaply.image_metadata import strip_image_metadata
 
 
@@ -23,12 +27,24 @@ def avatar_upload_to(_instance, filename: str) -> str:
 
 
 def prepare_avatar_upload(image):
-    """Odstráň metadáta a zmenši bezpečne dekódovateľný avatar pred uložením."""
+    """Očisti avatar alebo odmietni formát, ktorý nemožno bezpečne spracovať."""
     if not image:
         return image
 
     processed = strip_image_metadata(image, max_side=AVATAR_MAX_SIDE)
-    # GIF sa zámerne ponechá bez re-enkódovania, aby sa nestratila animácia.
-    # Rovnaký fallback zachová doterajšie prijímanie formátu, ktorý Pillow
-    # v konkrétnom prostredí nevie bezpečne spracovať (napríklad HEIC bez codec-u).
-    return processed if processed is not None else image
+    if processed is not None:
+        return processed
+
+    header = read_file_header(image)
+    detected_format = sniff_image_format(header or b"")
+    suffix = Path(getattr(image, "name", "") or "").suffix.lower()
+    # GIF nemá EXIF/GPS a ponechávame ho bez re-enkódovania, aby sa
+    # nestratila animácia. Prípona aj magic bytes musia súhlasiť.
+    if suffix == ".gif" and detected_format == "gif":
+        return image
+
+    # Verejný avatar nikdy neuložíme v pôvodnej podobe, ak jeho metadáta
+    # nevieme spoľahlivo odstrániť (najmä HEIC/HEIF bez dostupného kodeku).
+    raise ValidationError(
+        _("Súbor nie je platný obrázok (neznámy alebo poškodený formát).")
+    )

@@ -62,8 +62,8 @@ def strip_image_metadata(
     Re-enkóduj obrázok bez metadát, so zachovaním orientácie a voliteľným zmenšením.
 
     Vracia `ContentFile` pripravený na priradenie do `ImageField`, alebo `None`
-    ak strip nie je možný/potrebný – vtedy volajúci ponechá originál (fail-open,
-    aby sa upload nerozbil). GIF sa preskakuje (nepodporuje EXIF, re-enkódovanie
+    ak strip nie je možný/potrebný; volajúci potom rozhodne o odmietnutí alebo
+    bezpečnom fallbacku. GIF sa preskakuje (nepodporuje EXIF, re-enkódovanie
     by zničilo animáciu).
 
     `filename` (voliteľné) určuje stem výsledného názvu; default sa odvodí z
@@ -117,7 +117,7 @@ def strip_image_metadata(
             return ContentFile(output.read(), name=f"{stem}{suffix}")
     except Exception:
         logger.warning(
-            "Image metadata strip failed; falling back to original.",
+            "Image metadata stripping failed; no processed image was produced.",
             exc_info=True,
         )
         return None
