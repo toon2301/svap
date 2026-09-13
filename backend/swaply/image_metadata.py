@@ -40,13 +40,30 @@ def _normalize_for_jpeg(image):
     return image.convert("RGB")
 
 
-def strip_image_metadata(image, *, filename: str | None = None):
+def _resize_within_max_side(image, max_side: int | None):
+    """Zmenši obrázok so zachovaním pomeru strán bez jeho zväčšovania."""
+    from PIL import Image
+
+    if max_side is None or max(image.size) <= max_side:
+        return image
+    if max_side < 1:
+        raise ValueError("max_side must be a positive integer")
+    image.thumbnail((max_side, max_side), resample=Image.Resampling.LANCZOS)
+    return image
+
+
+def strip_image_metadata(
+    image,
+    *,
+    filename: str | None = None,
+    max_side: int | None = None,
+):
     """
-    Re-enkóduj nahraný obrázok bez EXIF/metadát, so zachovaním orientácie.
+    Re-enkóduj obrázok bez metadát, so zachovaním orientácie a voliteľným zmenšením.
 
     Vracia `ContentFile` pripravený na priradenie do `ImageField`, alebo `None`
-    ak strip nie je možný/potrebný – vtedy volajúci ponechá originál (fail-open,
-    aby sa upload nerozbil). GIF sa preskakuje (nepodporuje EXIF, re-enkódovanie
+    ak strip nie je možný/potrebný; volajúci potom rozhodne o odmietnutí alebo
+    bezpečnom fallbacku. GIF sa preskakuje (nepodporuje EXIF, re-enkódovanie
     by zničilo animáciu).
 
     `filename` (voliteľné) určuje stem výsledného názvu; default sa odvodí z
@@ -76,6 +93,7 @@ def strip_image_metadata(image, *, filename: str | None = None):
             # odstránime. JPEG ich pri save() bez exif= aj tak ignoruje.
             oriented.info.pop("exif", None)
             oriented.info.pop("xmp", None)
+            oriented = _resize_within_max_side(oriented, max_side)
 
             output = io.BytesIO()
             if source_format in _JPEG_SOURCE_FORMATS or source_format in _HEIF_SOURCE_FORMATS:
@@ -99,7 +117,7 @@ def strip_image_metadata(image, *, filename: str | None = None):
             return ContentFile(output.read(), name=f"{stem}{suffix}")
     except Exception:
         logger.warning(
-            "Image metadata strip failed; falling back to original.",
+            "Image metadata stripping failed; no processed image was produced.",
             exc_info=True,
         )
         return None

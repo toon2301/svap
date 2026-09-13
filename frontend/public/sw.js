@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const CACHE_NAME = `svaply-cache-${CACHE_VERSION}`;
 const STATIC_CACHE = `svaply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `svaply-dynamic-${CACHE_VERSION}`;
@@ -252,6 +252,17 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Avatary majú vlastné nemenné URL. Vždy ich načítaj
+  // zo siete, aby stará položka z dynamickej cache nemohla prekryť nový súbor.
+  if (
+    request.method === 'GET' &&
+    url.origin === location.origin &&
+    url.pathname.startsWith('/media/avatars/')
+  ) {
     event.respondWith(fetch(request));
     return;
   }

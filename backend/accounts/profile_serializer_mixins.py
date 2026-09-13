@@ -17,7 +17,6 @@ from time import perf_counter
 from django.db.models import Q
 from rest_framework import serializers
 
-from swaply.image_metadata import strip_image_metadata
 from swaply.validators import (
     BioValidator,
     HtmlSanitizer,
@@ -26,6 +25,7 @@ from swaply.validators import (
     URLValidator,
 )
 
+from .avatar_images import prepare_avatar_upload
 from .models import (
     FavoriteUser,
     Notification,
@@ -382,15 +382,8 @@ class ProfileValidationMixin:
         return validated
 
     def validate_avatar(self, value):
-        """GDPR: odstráň EXIF/GPS metadáta z avatara pred uložením do storage.
-
-        Beží až po štandardnej validácii obrázka (veľkosť/typ/SafeSearch);
-        pri neúspechu stripu ponecháme originál (fail-open, nerozbije upload).
-        """
-        if not value:
-            return value
-        stripped = strip_image_metadata(value)
-        return stripped if stripped is not None else value
+        """Normalizuj avatar po štandardnej validácii typu, veľkosti a obsahu."""
+        return prepare_avatar_upload(value)
 
     def validate_phone(self, value):
         """Validácia telefónu"""

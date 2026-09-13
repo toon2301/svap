@@ -9,6 +9,18 @@ const options = [
   { key: 'second', label: 'Druhá možnosť', secondaryLabel: 'Skupina' },
 ];
 
+const optionsWithDuplicateKey = [
+  options[0],
+  { ...options[0], secondaryLabel: 'Duplicitný zdroj' },
+  options[1],
+];
+
+const optionsWithSharedLabel = [
+  { key: 'first', label: 'Rovnaká možnosť', secondaryLabel: 'Prvá kategória' },
+  { key: 'first', label: 'Rovnaká možnosť', secondaryLabel: 'Duplicitná kategória' },
+  { key: 'second', label: 'Rovnaká možnosť', secondaryLabel: 'Iná kategória' },
+];
+
 describe('OfferWatchSearchSelect', () => {
   it('keeps the selected value in the same input', async () => {
     const user = userEvent.setup();
@@ -130,7 +142,7 @@ describe('OfferWatchSearchSelect', () => {
         searchPlaceholder='Hľadaj'
         startTypingMessage='Začni písať'
         emptyMessage='Nič sa nenašlo'
-        options={options}
+        options={optionsWithDuplicateKey}
         onSelect={jest.fn()}
         requireQuery
       />,
@@ -146,6 +158,36 @@ describe('OfferWatchSearchSelect', () => {
     expect(screen.queryAllByRole('option')).toHaveLength(0);
     expect(screen.getByRole('status')).toHaveTextContent('Nič sa nenašlo');
     expect(screen.queryByText('Prvá možnosť')).not.toBeInTheDocument();
+  });
+
+  it('deduplicates canonical keys but preserves the same label for distinct keys', async () => {
+    const user = userEvent.setup();
+    const onSelect = jest.fn();
+    render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        emptyMessage='Nič sa nenašlo'
+        options={optionsWithSharedLabel}
+        onSelect={onSelect}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
+
+    const renderedOptions = screen.getAllByRole('option');
+    expect(renderedOptions).toHaveLength(2);
+    expect(renderedOptions[0]).toHaveAccessibleName(/Prvá kategória/);
+    expect(renderedOptions[1]).toHaveAccessibleName(/Iná kategória/);
+    expect(screen.queryByText('Duplicitná kategória')).not.toBeInTheDocument();
+
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    expect(onSelect).toHaveBeenCalledWith(optionsWithSharedLabel[2]);
   });
 
   it('keeps only one portalled popup open across multiple fields', async () => {
@@ -183,6 +225,30 @@ describe('OfferWatchSearchSelect', () => {
     expect(screen.getAllByRole('listbox')).toHaveLength(1);
     expect(screen.getByRole('combobox', { name: 'Prvý výber' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('combobox', { name: 'Druhý výber' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('removes its portalled popup when the owning field unmounts', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        emptyMessage='Nič sa nenašlo'
+        options={options}
+        onSelect={jest.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', { name: 'Výber' }));
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    unmount();
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
 });
 

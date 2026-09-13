@@ -1103,8 +1103,6 @@
     "priceMin": "Price from",
     "priceMax": "Price to",
     "currency": "Currency",
-    "currencySearchPlaceholder": "Search currencies",
-    "currencyNoResults": "No currency was found.",
     "priceFromPrefix": "From",
     "priceToPrefix": "To",
     "anyPrice": "Any price",

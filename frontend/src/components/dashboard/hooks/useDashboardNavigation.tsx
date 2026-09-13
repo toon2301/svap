@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { primeUserSlugId } from '../modules/profile/profileUserCache';
+import { preloadProfileAvatar } from '../modules/profile/preloadAvatar';
 import { type UseDashboardStateResult } from './useDashboardState';
 import {
   createDesktopSettingsReturnTarget,
@@ -304,6 +305,8 @@ export function useDashboardNavigation({
     slug?: string | null,
     summary?: SearchUserResult
   ) => {
+    preloadProfileAvatar(summary?.avatar_url);
+
     // Invalidovať cache ponúk pre cudzí profil, aby sa načítali čerstvé dáta (vrátane filtrovania skrytých kariet)
     if (userId !== user?.id) {
       import('../modules/profile/profileOffersCache').then(({ invalidateOffersCache }) => {

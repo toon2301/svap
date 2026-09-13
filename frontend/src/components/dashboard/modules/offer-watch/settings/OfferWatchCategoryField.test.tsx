@@ -18,6 +18,16 @@ const [CATEGORY, SUBCATEGORIES] = Object.entries(skillsCategories)[0]!;
 const SUBCATEGORY = SUBCATEGORIES[0]!;
 
 describe('OfferWatchCategoryField', () => {
+  it('keeps every canonical category and subcategory pair unique', () => {
+    const optionKeys = Object.entries(skillsCategories).flatMap(
+      ([category, subcategories]) => subcategories.map(
+        (subcategory) => `${category}\u0000${subcategory}`,
+      ),
+    );
+
+    expect(new Set(optionKeys).size).toBe(optionKeys.length);
+  });
+
   it('finds a localized label but returns the canonical category pair', async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
@@ -43,5 +53,29 @@ describe('OfferWatchCategoryField', () => {
     await user.click(translatedLabel.closest('button')!);
 
     expect(onChange).toHaveBeenCalledWith(CATEGORY, SUBCATEGORY);
+  });
+
+  it('does not retain a real catalog result after a query with no matches', () => {
+    render(
+      <OfferWatchCategoryField
+        id='watch-category'
+        category=''
+        subcategory=''
+        onChange={jest.fn()}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Podkategória' });
+    fireEvent.focus(combobox);
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      fireEvent.change(combobox, { target: { value: 'Technická dokumentácia' } });
+      expect(screen.getAllByText('Preklad Technická dokumentácia')).toHaveLength(1);
+
+      fireEvent.change(combobox, { target: { value: 'xyzabc123' } });
+      expect(screen.queryAllByRole('option')).toHaveLength(0);
+      expect(screen.getByRole('status')).toHaveTextContent('Nenašla sa žiadna podkategória.');
+      expect(screen.queryByText('Preklad Technická dokumentácia')).not.toBeInTheDocument();
+    }
   });
 });
