@@ -11,7 +11,7 @@
  */
 
 import type { FeedPost } from '@/lib/feedApi';
-import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
+import { openPortfolioDetail } from '../profile/portfolioRouting';
 import { requestFeedReturnCapture } from './feedReturnState';
 
 type Router = { push: (href: string) => void };
@@ -52,7 +52,8 @@ export function buildSharedSourceHandler(
     // odchodom, nech sa dá vrátiť presne tam, kde používateľ skončil.
     requestFeedReturnCapture();
     if (sharedType === 'portfolio_item') {
-      router.push(buildPortfolioDetailPath(ownerIdentifier, sourceId));
+      // S pôvodom: krok späť z detailu vráti na Nástenku.
+      openPortfolioDetail(router, ownerIdentifier, sourceId);
       return;
     }
     if (sharedType === 'feed_post') {

@@ -15,6 +15,7 @@ import { useDesktopSettingsOriginRestore } from './useDesktopSettingsOriginResto
 import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { clearFeedReturn } from '../modules/feed/feedReturnState';
+import { markProfileFreshEntry } from '../modules/profile/profileFreshEntry';
 
 /**
  * Identifikátor profilu pre URL `/dashboard/users/{identifier}`.
@@ -117,6 +118,13 @@ export function useDashboardNavigation({
       moduleId !== 'home' &&
       (moduleId !== 'profile' || profileIdentifier(user) != null);
     if (changesModule) clearFeedReturn();
+
+    // „Profil" v navigácii je nový vstup do vlastného profilu – od vrchu, na
+    // Ponukách. Len keď sa prepnutie naozaj uskutoční (vetvy nižšie sa bez
+    // identifikátora vrátia).
+    if (moduleId === 'profile' && profileIdentifier(user) != null) {
+      markProfileFreshEntry({ id: user?.id, slug: user?.slug });
+    }
 
     // Pri zmene modulu zrušiť zvýraznenie karty
     setHighlightedSkillId(null);
@@ -384,6 +392,7 @@ export function useDashboardNavigation({
     // Vlastný profil z mobilnej lišty je tiež „iná sekcia" – nejde sa oň
     // z Nástenky preklikom, takže návratová snímka tu neplatí.
     clearFeedReturn();
+    markProfileFreshEntry({ id: user.id, slug: user.slug });
     setActiveModule('profile');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');

@@ -52,6 +52,7 @@ import {
   buildPortfolioCreatePath,
   navigateBackFromPortfolioDetail,
   portfolioDetailBackTarget,
+  returnToPortfolioDetailOrigin,
 } from '../modules/profile/portfolioRouting';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { useDashboardState } from '../hooks/useDashboardState';
@@ -81,6 +82,10 @@ import {
 import type { FeedPostOverlayCloseOptions } from '../contexts/FeedPostOverlayContext';
 import { decideFeedPostEntry } from '../modules/feed/feedPostEntryDecision';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
+import {
+  markProfileFreshEntry,
+  profileEntryTargetFromIdentifier,
+} from '../modules/profile/profileFreshEntry';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -961,6 +966,11 @@ export default function DashboardContent({
   const effectivePortfolioCreateOwnerIdentifier = portfolioCreateOwnerIdentifierFromPath ?? null;
 
   const handlePortfolioDetailBack = useCallback(() => {
+    // Polozku otvorila appka (zalozka Portfolio, zdielana karta na Nastenke):
+    // skutocny krok spat. Modul si podla adresy doladi `syncModuleFromPath`.
+    // Bez znameho povodu (odkaz, F5) ostava replace na zoznam vlastnika.
+    if (returnToPortfolioDetailOrigin()) return;
+
     const identifier = String(effectivePortfolioOwnerIdentifier || '').trim();
     const { target, module: targetModule } = portfolioDetailBackTarget(identifier);
 
@@ -1236,6 +1246,10 @@ export default function DashboardContent({
       const identifier = (detail?.identifier || '').trim();
       if (!identifier) return;
 
+      // Programovy vstup do profilu = novy vstup (od vrchu, na Ponukach) pre
+      // VSETKYCH, co tento event posielaju. Traversal historie ho nenastavuje.
+      markProfileFreshEntry(profileEntryTargetFromIdentifier(identifier));
+
       const rawHighlight = detail?.offerId ?? detail?.highlightId;
       const useOfferParam = detail?.offerId != null;
       const highlightId = parseDashboardHighlightId(rawHighlight);
@@ -1321,6 +1335,9 @@ export default function DashboardContent({
       const detail = (evt as CustomEvent<{ highlightId?: number | string | null }>).detail;
       const highlightId = parseDashboardHighlightId(detail?.highlightId);
 
+      // Novy vstup do vlastneho profilu – rovnako ako `goToUserProfile`.
+      markProfileFreshEntry({ id: user?.id, slug: user?.slug });
+
       setActiveModule('profile');
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
@@ -1372,6 +1389,8 @@ export default function DashboardContent({
     setIsNotificationsPanelOpen,
     userProfile,
     highlighting,
+    user?.id,
+    user?.slug,
   ]);
 
   const handleMobileMessagesBack = useCallback(() => {

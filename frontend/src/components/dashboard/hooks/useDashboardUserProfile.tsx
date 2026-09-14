@@ -193,9 +193,10 @@ export function useDashboardUserProfile({
     // (klik na ponuku/cudzi profil) sa NEaktualizuje a pri router.push zaostava za
     // synchronnym `setActiveModule('user-profile')`. Bez tohto guardu by prepnutie na
     // vlastny profil vyskocilo aj ked uz interaktivne prezerame INEHO pouzivatela.
-    // Prepiname preto len ked skutocne zobrazujeme vlastny profil: `viewedUserId` je
-    // este nevyriesene (null) alebo sa rovna vlastnemu id.
-    const viewingSelf = viewedUserId === null || viewedUserId === user.id;
+    // Prepiname preto len ked zobrazovany slug je naozaj vlastny. Slug, nie id: slug
+    // nastavuje preklik hned (`goToUserProfile`), id sa dopocita az neskor – a
+    // nevyriesene id nesmie znamenat „pozeram seba".
+    const viewingSelf = viewedUserSlug === user.slug;
     if (viewingSelf && user.slug && user.slug === initialProfileSlug) {
       setActiveModule('profile');
       try {
@@ -206,7 +207,7 @@ export function useDashboardUserProfile({
         // ignore
       }
     }
-  }, [activeModule, user, initialProfileSlug, viewedUserId, setActiveModule]);
+  }, [activeModule, user, initialProfileSlug, viewedUserSlug, setActiveModule]);
 
   // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
   useEffect(() => {

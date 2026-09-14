@@ -4,6 +4,11 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import type { PortfolioItem } from './portfolioTypes';
+import {
+  openPortfolioDetail,
+  resetPortfolioDetailOrigin,
+  returnToPortfolioDetailOrigin,
+} from './portfolioRouting';
 
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
@@ -266,6 +271,65 @@ describe('PortfolioDetailModule', () => {
     expect(mockReplace).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
     // Krok dopredu sa nepridáva – práve tým vznikala slučka so Späť.
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  describe('pôvod otvorenia', () => {
+    beforeEach(() => {
+      resetPortfolioDetailOrigin();
+      window.history.replaceState(null, '', '/dashboard/users/jane-doe?tab=portfolio');
+    });
+
+    function openFromApp() {
+      // Next router pri klientskej navigácii pridá záznam histórie.
+      openPortfolioDetail(
+        { push: (url: string) => window.history.pushState(null, '', url) },
+        'jane-doe',
+        7,
+      );
+    }
+
+    it('marks the history entry of an item opened by the app', async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+      openFromApp();
+
+      render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+      await screen.findByRole('button', { name: /Späť/ });
+
+      const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+      try {
+        // Mobilná šípka teda urobí skutočný krok späť.
+        expect(returnToPortfolioDetailOrigin()).toBe(true);
+      } finally {
+        backSpy.mockRestore();
+      }
+    });
+
+    it('leaves an item reached by a direct link without origin', async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+      window.history.replaceState(null, '', '/dashboard/users/jane-doe/portfolio/7');
+
+      render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+      await screen.findByRole('button', { name: /Späť/ });
+
+      expect(returnToPortfolioDetailOrigin()).toBe(false);
+    });
+
+    it('keeps the desktop back button on replace even with a known origin', async () => {
+      (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+      openFromApp();
+      const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+
+      try {
+        render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+        fireEvent.click(await screen.findByRole('button', { name: /Späť/ }));
+
+        // Desktop sa nemení – mení sa len mobilná šípka v hornej lište.
+        expect(mockReplace).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+        expect(backSpy).not.toHaveBeenCalled();
+      } finally {
+        backSpy.mockRestore();
+      }
+    });
   });
 
   it('does not show owner actions to visitors', async () => {

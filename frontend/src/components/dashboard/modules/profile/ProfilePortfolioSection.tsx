@@ -25,7 +25,11 @@ import { PortfolioReorderableLayout } from './PortfolioReorderableLayout';
 import { PortfolioSectionSkeleton } from './PortfolioSectionSkeleton';
 import FeedShareDialog from '../feed/FeedShareDialog';
 import { sharePortfolioItemToFeed } from '@/lib/feedApi';
-import { buildPortfolioDetailPath, getPortfolioOwnerIdentifier } from './portfolioRouting';
+import {
+  buildPortfolioDetailPath,
+  getPortfolioOwnerIdentifier,
+  openPortfolioDetail,
+} from './portfolioRouting';
 
 type ProfilePortfolioSectionProps = {
   activeTab: ProfileTab;
@@ -85,7 +89,8 @@ export default function ProfilePortfolioSection({
   const handleOpenItem = useCallback(
     (item: PortfolioItem) => {
       if (!ownerIdentifier) return;
-      router.push(buildPortfolioDetailPath(ownerIdentifier, item.id));
+      // S pôvodom: krok späť z detailu vráti na túto záložku, nie na jej kópiu.
+      openPortfolioDetail(router, ownerIdentifier, item.id);
     },
     [ownerIdentifier, router],
   );

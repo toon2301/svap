@@ -121,14 +121,14 @@ export default function FeedShareDialog({
       if (!Number.isSafeInteger(createdId) || createdId <= 0) return;
 
       // Otvorené vrstvy sa zatvárajú SAMY na tento signál – každá vie o svojej
-      // histórii najlepšie (okno detailu si napríklad odoberá vlastný záznam).
+      // histórii najlepšie (okno detailu si napríklad nechá vlastný záznam,
+      // aby naň viedlo Späť, a keď je feed pod ním, na Nástenku preskočí samo).
       // Feed si podľa toho istého signálu zvýrazní nový príspevok.
       emitFeedShareLanding(createdId);
 
       // Navigácia LEN keď Nástenka na obrazovke nie je (zdieľanie z profilu).
-      // Nedá sa to čítať z adresy: okno detailu sa zatvára krokom späť, ktorý
-      // dobehne až po tomto rozhodnutí, takže `location.pathname` je tu ešte
-      // stará.
+      // Nedá sa to čítať z adresy: po zatvorení okna detailu ostáva adresa
+      // ešte na ceste príspevku, hoci feed pod ním môže byť.
       //
       // Ide to cez modulovú navigáciu dashboardu, nie cez `router.push`:
       // Next router je celý čas na route `/dashboard` (adresu si appka

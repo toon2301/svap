@@ -1,19 +1,20 @@
 /**
- * Zdieľanie z okna detailu otvoreného NAD nefeedovým modulom.
+ * Zdieľanie z otvoreného okna detailu (desktop).
  *
- * Okno si pri bežnom zatvorení odoberá svoj záznam histórie cez
- * `history.back()`, ktorý je ASYNCHRÓNNY. Keď po zdieľaní hneď nasleduje
- * prepnutie na Nástenku (`pushState`), dobehol by až po ňom – a buď by ho
- * zrušil, alebo by nechal adresu na ceste už zavretého okna.
+ * Po zdieľaní sa pristáva na Nástenke, ale záznam okna v histórii OSTÁVA:
+ * Späť z Nástenky má vrátiť do príspevku, z ktorého sa zdieľalo. Okno sa preto
+ * zatvára s `keepHistory` a na Nástenku sa ide pushom – rovnako ako pri
+ * zdieľaní z profilu.
  *
- * Test meria MECHANIZMUS, nie výslednú adresu: v jsdom `pushState` zaradený
+ * Test meria MECHANIZMUS, nie len výslednú adresu: v jsdom `pushState` zaradený
  * `back()` úplne zruší (odmerané: žiadny `popstate`, adresa končí na
  * pushnutej ceste), takže by tvrdenie o adrese prešlo aj s chybou. Rozhoduje
- * teda to, či sa krok späť vôbec vyžiada a s akou voľbou sa okno zatvára.
+ * teda aj to, či sa krok späť vôbec vyžiada a s akou voľbou sa okno zatvára.
  */
 
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostDetailOverlay from '../FeedPostDetailOverlay';
 import {
@@ -26,12 +27,17 @@ import {
   resetFeedShareLanding,
 } from '../feedShareLanding';
 import {
+  adoptFeedOverlayHistory,
   pushFeedOverlayHistory,
   popFeedOverlayHistory,
   forgetFeedOverlayHistory,
+  isFeedOverlayHistoryBusy,
   resetFeedOverlayHistory,
 } from '../feedOverlayHistory';
-import { getFeedPost } from '@/lib/feedApi';
+import { onFeedHomeNavigation } from '../feedHomeNavigation';
+import { decideFeedPostEntry } from '../feedPostEntryDecision';
+import { parseFeedPostTargetUrl } from '../feedPostRouting';
+import { getFeedPost, shareFeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
   FEED_COMMENT_MAX_LENGTH: 500,
@@ -102,6 +108,7 @@ jest.mock('framer-motion', () => ({
 }));
 
 const mockedGetPost = getFeedPost as jest.MockedFunction<typeof getFeedPost>;
+const mockedShare = shareFeedPost as jest.MockedFunction<typeof shareFeedPost>;
 
 const author = {
   id: 10,
@@ -134,19 +141,25 @@ function post() {
 }
 
 /**
- * Dashboard okolo okna: drží jeho stav a účtovníctvo histórie presne tak,
- * ako to robí `handleFeedOverlayTargetChange`.
+ * Dashboard okolo okna: stav okna, účtovníctvo histórie a reakcia na adresu
+ * príspevku presne tak, ako to robí `DashboardContent`
+ * (`handleFeedOverlayTargetChange`, popstate pri otvorenom okne a vstup cez
+ * `decideFeedPostEntry`).
  */
 let closeOptions: Array<FeedPostOverlayCloseOptions | undefined>;
 let backSpy: jest.SpyInstance;
+let homeRequests: number;
+let stopHomeRequests: () => void;
 
 function OverlayHost() {
-  const [open, setOpen] = React.useState(true);
+  const [target, setTarget] = React.useState<{ postId: number } | null>({
+    postId: 7,
+  });
   const handleTargetChange = React.useCallback(
-    (target: unknown, options?: FeedPostOverlayCloseOptions) => {
-      if (target) return;
+    (next: { postId: number } | null, options?: FeedPostOverlayCloseOptions) => {
+      setTarget(next);
+      if (next) return;
       closeOptions.push(options);
-      setOpen(false);
       if (options?.keepHistory) {
         forgetFeedOverlayHistory();
         return;
@@ -156,12 +169,36 @@ function OverlayHost() {
     [],
   );
 
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (target) {
+        // Späť pri otvorenom okne – záznam okna práve zmizol.
+        forgetFeedOverlayHistory();
+        setTarget(null);
+        return;
+      }
+      const decision = decideFeedPostEntry({
+        pathPostId: parseFeedPostTargetUrl(window.location.pathname)?.postId ?? null,
+        overlayOpen: false,
+        historyBusy: isFeedOverlayHistoryBusy(),
+        liveUrl: window.location.pathname + window.location.search,
+        viewportResolved: true,
+        isMobile: false,
+      });
+      if (decision.kind !== 'overlay') return;
+      adoptFeedOverlayHistory();
+      setTarget(decision.target);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [target]);
+
   return (
     <FeedPostOverlayProvider onTargetChange={handleTargetChange}>
       <div data-testid="module-underneath" />
-      {open ? (
+      {target ? (
         <FeedPostDetailOverlay
-          postId={7}
+          postId={target.postId}
           highlightCommentId={null}
           onClose={() => handleTargetChange(null)}
         />
@@ -180,14 +217,20 @@ beforeEach(() => {
   resetFeedShareLanding();
   resetFeedOverlayHistory();
   mockedGetPost.mockResolvedValue(post());
-  // Okno bolo otvorené nad profilom a pridalo si svoj záznam.
+  // Okno bolo otvorené a pridalo si svoj záznam.
   window.history.replaceState(null, '', PROFILE_PATH);
   pushFeedOverlayHistory(OVERLAY_PATH);
   closeOptions = [];
   backSpy = jest.spyOn(window.history, 'back');
+  homeRequests = 0;
+  stopHomeRequests = onFeedHomeNavigation(() => {
+    homeRequests += 1;
+    navigateToFeed();
+  });
 });
 
 afterEach(() => {
+  stopHomeRequests();
   backSpy.mockRestore();
   resetFeedShareLanding();
   resetFeedOverlayHistory();
@@ -200,8 +243,22 @@ async function settleHistory() {
   });
 }
 
+/** Krok späť, ktorý sa naozaj stal (jsdom ho vybavuje asynchrónne). */
+async function goBack() {
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      const onPopState = () => {
+        window.removeEventListener('popstate', onPopState);
+        resolve();
+      };
+      window.addEventListener('popstate', onPopState);
+      window.history.back();
+    });
+  });
+}
+
 describe('okno nad nefeedovým modulom', () => {
-  it('closes without its own step back, because navigation follows', async () => {
+  it('closes without its own step back and leaves the navigation to the dialog', async () => {
     render(<OverlayHost />);
     await screen.findByTestId('feed-post-overlay');
     expect(window.location.pathname).toBe(OVERLAY_PATH);
@@ -211,10 +268,11 @@ describe('okno nad nefeedovým modulom', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('feed-post-overlay')).not.toBeInTheDocument(),
     );
-    // Jediná operácia s históriou ostáva na prepnutí modulu. Vlastný krok
-    // späť je asynchrónny, takže by dobehol až PO ňom.
+    // Vlastný krok späť je asynchrónny, takže by dobehol až PO prepnutí modulu.
     expect(backSpy).not.toHaveBeenCalled();
     expect(closeOptions).toEqual([{ keepHistory: true }]);
+    // Feed na obrazovke nie je – navigáciu spúšťa dialóg, okno ju nezdvojí.
+    expect(homeRequests).toBe(0);
   });
 
   it('ends up on the feed once the navigation runs', async () => {
@@ -229,10 +287,11 @@ describe('okno nad nefeedovým modulom', () => {
     await settleHistory();
     expect(window.location.pathname).toBe(FEED_PATH);
   });
+});
 
-  it('still removes its own entry when the feed IS on screen', async () => {
-    // Feed je pod oknom, takže sa nikam nenaviguje – okno sa zatvára bežne
-    // a svoj záznam si odoberie.
+describe('okno nad Nástenkou', () => {
+  it('keeps its history entry and moves to the feed with a push', async () => {
+    // Feed je pod oknom – dialóg nenaviguje, na Nástenku preskočí okno samo.
     const release = registerFeedLandingTarget();
     render(<OverlayHost />);
     await screen.findByTestId('feed-post-overlay');
@@ -242,11 +301,57 @@ describe('okno nad nefeedovým modulom', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('feed-post-overlay')).not.toBeInTheDocument(),
     );
-    expect(backSpy).toHaveBeenCalledTimes(1);
-    expect(closeOptions).toEqual([undefined]);
+    // Záznam okna sa NEODOBERÁ – práve naň má viesť Späť.
+    expect(backSpy).not.toHaveBeenCalled();
+    expect(closeOptions).toEqual([{ keepHistory: true }]);
+    expect(homeRequests).toBe(1);
     await settleHistory();
-    // Krok späť dobehol – sme tam, kde bol používateľ pred otvorením okna.
-    expect(window.location.pathname).toBe(PROFILE_PATH);
+    expect(window.location.pathname).toBe(FEED_PATH);
+    release();
+  });
+
+  it('reopens the original post when going back from the feed', async () => {
+    const release = registerFeedLandingTarget();
+    render(<OverlayHost />);
+    await screen.findByTestId('feed-post-overlay');
+    act(() => emitFeedShareLanding(99));
+    await waitFor(() => expect(window.location.pathname).toBe(FEED_PATH));
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-post-overlay')).not.toBeInTheDocument(),
+    );
+    mockedGetPost.mockClear();
+
+    await goBack();
+
+    // Späť pristane na adrese príspevku a existujúci vstup cez adresu otvorí
+    // to isté okno – nič nové sa nestavia.
+    expect(window.location.pathname).toBe(OVERLAY_PATH);
+    expect(await screen.findByTestId('feed-post-overlay')).toBeInTheDocument();
+    expect(mockedGetPost).toHaveBeenCalledWith(7);
+    expect(await screen.findByText('Text príspevku')).toBeInTheDocument();
+    release();
+  });
+});
+
+describe('skutočné zdieľanie z okna', () => {
+  it.each([
+    ['nad Nástenkou', true],
+    ['nad iným modulom', false],
+  ])('navigates to the feed exactly once – %s', async (_name, feedOnScreen) => {
+    const release = feedOnScreen ? registerFeedLandingTarget() : () => {};
+    mockedShare.mockResolvedValue({ id: 99, post_type: 'shared_feed_post' } as never);
+    render(<OverlayHost />);
+    await screen.findByTestId('feed-post-overlay');
+
+    await userEvent.click(await screen.findByTestId('feed-share-button'));
+    await userEvent.click(await screen.findByTestId('feed-share-submit'));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-post-overlay')).not.toBeInTheDocument(),
+    );
+    expect(homeRequests).toBe(1);
+    expect(backSpy).not.toHaveBeenCalled();
+    expect(closeOptions).toEqual([{ keepHistory: true }]);
     release();
   });
 });

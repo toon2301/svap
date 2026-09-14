@@ -136,9 +136,13 @@ describe('useDashboardUserProfile – vlastný slug vs. interaktívna navigácia
       { initialProps: { activeModule: 'profile' } },
     );
 
-    // Klik vo vyhľadávaní na INÉHO používateľa: viewedUserId=42 + prechod na 'user-profile'.
+    // Klik vo vyhľadávaní na INÉHO používateľa: id AJ slug naraz (presne ako
+    // `handleViewUserProfileFromSearch`) + prechod na 'user-profile'.
     // (initialProfileSlug ostáva zamrznutý 'me', lebo pushState/router.push ho hneď nemení.)
-    act(() => result.current.setViewedUserId(42));
+    act(() => {
+      result.current.setViewedUserId(42);
+      result.current.setViewedUserSlug('peter');
+    });
     dashboardState.setActiveModule.mockClear();
     rerender({ activeModule: 'user-profile' });
 
