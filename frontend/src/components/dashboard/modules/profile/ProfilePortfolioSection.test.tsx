@@ -3,6 +3,11 @@ import ProfilePortfolioSection from './ProfilePortfolioSection';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { PortfolioItem } from './portfolioTypes';
+import {
+  adoptPortfolioDetailOrigin,
+  resetPortfolioDetailOrigin,
+  returnToPortfolioDetailOrigin,
+} from './portfolioRouting';
 
 const mockPush = jest.fn();
 
@@ -321,6 +326,35 @@ describe('ProfilePortfolioSection', () => {
       });
     });
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/1/portfolio/9');
+  });
+
+  it('opens an item with its origin, so the mobile back arrow can step back', async () => {
+    const item = portfolioItem({ id: 4, title: 'Open me' });
+    (api.get as jest.Mock).mockResolvedValue({ data: [item] });
+    // Next router pri klientskej navigácii pridá záznam histórie.
+    mockPush.mockImplementationOnce((url: string) => window.history.pushState(null, '', url));
+    window.history.replaceState(null, '', '/dashboard/users/jane-doe?tab=portfolio');
+    resetPortfolioDetailOrigin();
+
+    render(
+      <ProfilePortfolioSection
+        activeTab="portfolio"
+        isOtherUserProfile
+        ownerUserId={42}
+        ownerSlug="jane-doe"
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Open me' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio/4');
+    // Detail sa zobrazil a prevzal pôvod – šípka urobí krok späť.
+    adoptPortfolioDetailOrigin();
+    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+    try {
+      expect(returnToPortfolioDetailOrigin()).toBe(true);
+    } finally {
+      backSpy.mockRestore();
+    }
   });
 
   it('shows visitor empty state and uses the slug portfolio endpoint when available', async () => {

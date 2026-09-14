@@ -189,6 +189,7 @@ export default function OfferReviewsView({
         const { data } = await api.get<{
           offer: number | null;
           reviewed_user_id: number | null;
+          reviewed_user_slug?: string | null;
         }>(endpoints.reviews.detail(reviewId));
         // Stale-response guard: kým sme čakali na odpoveď, používateľ sa mohol
         // presunúť na inú ponuku/recenziu → ticho skonči (nemätúci kontext).
@@ -201,9 +202,13 @@ export default function OfferReviewsView({
             ),
           );
           if (typeof window !== 'undefined') {
+            // Profil sa otvára slugom ako všade v appke – ID len keď slug chýba
+            // (starší účet bez slugu, anonymizovaný účet).
+            const identifier =
+              (data.reviewed_user_slug || '').trim() || String(data.reviewed_user_id);
             window.dispatchEvent(
               new CustomEvent('goToUserProfile', {
-                detail: { identifier: String(data.reviewed_user_id) },
+                detail: { identifier },
               }),
             );
           }

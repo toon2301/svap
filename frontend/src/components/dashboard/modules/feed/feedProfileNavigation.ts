@@ -12,7 +12,6 @@
 
 import type { FeedUserSummary } from '@/lib/feedApi';
 import { requestFeedReturnCapture } from './feedReturnState';
-import { markProfileFreshEntry } from '../profile/profileFreshEntry';
 import { preloadProfileAvatar } from '../profile/preloadAvatar';
 
 /** Koho vieme otvoriť: čokoľvek so slugom alebo id (autor, komentujúci…). */
@@ -50,9 +49,8 @@ export function openUserProfile(
   // Nástenka sa odchodom odmountuje – nech si stihne uložiť stav, kým je
   // ešte v DOM. Keď na obrazovke nie je, žiadosť sa ticho stratí.
   requestFeedReturnCapture();
-  // Preklik je vstup do NIEČOHO INÉHO – profil sa má otvoriť od vrchu a na
-  // východzej záložke, nie tam, kde používateľ skončil na predošlom profile.
-  markProfileFreshEntry();
+  // Nový vstup (od vrchu, na Ponukách) si označí handler `goToUserProfile`
+  // v dashboarde – rovnako pre všetkých, čo tento event posielajú.
   window.dispatchEvent(
     new CustomEvent('goToUserProfile', { detail: { identifier } }),
   );

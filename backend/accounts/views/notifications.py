@@ -19,6 +19,7 @@ from ..serializers import NotificationSerializer
 from ..notification_serializers import (
     existing_offer_watch_targets,
     existing_review_offer_ids,
+    review_profile_slugs,
 )
 from ..realtime import notify_user
 from ..services.notifications import (
@@ -121,6 +122,7 @@ def notifications_list_view(request):
                     context={
                         "request": request,
                         "existing_review_offer_ids": existing_review_offer_ids(items),
+                        "review_profile_slugs": review_profile_slugs(items),
                         "offer_watch_targets": existing_offer_watch_targets(
                             items,
                             viewer_user_id=request.user.id,
@@ -150,6 +152,7 @@ def notifications_list_view(request):
             context={
                 "request": request,
                 "existing_review_offer_ids": existing_review_offer_ids(items),
+                "review_profile_slugs": review_profile_slugs(items),
                 "offer_watch_targets": existing_offer_watch_targets(
                     items,
                     viewer_user_id=request.user.id,

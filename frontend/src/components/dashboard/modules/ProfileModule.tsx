@@ -167,7 +167,7 @@ export default function ProfileModule({
 
   // Nový vstup cez preklik: od vrchu a na Ponukách. Pri F5 ani pri kroku
   // späť/dopredu vnútri profilu sa nespúšťa – tam sa obnovuje adresa.
-  const isFreshEntry = useProfileFreshEntry(user?.id);
+  const isFreshEntry = useProfileFreshEntry(user?.id, user?.slug);
   useEffect(() => {
     if (!isFreshEntry) return;
     handleTabChange('offers', { replace: true });

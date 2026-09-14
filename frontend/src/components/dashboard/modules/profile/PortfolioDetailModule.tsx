@@ -13,7 +13,8 @@ import {
   getPortfolioCategoryLabel,
   preparePortfolioDisplayImages,
 } from './portfolioDisplay';
-import { buildPortfolioListPath,
+import { adoptPortfolioDetailOrigin,
+  buildPortfolioListPath,
   navigateBackFromPortfolioDetail,
 } from './portfolioRouting';
 import { PortfolioDetailErrorState } from './PortfolioDetailErrorState';
@@ -104,6 +105,12 @@ export default function PortfolioDetailModule({
         setIsLoading(false);
       }
     }
+  }, [itemId]);
+
+  // Záznam histórie tejto položky už existuje – ak ju otvorila appka, dostane
+  // pôvod pre krok späť.
+  useEffect(() => {
+    adoptPortfolioDetailOrigin();
   }, [itemId]);
 
   useEffect(() => {

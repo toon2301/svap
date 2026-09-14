@@ -1,6 +1,21 @@
+from django.db.models import prefetch_related_objects
 from rest_framework import serializers
 
 from .models import Review
+
+
+class ReviewListSerializer(serializers.ListSerializer):
+    """Zoznam recenzií: recenzovaný používateľ sa načíta JEDNÝM dotazom.
+
+    ``reviewed_user_slug`` číta vzťah ``reviewed_user``; bez prednačítania by
+    zoznam robil dotaz na každú recenziu. Už načítané vzťahy (``select_related``
+    v detaile) sa znova nenačítavajú.
+    """
+
+    def to_representation(self, data):
+        items = list(data.all() if hasattr(data, "all") else data)
+        prefetch_related_objects(items, "reviewed_user")
+        return super().to_representation(items)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -15,17 +30,22 @@ class ReviewSerializer(serializers.ModelSerializer):
     # aby FE vedel presmerovať na profil recenzovaného aj keď bola ponuka zmazaná
     # (offer=None). Pozri Fáza 1 – Review.reviewed_user.
     reviewed_user_id = serializers.IntegerField(read_only=True)
+    # Slug toho istého používateľa – FE podľa neho presmeruje na profil slugom,
+    # rovnako ako všade inde v appke; ID ostáva ako záloha.
+    reviewed_user_slug = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
+        list_serializer_class = ReviewListSerializer
         fields = [
             "id",
             "reviewer_id",
             "reviewer_display_name",
             "reviewer_avatar_url",
             "reviewed_user_id",
+            "reviewed_user_slug",
             "offer",
             "rating",
             "text",
@@ -44,6 +64,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "reviewer_display_name",
             "reviewer_avatar_url",
             "reviewed_user_id",
+            "reviewed_user_slug",
             "offer",
             "owner_responded_at",
             "likes_count",
@@ -60,6 +81,19 @@ class ReviewSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.reviewer.avatar.url)
             return obj.reviewer.avatar.url
         return None
+
+    def get_reviewed_user_slug(self, obj):
+        """Slug recenzovaného; ``None`` pri chýbajúcom alebo anonymizovanom účte.
+
+        Anonymizovaný účet (``is_active=False``) má slug nahradený technickým
+        ``deleted-user-…`` – nevracia sa, rovnako ako ``actor`` v notifikáciách.
+        """
+        if not obj.reviewed_user_id:
+            return None
+        reviewed_user = obj.reviewed_user
+        if reviewed_user is None or not getattr(reviewed_user, "is_active", True):
+            return None
+        return (getattr(reviewed_user, "slug", None) or "").strip() or None
 
     def get_likes_count(self, obj):
         annotated_count = getattr(obj, "likes_count", None)

@@ -45,6 +45,7 @@ import {
   isFeedLandingTargetMounted,
   onFeedShareLanding,
 } from './feedShareLanding';
+import { requestFeedHomeNavigation } from './feedHomeNavigation';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
 
 type FeedPostDetailOverlayProps = {
@@ -151,29 +152,29 @@ export default function FeedPostDetailOverlay({
   );
 
   // Po zdieľaní sa pristáva na Nástenku, nie do detailu – okno sa preto zavrie
-  // samo.
+  // samo. Jeho záznam histórie ale OSTÁVA: Späť z Nástenky má vrátiť do
+  // príspevku, z ktorého sa zdieľalo, a znovuotvorenie z adresy už appka vie
+  // (`decideFeedPostEntry`).
   //
-  // Ako presne, závisí od toho, či po tomto signáli nasleduje prepnutie na
-  // Nástenku (`FeedShareDialog` ho spúšťa práve vtedy, keď feed na obrazovke
-  // nie je):
+  // Preto `keepHistory` (bez vlastného kroku späť – ten by záznam odobral)
+  // a na Nástenku sa ide pushom, rovnako ako pri zdieľaní z profilu. Kto
+  // navigáciu spustí, závisí od toho, či je feed pod oknom:
   //
-  //  - Feed JE na obrazovke: nikam sa nenaviguje, takže okno odoberie svoj
-  //    záznam histórie bežným `onClose` – presne ako pri „X" či Escape.
-  //  - Feed na obrazovke NIE JE: hneď po tomto signáli príde prepnutie modulu,
-  //    ktoré si adresu rieši samo (`pushState`). Vlastný krok späť je pritom
-  //    ASYNCHRÓNNY, takže by dobehol až PO ňom a buď by ho zrušil, alebo by
-  //    nechal adresu na ceste už zavretého okna. `keepHistory` ho vynechá –
-  //    ostane jediná operácia s históriou. Ten istý parameter používa aj
-  //    preklik na autora komentára, ktorý má rovnaký dôvod.
+  //  - Feed JE na obrazovke: `FeedShareDialog` nenaviguje (nemá prečo), tak
+  //    to spraví okno – inak by adresa ostala na ceste zavretého okna.
+  //  - Feed na obrazovke NIE JE: navigáciu spustí dialóg hneď po tomto
+  //    signáli. Okno ju nesmie zopakovať, vznikli by dva záznamy.
   const postOverlay = useFeedPostOverlay();
   useEffect(
     () =>
       onFeedShareLanding(() => {
-        if (!isFeedLandingTargetMounted() && postOverlay) {
-          postOverlay.close({ keepHistory: true });
+        if (!postOverlay) {
+          onClose();
           return;
         }
-        onClose();
+        const feedOnScreen = isFeedLandingTargetMounted();
+        postOverlay.close({ keepHistory: true });
+        if (feedOnScreen) requestFeedHomeNavigation();
       }),
     [onClose, postOverlay],
   );

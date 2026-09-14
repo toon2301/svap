@@ -60,3 +60,97 @@ export function navigateBackFromPortfolioDetail(
 ): void {
   router.replace(target);
 }
+
+/**
+ * Pôvod detailu portfólia – odkiaľ ho otvorila appka.
+ *
+ * `replace` vyššie má jednu slabinu: keď appka položku otvorila sama (zo
+ * záložky Portfólio, zo zdieľanej karty na Nástenke), prepíše jej záznam
+ * INOU adresou toho istého stavu a v histórii ostanú dva rovnaké kroky.
+ * Pri známom pôvode je preto správny skutočný krok späť. `replace` ostáva pre
+ * vstup bez pôvodu (odkaz, F5), kde predošlý záznam nemusí patriť appke.
+ *
+ * Pôvod sa píše do `history.state` záznamu položky – rovnaký vzor ako
+ * `__svaplyDesktopSettingsOrigin`. Dvojkrokovo, lebo záznam vytvára až Next
+ * router pri commite novej stránky: otvorenie si cestu zapamätá a detail ju
+ * po zobrazení prevezme.
+ */
+const ORIGIN_HISTORY_KEY = '__svaplyPortfolioDetailOrigin';
+
+/**
+ * Identita tohto načítania stránky.
+ *
+ * `history.state` prežije F5, pôvod však nie: po reloade appka stav, z ktorého
+ * sa položka otvorila, nepozná. Marker z iného načítania preto neplatí.
+ */
+const PAGE_LOAD_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
+type PortfolioDetailOriginMarker = { version: 1; pageLoadId: string };
+
+/** Cesta položky, ktorú appka práve otvára a ešte nemá svoj záznam. */
+let pendingDetailPath: string | null = null;
+
+function historyStateRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/** Otvor položku z appky (profil, Nástenka) – s pôvodom pre krok späť. */
+export function openPortfolioDetail(
+  router: { push: (url: string) => void },
+  ownerIdentifier: string,
+  portfolioItemId: number,
+): void {
+  const path = buildPortfolioDetailPath(ownerIdentifier, portfolioItemId);
+  pendingDetailPath = path;
+  router.push(path);
+}
+
+/**
+ * Detail sa zobrazil: ak ho otvorila appka, označí jeho záznam pôvodom.
+ *
+ * Prevzatie je jednorazové a zahodí sa aj pri nezhode – inak by si ho mohol
+ * neskôr privlastniť detail otvorený odkazom.
+ */
+export function adoptPortfolioDetailOrigin(): void {
+  if (typeof window === 'undefined') return;
+  const path = pendingDetailPath;
+  pendingDetailPath = null;
+  if (!path || window.location.pathname !== path) return;
+  try {
+    window.history.replaceState(
+      {
+        ...historyStateRecord(window.history.state),
+        [ORIGIN_HISTORY_KEY]: {
+          version: 1,
+          pageLoadId: PAGE_LOAD_ID,
+        } satisfies PortfolioDetailOriginMarker,
+      },
+      '',
+      window.location.href,
+    );
+  } catch {
+    // Bez markera sa návrat správa ako pri vstupe odkazom (replace na zoznam).
+  }
+}
+
+/**
+ * Krok späť na pôvod detailu, keď je známy.
+ *
+ * Vracia `false`, keď pôvod známy nie je – volajúci ostáva pri `replace`.
+ */
+export function returnToPortfolioDetailOrigin(): boolean {
+  if (typeof window === 'undefined') return false;
+  const marker = historyStateRecord(window.history.state)[ORIGIN_HISTORY_KEY] as
+    | Partial<PortfolioDetailOriginMarker>
+    | undefined;
+  if (marker?.version !== 1 || marker.pageLoadId !== PAGE_LOAD_ID) return false;
+  window.history.back();
+  return true;
+}
+
+/** Len pre testy – vyčistí modulový stav medzi prípadmi. */
+export function resetPortfolioDetailOrigin(): void {
+  pendingDetailPath = null;
+}
