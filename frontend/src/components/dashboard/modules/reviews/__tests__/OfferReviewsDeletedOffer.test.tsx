@@ -114,6 +114,36 @@ describe('OfferReviewsView – notifikácia na recenziu so zmazanou ponukou', ()
     },
   );
 
+  it.each([
+    ['so slugom → presmeruje slugom', 'jana-novak', 'jana-novak'],
+    ['prázdny slug → záloha na ID', '   ', '42'],
+    ['slug null → záloha na ID', null, '42'],
+  ])('zmazaná ponuka, %s', async (_name, slug, expectedIdentifier) => {
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.startsWith('skills/')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('review-detail/')) {
+        return Promise.resolve({
+          data: { offer: null, reviewed_user_id: 42, reviewed_user_slug: slug },
+        });
+      }
+      if (url.startsWith('reviews-list/')) return Promise.reject({ response: { status: 404 } });
+      return Promise.resolve({ data: {} });
+    });
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+    try {
+      render(<OfferReviewsView offerId={5} />);
+
+      await waitFor(() => expect(mockToast).toHaveBeenCalledTimes(1));
+      // Profil sa otvára slugom ako všade v appke; číselné ID len ako záloha.
+      await waitFor(() =>
+        expect(goToUserProfileIdentifiers(dispatchSpy)).toEqual([expectedIdentifier]),
+      );
+    } finally {
+      dispatchSpy.mockRestore();
+    }
+  });
+
   it('existujúca ponuka → funguje ako doteraz (žiadny toast, žiadne presmerovanie)', async () => {
     mockApiGet.mockImplementation((url: string) => {
       if (url.startsWith('skills/')) {

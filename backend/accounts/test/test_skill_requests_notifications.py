@@ -729,7 +729,8 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
 
         payload = NotificationSerializer(notification).data
-        self.assertEqual(payload["target_url"], f"/dashboard/users/{self.owner.id}")
+        # Profil sa otvára slugom (ID je len záloha pre účty bez slugu).
+        self.assertEqual(payload["target_url"], f"/dashboard/users/{self.owner.slug}")
 
     def test_review_notification_with_deleted_offer_falls_back_to_profile(self):
         """Historicky kladné offer_id, ale ponuka bola odvtedy zmazaná → target_url
@@ -773,7 +774,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
             "existing_review_offer_ids": existing_review_offer_ids([notification])
         }
         after = NotificationSerializer(notification, context=ctx_after).data
-        self.assertEqual(after["target_url"], f"/dashboard/users/{self.owner.id}")
+        self.assertEqual(after["target_url"], f"/dashboard/users/{self.owner.slug}")
 
     def test_offer_like_toggle_updates_counts_and_notifies_owner_once(self):
         self.client.force_authenticate(user=self.requester)

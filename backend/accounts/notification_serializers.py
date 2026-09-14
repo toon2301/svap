@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Notification, NotificationType, OfferedSkill
+from .models import Notification, NotificationType, OfferedSkill, User
 from .search_visibility import searchable_user_q
 from .services.user_blocks import exclude_blocked_users
 
@@ -35,6 +35,48 @@ def existing_review_offer_ids(notifications) -> set[int]:
     return set(
         OfferedSkill.objects.filter(id__in=offer_ids).values_list("id", flat=True)
     )
+
+
+def _review_notification_reviewed_user_id(notification) -> int:
+    if getattr(notification, "type", None) not in _REVIEW_NOTIFICATION_TYPES:
+        return 0
+    data = notification.data if isinstance(notification.data, dict) else {}
+    try:
+        return int(data.get("reviewed_user_id") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _clean_slug(slug) -> str:
+    return (slug or "").strip()
+
+
+def review_profile_slugs(notifications) -> dict[int, str]:
+    """Slugy recenzovaných používateľov z review-notifikácií.
+
+    Context pre ``NotificationSerializer`` pri serializácii ZOZNAMU: fallback na
+    profil (zmazaná ponuka) má viesť na ``/dashboard/users/<slug>``, nie na
+    číselné ID. ``data`` notifikácie nesie len ``reviewed_user_id`` a príjemca
+    recenzovaným byť nemusí (odpoveď a lajk idú autorovi recenzie), preto sa
+    slug dohľadá. Jeden dotaz pre celú stránku → žiadny N+1.
+
+    Anonymizovaný účet (``is_active=False``) slug nedostane – rovnako ako
+    ``actor`` v ``get_actor``; cieľ ostáva na ID.
+    """
+    user_ids = {
+        user_id
+        for user_id in map(_review_notification_reviewed_user_id, notifications)
+        if user_id > 0
+    }
+    if not user_ids:
+        return {}
+    return {
+        user_id: slug
+        for user_id, slug in User.objects.filter(
+            id__in=user_ids, is_active=True
+        ).values_list("id", "slug")
+        if _clean_slug(slug)
+    }
 
 
 def existing_offer_watch_targets(notifications, *, viewer_user_id: int) -> dict[int, str]:
@@ -259,5 +301,24 @@ class NotificationSerializer(serializers.ModelSerializer):
             except (TypeError, ValueError):
                 reviewed_user_id = 0
             if review_id > 0 and reviewed_user_id > 0:
-                return f"/dashboard/users/{reviewed_user_id}"
+                identifier = (
+                    self._reviewed_user_slug(reviewed_user_id) or str(reviewed_user_id)
+                )
+                return f"/dashboard/users/{identifier}"
         return None
+
+    def _reviewed_user_slug(self, user_id: int) -> str:
+        """Slug recenzovaného pre cieľ na profil; prázdny → volajúci použije ID.
+
+        Zoznam ho dostane hotový cez context (``review_profile_slugs``). Realtime
+        push serializuje jednu notifikáciu bez contextu – vtedy jeden dotaz.
+        """
+        slugs = self.context.get("review_profile_slugs")
+        if slugs is not None:
+            return _clean_slug(slugs.get(user_id))
+        slug = (
+            User.objects.filter(pk=user_id, is_active=True)
+            .values_list("slug", flat=True)
+            .first()
+        )
+        return _clean_slug(slug)
