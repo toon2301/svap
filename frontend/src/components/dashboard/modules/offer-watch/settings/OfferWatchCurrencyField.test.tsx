@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import OfferWatchCurrencyField from './OfferWatchCurrencyField';
 
@@ -22,6 +23,8 @@ describe('OfferWatchCurrencyField', () => {
 
     const combobox = screen.getByRole('combobox', { name: 'Mena' });
     expect(combobox.tagName).toBe('SELECT');
+    expect(combobox).toHaveClass('appearance-none', 'bg-none');
+    expect(combobox).toHaveStyle({ backgroundImage: 'none' });
     expect(combobox).toHaveValue('€');
     expect(
       within(combobox).getAllByRole('option').map((option) => ({
@@ -47,6 +50,75 @@ describe('OfferWatchCurrencyField', () => {
     expect(onChange.mock.calls.map(([currency]) => currency)).toEqual([
       '€', 'Kč', '$', 'zł', 'Ft',
     ]);
+  });
+
+  it('renders the supported currencies in the custom desktop selector', async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(
+      <OfferWatchCurrencyField
+        id='watch-currency'
+        currency='Kč'
+        onChange={onChange}
+        presentation='custom'
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Mena' });
+    expect(combobox.tagName).toBe('INPUT');
+    expect(combobox).toHaveAttribute('readonly');
+
+    await user.click(combobox);
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      '€', 'Kč', '$', 'zł', 'Ft',
+    ]);
+
+    await user.click(screen.getByRole('option', { name: '$' }));
+    expect(onChange).toHaveBeenCalledWith('$');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(combobox).toHaveFocus();
+  });
+
+  it('opens the app-styled mobile currency menu above the field with an upward chevron', async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(
+      <OfferWatchCurrencyField
+        id='watch-currency'
+        currency='€'
+        onChange={onChange}
+        presentation='custom-above'
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Mena' });
+    jest.spyOn(combobox, 'getBoundingClientRect').mockReturnValue({
+      x: 20,
+      y: 500,
+      top: 500,
+      right: 300,
+      bottom: 544,
+      left: 20,
+      width: 280,
+      height: 44,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    expect(combobox).toHaveAttribute('readonly');
+    expect(combobox.parentElement?.querySelector('svg')).toHaveClass('rotate-180');
+
+    await user.click(combobox);
+    const popup = screen.getByRole('listbox').parentElement as HTMLElement;
+    expect(popup).toHaveAttribute('data-placement', 'above');
+    expect(popup).toHaveClass(
+      'rounded-t-xl',
+      'rounded-b-none',
+      'border-purple-400',
+    );
+    expect(screen.getAllByRole('option')).toHaveLength(5);
+
+    await user.click(screen.getByRole('option', { name: 'Kč' }));
+    expect(onChange).toHaveBeenCalledWith('Kč');
   });
 
   it('preserves disabled and validation accessibility state', () => {

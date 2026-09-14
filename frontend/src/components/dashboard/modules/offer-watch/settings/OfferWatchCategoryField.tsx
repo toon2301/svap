@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import { skillsCategories } from '@/constants/skillsCategories';
 import { useLanguage } from '@/contexts/LanguageContext';
-import OfferWatchSearchSelect, { type OfferWatchSearchOption } from './OfferWatchSearchSelect';
 import {
-  offerWatchCategoryLabel,
-  offerWatchSubcategoryLabel,
-} from './offerWatchUi';
+  buildOfferWatchCategoryOptions,
+  offerWatchCategoryKey,
+} from '../offerWatchSelectionOptions';
+import OfferWatchMobilePickerTrigger from '../mobile/OfferWatchMobilePickerTrigger';
+import OfferWatchSearchSelect, { type OfferWatchSearchOption } from './OfferWatchSearchSelect';
+import { offerWatchSubcategoryLabel } from './offerWatchUi';
 
 type OfferWatchCategoryFieldProps = {
   id: string;
@@ -17,6 +18,7 @@ type OfferWatchCategoryFieldProps = {
   disabled?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  onOpenMobilePicker?: () => void;
 };
 
 export default function OfferWatchCategoryField({
@@ -27,29 +29,42 @@ export default function OfferWatchCategoryField({
   disabled = false,
   invalid = false,
   describedBy,
+  onOpenMobilePicker,
 }: OfferWatchCategoryFieldProps) {
   const { t } = useLanguage();
-  const options = useMemo<OfferWatchSearchOption[]>(() => (
-    Object.entries(skillsCategories).flatMap(([categoryName, subcategories]) =>
-      subcategories.map((subcategoryName) => ({
-        key: `${categoryName}\u0000${subcategoryName}`,
-        label: offerWatchSubcategoryLabel(t, categoryName, subcategoryName),
-        secondaryLabel: offerWatchCategoryLabel(t, categoryName),
-        searchText: `${categoryName} ${subcategoryName}`,
-      })),
-    )
-  ), [t]);
+  const usesMobilePicker = Boolean(onOpenMobilePicker);
+  const options = useMemo<OfferWatchSearchOption[]>(
+    () => (usesMobilePicker ? [] : buildOfferWatchCategoryOptions(t)),
+    [t, usesMobilePicker],
+  );
   const selectedLabel = category && subcategory
     ? offerWatchSubcategoryLabel(t, category, subcategory)
     : '';
+  const label = t('offerWatch.categoryLabel', 'Podkategória');
+  const placeholder = t('offerWatch.categoryPlaceholder', 'Vyber podkategóriu');
+
+  if (onOpenMobilePicker) {
+    return (
+      <OfferWatchMobilePickerTrigger
+        id={id}
+        label={label}
+        valueLabel={selectedLabel}
+        placeholder={placeholder}
+        onOpen={onOpenMobilePicker}
+        disabled={disabled}
+        invalid={invalid}
+        describedBy={describedBy}
+      />
+    );
+  }
 
   return (
     <OfferWatchSearchSelect
       id={id}
-      label={t('offerWatch.categoryLabel', 'Podkategória')}
-      valueKey={category && subcategory ? `${category}\u0000${subcategory}` : ''}
+      label={label}
+      valueKey={offerWatchCategoryKey(category, subcategory)}
       valueLabel={selectedLabel}
-      placeholder={t('offerWatch.categoryPlaceholder', 'Vyber podkategóriu')}
+      placeholder={placeholder}
       searchPlaceholder={t('offerWatch.categorySearchPlaceholder', 'Začni písať názov podkategórie')}
       startTypingMessage={t('offerWatch.categoryStartTyping', 'Začni písať a vyber podkategóriu zo zoznamu.')}
       emptyMessage={t('offerWatch.categoryNoResults', 'Nenašla sa žiadna podkategória.')}

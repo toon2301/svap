@@ -11,15 +11,31 @@ import {
 jest.mock('./OfferWatchSettingsMobile', () => ({
   __esModule: true,
   default: ({ view, onBack, onPushView }: {
-    view: { kind: 'list' | 'create' | 'edit'; watchId?: number };
+    view: {
+      kind: 'list' | 'create' | 'edit';
+      watchId?: number;
+      picker?: 'category' | 'country' | 'district';
+    };
     onBack: () => void;
-    onPushView: (view: { kind: 'list' | 'create' | 'edit'; watchId?: number }) => void;
+    onPushView: (view: {
+      kind: 'list' | 'create' | 'edit';
+      watchId?: number;
+      picker?: 'category' | 'country' | 'district';
+    }) => void;
   }) => (
     <div data-testid='mobile-watch-host-view'>
-      <span>{view.kind}</span>
+      <span data-testid='mobile-watch-host-view-name'>{view.picker || view.kind}</span>
       <button type='button' onClick={onBack}>back</button>
       <button type='button' onClick={() => onPushView({ kind: 'create' })}>create</button>
       <button type='button' onClick={() => onPushView({ kind: 'edit', watchId: 9 })}>edit</button>
+      <button
+        type='button'
+        onClick={() => onPushView(view.kind === 'edit'
+          ? { kind: 'edit', watchId: view.watchId, picker: 'category' }
+          : { kind: 'create', picker: 'category' })}
+      >
+        category
+      </button>
     </div>
   ),
 }));
@@ -67,7 +83,7 @@ describe('OfferWatchSettingsMobileHost', () => {
     render(<OfferWatchSettingsMobileHost onReturnToSettings={onReturnToSettings} />);
 
     act(() => window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT)));
-    expect(screen.getByTestId('mobile-watch-host-view')).toHaveTextContent('list');
+    expect(screen.getByTestId('mobile-watch-host-view-name')).toHaveTextContent(/^list$/);
     expect(window.location.pathname).toBe(OFFER_WATCH_SETTINGS_PATH);
     expect(readOfferWatchMobileHistory(window.history.state)).toEqual({
       version: 2,
@@ -76,11 +92,21 @@ describe('OfferWatchSettingsMobileHost', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'create' }));
-    expect(screen.getByTestId('mobile-watch-host-view')).toHaveTextContent('create');
+    expect(screen.getByTestId('mobile-watch-host-view-name')).toHaveTextContent(/^create$/);
     expect(readOfferWatchMobileHistory(window.history.state)?.view).toEqual({ kind: 'create' });
 
+    fireEvent.click(screen.getByRole('button', { name: 'category' }));
+    expect(screen.getByTestId('mobile-watch-host-view-name')).toHaveTextContent(/^category$/);
+    expect(readOfferWatchMobileHistory(window.history.state)?.view).toEqual({
+      kind: 'create',
+      picker: 'category',
+    });
+
     act(() => window.history.back());
-    await waitFor(() => expect(screen.getByTestId('mobile-watch-host-view')).toHaveTextContent('list'));
+    await waitFor(() => expect(screen.getByTestId('mobile-watch-host-view-name')).toHaveTextContent(/^create$/));
+
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.getByTestId('mobile-watch-host-view-name')).toHaveTextContent(/^list$/));
 
     act(() => window.history.back());
     await waitFor(() => expect(screen.queryByTestId('mobile-watch-host-view')).not.toBeInTheDocument());
@@ -93,7 +119,7 @@ describe('OfferWatchSettingsMobileHost', () => {
     const onReturnToSettings = jest.fn();
     render(<OfferWatchSettingsMobileHost onReturnToSettings={onReturnToSettings} />);
 
-    expect(await screen.findByTestId('mobile-watch-host-view')).toHaveTextContent('list');
+    expect(await screen.findByTestId('mobile-watch-host-view-name')).toHaveTextContent(/^list$/);
     expect(readOfferWatchMobileHistory(window.history.state)).toEqual({
       version: 2,
       origin: 'direct',

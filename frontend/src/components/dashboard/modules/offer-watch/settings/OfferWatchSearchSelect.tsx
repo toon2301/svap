@@ -37,6 +37,9 @@ type OfferWatchSearchSelectProps = {
   invalid?: boolean;
   describedBy?: string;
   requireQuery?: boolean;
+  readOnly?: boolean;
+  popupPlacement?: 'auto' | 'above';
+  chevronPointsUp?: boolean;
 };
 
 type PopupPlacement = 'above' | 'below';
@@ -51,7 +54,10 @@ const LIST_MAX_HEIGHT = 304;
 const PREFERRED_BELOW_HEIGHT = 160;
 const OPEN_EVENT = 'svaply:offer-watch-search-select-open';
 
-function popupLayout(trigger: HTMLElement): PopupLayout {
+function popupLayout(
+  trigger: HTMLElement,
+  placementPreference: 'auto' | 'above' = 'auto',
+): PopupLayout {
   const rect = trigger.getBoundingClientRect();
   const viewport = readVisualViewportBounds() ?? {
     top: 0,
@@ -71,7 +77,8 @@ function popupLayout(trigger: HTMLElement): PopupLayout {
   );
   const below = Math.max(0, viewport.bottom - rect.bottom - VIEWPORT_PADDING);
   const above = Math.max(0, rect.top - viewport.top - VIEWPORT_PADDING);
-  const openBelow = below >= PREFERRED_BELOW_HEIGHT || below >= above;
+  const openBelow = placementPreference === 'auto'
+    && (below >= PREFERRED_BELOW_HEIGHT || below >= above);
   const maxHeight = Math.min(LIST_MAX_HEIGHT, openBelow ? below : above);
   return {
     placement: openBelow ? 'below' : 'above',
@@ -107,6 +114,9 @@ export default function OfferWatchSearchSelect({
   invalid = false,
   describedBy,
   requireQuery = false,
+  readOnly = false,
+  popupPlacement = 'auto',
+  chevronPointsUp = false,
 }: OfferWatchSearchSelectProps) {
   const instanceId = useId();
   const listboxId = useId();
@@ -130,6 +140,7 @@ export default function OfferWatchSearchSelect({
   }, [options]);
 
   const filteredOptions = useMemo(() => {
+    if (readOnly) return uniqueOptions;
     const normalizedQuery = normalizeOfferWatchSearch(query);
     if (!normalizedQuery) return requireQuery ? [] : uniqueOptions;
     return uniqueOptions.filter((option) =>
@@ -137,7 +148,12 @@ export default function OfferWatchSearchSelect({
         `${option.label} ${option.secondaryLabel || ''} ${option.searchText || ''}`,
       ).includes(normalizedQuery),
     );
-  }, [query, requireQuery, uniqueOptions]);
+  }, [query, readOnly, requireQuery, uniqueOptions]);
+
+  const selectedIndex = useMemo(
+    () => uniqueOptions.findIndex((option) => option.key === valueKey),
+    [uniqueOptions, valueKey],
+  );
 
   const close = useCallback((restoreFocus: boolean) => {
     setOpen(false);
@@ -147,17 +163,17 @@ export default function OfferWatchSearchSelect({
   }, []);
 
   const updatePosition = useCallback(() => {
-    if (inputRef.current) setLayout(popupLayout(inputRef.current));
-  }, []);
+    if (inputRef.current) setLayout(popupLayout(inputRef.current, popupPlacement));
+  }, [popupPlacement]);
 
-  const openPopup = useCallback(() => {
+  const openPopup = useCallback((initialActiveIndex: number | null = null) => {
     if (disabled || !inputRef.current) return;
     window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: instanceId }));
-    setLayout(popupLayout(inputRef.current));
+    setLayout(popupLayout(inputRef.current, popupPlacement));
     setQuery('');
-    setActiveIndex(null);
+    setActiveIndex(initialActiveIndex);
     setOpen(true);
-  }, [disabled, instanceId]);
+  }, [disabled, instanceId, popupPlacement]);
 
   useEffect(() => {
     const closeWhenPeerOpens = (event: Event) => {
@@ -235,9 +251,24 @@ export default function OfferWatchSearchSelect({
       close(true);
       return;
     }
-    if (!open && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+    if (event.key === 'Tab' && open) {
+      close(false);
+      return;
+    }
+    if (
+      !open
+      && (
+        ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)
+        || (readOnly && event.key === ' ')
+      )
+    ) {
       event.preventDefault();
-      openPopup();
+      const fallbackIndex = event.key === 'ArrowUp'
+        ? filteredOptions.length - 1
+        : 0;
+      openPopup(readOnly
+        ? Math.max(0, selectedIndex >= 0 ? selectedIndex : fallbackIndex)
+        : null);
       return;
     }
     if (event.key === 'ArrowDown') {
@@ -260,7 +291,7 @@ export default function OfferWatchSearchSelect({
     } else if (event.key === 'End' && filteredOptions.length) {
       event.preventDefault();
       setActiveIndex(filteredOptions.length - 1);
-    } else if (event.key === 'Enter') {
+    } else if (event.key === 'Enter' || (readOnly && event.key === ' ')) {
       const enterOption = activeOption
         || (filteredOptions.length === 1 ? filteredOptions[0] : undefined);
       if (enterOption) {
@@ -282,18 +313,23 @@ export default function OfferWatchSearchSelect({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={activeOptionId}
-        aria-autocomplete='list'
+        aria-autocomplete={readOnly ? 'none' : 'list'}
         aria-describedby={describedBy}
         aria-invalid={invalid || undefined}
         autoComplete='off'
         spellCheck={false}
         disabled={disabled}
-        value={open ? query : valueLabel}
-        placeholder={open ? searchPlaceholder : placeholder}
+        readOnly={readOnly}
+        value={readOnly ? valueLabel : open ? query : valueLabel}
+        placeholder={readOnly ? placeholder : open ? searchPlaceholder : placeholder}
         onFocus={() => {
-          if (!open) openPopup();
+          if (!open) openPopup(readOnly ? Math.max(0, selectedIndex) : null);
+        }}
+        onClick={() => {
+          if (!open) openPopup(readOnly ? Math.max(0, selectedIndex) : null);
         }}
         onChange={(event) => {
+          if (readOnly) return;
           if (!open) openPopup();
           setQuery(event.target.value);
           setActiveIndex(null);
@@ -304,20 +340,24 @@ export default function OfferWatchSearchSelect({
             if (!popupRef.current?.contains(document.activeElement)) close(false);
           });
         }}
-        className={`min-h-11 w-full border bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black dark:text-white dark:placeholder:text-gray-400 ${
+        className={`min-h-11 w-full border bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black dark:text-white dark:placeholder:text-gray-400 ${readOnly ? 'cursor-pointer' : ''} ${
           open
             ? layout.placement === 'below'
-              ? 'rounded-t-xl rounded-b-none'
-              : 'rounded-b-xl rounded-t-none'
-            : 'rounded-xl'
+              ? 'rounded-t-xl rounded-b-none focus:outline-none focus-visible:outline-none'
+              : 'rounded-b-xl rounded-t-none focus:outline-none focus-visible:outline-none'
+            : 'rounded-xl focus:ring-2'
         } ${
           invalid
-            ? 'border-red-400 focus:border-red-400 focus:ring-red-400/25 dark:border-red-700'
-            : 'border-gray-300 focus:border-purple-400 focus:ring-purple-400/25 dark:border-gray-700'
+            ? `border-red-400 focus:border-red-400 dark:border-red-700 ${open ? '' : 'focus:ring-red-400/25'}`
+            : open
+              ? 'border-purple-400 dark:border-purple-400'
+              : 'border-gray-300 focus:border-purple-400 focus:ring-purple-400/25 dark:border-gray-700'
         }`}
       />
       <ChevronDownIcon
-        className={`pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition ${open ? 'rotate-180' : ''}`}
+        className={`pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 transition ${
+          chevronPointsUp || open ? 'rotate-180' : ''
+        }`}
         aria-hidden='true'
       />
 
@@ -373,12 +413,12 @@ export default function OfferWatchSearchSelect({
                 </button>
               );
             })}
-            {!query.trim() && requireQuery ? (
+            {!readOnly && !query.trim() && requireQuery ? (
               <p className='px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400' role='status'>
                 {startTypingMessage || searchPlaceholder}
               </p>
             ) : null}
-            {query.trim() && filteredOptions.length === 0 ? (
+            {!readOnly && query.trim() && filteredOptions.length === 0 ? (
               <p className='px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400' role='status'>
                 {emptyMessage}
               </p>

@@ -3,10 +3,14 @@
 import { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
-  getOfferCountryEntries,
-  getOfferCountryFallbackName,
   type OfferCountryCode,
 } from '@/shared/countryRegistry';
+import {
+  buildOfferWatchCountryOptions,
+  offerWatchCountryLabel,
+  selectedOfferWatchCountryLabel,
+} from '../offerWatchSelectionOptions';
+import OfferWatchMobilePickerTrigger from '../mobile/OfferWatchMobilePickerTrigger';
 import OfferWatchSearchSelect, { type OfferWatchSearchOption } from './OfferWatchSearchSelect';
 
 type OfferWatchCountryFieldProps = {
@@ -16,6 +20,7 @@ type OfferWatchCountryFieldProps = {
   disabled?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  onOpenMobilePicker?: () => void;
 };
 
 export default function OfferWatchCountryField({
@@ -25,35 +30,45 @@ export default function OfferWatchCountryField({
   disabled = false,
   invalid = false,
   describedBy,
+  onOpenMobilePicker,
 }: OfferWatchCountryFieldProps) {
   const { locale, t } = useLanguage();
-  const options = useMemo<OfferWatchSearchOption[]>(() => {
-    let displayNames: Intl.DisplayNames | null = null;
-    try {
-      displayNames = new Intl.DisplayNames([locale], { type: 'region' });
-    } catch {
-      displayNames = null;
-    }
+  const usesMobilePicker = Boolean(onOpenMobilePicker);
+  const options = useMemo<OfferWatchSearchOption[]>(
+    () => (usesMobilePicker ? [] : buildOfferWatchCountryOptions(locale)),
+    [locale, usesMobilePicker],
+  );
+  const selectedLabel = useMemo(
+    () => (usesMobilePicker
+      ? offerWatchCountryLabel(locale, countryCode)
+      : selectedOfferWatchCountryLabel(options, countryCode)),
+    [countryCode, locale, options, usesMobilePicker],
+  );
+  const label = t('offerWatch.countryLabel', 'Krajina');
+  const placeholder = t('skills.countryPlaceholder', 'Vyber krajinu');
 
-    return getOfferCountryEntries()
-      .map((country) => ({
-        key: country.code,
-        label: displayNames?.of(country.code) || country.name,
-        secondaryLabel: country.code,
-        searchText: country.name,
-      }))
-      .sort((first, second) => first.label.localeCompare(second.label, locale));
-  }, [locale]);
-  const selectedLabel = options.find((option) => option.key === countryCode)?.label
-    || getOfferCountryFallbackName(countryCode);
+  if (onOpenMobilePicker) {
+    return (
+      <OfferWatchMobilePickerTrigger
+        id={id}
+        label={label}
+        valueLabel={selectedLabel}
+        placeholder={placeholder}
+        onOpen={onOpenMobilePicker}
+        disabled={disabled}
+        invalid={invalid}
+        describedBy={describedBy}
+      />
+    );
+  }
 
   return (
     <OfferWatchSearchSelect
       id={id}
-      label={t('offerWatch.countryLabel', 'Krajina')}
+      label={label}
       valueKey={countryCode}
       valueLabel={selectedLabel}
-      placeholder={t('skills.countryPlaceholder', 'Vyber krajinu')}
+      placeholder={placeholder}
       searchPlaceholder={t('skills.countrySearchPlaceholder', 'Vyhľadaj krajinu')}
       emptyMessage={t('skills.countryNoResults', 'Nenašla sa žiadna krajina.')}
       options={options}
