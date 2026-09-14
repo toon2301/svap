@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import OfferWatchCountryField from './OfferWatchCountryField';
 
@@ -24,6 +24,11 @@ describe('OfferWatchCountryField', () => {
     expect(combobox).toHaveValue('Slovakia');
 
     fireEvent.focus(combobox);
+    const longCountry = screen.getByRole('option', { name: /South Georgia/i });
+    const longCountryLabel = within(longCountry).getByText(/South Georgia/i);
+    expect(longCountryLabel).toHaveClass('whitespace-normal', 'break-words');
+    expect(longCountryLabel).not.toHaveClass('truncate');
+
     fireEvent.change(combobox, { target: { value: 'Italy' } });
     expect(screen.getAllByRole('combobox')).toHaveLength(1);
 

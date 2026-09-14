@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useMobileViewportHeight } from '../../../hooks/useMobileViewportHeight';
+import { useVisualViewportBounds } from '../../../hooks/useVisualViewportBounds';
 import { useModalFocusTrap } from '../../profile/useModalFocusTrap';
 import { MAX_OFFER_WATCHES, type OfferWatch, type OfferWatchInput } from '../types';
 import { useOfferWatches } from '../useOfferWatches';
@@ -47,9 +47,12 @@ export default function OfferWatchSettingsMobile({
       : null
   ), [view, watches]);
   const deleteDialogOpen = deletingWatch !== null;
-  const mobileViewportHeight = useMobileViewportHeight(view.kind !== 'list');
-  const mobileViewportStyle = mobileViewportHeight
-    ? { height: `${mobileViewportHeight}px` }
+  const mobileViewportBounds = useVisualViewportBounds(view.kind !== 'list');
+  const mobileViewportStyle = mobileViewportBounds
+    ? {
+      top: `${mobileViewportBounds.top}px`,
+      height: `${mobileViewportBounds.height}px`,
+    }
     : undefined;
 
   useModalFocusTrap(!deleteDialogOpen, rootRef);
@@ -163,7 +166,7 @@ export default function OfferWatchSettingsMobile({
     <>
       <div
         ref={rootRef}
-        className='fixed inset-0 z-[9000] overflow-hidden lg:hidden'
+        className='fixed inset-x-0 top-0 z-[9000] h-dvh overflow-hidden bg-white text-gray-900 dark:bg-black dark:text-white lg:hidden'
         style={mobileViewportStyle}
         role='dialog'
         aria-modal='true'

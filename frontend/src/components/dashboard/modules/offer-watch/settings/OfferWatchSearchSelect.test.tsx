@@ -21,6 +21,20 @@ const optionsWithSharedLabel = [
   { key: 'second', label: 'Rovnaká možnosť', secondaryLabel: 'Iná kategória' },
 ];
 
+function mockInputRect(input: HTMLElement, top: number): void {
+  jest.spyOn(input, 'getBoundingClientRect').mockReturnValue({
+    x: 40,
+    y: top,
+    top,
+    right: 340,
+    bottom: top + 44,
+    left: 40,
+    width: 300,
+    height: 44,
+    toJSON: () => ({}),
+  });
+}
+
 describe('OfferWatchSearchSelect', () => {
   it('keeps the selected value in the same input', async () => {
     const user = userEvent.setup();
@@ -250,6 +264,74 @@ describe('OfferWatchSearchSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
+
+  it('joins a popup below the input and shows complete wrapping option labels', async () => {
+    const user = userEvent.setup();
+    const longLabel = 'South Georgia and the South Sandwich Islands';
+    const secondaryLabel = 'A complete secondary description that may wrap';
+    render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        emptyMessage='Nič sa nenašlo'
+        options={[{ key: 'long', label: longLabel, secondaryLabel }]}
+        onSelect={jest.fn()}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    mockInputRect(combobox, 100);
+    await user.click(combobox);
+
+    const list = screen.getByRole('listbox');
+    const popup = list.parentElement as HTMLElement;
+    expect(popup).toHaveAttribute('data-placement', 'below');
+    expect(popup.style.top).toBe('144px');
+    expect(popup.style.width).toBe('300px');
+    expect(combobox).toHaveClass('rounded-t-xl', 'rounded-b-none');
+    expect(popup).toHaveClass('rounded-b-xl', 'rounded-t-none', 'border-t-0');
+
+    const primary = screen.getByText(longLabel);
+    const secondary = screen.getByText(secondaryLabel);
+    expect(primary).toHaveClass('whitespace-normal', 'break-words');
+    expect(secondary).toHaveClass('whitespace-normal', 'break-words');
+    expect(primary).not.toHaveClass('truncate');
+    expect(secondary).not.toHaveClass('truncate');
+  });
+
+  it('keeps an upward popup directly connected to the input', async () => {
+    const user = userEvent.setup();
+    render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        emptyMessage='Nič sa nenašlo'
+        options={options}
+        onSelect={jest.fn()}
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    mockInputRect(combobox, 600);
+    await user.click(combobox);
+
+    const popup = screen.getByRole('listbox').parentElement as HTMLElement;
+    expect(popup).toHaveAttribute('data-placement', 'above');
+    expect(popup.style.top).toBe('600px');
+    expect(popup.style.transform).toBe('translateY(-100%)');
+    expect(popup.style.width).toBe('300px');
+    expect(combobox).toHaveClass('rounded-b-xl', 'rounded-t-none');
+    expect(popup).toHaveClass('rounded-t-xl', 'rounded-b-none', 'border-b-0');
+  });
+
 });
 
 describe('výška vysúvacieho okienka', () => {
