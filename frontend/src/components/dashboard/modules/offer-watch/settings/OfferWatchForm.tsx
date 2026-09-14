@@ -15,6 +15,7 @@ import {
   type OfferWatchDraftField,
   type OfferWatchValidationErrors,
 } from '../types';
+import type { OfferWatchPickerKind } from '../offerWatchSelectionOptions';
 import OfferWatchCategoryField from './OfferWatchCategoryField';
 import OfferWatchCountryField from './OfferWatchCountryField';
 import OfferWatchCurrencyField from './OfferWatchCurrencyField';
@@ -38,6 +39,7 @@ type OfferWatchFormProps = {
   secondaryLabel?: string;
   onSecondary?: () => void;
   persistCountrySelection?: boolean;
+  onOpenMobilePicker?: (picker: OfferWatchPickerKind) => void;
 };
 
 function FieldError({
@@ -73,6 +75,7 @@ export default function OfferWatchForm({
   secondaryLabel,
   onSecondary,
   persistCountrySelection = true,
+  onOpenMobilePicker,
 }: OfferWatchFormProps) {
   const { t, setCountry } = useLanguage();
   const categoryErrorId = `${idPrefix}-category-error`;
@@ -120,6 +123,9 @@ export default function OfferWatchForm({
             disabled={controlsDisabled}
             invalid={Boolean(categoryError)}
             describedBy={categoryError ? categoryErrorId : undefined}
+            onOpenMobilePicker={onOpenMobilePicker
+              ? () => onOpenMobilePicker('category')
+              : undefined}
           />
           {categoryError ? (
             <p id={categoryErrorId} className='mt-1.5 text-xs font-medium text-red-600 dark:text-red-400' role='alert'>
@@ -184,6 +190,9 @@ export default function OfferWatchForm({
               disabled={controlsDisabled}
               invalid={Boolean(errors.countryCode)}
               describedBy={errors.countryCode ? countryErrorId : undefined}
+              onOpenMobilePicker={onOpenMobilePicker
+                ? () => onOpenMobilePicker('country')
+                : undefined}
             />
             <FieldError id={countryErrorId} field='countryCode' errors={errors} />
           </div>
@@ -204,6 +213,9 @@ export default function OfferWatchForm({
                 disabled={controlsDisabled}
                 invalid={Boolean(errors.districtCode) || hasInactiveDistrict}
                 describedBy={errors.districtCode || hasInactiveDistrict ? districtErrorId : undefined}
+                onOpenMobilePicker={onOpenMobilePicker
+                  ? () => onOpenMobilePicker('district')
+                  : undefined}
               />
               {errors.districtCode || hasInactiveDistrict ? (
                 <p id={districtErrorId} className='mt-1.5 text-xs font-medium text-red-600 dark:text-red-400' role='alert'>
@@ -219,7 +231,7 @@ export default function OfferWatchForm({
             {t('offerWatch.priceLabel', 'Cena (voliteľná)')}
           </span>
           <div className='grid gap-3 md:grid-cols-[1fr_1fr_120px]'>
-            <div>
+            <div data-offer-watch-price-field>
               <label htmlFor={`${idPrefix}-price-min`} className='sr-only'>{t('offerWatch.priceMin', 'Cena od')}</label>
               <input
                 id={`${idPrefix}-price-min`}
@@ -239,7 +251,7 @@ export default function OfferWatchForm({
               />
               <FieldError id={priceMinErrorId} field='priceMin' errors={errors} />
             </div>
-            <div>
+            <div data-offer-watch-price-field>
               <label htmlFor={`${idPrefix}-price-max`} className='sr-only'>{t('offerWatch.priceMax', 'Cena do')}</label>
               <input
                 id={`${idPrefix}-price-max`}
@@ -271,19 +283,20 @@ export default function OfferWatchForm({
                 disabled={controlsDisabled || (!draft.priceMin.trim() && !draft.priceMax.trim())}
                 invalid={Boolean(errors.priceCurrency)}
                 describedBy={errors.priceCurrency ? currencyErrorId : undefined}
+                presentation={onOpenMobilePicker ? 'custom-above' : 'custom'}
               />
               <FieldError id={currencyErrorId} field='priceCurrency' errors={errors} />
             </div>
           </div>
         </div>
 
-        <div className={`pt-1 ${secondaryLabel && onSecondary ? 'grid grid-cols-2 gap-3' : 'flex justify-end'}`}>
+        <div className={`pt-1 ${secondaryLabel && onSecondary ? 'grid min-w-0 grid-cols-2 gap-3' : 'flex justify-end'}`}>
           {secondaryLabel && onSecondary ? (
             <button
               type='button'
               onClick={onSecondary}
               disabled={controlsDisabled}
-              className='min-h-11 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/30 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900'
+              className='min-h-11 min-w-0 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/30 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900'
             >
               {secondaryLabel}
             </button>
@@ -291,7 +304,11 @@ export default function OfferWatchForm({
           <button
             type='submit'
             disabled={controlsDisabled}
-            className='inline-flex min-h-11 min-w-40 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-600'
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-600 ${
+              secondaryLabel && onSecondary
+                ? 'min-w-0 w-full px-3'
+                : 'min-w-40 px-5'
+            }`}
           >
             {isSubmitting ? <span className='h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' aria-hidden='true' /> : null}
             {isSubmitting ? submittingLabel : submitLabel}

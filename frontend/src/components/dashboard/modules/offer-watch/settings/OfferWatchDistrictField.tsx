@@ -3,11 +3,14 @@
 import { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
-  getDistrictOptions,
-  getOfferDistrictLabel,
   isInactiveOfferDistrictCode,
 } from '@/shared/districtRegistry';
 import type { OfferCountryCode } from '@/shared/countryRegistry';
+import {
+  buildOfferWatchDistrictOptions,
+  selectedOfferWatchDistrictLabel,
+} from '../offerWatchSelectionOptions';
+import OfferWatchMobilePickerTrigger from '../mobile/OfferWatchMobilePickerTrigger';
 import OfferWatchSearchSelect, { type OfferWatchSearchOption } from './OfferWatchSearchSelect';
 
 type OfferWatchDistrictFieldProps = {
@@ -18,6 +21,7 @@ type OfferWatchDistrictFieldProps = {
   disabled?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  onOpenMobilePicker?: () => void;
 };
 
 export default function OfferWatchDistrictField({
@@ -28,27 +32,44 @@ export default function OfferWatchDistrictField({
   disabled = false,
   invalid = false,
   describedBy,
+  onOpenMobilePicker,
 }: OfferWatchDistrictFieldProps) {
   const { t } = useLanguage();
+  const usesMobilePicker = Boolean(onOpenMobilePicker);
   const allDistrictsLabel = t('offerWatch.allDistricts', 'Všetky okresy');
-  const options = useMemo<OfferWatchSearchOption[]>(() => [
-    { key: '', label: allDistrictsLabel },
-    ...getDistrictOptions(countryCode).map((district) => ({
-      key: district.code,
-      label: district.label,
-      searchText: district.aliases.join(' '),
-    })),
-  ], [allDistrictsLabel, countryCode]);
-  const historicalLabel = getOfferDistrictLabel(countryCode, districtCode);
+  const options = useMemo<OfferWatchSearchOption[]>(
+    () => (usesMobilePicker
+      ? []
+      : buildOfferWatchDistrictOptions(countryCode, allDistrictsLabel)),
+    [allDistrictsLabel, countryCode, usesMobilePicker],
+  );
   const inactive = isInactiveOfferDistrictCode(countryCode, districtCode);
-  const selectedLabel = districtCode
-    ? historicalLabel || districtCode
-    : allDistrictsLabel;
+  const selectedLabel = selectedOfferWatchDistrictLabel(
+    countryCode,
+    districtCode,
+    allDistrictsLabel,
+  );
+  const label = t('offerWatch.districtLabel', 'Okres (voliteľný)');
+
+  if (onOpenMobilePicker) {
+    return (
+      <OfferWatchMobilePickerTrigger
+        id={id}
+        label={label}
+        valueLabel={selectedLabel}
+        placeholder={allDistrictsLabel}
+        onOpen={onOpenMobilePicker}
+        disabled={disabled}
+        invalid={invalid || inactive}
+        describedBy={describedBy}
+      />
+    );
+  }
 
   return (
     <OfferWatchSearchSelect
       id={id}
-      label={t('offerWatch.districtLabel', 'Okres (voliteľný)')}
+      label={label}
       valueKey={districtCode}
       valueLabel={selectedLabel}
       placeholder={allDistrictsLabel}

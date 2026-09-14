@@ -4,11 +4,15 @@ import type { ReactNode, RefObject } from 'react';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+export const OFFER_WATCH_MOBILE_TITLE_ID = 'offer-watch-mobile-title';
+
 type OfferWatchMobileShellProps = {
   title: string;
   onBack: () => void;
   backDisabled?: boolean;
   initialFocusRef?: RefObject<HTMLButtonElement>;
+  contentRef?: RefObject<HTMLDivElement>;
+  contentScrollable?: boolean;
   children: ReactNode;
 };
 
@@ -17,6 +21,8 @@ export default function OfferWatchMobileShell({
   onBack,
   backDisabled = false,
   initialFocusRef,
+  contentRef,
+  contentScrollable = true,
   children,
 }: OfferWatchMobileShellProps) {
   const { t } = useLanguage();
@@ -34,10 +40,19 @@ export default function OfferWatchMobileShell({
         >
           <ChevronLeftIcon className='h-6 w-6' aria-hidden='true' />
         </button>
-        <h1 className='min-w-0 truncate px-2 text-center text-lg font-semibold'>{title}</h1>
+        <h1
+          id={OFFER_WATCH_MOBILE_TITLE_ID}
+          className='min-w-0 truncate px-2 text-center text-lg font-semibold'
+        >
+          {title}
+        </h1>
         <span aria-hidden='true' />
       </header>
-      <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain elegant-scrollbar'>
+      <div ref={contentRef} className={`min-h-0 flex-1 ${
+        contentScrollable
+          ? 'overflow-y-auto overscroll-contain elegant-scrollbar'
+          : 'overflow-hidden'
+      }`}>
         {children}
       </div>
     </div>

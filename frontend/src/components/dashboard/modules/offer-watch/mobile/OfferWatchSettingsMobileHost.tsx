@@ -20,6 +20,8 @@ import {
 type OfferWatchSettingsMobileHostProps = {
   onReturnToSettings: () => void;
   isSettingsOpen?: boolean;
+  /** Informuje nadradený layout, či mobilné okno prekrýva jeho navigáciu. */
+  onOpenChange?: (isOpen: boolean) => void;
   /**
    * Otvor sledované ponuky v desktopovom rozložení po prekročení hranice
    * 1024 px s otvoreným mobilným panelom.
@@ -46,12 +48,14 @@ function markerFor(
 export default function OfferWatchSettingsMobileHost({
   onReturnToSettings,
   isSettingsOpen = false,
+  onOpenChange,
   onOpenDesktop,
 }: OfferWatchSettingsMobileHostProps) {
   const [marker, setMarker] = useState<OfferWatchMobileHistory | null>(null);
   const markerRef = useRef<OfferWatchMobileHistory | null>(null);
   const returnToSettingsRef = useRef(onReturnToSettings);
   const openDesktopRef = useRef(onOpenDesktop);
+  const openChangeRef = useRef(onOpenChange);
   const navigationPendingRef = useRef(false);
   const settingsReturnRequestedRef = useRef(false);
   const settingsReturnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,6 +71,20 @@ export default function OfferWatchSettingsMobileHost({
   useEffect(() => {
     openDesktopRef.current = onOpenDesktop;
   }, [onOpenDesktop]);
+
+  useEffect(() => {
+    openChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  const isOpen = marker !== null;
+
+  useEffect(() => {
+    openChangeRef.current?.(isOpen);
+  }, [isOpen]);
+
+  useEffect(() => () => {
+    if (markerRef.current) openChangeRef.current?.(false);
+  }, []);
 
   const returnToSettings = useCallback(() => {
     returnToSettingsRef.current();

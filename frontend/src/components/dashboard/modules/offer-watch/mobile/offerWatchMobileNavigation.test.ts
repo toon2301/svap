@@ -34,14 +34,53 @@ describe('offerWatchMobileNavigation', () => {
     expect(withoutOfferWatchMobileHistory(state)).toEqual({ preserved: 42 });
   });
 
+  it.each(['category', 'country', 'district'] as const)(
+    'round-trips the %s picker only inside a create or edit view',
+    (picker) => {
+      const createMarker: OfferWatchMobileHistory = {
+        version: 2,
+        origin: 'settings',
+        view: { kind: 'create', picker },
+      };
+      const editMarker: OfferWatchMobileHistory = {
+        version: 2,
+        origin: 'direct',
+        view: { kind: 'edit', watchId: 8, picker },
+      };
+
+      expect(readOfferWatchMobileHistory(withOfferWatchMobileHistory({}, createMarker)))
+        .toEqual(createMarker);
+      expect(readOfferWatchMobileHistory(withOfferWatchMobileHistory({}, editMarker)))
+        .toEqual(editMarker);
+    },
+  );
+
   it.each([
     null,
     { __svaplyOfferWatchMobile: { version: 1, origin: 'settings', view: { kind: 'list' } } },
     { __svaplyOfferWatchMobile: { version: 2, origin: 'unknown', view: { kind: 'list' } } },
     { __svaplyOfferWatchMobile: { version: 2, origin: 'settings', view: { kind: 'edit', watchId: 0 } } },
     { __svaplyOfferWatchMobile: { version: 2, origin: 'settings', view: { kind: 'edit', watchId: 1.5 } } },
+    { __svaplyOfferWatchMobile: { version: 2, origin: 'settings', view: { kind: 'list', picker: 'country' } } },
+    { __svaplyOfferWatchMobile: { version: 2, origin: 'settings', view: { kind: 'create', picker: 'currency' } } },
+    { __svaplyOfferWatchMobile: { version: 2, origin: 'settings', view: { kind: 'edit', watchId: 7, picker: '' } } },
   ])('rejects malformed history state %#', (state) => {
     expect(readOfferWatchMobileHistory(state)).toBeNull();
+  });
+
+  it('returns a sanitized marker without unrelated untrusted properties', () => {
+    expect(readOfferWatchMobileHistory({
+      __svaplyOfferWatchMobile: {
+        version: 2,
+        origin: 'settings',
+        ignored: 'value',
+        view: { kind: 'edit', watchId: 7, picker: 'district', ignored: true },
+      },
+    })).toEqual({
+      version: 2,
+      origin: 'settings',
+      view: { kind: 'edit', watchId: 7, picker: 'district' },
+    });
   });
 
   it('stores and consumes the settings-return marker independently', () => {

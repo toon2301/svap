@@ -118,6 +118,9 @@ describe('OfferWatchSearchSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     expect(combobox).toHaveFocus();
     expect(combobox).toHaveValue('Prvá možnosť');
+
+    await user.click(combobox);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
   it('does not visually activate the first result until keyboard or pointer navigation', async () => {
@@ -293,7 +296,11 @@ describe('OfferWatchSearchSelect', () => {
     expect(popup.style.top).toBe('144px');
     expect(popup.style.width).toBe('300px');
     expect(combobox).toHaveClass('rounded-t-xl', 'rounded-b-none');
+    expect(combobox).toHaveClass('border-purple-400');
+    expect(combobox).not.toHaveClass('focus:ring-2');
+    expect(combobox).toHaveClass('focus-visible:outline-none');
     expect(popup).toHaveClass('rounded-b-xl', 'rounded-t-none', 'border-t-0');
+    expect(popup).toHaveClass('border-purple-400');
 
     const primary = screen.getByText(longLabel);
     const secondary = screen.getByText(secondaryLabel);
@@ -329,7 +336,38 @@ describe('OfferWatchSearchSelect', () => {
     expect(popup.style.transform).toBe('translateY(-100%)');
     expect(popup.style.width).toBe('300px');
     expect(combobox).toHaveClass('rounded-b-xl', 'rounded-t-none');
+    expect(combobox).toHaveClass('border-purple-400');
+    expect(combobox).not.toHaveClass('focus:ring-2');
+    expect(combobox).toHaveClass('focus-visible:outline-none');
     expect(popup).toHaveClass('rounded-t-xl', 'rounded-b-none', 'border-b-0');
+    expect(popup).toHaveClass('border-purple-400');
+  });
+
+  it('uses one continuous invalid outline without a trigger-only focus ring', async () => {
+    const user = userEvent.setup();
+    render(
+      <OfferWatchSearchSelect
+        id='watch-picker'
+        label='Výber'
+        valueKey=''
+        valueLabel=''
+        placeholder='Vyber'
+        searchPlaceholder='Hľadaj'
+        emptyMessage='Nič sa nenašlo'
+        options={options}
+        onSelect={jest.fn()}
+        invalid
+      />,
+    );
+
+    const combobox = screen.getByRole('combobox', { name: 'Výber' });
+    await user.click(combobox);
+    const popup = screen.getByRole('listbox').parentElement as HTMLElement;
+
+    expect(combobox).toHaveClass('border-red-400');
+    expect(combobox).not.toHaveClass('focus:ring-2');
+    expect(combobox).toHaveClass('focus-visible:outline-none');
+    expect(popup).toHaveClass('border-red-400');
   });
 
 });

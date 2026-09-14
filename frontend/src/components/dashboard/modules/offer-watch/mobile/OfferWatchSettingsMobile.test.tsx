@@ -9,6 +9,7 @@ import type { UseOfferWatchesResult } from '../useOfferWatches';
 import { useOfferWatches } from '../useOfferWatches';
 import { useVisualViewportBounds } from '../../../hooks/useVisualViewportBounds';
 import OfferWatchSettingsMobile from './OfferWatchSettingsMobile';
+import type { OfferWatchMobileView } from './offerWatchMobileNavigation';
 
 jest.mock('../useOfferWatches', () => ({ useOfferWatches: jest.fn() }));
 jest.mock('../../../hooks/useVisualViewportBounds', () => ({
@@ -66,25 +67,40 @@ function hookResult(overrides: Partial<UseOfferWatchesResult> = {}): UseOfferWat
   };
 }
 
-function renderMobile(
-  view: { kind: 'list' } | { kind: 'create' } | { kind: 'edit'; watchId: number },
-) {
+function renderMobile(view: OfferWatchMobileView) {
   const callbacks = {
     onBack: jest.fn(),
     onPushView: jest.fn(),
   };
-  render(<OfferWatchSettingsMobile view={view} {...callbacks} />);
-  return callbacks;
+  const rendered = render(<OfferWatchSettingsMobile view={view} {...callbacks} />);
+  return {
+    ...callbacks,
+    rerenderView: (nextView: OfferWatchMobileView) => {
+      rendered.rerender(<OfferWatchSettingsMobile view={nextView} {...callbacks} />);
+    },
+  };
 }
 
-function selectCategory() {
-  const category = screen.getByRole('combobox', { name: /Podkateg/ });
-  fireEvent.focus(category);
-  fireEvent.change(category, {
+function selectCategory(controls: ReturnType<typeof renderMobile>) {
+  fireEvent.click(screen.getByRole('button', { name: /Podkateg/ }));
+  expect(controls.onPushView).toHaveBeenCalledWith({
+    kind: 'create',
+    picker: 'category',
+  });
+
+  controls.rerenderView({ kind: 'create', picker: 'category' });
+  fireEvent.change(screen.getByRole('searchbox', {
+    name: 'Začni písať názov podkategórie',
+  }), {
     target: { value: SUBCATEGORY },
   });
   const result = screen.getByText(SUBCATEGORY, { selector: 'span' });
   fireEvent.click(result.closest('button')!);
+  expect(controls.onBack).toHaveBeenCalledTimes(1);
+
+  controls.rerenderView({ kind: 'create' });
+  controls.onBack.mockClear();
+  controls.onPushView.mockClear();
 }
 
 describe('OfferWatchSettingsMobile', () => {
@@ -127,13 +143,13 @@ describe('OfferWatchSettingsMobile', () => {
     mockedUseOfferWatches.mockReturnValue(state);
     const callbacks = renderMobile({ kind: 'create' });
 
-    fireEvent.click(screen.getByRole('button', { name: /Ulo.*sledovanie/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Uložiť$/ }));
     expect(state.createWatch).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalled();
 
-    selectCategory();
+    selectCategory(callbacks);
     fireEvent.click(screen.getByRole('button', { name: /Dopyty/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Ulo.*sledovanie/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Uložiť$/ }));
 
     await waitFor(() => expect(state.createWatch).toHaveBeenCalledWith(expect.objectContaining({
       category: CATEGORY,
@@ -185,6 +201,27 @@ describe('OfferWatchSettingsMobile', () => {
     });
   });
 
+  it('keeps a nested picker inside the visual viewport and names the dialog from its heading', () => {
+    mockedUseVisualViewportBounds.mockReturnValue({
+      top: 48,
+      left: 0,
+      width: 390,
+      height: 430,
+      right: 390,
+      bottom: 478,
+    });
+
+    renderMobile({ kind: 'create', picker: 'country' });
+
+    expect(screen.getByRole('dialog', { name: 'Krajina' })).toHaveStyle({
+      top: '48px',
+      height: '430px',
+    });
+    expect(screen.getByTestId('offer-watch-mobile-picker-list')).not.toContainElement(
+      screen.getByRole('searchbox', { name: 'Vyhľadaj krajinu' }),
+    );
+  });
+
   it('keeps both form actions inside the remaining scrollable viewport', () => {
     mockedUseVisualViewportBounds.mockReturnValue({
       top: 0,
@@ -196,13 +233,17 @@ describe('OfferWatchSettingsMobile', () => {
     });
     renderMobile({ kind: 'create' });
 
-    const saveButton = screen.getByRole('button', { name: /Ulo.*sledovanie/ });
+    const saveButton = screen.getByRole('button', { name: /^Uložiť$/ });
     const cancelButton = screen.getByRole('button', { name: /Zru/ });
     const scrollArea = saveButton.closest('.overflow-y-auto');
 
     expect(scrollArea).not.toBeNull();
     expect(scrollArea).toContainElement(cancelButton);
     expect(scrollArea).toContainElement(saveButton);
+    expect(saveButton.parentElement).toHaveClass('grid', 'min-w-0', 'grid-cols-2');
+    expect(cancelButton).toHaveClass('w-full', 'min-w-0');
+    expect(saveButton).toHaveClass('w-full', 'min-w-0');
+    expect(saveButton).not.toHaveClass('min-w-40');
     expect(scrollArea?.firstElementChild).toHaveClass(
       'pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]',
     );
@@ -223,28 +264,22 @@ describe('OfferWatchSettingsMobile', () => {
       watches: existing,
       createWatch,
     }));
-    const onBack = jest.fn();
-    const props = {
-      view: { kind: 'create' } as const,
-      onBack,
-      onPushView: jest.fn(),
-    };
-    const { rerender } = render(<OfferWatchSettingsMobile {...props} />);
+    const callbacks = renderMobile({ kind: 'create' });
 
-    selectCategory();
-    fireEvent.click(screen.getByRole('button', { name: /Ulo.*sledovanie/ }));
+    selectCategory(callbacks);
+    fireEvent.click(screen.getByRole('button', { name: /^Uložiť$/ }));
 
     await waitFor(() => expect(createWatch).toHaveBeenCalledTimes(1));
-    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(callbacks.onBack).toHaveBeenCalledTimes(1);
     expect(toast.error).not.toHaveBeenCalled();
 
     mockedUseOfferWatches.mockReturnValue(hookResult({
       watches: [created, ...existing],
       createWatch,
     }));
-    rerender(<OfferWatchSettingsMobile {...props} />);
+    callbacks.rerenderView({ kind: 'create' });
 
-    await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(callbacks.onBack).toHaveBeenCalledTimes(1));
     expect(toast.error).not.toHaveBeenCalled();
   });
 

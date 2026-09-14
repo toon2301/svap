@@ -6,6 +6,9 @@ import {
   OFFER_WATCH_PRICE_CURRENCIES,
   type OfferWatchPriceCurrency,
 } from '../types';
+import OfferWatchSearchSelect, { type OfferWatchSearchOption } from './OfferWatchSearchSelect';
+
+type OfferWatchCurrencyPresentation = 'native' | 'custom' | 'custom-above';
 
 type OfferWatchCurrencyFieldProps = {
   id: string;
@@ -14,6 +17,7 @@ type OfferWatchCurrencyFieldProps = {
   disabled?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  presentation?: OfferWatchCurrencyPresentation;
 };
 
 export default function OfferWatchCurrencyField({
@@ -23,9 +27,41 @@ export default function OfferWatchCurrencyField({
   disabled = false,
   invalid = false,
   describedBy,
+  presentation = 'native',
 }: OfferWatchCurrencyFieldProps) {
   const { t } = useLanguage();
   const label = t('offerWatch.currency', 'Mena');
+  const options: OfferWatchSearchOption[] = OFFER_WATCH_PRICE_CURRENCIES.map((option) => ({
+    key: option,
+    label: option,
+  }));
+
+  if (presentation !== 'native') {
+    return (
+      <OfferWatchSearchSelect
+        id={id}
+        label={label}
+        valueKey={currency}
+        valueLabel={currency}
+        placeholder={label}
+        searchPlaceholder={label}
+        emptyMessage={label}
+        options={options}
+        onSelect={(option) => {
+          const selectedCurrency = OFFER_WATCH_PRICE_CURRENCIES.find(
+            (currencyOption) => currencyOption === option.key,
+          );
+          if (selectedCurrency) onChange(selectedCurrency);
+        }}
+        disabled={disabled}
+        invalid={invalid}
+        describedBy={describedBy}
+        readOnly
+        popupPlacement={presentation === 'custom-above' ? 'above' : 'auto'}
+        chevronPointsUp={presentation === 'custom-above'}
+      />
+    );
+  }
 
   return (
     <div className='relative w-full'>
@@ -42,7 +78,8 @@ export default function OfferWatchCurrencyField({
           );
           if (selectedCurrency) onChange(selectedCurrency);
         }}
-        className={`min-h-11 w-full appearance-none rounded-xl border bg-white px-3 py-2 pr-9 text-sm outline-none [color-scheme:light] focus:ring-2 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-black dark:[color-scheme:dark] dark:disabled:bg-gray-900 dark:disabled:text-gray-500 ${
+        style={{ backgroundImage: 'none' }}
+        className={`min-h-11 w-full appearance-none bg-none rounded-xl border bg-white px-3 py-2 pr-9 text-sm outline-none [color-scheme:light] focus:ring-2 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:bg-black dark:[color-scheme:dark] dark:disabled:bg-gray-900 dark:disabled:text-gray-500 ${
           currency
             ? 'text-gray-900 dark:text-white'
             : 'text-gray-500 dark:text-gray-400'

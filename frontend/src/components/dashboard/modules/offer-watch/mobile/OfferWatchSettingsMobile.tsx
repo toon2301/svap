@@ -11,6 +11,7 @@ import OfferWatchDeleteDialog from '../settings/OfferWatchDeleteDialog';
 import { offerWatchErrorMessage } from '../settings/offerWatchUi';
 import OfferWatchMobileFormScreen from './OfferWatchMobileFormScreen';
 import OfferWatchMobileListScreen from './OfferWatchMobileListScreen';
+import { OFFER_WATCH_MOBILE_TITLE_ID } from './OfferWatchMobileShell';
 import type { OfferWatchMobileView } from './offerWatchMobileNavigation';
 
 type OfferWatchSettingsMobileProps = {
@@ -171,6 +172,7 @@ export default function OfferWatchSettingsMobile({
         role='dialog'
         aria-modal='true'
         aria-label={t('offerWatch.title', 'Sledovanie')}
+        aria-labelledby={OFFER_WATCH_MOBILE_TITLE_ID}
         aria-hidden={deleteDialogOpen || undefined}
         data-testid='offer-watch-mobile-screen'
       >
@@ -195,6 +197,9 @@ export default function OfferWatchSettingsMobile({
             onSave={runCreate}
             onSaved={onBack}
             onUnavailable={handleUnavailable}
+            picker={view.picker}
+            onOpenPicker={(picker) => onPushView({ kind: 'create', picker })}
+            viewportBounds={mobileViewportBounds}
           />
         ) : selectedWatch ? (
           <OfferWatchMobileFormScreen
@@ -206,6 +211,13 @@ export default function OfferWatchSettingsMobile({
             onSave={runUpdate}
             onSaved={onBack}
             onUnavailable={handleUnavailable}
+            picker={view.picker}
+            viewportBounds={mobileViewportBounds}
+            onOpenPicker={(picker) => onPushView({
+              kind: 'edit',
+              watchId: selectedWatch.id,
+              picker,
+            })}
           />
         ) : null}
       </div>

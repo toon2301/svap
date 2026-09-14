@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks';
 import { useMobileViewportHeight } from './hooks/useMobileViewportHeight';
 import Sidebar from './Sidebar';
@@ -142,6 +142,7 @@ export default function DashboardLayout({
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
   const isMobile = useIsMobile();
+  const [isOfferWatchMobileOpen, setIsOfferWatchMobileOpen] = useState(false);
   const shouldUseDynamicMobileMessagesHeight = isMobile && isOpenMobileMessagesConversation;
   const mobileViewportHeight = useMobileViewportHeight(shouldUseDynamicMobileMessagesHeight);
   const mobileMessagesViewportStyle =
@@ -258,6 +259,7 @@ export default function DashboardLayout({
       <OfferWatchSettingsMobileHost
         onReturnToSettings={onMobileMenuOpen}
         isSettingsOpen={isMobileMenuOpen}
+        onOpenChange={setIsOfferWatchMobileOpen}
         onOpenDesktop={() => onRightItemClick('offer-watches')}
       />
       {/* Mobile Top Bar - skryť pre search modul */}
@@ -290,6 +292,7 @@ export default function DashboardLayout({
 
       {/* Mobile Bottom Nav */}
       {!isMobileMenuOpen &&
+        !isOfferWatchMobileOpen &&
         !isMobileSettingsDetailOpen &&
         !(isRightSidebarOpen && activeModule === 'profile') &&
         activeModule !== 'skills-describe' &&
