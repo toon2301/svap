@@ -7,12 +7,13 @@ import { OfferWatchApiError } from '../offerWatchApi';
 import type { OfferWatch } from '../types';
 import type { UseOfferWatchesResult } from '../useOfferWatches';
 import { useOfferWatches } from '../useOfferWatches';
-import { useMobileViewportHeight } from '../../../hooks/useMobileViewportHeight';
+import { useVisualViewportBounds } from '../../../hooks/useVisualViewportBounds';
 import OfferWatchSettingsMobile from './OfferWatchSettingsMobile';
 
 jest.mock('../useOfferWatches', () => ({ useOfferWatches: jest.fn() }));
-jest.mock('../../../hooks/useMobileViewportHeight', () => ({
-  useMobileViewportHeight: jest.fn(),
+jest.mock('../../../hooks/useVisualViewportBounds', () => ({
+  ...jest.requireActual('../../../hooks/useVisualViewportBounds'),
+  useVisualViewportBounds: jest.fn(),
 }));
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
@@ -30,7 +31,7 @@ jest.mock('@/contexts/LanguageContext', () => ({
 const [CATEGORY, SUBCATEGORIES] = Object.entries(skillsCategories)[0]!;
 const SUBCATEGORY = SUBCATEGORIES[0]!;
 const mockedUseOfferWatches = jest.mocked(useOfferWatches);
-const mockedUseMobileViewportHeight = jest.mocked(useMobileViewportHeight);
+const mockedUseVisualViewportBounds = jest.mocked(useVisualViewportBounds);
 
 function watch(id: number, overrides: Partial<OfferWatch> = {}): OfferWatch {
   return {
@@ -91,7 +92,7 @@ describe('OfferWatchSettingsMobile', () => {
     jest.clearAllMocks();
     window.localStorage.setItem(LAST_MANUAL_OFFER_COUNTRY_KEY, 'SK');
     mockedUseOfferWatches.mockReturnValue(hookResult());
-    mockedUseMobileViewportHeight.mockReturnValue(null);
+    mockedUseVisualViewportBounds.mockReturnValue(null);
   });
 
   afterEach(() => window.localStorage.clear());
@@ -145,7 +146,14 @@ describe('OfferWatchSettingsMobile', () => {
   });
 
   it('fits create and edit forms into the visible viewport above the keyboard', () => {
-    mockedUseMobileViewportHeight.mockReturnValue(612);
+    mockedUseVisualViewportBounds.mockReturnValue({
+      top: 72,
+      left: 0,
+      width: 390,
+      height: 420,
+      right: 390,
+      bottom: 492,
+    });
 
     const { unmount } = render(
       <OfferWatchSettingsMobile
@@ -155,8 +163,12 @@ describe('OfferWatchSettingsMobile', () => {
       />,
     );
 
-    expect(mockedUseMobileViewportHeight).toHaveBeenCalledWith(true);
-    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveStyle({ height: '612px' });
+    expect(mockedUseVisualViewportBounds).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveStyle({
+      top: '72px',
+      height: '420px',
+    });
+    expect(screen.getByTestId('offer-watch-mobile-screen')).not.toHaveStyle({ height: '492px' });
     unmount();
 
     mockedUseOfferWatches.mockReturnValue(hookResult({ watches: [watch(7)] }));
@@ -167,11 +179,21 @@ describe('OfferWatchSettingsMobile', () => {
         onPushView={jest.fn()}
       />,
     );
-    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveStyle({ height: '612px' });
+    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveStyle({
+      top: '72px',
+      height: '420px',
+    });
   });
 
   it('keeps both form actions inside the remaining scrollable viewport', () => {
-    mockedUseMobileViewportHeight.mockReturnValue(480);
+    mockedUseVisualViewportBounds.mockReturnValue({
+      top: 0,
+      left: 0,
+      width: 390,
+      height: 480,
+      right: 390,
+      bottom: 480,
+    });
     renderMobile({ kind: 'create' });
 
     const saveButton = screen.getByRole('button', { name: /Ulo.*sledovanie/ });
@@ -189,7 +211,7 @@ describe('OfferWatchSettingsMobile', () => {
   it('does not opt the non-editable list screen into keyboard viewport sizing', () => {
     renderMobile({ kind: 'list' });
 
-    expect(mockedUseMobileViewportHeight).toHaveBeenCalledWith(false);
+    expect(mockedUseVisualViewportBounds).toHaveBeenCalledWith(false);
     expect(screen.getByTestId('offer-watch-mobile-screen')).not.toHaveAttribute('style');
   });
 

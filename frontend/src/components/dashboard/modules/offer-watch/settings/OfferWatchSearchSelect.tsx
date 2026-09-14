@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { readVisualViewportBounds } from '../../../hooks/useVisualViewportBounds';
 import { normalizeOfferWatchSearch } from './offerWatchUi';
 
 export type OfferWatchSearchOption = {
@@ -38,30 +39,51 @@ type OfferWatchSearchSelectProps = {
   requireQuery?: boolean;
 };
 
+type PopupPlacement = 'above' | 'below';
+
+type PopupLayout = {
+  placement: PopupPlacement;
+  style: CSSProperties;
+};
+
 const VIEWPORT_PADDING = 16;
-const LIST_GAP = 8;
 const LIST_MAX_HEIGHT = 304;
+const PREFERRED_BELOW_HEIGHT = 160;
 const OPEN_EVENT = 'svaply:offer-watch-search-select-open';
 
-function popupPosition(trigger: HTMLElement): CSSProperties {
+function popupLayout(trigger: HTMLElement): PopupLayout {
   const rect = trigger.getBoundingClientRect();
-  const width = Math.min(rect.width, window.innerWidth - VIEWPORT_PADDING * 2);
+  const viewport = readVisualViewportBounds() ?? {
+    top: 0,
+    left: 0,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+  };
+  const availableWidth = Math.max(0, viewport.width - VIEWPORT_PADDING * 2);
+  const width = Math.min(rect.width, availableWidth);
+  const minimumLeft = viewport.left + VIEWPORT_PADDING;
+  const maximumLeft = Math.max(minimumLeft, viewport.right - width - VIEWPORT_PADDING);
   const left = Math.min(
-    Math.max(rect.left, VIEWPORT_PADDING),
-    window.innerWidth - width - VIEWPORT_PADDING,
+    Math.max(rect.left, minimumLeft),
+    maximumLeft,
   );
-  const below = window.innerHeight - rect.bottom - LIST_GAP - VIEWPORT_PADDING;
-  const above = rect.top - LIST_GAP - VIEWPORT_PADDING;
-  const openBelow = below >= above;
-  const maxHeight = Math.min(LIST_MAX_HEIGHT, Math.max(openBelow ? below : above, 160));
+  const below = Math.max(0, viewport.bottom - rect.bottom - VIEWPORT_PADDING);
+  const above = Math.max(0, rect.top - viewport.top - VIEWPORT_PADDING);
+  const openBelow = below >= PREFERRED_BELOW_HEIGHT || below >= above;
+  const maxHeight = Math.min(LIST_MAX_HEIGHT, openBelow ? below : above);
   return {
-    position: 'fixed',
-    left,
-    width,
-    maxHeight,
-    ...(openBelow
-      ? { top: rect.bottom + LIST_GAP }
-      : { top: Math.max(VIEWPORT_PADDING, rect.top - LIST_GAP - maxHeight) }),
+    placement: openBelow ? 'below' : 'above',
+    style: {
+      position: 'fixed',
+      left,
+      width,
+      maxHeight,
+      ...(openBelow
+        ? { top: rect.bottom }
+        : { top: rect.top, transform: 'translateY(-100%)' }),
+    },
   };
 }
 
@@ -93,7 +115,10 @@ export default function OfferWatchSearchSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [position, setPosition] = useState<CSSProperties>({});
+  const [layout, setLayout] = useState<PopupLayout>({
+    placement: 'below',
+    style: {},
+  });
 
   const uniqueOptions = useMemo(() => {
     const seenKeys = new Set<string>();
@@ -122,13 +147,13 @@ export default function OfferWatchSearchSelect({
   }, []);
 
   const updatePosition = useCallback(() => {
-    if (inputRef.current) setPosition(popupPosition(inputRef.current));
+    if (inputRef.current) setLayout(popupLayout(inputRef.current));
   }, []);
 
   const openPopup = useCallback(() => {
     if (disabled || !inputRef.current) return;
     window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: instanceId }));
-    setPosition(popupPosition(inputRef.current));
+    setLayout(popupLayout(inputRef.current));
     setQuery('');
     setActiveIndex(null);
     setOpen(true);
@@ -170,10 +195,15 @@ export default function OfferWatchSearchSelect({
     document.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('resize', handleReflow);
     window.addEventListener('scroll', handleReflow, true);
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', handleReflow);
+    viewport?.addEventListener('scroll', handleReflow);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('resize', handleReflow);
       window.removeEventListener('scroll', handleReflow, true);
+      viewport?.removeEventListener('resize', handleReflow);
+      viewport?.removeEventListener('scroll', handleReflow);
     };
   }, [close, open, updatePosition]);
 
@@ -274,7 +304,13 @@ export default function OfferWatchSearchSelect({
             if (!popupRef.current?.contains(document.activeElement)) close(false);
           });
         }}
-        className={`min-h-11 w-full rounded-xl border bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black dark:text-white dark:placeholder:text-gray-400 ${
+        className={`min-h-11 w-full border bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black dark:text-white dark:placeholder:text-gray-400 ${
+          open
+            ? layout.placement === 'below'
+              ? 'rounded-t-xl rounded-b-none'
+              : 'rounded-b-xl rounded-t-none'
+            : 'rounded-xl'
+        } ${
           invalid
             ? 'border-red-400 focus:border-red-400 focus:ring-red-400/25 dark:border-red-700'
             : 'border-gray-300 focus:border-purple-400 focus:ring-purple-400/25 dark:border-gray-700'
@@ -288,8 +324,17 @@ export default function OfferWatchSearchSelect({
       {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={popupRef}
-          className='z-[10050] flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-[#0f0f10]'
-          style={position}
+          data-placement={layout.placement}
+          className={`z-[10050] flex flex-col overflow-hidden border bg-white shadow-2xl dark:bg-[#0f0f10] ${
+            invalid
+              ? 'border-red-400 dark:border-red-700'
+              : 'border-purple-400 dark:border-purple-400'
+          } ${
+            layout.placement === 'below'
+              ? 'rounded-b-xl rounded-t-none border-t-0'
+              : 'rounded-t-xl rounded-b-none border-b-0'
+          }`}
+          style={layout.style}
         >
           <div
             id={listboxId}
@@ -312,19 +357,19 @@ export default function OfferWatchSearchSelect({
                   onPointerDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => choose(option)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                  className={`flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
                     selected || active
                       ? 'bg-purple-100 text-purple-900 dark:bg-purple-900/40 dark:text-purple-100'
                       : 'text-gray-800 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-gray-900'
                   }`}
                 >
-                  <span className='min-w-0'>
-                    <span className='block truncate font-medium'>{option.label}</span>
+                  <span className='min-w-0 flex-1'>
+                    <span className='block whitespace-normal break-words font-medium leading-5'>{option.label}</span>
                     {option.secondaryLabel ? (
-                      <span className='mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400'>{option.secondaryLabel}</span>
+                      <span className='mt-0.5 block whitespace-normal break-words text-xs leading-4 text-gray-500 dark:text-gray-400'>{option.secondaryLabel}</span>
                     ) : null}
                   </span>
-                  {selected ? <CheckIcon className='h-4 w-4 shrink-0' aria-hidden='true' /> : null}
+                  {selected ? <CheckIcon className='mt-0.5 h-4 w-4 shrink-0' aria-hidden='true' /> : null}
                 </button>
               );
             })}
