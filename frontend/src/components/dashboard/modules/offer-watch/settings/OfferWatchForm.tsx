@@ -237,6 +237,10 @@ export default function OfferWatchForm({
                 id={`${idPrefix}-price-min`}
                 type='text'
                 inputMode='decimal'
+                autoComplete='off'
+                autoCorrect='off'
+                autoCapitalize='none'
+                spellCheck={false}
                 maxLength={16}
                 value={draft.priceMin}
                 onChange={(event) => changePrice('priceMin', event.target.value)}
@@ -257,6 +261,10 @@ export default function OfferWatchForm({
                 id={`${idPrefix}-price-max`}
                 type='text'
                 inputMode='decimal'
+                autoComplete='off'
+                autoCorrect='off'
+                autoCapitalize='none'
+                spellCheck={false}
                 maxLength={16}
                 value={draft.priceMax}
                 onChange={(event) => changePrice('priceMax', event.target.value)}
