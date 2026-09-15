@@ -128,4 +128,28 @@ describe('OfferWatchForm', () => {
     fireEvent.click(screen.getByRole('combobox', { name: 'Mena' }));
     expect(screen.getByRole('listbox').parentElement).toHaveAttribute('data-placement', 'above');
   });
+
+  it('disables text suggestions on both decimal price fields', () => {
+    render(
+      <OfferWatchForm
+        idPrefix='watch-form'
+        draft={pricedDraft()}
+        errors={{}}
+        onChange={jest.fn()}
+        onSubmit={jest.fn()}
+        submitLabel='Uložiť'
+        submittingLabel='Ukladám'
+        isSubmitting={false}
+      />,
+    );
+
+    ['Cena od', 'Cena do'].forEach((placeholder) => {
+      const field = screen.getByPlaceholderText(placeholder);
+      expect(field).toHaveAttribute('inputmode', 'decimal');
+      expect(field).toHaveAttribute('autocomplete', 'off');
+      expect(field).toHaveAttribute('autocorrect', 'off');
+      expect(field).toHaveAttribute('autocapitalize', 'none');
+      expect(field).toHaveAttribute('spellcheck', 'false');
+    });
+  });
 });
