@@ -91,6 +91,7 @@ import {
   dashboardUserIdentifierFromPath,
   useDashboardMountRoute,
 } from './dashboardMountRoute';
+import { dashboardProfilePath, dashboardSectionPath } from './dashboardRoutes';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -618,8 +619,9 @@ export default function DashboardContent({
       // Navigation state is already updated; ignore storage failures.
     }
 
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', '/dashboard/profile');
+    const ownProfilePath = dashboardSectionPath('profile');
+    if (typeof window !== 'undefined' && ownProfilePath) {
+      window.history.pushState(null, '', ownProfilePath);
     }
   }, [
     highlighting,
@@ -1292,8 +1294,9 @@ export default function DashboardContent({
       }
 
       // Aktualizuj URL bez reloadu
-      if (typeof window !== 'undefined') {
-        const url = `/dashboard/users/${encodeURIComponent(identifier)}${
+      const profilePath = dashboardProfilePath(identifier);
+      if (typeof window !== 'undefined' && profilePath) {
+        const url = `${profilePath}${
           highlightId != null
             ? `?${useOfferParam ? 'offer' : 'highlight'}=${encodeURIComponent(String(highlightId))}`
             : ''
@@ -1356,8 +1359,9 @@ export default function DashboardContent({
         highlighting.setHighlightedSkillId(null);
       }
 
-      if (typeof window !== 'undefined') {
-        const url = `/dashboard/profile${
+      const ownProfilePath = dashboardSectionPath('profile');
+      if (typeof window !== 'undefined' && ownProfilePath) {
+        const url = `${ownProfilePath}${
           highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
         }`;
         window.history.pushState(null, '', url);

@@ -1,3 +1,5 @@
+import { dashboardSectionPath } from '../components/dashboardRoutes';
+
 export type DesktopSettingsSection =
   | 'edit-profile'
   | 'notifications'
@@ -48,16 +50,33 @@ const RETURNABLE_MODULES = new Set([
   'create',
 ]);
 
-const SECTION_PATHS: Record<DesktopSettingsSection, string> = {
-  'edit-profile': '/dashboard/settings',
-  notifications: '/dashboard/settings/notifications',
-  'offer-watches': '/dashboard/settings/watches',
-  'account-type': '/dashboard/account-type',
-  privacy: '/dashboard/privacy',
-  language: '/dashboard/language',
-  'blocked-users': '/dashboard/settings/blocked',
-  'account-settings': '/dashboard/settings/account',
+/**
+ * Čo ktorá sekcia Nastavení znamená ako adresa – povedané modulom, nie cestou.
+ *
+ * Samotné cesty sa berú z `DASHBOARD_ROUTES`, takže sekcia a stránka, ktorá ju
+ * zobrazuje, nemôžu mať dve rôzne adresy. „Sledované ponuky" nie sú vlastný
+ * modul: je to pravá sekcia Nastavení, preto dvojica.
+ */
+const SECTION_TARGETS: Record<
+  DesktopSettingsSection,
+  { moduleId: string; rightItem?: string }
+> = {
+  'edit-profile': { moduleId: 'settings' },
+  notifications: { moduleId: 'notification-settings' },
+  'offer-watches': { moduleId: 'settings', rightItem: 'offer-watches' },
+  'account-type': { moduleId: 'account-type' },
+  privacy: { moduleId: 'privacy' },
+  language: { moduleId: 'language' },
+  'blocked-users': { moduleId: 'blocked-users' },
+  'account-settings': { moduleId: 'account-settings' },
 };
+
+const SETTINGS_SECTIONS = Object.keys(SECTION_TARGETS) as DesktopSettingsSection[];
+
+function sectionPath(section: DesktopSettingsSection): string | null {
+  const target = SECTION_TARGETS[section];
+  return dashboardSectionPath(target.moduleId, target.rightItem ?? null);
+}
 
 const MODULE_SECTIONS: Partial<Record<string, DesktopSettingsSection>> = {
   settings: 'edit-profile',
@@ -215,8 +234,8 @@ export function readDesktopSettingsOriginTarget(
 
 export function getDesktopSettingsSectionPath(section: string): string | null {
   // Object.hasOwn: nečítať zdedené properties (toString/constructor/valueOf…).
-  return Object.hasOwn(SECTION_PATHS, section)
-    ? SECTION_PATHS[section as DesktopSettingsSection]
+  return Object.hasOwn(SECTION_TARGETS, section)
+    ? sectionPath(section as DesktopSettingsSection)
     : null;
 }
 
@@ -231,6 +250,5 @@ export function getDesktopSettingsSectionFromPath(
   pathname: string,
 ): DesktopSettingsSection | null {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
-  const entry = Object.entries(SECTION_PATHS).find(([, path]) => path === normalizedPath);
-  return (entry?.[0] as DesktopSettingsSection | undefined) ?? null;
+  return SETTINGS_SECTIONS.find((section) => sectionPath(section) === normalizedPath) ?? null;
 }

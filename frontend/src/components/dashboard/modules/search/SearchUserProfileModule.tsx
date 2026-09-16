@@ -31,6 +31,7 @@ import { BlockUserConfirmDialog } from '../profile/BlockUserConfirmDialog';
 import { useBlockUserAction } from '../profile/useBlockUserAction';
 import { invalidateSearchCacheForUser } from './hooks/useSearchApi';
 import { removeUserFromRecentSearches } from './recentSearchStorage';
+import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
 
 type SearchProfileApiError = {
   response?: {
@@ -127,7 +128,7 @@ export function SearchUserProfileModule({
     // to return to. This is a real route change (see app/dashboard/page.tsx),
     // so the old module state does not need to be reset here.
     removeTargetFromClientState();
-    router.replace('/dashboard');
+    router.replace(DASHBOARD_HOME_PATH);
   }, [removeTargetFromClientState, router]);
 
   const blockAction = useBlockUserAction({
@@ -394,7 +395,7 @@ export function SearchUserProfileModule({
             to, so go to the main dashboard instead of the search results. */}
         <button
           type="button"
-          onClick={() => router.replace('/dashboard')}
+          onClick={() => router.replace(DASHBOARD_HOME_PATH)}
           className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           <span>{t("search.backToDashboard", "Späť na nástenku")}</span>

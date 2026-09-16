@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import type { Offer } from '../profile/profileOffersTypes';
 import { ChatOfferPreviewCard } from './ChatOfferPreviewCard';
+import { dashboardProfilePath } from '../../components/dashboardRoutes';
 
 function mapOffer(value: any): Offer | null {
   const id = typeof value?.id === 'number' ? value.id : Number(value?.id);
@@ -173,11 +174,10 @@ export function ChatRequestOfferPicker({
         return;
       }
 
-      router.push(
-        `/dashboard/users/${encodeURIComponent(identifier)}?highlight=${encodeURIComponent(
-          String(offerId),
-        )}`,
-      );
+      const profilePath = dashboardProfilePath(identifier);
+      if (profilePath) {
+        router.push(`${profilePath}?highlight=${encodeURIComponent(String(offerId))}`);
+      }
     },
     [router, targetUserId, targetUserSlug],
   );

@@ -45,6 +45,13 @@ type DashboardRoute = {
   /** Ukážková adresa pre obojsmerný test a pre strážny test stránok. */
   example: string;
   props: (params: string[], search: URLSearchParams) => DashboardRouteProps;
+  /**
+   * Adresa z parametrov – pre zapisovačov histórie.
+   *
+   * Len pri trasách s parametrom: bez neho je adresou sekcie samotný
+   * `example`. Statický test zapisovačov drží obe strany na tomto zozname.
+   */
+  build?: (params: string[]) => string;
 };
 
 function positiveInteger(value: string | null | undefined): number | null {
@@ -164,6 +171,7 @@ export const DASHBOARD_ROUTES: readonly DashboardRoute[] = [
     page: 'feed/[postId]',
     pattern: /^\/dashboard\/feed\/(\d+)\/?$/,
     example: '/dashboard/feed/7',
+    build: ([postId]) => `/dashboard/feed/${postId}`,
     props: ([postId]) => ({
       initialRoute: 'feed-post-detail',
       initialFeedPostId: positiveInteger(postId),
@@ -208,6 +216,10 @@ export const DASHBOARD_ROUTES: readonly DashboardRoute[] = [
     page: 'users/[userId]',
     pattern: /^\/dashboard\/users\/([^/]+)\/?$/,
     example: '/dashboard/users/jana',
+    // Kódovanie je protikus `decodeIdentifier` pri čítaní. Na dnešné adresy
+    // nemá vplyv: slug je zo servera vždy `[a-z0-9.-]` a ID je číslo, takže
+    // zapisovačom, ktoré kódovali, aj tým, čo nie, vychádza tá istá adresa.
+    build: ([identifier]) => `/dashboard/users/${encodeURIComponent(identifier)}`,
     props: ([identifier], search) => ({
       initialRoute: 'user-profile',
       ...profileIdentity(identifier),
@@ -247,6 +259,56 @@ export function matchDashboardRoute(
 export function dashboardModuleFromPath(pathname: string): string | null {
   return matchDashboardRoute(pathname)?.initialRoute ?? null;
 }
+
+const NO_SEARCH = new URLSearchParams();
+
+/**
+ * Adresa, ktorú má zapisovač histórie zapísať pre danú sekciu dashboardu.
+ *
+ * Opak `matchDashboardRoute`: hľadá položku, ktorej adresa znamená PRESNE
+ * tento modul (a prípadne túto pravú sekciu) a nič viac – teda stránku, ktorá
+ * sekciu predstavuje celú. Trasy s parametrom sa takto skladať nedajú (adresa
+ * profilu potrebuje identifikátor), tie majú vlastnú staviteľku.
+ *
+ * `null` = tabuľka pre takú sekciu adresu nemá; volajúci vtedy adresu NEMÁ
+ * písať – zapísať uhádnutú by bola horšia chyba než nezapísať nič.
+ */
+export function dashboardSectionPath(
+  moduleId: string,
+  rightItem: string | null = null,
+): string | null {
+  for (const route of DASHBOARD_ROUTES) {
+    if (route.page.includes('[')) continue;
+    const props = route.props([], NO_SEARCH);
+    if ((props.initialRoute ?? null) !== moduleId) continue;
+    if ((props.initialRightItem ?? null) !== rightItem) continue;
+    return route.example;
+  }
+  return null;
+}
+
+function builtPath(page: string, params: string[]): string | null {
+  const route = DASHBOARD_ROUTES.find((candidate) => candidate.page === page);
+  return route?.build?.(params) ?? null;
+}
+
+/** Adresa profilu podľa slugu alebo číselného ID. */
+export function dashboardProfilePath(identifier: string): string | null {
+  return builtPath('users/[userId]', [identifier]);
+}
+
+/** Adresa detailu príspevku (permalink). */
+export function dashboardFeedPostPath(postId: string | number): string | null {
+  return builtPath('feed/[postId]', [String(postId)]);
+}
+
+/**
+ * Adresa Nástenky – východisko celej appky.
+ *
+ * Volajúci ju dostávajú ako hotový reťazec: prihlásenie ani návrat na Nástenku
+ * nemá čo riešiť „a čo keď ju tabuľka nepozná". Že ju pozná, drží test.
+ */
+export const DASHBOARD_HOME_PATH = dashboardSectionPath('home') ?? '/dashboard';
 
 /** Slug alebo číselné ID používateľa z profilovej adresy. */
 export function dashboardUserIdentifierFromPath(pathname: string): string | null {

@@ -19,6 +19,7 @@ import { OfferReviewsMobile } from './OfferReviewsMobile';
 import type { Review } from './ReviewCard';
 import type { ReviewsStats } from './reviewsSummary';
 import { invalidateOffersCache } from '../profile/profileOffersCache';
+import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
 
 const REVIEWS_PAGE_SIZE = 10;
 
@@ -182,7 +183,7 @@ export default function OfferReviewsView({
       // Neutrálny fallback: hláška „obsah nedostupný" + návrat na nástenku.
       const goToDashboardUnavailable = () => {
         toast(t('reviews.contentUnavailable', 'Tento obsah už nie je dostupný.'));
-        router.push('/dashboard');
+        router.push(DASHBOARD_HOME_PATH);
       };
 
       try {

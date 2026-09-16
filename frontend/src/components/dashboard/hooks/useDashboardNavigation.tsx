@@ -16,6 +16,10 @@ import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { clearFeedReturn } from '../modules/feed/feedReturnState';
 import { markProfileFreshEntry } from '../modules/profile/profileFreshEntry';
+import {
+  dashboardProfilePath,
+  dashboardSectionPath,
+} from '../components/dashboardRoutes';
 
 /**
  * Identifikátor profilu pre URL `/dashboard/users/{identifier}`.
@@ -171,10 +175,13 @@ export function useDashboardNavigation({
       } catch {
         // UI state is already synchronized; ignore storage failures.
       }
-      if (isDesktop) {
-        router.push('/dashboard/statistics');
-      } else if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', '/dashboard/statistics');
+      const statisticsPath = dashboardSectionPath('statistics');
+      if (statisticsPath) {
+        if (isDesktop) {
+          router.push(statisticsPath);
+        } else if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', statisticsPath);
+        }
       }
       return;
     }
@@ -192,49 +199,28 @@ export function useDashboardNavigation({
       } catch {
         // UI state is already synchronized; ignore storage failures.
       }
-      if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', `/dashboard/users/${identifier}`);
+      const profilePath = dashboardProfilePath(identifier);
+      if (typeof window !== 'undefined' && profilePath) {
+        window.history.replaceState(null, '', profilePath);
       }
       return;
     }
 
     // Synchronizuj URL s hlavnými sekciami dashboardu - použijeme window.history.pushState bez reloadu
+    //
+    // Adresa sa skladá z `DASHBOARD_ROUTES` – z toho istého zoznamu, podľa
+    // ktorého sa adresa pri kroku späť aj číta. Vlastný reťazec `if/else` sa
+    // od stránok postupne rozišiel a modul, ktorý v ňom chýbal, skončil na
+    // `/dashboard`. Sekcia, ktorú tabuľka nepozná, si adresu nevymýšľa:
+    // ostáva `/dashboard` presne ako doteraz.
     let url = '/dashboard';
-    if (moduleId === 'search') {
-      url = '/dashboard/search';
-    } else if (moduleId === 'settings') {
-      url = '/dashboard/settings';
-    } else if (moduleId === 'notifications') {
-      url = '/dashboard/notifications';
-    } else if (moduleId === 'notification-settings') {
-      url = '/dashboard/settings/notifications';
-    } else if (moduleId === 'account-settings') {
-      url = '/dashboard/settings/account';
-    } else if (moduleId === 'blocked-users') {
-      url = '/dashboard/settings/blocked';
-    } else if (moduleId === 'language') {
-      url = '/dashboard/language';
-    } else if (moduleId === 'account-type') {
-      url = '/dashboard/account-type';
-    } else if (moduleId === 'privacy') {
-      url = '/dashboard/privacy';
-    } else if (moduleId === 'profile') {
+    if (moduleId === 'profile') {
       const identifier = profileIdentifier(user);
       // Bez platného slug/id nemáme kam navigovať → odlož navigáciu.
       if (identifier == null) return;
-      url = `/dashboard/users/${identifier}`;
-    } else if (moduleId === 'favorites') {
-      url = '/dashboard/favorites';
-    } else if (moduleId === 'messages') {
-      url = '/dashboard/messages';
-    } else if (moduleId === 'requests') {
-      url = '/dashboard/requests';
-    } else if (moduleId === 'skills') {
-      url = '/dashboard/skills';
-    } else if (moduleId === 'skills-offer') {
-      url = '/dashboard/skills/offer';
-    } else if (moduleId === 'skills-search') {
-      url = '/dashboard/skills/search';
+      url = dashboardProfilePath(identifier) ?? url;
+    } else {
+      url = dashboardSectionPath(moduleId) ?? url;
     }
 
     if (typeof window !== 'undefined') {
@@ -291,11 +277,12 @@ export function useDashboardNavigation({
 
     // Použiť slug ak existuje, inak userId
     const identifier = slug || String(userId);
-    const url = `/dashboard/users/${identifier}?highlight=${skillId}`;
-    
+    // Cesta z tabuľky, zvýraznenie je query tej istej stránky.
+    const profilePath = dashboardProfilePath(identifier);
+
     // Aktualizovať URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', url);
+    if (typeof window !== 'undefined' && profilePath) {
+      window.history.pushState(null, '', `${profilePath}?highlight=${skillId}`);
     }
   }, [
     setViewedUserId,

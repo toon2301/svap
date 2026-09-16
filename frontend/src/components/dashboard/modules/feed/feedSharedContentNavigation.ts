@@ -1,4 +1,5 @@
 'use client';
+import { dashboardFeedPostPath } from '../../components/dashboardRoutes';
 
 /**
  * Preklik z vnoreného náhľadu na samotný zdieľaný obsah.
@@ -57,7 +58,8 @@ export function buildSharedSourceHandler(
       return;
     }
     if (sharedType === 'feed_post') {
-      router.push(`/dashboard/feed/${sourceId}`);
+      const postPath = dashboardFeedPostPath(sourceId);
+      if (postPath) router.push(postPath);
       return;
     }
     // Ponuka – globálny event, rovnako ako OfferShareMessageCard v správach.
