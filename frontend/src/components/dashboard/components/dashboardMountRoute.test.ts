@@ -16,60 +16,71 @@ import {
   type DashboardRouteProps,
 } from './dashboardMountRoute';
 
-/** Pôvodný reťazec zo `syncModuleFromPath` (DashboardContent pred opravou). */
-function previousSyncModuleFromPath(p: string): string | null {
-  let moduleId: string | null = null;
-  if (p.match(/^\/dashboard\/requests\/?$/)) {
-    moduleId = 'requests';
-  } else if (p.match(/^\/dashboard\/search\/?$/)) {
-    moduleId = 'search';
-  } else if (p.match(/^\/dashboard\/messages\/?$/) || p.match(/^\/dashboard\/messages\/\d+\/?$/)) {
-    moduleId = 'messages';
-  } else if (p.match(/^\/dashboard\/settings\/notifications\/?$/)) {
-    moduleId = 'notification-settings';
-  } else if (p.match(/^\/dashboard\/settings\/account\/?$/)) {
-    moduleId = 'account-settings';
-  } else if (p.match(/^\/dashboard\/settings\/blocked\/?$/)) {
-    moduleId = 'blocked-users';
-  } else if (p === '/dashboard' || p === '/dashboard/') {
-    moduleId = 'home';
-  } else if (p.match(/^\/dashboard\/profile\/?$/)) {
-    moduleId = 'profile';
-  } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/)) {
-    moduleId = 'portfolio-detail';
-  } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/create\/?$/)) {
-    moduleId = 'portfolio-create';
-  } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/?$/)) {
-    moduleId = 'user-profile';
-  } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
-    moduleId = 'user-profile';
-  }
-  return moduleId;
-}
-
-const PATHS = [
-  '/dashboard', '/dashboard/', '/dashboard/home', '/dashboard/search', '/dashboard/search/',
-  '/dashboard/requests', '/dashboard/messages', '/dashboard/messages/12', '/dashboard/messages/x',
-  '/dashboard/settings', '/dashboard/settings/notifications', '/dashboard/settings/account',
-  '/dashboard/settings/blocked', '/dashboard/settings/watches', '/dashboard/profile',
-  '/dashboard/users/jana', '/dashboard/users/jana/', '/dashboard/users/42',
-  '/dashboard/users/jana/portfolio', '/dashboard/users/jana/portfolio/5',
-  '/dashboard/users/jana/portfolio/create', '/dashboard/users/jana/posts',
-  '/dashboard/users/jana/edit', '/dashboard/feed/7', '/dashboard/offers/3/reviews',
-  '/dashboard/favorites', '/dashboard/notifications', '/dashboard/statistics',
-  '/dashboard/skills', '/dashboard/skills/offer', '/search', '/', '',
+/**
+ * Adresa → modul. Zoznam zámerne opisuje aj adresy, ktoré staršie mapovanie
+ * nepoznalo (12 z mapovania) – práve na nich sa po kroku späť zobrazoval modul
+ * predošlej obrazovky.
+ */
+const EXPECTED_MODULES: Array<[string, string | null]> = [
+  ['/dashboard', 'home'],
+  ['/dashboard/', 'home'],
+  ['/dashboard/home', 'home'],
+  ['/dashboard/search', 'search'],
+  ['/dashboard/search/', 'search'],
+  ['/dashboard/requests', 'requests'],
+  ['/dashboard/messages', 'messages'],
+  ['/dashboard/messages/12', 'messages'],
+  ['/dashboard/messages/x', null],
+  ['/dashboard/profile', 'profile'],
+  // Dvanásť adries, ktoré mapovanie doteraz nepoznalo.
+  ['/dashboard/favorites', 'favorites'],
+  ['/dashboard/notifications', 'notifications'],
+  ['/dashboard/settings', 'settings'],
+  ['/dashboard/settings/watches', 'settings'],
+  ['/dashboard/language', 'language'],
+  ['/dashboard/account-type', 'account-type'],
+  ['/dashboard/privacy', 'privacy'],
+  ['/dashboard/skills', 'skills'],
+  ['/dashboard/skills/offer', 'skills-offer'],
+  ['/dashboard/skills/search', 'skills-search'],
+  ['/dashboard/statistics', 'statistics'],
+  ['/dashboard/users/jana/edit', 'profile'],
+  // Zvyšok tabuľky.
+  ['/dashboard/settings/notifications', 'notification-settings'],
+  ['/dashboard/settings/account', 'account-settings'],
+  ['/dashboard/settings/blocked', 'blocked-users'],
+  ['/dashboard/users/jana', 'user-profile'],
+  ['/dashboard/users/jana/', 'user-profile'],
+  ['/dashboard/users/42', 'user-profile'],
+  ['/dashboard/users/jana/portfolio', 'user-profile'],
+  ['/dashboard/users/jana/portfolio/5', 'portfolio-detail'],
+  ['/dashboard/users/jana/portfolio/create', 'portfolio-create'],
+  ['/dashboard/users/jana/posts', 'user-profile'],
+  ['/dashboard/users/jana/skills', 'user-profile'],
+  ['/dashboard/users/jana/account', 'profile'],
+  ['/dashboard/users/jana/language', 'profile'],
+  ['/dashboard/users/jana/privacy', 'profile'],
+  ['/dashboard/feed/7', 'feed-post-detail'],
+  ['/dashboard/offers/3/reviews', 'offer-reviews'],
+  // Adresy mimo dashboardu a neznáme podstránky ostávajú na stránke.
+  ['/dashboard/skills/describe', null],
+  ['/dashboard/users/jana/portfolio/5/gallery', null],
+  ['/search', null],
+  ['/', null],
+  ['', null],
 ];
 
 describe('mapovanie adresy', () => {
-  it.each(PATHS)('matches the previous popstate mapping for %s', (path) => {
-    expect(dashboardModuleFromPath(path)).toBe(previousSyncModuleFromPath(path));
+  it.each(EXPECTED_MODULES)('maps %s', (path, expected) => {
+    expect(dashboardModuleFromPath(path)).toBe(expected);
   });
 
-  it('reads the user identifier like before', () => {
+  it('reads the user identifier from every profile address', () => {
     expect(dashboardUserIdentifierFromPath('/dashboard/users/jana')).toBe('jana');
     expect(dashboardUserIdentifierFromPath('/dashboard/users/42/portfolio/5')).toBe('42');
-    expect(dashboardUserIdentifierFromPath('/dashboard/users/jana/posts')).toBeNull();
+    expect(dashboardUserIdentifierFromPath('/dashboard/users/jana/posts')).toBe('jana');
     expect(dashboardUserIdentifierFromPath('/dashboard/users/%E0%A4%A')).toBeNull();
+    expect(dashboardUserIdentifierFromPath('/dashboard/search')).toBeNull();
   });
 });
 
@@ -174,10 +185,34 @@ describe('krok späť cez hranicu stránky', () => {
     );
   });
 
-  it('leaves addresses the mapping does not know to the page', () => {
+  it('leaves addresses the table does not know to the page', () => {
     const props = usersPage('jana');
-    expect(resolveDashboardRouteProps(props, '/dashboard/feed/7')).toBe(props);
-    expect(resolveDashboardRouteProps(props, '/dashboard/settings/watches')).toBe(props);
+    expect(resolveDashboardRouteProps(props, '/dashboard/skills/describe')).toBe(props);
+    expect(resolveDashboardRouteProps(props, '/search')).toBe(props);
+  });
+
+  it('restores the twelve addresses the mapping used to miss', () => {
+    const page = { initialRoute: 'home' };
+    expect(resolveDashboardRouteProps(page, '/dashboard/favorites')).toEqual({ initialRoute: 'favorites' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/notifications')).toEqual({ initialRoute: 'notifications' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/settings')).toEqual({ initialRoute: 'settings' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/settings/watches')).toEqual({
+      initialRoute: 'settings',
+      initialRightItem: 'offer-watches',
+    });
+    expect(resolveDashboardRouteProps(page, '/dashboard/language')).toEqual({ initialRoute: 'language' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/account-type')).toEqual({ initialRoute: 'account-type' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/privacy')).toEqual({ initialRoute: 'privacy' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/skills')).toEqual({ initialRoute: 'skills' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/skills/offer')).toEqual({ initialRoute: 'skills-offer' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/skills/search')).toEqual({ initialRoute: 'skills-search' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/statistics')).toEqual({ initialRoute: 'statistics' });
+    expect(resolveDashboardRouteProps(page, '/dashboard/users/me/edit')).toEqual({
+      initialRoute: 'profile',
+      initialViewedUserId: null,
+      initialProfileSlug: 'me',
+      initialRightItem: 'edit-profile',
+    });
   });
 });
 

@@ -24,48 +24,15 @@
  */
 
 import { useRef, useState } from 'react';
-import type { ProfileTab } from '../modules/profile/profileTypes';
+import {
+  dashboardModuleFromPath,
+  dashboardUserIdentifierFromPath,
+  matchDashboardRoute,
+  type DashboardRouteProps,
+} from './dashboardRoutes';
 
-/** Props dashboardu, ktoré opisujú, čo sa má zobraziť. */
-export type DashboardRouteProps = {
-  initialRoute?: string;
-  initialViewedUserId?: number | null;
-  initialHighlightedSkillId?: number | null;
-  initialProfileTab?: ProfileTab;
-  initialProfileSlug?: string | null;
-  initialRightItem?: string | null;
-  initialOfferId?: number | null;
-  initialPortfolioItemId?: number | null;
-  initialFeedPostId?: number | null;
-};
-
-const USERS_PATH = /^\/dashboard\/users\/([^/]+)(?:\/portfolio(?:\/(?:\d+|create))?)?\/?$/;
-const PORTFOLIO_DETAIL_PATH = /^\/dashboard\/users\/[^/]+\/portfolio\/(\d+)\/?$/;
-const PORTFOLIO_CREATE_PATH = /^\/dashboard\/users\/[^/]+\/portfolio\/create\/?$/;
-const PORTFOLIO_LIST_PATH = /^\/dashboard\/users\/[^/]+\/portfolio\/?$/;
-const USER_PROFILE_PATH = /^\/dashboard\/users\/[^/]+\/?$/;
-
-/**
- * Modul pre adresu – mapovanie, ktoré používa aj reakcia na krok späť.
- *
- * `null` = adresu toto mapovanie nepozná a o module rozhoduje stránka.
- */
-export function dashboardModuleFromPath(pathname: string): string | null {
-  const p = pathname || '';
-  if (/^\/dashboard\/requests\/?$/.test(p)) return 'requests';
-  if (/^\/dashboard\/search\/?$/.test(p)) return 'search';
-  if (/^\/dashboard\/messages(?:\/\d+)?\/?$/.test(p)) return 'messages';
-  if (/^\/dashboard\/settings\/notifications\/?$/.test(p)) return 'notification-settings';
-  if (/^\/dashboard\/settings\/account\/?$/.test(p)) return 'account-settings';
-  if (/^\/dashboard\/settings\/blocked\/?$/.test(p)) return 'blocked-users';
-  if (p === '/dashboard' || p === '/dashboard/') return 'home';
-  if (/^\/dashboard\/profile\/?$/.test(p)) return 'profile';
-  if (PORTFOLIO_DETAIL_PATH.test(p)) return 'portfolio-detail';
-  if (PORTFOLIO_CREATE_PATH.test(p)) return 'portfolio-create';
-  if (PORTFOLIO_LIST_PATH.test(p)) return 'user-profile';
-  if (USER_PROFILE_PATH.test(p)) return 'user-profile';
-  return null;
-}
+export { dashboardModuleFromPath, dashboardUserIdentifierFromPath };
+export type { DashboardRouteProps };
 
 function safeDecode(value: string): string {
   try {
@@ -73,60 +40,6 @@ function safeDecode(value: string): string {
   } catch {
     return value;
   }
-}
-
-/** Slug alebo číselné ID používateľa z profilovej adresy (chybné kódovanie → `null`). */
-export function dashboardUserIdentifierFromPath(pathname: string): string | null {
-  const match = String(pathname || '').match(USERS_PATH);
-  if (!match?.[1]) return null;
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return null;
-  }
-}
-
-function positiveInteger(value: string | null | undefined): number | null {
-  if (value == null || !String(value).trim()) return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
-
-/**
- * Props, aké by pre túto adresu dala jej vlastná stránka (`app/dashboard/...`).
- * `null`, keď adresu mapovanie nepozná.
- */
-function routePropsFromPath(pathname: string, search: string): DashboardRouteProps | null {
-  const route = dashboardModuleFromPath(pathname);
-  if (route === null) return null;
-
-  const props: DashboardRouteProps = { initialRoute: route };
-  const identifier = dashboardUserIdentifierFromPath(pathname);
-  if (!identifier) return props;
-
-  const numericId = /^\d+$/.test(identifier) ? Number(identifier) : null;
-  props.initialViewedUserId = numericId;
-
-  if (route === 'portfolio-detail' || route === 'portfolio-create') {
-    props.initialProfileSlug = numericId === null ? identifier : null;
-    props.initialProfileTab = 'portfolio';
-    if (route === 'portfolio-detail') {
-      props.initialPortfolioItemId = positiveInteger(
-        pathname.match(PORTFOLIO_DETAIL_PATH)?.[1],
-      );
-    }
-    return props;
-  }
-
-  // `user-profile`: profil aj jeho zoznam portfólia dávajú slug = identifikátor.
-  props.initialProfileSlug = identifier;
-  if (PORTFOLIO_LIST_PATH.test(pathname)) {
-    props.initialProfileTab = 'portfolio';
-  } else {
-    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-    props.initialHighlightedSkillId = positiveInteger(params.get('offer') ?? params.get('highlight'));
-  }
-  return props;
 }
 
 function identityOf(props: DashboardRouteProps): string {
@@ -163,7 +76,7 @@ export function resolveDashboardRouteProps(
   search = '',
 ): DashboardRouteProps {
   if (!pathname) return pageProps;
-  const fromPath = routePropsFromPath(pathname, search);
+  const fromPath = matchDashboardRoute(pathname, search);
   if (fromPath === null || describeSameRoute(pageProps, fromPath)) return pageProps;
   return fromPath;
 }
