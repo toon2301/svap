@@ -16,6 +16,7 @@ import {
 } from './helpProposalUtils';
 import { requestUserName } from './requestUserName';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardProfilePath, dashboardSectionPath } from '../../components/dashboardRoutes';
 
 type Props = {
   open: boolean;
@@ -223,7 +224,10 @@ export function RequestDetailModal({
       }
 
       onClose();
-      router.push(`/dashboard/profile?highlight=${encodeURIComponent(String(offerId))}`);
+      const ownProfilePath = dashboardSectionPath('profile');
+      if (ownProfilePath) {
+        router.push(`${ownProfilePath}?highlight=${encodeURIComponent(String(offerId))}`);
+      }
       return;
     }
 
@@ -267,9 +271,8 @@ export function RequestDetailModal({
     }
 
     onClose();
-    router.push(
-      `/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`,
-    );
+    const profilePath = dashboardProfilePath(profileIdentifier);
+    if (profilePath) router.push(`${profilePath}?highlight=${encodeURIComponent(String(offerId))}`);
   };
 
   const handleViewProposal = () => {
@@ -297,7 +300,8 @@ export function RequestDetailModal({
       onClose();
     } catch {
       onClose();
-      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
+      const target = dashboardProfilePath(profileIdentifier);
+      if (target) router.push(`${target}?highlight=${encodeURIComponent(String(offerId))}`);
     }
   };
 

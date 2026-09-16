@@ -1,7 +1,15 @@
 import type { OfferWatchPickerKind } from '../offerWatchSelectionOptions';
+import { dashboardSectionPath } from '../../../components/dashboardRoutes';
 
 export const OFFER_WATCH_MOBILE_REQUEST_EVENT = 'svaply:offer-watch-mobile-request';
-export const OFFER_WATCH_SETTINGS_PATH = '/dashboard/settings/watches';
+
+// Obe adresy hovorí `DASHBOARD_ROUTES`, aby mobilný hosť a zvyšok appky nemali
+// dve rôzne predstavy o tej istej obrazovke. Náhrada za `null` je len typová
+// podlaha – že sa nepoužije, drží test zapisovačov.
+export const OFFER_WATCH_SETTINGS_PATH =
+  dashboardSectionPath('settings', 'offer-watches') ?? '/dashboard/settings/watches';
+/** Adresa Nastavení – návratový bod pod obrazovkou sledovaných ponúk. */
+export const OFFER_WATCH_RETURN_PATH = dashboardSectionPath('settings') ?? '/dashboard/settings';
 
 const HISTORY_KEY = '__svaplyOfferWatchMobile';
 const SETTINGS_RETURN_KEY = '__svaplyOfferWatchSettingsReturn';

@@ -10,6 +10,7 @@ import {
   setUserProfileToCache,
 } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
+import { supportsSkillHighlight } from './useDashboardHighlighting';
 
 export interface DashboardUserProfileProps {
   viewedUserId: number | null;
@@ -68,6 +69,11 @@ export function useDashboardUserProfile({
   // True ak slug profil neexistuje (404 – napr. zmazaný/anonymizovaný účet).
   const [viewedUserNotFound, setViewedUserNotFound] = useState(false);
   const initialRightItemAppliedRef = useRef(false);
+  // Aktuálny modul pre efekty, ktoré sa ním NEMAJÚ spúšťať. Inicializácia
+  // profilu patrí výhradne props: keby ju prebudila zmena modulu, prepísala by
+  // interaktívnu navigáciu späť na stav z času mountu.
+  const activeModuleRef = useRef(activeModule);
+  activeModuleRef.current = activeModule;
 
   const {
     setActiveModule,
@@ -133,7 +139,17 @@ export function useDashboardUserProfile({
     // Priorita: ak máme initialViewedUserId, použiť ho
     if (initialViewedUserId) {
       setViewedUserId(initialViewedUserId);
-      if (initialHighlightedSkillId != null) {
+      // Zvýraznenie z props nastav LEN keď o ňom nerozhoduje adresa.
+      //
+      // Tú istú hodnotu z props nastavuje aj `useDashboardHighlighting`, a to
+      // PREDTÝM, než ju prepíše hodnotou z adresy. Tento efekt sa registruje
+      // až za ním, takže druhý zápis tej istej hodnoty by adresu prepísal
+      // späť na props – a tie vedia byť staršie: krok späť cez hranicu
+      // stránky obnoví strom pôvodnej stránky, takže nesú zvýraznenie z času,
+      // keď záznam vznikol. Zvýraznila by sa iná karta, než na ktorú odkaz
+      // ukazuje. Prejavovalo sa to len pri číselnom ID – slugová vetva sem
+      // nedôjde, vracia sa až nižšie.
+      if (initialHighlightedSkillId != null && !supportsSkillHighlight(activeModuleRef.current)) {
         setHighlightedSkillId(initialHighlightedSkillId);
       }
       return;

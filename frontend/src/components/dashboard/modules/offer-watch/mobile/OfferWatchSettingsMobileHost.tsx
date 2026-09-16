@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import OfferWatchSettingsMobile from './OfferWatchSettingsMobile';
 import {
   OFFER_WATCH_MOBILE_REQUEST_EVENT,
+  OFFER_WATCH_RETURN_PATH,
   OFFER_WATCH_SETTINGS_PATH,
   hasOfferWatchSettingsReturnHistory,
   isOfferWatchSettingsPath,
@@ -195,7 +196,7 @@ export default function OfferWatchSettingsMobileHost({
       const settingsState = withOfferWatchSettingsReturnHistory(
         withoutOfferWatchMobileHistory(window.history.state),
       );
-      window.history.replaceState(settingsState, '', '/dashboard/settings');
+      window.history.replaceState(settingsState, '', OFFER_WATCH_RETURN_PATH);
       window.history.pushState(
         withOfferWatchMobileHistory(
           withoutOfferWatchSettingsReturnHistory(settingsState),

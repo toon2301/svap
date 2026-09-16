@@ -86,6 +86,12 @@ import {
   markProfileFreshEntry,
   profileEntryTargetFromIdentifier,
 } from '../modules/profile/profileFreshEntry';
+import {
+  dashboardModuleFromPath,
+  dashboardUserIdentifierFromPath,
+  useDashboardMountRoute,
+} from './dashboardMountRoute';
+import { dashboardProfilePath, dashboardSectionPath } from './dashboardRoutes';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -140,8 +146,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
 function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null {
   try {
     const path = new URL(targetUrl, 'https://swaply.local').pathname;
-    const match = path.match(/^\/dashboard\/users\/([^/]+)(?:\/portfolio(?:\/(?:\d+|create))?)?\/?$/);
-    return match?.[1] ? decodeURIComponent(match[1]) : null;
+    return dashboardUserIdentifierFromPath(path);
   } catch {
     return null;
   }
@@ -207,15 +212,7 @@ function resolveInitialOwnProfileTab(
  */
 export default function DashboardContent({
   initialUser,
-  initialRoute,
-  initialViewedUserId,
-  initialHighlightedSkillId,
-  initialProfileTab,
-  initialProfileSlug,
-  initialRightItem,
-  initialOfferId,
-  initialPortfolioItemId,
-  initialFeedPostId,
+  ...pageRouteProps
 }: DashboardContentProps) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -224,6 +221,22 @@ export default function DashboardContent({
   const { isMobile, isResolved: isViewportResolved } = useIsMobileState();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+
+  // Krok spat cez hranicu Next stranky obnovi stranku, ktorej props nesedia s
+  // adresou (zaznam z pushState nesie strom stranky, na ktorej vznikol). Pri
+  // mounte sa preto props zosuladia s adresou – pri tvrdom nacitani a bezne
+  // navigacii sa nemeni nic. Detaily vo `dashboardMountRoute`.
+  const {
+    initialRoute,
+    initialViewedUserId,
+    initialHighlightedSkillId,
+    initialProfileTab,
+    initialProfileSlug,
+    initialRightItem,
+    initialOfferId,
+    initialPortfolioItemId,
+    initialFeedPostId,
+  } = useDashboardMountRoute(pageRouteProps, pathname, searchParams?.toString() ?? '');
 
   // OdvodiÅ¥ offerId pre recenzie z URL (fix: client-side navigÃ¡cia bez full reloadu)
   const offerIdFromReviewsPath = React.useMemo(() => {
@@ -606,8 +619,9 @@ export default function DashboardContent({
       // Navigation state is already updated; ignore storage failures.
     }
 
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', '/dashboard/profile');
+    const ownProfilePath = dashboardSectionPath('profile');
+    if (typeof window !== 'undefined' && ownProfilePath) {
+      window.history.pushState(null, '', ownProfilePath);
     }
   }, [
     highlighting,
@@ -1175,32 +1189,8 @@ export default function DashboardContent({
     const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
       const p = window.location.pathname || '';
-      let moduleId: string | null = null;
-      if (p.match(/^\/dashboard\/requests\/?$/)) {
-        moduleId = 'requests';
-      } else if (p.match(/^\/dashboard\/search\/?$/)) {
-        moduleId = 'search';
-      } else if (p.match(/^\/dashboard\/messages\/?$/) || p.match(/^\/dashboard\/messages\/\d+\/?$/)) {
-        moduleId = 'messages';
-      } else if (p.match(/^\/dashboard\/settings\/notifications\/?$/)) {
-        moduleId = 'notification-settings';
-      } else if (p.match(/^\/dashboard\/settings\/account\/?$/)) {
-        moduleId = 'account-settings';
-      } else if (p.match(/^\/dashboard\/settings\/blocked\/?$/)) {
-        moduleId = 'blocked-users';
-      } else if (p === '/dashboard' || p === '/dashboard/') {
-        moduleId = 'home';
-      } else if (p.match(/^\/dashboard\/profile\/?$/)) {
-        moduleId = 'profile';
-      } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/)) {
-        moduleId = 'portfolio-detail';
-      } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/create\/?$/)) {
-        moduleId = 'portfolio-create';
-      } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/?$/)) {
-        moduleId = 'user-profile';
-      } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
-        moduleId = 'user-profile';
-      }
+      // To iste mapovanie ako pri mounte (`useDashboardMountRoute`).
+      const moduleId = dashboardModuleFromPath(p);
       if (moduleId !== null) {
         setActiveModule(moduleId);
         try {
@@ -1304,8 +1294,9 @@ export default function DashboardContent({
       }
 
       // Aktualizuj URL bez reloadu
-      if (typeof window !== 'undefined') {
-        const url = `/dashboard/users/${encodeURIComponent(identifier)}${
+      const profilePath = dashboardProfilePath(identifier);
+      if (typeof window !== 'undefined' && profilePath) {
+        const url = `${profilePath}${
           highlightId != null
             ? `?${useOfferParam ? 'offer' : 'highlight'}=${encodeURIComponent(String(highlightId))}`
             : ''
@@ -1368,8 +1359,9 @@ export default function DashboardContent({
         highlighting.setHighlightedSkillId(null);
       }
 
-      if (typeof window !== 'undefined') {
-        const url = `/dashboard/profile${
+      const ownProfilePath = dashboardSectionPath('profile');
+      if (typeof window !== 'undefined' && ownProfilePath) {
+        const url = `${ownProfilePath}${
           highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
         }`;
         window.history.pushState(null, '', url);

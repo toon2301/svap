@@ -15,7 +15,15 @@ interface UseDashboardHighlightingParams {
   initialHighlightedSkillId?: number | null;
 }
 
-function supportsSkillHighlight(activeModule: string): boolean {
+/**
+ * Moduly, ktorým vie zvýraznenie určiť ADRESA.
+ *
+ * Kým je zobrazený takýto modul, zvýraznenie odvádza z adresy efekt nižšie –
+ * a to v oboch smeroch: parameter v adrese kartu zvýrazní, jeho neprítomnosť
+ * zvýraznenie zruší. Iné miesta sa preto majú do tej istej hodnoty miešať len
+ * vtedy, keď je zobrazené niečo iné.
+ */
+export function supportsSkillHighlight(activeModule: string): boolean {
   return activeModule === 'profile' || activeModule === 'user-profile';
 }
 

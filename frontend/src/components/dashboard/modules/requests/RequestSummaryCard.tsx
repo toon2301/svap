@@ -15,6 +15,7 @@ import { isDeletedUserName, requestUserName } from './requestUserName';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
+import { dashboardProfilePath, dashboardSectionPath } from '../../components/dashboardRoutes';
 
 type Props = {
   item: SkillRequest;
@@ -296,7 +297,10 @@ export function RequestSummaryCard({
         // ignore
       }
 
-      router.push(`/dashboard/profile?highlight=${encodeURIComponent(String(offerId))}`);
+      const ownProfilePath = dashboardSectionPath('profile');
+      if (ownProfilePath) {
+        router.push(`${ownProfilePath}?highlight=${encodeURIComponent(String(offerId))}`);
+      }
       return;
     }
 
@@ -346,7 +350,8 @@ export function RequestSummaryCard({
       // ignore
     }
 
-    router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
+    const target = dashboardProfilePath(profileIdentifier);
+    if (target) router.push(`${target}?highlight=${encodeURIComponent(String(offerId))}`);
   };
 
   const handleViewProposal = () => {
@@ -371,7 +376,8 @@ export function RequestSummaryCard({
         }),
       );
     } catch {
-      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
+      const target = dashboardProfilePath(profileIdentifier);
+      if (target) router.push(`${target}?highlight=${encodeURIComponent(String(offerId))}`);
     }
   };
 

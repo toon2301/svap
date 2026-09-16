@@ -16,6 +16,7 @@ import {
 import type { DashboardSkill } from '../../hooks/useSkillsModals';
 import type { OpeningHours } from './skillDescriptionModal/types';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { dashboardSectionPath } from '../../components/dashboardRoutes';
 
 const MAX_SKILLS_PER_TYPE = 3;
 
@@ -82,8 +83,9 @@ export default function SkillsModuleRouter({
               // ignore
             }
             // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-            if (typeof window !== 'undefined') {
-              window.history.pushState(null, '', '/dashboard/skills/offer');
+            const path = dashboardSectionPath('skills-offer');
+            if (typeof window !== 'undefined' && path) {
+              window.history.pushState(null, '', path);
             }
           })}
           onSearch={onSkillsSearchClick || (() => {
@@ -94,8 +96,9 @@ export default function SkillsModuleRouter({
               // ignore
             }
             // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-            if (typeof window !== 'undefined') {
-              window.history.pushState(null, '', '/dashboard/skills/search');
+            const path = dashboardSectionPath('skills-search');
+            if (typeof window !== 'undefined' && path) {
+              window.history.pushState(null, '', path);
             }
           })}
         />

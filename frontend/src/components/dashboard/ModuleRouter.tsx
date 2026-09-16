@@ -33,6 +33,7 @@ import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
 import FeedPostDetailModule from './modules/feed/FeedPostDetailModule';
 import OfferWatchSettingsDesktop from './modules/offer-watch/settings/OfferWatchSettingsDesktop';
+import { dashboardSectionPath } from './components/dashboardRoutes';
 
 interface ModuleRouterProps {
   user: User;
@@ -168,8 +169,9 @@ export default function ModuleRouter({
         } catch {
           // ignore
         }
-        if (typeof window !== 'undefined') {
-          window.history.pushState(null, '', '/dashboard/skills');
+        const skillsPath = dashboardSectionPath('skills');
+        if (typeof window !== 'undefined' && skillsPath) {
+          window.history.pushState(null, '', skillsPath);
         }
       })}
       isEditMode={isEditMode}

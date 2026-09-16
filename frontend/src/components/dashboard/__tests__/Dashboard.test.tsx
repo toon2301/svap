@@ -26,6 +26,9 @@ jest.mock('../modules/StatisticsModule', () => ({
 // Mock next/navigation s zdieľaným pushMock
 const pushMock = jest.fn();
 const replaceMock = jest.fn();
+// Adresa stránky, ktorú test renderuje – dashboard pri mounte zosúlaďuje props
+// stránky s adresou, takže musí sedieť s trasou (napr. Štatistiky).
+let mockPathname = '/dashboard';
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: pushMock,
@@ -34,7 +37,7 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: jest.fn(),
   }),
-  usePathname: () => '/dashboard',
+  usePathname: () => mockPathname,
 }));
 
 // Mock auth utils
@@ -90,6 +93,7 @@ const renderDashboard = (ui: ReactElement) => render(<AuthProvider>{ui}</AuthPro
 describe('Dashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPathname = '/dashboard';
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,
       value: 1280,
@@ -201,6 +205,8 @@ describe('Dashboard', () => {
   it('restores Statistics directly from its dedicated route', async () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
+    // Stránka Štatistík žije na vlastnej adrese.
+    mockPathname = '/dashboard/statistics';
 
     renderDashboard(
       <ThemeProvider>
@@ -212,6 +218,23 @@ describe('Dashboard', () => {
       expect(screen.getByTestId('statistics-module')).toBeInTheDocument();
     });
     expect(screen.queryByTestId('home-module')).not.toBeInTheDocument();
+  });
+
+  it('shows the module of the address when Back restores a different page', async () => {
+    // Záznam Nástenky vznikol pushState-om na stránke Štatistík – krok späť
+    // obnoví stránku Štatistík, adresa však patrí Nástenke.
+    mockPathname = '/dashboard';
+
+    renderDashboard(
+      <ThemeProvider>
+        <Dashboard initialUser={mockUser} initialRoute="statistics" />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('home-module')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('statistics-module')).not.toBeInTheDocument();
   });
 
   it('clears tokens and redirects on API error', async () => {
