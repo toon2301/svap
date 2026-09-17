@@ -7,7 +7,10 @@
  */
 
 import {
+  adoptProfileOrigin,
+  markProfileOriginPending,
   readProfileOriginDepth,
+  resetProfileOriginPending,
   returnToProfileOrigin,
   withProfileOriginEntry,
   withProfileOriginStep,
@@ -119,5 +122,81 @@ describe('marker a adresa sú oddelené', () => {
 
     expect(window.location.search).toBe('?tab=posts');
     expect(readProfileOriginDepth(window.history.state)).toBe(1);
+  });
+});
+
+/**
+ * Vstup cez `router.push` (vyhľadávanie): stav sa pripnúť dopredu nedá, lebo
+ * záznam vzniká až po dokončení navigácie. Pôvod si preto profil prevezme po
+ * príchode – rovnako ako detail portfólia.
+ */
+describe('prevzatie pôvodu po navigácii routerom', () => {
+  beforeEach(() => {
+    resetProfileOriginPending();
+    window.history.replaceState(null, '', '/dashboard/users/jana');
+  });
+
+  it('označí záznam profilu, ktorý appka otvorila', () => {
+    markProfileOriginPending('/dashboard/users/jana');
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
+  });
+
+  it('profil otvorený odkazom si pôvod neprivlastní', () => {
+    // Žiadna čakajúca navigácia – appka tento profil neotvárala.
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBeNull();
+  });
+
+  it('pri nezhode adries sa čakajúci pôvod zahodí', () => {
+    markProfileOriginPending('/dashboard/users/peter');
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBeNull();
+  });
+
+  it('prevzatie je jednorazové', () => {
+    markProfileOriginPending('/dashboard/users/jana');
+    adoptProfileOrigin();
+
+    // Ďalší profil v tom istom behu už tento štítok dostať nesmie.
+    window.history.replaceState(null, '', '/dashboard/users/jana');
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBeNull();
+  });
+
+  it('hĺbku už označeného záznamu neprepíše', () => {
+    // Krok dopredu na profil, kde už používateľ prepínal záložky.
+    window.history.replaceState(
+      withProfileOriginStep(withProfileOriginEntry(null)),
+      '',
+      '/dashboard/users/jana',
+    );
+    markProfileOriginPending('/dashboard/users/jana');
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBe(1);
+  });
+
+  it('scenár z nálezu: vstup z vyhľadávania → záložka → šípka opustí profil', () => {
+    const go = jest.spyOn(window.history, 'go').mockImplementation(() => {});
+
+    // Vyhľadávanie otvorí profil routerom a profil si pôvod prevezme.
+    markProfileOriginPending('/dashboard/users/jana');
+    adoptProfileOrigin();
+    // Používateľ prepne záložku – vlastný krok histórie.
+    window.history.replaceState(
+      withProfileOriginStep(window.history.state),
+      '',
+      '/dashboard/users/jana?tab=portfolio',
+    );
+
+    expect(returnToProfileOrigin()).toBe(true);
+    // Záložka + profil = dva kroky. Predtým sa vrátila len záložka.
+    expect(go).toHaveBeenCalledWith(-2);
+    go.mockRestore();
   });
 });

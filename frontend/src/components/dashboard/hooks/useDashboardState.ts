@@ -22,6 +22,8 @@ import {
   type DesktopSettingsReturnTarget,
 } from './desktopSettingsNavigation';
 import { returnToProfileOrigin } from '../modules/profile/profileOriginHistory';
+import { stepBackFromMobileSettings } from './mobileSettingsOrigin';
+import { dashboardSectionPath } from '../components/dashboardRoutes';
 
 // Izomorfný layout-effect: v prehliadači beží pred vykreslením (bez viditeľného
 // bliku pri obnove modulu), pri SSR degraduje na useEffect (žiadny React warning).
@@ -452,7 +454,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
           // záznam a krok späť zo sekcie neviedol na zoznam, ale rovno von
           // z Nastavení. Stav histórie sa ponecháva – nesie štítok návratu,
           // podľa ktorého sa Nastavenia obnovujú pri `popstate`.
-          window.history.pushState(window.history.state, '', settingsPath);
+          //
+          // Klik na UŽ OTVORENÚ sekciu záznam nepridáva – rovnako ako klik na
+          // už aktívnu záložku profilu. Inak by sa cez prázdne kroky musel
+          // používateľ preklikať späť.
+          if (window.location.pathname !== settingsPath) {
+            window.history.pushState(window.history.state, '', settingsPath);
+          }
           try {
             localStorage.setItem('activeModule', 'settings');
           } catch {
@@ -785,7 +793,17 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // zoznam je obyčajný krok späť – rovnaký, aký spraví browser Back.
       // Predtým sa zoznam otváral ručne, každá sekcia vlastnou vetvou, a tri
       // z nich na to vetvu nemali vôbec.
-      if (typeof window !== 'undefined') window.history.back();
+      //
+      // Krok späť sa ale smie použiť len tam, kde pod sekciou naozaj nejaký
+      // záznam je. Pri priamom vstupe (odkaz, nová karta) by odišiel z appky,
+      // preto vtedy nasleduje deterministický cieľ – zoznam Nastavení.
+      if (!stepBackFromMobileSettings()) {
+        const settingsPath = dashboardSectionPath('settings');
+        setActiveModule('settings');
+        if (typeof window !== 'undefined' && settingsPath) {
+          window.history.pushState(null, '', settingsPath);
+        }
+      }
     } else if (activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeRightItem === 'account-settings') {
       // Desktopová podoba sekcie (pravá položka vedľa zoznamu) – iba zavrieť.
       setIsMobileMenuOpen(true);

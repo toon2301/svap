@@ -32,6 +32,7 @@ import { useBlockUserAction } from '../profile/useBlockUserAction';
 import { invalidateSearchCacheForUser } from './hooks/useSearchApi';
 import { removeUserFromRecentSearches } from './recentSearchStorage';
 import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
+import { adoptProfileOrigin } from '../profile/profileOriginHistory';
 
 type SearchProfileApiError = {
   response?: {
@@ -86,6 +87,13 @@ export function SearchUserProfileModule({
   // cudzieho profilu zhodilo F5 aj krok späť a pri návrate na profil ostávala
   // visieť tá, ktorú si používateľ pozeral naposledy.
   const [activeTab, setActiveTab] = useProfileTabQuery(initialTab ?? "offers", userId);
+
+  // Záznam tohto profilu už existuje – ak ho otvorila appka cez router
+  // (vyhľadávanie), dostane pôvod pre appkovú šípku. `router.push` ho pripnúť
+  // dopredu nevie, preto sa preberá až tu.
+  useEffect(() => {
+    adoptProfileOrigin();
+  }, [userId]);
 
   // Nový vstup cez preklik: od vrchu a na Ponukách – rovnako ako na vlastnom
   // profile. F5 ani krok späť/dopredu to nespúšťa.

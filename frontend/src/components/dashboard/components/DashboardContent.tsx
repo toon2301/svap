@@ -91,7 +91,12 @@ import {
   dashboardUserIdentifierFromPath,
   useDashboardMountRoute,
 } from './dashboardMountRoute';
-import { dashboardProfilePath, dashboardSectionPath } from './dashboardRoutes';
+import {
+  DASHBOARD_HOME_PATH,
+  dashboardProfilePath,
+  dashboardSectionPath,
+} from './dashboardRoutes';
+import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 
 interface DashboardContentProps {
@@ -492,10 +497,19 @@ export default function DashboardContent({
     handleMainModuleChange('settings');
   }, [handleMainModuleChange, setActiveModule]);
 
-  /** Krížik zavrie zoznam tak, ako ho otvorila história – krokom späť. */
+  /**
+   * Krížik zavrie zoznam tak, ako ho otvorila história – krokom späť.
+   *
+   * Pri priamom vstupe (odkaz, nová karta) pod zoznamom žiadny záznam appky
+   * nie je a krok späť by z nej odišiel; vtedy sa ide na Nástenku.
+   */
   const handleMobileSettingsClose = useCallback(() => {
-    if (typeof window !== 'undefined') window.history.back();
-  }, []);
+    if (stepBackFromMobileSettings()) return;
+    setActiveModule('home');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', DASHBOARD_HOME_PATH);
+    }
+  }, [setActiveModule]);
 
   const handleMobileProfileOpen = useCallback(() => {
     setOwnProfileTab('offers');

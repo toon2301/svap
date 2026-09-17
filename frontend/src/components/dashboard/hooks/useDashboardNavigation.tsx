@@ -9,14 +9,19 @@ import { preloadProfileAvatar } from '../modules/profile/preloadAvatar';
 import { type UseDashboardStateResult } from './useDashboardState';
 import {
   createDesktopSettingsReturnTarget,
+  isSettingsSectionModule,
   withDesktopSettingsOriginHistory,
 } from './desktopSettingsNavigation';
+import { withMobileSettingsOrigin } from './mobileSettingsOrigin';
 import { useDesktopSettingsOriginRestore } from './useDesktopSettingsOriginRestore';
 import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { clearFeedReturn } from '../modules/feed/feedReturnState';
 import { markProfileFreshEntry } from '../modules/profile/profileFreshEntry';
-import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
+import {
+  markProfileOriginPending,
+  withProfileOriginEntry,
+} from '../modules/profile/profileOriginHistory';
 import {
   dashboardProfilePath,
   dashboardSectionPath,
@@ -227,7 +232,16 @@ export function useDashboardNavigation({
     if (typeof window !== 'undefined') {
       // Vstup do vlastného profilu si značí pôvod, aby appková šípka vedela
       // opustiť profil celý – tam, kde sa značí aj nový vstup (vyššie).
-      const historyState = moduleId === 'profile' ? withProfileOriginEntry(null) : null;
+      //
+      // Zoznam Nastavení a jeho sekcie si značia, že pod nimi obrazovka appky
+      // NAOZAJ je: krok späť sa potom smie spoľahnúť na históriu, kým priamy
+      // vstup (odkaz, nová karta) dostane deterministický cieľ.
+      let historyState: unknown = null;
+      if (moduleId === 'profile') {
+        historyState = withProfileOriginEntry(null);
+      } else if (moduleId === 'settings' || isSettingsSectionModule(moduleId)) {
+        historyState = withMobileSettingsOrigin(null);
+      }
       // Najprv zmeň URL v browseri (to funguje vždy)
       window.history.pushState(historyState, '', url);
     }
@@ -286,7 +300,13 @@ export function useDashboardNavigation({
 
     // Aktualizovať URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
     if (typeof window !== 'undefined' && profilePath) {
-      window.history.pushState(null, '', `${profilePath}?highlight=${skillId}`);
+      // Vstup na cudzí profil – pôvod pre appkovú šípku, rovnako ako ostatné
+      // vstupné body.
+      window.history.pushState(
+        withProfileOriginEntry(null),
+        '',
+        `${profilePath}?highlight=${skillId}`,
+      );
     }
   }, [
     setViewedUserId,
@@ -339,6 +359,9 @@ export function useDashboardNavigation({
     // bez zbytočného `userProfileBySlug` API round-tripu.
     primeUserSlugId(slug ?? null, userId);
 
+    // `router.push` stav histórie neprijíma – pôvod si prevezme profil po
+    // príchode (`adoptProfileOrigin`).
+    markProfileOriginPending(url);
     router.push(url);
   }, [
     user?.id,

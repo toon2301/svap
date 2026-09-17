@@ -58,6 +58,7 @@ const baseUser: User = {
   is_public: true,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
+  profile_completeness: 80,
 };
 
 /** Dashboard s navigáciou – rovnaká dvojica, akú používa `DashboardContent`. */
@@ -181,5 +182,36 @@ describe('marker „opusti Nastavenia úplne" novú vrstvu prežije', () => {
     act(() => result.current.state.handleRightItemClick('privacy'));
 
     expect(readDesktopSettingsOriginTarget(window.history.state)).toBeNull();
+  });
+});
+
+describe('klik na už otvorenú sekciu', () => {
+  it('nepridáva ďalší záznam', async () => {
+    const { result } = renderDashboard('home');
+    act(() => result.current.navigation.handleMainModuleChange('settings'));
+    await waitFor(() => expect(url()).toBe('/dashboard/settings'));
+    act(() => result.current.state.handleRightItemClick('privacy'));
+    expect(url()).toBe('/dashboard/privacy');
+    const lengthOnSection = window.history.length;
+
+    // Druhý klik na tú istú položku – rovnako ako klik na už aktívnu záložku
+    // profilu nemá čo zapísať.
+    act(() => result.current.state.handleRightItemClick('privacy'));
+
+    expect(url()).toBe('/dashboard/privacy');
+    expect(window.history.length).toBe(lengthOnSection);
+  });
+
+  it('skutočná zmena sekcie záznam naďalej pridá', async () => {
+    const { result } = renderDashboard('home');
+    act(() => result.current.navigation.handleMainModuleChange('settings'));
+    await waitFor(() => expect(url()).toBe('/dashboard/settings'));
+    act(() => result.current.state.handleRightItemClick('privacy'));
+    const lengthOnPrivacy = window.history.length;
+
+    act(() => result.current.state.handleRightItemClick('language'));
+
+    expect(url()).toBe('/dashboard/language');
+    expect(window.history.length).toBe(lengthOnPrivacy + 1);
   });
 });

@@ -15,6 +15,7 @@ import type { User } from '@/types';
 import { useDashboardState } from '../useDashboardState';
 import { useDashboardNavigation } from '../useDashboardNavigation';
 import { isSettingsSectionModule } from '../desktopSettingsNavigation';
+import { hasMobileSettingsOrigin } from '../mobileSettingsOrigin';
 
 const mockPush = jest.fn();
 const mockBack = jest.fn();
@@ -57,6 +58,7 @@ const baseUser: User = {
   is_public: true,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
+  profile_completeness: 80,
 };
 
 function renderDashboard() {
@@ -219,5 +221,70 @@ describe('šípka sa zobrazí pre každú sekciu', () => {
     expect(isSettingsSectionModule('settings')).toBe(false);
     expect(isSettingsSectionModule('home')).toBe(false);
     expect(isSettingsSectionModule('user-profile')).toBe(false);
+  });
+});
+
+/**
+ * Priamy vstup (odkaz, nová karta, F5) nemá pod sebou žiadny záznam appky.
+ * Bezpodmienečný krok späť by z nej odišiel – preto štítok pôvodu a pri jeho
+ * absencii deterministický cieľ. Rovnaký vzor ako pri portfóliu a desktopových
+ * Nastaveniach.
+ */
+describe('priamy vstup bez pôvodu', () => {
+  it('sekcia otvorená zo zoznamu pôvod má', async () => {
+    const { result } = renderDashboard();
+    act(() => result.current.navigation.handleMainModuleChange('settings'));
+    await waitFor(() => expect(url()).toBe(SETTINGS));
+
+    act(() => result.current.navigation.handleSidebarLanguageClick());
+
+    await waitFor(() => expect(url()).toBe('/dashboard/language'));
+    expect(hasMobileSettingsOrigin(window.history.state)).toBe(true);
+  });
+
+  it('sekcia otvorená odkazom pôvod nemá', () => {
+    window.history.replaceState(null, '', '/dashboard/privacy');
+
+    expect(hasMobileSettingsOrigin(window.history.state)).toBe(false);
+  });
+
+  it('šípka pri priamom vstupe nejde späť, ale na zoznam', () => {
+    const backSpy = jest.spyOn(window.history, 'back');
+    window.history.replaceState(null, '', '/dashboard/privacy');
+    const { result } = renderDashboard();
+    act(() => result.current.state.setActiveModule('privacy'));
+
+    act(() => result.current.state.handleMobileBack());
+
+    // Krok späť by odišiel z appky – preto deterministický cieľ.
+    expect(backSpy).not.toHaveBeenCalled();
+    expect(url()).toBe(SETTINGS);
+    expect(result.current.state.activeModule).toBe('settings');
+    backSpy.mockRestore();
+  });
+
+  it('šípka pri vstupe zo zoznamu ostáva krokom späť', async () => {
+    const backSpy = jest.spyOn(window.history, 'back');
+    const { result } = renderDashboard();
+    act(() => result.current.navigation.handleMainModuleChange('settings'));
+    await waitFor(() => expect(url()).toBe(SETTINGS));
+    act(() => result.current.navigation.handleSidebarPrivacyClick());
+    await waitFor(() => expect(url()).toBe('/dashboard/privacy'));
+    backSpy.mockClear();
+
+    act(() => result.current.state.handleMobileBack());
+
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    backSpy.mockRestore();
+  });
+
+  it('zoznam otvorený z appky pôvod má, otvorený odkazom nie', async () => {
+    const { result } = renderDashboard();
+    act(() => result.current.navigation.handleMainModuleChange('settings'));
+    await waitFor(() => expect(url()).toBe(SETTINGS));
+    expect(hasMobileSettingsOrigin(window.history.state)).toBe(true);
+
+    window.history.replaceState(null, '', SETTINGS);
+    expect(hasMobileSettingsOrigin(window.history.state)).toBe(false);
   });
 });

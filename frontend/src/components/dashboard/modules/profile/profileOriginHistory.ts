@@ -83,6 +83,46 @@ export function withProfileOriginStep(historyState: unknown): Record<string, unk
   return withDepth(historyState, marker.depth + 1);
 }
 
+/** Adresa profilu, ktorý appka otvára cez router a ešte nemá svoj záznam. */
+let pendingOriginPath: string | null = null;
+
+/**
+ * Otvorenie profilu cez `router.push` – pôvod sa doplní až po príchode.
+ *
+ * `router.push` stav histórie neprijíma a záznam vzniká až po dokončení
+ * navigácie, takže marker sa naň nedá pripnúť dopredu. Rovnaký postup používa
+ * detail portfólia (`openPortfolioDetail` / `adoptPortfolioDetailOrigin`).
+ */
+export function markProfileOriginPending(path: string): void {
+  pendingOriginPath = path;
+}
+
+/**
+ * Profil sa zobrazil: ak ho otvorila appka, označí jeho záznam pôvodom.
+ *
+ * Prevzatie je jednorazové a zahodí sa aj pri nezhode adries – inak by si ho
+ * mohol privlastniť profil otvorený odkazom.
+ */
+export function adoptProfileOrigin(): void {
+  if (typeof window === 'undefined') return;
+  const path = pendingOriginPath;
+  pendingOriginPath = null;
+  if (!path || window.location.pathname !== path) return;
+  // Záznam už pôvod niesť môže (návrat dopredu na ten istý profil) – vtedy sa
+  // hĺbka neprepisuje, patrí tomu záznamu.
+  if (readProfileOriginDepth(window.history.state) !== null) return;
+  try {
+    window.history.replaceState(withProfileOriginEntry(window.history.state), '', window.location.href);
+  } catch {
+    // Bez markera sa šípka správa ako doteraz – jeden krok späť.
+  }
+}
+
+/** Len pre testy – vyčistí modulový stav medzi prípadmi. */
+export function resetProfileOriginPending(): void {
+  pendingOriginPath = null;
+}
+
 /** Hĺbka aktuálneho záznamu v profile; `null` keď pôvod nepoznáme. */
 export function readProfileOriginDepth(historyState: unknown): number | null {
   return readMarker(historyState)?.depth ?? null;
