@@ -401,18 +401,20 @@ describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
 
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith(
-        '/dashboard/users/test-user?offer=55#sekcia',
+        // Záložka je v adrese od vstupu do profilu; kanonizácia query nesie so sebou.
+        '/dashboard/users/test-user?offer=55&tab=offers#sekcia',
       ),
     );
   });
 
-  it('produces a bare URL when there was nothing to carry', async () => {
+  it('carries only the tab when there was nothing else', async () => {
     window.history.replaceState(null, '', '/dashboard/users/42');
 
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
+    // `?tab=` doplní vstup do profilu, aby záznam niesol svoju záložku sám.
     await waitFor(() =>
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user'),
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=offers'),
     );
   });
 });

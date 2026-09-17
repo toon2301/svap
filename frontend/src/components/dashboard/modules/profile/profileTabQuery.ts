@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProfileTab } from './profileTypes';
+import { withProfileOriginStep } from './profileOriginHistory';
 
 export type ProfileTabChangeOptions = {
   /**
@@ -127,6 +128,28 @@ export function useProfileTabQuery(
     setActiveTab(currentTab() ?? fallbackTab);
   }, [fallbackTab, profileKey]);
 
+  // Záznam profilu musí niesť `?tab=` explicitne.
+  //
+  // Bez parametra je jediným zdrojom záložky `fallbackTab` – a ten je pri
+  // VLASTNOM profile živý JS stav, ktorý sa mení s každým klikom. Krok späť
+  // z `?tab=portfolio` na adresu bez parametra potom dosadil najnovší klik,
+  // nie záložku, ktorú ten záznam niesol, takže Späť navonok nespravilo nič.
+  // Cudzí profil má fallback pevný z props stránky, takže tam to nezlyhávalo;
+  // zápis je napriek tomu spoločný, nech sa obe vetvy správajú rovnako.
+  //
+  // `replaceState` (nie push): dopisuje sa, čo daný záznam aj tak zobrazuje –
+  // nie je to navigácia a nemá si brať vlastný krok späť. Stav histórie sa
+  // ponecháva z rovnakého dôvodu ako v `changeTab`.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (currentTab() !== null) return;
+    window.history.replaceState(
+      window.history.state,
+      '',
+      buildProfileTabUrl(currentUrl(), fallbackTab),
+    );
+  }, [fallbackTab, profileKey]);
+
   // Krok späť/dopredu prepne záložku spolu s adresou.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -153,7 +176,9 @@ export function useProfileTabQuery(
         window.history.replaceState(window.history.state, '', url);
         return;
       }
-      window.history.pushState(window.history.state, '', url);
+      // Nový záznam vnútri profilu – appková šípka ho musí vedieť preskočiť,
+      // keď profil opúšťa celý (`withProfileOriginStep` zvýši hĺbku).
+      window.history.pushState(withProfileOriginStep(window.history.state), '', url);
     },
     [],
   );

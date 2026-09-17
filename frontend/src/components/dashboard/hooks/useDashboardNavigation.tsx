@@ -16,6 +16,7 @@ import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { clearFeedReturn } from '../modules/feed/feedReturnState';
 import { markProfileFreshEntry } from '../modules/profile/profileFreshEntry';
+import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
 import {
   dashboardProfilePath,
   dashboardSectionPath,
@@ -224,8 +225,11 @@ export function useDashboardNavigation({
     }
 
     if (typeof window !== 'undefined') {
+      // Vstup do vlastného profilu si značí pôvod, aby appková šípka vedela
+      // opustiť profil celý – tam, kde sa značí aj nový vstup (vyššie).
+      const historyState = moduleId === 'profile' ? withProfileOriginEntry(null) : null;
       // Najprv zmeň URL v browseri (to funguje vždy)
-      window.history.pushState(null, '', url);
+      window.history.pushState(historyState, '', url);
     }
 
     handleModuleChange(moduleId);
@@ -396,44 +400,54 @@ export function useDashboardNavigation({
     const url = `/dashboard/users/${identifier}`;
 
     if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', url);
+      window.history.pushState(withProfileOriginEntry(null), '', url);
     }
   }, [user, setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen]);
 
-  const handleSidebarLanguageClick = useCallback(() => {
-    setActiveModule('profile');
-    setIsRightSidebarOpen(true);
-    setActiveRightItem('language');
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
-
-  const handleSidebarAccountTypeClick = useCallback(() => {
-    setActiveModule('profile');
-    setIsRightSidebarOpen(true);
-    setActiveRightItem('account-type');
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
-
-  const handleSidebarAccountSettingsClick = useCallback(() => {
-    setActiveModule('profile');
-    setIsRightSidebarOpen(true);
-    setActiveRightItem('account-settings');
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
-
-  const handleSidebarPrivacyClick = useCallback(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setActiveModule('privacy');
-      setIsRightSidebarOpen(false);
-      setActiveRightItem('');
-      try {
-        localStorage.setItem('activeModule', 'privacy');
-      } catch {
-        // ignore
+  /**
+   * Sekcia Nastavení zo zoznamu.
+   *
+   * Na mobile je sekcia samostatná obrazovka, takže ide bežnou navigáciou –
+   * dostane vlastnú adresu aj vlastný záznam histórie a krok späť ju vráti na
+   * zoznam. Predtým sa nastavil len stav (pravá položka nad profilom), adresa
+   * sa nemenila vôbec a návrat musel riešiť ručný handler pre každú sekciu
+   * zvlášť – Jazyk ho nemal a šípka mu chýbala celkom.
+   *
+   * Na desktope ostáva sekcia pravou položkou vedľa zoznamu, ako doteraz.
+   */
+  const openSettingsSection = useCallback(
+    (moduleId: string, rightItem: string) => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+      if (isMobile) {
+        handleMainModuleChange(moduleId);
+        return;
       }
-    } else {
       setActiveModule('profile');
       setIsRightSidebarOpen(true);
-      setActiveRightItem('privacy');
-    }
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
+      setActiveRightItem(rightItem);
+    },
+    [handleMainModuleChange, setActiveModule, setIsRightSidebarOpen, setActiveRightItem],
+  );
+
+  const handleSidebarLanguageClick = useCallback(
+    () => openSettingsSection('language', 'language'),
+    [openSettingsSection],
+  );
+
+  const handleSidebarAccountTypeClick = useCallback(
+    () => openSettingsSection('account-type', 'account-type'),
+    [openSettingsSection],
+  );
+
+  const handleSidebarAccountSettingsClick = useCallback(
+    () => openSettingsSection('account-settings', 'account-settings'),
+    [openSettingsSection],
+  );
+
+  const handleSidebarPrivacyClick = useCallback(
+    () => openSettingsSection('privacy', 'privacy'),
+    [openSettingsSection],
+  );
 
   const handleRightSidebarClose = useCallback(() => {
     if (

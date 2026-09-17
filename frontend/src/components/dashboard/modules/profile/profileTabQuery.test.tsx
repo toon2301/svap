@@ -14,6 +14,7 @@ import {
   readProfileTabFromSearch,
   useProfileTabQuery,
 } from './profileTabQuery';
+import type { ProfileTab } from './profileTypes';
 
 beforeEach(() => {
   window.history.replaceState(null, '', '/dashboard/users/peter');
@@ -222,5 +223,112 @@ describe('useProfileTabQuery', () => {
     // Návrat z nastavení aj mobilný panel sledovaných ponúk si v stave
     // histórie nesú vlastné štítky – prepnutie záložky im ich nesmie zmazať.
     expect(window.history.state).toEqual({ marker: 'keep-me' });
+  });
+});
+
+/**
+ * Krok späť medzi záložkami VLASTNÉHO profilu.
+ *
+ * Vlastný profil si „poslednú voľbu" drží v JS stave (`ownProfileTab`), ktorý
+ * sa mení pri každom kliku a zároveň slúžil ako náhrada za chýbajúce `?tab=`.
+ * Krok späť na adresu bez parametra teda dosadil najnovší klik namiesto
+ * záložky, ktorú ten záznam niesol – a Späť navonok nespravilo nič. Cudzí
+ * profil má náhradu pevnú z props stránky, preto tam problém nebol.
+ */
+describe('záznam profilu nesie záložku explicitne', () => {
+  /** Vlastný profil: náhrada ide za posledným klikom, tak ako `ownProfileTab`. */
+  function renderOwnProfile(initial: ProfileTab) {
+    return renderHook(
+      ({ fallback }: { fallback: ProfileTab }) => useProfileTabQuery(fallback, 'peter'),
+      { initialProps: { fallback: initial } },
+    );
+  }
+
+  it('dopíše záložku do adresy hneď pri vstupe', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+  });
+
+  it('vstup si na to nevypýta krok späť', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    window.history.pushState(null, '', '/dashboard/users/peter');
+    const lengthBefore = window.history.length;
+
+    renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+    // Dopísanie je oprava adresy, nie navigácia.
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('adresu so záložkou nechá tak', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?tab=posts');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    await waitFor(() => expect(result.current[0]).toBe('posts'));
+    expect(window.location.search).toBe('?tab=posts');
+  });
+
+  it('cestou odvodenú záložku zapíše tiež', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter/portfolio');
+    renderHook(() => useProfileTabQuery('portfolio', 'peter'));
+
+    await waitFor(() => expect(window.location.search).toBe('?tab=portfolio'));
+  });
+
+  it('vlastný profil: Portfólio → Späť vráti na Ponuky', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    window.history.pushState(null, '', '/dashboard/users/peter');
+    const { result, rerender } = renderOwnProfile('offers');
+
+    // Vstupný záznam teraz nesie `?tab=offers`, nie holú adresu.
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+
+    act(() => result.current[1]('portfolio'));
+    // Klik posunul aj „poslednú voľbu" vlastného profilu.
+    rerender({ fallback: 'portfolio' });
+    expect(result.current[0]).toBe('portfolio');
+    expect(window.location.search).toBe('?tab=portfolio');
+
+    await act(async () => {
+      window.history.back();
+    });
+
+    // Predtým tu ostalo `portfolio`: adresa bola bez parametra a náhrada už
+    // odrážala posledný klik.
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+    expect(result.current[0]).toBe('offers');
+  });
+
+  it('nekoliduje s fresh-entry: jediný zápis, keď záložka sedí', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+    await waitFor(() => expect(window.location.search).toBe('?tab=offers'));
+
+    const urlBefore = window.location.href;
+    const lengthBefore = window.history.length;
+
+    // Presne to, čo robí fresh-entry efekt po vstupe cez preklik.
+    act(() => result.current[1]('offers', { replace: true }));
+
+    expect(window.location.href).toBe(urlBefore);
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('nekoliduje s fresh-entry: jeho hodnota má posledné slovo', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    const { result } = renderOwnProfile('portfolio');
+    // Zastaraná „posledná voľba" sa zapíše prvá…
+    await waitFor(() => expect(window.location.search).toBe('?tab=portfolio'));
+
+    const lengthBefore = window.history.length;
+    // …a fresh-entry ju vzápätí prepíše, tiež cez replace.
+    act(() => result.current[1]('offers', { replace: true }));
+
+    expect(result.current[0]).toBe('offers');
+    expect(window.location.search).toBe('?tab=offers');
+    expect(window.history.length).toBe(lengthBefore);
   });
 });

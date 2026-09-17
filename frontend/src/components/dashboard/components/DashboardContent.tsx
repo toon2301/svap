@@ -54,7 +54,6 @@ import {
   portfolioDetailBackTarget,
   returnToPortfolioDetailOrigin,
 } from '../modules/profile/portfolioRouting';
-import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -86,12 +85,14 @@ import {
   markProfileFreshEntry,
   profileEntryTargetFromIdentifier,
 } from '../modules/profile/profileFreshEntry';
+import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
 import {
   dashboardModuleFromPath,
   dashboardUserIdentifierFromPath,
   useDashboardMountRoute,
 } from './dashboardMountRoute';
 import { dashboardProfilePath, dashboardSectionPath } from './dashboardRoutes';
+import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -324,7 +325,6 @@ export default function DashboardContent({
     ),
   );
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
-  const mobileSettingsReturnRef = useRef<{ moduleId: string; url: string } | null>(null);
   const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
   const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
 
@@ -411,6 +411,14 @@ export default function DashboardContent({
     setIsPersonalAccountModalOpen,
   } = dashboardState;
 
+  // Zoznam Nastavení sa na mobile riadi ADRESOU, nie vlastným boolean stavom:
+  // je to obrazovka ako každá iná, takže krok späť ho zobrazí aj zatvorí.
+  const showMobileSettingsList = isMobile && activeModule === 'settings';
+
+  // Nastavenia sa otvárajú od vrchu – bez tohto si nesú scroll obrazovky,
+  // z ktorej sa do nich vošlo, a držia ho aj medzi sekciami.
+  useSettingsScrollReset(activeModule, activeRightItem, isRightSidebarOpen);
+
   useEffect(() => {
     if (activeModule !== 'account-settings' && activeRightItem !== 'account-settings') {
       setMobileAccountSettingsView('overview');
@@ -464,61 +472,30 @@ export default function DashboardContent({
     [activeModule, navigation],
   );
 
-  const rememberMobileSettingsReturn = useCallback(() => {
-    if (!isMobile || !isMobileMenuOpen) return;
-    if (
-      activeModule === 'notification-settings' ||
-      activeModule === 'privacy' ||
-      activeModule === 'blocked-users'
-    ) return;
+  // Zoznam Nastavení je na mobile skutočná obrazovka s vlastnou adresou, takže
+  // sekcia sa otvára bežnou navigáciou a návrat naň obstará krok späť.
+  const handleDashboardModuleChange = handleMainModuleChange;
 
-    // Ulozena hodnota ide neskor do `pushState(returnTarget.url)`, takze musi
-    // niest cely tvar adresy vratane fragmentu. Spolocny helper s desktopovou
-    // vetvou (`useDashboardNavigation`) - robia to iste.
-    const currentUrl = currentBrowserUrl('/dashboard/profile');
-
-    mobileSettingsReturnRef.current = {
-      moduleId: activeModule || 'profile',
-      url: currentUrl,
-    };
-  }, [activeModule, isMobile, isMobileMenuOpen]);
-
-  const handleMobileSettingsDetailBack = useCallback(() => {
-    const returnTarget = mobileSettingsReturnRef.current ?? { moduleId: 'profile', url: '/dashboard/profile' };
-
-    setActiveModule(returnTarget.moduleId);
-    setIsRightSidebarOpen(false);
-    setActiveRightItem('');
-    setIsMobileMenuOpen(true);
-
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', returnTarget.url);
-      try {
-        localStorage.setItem('activeModule', returnTarget.moduleId);
-      } catch {
-        // Navigation state is already restored; ignore storage failures.
-      }
+  /**
+   * Hamburger = vstup do Nastavení, teda navigácia, nie len otvorenie menu.
+   *
+   * Keď už adresa na zozname stojí, nenaviguje sa znova – len sa zosúladí
+   * modul. Sem sa totiž dá prísť aj „zvnútra": hostiteľ sledovaných ponúk si
+   * po kroku späť pýta zobrazenie zoznamu a druhý záznam by bol navyše.
+   */
+  const handleMobileSettingsOpen = useCallback(() => {
+    const settingsPath = dashboardSectionPath('settings');
+    if (typeof window !== 'undefined' && window.location.pathname === settingsPath) {
+      setActiveModule('settings');
+      return;
     }
-  }, [setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
+    handleMainModuleChange('settings');
+  }, [handleMainModuleChange, setActiveModule]);
 
-  const handleDashboardModuleChange = useCallback(
-    (moduleId: string) => {
-      if (
-        moduleId === 'notification-settings' ||
-        moduleId === 'privacy' ||
-        moduleId === 'blocked-users'
-      ) {
-        rememberMobileSettingsReturn();
-      }
-      handleMainModuleChange(moduleId);
-    },
-    [handleMainModuleChange, rememberMobileSettingsReturn],
-  );
-
-  const handleSidebarPrivacyClick = useCallback(() => {
-    rememberMobileSettingsReturn();
-    navigation.handleSidebarPrivacyClick();
-  }, [navigation, rememberMobileSettingsReturn]);
+  /** Krížik zavrie zoznam tak, ako ho otvorila história – krokom späť. */
+  const handleMobileSettingsClose = useCallback(() => {
+    if (typeof window !== 'undefined') window.history.back();
+  }, []);
 
   const handleMobileProfileOpen = useCallback(() => {
     setOwnProfileTab('offers');
@@ -1301,7 +1278,7 @@ export default function DashboardContent({
             ? `?${useOfferParam ? 'offer' : 'highlight'}=${encodeURIComponent(String(highlightId))}`
             : ''
         }`;
-        window.history.pushState(null, '', url);
+        window.history.pushState(withProfileOriginEntry(null), '', url);
       }
     };
 
@@ -1364,7 +1341,7 @@ export default function DashboardContent({
         const url = `${ownProfilePath}${
           highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
         }`;
-        window.history.pushState(null, '', url);
+        window.history.pushState(withProfileOriginEntry(null), '', url);
       }
     };
 
@@ -1547,7 +1524,7 @@ export default function DashboardContent({
         isProfileEditMode={isProfileEditMode}
         isRightSidebarOpen={isRightSidebarOpen}
         isNotificationsPanelOpen={isNotificationsPanelOpen}
-        isMobileMenuOpen={isMobileMenuOpen}
+        isMobileMenuOpen={showMobileSettingsList}
         onOpenHome={handleOnboardingHomeOpen}
         onOpenProfile={handleDesktopOnboardingProfileOpen}
         onOpenEditProfile={navigation.handleEditProfileClick}
@@ -1577,13 +1554,13 @@ export default function DashboardContent({
             activeRightItem={activeRightItem}
             viewedUserNotFound={userProfile.viewedUserNotFound}
             isRightSidebarOpen={isRightSidebarOpen}
-            isMobileMenuOpen={isMobileMenuOpen}
+            isMobileMenuOpen={showMobileSettingsList}
             onModuleChange={handleDashboardModuleChange}
             onLogout={handleLogout}
             onRightSidebarClose={navigation.handleRightSidebarClose}
             onRightItemClick={handleRightItemClick}
-            onMobileMenuOpen={() => setIsMobileMenuOpen(true)}
-            onMobileMenuClose={() => setIsMobileMenuOpen(false)}
+            onMobileMenuOpen={handleMobileSettingsOpen}
+            onMobileMenuClose={handleMobileSettingsClose}
             onMobileBack={
               activeModule === 'skills-select-category'
                 ? handleSkillsCategoryBack
@@ -1593,11 +1570,7 @@ export default function DashboardContent({
                     ? handleOfferReviewsBack
                     : activeModule === 'portfolio-detail'
                       ? handlePortfolioDetailBack
-                      : activeModule === 'notification-settings' ||
-                          activeModule === 'privacy' ||
-                          activeModule === 'blocked-users'
-                        ? handleMobileSettingsDetailBack
-                        : activeModule === 'account-settings' || activeRightItem === 'account-settings'
+                      : activeModule === 'account-settings' || activeRightItem === 'account-settings'
                         ? handleAccountSettingsMobileBack
                         : handleMobileBack
             }
@@ -1606,7 +1579,7 @@ export default function DashboardContent({
             onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
             onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
             onSidebarAccountSettingsClick={navigation.handleSidebarAccountSettingsClick}
-            onSidebarPrivacyClick={handleSidebarPrivacyClick}
+            onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
             isSearchOpen={isSearchOpen}
             isNotificationsPanelOpen={isNotificationsPanelOpen}
             onSidebarSearchClick={handleSidebarSearchClick}

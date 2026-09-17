@@ -14,6 +14,7 @@ import SkillsModeSwitchButton from './modules/skills/SkillsModeSwitchButton';
 import type { MessagingUserBrief } from './modules/messages/types';
 import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import { useOptionalMobileOnboarding } from './onboarding/MobileOnboardingContext';
+import { isSettingsSectionModule } from './hooks/desktopSettingsNavigation';
 
 const BACK_NAV_RIGHT_ITEMS: readonly string[] = [
   'language',
@@ -23,12 +24,15 @@ const BACK_NAV_RIGHT_ITEMS: readonly string[] = [
   'privacy',
 ];
 
+/**
+ * Moduly so šípkou späť MIMO Nastavení.
+ *
+ * Sekcie Nastavení tu zámerne nie sú – tie sa pýtajú registra
+ * (`isSettingsSectionModule`), aby nová sekcia nemusela byť dopísaná na dvoch
+ * miestach. Presne na tom predtým stroskotal Jazyk: sekciu mal, v zozname
+ * chýbal, a tak nemal šípku vôbec.
+ */
 const BACK_NAV_MODULES: readonly string[] = [
-  'account-type',
-  'account-settings',
-  'blocked-users',
-  'privacy',
-  'notification-settings',
   'skills',
   'skills-offer',
   'skills-search',
@@ -167,7 +171,8 @@ export default function MobileTopBar({
   const canShowBackNavigation =
     isEditMode ||
     BACK_NAV_RIGHT_ITEMS.includes(activeRightItem || '') ||
-    BACK_NAV_MODULES.includes(activeModule || '');
+    BACK_NAV_MODULES.includes(activeModule || '') ||
+    isSettingsSectionModule(activeModule);
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
