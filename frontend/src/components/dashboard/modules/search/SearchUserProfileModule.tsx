@@ -210,7 +210,11 @@ export function SearchUserProfileModule({
               // v histórii duplicitný krok navyše oproti vlastnému – ten sa
               // kanonizuje jediným `replaceState`.
               if (typeof window !== 'undefined') {
-                window.history.replaceState(null, '', newUrl);
+                // Stav záznamu sa PONECHÁVA: kanonizácia mení len tvar adresy,
+                // nie samotný záznam. Nesie si štítky, ktoré k nemu patria –
+                // najmä pôvod profilu pre appkovú šípku. `null` ich zmazal a
+                // keďže identita sa kanonizáciou nemení, už sa nenastavili.
+                window.history.replaceState(window.history.state, '', newUrl);
               }
               router.replace(newUrl);
             }

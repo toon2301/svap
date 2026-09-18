@@ -31,6 +31,10 @@ jest.mock('../../modules/profile/profileUserCache', () => ({
 }));
 
 import { useDashboardUserProfile } from '../useDashboardUserProfile';
+import {
+  readProfileOriginDepth,
+  withProfileOriginEntry,
+} from '../../modules/profile/profileOriginHistory';
 
 const dashboardState = {
   setActiveModule: jest.fn(),
@@ -79,6 +83,27 @@ describe('kanonizácia ID na slug', () => {
       expect(window.location.pathname).toBe('/dashboard/users/peter'),
     );
     expect(window.location.search).toBe('?offer=55');
+  });
+
+  it('pôvod profilu v stave záznamu prežije', async () => {
+    // Prepis mení LEN tvar adresy; štítky toho istého záznamu k nemu patria
+    // ďalej. `null` ich mazal a keďže identita sa kanonizáciou nemení, marker
+    // sa už nikdy nenastavil a appková šípka profil neopustila.
+    window.history.replaceState(withProfileOriginEntry(null), '', '/dashboard/users/42');
+    renderHook(() =>
+      useDashboardUserProfile({
+        user: viewer,
+        activeModule: 'user-profile',
+        dashboardState,
+        initialViewedUserId: 42,
+        setHighlightedSkillId,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/dashboard/users/peter'),
+    );
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
   });
 
   it('leaves a bare URL bare', async () => {
