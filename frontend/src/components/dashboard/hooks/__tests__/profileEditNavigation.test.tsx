@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { User } from '@/types';
 import { useDashboardState } from '../useDashboardState';
+import { readProfileOriginDepth } from '../../modules/profile/profileOriginHistory';
 import {
   useDashboardNavigation,
   profileIdentifier,
@@ -670,11 +671,11 @@ describe('profile edit navigation flow', () => {
       result.current.handleMainModuleChange('profile');
     });
 
-    expect(pushStateSpy).toHaveBeenLastCalledWith(
-      null,
-      '',
-      '/dashboard/users/test-user',
-    );
+    // Vstup do profilu si do stavu značí pôvod, aby appková šípka vedela
+    // profil opustiť celý; adresa sa tým nemení.
+    const [historyState, , pushedUrl] = pushStateSpy.mock.calls.at(-1) ?? [];
+    expect(pushedUrl).toBe('/dashboard/users/test-user');
+    expect(readProfileOriginDepth(historyState)).toBe(0);
     expect(handleModuleChange).toHaveBeenCalledWith('profile');
     pushStateSpy.mockRestore();
   });

@@ -17,9 +17,13 @@ import {
   getDesktopSettingsSectionPath,
   readDesktopSettingsReturnTarget,
   withDesktopSettingsHistory,
+  isSettingsSectionModule,
   withoutDesktopSettingsHistory,
   type DesktopSettingsReturnTarget,
 } from './desktopSettingsNavigation';
+import { returnToProfileOrigin } from '../modules/profile/profileOriginHistory';
+import { stepBackFromMobileSettings } from './mobileSettingsOrigin';
+import { dashboardSectionPath } from '../components/dashboardRoutes';
 
 // Izomorfný layout-effect: v prehliadači beží pred vykreslením (bez viditeľného
 // bliku pri obnove modulu), pri SSR degraduje na useEffect (žiadny React warning).
@@ -389,6 +393,9 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'blocked-users',
         'language',
         'account-type',
+        // Súkromie v zozname chýbalo – stará vetva si modul nastavovala sama,
+        // takže bežná navigácia sem preň nedošla.
+        'privacy',
         'skills',
         'skills-offer',
         'skills-search',
@@ -442,7 +449,18 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setIsRightSidebarOpen(true);
         setActiveModule('settings');
         if (typeof window !== 'undefined') {
-          window.history.replaceState(window.history.state, '', settingsPath);
+          // `pushState`, nie `replaceState`: sekcia je vlastná obrazovka a musí
+          // mať vlastný záznam. Keď ho nemala, boli celé Nastavenia jediný
+          // záznam a krok späť zo sekcie neviedol na zoznam, ale rovno von
+          // z Nastavení. Stav histórie sa ponecháva – nesie štítok návratu,
+          // podľa ktorého sa Nastavenia obnovujú pri `popstate`.
+          //
+          // Klik na UŽ OTVORENÚ sekciu záznam nepridáva – rovnako ako klik na
+          // už aktívnu záložku profilu. Inak by sa cez prázdne kroky musel
+          // používateľ preklikať späť.
+          if (window.location.pathname !== settingsPath) {
+            window.history.pushState(window.history.state, '', settingsPath);
+          }
           try {
             localStorage.setItem('activeModule', 'settings');
           } catch {
@@ -685,9 +703,16 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // Aktualizovať URL - odstrániť /edit časť
     }
 
-    // Ak sme na cudzom profile, vráť sa na predchádzajúcu stránku (Žiadosti, Vyhľadávanie, …)
+    // Z cudzieho profilu vedie šípka na jeho PÔVOD – tam, odkiaľ sa doň vošlo
+    // (Žiadosti, Vyhľadávanie, …), jedným skokom cez všetky medzitým prepnuté
+    // záložky. Každé prepnutie je vlastný krok histórie kvôli browser Backu,
+    // takže jeden krok späť by vrátil len o záložku.
+    // Bez známeho pôvodu (vstup odkazom, záznam spred F5) ostáva jeden krok.
+    //
+    // Vlastný profil sem nepatrí: appkovú šípku na mobile nemá (v ľavom slote
+    // lišty je skratka na Štatistiky) a nedostáva ju.
     if (activeModule === 'user-profile') {
-      router.back();
+      if (!returnToProfileOrigin()) router.back();
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
@@ -763,19 +788,26 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
-    } else if (activeModule === 'privacy') {
-      setIsMobileMenuOpen(true);
-      setActiveModule('');
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.removeItem('activeModule');
-        } catch {
-          // ignore
+    } else if (isSettingsSectionModule(activeModule)) {
+      // Sekcia Nastavení má na mobile vlastný záznam histórie, takže návrat na
+      // zoznam je obyčajný krok späť – rovnaký, aký spraví browser Back.
+      // Predtým sa zoznam otváral ručne, každá sekcia vlastnou vetvou, a tri
+      // z nich na to vetvu nemali vôbec.
+      //
+      // Krok späť sa ale smie použiť len tam, kde pod sekciou naozaj nejaký
+      // záznam je. Pri priamom vstupe (odkaz, nová karta) by odišiel z appky,
+      // preto vtedy nasleduje deterministický cieľ – zoznam Nastavení.
+      if (!stepBackFromMobileSettings()) {
+        const settingsPath = dashboardSectionPath('settings');
+        setActiveModule('settings');
+        if (typeof window !== 'undefined' && settingsPath) {
+          window.history.pushState(null, '', settingsPath);
         }
       }
     } else if (activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeRightItem === 'account-settings') {
+      // Desktopová podoba sekcie (pravá položka vedľa zoznamu) – iba zavrieť.
       setIsMobileMenuOpen(true);
-    } else if (activeModule === 'notifications' || activeModule === 'notification-settings') {
+    } else if (activeModule === 'notifications') {
       setActiveModule('');
       setIsMobileMenuOpen(true);
     } else if (activeModule === 'offer-reviews') {

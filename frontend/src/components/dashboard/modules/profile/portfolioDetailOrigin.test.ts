@@ -104,8 +104,11 @@ describe('scenár z mapovania: Nástenka → Vyhľadávanie → cudzí profil �
 
     // Ďalej už len vlastné kroky používateľa: záložka Ponuky, Vyhľadávanie.
     // Žiadna kópia profilu navyše (predtým `/portfolio` + `?tab=portfolio`).
+    //
+    // Vstupný záznam nesie záložku explicitne – bez nej by krok späť na holú
+    // adresu dosadil poslednú voľbu namiesto tej, ktorú záznam niesol.
     await goBack();
-    expect(url()).toBe(PROFILE);
+    expect(url()).toBe(`${PROFILE}?tab=offers`);
     await goBack();
     expect(url()).toBe(SEARCH);
   });

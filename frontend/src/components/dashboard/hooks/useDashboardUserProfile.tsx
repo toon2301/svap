@@ -327,6 +327,10 @@ export function useDashboardUserProfile({
     }
 
     // Aktualizovať URL bez reloadu - window.history.replaceState mení URL bez prerenderovania stránky
+    //
+    // Všetky prepisy nižšie menia LEN tvar adresy toho istého záznamu, preto si
+    // odovzdávajú jeho stav. Nesie štítky, ktoré prepis adresy nemá zrušiť –
+    // napríklad pôvod profilu pre appkovú šípku alebo návrat z Nastavení.
     if (currentPath.startsWith('/dashboard/users/')) {
       const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
       const isCurrentPathEdit = currentPath.endsWith('/edit');
@@ -346,7 +350,7 @@ export function useDashboardUserProfile({
       // Ak sme v edit móde a slug sa zmenil, aktualizovať URL s novým slugom a zachovať /edit
       if (isEditMode && currentIdentifier !== user.slug) {
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', profileUrlKeepingQuery(expectedPathWithEdit));
+          window.history.replaceState(window.history.state, '', profileUrlKeepingQuery(expectedPathWithEdit));
         }
         return;
       }
@@ -355,11 +359,11 @@ export function useDashboardUserProfile({
       if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== user.slug) {
         const newUrl = isEditMode ? expectedPathWithEdit : expectedPath;
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', profileUrlKeepingQuery(newUrl));
+          window.history.replaceState(window.history.state, '', profileUrlKeepingQuery(newUrl));
         }
       } else if (currentIdentifier !== user.slug) {
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', profileUrlKeepingQuery(expectedPathForCurrentMode));
+          window.history.replaceState(window.history.state, '', profileUrlKeepingQuery(expectedPathForCurrentMode));
         }
       }
     } else {
@@ -367,7 +371,7 @@ export function useDashboardUserProfile({
       // Query ani fragment sa tu ZÁMERNE neprenášajú: patria tomu, odkiaľ sa
       // odchádza, nie profilu, na ktorý sa ide.
       if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', expectedPathForCurrentMode);
+        window.history.replaceState(window.history.state, '', expectedPathForCurrentMode);
       }
     }
   }, [
@@ -427,7 +431,7 @@ export function useDashboardUserProfile({
         const newUrl = profileUrlKeepingQuery(`/dashboard/users/${slug}`);
 
         // Aktualizovať URL bez reloadu - window.history.replaceState je konzistentnejšie
-        window.history.replaceState(null, '', newUrl);
+        window.history.replaceState(window.history.state, '', newUrl);
         
         // Aktualizovať viewedUserSlug
         setViewedUserSlug(slug);

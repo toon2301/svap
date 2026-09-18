@@ -12,6 +12,11 @@ import {
   invalidateUserProfileCache,
   setUserProfileToCache,
 } from '../profile/profileUserCache';
+import {
+  markProfileOriginPending,
+  readProfileOriginDepth,
+  withProfileOriginEntry,
+} from '../profile/profileOriginHistory';
 
 const pushMock = jest.fn();
 const replaceMock = jest.fn();
@@ -401,18 +406,49 @@ describe('SearchUserProfileModule – kanonizacia ID na slug', () => {
 
     await waitFor(() =>
       expect(replaceMock).toHaveBeenCalledWith(
-        '/dashboard/users/test-user?offer=55#sekcia',
+        // Záložka je v adrese od vstupu do profilu; kanonizácia query nesie so sebou.
+        '/dashboard/users/test-user?offer=55&tab=offers#sekcia',
       ),
     );
   });
 
-  it('produces a bare URL when there was nothing to carry', async () => {
-    window.history.replaceState(null, '', '/dashboard/users/42');
+  it('pôvod profilu v stave záznamu kanonizáciu prežije', async () => {
+    // Prepis adresy mení LEN jej tvar – štítky záznamu k nemu patria ďalej.
+    // `null` ich mazal a keďže identita sa kanonizáciou nemení, druhú šancu
+    // marker už nedostal a appková šípka profil neopustila.
+    window.history.replaceState(withProfileOriginEntry(null), '', '/dashboard/users/42');
 
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     await waitFor(() =>
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user'),
+      expect(window.location.pathname).toBe('/dashboard/users/test-user'),
+    );
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
+  });
+
+  it('krížová kontrola: vstup z vyhľadávania číselným ID → kanonizácia → pôvod prežije', async () => {
+    // Celý reťazec naraz: vyhľadávanie otvorí profil routerom (pôvod sa
+    // preberá až po príchode), adresa je ešte číselná a hneď sa kanonizuje.
+    // Musia vydržať OBE opravy, nielen každá zvlášť.
+    window.history.replaceState(null, '', '/dashboard/users/42');
+    markProfileOriginPending('/dashboard/users/42');
+
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/dashboard/users/test-user'),
+    );
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
+  });
+
+  it('carries only the tab when there was nothing else', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/42');
+
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    // `?tab=` doplní vstup do profilu, aby záznam niesol svoju záložku sám.
+    await waitFor(() =>
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/users/test-user?tab=offers'),
     );
   });
 });

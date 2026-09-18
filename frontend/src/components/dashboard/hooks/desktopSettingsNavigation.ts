@@ -246,6 +246,17 @@ export function getDesktopSettingsSectionFromModule(
   return MODULE_SECTIONS[moduleId] ?? null;
 }
 
+/**
+ * Je tento modul SEKCIOU Nastavení (nie ich zoznamom)?
+ *
+ * Jediný zdroj pre miesta, ktoré sa pýtajú „sme vnútri Nastavení" – napríklad
+ * mobilná lišta, ktorá podľa toho ukazuje šípku späť. Nová sekcia sa tak
+ * nemusí dopisovať do ďalšieho ručného zoznamu.
+ */
+export function isSettingsSectionModule(moduleId: string | null | undefined): boolean {
+  return moduleId !== 'settings' && getDesktopSettingsSectionFromModule(moduleId) !== null;
+}
+
 export function getDesktopSettingsSectionFromPath(
   pathname: string,
 ): DesktopSettingsSection | null {
