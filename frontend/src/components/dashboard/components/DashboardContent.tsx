@@ -502,8 +502,17 @@ export default function DashboardContent({
    *
    * Pri priamom vstupe (odkaz, nová karta) pod zoznamom žiadny záznam appky
    * nie je a krok späť by z nej odišiel; vtedy sa ide na Nástenku.
+   *
+   * Zoznam sa zatvára LEN kým je naozaj zobrazený. Jeho riadky totiž po
+   * navigácii do sekcie volajú zatvorenie ešte raz (z čias, keď bol zoznam iba
+   * stavom menu a zatvorenie nič nenavigovalo). Odkedy je zoznam obrazovkou
+   * s adresou, bol by to druhý krok, ktorý by práve otvorenú sekciu vzápätí
+   * vrátil – obrazovka ostala na zozname a sekcia bola dosiahnuteľná až
+   * tlačidlom „dopredu".
    */
   const handleMobileSettingsClose = useCallback(() => {
+    const settingsPath = dashboardSectionPath('settings');
+    if (typeof window !== 'undefined' && window.location.pathname !== settingsPath) return;
     if (stepBackFromMobileSettings()) return;
     setActiveModule('home');
     if (typeof window !== 'undefined') {
