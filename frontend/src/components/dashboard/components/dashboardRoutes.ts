@@ -310,6 +310,23 @@ export function dashboardFeedPostPath(postId: string | number): string | null {
  */
 export const DASHBOARD_HOME_PATH = dashboardSectionPath('home') ?? '/dashboard';
 
+/**
+ * Sú to tie isté adresy dashboardu?
+ *
+ * Koncové lomítko je platný tvar tej istej cesty – `skipTrailingSlashRedirect`
+ * ju nechá tak a vzory v tejto tabuľke ju tiež prijímajú (`\/?$`). Porovnanie
+ * ciest ho preto musí zniesť, inak si appka pri `/dashboard/settings/` myslí,
+ * že stojí inde.
+ */
+export function isSameDashboardPath(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  if (a == null || b == null) return false;
+  const normalize = (value: string) => value.replace(/\/+$/, '') || '/';
+  return normalize(a) === normalize(b);
+}
+
 /** Slug alebo číselné ID používateľa z profilovej adresy. */
 export function dashboardUserIdentifierFromPath(pathname: string): string | null {
   const match = String(pathname || '').match(

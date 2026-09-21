@@ -95,6 +95,7 @@ import {
   DASHBOARD_HOME_PATH,
   dashboardProfilePath,
   dashboardSectionPath,
+  isSameDashboardPath,
 } from './dashboardRoutes';
 import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
@@ -490,7 +491,7 @@ export default function DashboardContent({
    */
   const handleMobileSettingsOpen = useCallback(() => {
     const settingsPath = dashboardSectionPath('settings');
-    if (typeof window !== 'undefined' && window.location.pathname === settingsPath) {
+    if (typeof window !== 'undefined' && isSameDashboardPath(window.location.pathname, settingsPath)) {
       setActiveModule('settings');
       return;
     }
@@ -512,7 +513,9 @@ export default function DashboardContent({
    */
   const handleMobileSettingsClose = useCallback(() => {
     const settingsPath = dashboardSectionPath('settings');
-    if (typeof window !== 'undefined' && window.location.pathname !== settingsPath) return;
+    if (typeof window !== 'undefined' && !isSameDashboardPath(window.location.pathname, settingsPath)) {
+      return;
+    }
     if (stepBackFromMobileSettings()) return;
     setActiveModule('home');
     if (typeof window !== 'undefined') {

@@ -102,11 +102,11 @@ beforeEach(() => {
   }));
 });
 
-async function openSettingsList() {
+async function openSettingsList(path = '/dashboard/settings') {
   // Adresa aj props musia hovoriť o zozname – mount ich zosúlaďuje podľa
   // `DASHBOARD_ROUTES`, takže nesúlad by prebil `initialRoute`.
-  window.history.replaceState(null, '', '/dashboard/settings');
-  mockPathname = '/dashboard/settings';
+  window.history.replaceState(null, '', path);
+  mockPathname = path;
   render(
     <AuthProvider>
       <ThemeProvider>
@@ -167,5 +167,59 @@ describe('ťuknutie na sekciu v mobilnom zozname', () => {
     // Chyba sa prejavovala tak, že adresa sa vrátila na zoznam a sekcia
     // ostala dosiahnuteľná len tlačidlom „dopredu".
     expect(window.location.pathname).not.toBe('/dashboard/settings');
+  });
+});
+
+/**
+ * Koncové lomítko je platný tvar tej istej adresy: `skipTrailingSlashRedirect`
+ * ju nechá tak a vzory v tabuľke ju prijímajú. Porovnanie ciest ho preto musí
+ * zniesť – inak si appka myslí, že zoznam nie je zobrazený, a krížik ani klik
+ * mimo panel ho prestanú zatvárať.
+ */
+describe('adresa zoznamu s koncovým lomítkom', () => {
+  it('krížik zoznam zavrie', async () => {
+    await openSettingsList('/dashboard/settings/');
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Zatvoriť' }));
+    });
+    await settle();
+
+    expect(shownModule()).not.toBe('settings');
+  });
+
+  it('klik mimo panel zoznam zavrie', async () => {
+    await openSettingsList('/dashboard/settings/');
+    const backdrop = document.querySelector('.fixed.inset-0.bg-black');
+    expect(backdrop).not.toBeNull();
+
+    act(() => {
+      fireEvent.click(backdrop as Element);
+    });
+    await settle();
+
+    expect(shownModule()).not.toBe('settings');
+  });
+
+  it('bežný tvar bez lomítka sa nemení', async () => {
+    await openSettingsList('/dashboard/settings');
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Zatvoriť' }));
+    });
+    await settle();
+
+    expect(shownModule()).not.toBe('settings');
+  });
+
+  it('ťuknutie na sekciu funguje aj z adresy s lomítkom', async () => {
+    await openSettingsList('/dashboard/settings/');
+
+    act(() => {
+      fireEvent.click(settingsRow('Jazyk'));
+    });
+    await settle();
+
+    expect(shownModule()).toBe('language');
   });
 });
