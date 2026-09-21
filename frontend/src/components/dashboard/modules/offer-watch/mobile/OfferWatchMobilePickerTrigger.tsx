@@ -30,6 +30,7 @@ export default function OfferWatchMobilePickerTrigger({
       aria-label={`${label}: ${valueLabel || placeholder}`}
       aria-haspopup='dialog'
       aria-describedby={describedBy}
+      aria-invalid={invalid}
       disabled={disabled}
       onClick={onOpen}
       className={`flex min-h-11 w-full items-center gap-3 rounded-xl border bg-white px-3 py-2 text-left text-sm outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-black ${
