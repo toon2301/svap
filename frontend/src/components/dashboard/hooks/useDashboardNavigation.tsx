@@ -18,10 +18,11 @@ import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import { clearFeedReturn } from '../modules/feed/feedReturnState';
 import { markProfileFreshEntry } from '../modules/profile/profileFreshEntry';
+import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
 import {
-  markProfileOriginPending,
-  withProfileOriginEntry,
-} from '../modules/profile/profileOriginHistory';
+  openUserProfileFromSearch,
+  profileIdentifierFor,
+} from '../modules/profile/openUserProfileFromSearch';
 import {
   dashboardProfilePath,
   dashboardSectionPath,
@@ -350,8 +351,7 @@ export function useDashboardNavigation({
     }
 
     // Použiť slug ak existuje, inak userId
-    const identifier = slug || String(userId);
-    const url = `/dashboard/users/${identifier}`;
+    const identifier = profileIdentifierFor(userId, slug);
 
     // router.push na slug URL remountuje Dashboard (users/[userId]/page.tsx), pričom
     // sa stratí už známe `userId` z výsledku vyhľadávania. Naprimujeme slug -> id
@@ -359,10 +359,10 @@ export function useDashboardNavigation({
     // bez zbytočného `userProfileBySlug` API round-tripu.
     primeUserSlugId(slug ?? null, userId);
 
-    // `router.push` stav histórie neprijíma – pôvod si prevezme profil po
-    // príchode (`adoptProfileOrigin`).
-    markProfileOriginPending(url);
-    router.push(url);
+    // Tá istá navigácia, akú robí stránka `/search` – vrátane označenia pôvodu
+    // pre appkovú šípku. `router.push` stav histórie neprijíma, pôvod si preto
+    // prevezme profil po príchode (`adoptProfileOrigin`).
+    openUserProfileFromSearch(router, identifier);
   }, [
     user?.id,
     setViewedUserId,

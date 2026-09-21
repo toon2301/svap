@@ -10,6 +10,7 @@ import { FilterChips } from '@/components/search/FilterChips';
 import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
 import SearchFilterSelect from '@/components/search/SearchFilterSelect';
 import type { Offer } from '@/components/dashboard/modules/profile/profileOffersTypes';
+import { openUserProfileFromSearch } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
 
 export function SearchOffersTab({
   t,
@@ -181,7 +182,7 @@ export function SearchOffersTab({
                         displayName={ownerDisplayName || 'Používateľ'}
                         avatarUrl={ext.owner_avatar_url}
                         ownerUserType={ext.owner_user_type}
-                        onProfileClick={() => identifier && router.push(`/dashboard/users/${identifier}`)}
+                        onProfileClick={() => identifier && openUserProfileFromSearch(router, identifier)}
                       />
                       <ProfileOfferCard
                         offer={offer}
