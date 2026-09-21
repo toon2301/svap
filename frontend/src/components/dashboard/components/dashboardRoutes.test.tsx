@@ -12,7 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { render } from '@testing-library/react';
-import { DASHBOARD_ROUTES, matchDashboardRoute } from './dashboardRoutes';
+import { DASHBOARD_ROUTES, isSameDashboardPath, matchDashboardRoute } from './dashboardRoutes';
 import { resolveDashboardRouteProps, dashboardModuleFromPath } from './dashboardMountRoute';
 
 const capturedProps: Array<Record<string, unknown>> = [];
@@ -117,4 +117,28 @@ describe('obojsmernosť', () => {
       expect(dashboardModuleFromPath(entry.example)).toBe(props!.initialRoute);
     },
   );
+});
+
+describe('porovnanie ciest', () => {
+  it('koncové lomítko je tá istá adresa', () => {
+    // `skipTrailingSlashRedirect` ju nechá tak a vzory v tabuľke ju prijímajú,
+    // takže porovnanie ho musí zniesť.
+    expect(isSameDashboardPath('/dashboard/settings/', '/dashboard/settings')).toBe(true);
+    expect(isSameDashboardPath('/dashboard/settings', '/dashboard/settings/')).toBe(true);
+    expect(isSameDashboardPath('/dashboard/settings//', '/dashboard/settings')).toBe(true);
+  });
+
+  it('iné cesty ostávajú iné', () => {
+    expect(isSameDashboardPath('/dashboard/settings/watches', '/dashboard/settings')).toBe(false);
+    expect(isSameDashboardPath('/dashboard', '/dashboard/settings')).toBe(false);
+  });
+
+  it('koreň sa lomítkom nevymaže', () => {
+    expect(isSameDashboardPath('/', '/')).toBe(true);
+  });
+
+  it('chýbajúca hodnota sa nerovná ničomu', () => {
+    expect(isSameDashboardPath(null, '/dashboard')).toBe(false);
+    expect(isSameDashboardPath('/dashboard', undefined)).toBe(false);
+  });
 });
