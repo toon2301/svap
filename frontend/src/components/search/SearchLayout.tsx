@@ -6,6 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from '@/components/dashboard/Sidebar';
 import SearchModule from '@/components/dashboard/modules/SearchModule';
 import { RequestsNotificationsProvider } from '@/components/dashboard/contexts/RequestsNotificationsContext';
+import {
+  openUserProfileFromSearch,
+  profileIdentifierFor,
+} from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
 
 interface SearchLayoutProps {
   children: React.ReactNode;
@@ -42,16 +46,16 @@ export function SearchLayout({ children }: SearchLayoutProps) {
 
   const handleViewUserProfile = useCallback(
     (userId: number, slug?: string | null, _summary?: unknown) => {
-      const identifier = slug || String(userId);
-      router.push(`/dashboard/users/${identifier}`);
+      openUserProfileFromSearch(router, profileIdentifierFor(userId, slug));
     },
     [router],
   );
 
   const handleViewUserSkill = useCallback(
     (userId: number, skillId: number, slug?: string | null) => {
-      const identifier = slug || String(userId);
-      router.push(`/dashboard/users/${identifier}?highlight=${skillId}`);
+      openUserProfileFromSearch(router, profileIdentifierFor(userId, slug), {
+        highlightSkillId: skillId,
+      });
     },
     [router],
   );

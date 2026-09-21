@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { HeartIcon, UserIcon } from '@heroicons/react/24/outline';
@@ -12,6 +12,7 @@ import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
 import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
 import BlurredContainImage from './shared/BlurredContainImage';
+import { openUserProfileFromSearch } from './profile/openUserProfileFromSearch';
 
 type ApiErrorLike = {
   response?: {
@@ -23,9 +24,10 @@ type ApiErrorLike = {
   message?: string;
 };
 
-function buildProfileUrl(user: Pick<DashboardFavoriteUser, 'id' | 'slug'>): string {
-  const identifier = user.slug && user.slug.trim() ? user.slug.trim() : String(user.id);
-  return `/dashboard/users/${encodeURIComponent(identifier)}`;
+function favoriteProfileIdentifier(
+  user: Pick<DashboardFavoriteUser, 'id' | 'slug'>,
+): string {
+  return user.slug && user.slug.trim() ? user.slug.trim() : String(user.id);
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -46,6 +48,14 @@ function initialsFromName(name: string): string {
 
 export default function FavoritesModule() {
   const router = useRouter();
+
+  /** Otvorenie profilu z Obľúbených – so značením pôvodu pre appkovú šípku. */
+  const openFavoriteProfile = useCallback(
+    (favoriteUser: Pick<DashboardFavoriteUser, 'id' | 'slug'>) => {
+      openUserProfileFromSearch(router, favoriteProfileIdentifier(favoriteUser));
+    },
+    [router],
+  );
   const { t } = useLanguage();
   const [favoriteUsers, setFavoriteUsers] = useState<DashboardFavoriteUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -166,7 +176,7 @@ export default function FavoritesModule() {
               >
                 <button
                   type="button"
-                  onClick={() => router.push(buildProfileUrl(favoriteUser))}
+                  onClick={() => openFavoriteProfile(favoriteUser)}
                   className="block w-full text-left"
                   aria-label={displayName}
                 >
@@ -188,7 +198,7 @@ export default function FavoritesModule() {
                 <div className="space-y-3 p-3">
                   <button
                     type="button"
-                    onClick={() => router.push(buildProfileUrl(favoriteUser))}
+                    onClick={() => openFavoriteProfile(favoriteUser)}
                     className="block w-full text-left"
                   >
                     <h2 className="truncate text-base font-semibold text-gray-900 dark:text-white">

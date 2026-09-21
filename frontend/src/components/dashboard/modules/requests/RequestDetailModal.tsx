@@ -16,7 +16,8 @@ import {
 } from './helpProposalUtils';
 import { requestUserName } from './requestUserName';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { dashboardProfilePath, dashboardSectionPath } from '../../components/dashboardRoutes';
+import { dashboardSectionPath } from '../../components/dashboardRoutes';
+import { openUserProfileFromSearch } from '../profile/openUserProfileFromSearch';
 
 type Props = {
   open: boolean;
@@ -271,8 +272,7 @@ export function RequestDetailModal({
     }
 
     onClose();
-    const profilePath = dashboardProfilePath(profileIdentifier);
-    if (profilePath) router.push(`${profilePath}?highlight=${encodeURIComponent(String(offerId))}`);
+    openUserProfileFromSearch(router, profileIdentifier, { highlightSkillId: offerId });
   };
 
   const handleViewProposal = () => {
@@ -300,8 +300,7 @@ export function RequestDetailModal({
       onClose();
     } catch {
       onClose();
-      const target = dashboardProfilePath(profileIdentifier);
-      if (target) router.push(`${target}?highlight=${encodeURIComponent(String(offerId))}`);
+      openUserProfileFromSearch(router, profileIdentifier, { highlightSkillId: offerId });
     }
   };
 

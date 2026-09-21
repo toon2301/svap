@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import VerifiedBadge from '@/components/shared/VerifiedBadge';
+import { openUserProfileFromSearch } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
 
 export type GlobalSearchUser = {
   id: number;
@@ -147,11 +148,11 @@ export function SearchUsersResults({
                 key={u.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => router.push(`/dashboard/users/${identifier}`)}
+                onClick={() => openUserProfileFromSearch(router, identifier)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    router.push(`/dashboard/users/${identifier}`);
+                    openUserProfileFromSearch(router, identifier);
                   }
                 }}
                 className="w-full text-left flex items-center justify-between gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] hover:bg-white/80 dark:hover:bg-[#141416] transition-colors px-4 py-3 cursor-pointer"

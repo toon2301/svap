@@ -153,8 +153,15 @@ describe('zapisovači histórie a tabuľka', () => {
   const writers = allWriters(files);
 
   it('nájde zdrojáky aj zapisovačov, v ktorých má hľadať', () => {
+    // Kanárik proti pokazenému skeneru: keby prestal čokoľvek nachádzať,
+    // všetky tvrdenia nižšie by ticho prešli.
+    //
+    // Počet zapisovačov zámerne klesá – každé kolo ich časť prejde na zdieľané
+    // funkcie (naposledy osem vstupov do cudzieho profilu na
+    // `openUserProfileFromSearch`). Hranica je preto nízka a stráži „nula",
+    // nie konkrétne číslo.
     expect(files.length).toBeGreaterThan(100);
-    expect(writers.length).toBeGreaterThan(10);
+    expect(writers.length).toBeGreaterThan(4);
   });
 
   it('každú zapísanú adresu vie tabuľka prečítať', () => {

@@ -21,6 +21,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProfileTab } from './profileTypes';
 import { withProfileOriginStep } from './profileOriginHistory';
+// [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ]
+import { logTabDebug } from '../../debug/tabDebugLog';
 
 export type ProfileTabChangeOptions = {
   /**
@@ -153,7 +155,14 @@ export function useProfileTabQuery(
   // Krok späť/dopredu prepne záložku spolu s adresou.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handlePopState = () => setActiveTab(currentTab() ?? fallbackTab);
+    const handlePopState = () => {
+      const next = currentTab() ?? fallbackTab;
+      // [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ]
+      logTabDebug(
+        `tab popstate: search="${typeof window !== 'undefined' ? window.location.search : ''}" fallback=${fallbackTab} → ${next}`,
+      );
+      setActiveTab(next);
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [fallbackTab]);
