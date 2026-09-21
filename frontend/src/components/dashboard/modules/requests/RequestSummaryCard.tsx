@@ -15,7 +15,8 @@ import { isDeletedUserName, requestUserName } from './requestUserName';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
-import { dashboardProfilePath, dashboardSectionPath } from '../../components/dashboardRoutes';
+import { dashboardSectionPath } from '../../components/dashboardRoutes';
+import { openUserProfileFromSearch } from '../profile/openUserProfileFromSearch';
 
 type Props = {
   item: SkillRequest;
@@ -350,8 +351,7 @@ export function RequestSummaryCard({
       // ignore
     }
 
-    const target = dashboardProfilePath(profileIdentifier);
-    if (target) router.push(`${target}?highlight=${encodeURIComponent(String(offerId))}`);
+    openUserProfileFromSearch(router, profileIdentifier, { highlightSkillId: offerId });
   };
 
   const handleViewProposal = () => {
@@ -376,8 +376,7 @@ export function RequestSummaryCard({
         }),
       );
     } catch {
-      const target = dashboardProfilePath(profileIdentifier);
-      if (target) router.push(`${target}?highlight=${encodeURIComponent(String(offerId))}`);
+      openUserProfileFromSearch(router, profileIdentifier, { highlightSkillId: offerId });
     }
   };
 

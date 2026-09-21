@@ -13,6 +13,7 @@ import type { Offer } from '@/components/dashboard/modules/profile/profileOffers
 import { mapSearchResultToOffer } from '@/components/search/mapSearchResultToOffer';
 import { SearchUsersResults, type GlobalSearchUser } from '@/components/search/SearchUsersResults';
 import { SearchOffersTab } from '@/components/search/SearchOffersTab';
+import { openUserProfileFromSearch } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
 
 type SearchOffer = Offer & { user_id?: number };
 
@@ -590,7 +591,7 @@ function SearchResultsContent() {
                                 displayName={ownerDisplayName || 'Používateľ'}
                                 avatarUrl={ext.owner_avatar_url}
                                 ownerUserType={ext.owner_user_type}
-                                onProfileClick={() => identifier && router.push(`/dashboard/users/${identifier}`)}
+                                onProfileClick={() => openUserProfileFromSearch(router, identifier)}
                               />
                               <ProfileOfferCard
                                 offer={offer}
