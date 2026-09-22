@@ -68,12 +68,34 @@ export function subscribeTabDebug(listener: (lines: string[]) => void): () => vo
 }
 
 /**
+ * Ako sa na túto stránku prišlo – podľa prehliadača, nie podľa dohadu.
+ *
+ * `reload` = plné znovunačítanie, `back_forward` = krok históriou (bfcache),
+ * `navigate` = bežný vstup. Práve tento rozdiel je to, čo sa z chýbajúcich
+ * riadkov len nepriamo tušilo.
+ */
+function navigationType(): string {
+  if (typeof performance === 'undefined') return 'neznámy';
+  try {
+    const entry = performance.getEntriesByType('navigation')[0] as
+      | { type?: string }
+      | undefined;
+    return entry?.type ?? 'neznámy';
+  } catch {
+    return 'neznámy';
+  }
+}
+
+/**
  * Prvý riadok po štarte skriptu.
  *
  * Keby sa stránka pri kroku späť celá znovu načítala, zoznam riadkov by sa
  * vymazal a v paneli by ostalo len to, čo prišlo po reloade – čo vyzerá ako
- * „udalosť sa nestala". Tento riadok ten rozdiel ukáže priamo.
+ * „udalosť sa nestala". Tento riadok ten rozdiel ukáže priamo, aj s tým, čím
+ * to načítanie bolo.
  */
 if (typeof window !== 'undefined') {
-  logTabDebug(`— štart stránky — url=${window.location.pathname}${window.location.search}`);
+  logTabDebug(
+    `— štart stránky — typ=${navigationType()} url=${window.location.pathname}${window.location.search}`,
+  );
 }

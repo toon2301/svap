@@ -36,6 +36,9 @@ describe('ladiaci záznam záložiek', () => {
     // Poradie udalostí je to, čo sa skúma – riadky sa pridávajú, neprepisujú.
     // Prvý riadok je značka štartu stránky, podľa ktorej sa pozná reload.
     expect(lines[0]).toContain('štart stránky');
+    // Typ navigácie hovorí prehliadač sám – `reload` vs `back_forward`
+    // rozhoduje celé vyšetrovanie, preto musí byť v riadku vždy.
+    expect(lines[0]).toContain('typ=');
     expect(lines[lines.length - 2]).toContain('prvá');
     expect(lines[lines.length - 1]).toContain('druhá');
   });
