@@ -36,9 +36,6 @@ describe('ladiaci záznam záložiek', () => {
     // Poradie udalostí je to, čo sa skúma – riadky sa pridávajú, neprepisujú.
     // Prvý riadok je značka štartu stránky, podľa ktorej sa pozná reload.
     expect(lines[0]).toContain('štart stránky');
-    // Typ navigácie hovorí prehliadač sám – `reload` vs `back_forward`
-    // rozhoduje celé vyšetrovanie, preto musí byť v riadku vždy.
-    expect(lines[0]).toContain('typ=');
     expect(lines[lines.length - 2]).toContain('prvá');
     expect(lines[lines.length - 1]).toContain('druhá');
   });
@@ -93,5 +90,93 @@ describe('zapnutie prežije prechod na inú obrazovku', () => {
     const mod = await import('./tabDebugLog');
 
     expect(mod.isTabDebugEnabled()).toBe(false);
+  });
+});
+
+/**
+ * Typ navigácie aj `pageshow.persisted` sú to, podľa čoho sa bude čítať
+ * meranie z telefónu – musia v zázname sedieť presne, nie „nejako".
+ */
+describe('čím bola navigácia spustená a či sa obnovila z pamäte', () => {
+  type PerfWithEntries = Performance & { getEntriesByType?: unknown };
+  const original = (performance as PerfWithEntries).getEntriesByType;
+
+  /** jsdom `getEntriesByType` nemá – dodefinuje sa, aby sa dal riadiť. */
+  const setNavigationType = (type: string | null) => {
+    Object.defineProperty(performance, 'getEntriesByType', {
+      configurable: true,
+      writable: true,
+      value: () => (type === null ? [] : [{ type }]),
+    });
+  };
+
+  beforeEach(() => {
+    jest.resetModules();
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/dashboard?debugtabs=1');
+  });
+
+  afterEach(() => {
+    Object.defineProperty(performance, 'getEntriesByType', {
+      configurable: true,
+      writable: true,
+      value: original,
+    });
+  });
+
+  async function firstLine(): Promise<string> {
+    const mod = await import('./tabDebugLog');
+    let lines: string[] = [];
+    mod.subscribeTabDebug((next) => { lines = next; });
+    return lines[0] ?? '';
+  }
+
+  it('zaznamená presný typ, aký hlási prehliadač', async () => {
+    setNavigationType('reload');
+
+    expect(await firstLine()).toContain('typ=reload');
+  });
+
+  it('krok históriou sa odlíši od obnovenia', async () => {
+    setNavigationType('back_forward');
+
+    expect(await firstLine()).toContain('typ=back_forward');
+  });
+
+  it('keď prehliadač nič nehlási, zapíše sa „neznámy"', async () => {
+    setNavigationType(null);
+
+    expect(await firstLine()).toContain('typ=neznámy');
+  });
+
+  it('pageshow zapíše persisted vedľa typu', async () => {
+    setNavigationType('back_forward');
+    const mod = await import('./tabDebugLog');
+    let lines: string[] = [];
+    mod.subscribeTabDebug((next) => { lines = next; });
+
+    // Skutočné obnovenie z bfcache: modulový kód sa už nespustí, `pageshow`
+    // áno – a len `persisted` povie, že šlo o obnovenie z pamäte.
+    const event = new Event('pageshow') as Event & { persisted?: boolean };
+    Object.defineProperty(event, 'persisted', { value: true });
+    window.dispatchEvent(event);
+
+    const last = lines[lines.length - 1];
+    expect(last).toContain('pageshow:');
+    expect(last).toContain('persisted=true');
+    expect(last).toContain('typ=back_forward');
+  });
+
+  it('bežné načítanie hlási persisted=false', async () => {
+    setNavigationType('navigate');
+    const mod = await import('./tabDebugLog');
+    let lines: string[] = [];
+    mod.subscribeTabDebug((next) => { lines = next; });
+
+    const event = new Event('pageshow') as Event & { persisted?: boolean };
+    Object.defineProperty(event, 'persisted', { value: false });
+    window.dispatchEvent(event);
+
+    expect(lines[lines.length - 1]).toContain('persisted=false');
   });
 });
