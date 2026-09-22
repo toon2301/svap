@@ -5,6 +5,44 @@
  * ani riadok, takže bežný používateľ pásik nikdy neuvidí.
  */
 
+/** Listenery `pageshow`, ktoré si modul zaregistroval pri štarte. */
+const registeredPageshow: EventListener[] = [];
+
+/**
+ * Naimportuje modul a zapamätá si, čo si pri štarte navesí na `window`.
+ *
+ * Každý test si modul importuje nanovo (`jest.resetModules`), takže sa pri
+ * štarte zakaždým pridá ďalší `pageshow` listener – a `window` v jsdom žije
+ * naprieč celým súborom. Bez odregistrovania by sa hromadili a udalosť by
+ * dostávali aj inštancie z už dobehnutých testov.
+ */
+async function importTabDebug() {
+  const realAdd = window.addEventListener;
+  window.addEventListener = function patched(
+    this: Window,
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions,
+  ) {
+    if (type === 'pageshow' && typeof listener === 'function') {
+      registeredPageshow.push(listener as EventListener);
+    }
+    return realAdd.call(this, type, listener, options);
+  } as typeof window.addEventListener;
+
+  try {
+    return await import('./tabDebugLog');
+  } finally {
+    window.addEventListener = realAdd;
+  }
+}
+
+afterEach(() => {
+  while (registeredPageshow.length > 0) {
+    window.removeEventListener('pageshow', registeredPageshow.pop() as EventListener);
+  }
+});
+
 describe('ladiaci záznam záložiek', () => {
   beforeEach(() => {
     jest.resetModules();
@@ -13,7 +51,7 @@ describe('ladiaci záznam záložiek', () => {
 
   it('bez parametra v adrese nezbiera nič', async () => {
     window.history.replaceState(null, '', '/dashboard/users/peter');
-    const mod = await import('./tabDebugLog');
+    const mod = await importTabDebug();
 
     expect(mod.isTabDebugEnabled()).toBe(false);
     mod.logTabDebug('nemá sa objaviť');
@@ -25,7 +63,7 @@ describe('ladiaci záznam záložiek', () => {
 
   it('s parametrom zbiera a pridáva riadky za sebou', async () => {
     window.history.replaceState(null, '', '/dashboard/users/peter?debugtabs=1');
-    const mod = await import('./tabDebugLog');
+    const mod = await importTabDebug();
 
     expect(mod.isTabDebugEnabled()).toBe(true);
     mod.logTabDebug('prvá');
@@ -42,7 +80,7 @@ describe('ladiaci záznam záložiek', () => {
 
   it('parameter sa drží, aj keď ho appka z adresy odstráni', async () => {
     window.history.replaceState(null, '', '/dashboard/users/peter?debugtabs=1');
-    const mod = await import('./tabDebugLog');
+    const mod = await importTabDebug();
     expect(mod.isTabDebugEnabled()).toBe(true);
 
     // Appka si adresu priebežne prepisuje (`?tab=`, kanonizácia slugu) – bez
@@ -54,7 +92,7 @@ describe('ladiaci záznam záložiek', () => {
 
   it('drží len posledných pár udalostí', async () => {
     window.history.replaceState(null, '', '/dashboard?debugtabs=1');
-    const mod = await import('./tabDebugLog');
+    const mod = await importTabDebug();
 
     for (let i = 0; i < 25; i += 1) mod.logTabDebug(`udalosť ${i}`);
 
@@ -73,22 +111,110 @@ describe('zapnutie prežije prechod na inú obrazovku', () => {
 
   it('po zapnutí platí aj na adrese bez parametra', async () => {
     window.history.replaceState(null, '', '/dashboard?debugtabs=1');
-    const first = await import('./tabDebugLog');
+    const first = await importTabDebug();
     expect(first.isTabDebugEnabled()).toBe(true);
 
     // Prechod na profil skladá adresu nanovo a query predošlej obrazovky
     // zámerne zahadzuje – ladenie to nesmie zhasnúť.
     jest.resetModules();
     window.history.replaceState(null, '', '/dashboard/users/peter');
-    const afterNavigation = await import('./tabDebugLog');
+    const afterNavigation = await importTabDebug();
 
     expect(afterNavigation.isTabDebugEnabled()).toBe(true);
   });
 
   it('bez predošlého zapnutia ostáva vypnuté', async () => {
     window.history.replaceState(null, '', '/dashboard/users/peter');
-    const mod = await import('./tabDebugLog');
+    const mod = await importTabDebug();
 
     expect(mod.isTabDebugEnabled()).toBe(false);
+  });
+});
+
+/**
+ * Typ navigácie aj `pageshow.persisted` sú to, podľa čoho sa bude čítať
+ * meranie z telefónu – musia v zázname sedieť presne, nie „nejako".
+ */
+describe('čím bola navigácia spustená a či sa obnovila z pamäte', () => {
+  type PerfWithEntries = Performance & { getEntriesByType?: unknown };
+  const original = (performance as PerfWithEntries).getEntriesByType;
+
+  /** jsdom `getEntriesByType` nemá – dodefinuje sa, aby sa dal riadiť. */
+  const setNavigationType = (type: string | null) => {
+    Object.defineProperty(performance, 'getEntriesByType', {
+      configurable: true,
+      writable: true,
+      value: () => (type === null ? [] : [{ type }]),
+    });
+  };
+
+  beforeEach(() => {
+    jest.resetModules();
+    sessionStorage.clear();
+    window.history.replaceState(null, '', '/dashboard?debugtabs=1');
+  });
+
+  afterEach(() => {
+    Object.defineProperty(performance, 'getEntriesByType', {
+      configurable: true,
+      writable: true,
+      value: original,
+    });
+  });
+
+  async function firstLine(): Promise<string> {
+    const mod = await importTabDebug();
+    let lines: string[] = [];
+    mod.subscribeTabDebug((next) => { lines = next; });
+    return lines[0] ?? '';
+  }
+
+  it('zaznamená presný typ, aký hlási prehliadač', async () => {
+    setNavigationType('reload');
+
+    expect(await firstLine()).toContain('typ=reload');
+  });
+
+  it('krok históriou sa odlíši od obnovenia', async () => {
+    setNavigationType('back_forward');
+
+    expect(await firstLine()).toContain('typ=back_forward');
+  });
+
+  it('keď prehliadač nič nehlási, zapíše sa „neznámy"', async () => {
+    setNavigationType(null);
+
+    expect(await firstLine()).toContain('typ=neznámy');
+  });
+
+  it('pageshow zapíše persisted vedľa typu', async () => {
+    setNavigationType('back_forward');
+    const mod = await importTabDebug();
+    let lines: string[] = [];
+    mod.subscribeTabDebug((next) => { lines = next; });
+
+    // Skutočné obnovenie z bfcache: modulový kód sa už nespustí, `pageshow`
+    // áno – a len `persisted` povie, že šlo o obnovenie z pamäte.
+    const event = new Event('pageshow') as Event & { persisted?: boolean };
+    Object.defineProperty(event, 'persisted', { value: true });
+    window.dispatchEvent(event);
+
+    const last = lines[lines.length - 1];
+    expect(last).toContain('pageshow:');
+    expect(last).toContain('persisted=true');
+    expect(last).toContain('typ=back_forward');
+  });
+
+  it('bežné načítanie hlási persisted=false', async () => {
+    setNavigationType('navigate');
+    const mod = await importTabDebug();
+    let lines: string[] = [];
+    mod.subscribeTabDebug((next) => { lines = next; });
+
+    const event = new Event('pageshow') as Event & { persisted?: boolean };
+    Object.defineProperty(event, 'persisted', { value: false });
+    window.dispatchEvent(event);
+
+    expect(lines[lines.length - 1]).toContain('persisted=false');
   });
 });

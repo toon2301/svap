@@ -68,12 +68,50 @@ export function subscribeTabDebug(listener: (lines: string[]) => void): () => vo
 }
 
 /**
+ * Čím bola navigácia SPUSTENÁ – podľa prehliadača, nie podľa dohadu.
+ *
+ * `reload` = obnovenie, `back_forward` = krok históriou, `navigate` = bežný
+ * vstup. Pozor na hranicu tohto údaja: `back_forward` hovorí len to, že to
+ * spustilo tlačidlo Späť/Dopredu – NIE že prehliadač stránku naozaj obnovil
+ * z bfcache. Pri zablokovanej bfcache (napr. `Cache-Control: no-store`) sa
+ * rovnako hlási `back_forward`, hoci prebehlo plné načítanie. Na otázku
+ * „obnovilo sa z pamäte?" odpovedá až `pageshow.persisted` nižšie.
+ */
+function navigationType(): string {
+  if (typeof performance === 'undefined') return 'neznámy';
+  try {
+    const entry = performance.getEntriesByType('navigation')[0] as
+      | { type?: string }
+      | undefined;
+    return entry?.type ?? 'neznámy';
+  } catch {
+    return 'neznámy';
+  }
+}
+
+/**
  * Prvý riadok po štarte skriptu.
  *
  * Keby sa stránka pri kroku späť celá znovu načítala, zoznam riadkov by sa
  * vymazal a v paneli by ostalo len to, čo prišlo po reloade – čo vyzerá ako
- * „udalosť sa nestala". Tento riadok ten rozdiel ukáže priamo.
+ * „udalosť sa nestala". Tento riadok ten rozdiel ukáže priamo, aj s tým, čím
+ * to načítanie bolo.
  */
 if (typeof window !== 'undefined') {
-  logTabDebug(`— štart stránky — url=${window.location.pathname}${window.location.search}`);
+  logTabDebug(
+    `— štart stránky — typ=${navigationType()} url=${window.location.pathname}${window.location.search}`,
+  );
+
+  // `pageshow.persisted` je jediný autoritatívny signál „táto stránka bola
+  // práve obnovená z bfcache".
+  //
+  // Listener to musí byť práve preto: pri skutočnom obnovení sa modulový kód
+  // vyššie NESPUSTÍ znova (beh skriptu prežije zmrazenie), takže štartovací
+  // riadok by nepribudol – ale `pageshow` áno. Obe hodnoty sa zapisujú vedľa
+  // seba, nech sa dá porovnať, čo navigáciu spustilo a čo sa naozaj stalo.
+  window.addEventListener('pageshow', (event) => {
+    logTabDebug(
+      `pageshow: persisted=${(event as PageTransitionEvent).persisted} typ=${navigationType()}`,
+    );
+  });
 }
