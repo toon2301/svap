@@ -13,6 +13,7 @@
  */
 
 const QUERY_FLAG = 'debugtabs';
+const STORAGE_KEY = '__svaplyDebugTabs';
 const MAX_LINES = 10;
 
 let enabled: boolean | null = null;
@@ -22,14 +23,26 @@ const listeners = new Set<(lines: string[]) => void>();
 /**
  * Je ladenie zapnuté?
  *
- * Zistí sa raz a drží sa po celý beh stránky: appka si adresu priebežne
- * prepisuje (`?tab=`, kanonizácia slugu) a parameter by sa cestou mohol
- * stratiť práve uprostred meraného scenára.
+ * Raz zapnuté ostáva zapnuté po celú reláciu karty – drží sa v `sessionStorage`.
+ * Samotný parameter v adrese totiž neprežije: prechod na inú obrazovku skladá
+ * adresu nanovo (`dashboardSectionPath`, `dashboardProfilePath`) a query
+ * predošlej obrazovky zámerne zahadzuje. Bez tohto podržania panel zmizol
+ * uprostred meraného scenára.
  */
 export function isTabDebugEnabled(): boolean {
   if (enabled !== null) return enabled;
   if (typeof window === 'undefined') return false;
-  enabled = new URLSearchParams(window.location.search).get(QUERY_FLAG) === '1';
+
+  const fromUrl = new URLSearchParams(window.location.search).get(QUERY_FLAG) === '1';
+  let stored = false;
+  try {
+    stored = window.sessionStorage.getItem(STORAGE_KEY) === '1';
+    if (fromUrl && !stored) window.sessionStorage.setItem(STORAGE_KEY, '1');
+  } catch {
+    // Súkromné okno a pod. – ladenie vtedy platí len pre túto adresu.
+  }
+
+  enabled = fromUrl || stored;
   return enabled;
 }
 
@@ -52,4 +65,15 @@ export function subscribeTabDebug(listener: (lines: string[]) => void): () => vo
   return () => {
     listeners.delete(listener);
   };
+}
+
+/**
+ * Prvý riadok po štarte skriptu.
+ *
+ * Keby sa stránka pri kroku späť celá znovu načítala, zoznam riadkov by sa
+ * vymazal a v paneli by ostalo len to, čo prišlo po reloade – čo vyzerá ako
+ * „udalosť sa nestala". Tento riadok ten rozdiel ukáže priamo.
+ */
+if (typeof window !== 'undefined') {
+  logTabDebug(`— štart stránky — url=${window.location.pathname}${window.location.search}`);
 }
