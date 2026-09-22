@@ -98,8 +98,6 @@ import {
   isSameDashboardPath,
 } from './dashboardRoutes';
 import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
-// [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ]
-import { logTabDebug } from '../debug/tabDebugLog';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 
 interface DashboardContentProps {
@@ -479,10 +477,6 @@ export default function DashboardContent({
     },
     [activeModule, navigation],
   );
-
-  // [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ] aktuálny modul pre ladiaci pásik
-  const debugActiveModuleRef = useRef(activeModule);
-  debugActiveModuleRef.current = activeModule;
 
   // Zoznam Nastavení je na mobile skutočná obrazovka s vlastnou adresou, takže
   // sekcia sa otvára bežnou navigáciou a návrat naň obstará krok späť.
@@ -1200,10 +1194,6 @@ export default function DashboardContent({
       const p = window.location.pathname || '';
       // To iste mapovanie ako pri mounte (`useDashboardMountRoute`).
       const moduleId = dashboardModuleFromPath(p);
-      // [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ]
-      logTabDebug(
-        `sync: ${debugActiveModuleRef.current} → ${moduleId ?? '(nič)'} url="${p}"`,
-      );
       if (moduleId !== null) {
         setActiveModule(moduleId);
         try {

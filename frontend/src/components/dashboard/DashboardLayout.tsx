@@ -14,8 +14,6 @@ import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelCon
 import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
 import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatchSettingsMobileHost';
 import { onFeedHomeNavigation } from './modules/feed/feedHomeNavigation';
-// [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ]
-import TabDebugPanel from './debug/TabDebugPanel';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -255,8 +253,6 @@ export default function DashboardLayout({
       style={mobileMessagesViewportStyle}
     >
       <BugReportDialogHost />
-      {/* [DEBUG ?debugtabs=1 – DOČASNÉ, ODSTRÁNIŤ] */}
-      <TabDebugPanel />
       {/* Po zväčšení okna nad 1024 px mobilný panel zhasne, ale adresa ostáva
           na sledovaných ponukách – rovnaké volanie ako klik v pravom paneli
           dotiahne desktopový stav za ňou. */}
