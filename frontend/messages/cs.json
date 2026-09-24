@@ -677,7 +677,7 @@
     "detailedDescriptionHintSeeking": "Popište detailně, co hledáte – postup, co je zahrnuto, očekávání a výsledek.",
     "descriptionRequired": "Popis dovednosti je povinný",
     "descriptionTooLong": "Krátký popis může obsahovat maximálně 150 znaků.",
-    "duplicateCard": "Takovou nabídku nebo poptávku už máš vytvořenou.",
+    "duplicateCard": "Kartu s touto podkategorií už máš v této sekci vytvořenou.",
     "validationFailed": "Zkontroluj vyplněné údaje a zkus to znovu.",
     "experiencePositive": "Délka praxe musí být kladné číslo",
     "experienceTooLarge": "Délka praxe nemůže být větší než 100",

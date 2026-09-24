@@ -13,7 +13,9 @@ type OfferApiError = {
 
 export function getOfferSaveErrorMessage(error: unknown, t: Translator): string {
   const typedError = error as OfferApiError;
-  const code = typedError?.code ?? typedError?.response?.data?.code;
+  // Axios adds its own transport code (for example ERR_BAD_REQUEST). The
+  // backend business code is more specific and must win when both are present.
+  const code = typedError?.response?.data?.code ?? typedError?.code;
 
   switch (code) {
     case OFFER_COUNTRY_REQUIRED_CODE:
@@ -24,7 +26,7 @@ export function getOfferSaveErrorMessage(error: unknown, t: Translator): string 
     case 'duplicate_offer':
       return t(
         'skills.duplicateCard',
-        'Takúto ponuku alebo dopyt už máš vytvorený.',
+        'Kartu s touto podkategóriou už máš v tejto sekcii vytvorenú.',
       );
     case 'offer_description_too_long':
       return t(

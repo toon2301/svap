@@ -5,7 +5,7 @@ const t = (_key: string, fallback: string) => fallback;
 describe('getOfferSaveErrorMessage', () => {
   it.each([
     ['offer_country_required', 'Vyber krajinu ponuky alebo dopytu.'],
-    ['duplicate_offer', 'Takúto ponuku alebo dopyt už máš vytvorený.'],
+    ['duplicate_offer', 'Kartu s touto podkategóriou už máš v tejto sekcii vytvorenú.'],
     [
       'offer_description_too_long',
       'Krátky opis môže obsahovať maximálne 150 znakov.',
@@ -16,6 +16,17 @@ describe('getOfferSaveErrorMessage', () => {
     const error = { response: { data: { code } } };
 
     expect(getOfferSaveErrorMessage(error, t)).toBe(expected);
+  });
+
+  it('prefers the backend business code over the Axios transport code', () => {
+    const error = {
+      code: 'ERR_BAD_REQUEST',
+      response: { data: { code: 'duplicate_offer' } },
+    };
+
+    expect(getOfferSaveErrorMessage(error, t)).toBe(
+      'Kartu s touto podkategóriou už máš v tejto sekcii vytvorenú.',
+    );
   });
 
   it('maps a local pre-validation code too', () => {

@@ -692,7 +692,7 @@
     "detailedDescriptionHintSeeking": "Describe in detail what you are looking for – process, what is included, expectations and result.",
     "descriptionRequired": "Skill description is required",
     "descriptionTooLong": "The short description can contain at most 150 characters.",
-    "duplicateCard": "You have already created this offer or request.",
+    "duplicateCard": "You already have a card with this subcategory in this section.",
     "validationFailed": "Check the entered information and try again.",
     "experiencePositive": "Experience must be a positive number",
     "experienceTooLarge": "Experience cannot be greater than 100",
