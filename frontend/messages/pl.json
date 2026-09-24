@@ -1158,6 +1158,8 @@
   "offerWatchResults": {
     "title": "Obserwowane",
     "description": "Wybierz obserwowanie i zobacz najnowsze oferty lub zapytania pasujące do jego filtrów.",
+    "mobileUnavailableTitle": "Wyniki mobilne są w przygotowaniu",
+    "mobileUnavailableDescription": "Wyniki obserwowań są obecnie dostępne w wersji na komputer. Na telefonie nadal możesz zarządzać swoimi obserwowaniami.",
     "selectLabel": "Wybierz obserwowanie",
     "refresh": "Odśwież",
     "refreshing": "Odświeżam...",

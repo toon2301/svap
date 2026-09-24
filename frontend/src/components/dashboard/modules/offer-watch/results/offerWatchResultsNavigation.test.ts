@@ -7,8 +7,29 @@ import {
 } from '../../../hooks/desktopSettingsNavigation';
 import { useOfferWatchResultsNavigation } from './offerWatchResultsNavigation';
 
+const mockRequestOfferWatchMobile = jest.fn();
+
+jest.mock('../mobile/offerWatchMobileNavigation', () => ({
+  requestOfferWatchMobile: () => mockRequestOfferWatchMobile(),
+}));
+
+function setMobileViewport(matches: boolean): void {
+  (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+}
+
 describe('useOfferWatchResultsNavigation', () => {
   beforeEach(() => {
+    mockRequestOfferWatchMobile.mockClear();
+    setMobileViewport(false);
     window.history.replaceState(
       { nextInternal: 'kept' },
       '',
@@ -50,5 +71,24 @@ describe('useOfferWatchResultsNavigation', () => {
     expect(setActiveRightItem).toHaveBeenCalledWith('offer-watches');
 
     replaceState.mockRestore();
+  });
+
+  it('opens the existing mobile watch manager without desktop history changes', () => {
+    setMobileViewport(true);
+    const openDesktopSettings = jest.fn();
+    const setActiveRightItem = jest.fn();
+    const initialUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const { result } = renderHook(() => useOfferWatchResultsNavigation({
+      activeModule: 'watches',
+      openDesktopSettings,
+      setActiveRightItem,
+    }));
+
+    act(() => result.current());
+
+    expect(mockRequestOfferWatchMobile).toHaveBeenCalledTimes(1);
+    expect(openDesktopSettings).not.toHaveBeenCalled();
+    expect(setActiveRightItem).not.toHaveBeenCalled();
+    expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(initialUrl);
   });
 });

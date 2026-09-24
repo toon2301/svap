@@ -1158,6 +1158,8 @@
   "offerWatchResults": {
     "title": "Figyelések",
     "description": "Válassz egy figyelést, és nézd meg a szűrőinek megfelelő legújabb ajánlatokat vagy kereséseket.",
+    "mobileUnavailableTitle": "A mobilos találatok készülnek",
+    "mobileUnavailableDescription": "A figyelések találatai jelenleg az asztali verzióban érhetők el. Mobilon továbbra is kezelheted a figyeléseidet.",
     "selectLabel": "Figyelés kiválasztása",
     "refresh": "Frissítés",
     "refreshing": "Frissítés...",

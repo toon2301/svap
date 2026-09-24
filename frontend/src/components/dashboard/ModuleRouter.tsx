@@ -34,6 +34,7 @@ import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
 import FeedPostDetailModule from './modules/feed/FeedPostDetailModule';
 import OfferWatchSettingsDesktop from './modules/offer-watch/settings/OfferWatchSettingsDesktop';
 import OfferWatchResultsDesktop from './modules/offer-watch/results/OfferWatchResultsDesktop';
+import OfferWatchResultsMobileUnavailable from './modules/offer-watch/results/OfferWatchResultsMobileUnavailable';
 import { dashboardSectionPath } from './components/dashboardRoutes';
 
 interface ModuleRouterProps {
@@ -237,7 +238,9 @@ export default function ModuleRouter({
 
   switch (activeModule) {
     case 'watches':
-      return <OfferWatchResultsDesktop onManage={onManageOfferWatches} />;
+      return isMobile
+        ? <OfferWatchResultsMobileUnavailable onManage={onManageOfferWatches} />
+        : <OfferWatchResultsDesktop onManage={onManageOfferWatches} />;
     case 'offer-reviews':
       return <OfferReviewsView offerId={offerIdForReviews ?? null} accountType={accountType} user={user} />;
     case 'portfolio-detail':

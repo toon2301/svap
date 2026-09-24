@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { User } from '@/types';
 
@@ -205,6 +205,19 @@ describe('ModuleRouter – home', () => {
     expect(screen.getByTestId('offer-watch-results-desktop')).toBeInTheDocument();
     expect(screen.queryByTestId('offer-watch-settings-desktop')).not.toBeInTheDocument();
     screen.getByTestId('offer-watch-results-desktop').click();
+    expect(props.onManageOfferWatches).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows actionable guidance instead of hidden desktop results on mobile', () => {
+    mockIsMobile = true;
+    const props = baseProps();
+
+    render(<ModuleRouter {...props} activeModule="watches" />);
+
+    expect(screen.getByTestId('offer-watch-results-mobile-unavailable')).toBeInTheDocument();
+    expect(screen.queryByTestId('offer-watch-results-desktop')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Spravovať sledovania' }));
     expect(props.onManageOfferWatches).toHaveBeenCalledTimes(1);
   });
 });

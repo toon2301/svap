@@ -8,6 +8,16 @@ import {
   withDesktopSettingsOriginHistory,
   type DesktopSettingsReturnTarget,
 } from '../../../hooks/desktopSettingsNavigation';
+import { requestOfferWatchMobile } from '../mobile/offerWatchMobileNavigation';
+
+const MOBILE_MEDIA_QUERY = '(max-width: 1023px)';
+
+function isMobileViewport(): boolean {
+  if (typeof window.matchMedia === 'function') {
+    return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
+  }
+  return window.innerWidth < 1024;
+}
 
 type OfferWatchResultsNavigationParams = {
   activeModule: string;
@@ -16,10 +26,10 @@ type OfferWatchResultsNavigationParams = {
 };
 
 /**
- * Pripraví otvorenie správy sledovaní s presným návratom na aktuálne výsledky.
+ * Otvorí správu sledovaní cez natívny tok aktuálneho rozloženia.
  *
- * Samotný prechod necháva na centrálnej dashboard logike. Tento hook iba označí
- * pôvodný history záznam a po otvorení Nastavení zvolí ich správnu sekciu.
+ * Mobil použije existujúce celostránkové okno. Desktop označí pôvodný
+ * history záznam, aby sa zo sekcie Nastavení vrátil na presnú URL výsledkov.
  */
 export function useOfferWatchResultsNavigation({
   activeModule,
@@ -28,6 +38,11 @@ export function useOfferWatchResultsNavigation({
 }: OfferWatchResultsNavigationParams): () => void {
   return useCallback(() => {
     if (typeof window === 'undefined') return;
+
+    if (isMobileViewport()) {
+      requestOfferWatchMobile();
+      return;
+    }
 
     const returnTarget = createDesktopSettingsReturnTarget(
       activeModule,

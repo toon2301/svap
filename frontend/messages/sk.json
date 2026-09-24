@@ -1158,6 +1158,8 @@
   "offerWatchResults": {
     "title": "Sledovania",
     "description": "Vyber sledovanie a pozri si najnovšie ponuky alebo dopyty, ktoré zodpovedajú jeho filtrom.",
+    "mobileUnavailableTitle": "Výsledky na mobile pripravujeme",
+    "mobileUnavailableDescription": "Výsledky sledovaní sú zatiaľ dostupné vo verzii pre počítač. Svoje sledovania môžeš na mobile naďalej spravovať.",
     "selectLabel": "Vyber sledovanie",
     "refresh": "Obnoviť",
     "refreshing": "Obnovujem...",

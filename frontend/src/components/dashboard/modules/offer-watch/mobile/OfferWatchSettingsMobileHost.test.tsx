@@ -168,7 +168,7 @@ describe('OfferWatchSettingsMobileHost', () => {
   });
 
   it('preserves the underlying route and consumes its return marker after settings open', async () => {
-    window.history.replaceState(null, '', '/dashboard/messages/17?source=watch-test');
+    window.history.replaceState(null, '', '/dashboard/watches?watch=7#matches');
     const onReturnToSettings = jest.fn();
     const { rerender } = render(
       <OfferWatchSettingsMobileHost
@@ -180,8 +180,9 @@ describe('OfferWatchSettingsMobileHost', () => {
 
     act(() => window.history.back());
 
-    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/messages/17'));
-    expect(window.location.search).toBe('?source=watch-test');
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/watches'));
+    expect(window.location.search).toBe('?watch=7');
+    expect(window.location.hash).toBe('#matches');
     await waitFor(() => expect(onReturnToSettings).toHaveBeenCalledTimes(1));
     expect(hasOfferWatchSettingsReturnHistory(window.history.state)).toBe(true);
 

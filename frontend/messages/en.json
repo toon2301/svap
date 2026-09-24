@@ -1158,6 +1158,8 @@
   "offerWatchResults": {
     "title": "Watches",
     "description": "Choose a watch to see the latest offers or requests that match its filters.",
+    "mobileUnavailableTitle": "Mobile results are coming",
+    "mobileUnavailableDescription": "Watch results are currently available on desktop. You can still manage your watches on mobile.",
     "selectLabel": "Choose a watch",
     "refresh": "Refresh",
     "refreshing": "Refreshing...",
