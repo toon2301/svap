@@ -10,7 +10,7 @@
  * stromom, preto sa `window.location` zámerne drží inde (router.push).
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { User } from '@/types';
 import {
   dashboardModuleFromPath,
@@ -116,6 +116,15 @@ beforeEach(() => {
 });
 
 describe('scenáre z mapovania', () => {
+  it('opens the standalone watch-results module through the shared module switcher', () => {
+    const { result } = renderHook(() => useDashboardState(mockOwnUser, 'home'));
+
+    act(() => result.current.handleModuleChange('watches'));
+
+    expect(result.current.activeModule).toBe('watches');
+    expect(window.localStorage.getItem('activeModule')).toBe('watches');
+  });
+
   it('6 – desktop: Back z cudzieho profilu pristane na VLASTNOM profile, nie na Nástenke', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
     // Záznam vlastného profilu vznikol pushState-om na stránke /dashboard.

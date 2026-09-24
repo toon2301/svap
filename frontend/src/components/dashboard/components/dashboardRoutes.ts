@@ -148,6 +148,7 @@ export const DASHBOARD_ROUTES: readonly DashboardRoute[] = [
     props: () => ({ initialRoute: 'messages' }),
   },
   simple('notifications', '/dashboard/notifications', 'notifications'),
+  simple('watches', '/dashboard/watches', 'watches'),
   simple('favorites', '/dashboard/favorites', 'favorites'),
   simple('statistics', '/dashboard/statistics', 'statistics'),
   simple('settings/notifications', '/dashboard/settings/notifications', 'notification-settings'),

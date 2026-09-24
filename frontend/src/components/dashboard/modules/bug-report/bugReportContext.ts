@@ -45,6 +45,7 @@ export function getSemanticScreen(value: string): string {
     requests: 'requests',
     notifications: 'notifications',
     statistics: 'statistics',
+    watches: 'watches',
     profile: 'profile',
     'user-profile': 'profile',
     settings: 'settings',

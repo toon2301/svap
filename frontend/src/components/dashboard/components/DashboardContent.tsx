@@ -99,6 +99,7 @@ import {
 } from './dashboardRoutes';
 import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
+import { useOfferWatchResultsNavigation } from '../modules/offer-watch/results/offerWatchResultsNavigation';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -416,6 +417,12 @@ export default function DashboardContent({
     isPersonalAccountModalOpen,
     setIsPersonalAccountModalOpen,
   } = dashboardState;
+
+  const handleManageOfferWatches = useOfferWatchResultsNavigation({
+    activeModule,
+    openDesktopSettings: dashboardState.openDesktopSettings,
+    setActiveRightItem,
+  });
 
   // Zoznam Nastavení sa na mobile riadi ADRESOU, nie vlastným boolean stavom:
   // je to obrazovka ako každá iná, takže krok späť ho zobrazí aj zatvorí.
@@ -1498,6 +1505,7 @@ export default function DashboardContent({
       onDeleteOwnProfileOffer={handleDeleteOwnProfileOffer}
       mobileAccountSettingsView={mobileAccountSettingsView}
       onMobileAccountSettingsViewChange={setMobileAccountSettingsView}
+      onManageOfferWatches={handleManageOfferWatches}
     />
   );
 

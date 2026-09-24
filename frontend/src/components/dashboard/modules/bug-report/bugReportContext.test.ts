@@ -21,6 +21,7 @@ describe('bug report context', () => {
       getSemanticScreen('/dashboard/users/105?email=user@example.com#private'),
     ).toBe('profile');
     expect(getSemanticScreen('/dashboard/messages/987?token=secret')).toBe('messages');
+    expect(getSemanticScreen('/dashboard/watches?watch=7')).toBe('watches');
     expect(getSemanticScreen('/dashboard/offers/42/reviews?author=105')).toBe('reviews');
     expect(getSemanticScreen('/dashboard/users/105/portfolio/17')).toBe('portfolio');
     expect(getSemanticScreen('/dashboard/users/105/skills')).toBe('skills');

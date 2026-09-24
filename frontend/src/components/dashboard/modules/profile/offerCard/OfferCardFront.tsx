@@ -80,6 +80,7 @@ export function OfferCardFront({
   const isLiked = offer.is_liked_by_me === true;
   const likeLabel = t('skills.likes', 'Páči sa mi to');
   const canManageOffer = !isOtherUserProfile && typeof offer.id === 'number';
+  const hasOtherUserActions = Boolean(onRequestClick || onMessageClick);
   const editOfferLabel = t('skills.editOffer', 'Upraviť kartu');
   const deleteOfferLabel = t('skills.deleteOffer', 'Vymazať kartu');
 
@@ -163,7 +164,7 @@ export function OfferCardFront({
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
           </button>
-          {!offer.is_seeking && typeof offer.id === 'number' && (
+          {!offer.is_seeking && typeof offer.id === 'number' && reviewsHref && (
             <button
               type="button"
               aria-label="Pridať recenziu"
@@ -274,9 +275,9 @@ export function OfferCardFront({
           </p>
 
           {/* Tlačidlá Záujem a Správa - len na cudzom profile */}
-          {isOtherUserProfile && (
+          {isOtherUserProfile && hasOtherUserActions && (
             <div className="flex gap-2 mt-2">
-              <button
+              {onRequestClick && <button
                 type="button"
                 data-default-cta="true"
                 onClick={(e) => {
@@ -292,8 +293,8 @@ export function OfferCardFront({
                 }`}
               >
                 {requestLabel ?? (offer.is_seeking ? t('requests.wantToHelpCta', 'Pomôcť') : t('requests.interestCta', 'Mám záujem'))}
-              </button>
-              <button
+              </button>}
+              {onMessageClick && <button
                 type="button"
                 data-message-cta="true"
                 onClick={(e) => {
@@ -309,7 +310,7 @@ export function OfferCardFront({
                 }`}
               >
                 {messageLabel ?? t('skills.message', 'Správa')}
-              </button>
+              </button>}
             </div>
           )}
         </div>

@@ -33,6 +33,7 @@ import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
 import FeedPostDetailModule from './modules/feed/FeedPostDetailModule';
 import OfferWatchSettingsDesktop from './modules/offer-watch/settings/OfferWatchSettingsDesktop';
+import OfferWatchResultsDesktop from './modules/offer-watch/results/OfferWatchResultsDesktop';
 import { dashboardSectionPath } from './components/dashboardRoutes';
 
 interface ModuleRouterProps {
@@ -95,6 +96,7 @@ interface ModuleRouterProps {
   onDeleteOwnProfileOffer?: (offer: Offer) => void;
   mobileAccountSettingsView?: AccountSettingsMobileView;
   onMobileAccountSettingsViewChange?: (view: AccountSettingsMobileView) => void;
+  onManageOfferWatches: () => void;
 }
 
 export default function ModuleRouter({
@@ -152,6 +154,7 @@ export default function ModuleRouter({
   onDeleteOwnProfileOffer,
   mobileAccountSettingsView,
   onMobileAccountSettingsViewChange,
+  onManageOfferWatches,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -233,6 +236,8 @@ export default function ModuleRouter({
   }
 
   switch (activeModule) {
+    case 'watches':
+      return <OfferWatchResultsDesktop onManage={onManageOfferWatches} />;
     case 'offer-reviews':
       return <OfferReviewsView offerId={offerIdForReviews ?? null} accountType={accountType} user={user} />;
     case 'portfolio-detail':

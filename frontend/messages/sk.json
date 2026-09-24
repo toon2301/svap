@@ -189,7 +189,8 @@
     "search": "Vyhľadávanie",
     "favorites": "Obľúbené",
     "requests": "Žiadosti",
-    "notifications": "Upozornenia"
+    "notifications": "Upozornenia",
+    "watches": "Sledovania"
   },
   "homepage": {
     "welcome": "Víta ťa",
@@ -1153,6 +1154,25 @@
       "invalidResponse": "Server vrátil neplatnú odpoveď. Skús to znova.",
       "unknown": "Sledovanie sa nepodarilo uložiť. Skús to znova."
     }
+  },
+  "offerWatchResults": {
+    "title": "Sledovania",
+    "description": "Vyber sledovanie a pozri si najnovšie ponuky alebo dopyty, ktoré zodpovedajú jeho filtrom.",
+    "selectLabel": "Vyber sledovanie",
+    "refresh": "Obnoviť",
+    "refreshing": "Obnovujem...",
+    "manage": "Spravovať sledovania",
+    "noWatchesTitle": "Nemáš žiadne uložené sledovanie",
+    "noWatchesDescription": "Vytvor si sledovanie v Nastaveniach a zodpovedajúce karty sa zobrazia tu.",
+    "noMatchesTitle": "Zatiaľ žiadne zhody",
+    "noMatchesDescription": "Pre toto sledovanie momentálne nie sú dostupné žiadne zodpovedajúce karty.",
+    "loading": "Načítavam sledovania...",
+    "loadingMatches": "Načítavam výsledky...",
+    "loadMore": "Zobraziť ďalšie",
+    "loadingMore": "Načítavam ďalšie...",
+    "newBadge": "Nové",
+    "resultsFor": "Výsledky pre",
+    "matchesLoadFailed": "Výsledky sa nepodarilo načítať."
   },
   "blockedUsers": {
     "title": "Blokovaní používatelia",

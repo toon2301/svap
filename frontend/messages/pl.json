@@ -189,7 +189,8 @@
     "search": "Szukaj",
     "favorites": "Ulubione",
     "requests": "Prośby",
-    "notifications": "Powiadomienia"
+    "notifications": "Powiadomienia",
+    "watches": "Obserwowane"
   },
   "homepage": {
     "welcome": "Witaj w",
@@ -1153,6 +1154,25 @@
       "invalidResponse": "Serwer zwrócił nieprawidłową odpowiedź. Spróbuj ponownie.",
       "unknown": "Nie udało się zapisać śledzenia. Spróbuj ponownie."
     }
+  },
+  "offerWatchResults": {
+    "title": "Obserwowane",
+    "description": "Wybierz obserwowanie i zobacz najnowsze oferty lub zapytania pasujące do jego filtrów.",
+    "selectLabel": "Wybierz obserwowanie",
+    "refresh": "Odśwież",
+    "refreshing": "Odświeżam...",
+    "manage": "Zarządzaj obserwowaniami",
+    "noWatchesTitle": "Nie masz zapisanych obserwowań",
+    "noWatchesDescription": "Utwórz obserwowanie w Ustawieniach, a pasujące karty pojawią się tutaj.",
+    "noMatchesTitle": "Brak dopasowań",
+    "noMatchesDescription": "Dla tego obserwowania nie ma obecnie żadnych pasujących kart.",
+    "loading": "Wczytuję obserwowania...",
+    "loadingMatches": "Wczytuję wyniki...",
+    "loadMore": "Pokaż więcej",
+    "loadingMore": "Wczytuję więcej...",
+    "newBadge": "Nowe",
+    "resultsFor": "Wyniki dla",
+    "matchesLoadFailed": "Nie udało się wczytać wyników."
   },
   "blockedUsers": {
     "title": "Zablokowani użytkownicy",

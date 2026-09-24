@@ -383,6 +383,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'portfolio-create',
         'search',
         'favorites',
+        'watches',
         'settings',
         'create',
         'messages',

@@ -95,6 +95,11 @@ const sidebarItems: SidebarItem[] = [
     icon: ChartBarIcon,
   },
   {
+    id: 'watches',
+    label: 'Sledovania',
+    icon: EyeIcon,
+  },
+  {
     id: 'profile',
     label: 'Profil',
     icon: UserIcon,
@@ -372,6 +377,7 @@ export default function Sidebar({
                     if (item.id === 'requests') return t('navigation.requests', item.label);
                     if (item.id === 'notifications') return t('navigation.notifications', item.label);
                     if (item.id === 'statistics') return t('dashboard.statistics', item.label);
+                    if (item.id === 'watches') return t('navigation.watches', item.label);
                     if (item.id === 'messages') return t('messages.title', item.label);
                     if (item.id === 'profile') return t('navigation.profile', item.label);
                     if (item.id === 'settings') return t('navigation.settings', item.label);

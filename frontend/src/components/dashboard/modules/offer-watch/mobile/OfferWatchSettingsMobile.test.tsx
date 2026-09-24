@@ -240,6 +240,13 @@ describe('OfferWatchSettingsMobile', () => {
     expect(scrollArea).not.toBeNull();
     expect(scrollArea).toContainElement(cancelButton);
     expect(scrollArea).toContainElement(saveButton);
+    expect(scrollArea).toHaveClass(
+      'min-w-0',
+      'w-full',
+      'overflow-x-hidden',
+      'overflow-y-auto',
+    );
+    expect(saveButton.closest('fieldset')).toHaveClass('min-w-0', 'w-full');
     expect(saveButton.parentElement).toHaveClass('grid', 'min-w-0', 'grid-cols-2');
     expect(cancelButton).toHaveClass('w-full', 'min-w-0');
     expect(saveButton).toHaveClass('w-full', 'min-w-0');

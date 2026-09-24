@@ -201,6 +201,7 @@ describe('bodkové overenie: adresy sa po refaktore nezmenili', () => {
     ['account-type', '/dashboard/account-type'],
     ['privacy', '/dashboard/privacy'],
     ['favorites', '/dashboard/favorites'],
+    ['watches', '/dashboard/watches'],
     ['messages', '/dashboard/messages'],
     ['requests', '/dashboard/requests'],
     ['skills', '/dashboard/skills'],

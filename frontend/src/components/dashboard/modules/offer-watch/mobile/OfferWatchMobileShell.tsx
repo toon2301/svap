@@ -48,9 +48,9 @@ export default function OfferWatchMobileShell({
         </h1>
         <span aria-hidden='true' />
       </header>
-      <div ref={contentRef} className={`min-h-0 flex-1 ${
+      <div ref={contentRef} className={`min-h-0 min-w-0 w-full flex-1 ${
         contentScrollable
-          ? 'overflow-y-auto overscroll-contain elegant-scrollbar'
+          ? 'overflow-x-hidden overflow-y-auto overscroll-contain elegant-scrollbar'
           : 'overflow-hidden'
       }`}>
         {children}

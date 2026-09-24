@@ -107,7 +107,7 @@ export default function OfferWatchForm({
         </div>
       ) : null}
 
-      <fieldset disabled={controlsDisabled} className='space-y-5'>
+      <fieldset disabled={controlsDisabled} className='min-w-0 w-full space-y-5'>
         <div>
           <label htmlFor={`${idPrefix}-category`} className='mb-1.5 block text-sm font-medium text-gray-800 dark:text-gray-200'>
             {t('offerWatch.categoryLabel', 'Podkategória')}
