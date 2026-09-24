@@ -234,6 +234,33 @@ describe('prevzatie snímky', () => {
 
     expect(peekFeedReturn()).toBeNull();
   });
+
+  it('poškodený záznam v úložisku je to isté ako žiadny', () => {
+    // Cudzí alebo nedopísaný záznam nesmie zhodiť Nástenku pri mounte.
+    window.sessionStorage.setItem('svaplyFeedReturn', '{nie je to JSON');
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('pri zlyhaní zápisu snímku ticho zahodí', () => {
+    const setItem = jest
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+
+    try {
+      // Plná kvóta je bežná realita, nie výnimočný stav – appka musí ísť ďalej
+      // a návrat len prebehne ako bežné otvorenie Nástenky.
+      expect(() =>
+        saveFeedReturn({ posts: [post(1)] as never, nextUrl: null, scrollTop: 10 }),
+      ).not.toThrow();
+    } finally {
+      setItem.mockRestore();
+    }
+
+    expect(peekFeedReturn()).toBeNull();
+  });
 });
 
 describe('odchod z Nástenky', () => {
@@ -361,6 +388,28 @@ describe('návrat na Nástenku', () => {
     // prvou stránkou zo servera.
     expect(await screen.findByText('Príspevok 7')).toBeInTheDocument();
     expect(mockedList).not.toHaveBeenCalled();
+  });
+
+  it('survives a real document reload', () => {
+    saveFeedReturn({
+      posts: [post(7), post(8)] as never,
+      nextUrl: 'http://api.test/feed?cursor=8',
+      scrollTop: 4200,
+    });
+
+    // Späť z detailu portfólia vedie cez hranicu Next stránky a `no-store`
+    // drží Safari mimo bfcache: dokument sa načíta nanovo a CELÝ modulový JS
+    // stav zanikne – nie len jeden zahodený render. Nový beh modulu je presne
+    // to isté prostredie, aké dostane Nástenka po takom načítaní.
+    jest.resetModules();
+    const reloaded = jest.requireActual<typeof import('../feedReturnState')>(
+      '../feedReturnState',
+    );
+
+    const restored = reloaded.peekFeedReturn();
+    expect(restored?.posts.map((entry) => entry.id)).toEqual([7, 8]);
+    expect(restored?.nextUrl).toBe('http://api.test/feed?cursor=8');
+    expect(restored?.scrollTop).toBe(4200);
   });
 
   it('loads normally when there is nothing to restore', async () => {
