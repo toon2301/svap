@@ -189,7 +189,8 @@
     "search": "Search",
     "favorites": "Favorites",
     "requests": "Requests",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "watches": "Watches"
   },
   "homepage": {
     "welcome": "Welcome to",
@@ -1153,6 +1154,27 @@
       "invalidResponse": "The server returned an invalid response. Try again.",
       "unknown": "The watch could not be saved. Try again."
     }
+  },
+  "offerWatchResults": {
+    "title": "Watches",
+    "description": "Choose a watch to see the latest offers or requests that match its filters.",
+    "mobileUnavailableTitle": "Mobile results are coming",
+    "mobileUnavailableDescription": "Watch results are currently available on desktop. You can still manage your watches on mobile.",
+    "selectLabel": "Choose a watch",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "manage": "Manage watches",
+    "noWatchesTitle": "You have no saved watches",
+    "noWatchesDescription": "Create a watch in Settings and matching cards will appear here.",
+    "noMatchesTitle": "No matches yet",
+    "noMatchesDescription": "There are currently no matching cards available for this watch.",
+    "loading": "Loading watches...",
+    "loadingMatches": "Loading results...",
+    "loadMore": "Show more",
+    "loadingMore": "Loading more...",
+    "newBadge": "New",
+    "resultsFor": "Results for",
+    "matchesLoadFailed": "The results could not be loaded."
   },
   "blockedUsers": {
     "title": "Blocked users",

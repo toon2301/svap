@@ -35,6 +35,7 @@ const EXPECTED_MODULES: Array<[string, string | null]> = [
   // Dvanásť adries, ktoré mapovanie doteraz nepoznalo.
   ['/dashboard/favorites', 'favorites'],
   ['/dashboard/notifications', 'notifications'],
+  ['/dashboard/watches', 'watches'],
   ['/dashboard/settings', 'settings'],
   ['/dashboard/settings/watches', 'settings'],
   ['/dashboard/language', 'language'],
@@ -118,6 +119,7 @@ const OWN_PAGES: Array<[string, string, string, DashboardRouteProps]> = [
   ['settings/blocked', '/dashboard/settings/blocked', '', { initialRoute: 'blocked-users' }],
   ['settings/watches', '/dashboard/settings/watches', '', { initialRoute: 'settings', initialRightItem: 'offer-watches' }],
   ['favorites', '/dashboard/favorites', '', { initialRoute: 'favorites' }],
+  ['watches', '/dashboard/watches', '', { initialRoute: 'watches' }],
   ['feed/[postId]', '/dashboard/feed/7', '?comment=3', { initialRoute: 'feed-post-detail', initialFeedPostId: 7 }],
   ['offers/[id]/reviews', '/dashboard/offers/3/reviews', '?review_id=5', { initialRoute: 'offer-reviews', initialOfferId: 3 }],
   ['users/[slug]', '/dashboard/users/jana', '', usersPage('jana')],

@@ -189,7 +189,8 @@
     "search": "Suchen",
     "favorites": "Favoriten",
     "requests": "Anfragen",
-    "notifications": "Benachrichtigungen"
+    "notifications": "Benachrichtigungen",
+    "watches": "Beobachtungen"
   },
   "homepage": {
     "welcome": "Willkommen bei",
@@ -1153,6 +1154,27 @@
       "invalidResponse": "Der Server hat eine ungültige Antwort zurückgegeben. Versuche es erneut.",
       "unknown": "Die Beobachtung konnte nicht gespeichert werden. Versuche es erneut."
     }
+  },
+  "offerWatchResults": {
+    "title": "Beobachtungen",
+    "description": "Wähle eine Beobachtung aus und sieh dir die neuesten Angebote oder Gesuche an, die zu ihren Filtern passen.",
+    "mobileUnavailableTitle": "Mobile Ergebnisse sind in Vorbereitung",
+    "mobileUnavailableDescription": "Die Ergebnisse deiner Beobachtungen sind derzeit in der Desktop-Version verfügbar. Auf dem Mobilgerät kannst du deine Beobachtungen weiterhin verwalten.",
+    "selectLabel": "Beobachtung auswählen",
+    "refresh": "Aktualisieren",
+    "refreshing": "Wird aktualisiert...",
+    "manage": "Beobachtungen verwalten",
+    "noWatchesTitle": "Du hast keine gespeicherten Beobachtungen",
+    "noWatchesDescription": "Erstelle in den Einstellungen eine Beobachtung; passende Karten erscheinen anschließend hier.",
+    "noMatchesTitle": "Noch keine Treffer",
+    "noMatchesDescription": "Für diese Beobachtung sind derzeit keine passenden Karten verfügbar.",
+    "loading": "Beobachtungen werden geladen...",
+    "loadingMatches": "Ergebnisse werden geladen...",
+    "loadMore": "Mehr anzeigen",
+    "loadingMore": "Weitere werden geladen...",
+    "newBadge": "Neu",
+    "resultsFor": "Ergebnisse für",
+    "matchesLoadFailed": "Die Ergebnisse konnten nicht geladen werden."
   },
   "blockedUsers": {
     "title": "Blockierte Nutzer",

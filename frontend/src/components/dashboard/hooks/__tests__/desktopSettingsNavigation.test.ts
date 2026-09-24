@@ -31,6 +31,13 @@ describe('desktop settings navigation helpers', () => {
     });
 
     expect(
+      createDesktopSettingsReturnTarget('watches', '/dashboard/watches?watch=7'),
+    ).toEqual({
+      moduleId: 'watches',
+      url: '/dashboard/watches?watch=7',
+    });
+
+    expect(
       createDesktopSettingsReturnTarget('skills', '/dashboard'),
     ).toEqual({
       moduleId: 'skills',

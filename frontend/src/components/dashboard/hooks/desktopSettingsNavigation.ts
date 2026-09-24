@@ -38,6 +38,7 @@ const RETURNABLE_MODULES = new Set([
   'portfolio-detail',
   'portfolio-create',
   'favorites',
+  'watches',
   'messages',
   'requests',
   'skills',

@@ -189,7 +189,8 @@
     "search": "Hledat",
     "favorites": "Oblíbené",
     "requests": "Žádosti",
-    "notifications": "Upozornění"
+    "notifications": "Upozornění",
+    "watches": "Sledování"
   },
   "homepage": {
     "welcome": "Vítejte na",
@@ -1153,6 +1154,27 @@
       "invalidResponse": "Server vrátil neplatnou odpověď. Zkus to znovu.",
       "unknown": "Sledování se nepodařilo uložit. Zkus to znovu."
     }
+  },
+  "offerWatchResults": {
+    "title": "Sledování",
+    "description": "Vyber sledování a prohlédni si nejnovější nabídky nebo poptávky, které odpovídají jeho filtrům.",
+    "mobileUnavailableTitle": "Výsledky pro mobil připravujeme",
+    "mobileUnavailableDescription": "Výsledky sledování jsou zatím dostupné ve verzi pro počítač. Svá sledování můžeš na mobilu nadále spravovat.",
+    "selectLabel": "Vyber sledování",
+    "refresh": "Obnovit",
+    "refreshing": "Obnovuji...",
+    "manage": "Spravovat sledování",
+    "noWatchesTitle": "Nemáš žádné uložené sledování",
+    "noWatchesDescription": "Vytvoř si sledování v Nastavení a odpovídající karty se zobrazí zde.",
+    "noMatchesTitle": "Zatím žádné shody",
+    "noMatchesDescription": "Pro toto sledování momentálně nejsou dostupné žádné odpovídající karty.",
+    "loading": "Načítám sledování...",
+    "loadingMatches": "Načítám výsledky...",
+    "loadMore": "Zobrazit další",
+    "loadingMore": "Načítám další...",
+    "newBadge": "Nové",
+    "resultsFor": "Výsledky pro",
+    "matchesLoadFailed": "Výsledky se nepodařilo načíst."
   },
   "blockedUsers": {
     "title": "Blokovaní uživatelé",

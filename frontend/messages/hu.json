@@ -189,7 +189,8 @@
     "search": "Keresés",
     "favorites": "Kedvencek",
     "requests": "Kérelmek",
-    "notifications": "Értesítések"
+    "notifications": "Értesítések",
+    "watches": "Figyelések"
   },
   "homepage": {
     "welcome": "Üdvözöljük a",
@@ -1153,6 +1154,27 @@
       "invalidResponse": "A szerver érvénytelen választ adott. Próbáld újra.",
       "unknown": "A figyelést nem sikerült menteni. Próbáld újra."
     }
+  },
+  "offerWatchResults": {
+    "title": "Figyelések",
+    "description": "Válassz egy figyelést, és nézd meg a szűrőinek megfelelő legújabb ajánlatokat vagy kereséseket.",
+    "mobileUnavailableTitle": "A mobilos találatok készülnek",
+    "mobileUnavailableDescription": "A figyelések találatai jelenleg az asztali verzióban érhetők el. Mobilon továbbra is kezelheted a figyeléseidet.",
+    "selectLabel": "Figyelés kiválasztása",
+    "refresh": "Frissítés",
+    "refreshing": "Frissítés...",
+    "manage": "Figyelések kezelése",
+    "noWatchesTitle": "Nincs mentett figyelésed",
+    "noWatchesDescription": "Hozz létre egy figyelést a Beállításokban, és a megfelelő kártyák itt jelennek meg.",
+    "noMatchesTitle": "Még nincs találat",
+    "noMatchesDescription": "Ehhez a figyeléshez jelenleg nincs elérhető megfelelő kártya.",
+    "loading": "Figyelések betöltése...",
+    "loadingMatches": "Találatok betöltése...",
+    "loadMore": "Továbbiak megjelenítése",
+    "loadingMore": "Továbbiak betöltése...",
+    "newBadge": "Új",
+    "resultsFor": "Találatok ehhez",
+    "matchesLoadFailed": "A találatokat nem sikerült betölteni."
   },
   "blockedUsers": {
     "title": "Letiltott felhasználók",

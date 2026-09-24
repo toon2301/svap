@@ -60,6 +60,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
     expect(screen.getByText('Obľúbené')).toBeInTheDocument();
     expect(screen.getByText('Štatistiky')).toBeInTheDocument();
+    expect(screen.getByText('Sledovania')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
   });
@@ -92,6 +93,20 @@ describe('Sidebar', () => {
     );
 
     expect(statisticsIndex).toBe(notificationsIndex + 1);
+  });
+
+  it('places watch results after Statistics in the desktop navigation', () => {
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
+
+    const navItems = Array.from(document.querySelectorAll('[data-sidebar-nav-item]'));
+    const statisticsIndex = navItems.findIndex(
+      (item) => item.getAttribute('data-sidebar-nav-item') === 'statistics',
+    );
+    const watchesIndex = navItems.findIndex(
+      (item) => item.getAttribute('data-sidebar-nav-item') === 'watches',
+    );
+
+    expect(watchesIndex).toBe(statisticsIndex + 1);
   });
 
   it('does not add Statistics to the mobile settings menu yet', () => {

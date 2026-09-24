@@ -417,6 +417,7 @@ export default function DashboardLayout({
                 activeModule === 'requests' ||
                 activeModule === 'messages' ||
                 activeModule === 'favorites' ||
+                activeModule === 'watches' ||
                 isSkillsModule
                   ? 'max-w-7xl'
                   : activeModule === 'offer-reviews'
