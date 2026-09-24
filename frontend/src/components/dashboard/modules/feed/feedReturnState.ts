@@ -19,8 +19,9 @@
  *  - `requestFeedReturnCapture()` volá NAVIGÁCIA tesne pred odchodom. Hovorí
  *    „idem preč, ulož si stav" – nič viac. Nemusí vedieť, či je Nástenka vôbec
  *    na obrazovke; keď nie je, žiadosť sa ticho stratí.
- *  - `saveFeedReturn()` / `takeFeedReturn()` používa SAMA Nástenka. Len ona
- *    vie, čo má jej stav obsahovať.
+ *  - `saveFeedReturn()` / `peekFeedReturn()` + `consumeFeedReturn()` používa
+ *    SAMA Nástenka. Len ona vie, čo má jej stav obsahovať – a len ona vie
+ *    povedať, kedy je obnova naozaj na obrazovke.
  */
 
 import type { FeedPost } from '@/lib/feedApi';
@@ -81,18 +82,45 @@ export function saveFeedReturn(snapshot: FeedReturnSnapshot): void {
 }
 
 /**
- * Nástenka pri mounte preberá snímku.
+ * Nástenka nazrie do snímky počas vykresľovania – ČÍTA, nespotrebúva.
  *
- * Prevzatie ju ZAHODÍ: obnova je jednorazová, inak by sa ten istý starý stav
- * vracal pri každom ďalšom otvorení Nástenky.
+ * Spotreba patrí až za commit (`consumeFeedReturn`). React rozpracovaný render
+ * zahadzuje a opakuje – nad dashboardom je `Suspense` a `DashboardContent` číta
+ * `useSearchParams()` – a zahodený pokus nesmie snímku vziať so sebou: druhý
+ * pokus by dostal prázdno a feed by sa načítal od vrchu.
+ */
+export function peekFeedReturn(): FeedReturnSnapshot | null {
+  if (!stored) return null;
+  if (Date.now() - stored.savedAt > FEED_RETURN_TTL_MS) {
+    // Expirovaná snímka je nepoužiteľná pre kohokoľvek, takže ju smie zahodiť
+    // aj samotné nazretie – opakovaný render tým o nič nepríde.
+    stored = null;
+    return null;
+  }
+  return stored;
+}
+
+/**
+ * Snímka je naozaj prevzatá: render, ktorý ju dostal, sa commitol.
+ *
+ * Zahodí VÝHRADNE tú snímku, ktorú volajúci dostal. Keby medzitým vznikla
+ * nová, patrí už ďalšiemu návratu a spotrebovať sa nesmie.
+ */
+export function consumeFeedReturn(snapshot: FeedReturnSnapshot | null): void {
+  if (snapshot && stored === snapshot) stored = null;
+}
+
+/**
+ * Prečítanie aj spotreba naraz.
+ *
+ * Len MIMO vykresľovacej fázy. Vo vykresľovaní patrí `peekFeedReturn` a
+ * potvrdenie `consumeFeedReturn` v efekte – dôvod je vysvetlený pri `peek`
+ * a stráži ho test „nikto nespotrebúva snímku počas vykresľovania".
  */
 export function takeFeedReturn(): FeedReturnSnapshot | null {
-  const snapshot = stored;
-  stored = null;
-  if (!snapshot) return null;
-  if (Date.now() - snapshot.savedAt > FEED_RETURN_TTL_MS) return null;
-  const { posts, nextUrl, scrollTop } = snapshot;
-  return { posts, nextUrl, scrollTop };
+  const snapshot = peekFeedReturn();
+  consumeFeedReturn(snapshot);
+  return snapshot;
 }
 
 /** Zahodí snímku bez prevzatia (napr. keď si používateľ feed vedome obnovil). */

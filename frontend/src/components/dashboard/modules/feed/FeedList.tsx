@@ -20,7 +20,7 @@ import FeedPostCard from './FeedPostCard';
 import FeedPostComposerModal from './FeedPostComposerModal';
 import { onFeedPostCreated } from './feedShareEvents';
 import { useFeedShareLanding } from './useFeedShareLanding';
-import { takeFeedReturn } from './feedReturnState';
+import { consumeFeedReturn, peekFeedReturn } from './feedReturnState';
 import { useFeedReturn } from './useFeedReturn';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import { useFeedPullToRefresh } from './useFeedPullToRefresh';
@@ -149,9 +149,13 @@ type FeedListProps = {
 
 export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   const { t } = useLanguage();
-  // Návrat z profilu/ponuky/portfólia: snímka sa preberá RAZ pri mounte
-  // (lazy inicializátor `useState`), inak by ju každé prekreslenie spotrebovalo.
-  const [restored] = useState(() => takeFeedReturn());
+  // Návrat z profilu/ponuky/portfólia. Snímka sa PREČÍTA hneď pri prvom rendri
+  // (lazy inicializátor `useState`), aby sa feed vykreslil rovno obnovený, bez
+  // bliknutia prázdneho zoznamu. Spotrebuje sa až v efekte, teda po commite:
+  // render, ktorý React zahodí a zopakuje, by ju inak vzal so sebou a druhý
+  // pokus by začal od vrchu.
+  const [restored] = useState(() => peekFeedReturn());
+  useEffect(() => consumeFeedReturn(restored), [restored]);
   const {
     posts,
     loading,

@@ -692,7 +692,7 @@
     "detailedDescriptionHintSeeking": "Beschreiben Sie im Detail, was Sie suchen – Vorgehensweise, was enthalten ist, Erwartungen und Ergebnis.",
     "descriptionRequired": "Beschreibung der Fähigkeit ist erforderlich",
     "descriptionTooLong": "Die Kurzbeschreibung darf höchstens 150 Zeichen enthalten.",
-    "duplicateCard": "Du hast bereits ein solches Angebot oder Gesuch erstellt.",
+    "duplicateCard": "Du hast in diesem Bereich bereits eine Karte mit dieser Unterkategorie erstellt.",
     "validationFailed": "Prüfe die eingegebenen Angaben und versuche es erneut.",
     "experiencePositive": "Erfahrung muss eine positive Zahl sein",
     "experienceTooLarge": "Erfahrung darf nicht größer als 100 sein",
