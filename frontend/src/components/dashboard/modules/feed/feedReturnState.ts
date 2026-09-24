@@ -21,6 +21,11 @@
  * nikam nepretečie a zanikne s jej zatvorením) a TTL nižšie drží to, že snímka
  * ostáva návratom, nie archívom.
  *
+ * `sessionStorage` však patrí KARTE, nie účtu, a jedna karta ich za tú istú
+ * session vystrieda viac. Snímka preto nesie `ownerId` a vydá sa len účtu,
+ * ktorý ju vytvoril – vek záznamu na to nestačí. Druhá, nezávislá vrstva je
+ * `clearFeedReturn()` pri odhlásení v `AuthContext`.
+ *
  * DVE ROLE, zámerne oddelené:
  *
  *  - `requestFeedReturnCapture()` volá NAVIGÁCIA tesne pred odchodom. Hovorí
@@ -32,6 +37,7 @@
  */
 
 import type { FeedPost } from '@/lib/feedApi';
+import { getCurrentAccountId } from '@/lib/currentAccount';
 
 export const FEED_RETURN_CAPTURE_EVENT = 'feed-return-capture';
 
@@ -55,8 +61,13 @@ export type FeedReturnSnapshot = {
 
 const STORAGE_KEY = 'svaplyFeedReturn';
 
-/** Tvar záznamu. Iné číslo = záznam z inej verzie appky, ignoruje sa. */
-const STORAGE_VERSION = 1;
+/**
+ * Tvar záznamu. Iné číslo = záznam z inej verzie appky, ignoruje sa.
+ *
+ * 2: pribudol `ownerId`. Záznamy bez neho sa nedajú priradiť k účtu, takže sa
+ *    zahadzujú – nie sú „staré", sú neoveriteľné.
+ */
+const STORAGE_VERSION = 2;
 
 /**
  * Strop na veľkosť zápisu (v znakoch serializovaného JSON).
@@ -74,6 +85,15 @@ type StoredSnapshot = FeedReturnSnapshot & {
   version: number;
   /** Ktorá snímka to je – potvrdenie nesmie zmazať tú, čo vznikla medzitým. */
   id: string;
+  /**
+   * Čí je obsah.
+   *
+   * `sessionStorage` patrí KARTE, nie účtu, a jedna karta ich za tú istú
+   * session vystrieda viac (odhlásenie a prihlásenie niekoho iného, vypršanie
+   * session). Feed pritom nesie aj osobné polia (`is_liked_by_me`,
+   * `can_manage`), takže bez tohto by ich druhý účet videl ako svoje.
+   */
+  ownerId: number;
   savedAt: number;
 };
 
@@ -103,11 +123,13 @@ function readStored(): StoredSnapshot | null {
     const parsed = JSON.parse(raw) as Partial<StoredSnapshot> | null;
     if (!parsed || parsed.version !== STORAGE_VERSION) return null;
     if (typeof parsed.id !== 'string' || typeof parsed.savedAt !== 'number') return null;
+    if (typeof parsed.ownerId !== 'number') return null;
     // Prázdny zoznam sa neukladá, takže záznam bez príspevkov je poškodený.
     if (!Array.isArray(parsed.posts) || parsed.posts.length === 0) return null;
     return {
       version: STORAGE_VERSION,
       id: parsed.id,
+      ownerId: parsed.ownerId,
       savedAt: parsed.savedAt,
       posts: parsed.posts as FeedPost[],
       nextUrl: typeof parsed.nextUrl === 'string' ? parsed.nextUrl : null,
@@ -175,12 +197,20 @@ export function saveFeedReturn(snapshot: FeedReturnSnapshot): void {
     removeStored();
     return;
   }
+  const ownerId = getCurrentAccountId();
+  if (ownerId === null) {
+    // Bez známeho účtu sa snímka nedá neskôr priradiť. Radšej žiadna než taká,
+    // ktorú by si mohol privlastniť ktokoľvek ďalší v tej istej karte.
+    removeStored();
+    return;
+  }
   const store = storage();
   if (!store) return;
 
   const record: StoredSnapshot = {
     version: STORAGE_VERSION,
     id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+    ownerId,
     savedAt: Date.now(),
     posts: snapshot.posts,
     nextUrl: snapshot.nextUrl,
@@ -218,6 +248,20 @@ export function saveFeedReturn(snapshot: FeedReturnSnapshot): void {
 export function peekFeedReturn(): FeedReturnSnapshot | null {
   const record = readStored();
   if (!record) return null;
+
+  const viewerId = getCurrentAccountId();
+  if (viewerId === null) {
+    // Účet sa ešte nezistil – po znovunačítaní dokumentu to trvá, kým dobehne
+    // `/me`. Záznam sa NEZAHADZUJE: patrí niekomu, kto sa o chvíľu ozve.
+    return null;
+  }
+  if (record.ownerId !== viewerId) {
+    // Snímka iného účtu v tej istej karte. Cudzí feed sa nesmie zobraziť ani
+    // ostať ležať – zahadzuje sa hneď, nie až po vypršaní TTL.
+    removeStored();
+    return null;
+  }
+
   if (Date.now() - record.savedAt > FEED_RETURN_TTL_MS) {
     // Expirovaná snímka je nepoužiteľná pre kohokoľvek, takže ju smie zahodiť
     // aj samotné nazretie – opakovaný render tým o nič nepríde.
@@ -232,6 +276,9 @@ export function peekFeedReturn(): FeedReturnSnapshot | null {
  *
  * Zahodí VÝHRADNE tú snímku, ktorú volajúci dostal. Keby medzitým vznikla
  * nová, patrí už ďalšiemu návratu a spotrebovať sa nesmie.
+ *
+ * Účet sa tu neoveruje zámerne: potvrdenie iba MAŽE, takže ním nič nevyjde
+ * von, a snímku cudzieho účtu volajúci nemá odkiaľ dostať – `peek` ju nevydá.
  */
 export function consumeFeedReturn(snapshot: FeedReturnSnapshot | null): void {
   const id = snapshotId(snapshot);

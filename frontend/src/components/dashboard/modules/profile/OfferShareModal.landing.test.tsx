@@ -15,6 +15,7 @@ import { OfferShareModal } from './OfferShareModal';
 import { shareOfferToFeed } from '@/lib/feedApi';
 import { resetFeedShareLanding } from '../feed/feedShareLanding';
 import { onFeedHomeNavigation } from '../feed/feedHomeNavigation';
+import { setCurrentAccountId } from '@/lib/currentAccount';
 import { resetFeedReturnState, saveFeedReturn } from '../feed/feedReturnState';
 
 const mockRouterPush = jest.fn();
@@ -108,6 +109,8 @@ beforeEach(() => {
   });
   resetFeedShareLanding();
   resetFeedReturnState();
+  // Snímka sa ukladá len prihlásenému účtu.
+  setCurrentAccountId(42);
   mockedShareOffer.mockResolvedValue({ id: 101 } as never);
 });
 
@@ -115,6 +118,7 @@ afterEach(() => {
   stopHomeRequests();
   resetFeedShareLanding();
   resetFeedReturnState();
+  setCurrentAccountId(null);
 });
 
 /** Otvorí vnorený dialóg Nástenky a odošle zdieľanie. */
