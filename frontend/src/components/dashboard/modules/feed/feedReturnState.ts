@@ -59,7 +59,14 @@ export type FeedReturnSnapshot = {
   scrollTop: number;
 };
 
-const STORAGE_KEY = 'svaplyFeedReturn';
+/**
+ * Kde snímka býva.
+ *
+ * Exportované, aby testy vedeli overiť SAMOTNÉ úložisko: `peekFeedReturn()`
+ * vráti `null` aj vtedy, keď účet nie je známy, takže o tom, či záznam naozaj
+ * zmizol, nehovorí nič.
+ */
+export const FEED_RETURN_STORAGE_KEY = 'svaplyFeedReturn';
 
 /**
  * Tvar záznamu. Iné číslo = záznam z inej verzie appky, ignoruje sa.
@@ -118,7 +125,7 @@ function readStored(): StoredSnapshot | null {
   const store = storage();
   if (!store) return null;
   try {
-    const raw = store.getItem(STORAGE_KEY);
+    const raw = store.getItem(FEED_RETURN_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredSnapshot> | null;
     if (!parsed || parsed.version !== STORAGE_VERSION) return null;
@@ -145,7 +152,7 @@ function removeStored(): void {
   const store = storage();
   if (!store) return;
   try {
-    store.removeItem(STORAGE_KEY);
+    store.removeItem(FEED_RETURN_STORAGE_KEY);
   } catch {
     // Nedá sa zmazať – obnovu ustráži TTL.
   }
@@ -229,7 +236,7 @@ export function saveFeedReturn(snapshot: FeedReturnSnapshot): void {
     return;
   }
   try {
-    store.setItem(STORAGE_KEY, serialized);
+    store.setItem(FEED_RETURN_STORAGE_KEY, serialized);
   } catch {
     // Kvóta alebo zamknutý zápis: nech po sebe neostane starší záznam, ktorý
     // už neplatí – obnovil by feed do stavu spred tohto odchodu.

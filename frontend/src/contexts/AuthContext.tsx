@@ -208,6 +208,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setMayHaveRefreshCookie(false);
       applyResolvedUser(null);
+      // Rovnako ako pri explicitnom logoute: väzba snímky na účet ju cudziemu
+      // nevydá, ale druhá vrstva platí pre KAŽDÚ cestu, ktorá účet nuluje –
+      // vypršanie session je len menej častá z nich, nie menej dôležitá.
+      clearFeedReturn();
       setIsLoading(false);
 
       // Presmerovať len ak sme na chránenej trase – na verejných (/register, /login, …) nepresmerovať

@@ -13,6 +13,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import FeedList from '../FeedList';
 import {
+  FEED_RETURN_STORAGE_KEY,
   FEED_RETURN_TTL_MS,
   clearFeedReturn,
   consumeFeedReturn,
@@ -254,7 +255,7 @@ describe('prevzatie snímky', () => {
 
   it('poškodený záznam v úložisku je to isté ako žiadny', () => {
     // Cudzí alebo nedopísaný záznam nesmie zhodiť Nástenku pri mounte.
-    window.sessionStorage.setItem('svaplyFeedReturn', '{nie je to JSON');
+    window.sessionStorage.setItem(FEED_RETURN_STORAGE_KEY, '{nie je to JSON');
 
     expect(peekFeedReturn()).toBeNull();
   });
@@ -316,7 +317,7 @@ describe('snímka patrí účtu, ktorý ju vytvoril', () => {
     // Záznam z predošlej verzie appky sa nedá priradiť k účtu – zahadzuje sa,
     // nie je „starý", je neoveriteľný.
     window.sessionStorage.setItem(
-      'svaplyFeedReturn',
+      FEED_RETURN_STORAGE_KEY,
       JSON.stringify({
         version: 1,
         id: 'stary-zaznam',
