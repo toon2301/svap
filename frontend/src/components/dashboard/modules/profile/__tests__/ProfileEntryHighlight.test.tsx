@@ -75,7 +75,7 @@ function mockSearchParams() {
 jest.mock('next/navigation', () => ({
   useRouter: () => mockRouter,
   useSearchParams: () => mockSearchParams(),
-  usePathname: () => '/dashboard',
+  usePathname: () => window.location.pathname,
 }));
 
 jest.mock('@/lib/api', () => ({
@@ -303,6 +303,31 @@ describe('vstup na profil do minúty od iného zvýraznenia', () => {
     expect(main.scrollTop).toBe(0);
     expect(scrolledTo).toEqual([]);
     expect(window.location.search).not.toContain('highlight');
+  });
+});
+
+describe('priame načítanie aliasu vlastného profilu', () => {
+  it('keeps highlight, tab and fragment together when /dashboard/profile is canonicalized', async () => {
+    window.history.replaceState(null, '', '/dashboard/profile?highlight=55&tab=offers#sekcia');
+    Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
+      scrolledTo.push(this.textContent ?? '');
+    };
+
+    render(
+      <AuthProvider>
+        <DashboardContent initialRoute="profile" />
+      </AuthProvider>,
+    );
+
+    // `/dashboard/profile` je len iný tvar adresy vlastného profilu – všetko,
+    // čo v nej je, patrí profilu a musí prejsť so sebou naraz.
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard/users/test-user'));
+    await waitFor(() => expect(scrolledTo).toHaveLength(1));
+    expect(scrolledTo[0]).toContain('skska');
+    const query = new URLSearchParams(window.location.search);
+    expect(query.get('highlight')).toBe('55');
+    expect(query.get('tab')).toBe('offers');
+    expect(window.location.hash).toBe('#sekcia');
   });
 });
 

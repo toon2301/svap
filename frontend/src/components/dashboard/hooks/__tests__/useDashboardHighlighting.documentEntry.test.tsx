@@ -134,6 +134,60 @@ describe('vstup na profil v bežiacej appke', () => {
   });
 });
 
+describe('návrat na profil, na ktorom sa dokument načítal', () => {
+  it('does not resurrect even when no effect run saw the other profile', () => {
+    // Priamy vstup na profil – zvýraznenie sa zo zálohy obnoví oprávnene.
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    nextCatchesUp();
+    storeRecentHighlight(55);
+    const { result, rerender } = renderHighlighting('user-profile');
+    expect(result.current.highlightedSkillId).toBe(55);
+    replaceMock.mockClear();
+
+    // Odchod na iný cudzí profil a späť. Modul ostáva ten istý a Next adresu
+    // ešte nedobehol, takže efekt cestou NEBEŽÍ – odchod nikto nezaznamenal.
+    act(() => {
+      result.current.setHighlightedSkillId(null);
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      rerender({ module: 'user-profile' });
+    });
+    act(() => {
+      window.history.pushState(null, '', '/dashboard/users/peter');
+      rerender({ module: 'user-profile' });
+    });
+
+    // Až teraz beží – na pôvodnom profile, bez parametra v adrese.
+    act(() => {
+      nextCatchesUp();
+      rerender({ module: 'user-profile' });
+    });
+
+    expect(result.current.highlightedSkillId).toBeNull();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('prechod na profil bez zvýraznenia', () => {
+  it('does not pick up the previous address while Next still describes it', () => {
+    // Cudzí profil otvorený so zvýraznením (napr. zdieľaná ponuka).
+    window.history.replaceState(null, '', '/dashboard/users/peter?offer=55');
+    nextCatchesUp();
+    const { result, rerender } = renderHighlighting('user-profile');
+    expect(result.current.highlightedSkillId).toBe(55);
+
+    // `goToMyProfile` bez zvýraznenia: stav zruší a zapíše adresu bez
+    // parametra. `searchParams` ešte opisujú predošlú adresu s `?offer=55`.
+    act(() => {
+      result.current.setHighlightedSkillId(null);
+      window.history.pushState(null, '', '/dashboard/profile');
+      rerender({ module: 'profile' });
+    });
+
+    // Prázdna skutočná adresa znamená „bez zvýraznenia", nie „nevieme".
+    expect(result.current.highlightedSkillId).toBeNull();
+  });
+});
+
 describe('explicitné zvýraznenie v bežiacej appke', () => {
   it('survives the render before Next catches up with the address', () => {
     // Presne to, čo robí `goToMyProfile` / `goToUserProfile`: nastaví stav a
