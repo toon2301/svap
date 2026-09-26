@@ -116,18 +116,16 @@ export function useDashboardNavigation({
 
   // Hlavná navigačná logika pre zmenu modulov
   const handleMainModuleChange = useCallback((moduleId: string) => {
-    // Odchod do INEJ sekcie zahodí návratovú snímku Nástenky.
-    //
-    // Snímka patrí VÝHRADNE návratu z profilu, ponuky/dopytu alebo portfólia
-    // otvoreného z Nástenky. Bez tohto by prežila aj odbočku do Štatistík či
-    // Správ a pri ďalšom otvorení Nástenky by obnovila starú pozíciu aj starý
-    // zoznam – používateľ by dostal feed, ktorý si nevypýtal.
+    // Každá voľba sekcie v navigácii – aj voľba samotnej Nástenky – zahodí
+    // návratovú snímku. Snímka patrí VÝHRADNE návratu (Späť, appková šípka)
+    // z profilu, ponuky/dopytu alebo portfólia otvoreného z Nástenky, a ten
+    // ide cez históriu (`syncModuleFromPath`), nie sem. Bez tohto by snímka
+    // prežila odbočku do Štatistík či Správ a priamy klik na „Nástenka" by
+    // obnovil starý zoznam aj starú pozíciu namiesto čistého vstupu.
     //
     // Prepnutie na `profile` bez platného identifikátora sa NEUSKUTOČNÍ
     // (vetvy nižšie sa vrátia bez zmeny), takže by sa snímka zahodila za nič.
-    const changesModule =
-      moduleId !== 'home' &&
-      (moduleId !== 'profile' || profileIdentifier(user) != null);
+    const changesModule = moduleId !== 'profile' || profileIdentifier(user) != null;
     if (changesModule) clearFeedReturn();
 
     // „Profil" v navigácii je nový vstup do vlastného profilu – od vrchu, na
