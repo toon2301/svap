@@ -13,6 +13,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import FeedList from '../FeedList';
 import {
+  FEED_RETURN_STORAGE_KEY,
   FEED_RETURN_TTL_MS,
   clearFeedReturn,
   consumeFeedReturn,
@@ -22,6 +23,7 @@ import {
   saveFeedReturn,
   takeFeedReturn,
 } from '../feedReturnState';
+import { setCurrentAccountId } from '@/lib/currentAccount';
 import { openUserProfile } from '../feedProfileNavigation';
 import {
   emitFeedShareLanding,
@@ -84,6 +86,9 @@ jest.mock('next/navigation', () => ({
 const feedApi = jest.requireMock('@/lib/feedApi');
 const mockedList = feedApi.listFeedPosts as jest.Mock;
 
+/** Prihlásený používateľ vo väčšine prípadov nižšie. */
+const VIEWER_ID = 42;
+
 const author = {
   id: 10,
   display_name: 'Jana',
@@ -122,6 +127,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   resetFeedReturnState();
   resetFeedShareLanding();
+  // Snímka patrí účtu, ktorý ju vytvoril – bez prihláseného sa neukladá.
+  setCurrentAccountId(VIEWER_ID);
   document.querySelectorAll('[data-dashboard-main]').forEach((node) => node.remove());
   mockedList.mockResolvedValue({
     results: [post(1), post(2)],
@@ -132,6 +139,7 @@ beforeEach(() => {
 afterEach(() => {
   resetFeedReturnState();
   resetFeedShareLanding();
+  setCurrentAccountId(null);
 });
 
 describe('snímka stavu Nástenky', () => {
@@ -231,6 +239,94 @@ describe('prevzatie snímky', () => {
     saveFeedReturn({ posts: [post(1)] as never, nextUrl: null, scrollTop: 10 });
     peekFeedReturn();
     clearFeedReturn();
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('bez prihláseného účtu sa snímka neuloží', () => {
+    setCurrentAccountId(null);
+
+    // Neoveriteľnú snímku by si mohol privlastniť ktokoľvek ďalší v karte.
+    saveFeedReturn({ posts: [post(1)] as never, nextUrl: null, scrollTop: 10 });
+
+    setCurrentAccountId(VIEWER_ID);
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('poškodený záznam v úložisku je to isté ako žiadny', () => {
+    // Cudzí alebo nedopísaný záznam nesmie zhodiť Nástenku pri mounte.
+    window.sessionStorage.setItem(FEED_RETURN_STORAGE_KEY, '{nie je to JSON');
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('pri zlyhaní zápisu snímku ticho zahodí', () => {
+    const setItem = jest
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+
+    try {
+      // Plná kvóta je bežná realita, nie výnimočný stav – appka musí ísť ďalej
+      // a návrat len prebehne ako bežné otvorenie Nástenky.
+      expect(() =>
+        saveFeedReturn({ posts: [post(1)] as never, nextUrl: null, scrollTop: 10 }),
+      ).not.toThrow();
+    } finally {
+      setItem.mockRestore();
+    }
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+});
+
+describe('snímka patrí účtu, ktorý ju vytvoril', () => {
+  const A = 1;
+  const B = 2;
+
+  it('nevydá feed účtu A účtu B v tej istej karte', () => {
+    setCurrentAccountId(A);
+    saveFeedReturn({ posts: [post(1)] as never, nextUrl: null, scrollTop: 640 });
+
+    // Odhlásenie: účet je neznámy. Záznam sa tu NEZAHADZUJE – rovnako neznámy
+    // je aj tesne po znovunačítaní dokumentu, kým dobehne `/me`.
+    setCurrentAccountId(null);
+    expect(peekFeedReturn()).toBeNull();
+
+    // Do TTL okna sa v tej istej karte prihlási niekto iný. Feed účtu A nesie
+    // aj osobné polia (`is_liked_by_me`, `can_manage`) – B ich nesmie dostať.
+    setCurrentAccountId(B);
+    expect(peekFeedReturn()).toBeNull();
+    expect(takeFeedReturn()).toBeNull();
+
+    // A zároveň v karte neostal ležať: ani pôvodný účet ho už nedostane.
+    setCurrentAccountId(A);
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('vydá ju tomu istému účtu', () => {
+    setCurrentAccountId(A);
+    saveFeedReturn({ posts: [post(1)] as never, nextUrl: null, scrollTop: 640 });
+
+    // Bežný návrat z profilu/portfólia sa nemení.
+    expect(peekFeedReturn()?.scrollTop).toBe(640);
+  });
+
+  it('nevydá záznam bez vlastníka (tvar spred tejto ochrany)', () => {
+    // Záznam z predošlej verzie appky sa nedá priradiť k účtu – zahadzuje sa,
+    // nie je „starý", je neoveriteľný.
+    window.sessionStorage.setItem(
+      FEED_RETURN_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        id: 'stary-zaznam',
+        savedAt: Date.now(),
+        posts: [post(1)],
+        nextUrl: null,
+        scrollTop: 640,
+      }),
+    );
 
     expect(peekFeedReturn()).toBeNull();
   });
@@ -361,6 +457,35 @@ describe('návrat na Nástenku', () => {
     // prvou stránkou zo servera.
     expect(await screen.findByText('Príspevok 7')).toBeInTheDocument();
     expect(mockedList).not.toHaveBeenCalled();
+  });
+
+  it('survives a real document reload', () => {
+    saveFeedReturn({
+      posts: [post(7), post(8)] as never,
+      nextUrl: 'http://api.test/feed?cursor=8',
+      scrollTop: 4200,
+    });
+
+    // Späť z detailu portfólia vedie cez hranicu Next stránky a `no-store`
+    // drží Safari mimo bfcache: dokument sa načíta nanovo a CELÝ modulový JS
+    // stav zanikne – nie len jeden zahodený render. Nový beh modulu je presne
+    // to isté prostredie, aké dostane Nástenka po takom načítaní.
+    jest.resetModules();
+    // Po reloade je účet najprv neznámy a potvrdí ho až `/me`; dashboard dovtedy
+    // Nástenku nevykreslí. Nový beh modulov to musí prejsť rovnako.
+    const account = jest.requireActual<typeof import('@/lib/currentAccount')>(
+      '@/lib/currentAccount',
+    );
+    const reloaded = jest.requireActual<typeof import('../feedReturnState')>(
+      '../feedReturnState',
+    );
+    expect(reloaded.peekFeedReturn()).toBeNull();
+
+    account.setCurrentAccountId(VIEWER_ID);
+    const restored = reloaded.peekFeedReturn();
+    expect(restored?.posts.map((entry) => entry.id)).toEqual([7, 8]);
+    expect(restored?.nextUrl).toBe('http://api.test/feed?cursor=8');
+    expect(restored?.scrollTop).toBe(4200);
   });
 
   it('loads normally when there is nothing to restore', async () => {

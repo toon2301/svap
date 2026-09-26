@@ -5,6 +5,11 @@ import { __resetAuthBootstrapSnapshotForTests, AuthProvider, useAuth } from '../
 import { api, endpoints, invalidateSession } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
+import {
+  FEED_RETURN_STORAGE_KEY,
+  peekFeedReturn,
+  saveFeedReturn,
+} from '@/components/dashboard/modules/feed/feedReturnState';
 
 const replaceMock = jest.fn();
 
@@ -262,6 +267,74 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(localStorage.getItem(historyKey)).toBeNull();
     });
+  });
+
+  it('clears the feed return snapshot on explicit logout', async () => {
+    mockApiGet.mockResolvedValueOnce({ status: 200, data: resolvedUser } as never);
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    });
+
+    // Snímka Nástenky prihláseného účtu – vzniká pri odchode na profil či
+    // portfólio a žije v `sessionStorage`, teda prežije aj reload dokumentu.
+    saveFeedReturn({
+      posts: [{ id: 1 }] as never,
+      nextUrl: null,
+      scrollTop: 640,
+    });
+    expect(peekFeedReturn()).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+    // Druhá vrstva k väzbe na účet: obsah jedného účtu nemá v karte po
+    // odhlásení ostať ležať ani na chvíľu.
+    //
+    // Kontroluje sa PRIAMO úložisko, nie len `peekFeedReturn()`. Po odhlásení
+    // je účet neznámy, takže `peek` by vrátil `null` aj keby záznam v karte
+    // ostal ležať – samotný `peek` teda o vymazaní nič nedokazuje.
+    await waitFor(() => {
+      expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).toBeNull();
+    });
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('clears the feed return snapshot when the session is invalidated', async () => {
+    mockApiGet.mockResolvedValueOnce({ status: 200, data: resolvedUser } as never);
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    });
+
+    saveFeedReturn({
+      posts: [{ id: 1 }] as never,
+      nextUrl: null,
+      scrollTop: 640,
+    });
+    expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).not.toBeNull();
+
+    // Vypršanie session (zlyhaný refresh) nuluje účet inou cestou než logout,
+    // ale v karte po ňom nesmie ostať obsah predošlého účtu rovnako.
+    act(() => {
+      window.dispatchEvent(new Event('auth:session-invalid'));
+    });
+
+    await waitFor(() => {
+      expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).toBeNull();
+    });
+    expect(peekFeedReturn()).toBeNull();
   });
 
   it('throws error when useAuth is used outside provider', () => {

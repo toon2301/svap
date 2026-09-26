@@ -24,6 +24,7 @@ jest.mock('../../modules/profile/preloadAvatar', () => ({
 
 import { useDashboardNavigation } from '../useDashboardNavigation';
 import { preloadProfileAvatar } from '../../modules/profile/preloadAvatar';
+import { setCurrentAccountId } from '@/lib/currentAccount';
 import {
   resetFeedReturnState,
   saveFeedReturn,
@@ -68,11 +69,16 @@ function renderNavigation(
 
 beforeEach(() => {
   resetFeedReturnState();
+  // Snímka sa ukladá len prihlásenému účtu.
+  setCurrentAccountId(42);
   window.history.replaceState(null, '', '/dashboard');
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
 });
 
-afterEach(() => resetFeedReturnState());
+afterEach(() => {
+  resetFeedReturnState();
+  setCurrentAccountId(null);
+});
 
 /** Stav Nástenky, aký po sebe zanechá preklik na profil. */
 function captureSnapshot() {

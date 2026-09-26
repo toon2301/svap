@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useRouter } from 'next/navigation';
 import { api, endpoints, invalidateSession, isTransientAuthFailureError, setMayHaveRefreshCookie } from '@/lib/api';
 import { clearMobileOnboardingPostponedForSession, clearMobileOnboardingResumePhase2 } from '@/lib/mobileOnboardingSession';
+import { setCurrentAccountId } from '@/lib/currentAccount';
+import { clearFeedReturn } from '@/components/dashboard/modules/feed/feedReturnState';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { logClientError } from '@/utils/clientLogging';
@@ -74,6 +76,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     userRef.current = nextUser;
     setUser(nextUser);
     syncAuthBootstrapSnapshot(nextUser, true);
+    // Modulové úložiská mimo Reactu si podľa toho overia, komu ich obsah patrí.
+    // Tadiaľto ide KAŽDÁ zmena účtu, takže stačí jedno miesto.
+    setCurrentAccountId(nextUser?.id ?? null);
   }, []);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
@@ -203,6 +208,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setMayHaveRefreshCookie(false);
       applyResolvedUser(null);
+      // Rovnako ako pri explicitnom logoute: väzba snímky na účet ju cudziemu
+      // nevydá, ale druhá vrstva platí pre KAŽDÚ cestu, ktorá účet nuluje –
+      // vypršanie session je len menej častá z nich, nie menej dôležitá.
+      clearFeedReturn();
       setIsLoading(false);
 
       // Presmerovať len ak sme na chránenej trase – na verejných (/register, /login, …) nepresmerovať
@@ -331,6 +340,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     localStorage.removeItem('activeModule');
     sessionStorage.removeItem('forceHome');
+    // Snímka Nástenky je viazaná na účet, ktorý ju vytvoril, takže cudziemu sa
+    // aj tak nezobrazí. Toto je druhá, nezávislá vrstva: obsah jedného účtu
+    // nemá v karte po odhlásení ostať ležať ani na chvíľu. Zároveň to znamená,
+    // že aj ten istý používateľ po opätovnom prihlásení dostane čerstvý feed –
+    // snímka je návrat v rámci session a odhlásením sa session končí.
+    clearFeedReturn();
 
     void (async () => {
       try {
