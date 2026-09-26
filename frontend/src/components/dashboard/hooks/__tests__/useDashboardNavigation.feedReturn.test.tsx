@@ -138,16 +138,18 @@ describe('neúspešný pokus o prepnutie', () => {
   });
 });
 
-describe('návrat na Nástenku', () => {
-  it('keeps the snapshot when the target IS the feed', () => {
+describe('priamy klik na Nástenku', () => {
+  it('drops the snapshot even when the target IS the feed', () => {
     captureSnapshot();
     const { result } = renderNavigation('user-profile');
 
-    // Klik na „Nástenka" po prezretí profilu – práve toto je návrat, ktorý
-    // snímku má použiť.
+    // Klik na „Nástenka" v navigácii po prezretí profilu NIE JE návrat – ten
+    // ide cez históriu (Späť, appková šípka), nie cez voľbu sekcie. Predtým
+    // tu snímka prežila a Nástenka sa otvorila so starým zoznamom aj starou
+    // pozíciou namiesto čistého vstupu.
     act(() => result.current.handleMainModuleChange('home'));
 
-    expect(takeFeedReturn()?.scrollTop).toBe(500);
+    expect(takeFeedReturn()).toBeNull();
   });
 });
 

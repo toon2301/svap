@@ -21,7 +21,11 @@ import { AuthProvider, __resetAuthBootstrapSnapshotForTests } from '@/contexts/A
 import DashboardContent from '../../../components/DashboardContent';
 import FeedList from '../FeedList';
 import { setCurrentAccountId } from '@/lib/currentAccount';
-import { resetFeedReturnState, saveFeedReturn } from '../feedReturnState';
+import {
+  FEED_RETURN_STORAGE_KEY,
+  resetFeedReturnState,
+  saveFeedReturn,
+} from '../feedReturnState';
 import { openUserProfile } from '../feedProfileNavigation';
 import { emitFeedShareLanding, resetFeedShareLanding } from '../feedShareLanding';
 import { requestFeedHomeNavigation } from '../feedHomeNavigation';
@@ -305,6 +309,51 @@ describe('návrat na Nástenku ostáva návratom', () => {
 
     await waitFor(() => expect(dashboardMain().scrollTop).toBe(4200));
     expect(mockedList).not.toHaveBeenCalled();
+  });
+});
+
+describe('priamy klik na Nástenku z profilu otvoreného z hlavičky príspevku', () => {
+  /**
+   * Tá istá cesta ako test na Späť vyššie – snímka existuje – ale namiesto
+   * kroku späť príde výslovná voľba sekcie. Snímka patrí len návratu, takže
+   * sa nesmie použiť: Nástenka sa načíta nanovo a od vrchu.
+   */
+  async function openAuthorProfileFromPostHeader() {
+    await mountDashboard();
+    dashboardMain().scrollTop = 1500;
+
+    act(() => openUserProfile({ id: 21, slug: 'peter' }));
+    await waitFor(() => expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument());
+    // Predpoklad scenára: snímka pre Späť naozaj vznikla. Bez nej by test
+    // prešiel aj so starou chybou.
+    expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).not.toBeNull();
+
+    // Používateľ doscrolluje profil na spodok.
+    dashboardMain().scrollTop = 3000;
+    // Server medzitým vracia iný obsah – podľa neho sa pozná, že feed prišiel
+    // zo servera, a nie zo starej snímky (tá drží príspevky 1 a 2).
+    mockedList.mockClear();
+    mockedList.mockResolvedValue({ results: [post(5), post(6)], next: null });
+  }
+
+  async function expectFreshFeed() {
+    expect(await screen.findByText('Príspevok 5')).toBeInTheDocument();
+    await settle();
+    expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument();
+    expect(mockedList).toHaveBeenCalledTimes(1);
+    expect(dashboardMain().scrollTop).toBe(0);
+    expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).toBeNull();
+  }
+
+  // Len desktop: na mobile je profil z hlavičky príspevku vždy `user-profile`,
+  // kde spodná navigácia chýba a hamburger otvára akcie profilu, nie menu.
+  // Von sa tam dá len šípkou alebo krokom späť – teda práve návratom.
+  it('loads the feed fresh at the top (sidebar Nástenka)', async () => {
+    await openAuthorProfileFromPostHeader();
+
+    act(() => sidebarItem('home').click());
+
+    await expectFreshFeed();
   });
 });
 
