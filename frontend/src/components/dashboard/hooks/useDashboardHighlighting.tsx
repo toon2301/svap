@@ -48,6 +48,43 @@ function clearHighlightSearchParams(url: URL): boolean {
   return changed;
 }
 
+/** Parameter zvýraznenia v adrese – `offer` znamená to isté čo `highlight`. */
+function highlightParamOf(params: Pick<URLSearchParams, 'get'> | null | undefined): string | null {
+  return params?.get('offer') ?? params?.get('highlight') ?? null;
+}
+
+/**
+ * Obnova zvýraznenia zo `sessionStorage` patrí JEDINÉMU cyklu efektu – prvému
+ * po načítaní dokumentu (F5 na profile, priamy vstup odkazom).
+ *
+ * Záloha je pre prípad, keď adresa po obnovení stránky parameter už nemá.
+ * Predtým sa však vetva spúšťala pri KAŽDOM prepnutí na profil v bežiacej
+ * appke a vzkriesila zvýraznenie spred menej ako minúty aj tam, kde si ho
+ * nikto nevyžiadal: ťuk na ikonu profilu či na hlavičku príspevku otvoril
+ * profil od vrchu a vzápätí ho odscrolloval na starú kartu. Navigácia v appke
+ * si zvýraznenie nesie sama – adresou, `goToMyProfile`, `goToUserProfile`.
+ *
+ * Cyklus sa pozná podľa renderu, z ktorého efekt beží – NIE podľa modulu a
+ * cesty: porovnanie nerozlíši „som tu od načítania" od „odišiel som a vrátil
+ * sa", keď efekt odchod nezaznamenal (modul rovnaký, Next adresu ešte
+ * nedobehol). `entryCycle` sa nastaví raz a už nikdy nezmení. Obyčajná
+ * jednorazová značka však nestačí: StrictMode ten istý cyklus spúšťa dvakrát
+ * a druhý beh by obnovené zvýraznenie hneď zmazal – oba behy tu majú ten
+ * istý render. Modulový stav zámerne: prežije prepínanie modulov aj výmenu
+ * inštancie dashboardu pri zmene Next stránky; znovunačítanie ho vynuluje.
+ */
+let entryCycle: object | null = null;
+
+function isDocumentEntryCycle(cycle: object): boolean {
+  if (entryCycle === null) entryCycle = cycle;
+  return entryCycle === cycle;
+}
+
+/** Len pre testy – nový „dokument". */
+export function __resetHighlightDocumentEntryForTests(): void {
+  entryCycle = null;
+}
+
 /**
  * Custom hook pre highlighting logiku skill kariet v Dashboard
  */
@@ -87,13 +124,32 @@ export function useDashboardHighlighting({
 
   // Synchronizácia highlightedSkillId s URL parametrom 'highlight'
   // A záloha v sessionStorage pre prípad full refreshu (profile aj user-profile)
+  // Totožnosť renderu, z ktorého beží efekt nižšie (viď `isDocumentEntryCycle`).
+  // StrictMode ho spúšťa dvakrát bez nového renderu – oba behy nájdu to isté.
+  const renderCycleRef = useRef<object>({});
+  renderCycleRef.current = {};
+
   useEffect(() => {
+    // Registruje sa KAŽDÝ beh, aj mimo profilu: prvý cyklus v dokumente
+    // určuje, či vôbec ide o vstup priamo na profil.
+    const mayRestoreFromStorage = isDocumentEntryCycle(renderCycleRef.current);
+
     // Ak nie sme v profile s kartami ponúk, neobnovovať zo sessionStorage
     if (!supportsSkillHighlight(activeModule)) {
       return;
     }
 
-    const highlightParam = searchParams?.get('offer') ?? searchParams?.get('highlight') ?? null;
+    // Skutočná adresa je AUTORITATÍVNA vždy, keď je okno k dispozícii – aj
+    // keď v nej parameter nie je: prázdna adresa znamená „bez zvýraznenia",
+    // nie „nevieme". Next `searchParams` po `pushState` dobieha až v prechode
+    // (`startTransition`), takže prvý beh po kliku v nich vidí PREDOŠLÚ
+    // adresu – zvýraznenie, ktoré tam práve zapísal `goToMyProfile` či
+    // `goToUserProfile`, by chýbalo, a pri prechode na profil bez neho by sa
+    // vrátilo staré. `searchParams` ostávajú len pre server, kde okno nie je.
+    const highlightParam =
+      typeof window !== 'undefined'
+        ? highlightParamOf(new URLSearchParams(window.location.search))
+        : highlightParamOf(searchParams);
     if (highlightParam) {
       const id = Number(highlightParam);
       if (!isNaN(id)) {
@@ -109,10 +165,11 @@ export function useDashboardHighlighting({
         }
       }
     } else {
-      // Ak v URL nie je parameter, skúsime obnoviť zo sessionStorage (ak sme po refreshi)
-      // Ale len ak neubehol čas
+      // Ak v URL nie je parameter, skúsime obnoviť zo sessionStorage – len pri
+      // aktivácii, na ktorej sa dokument načítal (po refreshi), a len ak
+      // neubehol čas.
       try {
-        if (typeof window !== 'undefined') {
+        if (mayRestoreFromStorage && typeof window !== 'undefined') {
           const storedId = sessionStorage.getItem('highlightedSkillId');
           const storedTime = sessionStorage.getItem('highlightedSkillTime');
           
