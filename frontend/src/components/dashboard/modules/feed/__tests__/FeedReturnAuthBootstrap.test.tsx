@@ -49,9 +49,25 @@ const resolvedUser = {
 /** Odpoveď `/me` drží test – appka medzitým beží v stave „ešte neviem". */
 let resolveMe: (() => void) | null = null;
 
+/**
+ * Ako Next: router aj query sú stabilné objekty a query sa mení len so zmenou
+ * adresy. Nový objekt pri každom renderi by efekt zvýraznenia (má ich v
+ * závislostiach) spúšťal po každom renderi dashboardu.
+ */
+const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
+let mockSearchKey = '\u0000';
+let mockSearch = new URLSearchParams('');
+function mockSearchParams() {
+  if (window.location.search !== mockSearchKey) {
+    mockSearchKey = window.location.search;
+    mockSearch = new URLSearchParams(mockSearchKey);
+  }
+  return mockSearch;
+}
+
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(''),
+  useRouter: () => mockRouter,
+  useSearchParams: () => mockSearchParams(),
   usePathname: () => '/dashboard',
 }));
 

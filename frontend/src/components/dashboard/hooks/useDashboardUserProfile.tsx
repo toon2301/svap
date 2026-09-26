@@ -11,6 +11,7 @@ import {
 } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
 import { supportsSkillHighlight } from './useDashboardHighlighting';
+import { dashboardSectionPath, isSameDashboardPath } from '../components/dashboardRoutes';
 
 export interface DashboardUserProfileProps {
   viewedUserId: number | null;
@@ -367,11 +368,20 @@ export function useDashboardUserProfile({
         }
       }
     } else {
-      // Sme mimo user profile URL štruktúry – teda prichádzame z INEJ stránky.
-      // Query ani fragment sa tu ZÁMERNE neprenášajú: patria tomu, odkiaľ sa
-      // odchádza, nie profilu, na ktorý sa ide.
+      // Sme mimo user profile URL štruktúry – spravidla prichádzame z INEJ
+      // stránky a query ani fragment sa ZÁMERNE neprenášajú: patria tomu,
+      // odkiaľ sa odchádza. Výnimkou je `/dashboard/profile` – len iný tvar
+      // adresy TOHO ISTÉHO profilu (`goToMyProfile`, Spolupráce), ktorého
+      // `?highlight=` či `?tab=` patrí profilu a musí prejsť so sebou.
       if (typeof window !== 'undefined') {
-        window.history.replaceState(window.history.state, '', expectedPathForCurrentMode);
+        const isOwnProfileAlias = isSameDashboardPath(currentPath, dashboardSectionPath('profile'));
+        window.history.replaceState(
+          window.history.state,
+          '',
+          isOwnProfileAlias
+            ? profileUrlKeepingQuery(expectedPathForCurrentMode)
+            : expectedPathForCurrentMode,
+        );
       }
     }
   }, [

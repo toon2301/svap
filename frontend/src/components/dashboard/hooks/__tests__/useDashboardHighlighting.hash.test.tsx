@@ -20,9 +20,15 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => searchParams,
 }));
 
-import { useDashboardHighlighting } from '../useDashboardHighlighting';
+import {
+  __resetHighlightDocumentEntryForTests,
+  useDashboardHighlighting,
+} from '../useDashboardHighlighting';
 
 beforeEach(() => {
+  // Každý test je nový dokument – obnova zo sessionStorage patrí len prvej
+  // aktivácii po načítaní, a tá sa inak prenesie z predošlého testu.
+  __resetHighlightDocumentEntryForTests();
   jest.useRealTimers();
   replaceMock.mockClear();
   searchParams = new URLSearchParams();

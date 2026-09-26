@@ -48,6 +48,48 @@ function clearHighlightSearchParams(url: URL): boolean {
   return changed;
 }
 
+/** Parameter zvýraznenia v adrese – `offer` znamená to isté čo `highlight`. */
+function highlightParamOf(params: Pick<URLSearchParams, 'get'> | null | undefined): string | null {
+  return params?.get('offer') ?? params?.get('highlight') ?? null;
+}
+
+/**
+ * Obnova zvýraznenia zo `sessionStorage` patrí JEDINEJ aktivácii – tej, na
+ * ktorej sa dokument načítal (F5 na profile, priamy vstup odkazom).
+ *
+ * Záloha je pre prípad, keď adresa po obnovení stránky parameter už nemá.
+ * Predtým sa však vetva spúšťala pri KAŽDOM prepnutí na profil v bežiacej
+ * appke a vzkriesila zvýraznenie spred menej ako minúty aj tam, kde si ho
+ * nikto nevyžiadal: ťuk na ikonu profilu či na hlavičku príspevku otvoril
+ * profil od vrchu a vzápätí ho odscrolloval na starú kartu. Navigácia v appke
+ * si zvýraznenie nesie sama – adresou, `goToMyProfile`, `goToUserProfile`.
+ *
+ * Okno je otvorené, kým synchronizácia beží pre ten istý modul aj cestu ako
+ * pri prvom behu v dokumente (StrictMode efekt zopakuje a musí dostať to
+ * isté), a pri prvej inej aktivácii sa zavrie natrvalo. Modulový stav zámerne:
+ * prežije prepínanie modulov aj výmenu inštancie dashboardu pri zmene Next
+ * stránky; znovunačítanie dokumentu ho vynuluje.
+ */
+let documentEntry: { module: string; path: string } | null = null;
+let documentEntryOpen = true;
+
+function isDocumentEntry(activeModule: string, path: string): boolean {
+  if (documentEntry === null) {
+    documentEntry = { module: activeModule, path };
+    return true;
+  }
+  if (documentEntry.module !== activeModule || documentEntry.path !== path) {
+    documentEntryOpen = false;
+  }
+  return documentEntryOpen;
+}
+
+/** Len pre testy – nový „dokument". */
+export function __resetHighlightDocumentEntryForTests(): void {
+  documentEntry = null;
+  documentEntryOpen = true;
+}
+
 /**
  * Custom hook pre highlighting logiku skill kariet v Dashboard
  */
@@ -88,12 +130,27 @@ export function useDashboardHighlighting({
   // Synchronizácia highlightedSkillId s URL parametrom 'highlight'
   // A záloha v sessionStorage pre prípad full refreshu (profile aj user-profile)
   useEffect(() => {
+    // Registruje sa KAŽDÝ beh, aj mimo profilu: prvý beh v dokumente určuje,
+    // či vôbec ide o vstup priamo na profil (viď `isDocumentEntry`).
+    const mayRestoreFromStorage = isDocumentEntry(
+      activeModule,
+      typeof window !== 'undefined' ? window.location.pathname : '',
+    );
+
     // Ak nie sme v profile s kartami ponúk, neobnovovať zo sessionStorage
     if (!supportsSkillHighlight(activeModule)) {
       return;
     }
 
-    const highlightParam = searchParams?.get('offer') ?? searchParams?.get('highlight') ?? null;
+    // Skutočná adresa má prednosť pred `searchParams`: Next ich po `pushState`
+    // dobieha až v prechode (`startTransition`), takže prvý beh po kliku vidí
+    // ešte adresu predošlej obrazovky. Parameter, ktorý tam práve zapísal
+    // `goToMyProfile` či `goToUserProfile`, by sa inak na jeden commit
+    // zmazal – doteraz to nepriznane premosťovala obnova zo `sessionStorage`.
+    const highlightParam =
+      (typeof window !== 'undefined'
+        ? highlightParamOf(new URLSearchParams(window.location.search))
+        : null) ?? highlightParamOf(searchParams);
     if (highlightParam) {
       const id = Number(highlightParam);
       if (!isNaN(id)) {
@@ -109,10 +166,11 @@ export function useDashboardHighlighting({
         }
       }
     } else {
-      // Ak v URL nie je parameter, skúsime obnoviť zo sessionStorage (ak sme po refreshi)
-      // Ale len ak neubehol čas
+      // Ak v URL nie je parameter, skúsime obnoviť zo sessionStorage – len pri
+      // aktivácii, na ktorej sa dokument načítal (po refreshi), a len ak
+      // neubehol čas.
       try {
-        if (typeof window !== 'undefined') {
+        if (mayRestoreFromStorage && typeof window !== 'undefined') {
           const storedId = sessionStorage.getItem('highlightedSkillId');
           const storedTime = sessionStorage.getItem('highlightedSkillTime');
           
