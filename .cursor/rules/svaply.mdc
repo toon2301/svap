@@ -19,6 +19,7 @@ Dodrž a dbaj na:
 - nevytváraj zbytočnú komplexitu
 - rešpektuj existujúcu architektúru projektu
 - rob malé, logicky oddelené zmeny, nech sa dajú jednotlivo overiť/revertnúť
+- pri práci na zadanej úlohe sa nedotýkaj kódu mimo jej priameho rozsahu, aj keby si si všimol niečo súvisiace, čo vyzerá ako chyba alebo priestor na vylepšenie — takýto nález len nahlás na konci správy, neopravuj ho potichu v tom istom kole
 
 Po implementácii:
 - Ak vieš niečo navrhnúť lepšie a spoľahlivejšie tak návrh vypíš

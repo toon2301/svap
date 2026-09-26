@@ -5,10 +5,12 @@
  *
  * Zoznam príspevkov obnovuje `useFeedInfiniteScroll` (dostane ich cez
  * `restore`); tu ostáva to, čo je mimo neho – reakcia na žiadosť o snímku a
- * scrollovateľný `<main>`.
+ * scrollovateľný `<main>`. Ten je zdieľaný so všetkými modulmi, takže Nástenka
+ * mu pri vstupe VŽDY povie, kde má stáť: pri návrate na uloženú pozíciu, inak
+ * na vrch.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { FeedPost } from '@/lib/feedApi';
 import { onFeedReturnCapture, saveFeedReturn } from './feedReturnState';
 
@@ -24,6 +26,9 @@ function dashboardMain(): HTMLElement | null {
   if (typeof document === 'undefined') return null;
   return document.querySelector<HTMLElement>(DASHBOARD_MAIN_SELECTOR);
 }
+
+/** Na serveri `useLayoutEffect` nebeží – rovnaký vzor ako `useSettingsScrollReset`. */
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type UseFeedReturnParams = {
   /** Aktuálny stav zoznamu – pýta sa naň až v momente odchodu. */
@@ -56,6 +61,31 @@ export function useFeedReturn({
       }),
     [],
   );
+
+  // Vstup, ktorý NIE JE návrat: od vrchu.
+  //
+  // `<main>` sa pri prepnutí modulu nevymieňa, len jeho obsah – bez tohto si
+  // drží pozíciu predošlej obrazovky. Priamy klik na Nástenku z odscrollovaného
+  // profilu tak skončil kúsok pod vrchom: prehliadač starú pozíciu orezal na
+  // výšku práve sa načítavajúceho feedu (hlavička + dve skeleton karty).
+  //
+  // Podmienka je presný doplnok obnovy nižšie: buď obnova posunie na kladnú
+  // uloženú pozíciu, alebo sa ide na vrch. Snímka s pozíciou 0 obnovu
+  // preskočí, takže patrí sem – inak by ostala stará pozícia.
+  //
+  // Layout efekt, nie bežný: beží pred vykreslením, takže posunutá Nástenka sa
+  // neukáže ani na jeden snímok. Zároveň beží pred pristátím po zdieľaní
+  // (`useFeedShareLanding` scrolluje až v bežnom efekte a o snímok neskôr),
+  // takže doscrollovanie na nový príspevok nezruší. Len pri mounte – neskoršie
+  // prekreslenie Nástenky nesmie používateľa hodiť na vrch.
+  const enteredRef = useRef(false);
+  useIsomorphicLayoutEffect(() => {
+    if (enteredRef.current) return;
+    enteredRef.current = true;
+    if (restoredScrollTop != null && restoredScrollTop > 0) return;
+    const main = dashboardMain();
+    if (main) main.scrollTop = 0;
+  }, [restoredScrollTop]);
 
   const restoredRef = useRef(false);
   useEffect(() => {
