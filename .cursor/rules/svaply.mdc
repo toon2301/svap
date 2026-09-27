@@ -42,3 +42,10 @@ Pri každej práci v Python súbore:
 - Nemeniť správanie existujúceho kódu iba kvôli zvýšeniu dokumentačného pokrytia.
 - Pred dokončením úlohy spusti príslušnú kontrolu dokumentačného pokrytia, ak je v projekte dostupná.
 - Cieľ projektu je minimálne 80 % dokumentačné pokrytie.
+
+## Playwright E2E testy
+
+- E2E testy žijú v `frontend/e2e/`, oddelene od Jest — Jest ich nesmie zbierať.
+- Bežia priamo proti produkcii (Railway), nie proti lokálnemu serveru — appka posiela `Cache-Control: no-store` a ďalšie produkčné správanie len v produkčnom režime, čo bolo príčinou viacerých ťažkých bugov v tejto appke.
+- WebKit projekt (desktop aj mobilná emulácia) je povinný, nie voliteľný — Safari-špecifické chyby (bfcache, história) boli historicky najčastejším zdrojom problémov. Chromium samotný nestačí.
+- Testy, čo niečo VYTVÁRAJÚ (zdieľanie, nový príspevok/ponuka), musia použiť existujúci opakovane použiteľný testovací obsah, alebo po sebe upratať — appka je zatiaľ len testovacie účty, ale toto pravidlo platí natrvalo, aj keď pribudnú skutoční používatelia.
