@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page, Response } from '@playwright/test';
 
 // Spoločné pomôcky pre E2E testy Nástenky: príprava a upratanie príspevkov
 // cez API a záznamy (URL, zvýraznenie), ktoré nesmú závisieť od času.
@@ -59,6 +59,54 @@ export async function createFreePost(page: Page, caption: string): Promise<numbe
 export async function deleteFeedPost(page: Page, postId: number): Promise<number> {
   const { status } = await callApi(page, 'DELETE', `${FEED_POSTS_API}${postId}/`);
   return status;
+}
+
+/**
+ * Prečíta príspevok z odpovede na vytvorenie a jeho ID HNEĎ zaradí na
+ * upratanie – skôr, než test čokoľvek tvrdí o obsahu odpovede (status, typ).
+ * Inak by zlyhané tvrdenie nechalo príspevok v produkcii. Novší ide na
+ * začiatok, aby sa repost mazal pred svojím zdrojom.
+ */
+export async function takeCreatedPost(
+  response: Response,
+  cleanupIds: number[],
+): Promise<{ id?: unknown; post_type?: unknown }> {
+  const created = (await response.json().catch(() => null)) as { id?: unknown; post_type?: unknown } | null;
+  if (typeof created?.id === 'number') cleanupIds.unshift(created.id);
+  return created ?? {};
+}
+
+/**
+ * Upratanie po teste: zmaže zaregistrované príspevky a ako poistku aj vlastné
+ * príspevky, ktorých text nesie `[e2e]` a značku testu, no ID sa zaregistrovať
+ * nestihlo. Chyby nevyhadzuje (nesmú prekryť pôvodné zlyhanie testu) –
+ * vracia výsledok každého mazania; status 0 = upratanie sa nedokončilo.
+ */
+export async function cleanupFeedPosts(
+  page: Page,
+  cleanupIds: number[],
+  marker: string,
+): Promise<{ id: number | null; status: number }[]> {
+  const results: { id: number | null; status: number }[] = [];
+  // Stránka appky sa ani nenačítala → nič sa nemohlo vytvoriť.
+  if (!/^https?:/.test(page.url())) return results;
+  try {
+    for (const id of cleanupIds) results.push({ id, status: await deleteFeedPost(page, id) });
+    const { data } = await callApi(page, 'GET', FEED_POSTS_API);
+    const posts = (Array.isArray(data) ? data : (data as { results?: unknown[] } | null)?.results ?? []) as {
+      id?: unknown;
+      caption?: unknown;
+    }[];
+    for (const post of posts) {
+      const caption = String(post?.caption ?? '');
+      if (typeof post?.id !== 'number' || cleanupIds.includes(post.id)) continue;
+      if (!caption.includes('[e2e]') || !caption.includes(marker)) continue;
+      results.push({ id: post.id, status: await deleteFeedPost(page, post.id) });
+    }
+  } catch {
+    results.push({ id: null, status: 0 });
+  }
+  return results;
 }
 
 /**

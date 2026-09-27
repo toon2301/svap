@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { expect, test, type Page } from '@playwright/test';
+import { cleanupFeedPosts, takeCreatedPost } from './support/feed';
 
 // Zdieľanie vlastnej ponuky z vlastného profilu na Nástenku – historicky
 // najkrehkejší scenár. Očakávanie podľa FeedShareDialog + useFeedShareLanding:
@@ -10,6 +11,10 @@ import { expect, test, type Page } from '@playwright/test';
 // Test vytvára príspevok, preto ho na konci vždy zmaže cez API (autor smie
 // DELETE /auth/feed/posts/<id>/). Popis nesie značku [e2e], aby sa prípadný
 // zvyšok po neúspešnom upratovaní dal nájsť.
+
+// Test zapisuje do produkcie – bez opakovania, inak by zlyhanie mohlo
+// vytvoriť ďalší príspevok. Globálne retries v configu ostávajú.
+test.describe.configure({ retries: 0 });
 
 // Tlačidlo zdieľania na karte ponuky nemá data-testid, len preložený
 // aria-label. Berieme ho z tých istých prekladov ako appka, nech test
@@ -54,8 +59,9 @@ async function recordLandedPostHighlight(page: Page) {
 }
 
 test('zdieľanie vlastnej ponuky z profilu pristane na Nástenke bez zvýraznenia', async ({ page }, testInfo) => {
-  const caption = `[e2e] zdieľanie z profilu ${testInfo.project.name} ${Date.now()}`;
-  let deleteUrl: string | null = null;
+  const marker = `${testInfo.project.name} ${Date.now()}`;
+  const caption = `[e2e] zdieľanie z profilu ${marker}`;
+  const createdIds: number[] = [];
 
   try {
     // Reálny vstup: Nástenka → vlastný profil cez navigáciu (desktop sidebar /
@@ -82,10 +88,10 @@ test('zdieľanie vlastnej ponuky z profilu pristane na Nástenke bez zvýrazneni
     );
     await shareDialog.getByTestId('feed-share-submit').click();
     const response = await createdResponse;
+    // Najprv zaradiť na upratanie, až potom čokoľvek tvrdiť o odpovedi.
+    const created = await takeCreatedPost(response, createdIds);
     expect(response.status()).toBe(201);
-    const created = await response.json();
     expect(created.post_type).toBe('shared_offer');
-    deleteUrl = `${new URL(response.url()).pathname}${created.id}/`;
 
     // (a) Nástenka – nie detail /dashboard/feed/<id>, nie profil.
     await expect(page).toHaveURL((url) => FEED_HOME_PATHS.has(url.pathname));
@@ -110,17 +116,8 @@ test('zdieľanie vlastnej ponuky z profilu pristane na Nástenke bez zvýrazneni
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect(FEED_HOME_PATHS.has(new URL(page.url()).pathname)).toBe(true);
   } finally {
-    if (deleteUrl) {
-      const status = await page.evaluate(async (url) => {
-        const csrf = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/)?.[1] ?? '';
-        const res = await fetch(url, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'X-CSRFToken': decodeURIComponent(csrf) },
-        });
-        return res.status;
-      }, deleteUrl);
-      expect.soft(status, `upratanie ${deleteUrl} zlyhalo`).toBe(204);
+    for (const { id, status } of await cleanupFeedPosts(page, createdIds, marker)) {
+      expect.soft(status, `upratanie príspevku ${id ?? '?'} zlyhalo`).toBe(204);
     }
   }
 });

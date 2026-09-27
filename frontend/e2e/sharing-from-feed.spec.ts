@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
 import {
   FEED_HOME_PATHS,
+  cleanupFeedPosts,
   createFreePost,
-  deleteFeedPost,
   readLandedPostHighlight,
   readUrlLog,
   recordLandedPostHighlight,
   recordUrlLog,
+  takeCreatedPost,
 } from './support/feed';
 
 // Zdieľanie (repost) príspevku priamo z karty na Nástenke – opačná vetva
@@ -17,6 +18,10 @@ import {
 // Zdroj si test pripraví sám cez API: obyčajný príspevok je na účte len jeden
 // a hlboko vo feede, takže by nebol spoľahlivý. Repost aj zdroj sa na konci
 // vždy zmažú; texty nesú značku [e2e] pre prípadný zvyšok.
+
+// Test zapisuje do produkcie – bez opakovania, inak by zlyhanie mohlo
+// vytvoriť ďalšie príspevky. Globálne retries v configu ostávajú.
+test.describe.configure({ retries: 0 });
 
 test('zdieľanie príspevku z Nástenky ostane na Nástenke bez zvýraznenia', async ({ page }, testInfo) => {
   const marker = `${testInfo.project.name} ${Date.now()}`;
@@ -55,9 +60,9 @@ test('zdieľanie príspevku z Nástenky ostane na Nástenke bez zvýraznenia', a
     );
     await shareDialog.getByTestId('feed-share-submit').click();
     const response = await createdResponse;
+    // Najprv zaradiť na upratanie, až potom čokoľvek tvrdiť o odpovedi.
+    const created = await takeCreatedPost(response, createdIds);
     expect(response.status()).toBe(201);
-    const created = await response.json();
-    createdIds.unshift(created.id);
     expect(created.post_type).toBe('shared_feed_post');
 
     // Nový repost = karta, na ktorú appka pristála; vo feede je práve raz
@@ -83,8 +88,8 @@ test('zdieľanie príspevku z Nástenky ostane na Nástenke bez zvýraznenia', a
     expect(urlLog, 'záznam zmizol – stránka sa po zdieľaní znovu načítala').toBeDefined();
     expect([...new Set([...urlLog!, ...navigatedTo, page.url()])]).toEqual([startUrl]);
   } finally {
-    for (const id of createdIds) {
-      expect.soft(await deleteFeedPost(page, id), `upratanie príspevku ${id} zlyhalo`).toBe(204);
+    for (const { id, status } of await cleanupFeedPosts(page, createdIds, marker)) {
+      expect.soft(status, `upratanie príspevku ${id ?? '?'} zlyhalo`).toBe(204);
     }
   }
 });
