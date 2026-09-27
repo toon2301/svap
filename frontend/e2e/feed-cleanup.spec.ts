@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cleanupFeedPosts, takeCreatedPost } from './support/feed';
+import { cleanupFeedPosts, takeCreatedPost, uniqueRunMarker } from './support/feed';
 
 // Regresný test upratovania E2E testov – BEZ produkcie. Celé API je
 // podvrhnuté cez page.route na fiktívnej doméne, DELETE sa len zaznamenáva.
@@ -82,4 +82,28 @@ test('poistka zmaže príspevok podľa značky testu, keď sa ID nezaregistroval
   // Len príspevok s [e2e] AJ značkou tohto behu – iné sa nesmú dotknúť.
   expect(deleted).toEqual([5151]);
   expect(cleanup).toEqual([{ id: 5151, status: 204 }]);
+});
+
+test('značky behov v tej istej milisekunde sa nezhodujú', () => {
+  const project = test.info().project.name;
+  const realNow = Date.now;
+  // Všetky behy „v tej istej milisekunde".
+  Date.now = () => 1_790_000_000_000;
+  try {
+    // Pôvodný tvar značky (projekt + čas) by sa tu zhodoval.
+    expect(`${project} ${Date.now()}`).toBe(`${project} ${Date.now()}`);
+
+    const markers = Array.from({ length: 1000 }, () => uniqueRunMarker(project));
+    expect(new Set(markers).size).toBe(markers.length);
+    // `cleanupFeedPosts` hľadá značku ako podreťazec textu – žiadna preto
+    // nesmie byť súčasťou inej, inak by upratovanie jedného behu zmazalo
+    // príspevky druhého.
+    for (const other of markers.slice(1)) {
+      expect(other.includes(markers[0]) || markers[0].includes(other)).toBe(false);
+    }
+    // Názov projektu ostáva na začiatku kvôli čitateľnosti pri ladení.
+    expect(markers.every((marker) => marker.startsWith(`${project} `))).toBe(true);
+  } finally {
+    Date.now = realNow;
+  }
 });

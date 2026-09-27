@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import type { Page, Response } from '@playwright/test';
 
 // Spoločné pomôcky pre E2E testy Nástenky: príprava a upratanie príspevkov
@@ -5,6 +6,18 @@ import type { Page, Response } from '@playwright/test';
 
 /** Adresa Nástenky: DASHBOARD_HOME_PATH ('/dashboard'), priamo aj '/dashboard/home'. */
 export const FEED_HOME_PATHS = new Set(['/dashboard', '/dashboard/', '/dashboard/home']);
+
+/**
+ * Značka jedného behu testu – ide do textu vytvorených príspevkov, aby ich
+ * `cleanupFeedPosts` našiel a zmazal len tie svoje.
+ *
+ * Názov projektu je tu pre čitateľnosť pri ladení; unikátnosť zaručuje UUID.
+ * Kedysi to bol čas (`Date.now()`) – dva behy toho istého projektu v tej istej
+ * milisekunde (súbežné sady, opakovanie) mali rovnakú značku.
+ */
+export function uniqueRunMarker(projectName: string): string {
+  return `${projectName} ${randomUUID()}`;
+}
 
 const FEED_POSTS_API = '/api/auth/feed/posts/';
 

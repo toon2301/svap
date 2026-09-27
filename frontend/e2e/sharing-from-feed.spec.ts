@@ -8,6 +8,7 @@ import {
   recordLandedPostHighlight,
   recordUrlLog,
   takeCreatedPost,
+  uniqueRunMarker,
 } from './support/feed';
 
 // Zdieľanie (repost) príspevku priamo z karty na Nástenke – opačná vetva
@@ -24,7 +25,7 @@ import {
 test.describe.configure({ retries: 0 });
 
 test('zdieľanie príspevku z Nástenky ostane na Nástenke bez zvýraznenia', async ({ page }, testInfo) => {
-  const marker = `${testInfo.project.name} ${Date.now()}`;
+  const marker = uniqueRunMarker(testInfo.project.name);
   const sourceCaption = `[e2e] zdroj na zdieľanie ${marker}`;
   const repostCaption = `[e2e] zdieľanie z Nástenky ${marker}`;
   // Poradie mazania: najprv repost, potom zdroj.

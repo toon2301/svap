@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { expect, test, type Page } from '@playwright/test';
-import { cleanupFeedPosts, takeCreatedPost } from './support/feed';
+import { cleanupFeedPosts, takeCreatedPost, uniqueRunMarker } from './support/feed';
 
 // Zdieľanie vlastnej ponuky z vlastného profilu na Nástenku – historicky
 // najkrehkejší scenár. Očakávanie podľa FeedShareDialog + useFeedShareLanding:
@@ -59,7 +59,7 @@ async function recordLandedPostHighlight(page: Page) {
 }
 
 test('zdieľanie vlastnej ponuky z profilu pristane na Nástenke bez zvýraznenia', async ({ page }, testInfo) => {
-  const marker = `${testInfo.project.name} ${Date.now()}`;
+  const marker = uniqueRunMarker(testInfo.project.name);
   const caption = `[e2e] zdieľanie z profilu ${marker}`;
   const createdIds: number[] = [];
 
