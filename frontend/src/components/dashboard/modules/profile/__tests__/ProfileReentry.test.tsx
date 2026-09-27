@@ -488,6 +488,81 @@ describe('Nález 2 – chyba nikdy nenechá večný spinner', () => {
   });
 });
 
+/**
+ * Zachytí text, aj keď bol v DOM len medzi dvoma commitmi.
+ *
+ * Záznamy mutácií sa spracujú až po nich, a React medzitým mohol ten istý
+ * prvok použiť znova a vymeniť mu deti – pridaný uzol vtedy už nesie nový
+ * text. Preto sa pozerá aj na ODSTRÁNENÉ uzly a na pôvodný text
+ * (`oldValue`): čo bolo odstránené alebo prepísané, v DOM predtým bolo.
+ * Odstránenia sa rátajú len na požiadanie – odchod z obrazovky, kde text
+ * právom bol, ho odstráni tiež.
+ */
+function watchText(text: string, { countRemoved }: { countRemoved: boolean }) {
+  const seen = { value: false };
+  const has = (value: string | null | undefined) => (value ?? '').includes(text);
+  const observer = new MutationObserver((records) => {
+    for (const record of records) {
+      if (Array.from(record.addedNodes).some((node) => has(node.textContent))) seen.value = true;
+      if (record.type === 'characterData' && (has(record.target.textContent) || has(record.oldValue))) {
+        seen.value = true;
+      }
+      if (countRemoved && Array.from(record.removedNodes).some((node) => has(node.textContent))) {
+        seen.value = true;
+      }
+    }
+  });
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    characterDataOldValue: true,
+  });
+  return { seen, stop: () => observer.disconnect() };
+}
+
+describe('chyba načítania patrí jednému profilu', () => {
+  const LOAD_ERROR = 'Nepodarilo sa načítať profil používateľa.';
+
+  it('error from A never shows on B entered with a KNOWN id, nor survives to the next entry', async () => {
+    const janaAgain = gate();
+    steps.set('/profile/slug/jana', ['network', janaAgain]);
+    // B má ID známe vopred – vstup naň preklad slugu vôbec nespúšťa.
+    primeUserSlugId('peter', 11);
+    await mountOnFeed();
+
+    // A zlyhá → chybová hláška.
+    await openSharedOffer('jana', 77);
+    await screen.findByText(LOAD_ERROR);
+
+    // Bez „Skúsiť znova" rovno na B. Hláška z A pritom z obrazovky odíde –
+    // to je v poriadku; na B sa nesmie PRIDAŤ.
+    const errorOnB = watchText(LOAD_ERROR, { countRemoved: false });
+    await openSharedOffer('peter', 88);
+    await expectForeignProfile('Peter Druhy');
+    await settle();
+    errorOnB.stop();
+
+    expect(errorOnB.seen.value).toBe(false);
+    expect(screen.queryByText(LOAD_ERROR)).toBeNull();
+    // B je plne funkčný profil – aj s menu (chybný príznak by ho skryl).
+    expect(document.querySelector('button[aria-label="Menu"]')).not.toBeNull();
+
+    // Chyba neprežije ani skrytá v stave: ďalší vstup cez preklad slugu začne
+    // spinnerom, bez okamihu so starou hláškou.
+    const errorOnNextEntry = watchText(LOAD_ERROR, { countRemoved: true });
+    await openSharedOffer('jana', 77);
+    await screen.findByText('Načítavam profil...');
+    errorOnNextEntry.stop();
+    expect(errorOnNextEntry.seen.value).toBe(false);
+
+    await act(async () => {
+      janaAgain.release();
+    });
+    await expectForeignProfile('Jana Cudzia');
+  });
+});
+
 // ── regresie ────────────────────────────────────────────────────────────────
 
 describe('regresie – vstup na cudzí profil', () => {

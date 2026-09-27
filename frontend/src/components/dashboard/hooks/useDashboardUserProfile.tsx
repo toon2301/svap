@@ -107,6 +107,14 @@ export function useDashboardUserProfile({
     setResolveAttempt((attempt) => attempt + 1);
   }, []);
 
+  // Chyba načítania patrí JEDNÉMU zobrazovanému profilu – pri jeho zmene
+  // (iný slug alebo ID) sa zahodí, aj keď preklad slugu vôbec nebeží (vstup so
+  // známym ID). Kedysi prežila do ďalšieho profilu: skryla na ňom menu a pri
+  // ďalšom preklade slugu sa na okamih ukázala stará hláška.
+  useEffect(() => {
+    setViewedUserLoadError(false);
+  }, [viewedUserSlug, viewedUserId]);
+
   // Inicializácia profilu podľa slug alebo ID
   useEffect(() => {
     // Nová navigácia → vyresetuj "not found" stav.
