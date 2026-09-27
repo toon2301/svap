@@ -28,6 +28,7 @@ import type { Offer } from './modules/profile/profileOffersTypes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
+import ViewedUserProfileGate from './modules/search/ViewedUserProfileGate';
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
 import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
@@ -67,6 +68,9 @@ interface ModuleRouterProps {
   viewedUserId?: number | null;
   viewedUserSlug?: string | null;
   viewedUserNotFound?: boolean;
+  /** Profil sa nepodarilo načítať (nie 404) – ukáže sa chyba s novým pokusom. */
+  viewedUserLoadError?: boolean;
+  onRetryViewedUserLoad?: () => void;
   viewedUserSummary?: SearchUserResult | null;
   onEditProfileClick?: () => void;
   onViewUserProfile?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
@@ -129,6 +133,8 @@ export default function ModuleRouter({
   viewedUserId,
   viewedUserSlug,
   viewedUserNotFound,
+  viewedUserLoadError,
+  onRetryViewedUserLoad,
   viewedUserSummary,
   onEditProfileClick,
   onViewUserProfile,
@@ -284,14 +290,14 @@ export default function ModuleRouter({
       );
     case 'user-profile':
       if (!viewedUserId) {
-        // Zmazaný/neexistujúci profil (404) → hláška namiesto nekonečného loadingu.
-        const showLoading = Boolean(viewedUserSlug) && !viewedUserNotFound;
+        // Zmazaný/neexistujúci profil (404) aj iná chyba → hláška namiesto
+        // nekonečného loadingu; pri chybe s novým pokusom.
         return (
-          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-            {showLoading
-              ? t('search.loadingUserProfile', 'Načítavam profil...')
-              : t('search.userProfileNotFound', 'Profil používateľa sa nepodarilo načítať.')}
-          </div>
+          <ViewedUserProfileGate
+            isResolving={Boolean(viewedUserSlug) && !viewedUserNotFound}
+            loadError={Boolean(viewedUserLoadError)}
+            onRetry={onRetryViewedUserLoad}
+          />
         );
       }
       return (

@@ -38,6 +38,9 @@ function dashboardState(): DashboardStateMock {
 const ownUser = { id: 1, slug: 'moj-profil' } as unknown as User;
 const setHighlightedSkillId = jest.fn();
 
+// Preklad slug -> id posiela vždy aj `signal` – request sa dá zrušiť.
+const cancellable = expect.objectContaining({ signal: expect.any(AbortSignal) });
+
 describe('useDashboardUserProfile portfolio routing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,7 +61,7 @@ describe('useDashboardUserProfile portfolio routing', () => {
     );
 
     await waitFor(() => expect(result.current.viewedUserId).toBe(1));
-    expect(api.get).toHaveBeenCalledWith('/profile/slug/moj-profil');
+    expect(api.get).toHaveBeenCalledWith('/profile/slug/moj-profil', cancellable);
     expect(state.setActiveModule).not.toHaveBeenCalledWith('profile');
   });
 
@@ -99,7 +102,7 @@ describe('useDashboardUserProfile portfolio routing', () => {
     });
 
     await waitFor(() => expect(result.current.viewedUserId).toBe(7));
-    expect(api.get).toHaveBeenCalledWith('/profile/slug/niekto');
+    expect(api.get).toHaveBeenCalledWith('/profile/slug/niekto', cancellable);
     expect(state.setActiveModule).not.toHaveBeenCalledWith('profile');
   });
 
@@ -151,7 +154,7 @@ describe('useDashboardUserProfile portfolio routing', () => {
     });
     await waitFor(() => expect(result.current.viewedUserId).toBe(5));
     expect(result.current.viewedUserNotFound).toBe(false);
-    expect(api.get).toHaveBeenNthCalledWith(1, '/profile/slug/neexistuje');
-    expect(api.get).toHaveBeenNthCalledWith(2, '/profile/slug/existuje');
+    expect(api.get).toHaveBeenNthCalledWith(1, '/profile/slug/neexistuje', cancellable);
+    expect(api.get).toHaveBeenNthCalledWith(2, '/profile/slug/existuje', cancellable);
   });
 });

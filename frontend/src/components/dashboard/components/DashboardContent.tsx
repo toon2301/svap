@@ -80,7 +80,7 @@ import {
 } from '../modules/feed/feedOverlayHistory';
 import type { FeedPostOverlayCloseOptions } from '../contexts/FeedPostOverlayContext';
 import { decideFeedPostEntry } from '../modules/feed/feedPostEntryDecision';
-import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
+import { getUserIdBySlug } from '../modules/profile/profileUserCache';
 import {
   markProfileFreshEntry,
   profileEntryTargetFromIdentifier,
@@ -1270,20 +1270,12 @@ export default function DashboardContent({
         userProfile.setViewedUserSlug(identifier);
         userProfile.setViewedUserId(null);
 
-        // PokÃºs sa slug -> userId (cache -> API), aby ModuleRouter vedel vyrenderovaÅ¥ profil.
+        // Známe ID z cache sa použije hneď (bez siete). Inak slug -> ID prekladá
+        // JEDINE efekt v useDashboardUserProfile – so zrušením aj ošetrením chýb.
+        // Vlastný fetch tu posielal druhý súbežný request bez zrušenia.
         const cachedId = getUserIdBySlug(identifier);
         if (cachedId) {
           userProfile.setViewedUserId(cachedId);
-        } else {
-          void (async () => {
-            try {
-              const { data } = await api.get(endpoints.dashboard.userProfileBySlug(identifier));
-              userProfile.setViewedUserId(data.id);
-              setUserProfileToCache(data.id, data);
-            } catch {
-              // nechÃ¡me UI rozhodnÃºÅ¥ (zobrazÃ­ not-found hlÃ¡Å¡ku)
-            }
-          })();
         }
       }
       userProfile.setViewedUserSummary(null);
@@ -1469,6 +1461,8 @@ export default function DashboardContent({
       viewedUserId={userProfile.viewedUserId}
       viewedUserSlug={userProfile.viewedUserSlug}
       viewedUserNotFound={userProfile.viewedUserNotFound}
+      viewedUserLoadError={userProfile.viewedUserLoadError}
+      onRetryViewedUserLoad={userProfile.retryViewedUserLoad}
       viewedUserSummary={userProfile.viewedUserSummary}
       onEditProfileClick={navigation.handleEditProfileClick}
       onViewUserProfile={navigation.handleViewUserProfileFromSearch}
@@ -1586,7 +1580,8 @@ export default function DashboardContent({
           <DashboardLayout
             activeModule={activeModule}
             activeRightItem={activeRightItem}
-            viewedUserNotFound={userProfile.viewedUserNotFound}
+            // Aj profil, ktorý sa nepodarilo načítať, je nedostupný (hamburger bez možností).
+            viewedUserNotFound={userProfile.viewedUserNotFound || userProfile.viewedUserLoadError}
             isRightSidebarOpen={isRightSidebarOpen}
             isMobileMenuOpen={showMobileSettingsList}
             onModuleChange={handleDashboardModuleChange}

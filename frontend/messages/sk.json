@@ -556,6 +556,7 @@
     "suggestionsForYou": "Návrhy pre vás",
     "tooManyRequests": "Príliš veľa požiadaviek, skúste o chvíľu.",
     "userProfileLoadError": "Nepodarilo sa načítať profil používateľa.",
+    "retry": "Skúsiť znova",
     "userProfileLoading": "Načítavam profil používateľa...",
     "userProfileNotFound": "Profil používateľa sa nepodarilo načítať.",
     "userProfileRateLimited": "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",

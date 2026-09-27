@@ -555,6 +555,7 @@
     "suggestionsForYou": "Ajánlások Önnek",
     "tooManyRequests": "Túl sok kérés, próbálja újra később.",
     "userProfileLoadError": "A felhasználói profil betöltése sikertelen.",
+    "retry": "Újrapróbálom",
     "userProfileLoading": "Felhasználói profil betöltése...",
     "userProfileNotFound": "A felhasználói profil nem tölthető be.",
     "userProfileRateLimited": "Túl sok kérés a profil betöltésekor, próbálja később.",
