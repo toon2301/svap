@@ -27,6 +27,7 @@ import { setCurrentAccountId } from '@/lib/currentAccount';
 import { FEED_RETURN_STORAGE_KEY, resetFeedReturnState } from '../feedReturnState';
 import { invalidateUserProfileCache, primeUserSlugId } from '../../profile/profileUserCache';
 import { invalidateOffersCache } from '../../profile/profileOffersCache';
+import { SCROLL_FIX_FLAG_KEY } from '../../../debug/scrollFixExperiment';
 
 /** Cache ponúk je modulová: vlastné pod `self` aj pod id, cudzie pod id. */
 function clearOffersCache() {
@@ -726,5 +727,77 @@ describe('opačný smer: Domov z profilu', () => {
     // je. Tento smer oprava nemení (nahlásené ako rovnaké riziko no-op).
     expect(recorder.writes).toEqual([{ value: 0, previous: 3000, sourceAttached: false, snapshot: false }]);
     expect(recorder.main.scrollTop).toBe(0);
+  });
+});
+
+// ── [EXPERIMENT ?scrollfix=b – DOČASNÉ] ─────────────────────────────────────
+
+describe('experiment B (?scrollfix=b): nový <main> pri zmene modulu', () => {
+  beforeEach(() => {
+    sessionStorage.setItem(SCROLL_FIX_FLAG_KEY, 'b');
+  });
+
+  /** Doscrollovanie na kartu – kde stál AKTUÁLNY `<main>` (po výmene iný element). */
+  function recordIntoViewOnCurrentMain() {
+    Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
+      intoView.push({ text: this.textContent ?? '', mainTop: dashboardMain().scrollTop });
+    };
+  }
+
+  it('own offer card from the depth: a new <main> at the top, card scrolled to from the top', async () => {
+    const { recorder } = await mount();
+    recordIntoViewOnCurrentMain();
+    recorder.userScrollsTo(DEEP);
+
+    await tap(sharedPreview('Moja ponuka'));
+
+    // Reset pri odchode beží ešte na starom elemente (neškodí); profil je v novom.
+    expectExitReset(recorder.writes, DEEP, true);
+    await expectOwnProfile();
+    expect(dashboardMain()).not.toBe(recorder.main);
+    expect(recorder.main.isConnected).toBe(false);
+    expect(dashboardMain().scrollTop).toBe(0);
+    await expectHighlightScrolledFromTop('mojaponuka');
+  });
+
+  it('Back restores the exact position and posts into the new <main>', async () => {
+    const { recorder } = await mount();
+    recorder.userScrollsTo(DEEP);
+    await tap(sharedPreview('Moja ponuka'));
+    await expectOwnProfile();
+    const profileMain = dashboardMain();
+
+    mockedList.mockClear();
+    act(() => window.history.back());
+    await screen.findByText('Moja ponuka');
+    await settle();
+
+    expect(dashboardMain()).not.toBe(profileMain);
+    await waitFor(() => expect(dashboardMain().scrollTop).toBe(DEEP));
+    expect(mockedList).not.toHaveBeenCalled();
+  });
+
+  it('Domov from a deep profile: a new <main> at the top', async () => {
+    await mount();
+    await tap(document.querySelector('[data-onboarding="profile-icon"]'));
+    await expectOwnProfile();
+    const profileMain = dashboardMain();
+    profileMain.scrollTop = 3000;
+
+    await goHome();
+
+    expect(dashboardMain()).not.toBe(profileMain);
+    expect(dashboardMain().scrollTop).toBe(0);
+  });
+
+  it('without the flag the same <main> element stays (control)', async () => {
+    sessionStorage.removeItem(SCROLL_FIX_FLAG_KEY);
+    const { recorder } = await mount();
+    recorder.userScrollsTo(DEEP);
+
+    await tap(sharedPreview('Moja ponuka'));
+    await expectOwnProfile();
+
+    expect(dashboardMain()).toBe(recorder.main);
   });
 });

@@ -78,6 +78,10 @@ export function classifyScrollChange(change: ScrollChange, writes: readonly Scro
   const smoothMatch = writes.some((write) => {
     const age = ageOf(write);
     if (!write.smooth || age < 0 || age > JS_SMOOTH_WINDOW_MS) return false;
+    // Volanie od predošlej snímky, no so štartom inde, než snímka videla:
+    // hodnota sa pohla ešte PRED volaním (napr. INTOVIEW pred=1440 po snímke
+    // 0) – to plynulý scroll nevysvetlí.
+    if (write.t >= change.previousT && Math.abs(write.before - from) > WRITE_VALUE_TOLERANCE_PX) return false;
     if (write.target === null) return true;
     const low = Math.min(write.before, write.target) - SMOOTH_TARGET_TOLERANCE_PX;
     const high = Math.max(write.before, write.target) + SMOOTH_TARGET_TOLERANCE_PX;
@@ -163,16 +167,31 @@ export function isSegmentStale(open: ScrollSegment | null, t: number): boolean {
   return open !== null && t - open.end > SEGMENT_GAP_MS;
 }
 
-/** Popis príčiny; NONE je zreteľné, s informáciou o poslednom ťahu prstom. */
-export function formatCause(cause: ScrollCause, msSinceTouchMove: number | null): string {
-  if (cause !== 'NONE') return cause;
-  return msSinceTouchMove === null ? '!!! NONE (bez touchmove)' : `!!! NONE (touchmove −${Math.round(msSinceTouchMove)}ms)`;
+/**
+ * Ťah prstom pri zmene: ms od posledného touchmove pred začiatkom,
+ * `'during'` = touchmove počas segmentu, `null` = žiadny v posledných 3 s.
+ */
+export type TouchContext = number | 'during' | null;
+
+/** Kde bol posledný touchmove (nie neskorší než koniec) voči úseku [start, end]. */
+export function touchContext(lastTouchMove: number | null, start: number, end: number, relevanceMs: number): TouchContext {
+  if (lastTouchMove === null || lastTouchMove > end) return null;
+  if (lastTouchMove >= start) return 'during';
+  return start - lastTouchMove <= relevanceMs ? start - lastTouchMove : null;
 }
 
-export function formatSegment(segment: ScrollSegment, msSinceTouchMove: number | null): string {
+/** Popis príčiny; NONE je zreteľné, s informáciou o ťahu prstom. */
+export function formatCause(cause: ScrollCause, touch: TouchContext): string {
+  if (cause !== 'NONE') return cause;
+  if (touch === null) return '!!! NONE (bez touchmove)';
+  if (touch === 'during') return '!!! NONE (touchmove počas)';
+  return `!!! NONE (touchmove −${Math.round(touch)}ms)`;
+}
+
+export function formatSegment(segment: ScrollSegment, touch: TouchContext): string {
   const duration = Math.round(segment.end - segment.start);
   return (
     `SCROLL ${Math.round(segment.from)}→${Math.round(segment.to)} ${duration}ms/${segment.frames}f ` +
-    `sh=${Math.round(segment.heightEnd)} ${formatCause(segment.cause, msSinceTouchMove)}`
+    `sh=${Math.round(segment.heightEnd)} ${formatCause(segment.cause, touch)}`
   );
 }

@@ -11,8 +11,10 @@ import {
   classifyScrollChange,
   estimateIntoViewTarget,
   formatSegment,
+  formatCause,
   isSegmentStale,
   mergeScrollChange,
+  touchContext,
   type ScrollChange,
   type ScrollWriteRecord,
 } from '../scrollDebugCause';
@@ -121,6 +123,24 @@ describe('classifyScrollChange – js-smooth', () => {
     expect(classifyScrollChange(change({ from: 0, to: 5000 }), [smooth(T - 10, 0, null)])).toBe('js-smooth');
   });
 
+  it('skok PRED plynulým scrollom (INTOVIEW pred=1440 po snímke 0) nie je js-smooth', () => {
+    // Snímka videla 0, volanie o 30 ms neskôr už štartovalo z 1440.
+    const jump = change({ previousT: T - 32, from: 0, to: 1440, heightBefore: 791, heightAfter: 2175 });
+    expect(classifyScrollChange(jump, [smooth(T - 2, 1440, 666)])).toBe('NONE');
+  });
+
+  it('plynulý scroll spustený od snímky z tej istej hodnoty ostáva js-smooth', () => {
+    expect(classifyScrollChange(change({ previousT: T - 16, from: 0, to: 300 }), [smooth(T - 2, 0, 666)])).toBe(
+      'js-smooth',
+    );
+  });
+
+  it('plynulý scroll spustený pred predošlou snímkou sa posudzuje podľa dráhy', () => {
+    expect(classifyScrollChange(change({ previousT: T - 16, from: 1200, to: 1000 }), [smooth(T - 100, 1440, 666)])).toBe(
+      'js-smooth',
+    );
+  });
+
   it('plynulý zápis sa nepočíta ako okamžitý', () => {
     expect(classifyScrollChange(change({ from: 0, to: 5000 }), [smooth(T - 10, 0, 706)])).toBe('NONE');
   });
@@ -153,6 +173,25 @@ describe('classifyScrollChange – layout-clamp', () => {
     expect(classifyScrollChange(change({ from: 0, to: 100, heightBefore: 11245, heightAfter: 791 }), [])).toBe(
       'NONE',
     );
+  });
+});
+
+describe('touchContext', () => {
+  it('žiadny ťah, alebo až po konci úseku', () => {
+    expect(touchContext(null, 100, 200, 3000)).toBeNull();
+    expect(touchContext(201, 100, 200, 3000)).toBeNull();
+  });
+
+  it('ťah počas úseku (scroll prstom) – nie „bez touchmove"', () => {
+    expect(touchContext(100, 100, 200, 3000)).toBe('during');
+    expect(touchContext(200, 100, 200, 3000)).toBe('during');
+    expect(formatCause('NONE', 'during')).toBe('!!! NONE (touchmove počas)');
+  });
+
+  it('ťah pred úsekom: ms pred začiatkom, len do 3 s', () => {
+    expect(touchContext(40, 100, 200, 3000)).toBe(60);
+    expect(touchContext(100 - 3000, 100, 200, 3000)).toBe(3000);
+    expect(touchContext(99 - 3000, 100, 200, 3000)).toBeNull();
   });
 });
 

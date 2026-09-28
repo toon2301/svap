@@ -125,6 +125,39 @@ it('ťah prstom pred skokom sa pri NONE uvedie a započíta', () => {
   expect(lines[lines.length - 1]).toMatch(/touchstart×1\(\+\d+\.\.\+\d+\) touchmove×1\(\+\d+\.\.\+\d+\)/);
 });
 
+it('scroll prstom (touchmove počas úseku) nie je „bez touchmove"', () => {
+  click(card);
+  frames(4);
+  main.dispatchEvent(new Event('touchstart', { bubbles: true }));
+  for (const value of [6900, 6700, 6400, 6000]) {
+    main.dispatchEvent(new Event('touchmove', { bubbles: true }));
+    moveWithoutJs(value);
+    frames(1);
+  }
+  jest.advanceTimersByTime(4000);
+
+  const lines = linesAfter('CLICK');
+  expect(lines).toContainEqual(expect.stringMatching(/SCROLL 7023→6000 .* !!! NONE \(touchmove počas\)$/));
+  expect(lines.join('\n')).not.toContain('bez touchmove');
+});
+
+it('nový element <main> (experiment B): riadok MAIN, žiadne falošné NONE', () => {
+  click(card);
+  frames(4);
+  // Výmena elementu: nový `<main>` začína na 0, starý zmizne.
+  const fresh = document.createElement('main');
+  fresh.setAttribute('data-dashboard-main', '');
+  Object.defineProperty(fresh, 'scrollHeight', { configurable: true, get: () => 2426 });
+  Object.defineProperty(fresh, 'clientHeight', { configurable: true, get: () => 659 });
+  main.replaceWith(fresh);
+  frames(5);
+  jest.advanceTimersByTime(4000);
+
+  const lines = linesAfter('CLICK');
+  expect(lines).toContainEqual(expect.stringMatching(/MAIN nový element st=0 sh=2426$/));
+  expect(lines.join('\n')).not.toContain('NONE');
+});
+
 it('klik v paneli nezačne okno a nemení číslo kliku', () => {
   const before = getScrollDebugLines().length;
   click(document.querySelector('[data-scroll-debug-panel] button')!);

@@ -17,7 +17,9 @@ import {
   formatSegment,
   isSegmentStale,
   mergeScrollChange,
+  touchContext,
   type ScrollSegment,
+  type TouchContext,
 } from './scrollDebugCause';
 import {
   DOM_MARKERS,
@@ -37,7 +39,7 @@ import {
   logDebugRaw,
   startDebugClick,
 } from './scrollDebugLog';
-import { scrollDebugState } from './scrollDebugState';
+import { lastTouchMoveUpTo, rememberTouchMove, scrollDebugState } from './scrollDebugState';
 
 export const CLICK_WINDOW_MS = 4000;
 const SAMPLE_AT_MS = [500, 1000, 2000, 3000];
@@ -57,6 +59,8 @@ type ClickWindow = {
   n: number;
   at: number;
   frame: number;
+  /** Element `<main>`, ktorý okno sleduje – experiment B ho pri zmene modulu vymieňa. */
+  mainEl: HTMLElement | null;
   /** Čas predošlej snímky – pri prvej čas kliku. */
   prevT: number;
   prev: MainMetrics & DocMetrics;
@@ -96,9 +100,9 @@ function viewportText(): string {
   return viewport ? `${r(viewport.height)}/${r(viewport.offsetTop)}` : '?';
 }
 
-function sinceTouchMove(t: number): number | null {
-  const last = scrollDebugState.lastTouchMoveAt;
-  return last !== null && t >= last && t - last <= TOUCH_RELEVANCE_MS ? t - last : null;
+/** Ťah prstom voči úseku [start, end] – aj ťah POČAS úseku (scroll prstom, momentum). */
+function touchAt(start: number, end: number): TouchContext {
+  return touchContext(lastTouchMoveUpTo(end), start, end, TOUCH_RELEVANCE_MS);
 }
 
 function freshCounts(): Record<CountKey, EventCount> {
@@ -115,7 +119,7 @@ function countEvent(key: CountKey, t: number): void {
 }
 
 function emitSegment(segment: ScrollSegment): void {
-  logDebugLine(formatSegment(segment, sinceTouchMove(segment.start)), segment.start);
+  logDebugLine(formatSegment(segment, touchAt(segment.start, segment.end)), segment.start);
 }
 
 function trackMain(win: ClickWindow, t: number, main: MainMetrics): void {
@@ -135,7 +139,7 @@ function trackMain(win: ClickWindow, t: number, main: MainMetrics): void {
       )
     : null;
   if (win.frame <= FIRST_FRAMES) {
-    const delta = cause ? ` Δ${r(win.prev.st)}→${r(main.st)} ${formatCause(cause, sinceTouchMove(t))}` : '';
+    const delta = cause ? ` Δ${r(win.prev.st)}→${r(main.st)} ${formatCause(cause, touchAt(win.prevT, t))}` : '';
     logDebugLine(`F${win.frame} st=${r(main.st)} sh=${r(main.sh)}${delta}`, t);
     return;
   }
@@ -165,7 +169,7 @@ function trackDocument(win: ClickWindow, t: number, doc: DocMetrics): void {
       },
       scrollDebugState.windowWrites,
     );
-    lines.push(`WIN scrollY ${r(win.prev.wy)}→${r(doc.wy)} ${formatCause(cause, sinceTouchMove(t))}`);
+    lines.push(`WIN scrollY ${r(win.prev.wy)}→${r(doc.wy)} ${formatCause(cause, touchAt(win.prevT, t))}`);
   }
   if (Math.abs(doc.docSt - win.prev.docSt) >= 1 && Math.abs(doc.docSt - doc.wy) >= 1) {
     lines.push(`DOC scrollingElement.scrollTop ${r(win.prev.docSt)}→${r(doc.docSt)}`);
@@ -228,6 +232,14 @@ function onFrame(): void {
   const main = readMain();
   const doc = readDocument();
   win.frame += 1;
+  const mainEl = findDashboardMain();
+  if (mainEl !== win.mainEl) {
+    // Nový element (experiment B): jeho hodnoty so starým neporovnávať –
+    // zmena by vyšla ako NONE, hoci ide o iný kontajner.
+    win.mainEl = mainEl;
+    logDebugLine(`MAIN nový element st=${r(main.st)} sh=${r(main.sh)}`, t);
+    win.prev = { ...win.prev, st: main.st, sh: main.sh };
+  }
   trackMain(win, t, main);
   trackDocument(win, t, doc);
   while (win.samples < SAMPLE_AT_MS.length && t - win.at >= SAMPLE_AT_MS[win.samples]) {
@@ -259,6 +271,7 @@ function onClick(event: Event): void {
     n,
     at: t,
     frame: 0,
+    mainEl: findDashboardMain(),
     prevT: t,
     prev: { ...main, ...doc },
     samples: 0,
@@ -284,7 +297,7 @@ function onTouchStart(event: Event): void {
 function onTouchMove(event: Event): void {
   if (isInDebugPanel(event.target)) return;
   const t = debugNow();
-  scrollDebugState.lastTouchMoveAt = t;
+  rememberTouchMove(t);
   countEvent('touchmove', t);
 }
 
