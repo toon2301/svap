@@ -9,6 +9,7 @@ import {
   SCROLL_DEBUG_MAX_LINES,
   clearScrollDebugLog,
   flushScrollDebugLog,
+  forgetScrollDebug,
   formatScrollDebugCopy,
   getScrollDebugLines,
   holdScrollDebugOutput,
@@ -42,10 +43,12 @@ describe('resolveScrollDebugFlag', () => {
     expect(resolveScrollDebugFlag('')).toBe(true);
   });
 
-  it('?debugscroll=0 vypne a stav zmaže', () => {
+  it('?debugscroll=0 vypne a zmaže príznak aj uložený záznam', () => {
     resolveScrollDebugFlag('?debugscroll=1');
+    sessionStorage.setItem(SCROLL_DEBUG_LOG_KEY, JSON.stringify(['CLICK /dashboard/users/anton']));
     expect(resolveScrollDebugFlag('?debugscroll=0')).toBe(false);
     expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBeNull();
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
     expect(resolveScrollDebugFlag('')).toBe(false);
   });
 
@@ -119,6 +122,35 @@ describe('sessionStorage', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     jest.advanceTimersByTime(500);
     expect(storedLines()).toEqual(['počas okna']);
+  });
+
+  it('vstup do okna zruší už nabitý časovač ukladania – uloží sa až po okne', () => {
+    jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] });
+    // Riadok CLICK nabije časovač ešte pred vstupom do okna.
+    logDebugRaw('CLICK');
+    holdScrollDebugOutput(true);
+    logDebugRaw('F1');
+    jest.advanceTimersByTime(4000);
+    expect(storedLines()).toBeNull();
+
+    holdScrollDebugOutput(false);
+    jest.advanceTimersByTime(499);
+    expect(storedLines()).toBeNull();
+    jest.advanceTimersByTime(1);
+    expect(storedLines()).toEqual(['CLICK', 'F1']);
+  });
+
+  it('forgetScrollDebug zmaže záznam aj príznak z pamäte aj z úložiska a zruší čakajúce uloženie', () => {
+    jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] });
+    resolveScrollDebugFlag('?debugscroll=1');
+    logDebugRaw('a');
+    flushScrollDebugLog();
+    logDebugRaw('b');
+    forgetScrollDebug();
+    jest.advanceTimersByTime(1000);
+    expect(getScrollDebugLines()).toEqual([]);
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
+    expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBeNull();
   });
 
   it('flush zapíše hneď (pagehide), aj počas okna', () => {

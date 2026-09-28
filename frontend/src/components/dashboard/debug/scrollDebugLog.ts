@@ -51,7 +51,11 @@ export function resolveScrollDebugFlag(search: string = typeof window === 'undef
   const store = sessionStore();
   try {
     if (param === '1') store?.setItem(SCROLL_DEBUG_FLAG_KEY, '1');
-    if (param === '0') store?.removeItem(SCROLL_DEBUG_FLAG_KEY);
+    // Vypnutie zmaže aj záznam – v karte nemá ostať ležať.
+    if (param === '0') {
+      store?.removeItem(SCROLL_DEBUG_FLAG_KEY);
+      store?.removeItem(SCROLL_DEBUG_LOG_KEY);
+    }
   } catch {
     // Úložisko nedostupné (súkromný režim) – platí aspoň parameter.
   }
@@ -131,10 +135,20 @@ function schedulePersist(): void {
   persistTimer = setTimeout(flushScrollDebugLog, PERSIST_DEBOUNCE_MS);
 }
 
-/** Počas okna po kliku zadrží prekreslenie panela aj ukladanie; potom dobehnú. */
+/**
+ * Počas okna po kliku zadrží prekreslenie panela aj ukladanie; potom dobehnú.
+ *
+ * Už nabitý časovač ukladania sa ruší – riadok CLICK ho nabije ešte pred
+ * vstupom do okna a zápis do sessionStorage by padol doprostred merania.
+ * `persistDirty` ostáva, takže sa uloží po okne.
+ */
 export function holdScrollDebugOutput(hold: boolean): void {
   held = hold;
-  if (hold) return;
+  if (hold) {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = null;
+    return;
+  }
   if (notifyPending) scheduleNotify();
   if (persistDirty) schedulePersist();
 }
@@ -161,6 +175,22 @@ export function clearScrollDebugLog(): void {
   lines = [];
   loaded = true;
   flushScrollDebugLog();
+  scheduleNotify();
+}
+
+/** Koniec ladenia: záznam aj príznak zmiznú z pamäte aj zo sessionStorage. */
+export function forgetScrollDebug(): void {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = null;
+  persistDirty = false;
+  lines = [];
+  loaded = true;
+  try {
+    sessionStore()?.removeItem(SCROLL_DEBUG_LOG_KEY);
+    sessionStore()?.removeItem(SCROLL_DEBUG_FLAG_KEY);
+  } catch {
+    // úložisko nedostupné – v pamäti je záznam aj tak preč
+  }
   scheduleNotify();
 }
 

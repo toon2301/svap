@@ -11,7 +11,10 @@ import { uninstallScrollDebug } from '../scrollDebugInstall';
 import {
   SCROLL_DEBUG_FLAG_KEY,
   SCROLL_DEBUG_LOG_KEY,
+  flushScrollDebugLog,
   getScrollDebugLines,
+  holdScrollDebugOutput,
+  logDebugRaw,
   resetScrollDebugLogForTests,
 } from '../scrollDebugLog';
 import { resetScrollDebugStateForTests } from '../scrollDebugState';
@@ -66,12 +69,14 @@ describe('bez príznaku', () => {
     expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
   });
 
-  it('?debugscroll=0 vypne aj predtým zapnutý pásik', async () => {
+  it('?debugscroll=0 vypne aj predtým zapnutý pásik a zmaže jeho záznam', async () => {
     sessionStorage.setItem(SCROLL_DEBUG_FLAG_KEY, '1');
+    sessionStorage.setItem(SCROLL_DEBUG_LOG_KEY, JSON.stringify(['C1 +0 CLICK x']));
     window.history.replaceState(null, '', '/dashboard?debugscroll=0');
     const { container } = await renderPanel();
     expect(container).toBeEmptyDOMElement();
     expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBeNull();
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
   });
 });
 
@@ -130,5 +135,62 @@ describe('s príznakom', () => {
     expect(getScrollDebugLines()).toEqual([]);
     expect(JSON.parse(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY) ?? 'null')).toEqual([]);
     expect(screen.getByText('vymazané')).toBeInTheDocument();
+  });
+
+  it('prekreslenie rodiča (navigácia) počas okna panel neprekreslí – riadky dobehnú po okne', async () => {
+    function Host({ module }: { module: string }) {
+      return (
+        <div data-module={module}>
+          <ScrollDebugPanel />
+        </div>
+      );
+    }
+    const { rerender } = render(<Host module="home" />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    holdScrollDebugOutput(true);
+    logDebugRaw('riadok počas okna');
+    rerender(<Host module="profile" />);
+    expect(screen.queryByText('riadok počas okna')).not.toBeInTheDocument();
+
+    await act(async () => {
+      holdScrollDebugOutput(false);
+      await Promise.resolve();
+    });
+    expect(screen.getByText('riadok počas okna')).toBeInTheDocument();
+  });
+
+  it('odchod z dashboardu (odhlásenie → /) vráti hooky a zmaže záznam aj príznak', async () => {
+    const setter = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set;
+    const { unmount } = await renderPanel();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).not.toBe(setter);
+    flushScrollDebugLog();
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).not.toBeNull();
+
+    // Next najprv prepíše adresu, až potom odmontuje dashboard.
+    window.history.replaceState(null, '', '/');
+    unmount();
+
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).toBe(setter);
+    expect(getScrollDebugLines()).toEqual([]);
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
+    expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBeNull();
+    fireEvent.click(document.body);
+    expect(getScrollDebugLines()).toEqual([]);
+  });
+
+  it('remount v rámci dashboardu meranie neukončí', async () => {
+    const setter = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set;
+    const { unmount } = await renderPanel();
+    window.history.replaceState(null, '', '/dashboard/users/anton?offer=11');
+    unmount();
+
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).not.toBe(setter);
+    expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBe('1');
+    const before = getScrollDebugLines().length;
+    fireEvent.click(document.body);
+    expect(getScrollDebugLines().length).toBe(before + 1);
   });
 });

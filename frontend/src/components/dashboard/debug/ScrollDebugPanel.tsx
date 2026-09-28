@@ -4,9 +4,10 @@
  * [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
  *
  * Ladiaci pásik scrollu pre skutočný iPhone: `?debugscroll=1` zapne,
- * `?debugscroll=0` vypne (stav v sessionStorage). Bez príznaku sa nič
- * neinštaluje a panel nevykreslí nič. Pred mountom tiež nič (žiadny
- * hydration mismatch).
+ * `?debugscroll=0` vypne a zmaže záznam (stav v sessionStorage). Odchod
+ * z dashboardu (odhlásenie, neplatná session) meranie ukončí a záznam
+ * s príznakom zmaže. Bez príznaku sa nič neinštaluje a panel nevykreslí nič.
+ * Pred mountom tiež nič (žiadny hydration mismatch).
  *
  * Panel je hore cez hlavičku, prepúšťa dotyky (pointer-events: none) okrem
  * tlačidiel a číta záznam z vlastného externého store – nový riadok
@@ -16,7 +17,7 @@
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { SCROLL_DEBUG_PANEL_ATTR, environmentLine } from './scrollDebugDom';
-import { installScrollDebug } from './scrollDebugInstall';
+import { endScrollDebugSession, installScrollDebug } from './scrollDebugInstall';
 import {
   clearScrollDebugLog,
   currentDebugClick,
@@ -176,14 +177,26 @@ function ScrollDebugPanelView() {
   );
 }
 
-export default function ScrollDebugPanel() {
+function ScrollDebugPanel() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     if (!resolveScrollDebugFlag()) return;
     installScrollDebug();
     setEnabled(true);
+    // Remount v rámci dashboardu meranie nekončí (hooky patria stránke).
+    // Odchod z neho áno – odhlásenie a neplatná session idú na '/' bez reloadu.
+    return () => {
+      if (!window.location.pathname.startsWith('/dashboard')) endScrollDebugSession();
+    };
   }, []);
 
   return enabled ? <ScrollDebugPanelView /> : null;
 }
+
+/**
+ * memo: panel nemá props, takže ho prekreslenie DashboardLayout (navigácia
+ * počas okna po kliku) neprekreslí – inak by si `useSyncExternalStore`
+ * prečítal nové riadky a zadržanie výstupu počas okna by obišiel.
+ */
+export default React.memo(ScrollDebugPanel);

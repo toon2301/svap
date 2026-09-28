@@ -10,7 +10,12 @@
 
 import { installScrollDebug, uninstallScrollDebug } from '../scrollDebugInstall';
 import { scrollDebugTag } from '../scrollDebugHooks';
-import { getScrollDebugLines, resetScrollDebugLogForTests, subscribeScrollDebugLog } from '../scrollDebugLog';
+import {
+  SCROLL_DEBUG_LOG_KEY,
+  getScrollDebugLines,
+  resetScrollDebugLogForTests,
+  subscribeScrollDebugLog,
+} from '../scrollDebugLog';
 import { resetScrollDebugStateForTests } from '../scrollDebugState';
 
 const nativeSetScrollTop = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')!.set!;
@@ -141,6 +146,21 @@ it('nový klik uzavrie predošlé okno súhrnom', () => {
   const secondClick = lines.findIndex((line) => line.startsWith('C2 +0 CLICK'));
   expect(endIndex).toBeGreaterThan(0);
   expect(secondClick).toBe(endIndex + 1);
+});
+
+it('počas okna sa do sessionStorage nezapisuje, hoci CLICK nabil časovač pred oknom', () => {
+  jest.advanceTimersByTime(600);
+  const stored = () => JSON.parse(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY) ?? '[]') as string[];
+  const beforeClick = stored();
+  expect(beforeClick.length).toBeGreaterThan(0);
+
+  click(card);
+  jest.advanceTimersByTime(3900);
+  expect(stored()).toEqual(beforeClick);
+
+  jest.advanceTimersByTime(200 + 500);
+  expect(stored()).toContainEqual(expect.stringMatching(/^C1 \+0 CLICK /));
+  expect(stored()[stored().length - 1]).toMatch(/END C1/);
 });
 
 it('panel sa počas okna neprekresľuje, dobehne na jeho konci', async () => {
