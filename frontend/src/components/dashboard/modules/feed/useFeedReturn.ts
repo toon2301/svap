@@ -13,6 +13,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { FeedPost } from '@/lib/feedApi';
 import { onFeedReturnCapture, saveFeedReturn } from './feedReturnState';
+import { scrollDebugTag } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
 
 /**
  * Scrollovateľná plocha dashboardu.
@@ -84,6 +85,7 @@ export function useFeedReturn({
     enteredRef.current = true;
     if (restoredScrollTop != null && restoredScrollTop > 0) return;
     const main = dashboardMain();
+    scrollDebugTag('feed enter top'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
     if (main) main.scrollTop = 0;
   }, [restoredScrollTop]);
 
@@ -101,6 +103,7 @@ export function useFeedReturn({
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
         const main = dashboardMain();
+        scrollDebugTag('feed restore'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
         if (main) main.scrollTop = restoredScrollTop;
       });
     });
