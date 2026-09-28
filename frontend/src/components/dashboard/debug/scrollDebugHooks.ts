@@ -157,7 +157,7 @@ function recordWrite(
   label: string,
   t: number,
   pre: ScrollerMetrics,
-  write: { smooth: boolean; after: number | null; target: number | null },
+  write: { smooth: boolean; after: number | null; target: number | null; scroller: object | null },
   stack: string | undefined,
 ): void {
   rememberWrite(kind === 'main' ? scrollDebugState.mainWrites : scrollDebugState.windowWrites, {
@@ -166,6 +166,7 @@ function recordWrite(
     before: pre.st,
     after: write.after,
     target: write.target,
+    scroller: write.scroller,
   });
   logDebugLine(
     `${label}${write.smooth ? ' smooth' : ''} pred=${round(pre.st)}` +
@@ -199,7 +200,12 @@ function hookScrollTopSetter(live: { live: boolean }): void {
         `SET ${kind}.scrollTop=${round(Number(value))}`,
         t,
         pre,
-        { smooth, after: smooth ? null : this.scrollTop, target: smooth ? clampToScroller(Number(value), pre) : null },
+        {
+          smooth,
+          after: smooth ? null : this.scrollTop,
+          target: smooth ? clampToScroller(Number(value), pre) : null,
+          scroller: this,
+        },
         stack,
       );
     });
@@ -243,7 +249,7 @@ function elementScrollWrapper(original: AnyFunction, name: string, live: { live:
         `${kind}.${name}(top=${top === null ? '?' : round(top)})`,
         t,
         pre,
-        { smooth, after: smooth ? null : element.scrollTop, target: smooth ? wanted : null },
+        { smooth, after: smooth ? null : element.scrollTop, target: smooth ? wanted : null, scroller: element },
         stack,
       );
     });
@@ -268,7 +274,7 @@ function windowScrollWrapper(original: AnyFunction, name: string, live: { live: 
         `window.${name}(top=${top === null ? '?' : round(top)})`,
         t,
         pre,
-        { smooth, after: smooth ? null : window.scrollY, target: smooth ? wanted : null },
+        { smooth, after: smooth ? null : window.scrollY, target: smooth ? wanted : null, scroller: null },
         stack,
       );
     });
@@ -313,7 +319,7 @@ function recordIntoView(
     `INTOVIEW ${describeTarget(element)} (${String(info.behavior ?? 'auto')}/${info.block})`,
     t,
     info.pre,
-    { smooth: info.smooth, after: info.smooth ? null : main.scrollTop, target: info.target },
+    { smooth: info.smooth, after: info.smooth ? null : main.scrollTop, target: info.target, scroller: main },
     stack,
   );
 }

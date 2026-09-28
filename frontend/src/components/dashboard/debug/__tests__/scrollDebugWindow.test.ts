@@ -125,6 +125,89 @@ it('ťah prstom pred skokom sa pri NONE uvedie a započíta', () => {
   expect(lines[lines.length - 1]).toMatch(/touchstart×1\(\+\d+\.\.\+\d+\) touchmove×1\(\+\d+\.\.\+\d+\)/);
 });
 
+it('scroll prstom (touchmove počas úseku) nie je „bez touchmove"', () => {
+  click(card);
+  frames(4);
+  main.dispatchEvent(new Event('touchstart', { bubbles: true }));
+  for (const value of [6900, 6700, 6400, 6000]) {
+    main.dispatchEvent(new Event('touchmove', { bubbles: true }));
+    moveWithoutJs(value);
+    frames(1);
+  }
+  jest.advanceTimersByTime(4000);
+
+  const lines = linesAfter('CLICK');
+  expect(lines).toContainEqual(expect.stringMatching(/SCROLL 7023→6000 .* !!! NONE \(touchmove počas\)$/));
+  expect(lines.join('\n')).not.toContain('bez touchmove');
+});
+
+it('nový element <main> (experiment B): riadok MAIN, žiadne falošné NONE', () => {
+  click(card);
+  frames(4);
+  // Výmena elementu: nový `<main>` začína na 0, starý zmizne.
+  const fresh = document.createElement('main');
+  fresh.setAttribute('data-dashboard-main', '');
+  Object.defineProperty(fresh, 'scrollHeight', { configurable: true, get: () => 2426 });
+  Object.defineProperty(fresh, 'clientHeight', { configurable: true, get: () => 659 });
+  main.replaceWith(fresh);
+  frames(5);
+  jest.advanceTimersByTime(4000);
+
+  const lines = linesAfter('CLICK');
+  expect(lines).toContainEqual(expect.stringMatching(/MAIN nový element st=0 sh=2426$/));
+  expect(lines.join('\n')).not.toContain('NONE');
+});
+
+/** Nový `<main>` (experiment B) s vlastnými rozmermi a pozíciou. */
+function replaceMain(initialTop: number) {
+  const fresh = document.createElement('main');
+  fresh.setAttribute('data-dashboard-main', '');
+  Object.defineProperty(fresh, 'scrollHeight', { configurable: true, get: () => 11245 });
+  Object.defineProperty(fresh, 'clientHeight', { configurable: true, get: () => 659 });
+  nativeSetScrollTop.call(fresh, initialTop);
+  main.replaceWith(fresh);
+  return fresh;
+}
+
+it('plynulý zápis do STARÉHO <main> nevysvetlí skok na novom elemente', () => {
+  click(card);
+  frames(4);
+  // Plynulý scroll na starom elemente: 7023 → ≈ 7794.
+  card.getBoundingClientRect = () => ({ top: 1000, height: 200 }) as DOMRect;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const fresh = replaceMain(0);
+  frames(2);
+  // Nový element skočí do rozsahu starého plynulého scrollu – bez JS.
+  nativeSetScrollTop.call(fresh, 7500);
+  frames(5);
+  jest.advanceTimersByTime(4000);
+
+  const lines = linesAfter('CLICK');
+  expect(lines).toContainEqual(expect.stringMatching(/SCROLL 0→7500 .* !!! NONE/));
+  expect(lines.join('\n')).not.toMatch(/0→7500 .* js-smooth/);
+});
+
+it('otvorený segment starého <main> sa pri výmene uzavrie a nezlúči s novým', () => {
+  click(card);
+  frames(4);
+  moveWithoutJs(5000);
+  frames(1);
+  // Segment 7023→5000 je otvorený; nový element začína na tej istej hodnote.
+  const fresh = replaceMain(5000);
+  frames(1);
+  nativeSetScrollTop.call(fresh, 4000);
+  frames(5);
+  jest.advanceTimersByTime(4000);
+
+  const lines = linesAfter('CLICK');
+  const oldSegment = lines.findIndex((line) => /SCROLL 7023→5000 /.test(line));
+  const replaced = lines.findIndex((line) => line.includes('MAIN nový element'));
+  expect(oldSegment).toBeGreaterThan(-1);
+  expect(oldSegment).toBeLessThan(replaced);
+  expect(lines).toContainEqual(expect.stringMatching(/SCROLL 5000→4000 /));
+  expect(lines.join('\n')).not.toContain('7023→4000');
+});
+
 it('klik v paneli nezačne okno a nemení číslo kliku', () => {
   const before = getScrollDebugLines().length;
   click(document.querySelector('[data-scroll-debug-panel] button')!);

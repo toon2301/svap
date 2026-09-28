@@ -15,6 +15,7 @@ import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
 import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatchSettingsMobileHost';
 import { onFeedHomeNavigation } from './modules/feed/feedHomeNavigation';
 import ScrollDebugPanel from './debug/ScrollDebugPanel'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
+import { useScrollFixMainKey } from './debug/scrollFixExperiment'; // [EXPERIMENT ?scrollfix=b – DOČASNÉ]
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -143,6 +144,7 @@ export default function DashboardLayout({
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
   const isMobile = useIsMobile();
+  const mainKey = useScrollFixMainKey(activeModule); // [EXPERIMENT ?scrollfix=b – DOČASNÉ]
   const [isOfferWatchMobileOpen, setIsOfferWatchMobileOpen] = useState(false);
   const shouldUseDynamicMobileMessagesHeight = isMobile && isOpenMobileMessagesConversation;
   const mobileViewportHeight = useMobileViewportHeight(shouldUseDynamicMobileMessagesHeight);
@@ -361,6 +363,7 @@ export default function DashboardLayout({
 
         {/* Main Content - data attr pre scroll preservation */}
         <main
+          key={mainKey} // [EXPERIMENT ?scrollfix=b – DOČASNÉ]
           data-dashboard-main
           className={`relative h-screen ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-28'} lg:pt-0 lg:pb-0 elegant-scrollbar ${
             activeModule === 'messages'

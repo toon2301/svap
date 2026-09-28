@@ -91,7 +91,7 @@ describe('s príznakom', () => {
     expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBe('1');
     const lines = getScrollDebugLines();
     expect(lines[0]).toMatch(/^— štart stránky — \S+ \/dashboard$/);
-    expect(lines[1]).toMatch(/^ENV .* · ih=\d+ · vv=\? · dpr=1 · main\{\?\} · html\{sb=\?\} · body\{sb=\?\}$/);
+    expect(lines[1]).toMatch(/^ENV .* · ih=\d+ · vv=\? · dpr=1 · main\{\?\} · html\{sb=\?\} · body\{sb=\?\} · scrollfix=\?$/);
     expect(screen.getByText(lines[0])).toBeInTheDocument();
   });
 
