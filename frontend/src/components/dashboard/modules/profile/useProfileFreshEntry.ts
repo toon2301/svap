@@ -14,6 +14,7 @@ import {
   onProfileFreshEntryMarked,
   takeProfileFreshEntry,
 } from './profileFreshEntry';
+import { scrollDebugTag } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
 
 /** Scrollovateľná plocha dashboardu – tá istá, akú používa feed aj profil. */
 const DASHBOARD_MAIN_SELECTOR = '[data-dashboard-main]';
@@ -43,6 +44,7 @@ export function useProfileFreshEntry(
     setIsFreshEntry(true);
     if (typeof document === 'undefined') return;
     const main = document.querySelector<HTMLElement>(DASHBOARD_MAIN_SELECTOR);
+    scrollDebugTag('fresh-entry reset'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
     if (main) main.scrollTop = 0;
   }, [profileId, profileSlug]);
 
