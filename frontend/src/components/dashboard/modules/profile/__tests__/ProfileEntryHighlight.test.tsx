@@ -283,8 +283,8 @@ describe('vstup na profil do minúty od iného zvýraznenia', () => {
     document.querySelector<HTMLElement>('[data-onboarding="profile-icon"]')!.click();
     await waitForOfferCard();
 
-    // Vrch z nového vstupu – a nič po ňom.
-    expect(writes).toEqual([0]);
+    // Vrch pri odchode z Nástenky (kým je v DOM), vrch z nového vstupu – a nič po ňom.
+    expect(writes).toEqual([0, 0]);
     expect(main.scrollTop).toBe(0);
     expect(scrolledTo).toEqual([]);
     expect(window.location.search).not.toContain('highlight');
@@ -299,7 +299,8 @@ describe('vstup na profil do minúty od iného zvýraznenia', () => {
     openUserProfile({ id: VIEWER_ID, slug: 'test-user' });
     await waitForOfferCard();
 
-    expect(writes).toEqual([0]);
+    // Vrch pri odchode z Nástenky, vrch z nového vstupu – a nič po ňom.
+    expect(writes).toEqual([0, 0]);
     expect(main.scrollTop).toBe(0);
     expect(scrolledTo).toEqual([]);
     expect(window.location.search).not.toContain('highlight');
