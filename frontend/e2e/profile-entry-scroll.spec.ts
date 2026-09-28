@@ -110,10 +110,16 @@ async function loadCardsUpTo(page: Page, index: number) {
 /**
  * Prvá vlastná zdieľaná ponuka hlbšie než MIN_DEPTH_PX, doscrollovaná na
  * obrazovku. Keď karta na očakávanom mieste nesedí (feed sa medzitým zmenil),
- * výpočet sa raz zopakuje.
+ * výpočet sa raz zopakuje – nad nanovo načítanou Nástenkou.
  */
 async function deepOwnOfferPreview(page: Page, label: string) {
   for (let attempt = 1; attempt <= 2; attempt += 1) {
+    if (attempt > 1) {
+      // Vykreslený feed je starší než odpoveď API (navrch medzitým pribudol
+      // príspevok) – bez nového načítania by boli indexy posunuté znova.
+      await page.reload();
+      await expect(page.getByTestId('feed-list')).toBeVisible();
+    }
     const candidates = await ownSharedOffers(page);
     expect(
       candidates.length,
