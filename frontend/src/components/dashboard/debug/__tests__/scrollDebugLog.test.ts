@@ -13,6 +13,7 @@ import {
   formatScrollDebugCopy,
   getScrollDebugLines,
   holdScrollDebugOutput,
+  isScrollDebugFlagStored,
   logDebugLine,
   logDebugRaw,
   resetScrollDebugLogForTests,
@@ -50,6 +51,23 @@ describe('resolveScrollDebugFlag', () => {
     expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBeNull();
     expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
     expect(resolveScrollDebugFlag('')).toBe(false);
+  });
+
+  it('?debugscroll=0 zmaže aj záznam v pamäti a zruší čakajúce uloženie', () => {
+    jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] });
+    logDebugRaw('C1 +0 CLICK x');
+    expect(resolveScrollDebugFlag('?debugscroll=0')).toBe(false);
+    expect(getScrollDebugLines()).toEqual([]);
+    jest.advanceTimersByTime(1000);
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
+  });
+
+  it('isScrollDebugFlagStored číta len úložisko, nie adresu', () => {
+    expect(isScrollDebugFlagStored()).toBe(false);
+    resolveScrollDebugFlag('?debugscroll=1');
+    expect(isScrollDebugFlagStored()).toBe(true);
+    sessionStorage.removeItem(SCROLL_DEBUG_FLAG_KEY);
+    expect(isScrollDebugFlagStored()).toBe(false);
   });
 
   it('bez parametra a bez uloženého stavu je vypnutý', () => {

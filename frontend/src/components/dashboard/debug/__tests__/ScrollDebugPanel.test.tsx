@@ -193,4 +193,44 @@ describe('s príznakom', () => {
     fireEvent.click(document.body);
     expect(getScrollDebugLines().length).toBe(before + 1);
   });
+
+  it('príznak vypnutý pri remounte ukončí meranie, ktoré v stránke ešte beží', async () => {
+    const setter = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set;
+    const first = await renderPanel();
+    first.unmount();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).not.toBe(setter);
+
+    window.history.replaceState(null, '', '/dashboard?debugscroll=0');
+    const { container } = await renderPanel();
+
+    expect(container).toBeEmptyDOMElement();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).toBe(setter);
+    expect(getScrollDebugLines()).toEqual([]);
+    expect(sessionStorage.getItem(SCROLL_DEBUG_FLAG_KEY)).toBeNull();
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
+  });
+
+  it('Späť z bfcache po vypnutí v inom načítaní ukončí meranie a skryje panel', async () => {
+    const setter = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set;
+    const pageShow = () =>
+      act(() => {
+        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+      });
+    await renderPanel();
+
+    // Príznak stále platí – obnovená stránka meria ďalej.
+    pageShow();
+    expect(screen.getByRole('button', { name: 'Kopírovať' })).toBeInTheDocument();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).not.toBe(setter);
+
+    // Iné načítanie s ?debugscroll=0 zmazalo príznak aj záznam, potom Späť.
+    sessionStorage.removeItem(SCROLL_DEBUG_FLAG_KEY);
+    sessionStorage.removeItem(SCROLL_DEBUG_LOG_KEY);
+    pageShow();
+
+    expect(screen.queryByRole('button', { name: 'Kopírovať' })).not.toBeInTheDocument();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).toBe(setter);
+    expect(getScrollDebugLines()).toEqual([]);
+    expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
+  });
 });

@@ -51,20 +51,33 @@ export function resolveScrollDebugFlag(search: string = typeof window === 'undef
   const store = sessionStore();
   try {
     if (param === '1') store?.setItem(SCROLL_DEBUG_FLAG_KEY, '1');
-    // Vypnutie zmaže aj záznam – v karte nemá ostať ležať.
-    if (param === '0') {
-      store?.removeItem(SCROLL_DEBUG_FLAG_KEY);
-      store?.removeItem(SCROLL_DEBUG_LOG_KEY);
-    }
   } catch {
     // Úložisko nedostupné (súkromný režim) – platí aspoň parameter.
   }
   if (param === '1') return true;
-  if (param === '0') return false;
+  if (param === '0') {
+    // Vypnutie zmaže príznak aj záznam – v pamäti, v úložisku aj čakajúce uloženie.
+    forgetScrollDebug();
+    return false;
+  }
   try {
     return store?.getItem(SCROLL_DEBUG_FLAG_KEY) === '1';
   } catch {
     return false;
+  }
+}
+
+/**
+ * Príznak len podľa sessionStorage, bez adresy – pre stránku obnovenú
+ * z bfcache, ktorej adresa je stará. Nedostupné úložisko nič nedokazuje,
+ * vtedy platí zapnuté.
+ */
+export function isScrollDebugFlagStored(): boolean {
+  try {
+    const store = sessionStore();
+    return store ? store.getItem(SCROLL_DEBUG_FLAG_KEY) === '1' : true;
+  } catch {
+    return true;
   }
 }
 

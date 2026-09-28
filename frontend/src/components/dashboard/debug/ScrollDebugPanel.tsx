@@ -6,7 +6,8 @@
  * Ladiaci pásik scrollu pre skutočný iPhone: `?debugscroll=1` zapne,
  * `?debugscroll=0` vypne a zmaže záznam (stav v sessionStorage). Odchod
  * z dashboardu (odhlásenie, neplatná session) meranie ukončí a záznam
- * s príznakom zmaže. Bez príznaku sa nič neinštaluje a panel nevykreslí nič.
+ * s príznakom zmaže; rovnako remount či návrat z bfcache po vypnutí.
+ * Bez príznaku sa nič neinštaluje a panel nevykreslí nič.
  * Pred mountom tiež nič (žiadny hydration mismatch).
  *
  * Panel je hore cez hlavičku, prepúšťa dotyky (pointer-events: none) okrem
@@ -24,10 +25,12 @@ import {
   formatScrollDebugCopy,
   getScrollDebugLines,
   getServerScrollDebugLines,
+  isScrollDebugFlagStored,
   logDebugLine,
   resolveScrollDebugFlag,
   subscribeScrollDebugLog,
 } from './scrollDebugLog';
+import { scrollDebugState } from './scrollDebugState';
 
 const VISIBLE_LINES = 8;
 const USER_MARKS = ['OK', 'ZOSPODU', 'BEZ ZVÝRAZNENIA'] as const;
@@ -181,12 +184,25 @@ function ScrollDebugPanel() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    if (!resolveScrollDebugFlag()) return;
+    if (!resolveScrollDebugFlag()) {
+      // Vypnuté, no v tejto stránke pásik ešte beží (remount) – koniec.
+      if (scrollDebugState.active) endScrollDebugSession();
+      return;
+    }
     installScrollDebug();
     setEnabled(true);
+    // Späť z bfcache: stránka ožije so starým stavom, hoci ju iné načítanie
+    // (?debugscroll=0) medzitým vypnulo – inak by merala a ukladala ďalej.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted || isScrollDebugFlagStored()) return;
+      endScrollDebugSession();
+      setEnabled(false);
+    };
+    window.addEventListener('pageshow', onPageShow);
     // Remount v rámci dashboardu meranie nekončí (hooky patria stránke).
     // Odchod z neho áno – odhlásenie a neplatná session idú na '/' bez reloadu.
     return () => {
+      window.removeEventListener('pageshow', onPageShow);
       if (!window.location.pathname.startsWith('/dashboard')) endScrollDebugSession();
     };
   }, []);
