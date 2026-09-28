@@ -9,13 +9,21 @@ import { expect, test, type Page } from '@playwright/test';
 // prejde aj bez opravy. Je to poistka poradia: keby sa reset alebo zvýraznenie
 // rozbili tak, že sa to prejaví aj v emulácii, zachytí to.
 //
-// Test len číta: vlastnú zdieľanú ponuku na Nástenke musí mať testovací účet.
+// Test len číta. Testovací účet musí mať na Nástenke zdieľanú vlastnú ponuku;
+// hľadá sa na prvých piatich stranách (MAX_FEED_PAGES) a použije sa prvá, ktorá
+// je hlbšie než 1000 px (MIN_DEPTH_PX). Nástenka rastie, takže ponuka časom
+// klesá – aj za prvú stranu.
+// Vytvárať ju netreba – nový zdieľaný príspevok by pristál navrchu, nie hlboko.
 
 const MAIN = '[data-dashboard-main]';
 const CARD = '[data-testid="feed-post-card"]';
 const EDIT = '[data-onboarding="profile-edit-button"]';
 const HIGHLIGHT = '.highlight-offer-card';
 const HOME = 'button[aria-label="Domov"]';
+/** Koľko strán Nástenky (kurzor `next`) sa prehľadá a najviac donačíta. */
+const MAX_FEED_PAGES = 5;
+/** Pod touto hĺbkou nejde o scenár „z hlboko odscrollovanej Nástenky". */
+const MIN_DEPTH_PX = 1000;
 
 type IntoViewCall = { mainTop: number; highlighted: boolean };
 type WindowWithIntoView = Window & { __e2eIntoView?: IntoViewCall[] };
@@ -46,31 +54,88 @@ async function recordScrollIntoView(page: Page) {
   });
 }
 
+type OwnOffer = { index: number; title: string };
+
 /**
- * Najhlbšia vlastná zdieľaná ponuka na prvej strane Nástenky – poradie z API je
- * poradie kariet. Počíta sa tesne pred vstupom, lebo iné testy môžu medzitým
- * pridať príspevok navrch.
+ * Vlastné zdieľané ponuky v poradí kariet na Nástenke – cez viac strán, podľa
+ * kurzora `next`. Poradie z API je poradie kariet. Počíta sa tesne pred
+ * vstupom, lebo iné testy môžu medzitým pridať príspevok navrch.
  */
-async function deepestOwnSharedOffer(page: Page): Promise<{ index: number; title: string } | null> {
-  return page.evaluate(async () => {
+async function ownSharedOffers(page: Page): Promise<OwnOffer[]> {
+  return page.evaluate(async (maxPages) => {
     const meResponse = await fetch('/api/auth/me/', { credentials: 'include' });
     const me = (await meResponse.json()) as { id?: number; user?: { id?: number } };
     const myId = me.user?.id ?? me.id;
-    const feedResponse = await fetch('/api/auth/feed/posts/', { credentials: 'include' });
-    const data = (await feedResponse.json()) as unknown;
-    const posts = (Array.isArray(data) ? data : ((data as { results?: unknown[] }).results ?? [])) as Array<{
-      post_type?: string;
-      shared_content?: { id?: number; title?: string; owner?: { id?: number } | null } | null;
-    }>;
-    let found: { index: number; title: string } | null = null;
-    posts.forEach((post, index) => {
-      const content = post.shared_content;
-      if (post.post_type === 'shared_offer' && content?.id && content.owner?.id === myId) {
-        found = { index, title: content.title ?? '' };
-      }
-    });
+    const found: OwnOffer[] = [];
+    let url: string | null = '/api/auth/feed/posts/';
+    let offset = 0;
+    for (let pageNo = 0; url && pageNo < maxPages; pageNo += 1) {
+      const response = await fetch(url, { credentials: 'include' });
+      const data = (await response.json()) as { results?: unknown[]; next?: string | null } | unknown[];
+      const posts = (Array.isArray(data) ? data : (data.results ?? [])) as Array<{
+        post_type?: string;
+        shared_content?: { id?: number; title?: string; owner?: { id?: number } | null } | null;
+      }>;
+      posts.forEach((post, index) => {
+        const content = post.shared_content;
+        if (post.post_type === 'shared_offer' && content?.id && content.owner?.id === myId) {
+          found.push({ index: offset + index, title: content.title ?? '' });
+        }
+      });
+      offset += posts.length;
+      const next = Array.isArray(data) ? null : data.next;
+      // `next` je absolútna URL z backendu – ako appka, ide sa cez vlastný origin.
+      url = next ? (() => {
+        const parsed = new URL(next, window.location.origin);
+        return `${parsed.pathname}${parsed.search}`;
+      })() : null;
+    }
     return found;
-  });
+  }, MAX_FEED_PAGES);
+}
+
+/** Donačíta Nástenku (scroll na sentinel, ako používateľ), kým nemá kartu s indexom. */
+async function loadCardsUpTo(page: Page, index: number) {
+  const cards = page.locator(CARD);
+  for (let pageNo = 1; pageNo < MAX_FEED_PAGES && (await cards.count()) <= index; pageNo += 1) {
+    const before = await cards.count();
+    await page.getByTestId('feed-sentinel').scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => cards.count(), { message: 'Nástenka nedonačítala ďalšiu stranu', timeout: 15_000 })
+      .toBeGreaterThan(before);
+  }
+  expect(await cards.count(), `Nástenka nemá kartu č. ${index + 1}`).toBeGreaterThan(index);
+}
+
+/**
+ * Prvá vlastná zdieľaná ponuka hlbšie než MIN_DEPTH_PX, doscrollovaná na
+ * obrazovku. Keď karta na očakávanom mieste nesedí (feed sa medzitým zmenil),
+ * výpočet sa raz zopakuje.
+ */
+async function deepOwnOfferPreview(page: Page, label: string) {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const candidates = await ownSharedOffers(page);
+    expect(
+      candidates.length,
+      `${label}: na prvých ${MAX_FEED_PAGES} stranách Nástenky nie je zdieľaná vlastná ponuka testovacieho účtu`,
+    ).toBeGreaterThan(0);
+    let feedChanged = false;
+    for (const candidate of candidates) {
+      await loadCardsUpTo(page, candidate.index);
+      const card = page.locator(CARD).nth(candidate.index);
+      const text = (await card.textContent()) ?? '';
+      if ((await card.getAttribute('data-post-type')) !== 'shared_offer' || !text.includes(candidate.title)) {
+        feedChanged = true;
+        break;
+      }
+      const preview = card.getByTestId('feed-shared-compact-preview');
+      await preview.scrollIntoViewIfNeeded();
+      const depth = await page.locator(MAIN).evaluate((main) => main.scrollTop);
+      if (depth > MIN_DEPTH_PX) return preview;
+    }
+    if (!feedChanged) break;
+  }
+  throw new Error(`${label}: na Nástenke nie je vlastná zdieľaná ponuka hlbšie než ${MIN_DEPTH_PX} px`);
 }
 
 async function goHome(page: Page) {
@@ -80,16 +145,7 @@ async function goHome(page: Page) {
 
 /** Hlboký scroll na vlastnú ponuku, ťuk, a tvrdenia o vrchu a zvýraznení. */
 async function enterOwnOfferFromDeepFeed(page: Page, label: string) {
-  const target = await deepestOwnSharedOffer(page);
-  expect(target, 'na Nástenke chýba zdieľaná vlastná ponuka testovacieho účtu').not.toBeNull();
-  const card = page.locator(CARD).nth(target!.index);
-  await expect(card).toHaveAttribute('data-post-type', 'shared_offer');
-  if (target!.title) await expect(card).toContainText(target!.title);
-
-  const preview = card.getByTestId('feed-shared-compact-preview');
-  await preview.scrollIntoViewIfNeeded();
-  const depth = await page.locator(MAIN).evaluate((main) => main.scrollTop);
-  expect(depth, `${label}: Nástenka pred vstupom nie je hlboko odscrollovaná`).toBeGreaterThan(1000);
+  const preview = await deepOwnOfferPreview(page, label);
 
   await page.evaluate(() => {
     (window as WindowWithIntoView).__e2eIntoView = [];
