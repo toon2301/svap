@@ -45,13 +45,22 @@ export function resolveScrollFixFlag(search: string = typeof window === 'undefin
   }
 }
 
-/** Pre hlavičku ladiaceho pásika: `b` alebo `-`. */
+/** Stav, ktorý naozaj použil `useScrollFixMainKey`; `null` = ešte nevyhodnotený. */
+let resolvedScrollFix: boolean | null = null;
+
+/**
+ * Pre hlavičku ladiaceho pásika: `b` zapnutý, `-` vypnutý, `?` nevyhodnotený.
+ * Hlási stav hooku, nie úložiska – bez sessionStorage zapne experiment aj
+ * samotný parameter v adrese.
+ */
 export function scrollFixLabel(): string {
-  try {
-    return sessionStore()?.getItem(SCROLL_FIX_FLAG_KEY) === 'b' ? 'b' : '-';
-  } catch {
-    return '-';
-  }
+  if (resolvedScrollFix === null) return '?';
+  return resolvedScrollFix ? 'b' : '-';
+}
+
+/** Len pre testy – vyčistí vyhodnotený stav medzi prípadmi. */
+export function resetScrollFixForTests(): void {
+  resolvedScrollFix = null;
 }
 
 /**
@@ -60,7 +69,11 @@ export function scrollFixLabel(): string {
  * rovnaký v oboch prípadoch – po načítaní stránky sa nič neremountuje.
  */
 export function useScrollFixMainKey(activeModule: string): string {
-  const [enabled] = useState(() => typeof window !== 'undefined' && resolveScrollFixFlag());
+  const [enabled] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    resolvedScrollFix = resolveScrollFixFlag();
+    return resolvedScrollFix;
+  });
   const [track, setTrack] = useState({ module: activeModule, generation: 0 });
   if (!enabled) return 'main-0';
   if (track.module !== activeModule) {

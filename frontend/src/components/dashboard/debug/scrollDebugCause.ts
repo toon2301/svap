@@ -32,6 +32,11 @@ export type ScrollWriteRecord = {
   after: number | null;
   /** Kam plynulý scroll mieri (pri scrollIntoView odhad); `null` = neznáme. */
   target: number | null;
+  /**
+   * Do ktorého elementu sa zapisovalo. Klasifikácia ho nepoužíva – podľa neho
+   * okno berie len zápisy aktuálneho `<main>` (experiment B ho vymieňa).
+   */
+  scroller?: object | null;
 };
 
 /** Zmena medzi dvoma snímkami. */

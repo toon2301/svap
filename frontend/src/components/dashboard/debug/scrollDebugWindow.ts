@@ -135,7 +135,8 @@ function trackMain(win: ClickWindow, t: number, main: MainMetrics): void {
           heightAfter: main.sh,
           clientHeight: main.ch,
         },
-        scrollDebugState.mainWrites,
+        // Len zápisy do TOHTO elementu – zápisy do vymeneného `<main>` s ním nesúvisia.
+        scrollDebugState.mainWrites.filter((write) => !write.scroller || write.scroller === win.mainEl),
       )
     : null;
   if (win.frame <= FIRST_FRAMES) {
@@ -235,7 +236,12 @@ function onFrame(): void {
   const mainEl = findDashboardMain();
   if (mainEl !== win.mainEl) {
     // Nový element (experiment B): jeho hodnoty so starým neporovnávať –
-    // zmena by vyšla ako NONE, hoci ide o iný kontajner.
+    // zmena by vyšla ako NONE, hoci ide o iný kontajner. Otvorený segment
+    // patrí starému elementu a s novými zmenami sa nesmie zlúčiť.
+    if (win.segment) {
+      emitSegment(win.segment);
+      win.segment = null;
+    }
     win.mainEl = mainEl;
     logDebugLine(`MAIN nový element st=${r(main.st)} sh=${r(main.sh)}`, t);
     win.prev = { ...win.prev, st: main.st, sh: main.sh };

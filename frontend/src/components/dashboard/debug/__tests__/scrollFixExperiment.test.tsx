@@ -8,6 +8,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import {
   SCROLL_FIX_FLAG_KEY,
+  resetScrollFixForTests,
   resolveScrollFixFlag,
   scrollFixLabel,
   useScrollFixMainKey,
@@ -23,6 +24,7 @@ function Probe({ module }: { module: string }) {
 }
 
 beforeEach(() => {
+  resetScrollFixForTests();
   sessionStorage.clear();
   window.history.replaceState(null, '', '/dashboard');
 });
@@ -32,7 +34,6 @@ describe('resolveScrollFixFlag', () => {
     expect(resolveScrollFixFlag('?scrollfix=b')).toBe(true);
     expect(sessionStorage.getItem(SCROLL_FIX_FLAG_KEY)).toBe('b');
     expect(resolveScrollFixFlag('?offer=11')).toBe(true);
-    expect(scrollFixLabel()).toBe('b');
   });
 
   it('?scrollfix=0 vypne a stav zmaže', () => {
@@ -40,7 +41,6 @@ describe('resolveScrollFixFlag', () => {
     expect(resolveScrollFixFlag('?scrollfix=0')).toBe(false);
     expect(sessionStorage.getItem(SCROLL_FIX_FLAG_KEY)).toBeNull();
     expect(resolveScrollFixFlag('')).toBe(false);
-    expect(scrollFixLabel()).toBe('-');
   });
 
   it('iná hodnota experiment nezapne', () => {
@@ -93,3 +93,39 @@ describe('useScrollFixMainKey', () => {
     expect(sessionStorage.getItem(SCROLL_FIX_FLAG_KEY)).toBe('b');
   });
 });
+
+describe('scrollFixLabel (hlavička pásika)', () => {
+  it('hlási stav, ktorý použil hook – pred ním „?"', () => {
+    expect(scrollFixLabel()).toBe('?');
+    render(<Probe module="home" />);
+    expect(scrollFixLabel()).toBe('-');
+  });
+
+  it('zapnutý experiment je „b"', () => {
+    sessionStorage.setItem(SCROLL_FIX_FLAG_KEY, 'b');
+    render(<Probe module="home" />);
+    expect(scrollFixLabel()).toBe('b');
+  });
+
+  it('bez sessionStorage zapne experiment parameter v adrese a hlavička to ukáže', () => {
+    window.history.replaceState(null, '', '/dashboard?scrollfix=b');
+    const getItem = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    const setItem = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    try {
+      const { rerender } = render(<Probe module="home" />);
+      const first = screen.getByTestId('main');
+      rerender(<Probe module="profile" />);
+
+      expect(screen.getByTestId('main')).not.toBe(first);
+      expect(scrollFixLabel()).toBe('b');
+    } finally {
+      getItem.mockRestore();
+      setItem.mockRestore();
+    }
+  });
+});
+
