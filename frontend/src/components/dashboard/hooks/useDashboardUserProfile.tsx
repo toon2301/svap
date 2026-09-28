@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
-import { api, endpoints } from '@/lib/api';
+import { endpoints } from '@/lib/api';
 import {
-  getUserIdBySlug,
   getUserProfileFromCache,
   setUserProfileToCache,
 } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
 import { supportsSkillHighlight } from './useDashboardHighlighting';
 import { dashboardSectionPath, isSameDashboardPath } from '../components/dashboardRoutes';
+import { fetchUserProfile, startViewedUserResolution } from './viewedUserResolution';
 
 export interface DashboardUserProfileProps {
   viewedUserId: number | null;
@@ -21,6 +21,10 @@ export interface DashboardUserProfileProps {
   viewedUserSummary: SearchUserResult | null;
   setViewedUserSummary: (summary: SearchUserResult | null) => void;
   viewedUserNotFound: boolean;
+  /** Profil sa nepodarilo načítať (sieť, 5xx, 429, timeout) – nie 404. */
+  viewedUserLoadError: boolean;
+  /** Nový pokus o načítanie profilu po chybe. */
+  retryViewedUserLoad: () => void;
   initialRightItemAppliedRef: React.MutableRefObject<boolean>;
 }
 
@@ -69,6 +73,9 @@ export function useDashboardUserProfile({
   const [viewedUserSummary, setViewedUserSummary] = useState<SearchUserResult | null>(null);
   // True ak slug profil neexistuje (404 – napr. zmazaný/anonymizovaný účet).
   const [viewedUserNotFound, setViewedUserNotFound] = useState(false);
+  const [viewedUserLoadError, setViewedUserLoadError] = useState(false);
+  // Zvýšenie spustí preklad slug → ID znova (tlačidlo „Skúsiť znova").
+  const [resolveAttempt, setResolveAttempt] = useState(0);
   const initialRightItemAppliedRef = useRef(false);
   // Aktuálny modul pre efekty, ktoré sa ním NEMAJÚ spúšťať. Inicializácia
   // profilu patrí výhradne props: keby ju prebudila zmena modulu, prepísala by
@@ -84,54 +91,29 @@ export function useDashboardUserProfile({
     activeRightItem,
   } = dashboardState;
 
-  // Centralizovaný profil-fetch s konzistentným 404 handlingom: nech profil
-  // načíta ktorákoľvek cesta (slug aj ID), pri 404 sa vždy nastaví
-  // `viewedUserNotFound` (UI ukáže chybu namiesto nekonečného "Načítavam...").
-  const fetchProfileWithNotFound = useCallback(
-    async (url: string, isCancelled: () => boolean): Promise<User | null> => {
-      try {
-        const { data } = await api.get<User>(url);
-        return isCancelled() ? null : data;
-      } catch (error: unknown) {
-        const status = (error as { response?: { status?: number } })?.response?.status;
-        if (!isCancelled() && status === 404) {
-          setViewedUserNotFound(true);
-        }
-        return null;
-      }
-    },
-    [],
-  );
+  // Rozlíšenie slug -> viewedUserId (cache, inak API). Vracia zrušenie behu –
+  // neskorá odpoveď zo staršieho vstupu už nič nezapíše. Viď viewedUserResolution.
+  const resolveViewedUserBySlug = useCallback((slug: string): (() => void) => {
+    setViewedUserLoadError(false);
+    return startViewedUserResolution(slug, {
+      onResolved: setViewedUserId,
+      onNotFound: () => setViewedUserNotFound(true),
+      onFailed: () => setViewedUserLoadError(true),
+    });
+  }, []);
 
-  // Zdieľané rozlíšenie slug -> viewedUserId: najprv cache, inak API (+ zápis do cache).
-  // Vracia cleanup, ktorý zruší prebiehajúci fetch (ochrana proti stale/po-unmount zápisu).
-  // Používajú ho oba efekty nižšie (mount-time podľa `initialProfileSlug` aj state-driven
-  // podľa `viewedUserSlug`), aby bola logika a 404/cancellation handling na jednom mieste.
-  const resolveViewedUserBySlug = useCallback(
-    (slug: string): (() => void) | undefined => {
-      const cachedId = getUserIdBySlug(slug);
-      if (cachedId) {
-        setViewedUserId(cachedId);
-        return undefined;
-      }
+  const retryViewedUserLoad = useCallback(() => {
+    setViewedUserLoadError(false);
+    setResolveAttempt((attempt) => attempt + 1);
+  }, []);
 
-      let cancelled = false;
-      void (async () => {
-        const data = await fetchProfileWithNotFound(
-          endpoints.dashboard.userProfileBySlug(slug),
-          () => cancelled,
-        );
-        if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
-        setViewedUserId(data.id);
-        setUserProfileToCache(data.id, data);
-      })();
-
-      return () => {
-        cancelled = true;
-      };
-    },
-    [fetchProfileWithNotFound],
-  );
+  // Chyba načítania patrí JEDNÉMU zobrazovanému profilu – pri jeho zmene
+  // (iný slug alebo ID) sa zahodí, aj keď preklad slugu vôbec nebeží (vstup so
+  // známym ID). Kedysi prežila do ďalšieho profilu: skryla na ňom menu a pri
+  // ďalšom preklade slugu sa na okamih ukázala stará hláška.
+  useEffect(() => {
+    setViewedUserLoadError(false);
+  }, [viewedUserSlug, viewedUserId]);
 
   // Inicializácia profilu podľa slug alebo ID
   useEffect(() => {
@@ -158,48 +140,48 @@ export function useDashboardUserProfile({
 
     if (!initialProfileSlug) return;
 
+    // Slug -> id prekladá JEDINE efekt nižšie – preklad aj tu posielal na ten
+    // istý vstup druhý súbežný request.
     setViewedUserSlug(initialProfileSlug);
-
-    // Slug -> id (cache, inak API); helper vracia cleanup prebiehajúceho fetchu.
-    return resolveViewedUserBySlug(initialProfileSlug);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfileSlug, initialViewedUserId, initialHighlightedSkillId, setHighlightedSkillId]);
 
-  // Rozlíšenie slug -> id aj pri state-driven navigácii (popstate, návrat z portfolia,
-  // notifikácie), nie len pri mount cez `initialProfileSlug`. Bez tohto ostane ModuleRouter
-  // trvalo na "Načítavam profil...", pretože `viewedUserId` je null a nič ho nedoplní:
-  // canonická URL vlastného profilu `/dashboard/users/[slug]` sa cez popstate vyhodnotí
-  // ako `user-profile` len so slugom (viewedUserSlug set, viewedUserId null). Tento efekt
-  // garantuje ukončenie loading stavu – buď doplní id, alebo (pri 404) nastaví not-found.
+  const viewingSelf =
+    (Boolean(user?.slug) && viewedUserSlug === user?.slug) ||
+    (user?.id != null && viewedUserId === user.id);
+
+  // Vlastný profil zobrazujeme cez plnohodnotný `profile` modul (edit, atď.) –
+  // pri KAŽDOM vstupe. Kedysi sa to kontrolovalo až za „ID je známe": slug ->
+  // ID je v cache od prvého vstupu, takže každý ďalší preklik na vlastnú ponuku
+  // mal ID hneď a vlastný profil sa ukázal ako cudzí (so šípkou, bez Upraviť).
   useEffect(() => {
-    if (activeModule !== 'user-profile') return;
-    // `viewedUserNotFound` zámerne NIE je v guarde ani v deps: stale not-found z
-    // predošlého profilu (napr. 404) nesmie zablokovať načítanie ĎALŠIEHO profilu pri
-    // popstate. Keďže nie je v deps, po 404 sa efekt pre ten istý slug znovu nespustí
-    // (žiadny refetch-loop) – znovu zbehne až pri skutočnej zmene slugu/id.
-    if (viewedUserId || !viewedUserSlug) return;
+    if (activeModule === 'user-profile' && viewingSelf) setActiveModule('profile');
+  }, [activeModule, viewingSelf, setActiveModule]);
 
-    // Vlastný profil zobrazujeme cez plnohodnotný `profile` modul (edit, atď.) –
-    // rovnako ako mount-time konverzia nižšie.
-    if (user?.slug && user.slug === viewedUserSlug) {
-      setActiveModule('profile');
-      return;
-    }
+  // Slug -> id: JEDINÝ preklad – pri tvrdom načítaní route (aj mimo profilu,
+  // napr. portfólio po F5) aj pri state-driven navigácii (popstate, návrat
+  // z portfólia, notifikácie). Bez neho ostane ModuleRouter trvalo na
+  // „Načítavam profil..." – `viewedUserId` je null a nič ho nedoplní.
+  // Vlastný slug mimo tvrdo načítanej route sa neprekladá: ten prepne efekt vyššie.
+  //
+  // Efekt závisí len od toho, ČI a ČO prekladať – prepnutie modulu uprostred
+  // prekladu ho nezruší. Zmena slugu áno: cleanup preruší request a neskorá
+  // odpoveď zo staršieho vstupu už nič nezapíše. `viewedUserNotFound` zámerne
+  // nie je v deps: po 404 sa ten istý slug znovu neprekladá (žiadny
+  // refetch-loop), až pri zmene slugu alebo novom pokuse (`resolveAttempt`).
+  const slugToResolve =
+    !viewedUserId &&
+    viewedUserSlug &&
+    (viewedUserSlug === initialProfileSlug || (activeModule === 'user-profile' && !viewingSelf))
+      ? viewedUserSlug
+      : null;
 
+  useEffect(() => {
+    if (!slugToResolve) return;
     // Nový slug → vyresetuj prípadný stale not-found z predošlého profilu, nech nový
     // profil nezostane omylom na "not found". 404 pre tento slug ho nastaví znovu.
     setViewedUserNotFound(false);
-
-    // Slug -> id (cache, inak API); helper vracia cleanup prebiehajúceho fetchu.
-    return resolveViewedUserBySlug(viewedUserSlug);
-  }, [
-    activeModule,
-    viewedUserId,
-    viewedUserSlug,
-    user?.slug,
-    setActiveModule,
-    resolveViewedUserBySlug,
-  ]);
+    return resolveViewedUserBySlug(slugToResolve);
+  }, [slugToResolve, resolveViewedUserBySlug, resolveAttempt]);
 
   // Vlastny slug prepina na ProfileModule iba pre bezny profil route.
   // Portfolio detail/create si musia zachovat vlastny aktivny modul aj po reloade.
@@ -455,14 +437,21 @@ export function useDashboardUserProfile({
       // Fallback: Ak nemáme slug, načítať profil z API
       // Len ak URL má ID (nie slug), načítať profil z API
       if (currentIdentifier && /^\d+$/.test(currentIdentifier)) {
-        let cancelled = false;
+        const controller = new AbortController();
 
         const loadProfileFromApi = async () => {
-          const data = await fetchProfileWithNotFound(
+          const result = await fetchUserProfile(
             endpoints.dashboard.userProfile(viewedUserId),
-            () => cancelled,
+            controller.signal,
           );
-          if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
+          if (result.status === 'not_found') {
+            setViewedUserNotFound(true);
+            return;
+          }
+          // Iná chyba ani zrušenie tu nič nemenia – ide len o tvar adresy;
+          // profil (aj chybu) zobrazuje SearchUserProfileModule.
+          if (result.status !== 'ok') return;
+          const { data } = result;
 
           // Uložiť do cache
           setUserProfileToCache(data.id, data);
@@ -477,11 +466,11 @@ export function useDashboardUserProfile({
         void loadProfileFromApi();
 
         return () => {
-          cancelled = true;
+          controller.abort();
         };
       }
     }
-  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary, fetchProfileWithNotFound]);
+  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary]);
 
   return {
     viewedUserId,
@@ -491,6 +480,8 @@ export function useDashboardUserProfile({
     viewedUserSummary,
     setViewedUserSummary,
     viewedUserNotFound,
+    viewedUserLoadError,
+    retryViewedUserLoad,
     initialRightItemAppliedRef,
   };
 }

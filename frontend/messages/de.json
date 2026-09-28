@@ -556,6 +556,7 @@
     "suggestionsForYou": "Vorschläge für Sie",
     "tooManyRequests": "Zu viele Anfragen, bitte später erneut versuchen.",
     "userProfileLoadError": "Profil konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
     "userProfileLoading": "Nutzerprofil wird geladen...",
     "userProfileNotFound": "Nutzerprofil konnte nicht geladen werden.",
     "userProfileRateLimited": "Zu viele Anfragen beim Laden des Profils, bitte später erneut versuchen.",

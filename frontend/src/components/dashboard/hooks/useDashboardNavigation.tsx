@@ -133,6 +133,9 @@ export function useDashboardNavigation({
     // identifikátora vrátia).
     if (moduleId === 'profile' && profileIdentifier(user) != null) {
       markProfileFreshEntry({ id: user?.id, slug: user?.slug });
+      // Stav cudzieho profilu zo staršieho vstupu sem nepatrí.
+      setViewedUserId(null);
+      setViewedUserSlug(null);
     }
 
     // Pri zmene modulu zrušiť zvýraznenie karty
@@ -259,6 +262,8 @@ export function useDashboardNavigation({
     setActiveRightItem,
     setIsMobileMenuOpen,
     setIsRightSidebarOpen,
+    setViewedUserId,
+    setViewedUserSlug,
   ]);
 
   // Edit profile navigácia
@@ -405,6 +410,9 @@ export function useDashboardNavigation({
     // z Nástenky preklikom, takže návratová snímka tu neplatí.
     clearFeedReturn();
     markProfileFreshEntry({ id: user.id, slug: user.slug });
+    // Stav cudzieho profilu zo staršieho vstupu sem nepatrí (rovnako ako goToMyProfile).
+    setViewedUserId(null);
+    setViewedUserSlug(null);
     setActiveModule('profile');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
@@ -423,7 +431,7 @@ export function useDashboardNavigation({
     if (typeof window !== 'undefined') {
       window.history.pushState(withProfileOriginEntry(null), '', url);
     }
-  }, [user, setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen]);
+  }, [user, setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug]);
 
   /**
    * Sekcia Nastavení zo zoznamu.
