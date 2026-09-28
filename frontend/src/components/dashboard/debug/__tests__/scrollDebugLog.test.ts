@@ -70,6 +70,18 @@ describe('resolveScrollDebugFlag', () => {
     expect(isScrollDebugFlagStored()).toBe(false);
   });
 
+  it('isScrollDebugFlagStored: nedostupné úložisko znamená vypnuté', () => {
+    resolveScrollDebugFlag('?debugscroll=1');
+    const getItem = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    try {
+      expect(isScrollDebugFlagStored()).toBe(false);
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
   it('bez parametra a bez uloženého stavu je vypnutý', () => {
     expect(resolveScrollDebugFlag('?offer=11')).toBe(false);
     expect(resolveScrollDebugFlag('?debugscroll=2')).toBe(false);

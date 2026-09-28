@@ -69,15 +69,15 @@ export function resolveScrollDebugFlag(search: string = typeof window === 'undef
 
 /**
  * Príznak len podľa sessionStorage, bez adresy – pre stránku obnovenú
- * z bfcache, ktorej adresa je stará. Nedostupné úložisko nič nedokazuje,
- * vtedy platí zapnuté.
+ * z bfcache, ktorej adresa je stará. Nedostupné úložisko = vypnuté, rovnako
+ * ako v `resolveScrollDebugFlag`: vypnutie (?debugscroll=0) v inom načítaní
+ * by sa inak nedalo zistiť a obnovená stránka by merala ďalej.
  */
 export function isScrollDebugFlagStored(): boolean {
   try {
-    const store = sessionStore();
-    return store ? store.getItem(SCROLL_DEBUG_FLAG_KEY) === '1' : true;
+    return sessionStore()?.getItem(SCROLL_DEBUG_FLAG_KEY) === '1';
   } catch {
-    return true;
+    return false;
   }
 }
 

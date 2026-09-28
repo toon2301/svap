@@ -233,4 +233,21 @@ describe('s príznakom', () => {
     expect(getScrollDebugLines()).toEqual([]);
     expect(sessionStorage.getItem(SCROLL_DEBUG_LOG_KEY)).toBeNull();
   });
+
+  it('Späť z bfcache pri nedostupnom úložisku meranie ukončí – vypnutie sa nedá overiť', async () => {
+    const setter = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set;
+    await renderPanel();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).not.toBe(setter);
+
+    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    act(() => {
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+
+    expect(screen.queryByRole('button', { name: 'Kopírovať' })).not.toBeInTheDocument();
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')?.set).toBe(setter);
+    expect(getScrollDebugLines()).toEqual([]);
+  });
 });
