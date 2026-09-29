@@ -5,9 +5,13 @@ import { expect, test, type Page } from '@playwright/test';
 // zvýraznenú ponuku má štartovať z vrchu, nie zospodu.
 //
 // Na skutočnom iPhone sa stará pozícia Nástenky po narastení profilu vracala
-// (namerané cez ?debugscroll=1). Emulácia WebKitu to NEREPRODUKUJE – test preto
-// prejde aj bez opravy. Je to poistka poradia: keby sa reset alebo zvýraznenie
-// rozbili tak, že sa to prejaví aj v emulácii, zachytí to.
+// (namerané cez ?debugscroll=1). Oprava: dashboard dáva `<main>` nový DOM
+// element pri KAŽDEJ zmene modulu (`useDashboardMainKey`), takže iOS nemá
+// čo vrátiť – 10/10 čistých vstupov s ňou oproti 4/5 zlyhaniam bez nej, na tej
+// istej karte v tej istej relácii. Emulácia WebKitu skok NEREPRODUKUJE – test
+// preto prejde aj bez opravy scrollu. Slúži ako poistka poradia (reset,
+// zvýraznenie) A priamo overuje, že `<main>` je pri každom vstupe iný element
+// (`recordMainInstance` nižšie) – to už funguje rovnako v emulácii aj naživo.
 //
 // Test len číta. Testovací účet musí mať na Nástenke zdieľanú vlastnú ponuku;
 // hľadá sa na prvých piatich stranách (MAX_FEED_PAGES) a použije sa prvá, ktorá
@@ -52,6 +56,35 @@ async function recordScrollIntoView(page: Page) {
       return (original as (...params: unknown[]) => void).apply(this, args);
     };
   });
+}
+
+/**
+ * Značí každý `<main data-dashboard-main>` čítaním narastajúceho počítadla –
+ * po výmene modulu má dostať iný element, čo sa dá čítať naprieč viacerými
+ * `page.evaluate` volaniami len cez atribút (živý DOM handle sa cez hranicu
+ * neprenáša). `MutationObserver` chytí aj element vložený počas behu skriptu.
+ */
+async function recordMainInstance(page: Page) {
+  await page.addInitScript(() => {
+    let counter = 0;
+    const tag = (main: Element | null) => {
+      if (main && !main.hasAttribute('data-main-instance')) {
+        counter += 1;
+        main.setAttribute('data-main-instance', String(counter));
+      }
+    };
+    tag(document.querySelector('[data-dashboard-main]'));
+    // `document.documentElement` v čase addInitScript ešte neexistuje (beží
+    // pred parsovaním HTML) – `document` samotný áno.
+    new MutationObserver(() => tag(document.querySelector('[data-dashboard-main]'))).observe(document, {
+      subtree: true,
+      childList: true,
+    });
+  });
+}
+
+async function mainInstance(page: Page): Promise<string | null> {
+  return page.locator(MAIN).getAttribute('data-main-instance');
 }
 
 type OwnOffer = { index: number; title: string };
@@ -177,14 +210,27 @@ async function enterOwnOfferFromDeepFeed(page: Page, label: string) {
 test.beforeEach(async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'webkit-mobile', 'Vstup z Nástenky na iPhone – len webkit-mobile.');
   await recordScrollIntoView(page);
+  await recordMainInstance(page);
   await page.goto('/dashboard');
   await expect(page.getByTestId('feed-list')).toBeVisible();
 });
 
-test('W: three entries in a row open the own profile from the top with the offer highlighted', async ({ page }) => {
+test('W: three entries in a row open the own profile from the top with the offer highlighted, each on a new <main>', async ({
+  page,
+}) => {
+  let previousInstance = await mainInstance(page);
   for (let entry = 1; entry <= 3; entry += 1) {
     await enterOwnOfferFromDeepFeed(page, `vstup ${entry}`);
+    const profileInstance = await mainInstance(page);
+    expect(profileInstance, `vstup ${entry}: <main> profilu je ten istý element ako predtým`).not.toBe(
+      previousInstance,
+    );
     await goHome(page);
+    const feedInstance = await mainInstance(page);
+    expect(feedInstance, `vstup ${entry}: <main> Nástenky po návrate je ten istý element ako profilu`).not.toBe(
+      profileInstance,
+    );
+    previousInstance = feedInstance;
   }
 });
 

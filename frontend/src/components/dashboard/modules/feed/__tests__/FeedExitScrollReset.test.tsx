@@ -1,17 +1,27 @@
 /**
- * Odchod z Nástenky vráti `<main>` na vrch, KÝM je feed ešte v DOM.
+ * Odchod z Nástenky vráti `<main>` na vrch, KÝM je feed ešte v DOM – a dashboard
+ * dá KAŽDÉMU modulu, aj cieľovému, vlastný nový element `<main>`.
  *
  * Namerané na iPhone (?debugscroll=1): reset profilu (`useProfileFreshEntry`)
  * prichádzal až po výmene modulu, keď krátky nový obsah pozíciu už orezal –
- * zapisoval 0 do 0 a stará pozícia Nástenky sa po narastení profilu vrátila.
- * Oprava resetuje v cleanupe layout efektu Nástenky (`useFeedReturn`), ktorý
- * React volá pred odpojením jej DOM.
+ * zapisoval 0 do 0 a stará pozícia Nástenky sa po narastení profilu vrátila
+ * (iOS si ju drží mimo JavaScriptu). Oprava má dve časti:
+ *  - `useFeedReturn` resetuje v cleanupe layout efektu Nástenky, ktorý React
+ *    volá pred odpojením jej DOM – zápis je tak skutočná zmena, nie 0 → 0;
+ *  - `useDashboardMainKey` (viď jej vlastný test) dáva `<main>` nový `key` pri
+ *    KAŽDEJ zmene `activeModule`, takže React vytvorí čerstvý DOM element bez
+ *    akejkoľvek scrollovej pamäte. 10 z 10 vstupov s touto opravou na iPhone
+ *    prešlo čisto, oproti 4 z 5 zlyhaniam bez nej – merané v tej istej relácii,
+ *    na tej istej karte.
  *
- * jsdom nemá layout ani iOS, takže samotný skok nezopakuje. Overuje sa PORADIE:
- * prvý zápis 0 po odchode prichádza z hlbokej pozície, kým je Nástenka
- * pripojená, a až po snímke na Späť. Zapisovač na `<main>` pri každom zápise
- * uloží hodnotu, predošlú hodnotu, či je zdrojový modul pripojený a či už
- * existuje snímka.
+ * jsdom nemá layout ani iOS, takže samotný skok nezopakuje. Overuje sa PORADIE
+ * a IDENTITA: prvý zápis 0 po odchode prichádza z hlbokej pozície, kým je
+ * Nástenka pripojená, a až po snímke na Späť; cieľový modul dostane preukázateľne
+ * INÝ element `<main>`. Zapisovač háči `scrollTop` na úrovni `Element.prototype`
+ * (rovnaký vzor ako produkčný ladiaci pásik v `debug/scrollDebugHooks.ts`), takže
+ * zachytí zápisy do KTORÉHOKOĽVEK `<main>` v poradí, v akom prišli – aj cez
+ * výmenu elementu. Pri každom zápise uloží hodnotu, predošlú hodnotu, či je
+ * zdrojový modul pripojený a či už existuje snímka.
  *
  * Skladá sa celý dashboard: `AuthProvider` → `DashboardContent` →
  * `ModuleRouter` → `FeedList` / `ProfileModule` / `SearchUserProfileModule`.
@@ -27,7 +37,6 @@ import { setCurrentAccountId } from '@/lib/currentAccount';
 import { FEED_RETURN_STORAGE_KEY, resetFeedReturnState } from '../feedReturnState';
 import { invalidateUserProfileCache, primeUserSlugId } from '../../profile/profileUserCache';
 import { invalidateOffersCache } from '../../profile/profileOffersCache';
-import { SCROLL_FIX_FLAG_KEY } from '../../../debug/scrollFixExperiment';
 
 /** Cache ponúk je modulová: vlastné pod `self` aj pod id, cudzie pod id. */
 function clearOffersCache() {
@@ -304,36 +313,61 @@ function dashboardMain(): HTMLElement {
   return main;
 }
 
+/** Odinštalovania zapisovačov, ktoré test zabudol uninštalovať sám – poistka v afterEach. */
+const pendingUninstalls: Array<() => void> = [];
+
 /**
- * Nahradí `scrollTop` na `<main>` zapisovačom. `userScrollsTo` je posun
- * používateľom (bez zápisu z appky) a zároveň určí, ktorá obrazovka je zdroj,
- * z ktorého sa ide odísť; záznam zápisov sa tým vynuluje.
+ * Zaznamenáva zápisy do `scrollTop` KAŽDÉHO `<main data-dashboard-main>` –
+ * háči setter na `Element.prototype`, nie na jednej inštancii, takže prežije
+ * výmenu elementu (nový `<main>` pri zmene modulu). `userScrollsTo` je posun
+ * používateľom (bez zápisu z appky, priamo cez pôvodný natívny setter, aby sa
+ * nezapočítal) a zároveň určí, ktorá obrazovka je zdroj, z ktorého sa odchádza;
+ * záznam zápisov sa tým vynuluje.
  */
 function recordMain() {
-  const main = dashboardMain();
-  let top = 0;
-  let source: Element | null = null;
+  const proto = Element.prototype;
+  const original = Object.getOwnPropertyDescriptor(proto, 'scrollTop')!;
+  const nativeGet = original.get!;
+  const nativeSet = original.set!;
   const writes: Write[] = [];
-  Object.defineProperty(main, 'scrollTop', {
+  let source: Element | null = null;
+  const main = dashboardMain(); // snímka pri vytvorení – na overenie výmeny identity.
+
+  Object.defineProperty(proto, 'scrollTop', {
     configurable: true,
-    get: () => top,
-    set: (value: number) => {
-      writes.push({
-        value,
-        previous: top,
-        sourceAttached: Boolean(source?.isConnected),
-        snapshot: sessionStorage.getItem(FEED_RETURN_STORAGE_KEY) !== null,
-      });
-      top = value;
+    get: original.get,
+    set(this: Element, value: number) {
+      if (this.hasAttribute('data-dashboard-main')) {
+        writes.push({
+          value,
+          previous: nativeGet.call(this),
+          sourceAttached: Boolean(source?.isConnected),
+          snapshot: sessionStorage.getItem(FEED_RETURN_STORAGE_KEY) !== null,
+        });
+      }
+      nativeSet.call(this, value);
     },
   });
+
+  const uninstall = () => {
+    if (Object.getOwnPropertyDescriptor(proto, 'scrollTop')?.set !== original.set) {
+      Object.defineProperty(proto, 'scrollTop', original);
+    }
+  };
+  pendingUninstalls.push(uninstall);
+
   return {
+    /** `<main>` v momente vytvorenia zapisovača – na `toBe`/`isConnected` po výmene. */
     main,
+    /** AKTUÁLNY `<main>` – po zmene modulu iný element, viď useDashboardMainKey.ts. */
+    get current(): HTMLElement {
+      return dashboardMain();
+    },
     writes,
     userScrollsTo(value: number, sourceSelector = FEED_ROOT) {
       source = document.querySelector(sourceSelector);
       if (!source) throw new Error(`zdroj ${sourceSelector} nie je na obrazovke`);
-      top = value;
+      nativeSet.call(dashboardMain(), value);
       writes.length = 0;
     },
   };
@@ -365,7 +399,7 @@ async function mount(options: { strict?: boolean } = {}) {
   await screen.findByText('Príspevok 1');
   const recorder = recordMain();
   Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
-    intoView.push({ text: this.textContent ?? '', mainTop: recorder.main.scrollTop });
+    intoView.push({ text: this.textContent ?? '', mainTop: recorder.current.scrollTop });
   };
   return { view, recorder };
 }
@@ -432,6 +466,7 @@ beforeEach(() => {
 
 afterEach(() => {
   Element.prototype.scrollIntoView = originalScrollIntoView;
+  while (pendingUninstalls.length) pendingUninstalls.pop()!();
   resetFeedReturnState();
   setCurrentAccountId(null);
   sessionStorage.clear();
@@ -453,6 +488,9 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, depth, true);
     await expectOwnProfile();
+    // Profil dostal vlastný, dosiaľ nikdy neskrolovaný element `<main>`.
+    expect(recorder.current).not.toBe(recorder.main);
+    expect(recorder.main.isConnected).toBe(false);
     expect(new URLSearchParams(window.location.search).get('tab')).toBe('offers');
     await expectHighlightScrolledFromTop('mojaponuka');
     // Každý ďalší zápis už ide do nového modulu a len na vrch.
@@ -471,6 +509,7 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, true);
     await expectForeignProfile();
+    expect(recorder.current).not.toBe(recorder.main);
     await expectHighlightScrolledFromTop('janinaponuka');
   });
 
@@ -482,6 +521,7 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, true);
     await expectOwnProfile();
+    expect(recorder.current).not.toBe(recorder.main);
     expect(new URLSearchParams(window.location.search).get('tab')).toBe('offers');
   });
 
@@ -493,6 +533,7 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, true);
     await expectForeignProfile();
+    expect(recorder.current).not.toBe(recorder.main);
     expect(new URLSearchParams(window.location.search).get('tab')).toBe('offers');
   });
 
@@ -522,6 +563,7 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, false);
     await expectOwnProfile();
+    expect(recorder.current).not.toBe(recorder.main);
   });
 
   it('desktop sidebar Profil: reset first (no snapshot), own profile', async () => {
@@ -534,6 +576,7 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, false);
     await waitFor(() => expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument());
+    expect(recorder.current).not.toBe(recorder.main);
   });
 
   it('desktop search result: reset first, foreign profile', async () => {
@@ -547,9 +590,10 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, false);
     await waitFor(() => expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument());
+    expect(recorder.current).not.toBe(recorder.main);
   });
 
-  it('desktop Settings: the feed reset comes before the Settings reset', async () => {
+  it('desktop Settings: the feed reset comes before the Settings reset, on a fresh <main>', async () => {
     mockIsMobile = false;
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
     const { recorder } = await mount();
@@ -559,7 +603,8 @@ describe('odchod z Nástenky resetuje <main>, kým je feed v DOM', () => {
 
     expectExitReset(recorder.writes, DEEP, false);
     await waitFor(() => expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument());
-    expect(recorder.main.scrollTop).toBe(0);
+    expect(recorder.current).not.toBe(recorder.main);
+    expect(recorder.current.scrollTop).toBe(0);
   });
 });
 
@@ -576,10 +621,12 @@ describe('ponuky zo siete aj z cache, opakované vstupy', () => {
     gates.set('/users/7/skills/', offers);
     gates.set('/skills/', offers);
 
+    const feedMain = recorder.current;
     recorder.userScrollsTo(DEEP);
     await tap(sharedPreview('Moja ponuka'));
     expectExitReset(recorder.writes, DEEP, true);
     await expectOwnProfile();
+    expect(recorder.current).not.toBe(feedMain);
     // Ponuky ešte nie sú – reset aj fresh-entry prebehli bez nich.
     expect(intoView).toEqual([]);
     await act(async () => {
@@ -587,29 +634,37 @@ describe('ponuky zo siete aj z cache, opakované vstupy', () => {
     });
     await expectHighlightScrolledFromTop('mojaponuka');
 
+    const profileMain = recorder.current;
     await goHome();
+    expect(recorder.current).not.toBe(profileMain);
     intoView = [];
+    const feedMainAgain = recorder.current;
     recorder.userScrollsTo(DEEP);
     await tap(sharedPreview('Moja ponuka'));
     expectExitReset(recorder.writes, DEEP, true);
+    expect(recorder.current).not.toBe(feedMainAgain);
     await expectHighlightScrolledFromTop('mojaponuka');
   });
 
-  it('5 rapid entries in a row: every one resets from the depth while the feed is attached', async () => {
+  it('5 rapid entries in a row: every one resets from the depth AND lands on a brand-new <main>', async () => {
     const { recorder } = await mount();
 
     for (let round = 1; round <= 5; round += 1) {
+      const before = recorder.current;
       intoView = [];
       recorder.userScrollsTo(DEEP + round);
       await tap(sharedPreview('Moja ponuka'));
       expectExitReset(recorder.writes, DEEP + round, true);
       await expectOwnProfile();
+      expect(recorder.current).not.toBe(before);
       await expectHighlightScrolledFromTop('mojaponuka');
+      const profileMain = recorder.current;
       await goHome();
+      expect(recorder.current).not.toBe(profileMain);
     }
   });
 
-  it('an entry 70 s after the previous one (caches expired): reset first again', async () => {
+  it('an entry 70 s after the previous one (caches expired): reset first again, still a new <main>', async () => {
     jest.useFakeTimers({ advanceTimers: true, doNotFake: ['queueMicrotask', 'nextTick'] });
     const { recorder } = await mount();
 
@@ -617,17 +672,21 @@ describe('ponuky zo siete aj z cache, opakované vstupy', () => {
     await tap(sharedPreview('Moja ponuka'));
     expectExitReset(recorder.writes, DEEP, true);
     await expectHighlightScrolledFromTop('mojaponuka');
+    const profileMain = recorder.current;
     await goHome();
+    expect(recorder.current).not.toBe(profileMain);
 
     await act(async () => {
       jest.advanceTimersByTime(70_000);
     });
     intoView = [];
     mockedGet.mockClear();
+    const feedMain = recorder.current;
     recorder.userScrollsTo(DEEP);
     await tap(sharedPreview('Moja ponuka'));
 
     expectExitReset(recorder.writes, DEEP, true);
+    expect(recorder.current).not.toBe(feedMain);
     await expectHighlightScrolledFromTop('mojaponuka');
     // Cache ponúk po 60 s vypršala – ponuky išli znova zo siete.
     expect(mockedGet.mock.calls.map(([url]) => url)).toContain('/users/7/skills/');
@@ -641,13 +700,14 @@ describe('ponuky zo siete aj z cache, opakované vstupy', () => {
 
     expectExitReset(recorder.writes, DEEP, true);
     await expectOwnProfile();
+    expect(recorder.current).not.toBe(recorder.main);
     await expectHighlightScrolledFromTop('mojaponuka');
   });
 });
 
 // ── návrat na Nástenku ──────────────────────────────────────────────────────
 
-describe('Späť vráti presnú pozíciu aj obsah Nástenky', () => {
+describe('Späť vráti presnú pozíciu aj obsah Nástenky – aj do nového <main>', () => {
   it('Back after the entry: snapshot taken before the reset restores position and posts', async () => {
     const { recorder } = await mount();
     recorder.userScrollsTo(DEEP);
@@ -655,6 +715,7 @@ describe('Späť vráti presnú pozíciu aj obsah Nástenky', () => {
     await tap(sharedPreview('Moja ponuka'));
     expectExitReset(recorder.writes, DEEP, true);
     await expectOwnProfile();
+    const profileMain = recorder.current;
 
     // Server medzitým vracia iný feed – obnova ho nesmie použiť.
     mockedList.mockClear();
@@ -663,7 +724,10 @@ describe('Späť vráti presnú pozíciu aj obsah Nástenky', () => {
     await screen.findByText('Moja ponuka');
     await settle();
 
-    await waitFor(() => expect(recorder.main.scrollTop).toBe(DEEP));
+    // Nástenka pri návrate dostáva vlastný nový element – rovnako ako pri
+    // ktoromkoľvek inom vstupe naň.
+    expect(recorder.current).not.toBe(profileMain);
+    await waitFor(() => expect(recorder.current.scrollTop).toBe(DEEP));
     expect(screen.queryByText('Nový zo servera')).not.toBeInTheDocument();
     expect(mockedList).not.toHaveBeenCalled();
   });
@@ -681,7 +745,7 @@ describe('Späť vráti presnú pozíciu aj obsah Nástenky', () => {
     await screen.findByText('Moja ponuka');
     await settle();
 
-    await waitFor(() => expect(recorder.main.scrollTop).toBe(DEEP));
+    await waitFor(() => expect(recorder.current.scrollTop).toBe(DEEP));
     expect(mockedList).not.toHaveBeenCalled();
   });
 
@@ -709,95 +773,29 @@ describe('Späť vráti presnú pozíciu aj obsah Nástenky', () => {
     await screen.findByText('Moja ponuka');
     await settle();
 
-    await waitFor(() => expect(recorder.main.scrollTop).toBe(DEEP));
+    await waitFor(() => expect(recorder.current.scrollTop).toBe(DEEP));
     expect(mockedList).not.toHaveBeenCalled();
   });
 });
 
-describe('opačný smer: Domov z profilu', () => {
-  it('Domov from a deep profile lands on the feed at the top (reset after the swap)', async () => {
+describe('opačný smer: Domov z profilu – tiež na novom <main>', () => {
+  it('Domov from a deep profile lands on the feed at the top, on a brand-new <main>', async () => {
     const { recorder } = await mount();
     await tap(document.querySelector('[data-onboarding="profile-icon"]'));
     await expectOwnProfile();
+    const profileMain = recorder.current;
     recorder.userScrollsTo(3000, EDIT);
 
     await goHome();
 
-    // Jediný zápis je „feed enter top" – až po výmene, keď profil už v DOM nie
-    // je. Tento smer oprava nemení (nahlásené ako rovnaké riziko no-op).
-    expect(recorder.writes).toEqual([{ value: 0, previous: 3000, sourceAttached: false, snapshot: false }]);
-    expect(recorder.main.scrollTop).toBe(0);
-  });
-});
-
-// ── [EXPERIMENT ?scrollfix=b – DOČASNÉ] ─────────────────────────────────────
-
-describe('experiment B (?scrollfix=b): nový <main> pri zmene modulu', () => {
-  beforeEach(() => {
-    sessionStorage.setItem(SCROLL_FIX_FLAG_KEY, 'b');
-  });
-
-  /** Doscrollovanie na kartu – kde stál AKTUÁLNY `<main>` (po výmene iný element). */
-  function recordIntoViewOnCurrentMain() {
-    Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
-      intoView.push({ text: this.textContent ?? '', mainTop: dashboardMain().scrollTop });
-    };
-  }
-
-  it('own offer card from the depth: a new <main> at the top, card scrolled to from the top', async () => {
-    const { recorder } = await mount();
-    recordIntoViewOnCurrentMain();
-    recorder.userScrollsTo(DEEP);
-
-    await tap(sharedPreview('Moja ponuka'));
-
-    // Reset pri odchode beží ešte na starom elemente (neškodí); profil je v novom.
-    expectExitReset(recorder.writes, DEEP, true);
-    await expectOwnProfile();
-    expect(dashboardMain()).not.toBe(recorder.main);
-    expect(recorder.main.isConnected).toBe(false);
-    expect(dashboardMain().scrollTop).toBe(0);
-    await expectHighlightScrolledFromTop('mojaponuka');
-  });
-
-  it('Back restores the exact position and posts into the new <main>', async () => {
-    const { recorder } = await mount();
-    recorder.userScrollsTo(DEEP);
-    await tap(sharedPreview('Moja ponuka'));
-    await expectOwnProfile();
-    const profileMain = dashboardMain();
-
-    mockedList.mockClear();
-    act(() => window.history.back());
-    await screen.findByText('Moja ponuka');
-    await settle();
-
-    expect(dashboardMain()).not.toBe(profileMain);
-    await waitFor(() => expect(dashboardMain().scrollTop).toBe(DEEP));
-    expect(mockedList).not.toHaveBeenCalled();
-  });
-
-  it('Domov from a deep profile: a new <main> at the top', async () => {
-    await mount();
-    await tap(document.querySelector('[data-onboarding="profile-icon"]'));
-    await expectOwnProfile();
-    const profileMain = dashboardMain();
-    profileMain.scrollTop = 3000;
-
-    await goHome();
-
-    expect(dashboardMain()).not.toBe(profileMain);
-    expect(dashboardMain().scrollTop).toBe(0);
-  });
-
-  it('without the flag the same <main> element stays (control)', async () => {
-    sessionStorage.removeItem(SCROLL_FIX_FLAG_KEY);
-    const { recorder } = await mount();
-    recorder.userScrollsTo(DEEP);
-
-    await tap(sharedPreview('Moja ponuka'));
-    await expectOwnProfile();
-
-    expect(dashboardMain()).toBe(recorder.main);
+    // Predtým nahlásené ako to isté riziko no-op, neopravené: „feed enter top"
+    // beží až po výmene modulu, keď je nový obsah krátky. S novým elementom pri
+    // KAŽDEJ zmene modulu to už nevadí – Nástenka dostane čerstvý uzol, ktorý
+    // nikdy nescrolloval, takže reset je 0 → 0 nie preto, že by prepisoval
+    // zdedenú hodnotu 3000, ale preto, že žiadna taká pamäť na ňom nie je.
+    expect(recorder.current).not.toBe(profileMain);
+    expect(profileMain.isConnected).toBe(false);
+    expect(recorder.writes).toEqual([{ value: 0, previous: 0, sourceAttached: false, snapshot: false }]);
+    expect(recorder.current.scrollTop).toBe(0);
   });
 });

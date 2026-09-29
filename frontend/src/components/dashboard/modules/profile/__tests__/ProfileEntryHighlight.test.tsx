@@ -194,19 +194,34 @@ function dashboardMain(): HTMLElement {
   return main;
 }
 
-/** Zaznamenáva každý zápis `scrollTop` – rozhoduje, čo prišlo PO resete. */
-function recordScrollWrites(element: HTMLElement, initial: number): number[] {
-  let top = initial;
+/**
+ * Zaznamenáva každý zápis `scrollTop` do KTORÉHOKOĽVEK `<main data-dashboard-main>`
+ * – rozhoduje, čo prišlo PO resete. Háči setter na `Element.prototype`, nie na
+ * jednej inštancii: dashboard dáva `<main>` nový DOM element pri každej zmene
+ * modulu (`useDashboardMainKey`), takže reset pri vstupe na profil zapisuje
+ * už do INÉHO elementu, než na akom stála Nástenka.
+ */
+function recordScrollWrites(): { writes: number[]; uninstall: () => void } {
+  const proto = Element.prototype;
+  const original = Object.getOwnPropertyDescriptor(proto, 'scrollTop')!;
+  const nativeSet = original.set!;
   const writes: number[] = [];
-  Object.defineProperty(element, 'scrollTop', {
+  Object.defineProperty(proto, 'scrollTop', {
     configurable: true,
-    get: () => top,
-    set: (value: number) => {
-      top = value;
-      writes.push(value);
+    get: original.get,
+    set(this: Element, value: number) {
+      if (this.hasAttribute('data-dashboard-main')) writes.push(value);
+      nativeSet.call(this, value);
     },
   });
-  return writes;
+  return {
+    writes,
+    uninstall: () => {
+      if (Object.getOwnPropertyDescriptor(proto, 'scrollTop')?.set !== original.set) {
+        Object.defineProperty(proto, 'scrollTop', original);
+      }
+    },
+  };
 }
 
 /** Zvýraznenie zapísané pred chvíľou – napr. zo Spoluprác či upozornenia. */
@@ -230,13 +245,15 @@ async function mountOnFeed() {
     </AuthProvider>,
   );
   await screen.findByText('Príspevok 1');
-  const main = dashboardMain();
-  const writes = recordScrollWrites(main, 3000);
+  dashboardMain().scrollTop = 3000;
+  const { writes, uninstall } = recordScrollWrites();
+  // Píše do AKTUÁLNEHO `<main>`, presne ako produkčný kód (nie do zachytenej,
+  // po výmene modulu už odpojenej referencie).
   Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
     scrolledTo.push(this.textContent ?? '');
-    main.scrollTop = 1200;
+    dashboardMain().scrollTop = 1200;
   };
-  return { main, writes };
+  return { writes, uninstall };
 }
 
 beforeEach(() => {
@@ -277,33 +294,41 @@ async function waitForOfferCard() {
 
 describe('vstup na profil do minúty od iného zvýraznenia', () => {
   it('mobile profile icon: opens at the top, nothing is highlighted', async () => {
-    const { main, writes } = await mountOnFeed();
-    storeRecentHighlight(55);
+    const { writes, uninstall } = await mountOnFeed();
+    try {
+      storeRecentHighlight(55);
 
-    document.querySelector<HTMLElement>('[data-onboarding="profile-icon"]')!.click();
-    await waitForOfferCard();
+      document.querySelector<HTMLElement>('[data-onboarding="profile-icon"]')!.click();
+      await waitForOfferCard();
 
-    // Vrch pri odchode z Nástenky (kým je v DOM), vrch z nového vstupu – a nič po ňom.
-    expect(writes).toEqual([0, 0]);
-    expect(main.scrollTop).toBe(0);
-    expect(scrolledTo).toEqual([]);
-    expect(window.location.search).not.toContain('highlight');
-    expect(mockRouter.replace).not.toHaveBeenCalledWith(expect.stringContaining('highlight='));
+      // Vrch pri odchode z Nástenky (kým je v DOM), vrch z nového vstupu – a nič po ňom.
+      expect(writes).toEqual([0, 0]);
+      expect(dashboardMain().scrollTop).toBe(0);
+      expect(scrolledTo).toEqual([]);
+      expect(window.location.search).not.toContain('highlight');
+      expect(mockRouter.replace).not.toHaveBeenCalledWith(expect.stringContaining('highlight='));
+    } finally {
+      uninstall();
+    }
   });
 
   it('profile opened from a post header (Nález B): nothing is highlighted', async () => {
-    const { main, writes } = await mountOnFeed();
-    storeRecentHighlight(55);
+    const { writes, uninstall } = await mountOnFeed();
+    try {
+      storeRecentHighlight(55);
 
-    // Preklik na autora z hlavičky príspevku – bez zvýraznenia.
-    openUserProfile({ id: VIEWER_ID, slug: 'test-user' });
-    await waitForOfferCard();
+      // Preklik na autora z hlavičky príspevku – bez zvýraznenia.
+      openUserProfile({ id: VIEWER_ID, slug: 'test-user' });
+      await waitForOfferCard();
 
-    // Vrch pri odchode z Nástenky, vrch z nového vstupu – a nič po ňom.
-    expect(writes).toEqual([0, 0]);
-    expect(main.scrollTop).toBe(0);
-    expect(scrolledTo).toEqual([]);
-    expect(window.location.search).not.toContain('highlight');
+      // Vrch pri odchode z Nástenky, vrch z nového vstupu – a nič po ňom.
+      expect(writes).toEqual([0, 0]);
+      expect(dashboardMain().scrollTop).toBe(0);
+      expect(scrolledTo).toEqual([]);
+      expect(window.location.search).not.toContain('highlight');
+    } finally {
+      uninstall();
+    }
   });
 });
 

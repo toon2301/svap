@@ -34,7 +34,8 @@ export type ScrollWriteRecord = {
   target: number | null;
   /**
    * Do ktorého elementu sa zapisovalo. Klasifikácia ho nepoužíva – podľa neho
-   * okno berie len zápisy aktuálneho `<main>` (experiment B ho vymieňa).
+   * okno berie len zápisy aktuálneho `<main>` (dashboard mu pri zmene modulu
+   * dáva nový element – useDashboardMainKey.ts).
    */
   scroller?: object | null;
 };
