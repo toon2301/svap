@@ -88,9 +88,21 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/utils/auth', () => ({ isAuthenticated: jest.fn(() => true), clearAuthState: jest.fn() }));
 jest.mock('@/utils/csrf', () => ({ fetchCsrfToken: jest.fn(), hasCsrfToken: jest.fn(() => true) }));
 jest.mock('@/lib/api', () => ({
-  api: { get: jest.fn(() => new Promise(() => {})), post: jest.fn(), delete: jest.fn() },
+  api: {
+    get: jest.fn(() => new Promise(() => {})),
+    post: jest.fn(),
+    delete: jest.fn(),
+    // Onboarding PATCH never settles: no async state update after act, optimistic state stays stable.
+    patch: jest.fn(() => new Promise(() => {})),
+  },
   endpoints: {
-    auth: { me: '/auth/me/', logout: '/auth/logout/', login: '/auth/login/', register: '/auth/register/' },
+    auth: {
+      me: '/auth/me/',
+      logout: '/auth/logout/',
+      login: '/auth/login/',
+      register: '/auth/register/',
+      mobileOnboarding: '/auth/onboarding/mobile/',
+    },
     dashboard: {
       userProfileBySlug: (slug: string) => `/profile/slug/${slug}/`,
       userProfile: (id: number) => `/profile/${id}/`,
