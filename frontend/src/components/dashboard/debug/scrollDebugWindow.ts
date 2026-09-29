@@ -59,7 +59,7 @@ type ClickWindow = {
   n: number;
   at: number;
   frame: number;
-  /** Element `<main>`, ktorý okno sleduje – experiment B ho pri zmene modulu vymieňa. */
+  /** Element `<main>`, ktorý okno sleduje – dashboard ho pri zmene modulu vymieňa. */
   mainEl: HTMLElement | null;
   /** Čas predošlej snímky – pri prvej čas kliku. */
   prevT: number;
@@ -235,7 +235,7 @@ function onFrame(): void {
   win.frame += 1;
   const mainEl = findDashboardMain();
   if (mainEl !== win.mainEl) {
-    // Nový element (experiment B): jeho hodnoty so starým neporovnávať –
+    // Nový element (dashboard ho vymenil pri zmene modulu): jeho hodnoty so starým neporovnávať –
     // zmena by vyšla ako NONE, hoci ide o iný kontajner. Otvorený segment
     // patrí starému elementu a s novými zmenami sa nesmie zlúčiť.
     if (win.segment) {

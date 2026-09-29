@@ -6,8 +6,6 @@
  * Do záznamu nejde text obsahu, len názvy tagov, atribúty a čísla.
  */
 
-import { scrollFixLabel } from './scrollFixExperiment';
-
 export const DASHBOARD_MAIN_SELECTOR = '[data-dashboard-main]';
 export const SCROLL_DEBUG_PANEL_ATTR = 'data-scroll-debug-panel';
 
@@ -99,7 +97,7 @@ function styleOf(element: Element | null, properties: Record<string, string>): s
     .join(' ');
 }
 
-/** Hlavička: prehliadač, režim, rozmery, computed štýly scrollera `<main>` a experiment. */
+/** Hlavička: prehliadač, režim, rozmery a computed štýly scrollera `<main>`. */
 export function environmentLine(): string {
   const standalone =
     (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
@@ -121,7 +119,5 @@ export function environmentLine(): string {
     })}}`,
     `html{${styleOf(document.documentElement, { sb: 'scroll-behavior' })}}`,
     `body{${styleOf(document.body, { sb: 'scroll-behavior' })}}`,
-    // Experiment B (nový `<main>` pri zmene modulu): `b` zapnutý, `-` vypnutý.
-    `scrollfix=${scrollFixLabel()}`,
   ].join(' · ');
 }

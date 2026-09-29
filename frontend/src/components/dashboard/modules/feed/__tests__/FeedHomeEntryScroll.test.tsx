@@ -189,23 +189,36 @@ function sidebarItem(id: string): HTMLElement {
 }
 
 /**
- * Zaznamenáva každý zápis `scrollTop` na elemente.
+ * Zaznamenáva každý zápis `scrollTop` do KTORÉHOKOĽVEK `<main data-dashboard-main>`.
  *
- * Rozhoduje PORADIE: reset na vrch musí prísť pred doscrollovaním na nový
- * príspevok, inak by ho zrušil. Samotná výsledná hodnota by to nerozlíšila.
+ * Háči setter na `Element.prototype`, nie na jednej inštancii – dashboard dáva
+ * `<main>` nový DOM element pri každej zmene modulu (`useDashboardMainKey`),
+ * takže zápis na vrch po vstupe na Nástenku ide už do INÉHO elementu, než
+ * na akom stál profil pred prekliknutím. Rozhoduje PORADIE: reset na vrch
+ * musí prísť pred doscrollovaním na nový príspevok, inak by ho zrušil.
+ * Samotná výsledná hodnota by to nerozlíšila.
  */
-function recordScrollWrites(element: HTMLElement, initial: number): number[] {
-  let top = initial;
+function recordScrollWrites(): { writes: number[]; uninstall: () => void } {
+  const proto = Element.prototype;
+  const original = Object.getOwnPropertyDescriptor(proto, 'scrollTop')!;
+  const nativeSet = original.set!;
   const writes: number[] = [];
-  Object.defineProperty(element, 'scrollTop', {
+  Object.defineProperty(proto, 'scrollTop', {
     configurable: true,
-    get: () => top,
-    set: (value: number) => {
-      top = value;
-      writes.push(value);
+    get: original.get,
+    set(this: Element, value: number) {
+      if (this.hasAttribute('data-dashboard-main')) writes.push(value);
+      nativeSet.call(this, value);
     },
   });
-  return writes;
+  return {
+    writes,
+    uninstall: () => {
+      if (Object.getOwnPropertyDescriptor(proto, 'scrollTop')?.set !== original.set) {
+        Object.defineProperty(proto, 'scrollTop', original);
+      }
+    },
+  };
 }
 
 async function mountDashboard() {
@@ -386,30 +399,36 @@ describe('pristátie po zdieľaní z profilu', () => {
     act(() => sidebarItem('profile').click());
     await waitFor(() => expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument());
 
-    const main = dashboardMain();
-    const writes = recordScrollWrites(main, 3000);
-    // Doscrollovanie na novú kartu – v prehliadači by posunulo `<main>`.
+    dashboardMain().scrollTop = 3000;
+    const { writes, uninstall } = recordScrollWrites();
+    // Doscrollovanie na novú kartu – v prehliadači by posunulo `<main>`. Píše
+    // do AKTUÁLNEHO `<main>`, presne ako produkčný kód (nie do zachytenej,
+    // po výmene modulu už odpojenej referencie).
     const landedOn: string[] = [];
     Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
       landedOn.push(this.textContent ?? '');
-      main.scrollTop = 777;
+      dashboardMain().scrollTop = 777;
     };
 
-    // Presne to, čo robí `FeedShareDialog` pri zdieľaní z profilu.
-    mockedList.mockResolvedValue({ results: [post(99), post(1), post(2)], next: null });
-    act(() => {
-      emitFeedShareLanding(99);
-      requestFeedHomeNavigation();
-    });
+    try {
+      // Presne to, čo robí `FeedShareDialog` pri zdieľaní z profilu.
+      mockedList.mockResolvedValue({ results: [post(99), post(1), post(2)], next: null });
+      act(() => {
+        emitFeedShareLanding(99);
+        requestFeedHomeNavigation();
+      });
 
-    await screen.findByText('Príspevok 99');
-    await waitFor(() => expect(landedOn).toHaveLength(1));
-    await settle();
+      await screen.findByText('Príspevok 99');
+      await waitFor(() => expect(landedOn).toHaveLength(1));
+      await settle();
 
-    expect(landedOn[0]).toContain('Príspevok 99');
-    // Najprv vrch (vstup na Nástenku), až potom nový príspevok – a nič po ňom.
-    expect(writes).toEqual([0, 777]);
-    expect(main.scrollTop).toBe(777);
+      expect(landedOn[0]).toContain('Príspevok 99');
+      // Najprv vrch (vstup na Nástenku), až potom nový príspevok – a nič po ňom.
+      expect(writes).toEqual([0, 777]);
+      expect(dashboardMain().scrollTop).toBe(777);
+    } finally {
+      uninstall();
+    }
   });
 });
 
