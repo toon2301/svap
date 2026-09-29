@@ -20,10 +20,13 @@
  * rovnaké riziko no-op resetu zaniká aj pri prechodoch, ktoré si scroll
  * vôbec nenulujú (napr. Štatistiky, Správy, Upozornenia, Obľúbené, Žiadosti).
  *
- * `<main>` nemá vlastný React stav ani refy mimo tohto komponentu – onboarding
- * (`useOnboardingScrollLock`, `useOnboardingTargetRect`) si ho pri KAŽDEJ
- * zmene modulu aj tak prekresľuje nanovo (viditeľnosť/meranie sú viazané na
- * zhodu s `activeModule`), takže výmena elementu mu neuškodí.
+ * `<main>` nemá vlastný React stav ani refy mimo tohto komponentu. Kód, ktorý si
+ * element zachytáva v efekte, s výmenou počíta: tutoriál posúva krok aj modul v
+ * jednom kroku, takže jeho viditeľnosť sa pri výmene môže nezmeniť (ostane
+ * zapnutá) a efekty viazané na viditeľnosť sa nespustia znova –
+ * `useOnboardingScrollLock` preto sám sleduje výmenu `<main>` a zámok prenesie
+ * na nový element; `useOnboardingTargetRect` si elementy hľadá pri každom meraní
+ * nanovo a scroll zachytáva aj na `window` (capture).
  */
 
 import { useState } from 'react';

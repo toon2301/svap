@@ -195,6 +195,14 @@ function dashboardMain(): HTMLElement {
 }
 
 /**
+ * Odinštalovania zapisovačov `scrollTop` – spúšťa ich `afterEach` (od
+ * posledného po prvý), takže setter na `Element.prototype` sa vráti späť aj
+ * vtedy, keď test zlyhá skôr, než by si ho odinštaloval sám.
+ */
+const pendingUninstalls: Array<() => void> = [];
+const originalScrollTopDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+
+/**
  * Zaznamenáva každý zápis `scrollTop` do KTORÉHOKOĽVEK `<main data-dashboard-main>`
  * – rozhoduje, čo prišlo PO resete. Háči setter na `Element.prototype`, nie na
  * jednej inštancii: dashboard dáva `<main>` nový DOM element pri každej zmene
@@ -214,14 +222,13 @@ function recordScrollWrites(): { writes: number[]; uninstall: () => void } {
       nativeSet.call(this, value);
     },
   });
-  return {
-    writes,
-    uninstall: () => {
-      if (Object.getOwnPropertyDescriptor(proto, 'scrollTop')?.set !== original.set) {
-        Object.defineProperty(proto, 'scrollTop', original);
-      }
-    },
+  const uninstall = () => {
+    if (Object.getOwnPropertyDescriptor(proto, 'scrollTop')?.set !== original.set) {
+      Object.defineProperty(proto, 'scrollTop', original);
+    }
   };
+  pendingUninstalls.push(uninstall);
+  return { writes, uninstall };
 }
 
 /** Zvýraznenie zapísané pred chvíľou – napr. zo Spoluprác či upozornenia. */
@@ -246,14 +253,14 @@ async function mountOnFeed() {
   );
   await screen.findByText('Príspevok 1');
   dashboardMain().scrollTop = 3000;
-  const { writes, uninstall } = recordScrollWrites();
+  const { writes } = recordScrollWrites();
   // Píše do AKTUÁLNEHO `<main>`, presne ako produkčný kód (nie do zachytenej,
   // po výmene modulu už odpojenej referencie).
   Element.prototype.scrollIntoView = function scrollIntoViewMock(this: Element) {
     scrolledTo.push(this.textContent ?? '');
     dashboardMain().scrollTop = 1200;
   };
-  return { writes, uninstall };
+  return { writes };
 }
 
 beforeEach(() => {
@@ -281,6 +288,7 @@ beforeEach(() => {
 
 afterEach(() => {
   Element.prototype.scrollIntoView = originalScrollIntoView;
+  while (pendingUninstalls.length > 0) pendingUninstalls.pop()!();
   resetFeedReturnState();
   setCurrentAccountId(null);
   sessionStorage.clear();
@@ -294,41 +302,33 @@ async function waitForOfferCard() {
 
 describe('vstup na profil do minúty od iného zvýraznenia', () => {
   it('mobile profile icon: opens at the top, nothing is highlighted', async () => {
-    const { writes, uninstall } = await mountOnFeed();
-    try {
-      storeRecentHighlight(55);
+    const { writes } = await mountOnFeed();
+    storeRecentHighlight(55);
 
-      document.querySelector<HTMLElement>('[data-onboarding="profile-icon"]')!.click();
-      await waitForOfferCard();
+    document.querySelector<HTMLElement>('[data-onboarding="profile-icon"]')!.click();
+    await waitForOfferCard();
 
-      // Vrch pri odchode z Nástenky (kým je v DOM), vrch z nového vstupu – a nič po ňom.
-      expect(writes).toEqual([0, 0]);
-      expect(dashboardMain().scrollTop).toBe(0);
-      expect(scrolledTo).toEqual([]);
-      expect(window.location.search).not.toContain('highlight');
-      expect(mockRouter.replace).not.toHaveBeenCalledWith(expect.stringContaining('highlight='));
-    } finally {
-      uninstall();
-    }
+    // Vrch pri odchode z Nástenky (kým je v DOM), vrch z nového vstupu – a nič po ňom.
+    expect(writes).toEqual([0, 0]);
+    expect(dashboardMain().scrollTop).toBe(0);
+    expect(scrolledTo).toEqual([]);
+    expect(window.location.search).not.toContain('highlight');
+    expect(mockRouter.replace).not.toHaveBeenCalledWith(expect.stringContaining('highlight='));
   });
 
   it('profile opened from a post header (Nález B): nothing is highlighted', async () => {
-    const { writes, uninstall } = await mountOnFeed();
-    try {
-      storeRecentHighlight(55);
+    const { writes } = await mountOnFeed();
+    storeRecentHighlight(55);
 
-      // Preklik na autora z hlavičky príspevku – bez zvýraznenia.
-      openUserProfile({ id: VIEWER_ID, slug: 'test-user' });
-      await waitForOfferCard();
+    // Preklik na autora z hlavičky príspevku – bez zvýraznenia.
+    openUserProfile({ id: VIEWER_ID, slug: 'test-user' });
+    await waitForOfferCard();
 
-      // Vrch pri odchode z Nástenky, vrch z nového vstupu – a nič po ňom.
-      expect(writes).toEqual([0, 0]);
-      expect(dashboardMain().scrollTop).toBe(0);
-      expect(scrolledTo).toEqual([]);
-      expect(window.location.search).not.toContain('highlight');
-    } finally {
-      uninstall();
-    }
+    // Vrch pri odchode z Nástenky, vrch z nového vstupu – a nič po ňom.
+    expect(writes).toEqual([0, 0]);
+    expect(dashboardMain().scrollTop).toBe(0);
+    expect(scrolledTo).toEqual([]);
+    expect(window.location.search).not.toContain('highlight');
   });
 });
 
@@ -381,5 +381,13 @@ describe('explicitné zvýraznenie ďalej funguje', () => {
     await waitFor(() => expect(scrolledTo).toHaveLength(1));
     expect(scrolledTo[0]).toContain('skska');
     expect(window.location.search).toContain('highlight=55');
+  });
+});
+
+describe('zapisovač scrollTop po predchádzajúcich testoch', () => {
+  it('nezostáva nainštalovaný na Element.prototype (ani po testoch, ktoré ho neodinštalovali sami)', () => {
+    expect(Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop')).toEqual(
+      originalScrollTopDescriptor,
+    );
   });
 });

@@ -35,17 +35,53 @@ function usesScrollKeysForInteraction(target: EventTarget | null): boolean {
   );
 }
 
+/**
+ * Hides the overflow of the dashboard `<main>` and keeps it hidden on whichever
+ * `<main>` is mounted. `DashboardLayout` swaps in a fresh element on every module
+ * change (see `useDashboardMainKey`), and a tutorial step change moves the module in
+ * the same batch, so the lock stays active across the swap without its effect
+ * re-running. Returns a function that restores the original inline overflow.
+ */
+function lockDashboardMain(): () => void {
+  let lockedMain: HTMLElement | null = null;
+  let previousOverflowY = '';
+
+  const release = () => {
+    if (lockedMain) {
+      lockedMain.style.overflowY = previousOverflowY;
+    }
+    lockedMain = null;
+  };
+
+  const lockCurrentMain = () => {
+    if (lockedMain?.isConnected) return;
+
+    release();
+    const currentMain = document.querySelector<HTMLElement>(DASHBOARD_MAIN_SELECTOR);
+    if (!currentMain) return;
+
+    lockedMain = currentMain;
+    previousOverflowY = currentMain.style.overflowY;
+    currentMain.style.overflowY = 'hidden';
+  };
+
+  lockCurrentMain();
+
+  const mainReplacementObserver = new MutationObserver(lockCurrentMain);
+  mainReplacementObserver.observe(document.body, { childList: true, subtree: true });
+
+  return () => {
+    mainReplacementObserver.disconnect();
+    release();
+  };
+}
+
 /** Prevents user-driven dashboard scrolling while preserving the current scroll position. */
 export function useOnboardingScrollLock(isLocked: boolean): void {
   useEffect(() => {
     if (!isLocked) return;
 
-    const dashboardMain = document.querySelector<HTMLElement>(DASHBOARD_MAIN_SELECTOR);
-    const previousOverflowY = dashboardMain?.style.overflowY ?? '';
-
-    if (dashboardMain) {
-      dashboardMain.style.overflowY = 'hidden';
-    }
+    const unlockMain = lockDashboardMain();
 
     const preventPointerScroll = (event: WheelEvent | TouchEvent) => {
       if (!isInsideOnboardingOverlay(event.target)) {
@@ -77,9 +113,7 @@ export function useOnboardingScrollLock(isLocked: boolean): void {
     document.addEventListener('keydown', preventKeyboardScroll, true);
 
     return () => {
-      if (dashboardMain) {
-        dashboardMain.style.overflowY = previousOverflowY;
-      }
+      unlockMain();
       document.removeEventListener('wheel', preventPointerScroll, true);
       document.removeEventListener('touchmove', preventPointerScroll, true);
       document.removeEventListener('keydown', preventKeyboardScroll, true);

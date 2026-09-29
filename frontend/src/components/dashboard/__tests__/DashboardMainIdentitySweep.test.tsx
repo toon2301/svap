@@ -13,9 +13,10 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import DashboardLayout from '../DashboardLayout';
+import OnboardingScrollLock from '../onboarding/OnboardingScrollLock';
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
@@ -30,6 +31,16 @@ jest.mock('@/hooks', () => ({
 
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fallback?: string) => fallback ?? _k }),
+}));
+
+// Viditeľnosť tutoriálu riadi test – zámok scrollu má zostať zapnutý aj po
+// výmene `<main>` (viď posledný `describe` nižšie).
+let mockOnboardingOverlayVisible = true;
+jest.mock('../onboarding/DesktopOnboardingContext', () => ({
+  useOptionalDesktopOnboarding: () => ({ isOverlayVisible: mockOnboardingOverlayVisible }),
+}));
+jest.mock('../onboarding/MobileOnboardingContext', () => ({
+  useOptionalMobileOnboarding: () => null,
 }));
 
 jest.mock('../Sidebar', () => ({ __esModule: true, default: () => <nav /> }));
@@ -168,5 +179,57 @@ describe('<main> dostáva nový element pri zmene modulu (naprieč celým katal�
 
     rerender(<React.StrictMode>{layoutFor({ activeModule: 'profile' })}</React.StrictMode>);
     expect(dashboardMain()).not.toBe(before);
+  });
+});
+
+describe('zámok scrollu tutoriálu sleduje aktuálny <main> (viditeľnosť tutoriálu sa pri zmene modulu nemení)', () => {
+  /** Tutoriál posúva krok aj modul v jednom kroku – zámok zostáva zapnutý, efekt sa nespustí znova. */
+  function layoutWithScrollLock(activeModule: string) {
+    return (
+      <>
+        {layoutFor({ activeModule })}
+        <OnboardingScrollLock />
+      </>
+    );
+  }
+
+  async function flushMutationObservers() {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  beforeEach(() => {
+    mockOnboardingOverlayVisible = true;
+  });
+
+  it('po každej výmene <main> je zamknutý ten AKTUÁLNY a starý sa uvoľní – naprieč celým katalógom', async () => {
+    const { rerender } = render(layoutWithScrollLock(MODULES[0]));
+    let previous = dashboardMain();
+    expect(previous.style.overflowY).toBe('hidden');
+
+    for (const moduleName of MODULES.slice(1)) {
+      rerender(layoutWithScrollLock(moduleName));
+      await flushMutationObservers();
+
+      const current = dashboardMain();
+      expect(current).not.toBe(previous);
+      expect(previous.isConnected).toBe(false);
+      expect(current.style.overflowY).toBe('hidden');
+      previous = current;
+    }
+  });
+
+  it('po skončení tutoriálu sa scroll aktuálneho <main> vráti (žiadne zaseknuté overflow: hidden)', async () => {
+    const { rerender } = render(layoutWithScrollLock('home'));
+    rerender(layoutWithScrollLock('profile'));
+    await flushMutationObservers();
+    expect(dashboardMain().style.overflowY).toBe('hidden');
+
+    mockOnboardingOverlayVisible = false;
+    rerender(layoutWithScrollLock('profile'));
+
+    expect(dashboardMain().style.overflowY).toBe('');
   });
 });
