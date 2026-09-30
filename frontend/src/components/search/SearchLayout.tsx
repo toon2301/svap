@@ -10,6 +10,8 @@ import {
   openUserProfileFromSearch,
   profileIdentifierFor,
 } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
+import { useDashboardWindowScrollReset } from '@/components/dashboard/hooks/useDashboardWindowScrollReset';
+import { VIEWPORT_HEIGHT_CLASSES } from '@/components/dashboard/viewportHeightClasses';
 
 interface SearchLayoutProps {
   children: React.ReactNode;
@@ -19,6 +21,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
   const router = useRouter();
   const { logout: authLogout, user } = useAuth();
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(true);
+  useDashboardWindowScrollReset('search');
 
   const handleItemClick = useCallback(
     (itemId: string) => {
@@ -117,7 +120,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
 
   return (
     <RequestsNotificationsProvider>
-      <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
+      <div className={`${VIEWPORT_HEIGHT_CLASSES} bg-[var(--background)] text-[var(--foreground)] overflow-hidden`}>
         <div className={`h-full grid grid-cols-1 ${gridColsClassName}`}>
           {/* Left Sidebar - Desktop only */}
           <div className="hidden lg:block h-screen overflow-hidden" data-sidebar="left">
@@ -151,7 +154,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
           </div>
 
           {/* Main Content - rovnaká šírka ako profil; klik mimo ľavého panelu zatvára search (cez useEffect) */}
-          <main data-dashboard-main className="relative h-screen overflow-y-auto elegant-scrollbar">
+          <main data-dashboard-main className={`relative ${VIEWPORT_HEIGHT_CLASSES} overflow-y-auto elegant-scrollbar`}>
             <div className="py-4 lg:py-8 px-4 sm:px-6 lg:px-8">
               <div className="w-full mx-auto max-w-7xl">
                 {children}

@@ -1,9 +1,10 @@
 /**
- * Skutočný `Dashboard`: uloženie profilu ešte letí, keď sa `<main>` – a s ním
- * `ProfileModule` – vytvorí nanovo (šípka späť v hornej lište na mobile, prechod
- * cez breakpoint). Druhé uloženie z novej inštancie nesmie odísť: kým prvé
- * nedobehne, letí jedno PATCH profilu naraz, takže starší snímok (napr. s inou
- * voľbou viditeľnosti kontaktu) nemôže predbehnúť ani prepísať novší.
+ * Skutočný `Dashboard`: uloženie profilu ešte letí, keď sa formulár vytvorí
+ * nanovo (šípka späť a znovu „Upraviť profil" vymení `<main>` aj `ProfileModule`,
+ * prechod cez breakpoint vymení mobilný formulár za desktopový). Druhé uloženie
+ * z nového formulára nesmie odísť: kým prvé nedobehne, letí jedno PATCH profilu
+ * naraz, takže starší snímok (napr. s inou voľbou viditeľnosti kontaktu) nemôže
+ * predbehnúť ani prepísať novší.
  *
  * Zámok samotný pokrývajú `useProfileActionLock` a `ProfileModule.saveLock`;
  * tento test overuje, že s reálnym `<main>` a stavom dashboardu naozaj drží.
@@ -217,9 +218,7 @@ describe('Dashboard: letiace uloženie profilu prežije nový <main>', () => {
     await clickSave();
     expect(patch).toHaveBeenCalledTimes(1);
 
-    const mobileMain = currentMain();
     await resizeViewport(false);
-    expect(currentMain()).not.toBe(mobileMain);
 
     await clickSave();
     expect(patch).toHaveBeenCalledTimes(1);

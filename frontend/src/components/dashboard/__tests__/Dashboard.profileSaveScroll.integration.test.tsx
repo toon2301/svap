@@ -1,13 +1,15 @@
 /**
- * Skutočný `Dashboard`: uloženie profilu začne na desktope a počas letiaceho
- * PATCH sa okno zúži pod breakpoint – `<main>` (a s ním `ProfileModule`) vznikne
- * nanovo ako mobilný formulár. Pôvodné uloženie sa dokončí až tam, no jeho
- * `handleSave` si pamätá „desktop": z pozície nového formulára by po
- * `onEditCancel` obnovilo scroll do mobilného profilu, ktorý sa má otvoriť od
- * začiatku.
+ * Skutočný `Dashboard`: „Upraviť profil" je samostatná obrazovka s vlastným
+ * `<main>` na mobile aj desktope. Formulár má tlačidlo „Uložiť" úplne dole, takže
+ * jeho scroll sa po uložení ani zrušení nesmie preniesť do profilu – ten sa
+ * otvorí v novom `<main>` od začiatku – a scroll profilu sa nesmie preniesť
+ * do formulára.
  *
- * Obnova scrollu smie písať len do `<main>`, z ktorého scroll prečítala – teda
- * len tam, kde formulár a profil zdieľajú jedno rozloženie (desktop).
+ * Uloženie sa môže dokončiť aj po zmene šírky okna (desktop → mobil počas
+ * letiaceho PATCH): `handleSave` scroll neobnovuje, takže výsledok je rovnaký.
+ *
+ * Nový `<main>` znamená aj nový `ProfileModule`, preto sa tu overuje, že aktívna
+ * záložka profilu (Portfólio, Príspevky…) úpravu prežije.
  */
 
 import React from 'react';
@@ -213,7 +215,7 @@ describe('Dashboard: scroll po uložení profilu naprieč zmenou obrazovky', () 
     window.matchMedia = originalMatchMedia;
   });
 
-  it('desktop → mobil počas letiaceho uloženia: scroll mobilného formulára sa do profilu neprenesie', async () => {
+  it('desktop → mobil počas letiaceho uloženia: profil sa otvorí v novom <main> od začiatku', async () => {
     const pending = deferred<PatchResponse>();
     jest.spyOn(api, 'patch').mockReturnValue(pending.promise);
     renderDashboard();
@@ -222,11 +224,9 @@ describe('Dashboard: scroll po uložení profilu naprieč zmenou obrazovky', () 
     userScrolls(currentMain(), 640);
     await clickSave();
 
-    const desktopMain = currentMain();
     await resizeViewport(true);
-    const mobileFormMain = currentMain();
-    expect(mobileFormMain).not.toBe(desktopMain);
-    userScrolls(mobileFormMain, 1240);
+    const formMain = currentMain();
+    userScrolls(formMain, 1240);
 
     await act(async () => {
       pending.resolve({ data: { user: savedUser } });
@@ -234,12 +234,12 @@ describe('Dashboard: scroll po uložení profilu naprieč zmenou obrazovky', () 
     await waitForProfileToReplaceForm();
 
     const profileMain = currentMain();
-    expect(profileMain).not.toBe(mobileFormMain);
+    expect(profileMain).not.toBe(formMain);
     expect(profileMain.scrollTop).toBe(0);
     expect(mainWrites.filter(({ value }) => value !== 0)).toEqual([]);
   });
 
-  it('desktop: scroll formulára sa po uložení obnoví v tom istom <main> (pôvodné správanie)', async () => {
+  it('desktop: po uložení zo scrollnutého formulára sa profil otvorí v novom <main> od začiatku', async () => {
     jest.spyOn(api, 'patch').mockResolvedValue({ data: { user: savedUser } });
     renderDashboard();
 
@@ -249,7 +249,60 @@ describe('Dashboard: scroll po uložení profilu naprieč zmenou obrazovky', () 
     await clickSave();
     await waitForProfileToReplaceForm();
 
-    expect(currentMain()).toBe(formMain);
-    expect(mainWrites).toContainEqual({ element: formMain, value: 640 });
+    const profileMain = currentMain();
+    expect(profileMain).not.toBe(formMain);
+    expect(profileMain.scrollTop).toBe(0);
+    expect(mainWrites.filter(({ value }) => value !== 0)).toEqual([]);
+  });
+
+  it('desktop: po zrušení úpravy zo scrollnutého formulára sa profil otvorí v novom <main> od začiatku', async () => {
+    renderDashboard();
+
+    await openProfileEdit();
+    const formMain = currentMain();
+    userScrolls(formMain, 640);
+    fireEvent.click(screen.getByRole('button', { name: 'Zrušiť' }));
+    await waitForProfileToReplaceForm();
+
+    const profileMain = currentMain();
+    expect(profileMain).not.toBe(formMain);
+    expect(profileMain.scrollTop).toBe(0);
+  });
+
+  it('desktop: úprava otvorená z odscrollovaného profilu začína od začiatku', async () => {
+    renderDashboard();
+
+    const editButton = (await screen.findAllByText('Upraviť profil'))[0];
+    const profileMain = currentMain();
+    userScrolls(profileMain, 900);
+    fireEvent.click(editButton);
+    await screen.findByRole('button', { name: 'Uložiť' });
+
+    const formMain = currentMain();
+    expect(formMain).not.toBe(profileMain);
+    expect(formMain.scrollTop).toBe(0);
+  });
+
+  it.each([
+    ['zrušení', 'Zrušiť'],
+    ['uložení', 'Uložiť'],
+  ])('desktop: po %s úpravy ostáva aktívna záložka profilu', async (_how, buttonName) => {
+    // Zvyšok adresy po predošlých testoch by mohol záložku podržať namiesto stavu appky.
+    window.history.replaceState(null, '', '/');
+    jest.spyOn(api, 'patch').mockResolvedValue({ data: { user: savedUser } });
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('tab', { name: /Portfólio/ }));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Portfólio/ })).toHaveAttribute('aria-selected', 'true'),
+    );
+
+    await openProfileEdit();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: buttonName }));
+    });
+    await waitForProfileToReplaceForm();
+
+    expect(screen.getByRole('tab', { name: /Portfólio/ })).toHaveAttribute('aria-selected', 'true');
   });
 });

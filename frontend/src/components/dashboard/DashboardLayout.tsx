@@ -16,6 +16,8 @@ import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatc
 import { onFeedHomeNavigation } from './modules/feed/feedHomeNavigation';
 import ScrollDebugPanel from './debug/ScrollDebugPanel'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
 import { useDashboardMainKey } from './hooks/useDashboardMainKey';
+import { useDashboardWindowScrollReset } from './hooks/useDashboardWindowScrollReset';
+import { VIEWPORT_HEIGHT_CLASSES } from './viewportHeightClasses';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -144,8 +146,9 @@ export default function DashboardLayout({
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
   const isMobile = useIsMobile();
-  // Nový `<main>` pri zmene modulu, na mobile aj pri úprave profilu – dôvod v useDashboardMainKey.ts.
-  const mainKey = useDashboardMainKey(isMobile && isMobileEditMode ? 'profile-edit' : activeModule);
+  // Nový `<main>` pri zmene modulu aj pri úprave profilu (mobil i desktop) – dôvod v useDashboardMainKey.ts.
+  const mainKey = useDashboardMainKey(isMobileEditMode ? 'profile-edit' : activeModule);
+  useDashboardWindowScrollReset(mainKey);
   const [isOfferWatchMobileOpen, setIsOfferWatchMobileOpen] = useState(false);
   const shouldUseDynamicMobileMessagesHeight = isMobile && isOpenMobileMessagesConversation;
   const mobileViewportHeight = useMobileViewportHeight(shouldUseDynamicMobileMessagesHeight);
@@ -253,7 +256,7 @@ export default function DashboardLayout({
 
   return (
     <div
-      className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
+      className={`${VIEWPORT_HEIGHT_CLASSES} bg-[var(--background)] text-[var(--foreground)] overflow-hidden`}
       style={mobileMessagesViewportStyle}
     >
       <BugReportDialogHost />
@@ -366,7 +369,7 @@ export default function DashboardLayout({
         <main
           key={mainKey}
           data-dashboard-main
-          className={`relative h-screen ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-28'} lg:pt-0 lg:pb-0 elegant-scrollbar ${
+          className={`relative ${VIEWPORT_HEIGHT_CLASSES} ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-28'} lg:pt-0 lg:pb-0 elegant-scrollbar ${
             activeModule === 'messages'
               ? isMobileMessageConversationOpen
                 ? 'overflow-hidden lg:overflow-hidden'

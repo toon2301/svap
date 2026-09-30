@@ -5,7 +5,8 @@
  *
  * Jednotlivé články reťazca majú vlastné testy (`DashboardMainIdentitySweep`,
  * `ProfileModule.saveScroll`); tento overuje, že do seba zapadajú – stav
- * z `useDashboardState`, kľúč `<main>` a obnova scrollu v `handleSave`.
+ * z `useDashboardState` a kľúč `<main>`. Desktop pokrýva
+ * `Dashboard.profileSaveScroll.integration`.
  */
 
 import React from 'react';
