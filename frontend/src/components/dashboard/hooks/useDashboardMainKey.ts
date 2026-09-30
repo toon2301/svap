@@ -27,20 +27,27 @@
  * `useOnboardingScrollLock` preto sám sleduje výmenu `<main>` a zámok prenesie
  * na nový element; `useOnboardingTargetRect` si elementy hľadá pri každom meraní
  * nanovo a scroll zachytáva aj na `window` (capture).
+ *
+ * Na mobile je „Upraviť profil" ten istý modul `profile` (mení sa len pravý
+ * panel), takže formulár – s tlačidlom „Uložiť" úplne dole – zdieľal `<main>`,
+ * a tým aj scroll, s profilom: po uložení sa profil otvoril odscrollovaný.
+ * `DashboardLayout` preto na mobile posiela pre úpravu profilu vlastnú
+ * „obrazovku" (`profile-edit`) namiesto názvu modulu.
  */
 
 import { useState } from 'react';
 
 /**
- * Vracia kľúč pre `<main key={...}>` – rovnaký, kým sa `activeModule` nezmení,
- * inak nový. Odvodené počas renderu (vzor z dokumentácie Reactu), nie efektom:
- * inak by prvý render s obsahom starého modulu ešte stihol namaľovať snímok
- * predtým, než by sa kľúč stihol zmeniť.
+ * Vracia kľúč pre `<main key={...}>` – rovnaký, kým sa `screen` (modul alebo
+ * samostatná obrazovka v rámci modulu) nezmení, inak nový. Odvodené počas
+ * renderu (vzor z dokumentácie Reactu), nie efektom: inak by prvý render
+ * s obsahom starej obrazovky ešte stihol namaľovať snímok predtým, než by sa
+ * kľúč stihol zmeniť.
  */
-export function useDashboardMainKey(activeModule: string): string {
-  const [track, setTrack] = useState({ module: activeModule, generation: 0 });
-  if (track.module !== activeModule) {
-    const next = { module: activeModule, generation: track.generation + 1 };
+export function useDashboardMainKey(screen: string): string {
+  const [track, setTrack] = useState({ screen, generation: 0 });
+  if (track.screen !== screen) {
+    const next = { screen, generation: track.generation + 1 };
     setTrack(next);
     return `main-${next.generation}`;
   }

@@ -144,8 +144,8 @@ export default function DashboardLayout({
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
   const isMobile = useIsMobile();
-  // Nový `<main>` pri zmene modulu – dôvod v useDashboardMainKey.ts.
-  const mainKey = useDashboardMainKey(activeModule);
+  // Nový `<main>` pri zmene modulu, na mobile aj pri úprave profilu – dôvod v useDashboardMainKey.ts.
+  const mainKey = useDashboardMainKey(isMobile && isMobileEditMode ? 'profile-edit' : activeModule);
   const [isOfferWatchMobileOpen, setIsOfferWatchMobileOpen] = useState(false);
   const shouldUseDynamicMobileMessagesHeight = isMobile && isOpenMobileMessagesConversation;
   const mobileViewportHeight = useMobileViewportHeight(shouldUseDynamicMobileMessagesHeight);

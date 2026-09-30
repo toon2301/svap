@@ -20,6 +20,7 @@ import {
   type ProfileTabChangeOptions,
 } from './profile/profileTabQuery';
 import { useProfileFreshEntry } from './profile/useProfileFreshEntry';
+import { useProfileActionLock } from './profile/useProfileActionLock';
 
 /** Hlboká kópia user objektu (1 level, arrays cez spread). */
 function deepCloneUser(u: User): User {
@@ -148,7 +149,6 @@ export default function ProfileModule({
   const mobileOnboarding = useOptionalMobileOnboarding();
   const desktopOnboarding = useOptionalDesktopOnboarding();
   const onboarding = isMobile ? mobileOnboarding : desktopOnboarding;
-  const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
@@ -219,25 +219,8 @@ export default function ProfileModule({
   }, [user]);
 
   // Async action isolation (out-of-order protection) + simple lock to avoid conflicting parallel actions.
-  const actionSeqRef = useRef(0);
-  const activeActionIdRef = useRef<number | null>(null);
-  const busyRef = useRef(false);
-
-  const beginAction = useCallback((): number | null => {
-    if (busyRef.current) return null;
-    const id = ++actionSeqRef.current;
-    busyRef.current = true;
-    activeActionIdRef.current = id;
-    setIsUploading(true);
-    return id;
-  }, []);
-
-  const endAction = useCallback((actionId: number) => {
-    if (activeActionIdRef.current !== actionId) return;
-    activeActionIdRef.current = null;
-    busyRef.current = false;
-    setIsUploading(false);
-  }, []);
+  // Zámok žije mimo komponentu: prežije nový `<main>`, ktorý ProfileModule vytvorí nanovo.
+  const { isBusy: isUploading, beginAction, endAction, isActionActive } = useProfileActionLock();
 
   const mergeUserIfChanged = useCallback(
     (partial: Partial<User>) => {
@@ -311,7 +294,7 @@ export default function ProfileModule({
       mergeUserIfChanged(optimisticPartial);
 
       const response = await api.patch('/auth/profile/', payload);
-      if (activeActionIdRef.current !== actionId) return;
+      if (!isActionActive(actionId)) return;
       if (response.data?.user) {
         const responseUser = response.data.user as User;
         const touchedKeys = Object.keys(payload) as ProfilePatchKey[];
@@ -325,14 +308,16 @@ export default function ProfileModule({
         }
         try {
           const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
-          const scrollTop = scrollEl?.scrollTop ?? 0;
+          // Na mobile je formulár samostatná obrazovka – jeho scroll sa do profilu neprenáša.
+          const scrollTop = isMobile ? 0 : (scrollEl?.scrollTop ?? 0);
           mergeUserIfChanged(nextPartial);
           onboarding?.notifyProfileSaved();
           onEditCancel(responseUser);
           // Zachovať scroll – po save sa obsah prepne a prehliadač resetuje scroll; obnoviť po re-renderi
           const restoreScroll = () => {
             const el = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
-            if (el && scrollTop > 0) {
+            // Len do <main>, z ktorého sa scroll prečítal – po výmene obrazovky (mobil, zmena breakpointu) je nový.
+            if (el && el === scrollEl && scrollTop > 0) {
               el.scrollTop = scrollTop;
             }
           };
@@ -347,7 +332,7 @@ export default function ProfileModule({
         }
       }
     } catch (e: unknown) {
-      if (activeActionIdRef.current !== actionId) return;
+      if (!isActionActive(actionId)) return;
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
       const err = e as { response?: { data?: { validation_errors?: Record<string, string[]>; details?: Record<string, string[]> } } };
@@ -357,7 +342,7 @@ export default function ProfileModule({
     } finally {
       endAction(actionId);
     }
-  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged, onboarding]);
+  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, isActionActive, mergeUserIfChanged, onboarding, isMobile]);
 
   const handleCancel = useCallback(() => {
     onEditCancel?.();
@@ -401,7 +386,7 @@ export default function ProfileModule({
       formData.append('avatar', file);
 
       const response = await api.patch<{ user: User }>('/auth/profile/', formData);
-      if (activeActionIdRef.current !== actionId) return;
+      if (!isActionActive(actionId)) return;
       if (response.data?.user) {
         mergeUserIfChanged({
           avatar_url: response.data.user.avatar_url,
@@ -421,7 +406,7 @@ export default function ProfileModule({
       }
       toast.success(t('profile.photoUploaded', 'Fotka bola úspešne nahraná!'));
     } catch (error: unknown) {
-      if (activeActionIdRef.current !== actionId) return;
+      if (!isActionActive(actionId)) return;
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
       if (avatarPreviewUrlRef.current === previewUrlForThisAction) {
@@ -467,7 +452,7 @@ export default function ProfileModule({
 
     try {
       const response = await api.patch<{ user: User }>('/auth/profile/', { avatar: null });
-      if (activeActionIdRef.current !== actionId) return;
+      if (!isActionActive(actionId)) return;
       if (response.data?.user) {
         mergeUserIfChanged({
           avatar: response.data.user.avatar,
@@ -482,7 +467,7 @@ export default function ProfileModule({
       }
       setIsActionsOpen(false);
     } catch (e: unknown) {
-      if (activeActionIdRef.current !== actionId) return;
+      if (!isActionActive(actionId)) return;
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
       const data = (e as ProfileApiError)?.response?.data;
