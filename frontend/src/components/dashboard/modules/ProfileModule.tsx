@@ -316,7 +316,8 @@ export default function ProfileModule({
           // Zachovať scroll – po save sa obsah prepne a prehliadač resetuje scroll; obnoviť po re-renderi
           const restoreScroll = () => {
             const el = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
-            if (el && scrollTop > 0) {
+            // Len do <main>, z ktorého sa scroll prečítal – po výmene obrazovky (mobil, zmena breakpointu) je nový.
+            if (el && el === scrollEl && scrollTop > 0) {
               el.scrollTop = scrollTop;
             }
           };

@@ -7,6 +7,10 @@
  * Na desktope to dáva zmysel (úprava aj profil sú jedno rozloženie). Na mobile je
  * formulár samostatná obrazovka s tlačidlom „Uložiť" úplne dole, takže obnovená
  * pozícia hodila otvorený profil hlboko pod jeho začiatok.
+ *
+ * Obnova navyše smie písať len do `<main>`, z ktorého scroll prečítala: ak sa
+ * obrazovka počas uloženia vymenila (napr. prechod desktop → mobil), `isMobile`
+ * zachytené pri kliku už neplatí, no nový `<main>` má vlastnú pozíciu.
  */
 
 import React from 'react';
@@ -158,5 +162,26 @@ describe('ProfileModule: scroll po uložení profilu', () => {
 
     expect(writes).toEqual([]);
     expect(main.scrollTop).toBe(0);
+  });
+
+  it('obrazovka sa počas uloženia vymenila (nový <main>): jeho scroll sa do profilu nepreberá', async () => {
+    const form = installScrollableMain(1240);
+    const replacements: Array<ReturnType<typeof installScrollableMain>> = [];
+    const onEditCancel = jest.fn(() => {
+      form.main.remove();
+      replacements.push(installScrollableMain(0));
+    });
+    patchMock.mockResolvedValue({ data: { user: savedUser } });
+
+    render(
+      <ProfileModule user={baseUser} isEditMode onUserUpdate={jest.fn()} onEditCancel={onEditCancel} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onEditCancel).toHaveBeenCalledWith(savedUser));
+    await waitOutRestoreWindow();
+
+    expect(replacements).toHaveLength(1);
+    expect(replacements[0].writes).toEqual([]);
+    expect(replacements[0].main.scrollTop).toBe(0);
   });
 });
