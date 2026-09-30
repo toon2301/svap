@@ -32,6 +32,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.restoreAllMocks();
   uninstallScrollDebug();
   Element.prototype.scrollIntoView = realIntoView;
   window.history.replaceState(null, '', '/');
@@ -63,6 +64,8 @@ describe('s príznakom', () => {
   });
 
   it('značka sa pripojí k najbližšiemu zápisu a spotrebuje sa', () => {
+    // Značka žije 50 ms reálneho času – na vyťaženom CI ju treba zmraziť.
+    jest.spyOn(performance, 'now').mockReturnValue(1000);
     installScrollDebug();
     const before = getScrollDebugLines().length;
     scrollDebugTag('fresh-entry reset');

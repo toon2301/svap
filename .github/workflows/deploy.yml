@@ -32,7 +32,7 @@ jobs:
 
     - name: Run frontend tests
       working-directory: ./frontend
-      run: npm test -- --ci
+      run: npm test -- --ci --reporters=default --reporters=github-actions
 
     - name: Build frontend
       working-directory: ./frontend

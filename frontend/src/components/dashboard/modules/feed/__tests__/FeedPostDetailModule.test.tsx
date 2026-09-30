@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, configure, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import toast from 'react-hot-toast';
@@ -95,6 +95,10 @@ const post: FeedPost = {
 function comment(id: number, text: string): FeedPostComment {
   return { id, text, author, can_delete: true, likes_count: 0, is_liked_by_me: false, created_at: '2026-01-01' };
 }
+
+// Stránkovanie komentárov sa na vyťaženom CI nezmestí do predvolenej 1 s.
+configure({ asyncUtilTimeout: 5000 });
+jest.setTimeout(15000);
 
 describe('FeedPostDetailModule', () => {
   beforeEach(() => {
