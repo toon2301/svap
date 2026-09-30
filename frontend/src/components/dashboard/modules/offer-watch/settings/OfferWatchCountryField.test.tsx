@@ -9,6 +9,9 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+// Zoznam ~250 krajín robí `getByRole` na vyťaženom CI pomalým; predvolených 5 s je tesných.
+jest.setTimeout(15000);
+
 describe('OfferWatchCountryField', () => {
   it('searches and selects in one combobox above the edit-dialog layer', () => {
     const onChange = jest.fn();

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import toast from 'react-hot-toast';
@@ -68,6 +68,10 @@ async function selectCategory(user: ReturnType<typeof userEvent.setup>) {
   const resultLabel = await screen.findByText(SUBCATEGORY, { selector: 'span' });
   await user.click(resultLabel.closest('button')!);
 }
+
+// Formulárové testy so `userEvent` sa na vyťaženom CI nezmestia do predvolených 1 s / 5 s.
+configure({ asyncUtilTimeout: 5000 });
+jest.setTimeout(15000);
 
 describe('OfferWatchSettingsDesktop', () => {
   beforeEach(() => {
