@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -37,6 +37,9 @@ type UsePortfolioImageUploadQueueOptions = {
 };
 
 const ALLOWED_EXTENSIONS = new Set<string>(PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS);
+
+// Layout efekt: ref je aktuálny už v commite (passive efekt môže bežať až po kliku na retry).
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 function createQueueId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -118,7 +121,7 @@ export function usePortfolioImageUploadQueue({
   const itemsRef = useRef<PortfolioUploadQueueItem[]>([]);
   const previewUrlsRef = useRef(new Map<string, string>());
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
