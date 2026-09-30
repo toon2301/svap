@@ -28,11 +28,12 @@
  * na nový element; `useOnboardingTargetRect` si elementy hľadá pri každom meraní
  * nanovo a scroll zachytáva aj na `window` (capture).
  *
- * Na mobile je „Upraviť profil" ten istý modul `profile` (mení sa len pravý
- * panel), takže formulár – s tlačidlom „Uložiť" úplne dole – zdieľal `<main>`,
- * a tým aj scroll, s profilom: po uložení sa profil otvoril odscrollovaný.
- * `DashboardLayout` preto na mobile posiela pre úpravu profilu vlastnú
- * „obrazovku" (`profile-edit`) namiesto názvu modulu.
+ * „Upraviť profil" je ten istý modul `profile` (mení sa len pravý panel), takže
+ * formulár – s tlačidlom „Uložiť" úplne dole – zdieľal `<main>`, a tým aj
+ * scroll, s profilom: po uložení sa profil otvoril odscrollovaný. Platí to na
+ * mobile aj na desktope (formulár sa vymieňa priamo v `<main>`), preto
+ * `DashboardLayout` pre úpravu profilu posiela vlastnú „obrazovku"
+ * (`profile-edit`) namiesto názvu modulu.
  */
 
 import { useState } from 'react';

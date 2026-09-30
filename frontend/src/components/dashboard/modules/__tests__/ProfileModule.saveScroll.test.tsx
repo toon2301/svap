@@ -1,16 +1,11 @@
 /**
- * Po uložení profilu sa scroll editačného formulára NESMIE preniesť do profilu
- * na mobile.
+ * Po uložení profilu sa scroll editačného formulára NESMIE preniesť do profilu.
  *
- * `handleSave` si pred prepnutím obrazovky zapamätá `scrollTop` kontajnera
- * `[data-dashboard-main]` a po `onEditCancel` ho niekoľko desiatok ms obnovuje.
- * Na desktope to dáva zmysel (úprava aj profil sú jedno rozloženie). Na mobile je
- * formulár samostatná obrazovka s tlačidlom „Uložiť" úplne dole, takže obnovená
- * pozícia hodila otvorený profil hlboko pod jeho začiatok.
- *
- * Obnova navyše smie písať len do `<main>`, z ktorého scroll prečítala: ak sa
- * obrazovka počas uloženia vymenila (napr. prechod desktop → mobil), `isMobile`
- * zachytené pri kliku už neplatí, no nový `<main>` má vlastnú pozíciu.
+ * „Upraviť profil" je samostatná obrazovka (mobil aj desktop) s tlačidlom
+ * „Uložiť" úplne dole, takže by obnovená pozícia hodila otvorený profil hlboko
+ * pod jeho začiatok. Profil sa po uložení otvára v novom `<main>` od začiatku
+ * (viď `useDashboardMainKey`), preto `handleSave` do `[data-dashboard-main]`
+ * nepíše vôbec.
  */
 
 import React from 'react';
@@ -126,11 +121,7 @@ async function saveFromScrolledForm(scrollTop: number) {
   return scroller;
 }
 
-/**
- * Obnova beží do ~150 ms (dva rAF a dva timeouty, ktoré si `<main>` hľadajú
- * znova). Počkáme dlhšie, aby po teste nezostal časovač zapisujúci do `<main>`
- * nasledujúceho testu.
- */
+/** Dlhšie než okno (~150 ms), v ktorom staršia obnova dopisovala scroll – zachytí aj oneskorený zápis. */
 async function waitOutRestoreWindow() {
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -147,41 +138,15 @@ describe('ProfileModule: scroll po uložení profilu', () => {
     document.querySelectorAll('[data-dashboard-main]').forEach((node) => node.remove());
   });
 
-  it('desktop: pozícia scrollu sa po uložení obnoví (pôvodné správanie)', async () => {
-    const { main, writes } = await saveFromScrolledForm(640);
-    await waitOutRestoreWindow();
-
-    expect(main.scrollTop).toBe(640);
-    expect(writes).toContain(640);
-  });
-
-  it('mobil: scroll formulára sa do profilu nepreberá – nič sa nezapíše', async () => {
-    mockIsMobile = true;
+  it.each([
+    ['desktop', false],
+    ['mobil', true],
+  ])('%s: scroll formulára sa do profilu nepreberá – nič sa nezapíše', async (_viewport, isMobile) => {
+    mockIsMobile = isMobile;
     const { main, writes } = await saveFromScrolledForm(1240);
     await waitOutRestoreWindow();
 
     expect(writes).toEqual([]);
     expect(main.scrollTop).toBe(0);
-  });
-
-  it('obrazovka sa počas uloženia vymenila (nový <main>): jeho scroll sa do profilu nepreberá', async () => {
-    const form = installScrollableMain(1240);
-    const replacements: Array<ReturnType<typeof installScrollableMain>> = [];
-    const onEditCancel = jest.fn(() => {
-      form.main.remove();
-      replacements.push(installScrollableMain(0));
-    });
-    patchMock.mockResolvedValue({ data: { user: savedUser } });
-
-    render(
-      <ProfileModule user={baseUser} isEditMode onUserUpdate={jest.fn()} onEditCancel={onEditCancel} />,
-    );
-    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(onEditCancel).toHaveBeenCalledWith(savedUser));
-    await waitOutRestoreWindow();
-
-    expect(replacements).toHaveLength(1);
-    expect(replacements[0].writes).toEqual([]);
-    expect(replacements[0].main.scrollTop).toBe(0);
   });
 });

@@ -24,8 +24,7 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Test riadi, či ide o mobil – iba tam je „Upraviť profil" samostatná obrazovka
-// (posledný `describe` pred zámkom scrollu); predvolene desktop.
+// Test riadi, či ide o mobil; predvolene desktop.
 let mockIsMobile = false;
 jest.mock('@/hooks', () => ({
   useIsMobile: () => mockIsMobile,
@@ -166,11 +165,11 @@ describe('<main> dostáva nový element pri zmene modulu (naprieč celým katal�
     expect(seen.size).toBe(MODULES.length);
   });
 
-  it('desktop: zmena INÝCH props (pravý panel, úprava profilu) bez zmeny modulu nevytvorí nový element', () => {
-    const { rerender } = render(layoutFor({ activeModule: 'profile', isRightSidebarOpen: false }));
+  it('zmena pravého panela bez zmeny modulu (nie úprava profilu) nevytvorí nový element', () => {
+    const { rerender } = render(layoutFor({ activeModule: 'settings', isRightSidebarOpen: false }));
     const before = dashboardMain();
 
-    rerender(layoutFor({ activeModule: 'profile', activeRightItem: 'edit-profile', isRightSidebarOpen: true }));
+    rerender(layoutFor({ activeModule: 'settings', activeRightItem: 'language', isRightSidebarOpen: true }));
 
     expect(dashboardMain()).toBe(before);
   });
@@ -198,18 +197,21 @@ describe('<main> dostáva nový element pri zmene modulu (naprieč celým katal�
 });
 
 /**
- * Na mobile je „Upraviť profil" ten istý modul `profile` (mení sa len pravý
- * panel), takže formulár – s tlačidlom „Uložiť" úplne dole – zdieľal scroll
+ * „Upraviť profil" je ten istý modul `profile` (mení sa len pravý panel), takže
+ * formulár – s tlačidlom „Uložiť" úplne dole – zdieľal `<main>` a jeho scroll
  * s profilom: po uložení sa profil otvoril odscrollovaný, a naopak. Preto je
- * úprava profilu na mobile samostatná obrazovka s vlastným `<main>`.
+ * úprava profilu samostatná obrazovka s vlastným `<main>` na mobile aj desktope.
  */
-describe('mobil: „Upraviť profil" je samostatná obrazovka s vlastným <main>', () => {
+describe.each([
+  ['mobil', true],
+  ['desktop', false],
+] as const)('%s: „Upraviť profil" je samostatná obrazovka s vlastným <main>', (_viewport, isMobileViewport) => {
   const profile = () => layoutFor({ activeModule: 'profile' });
   const profileEdit = () =>
     layoutFor({ activeModule: 'profile', activeRightItem: 'edit-profile', isRightSidebarOpen: true });
 
   beforeEach(() => {
-    mockIsMobile = true;
+    mockIsMobile = isMobileViewport;
   });
 
   it('profil → úprava: iný element `<main>`, starý sa odpojí', () => {
@@ -301,20 +303,6 @@ describe('mobil: „Upraviť profil" je samostatná obrazovka s vlastným <main>
     expect(dashboardMain()).toBe(edit);
   });
 
-  it('viewport sa vyrieši až po prvom renderi (priama adresa úpravy): jedna výmena, potom stabilný', () => {
-    mockIsMobile = false;
-    const { rerender } = render(profileEdit());
-    const unresolved = dashboardMain();
-
-    mockIsMobile = true;
-    rerender(profileEdit());
-    const resolved = dashboardMain();
-    expect(resolved).not.toBe(unresolved);
-
-    rerender(profileEdit());
-    expect(dashboardMain()).toBe(resolved);
-  });
-
   it('zámok scrollu tutoriálu prejde na nový <main> aj pri prepnutí úpravy profilu', async () => {
     mockOnboardingOverlayVisible = true;
     const withScrollLock = (layout: React.ReactElement) => (
@@ -334,6 +322,26 @@ describe('mobil: „Upraviť profil" je samostatná obrazovka s vlastným <main>
     const after = dashboardMain();
     expect(after).not.toBe(before);
     expect(after.style.overflowY).toBe('hidden');
+  });
+});
+
+/** Obrazovku určuje URL a pravý panel, nie šírka okna – inak by hydratácia či otočenie zbytočne vymenili `<main>`. */
+describe('úprava profilu: zmena viewportu element nevymení', () => {
+  const profileEdit = () =>
+    layoutFor({ activeModule: 'profile', activeRightItem: 'edit-profile', isRightSidebarOpen: true });
+
+  it.each([
+    ['viewport sa vyrieši až po prvom renderi (priama adresa úpravy)', false, true],
+    ['zmena šírky okna cez hranicu lg', true, false],
+  ] as const)('%s', (_name, before, after) => {
+    mockIsMobile = before;
+    const { rerender } = render(profileEdit());
+    const initial = dashboardMain();
+
+    mockIsMobile = after;
+    rerender(profileEdit());
+
+    expect(dashboardMain()).toBe(initial);
   });
 });
 

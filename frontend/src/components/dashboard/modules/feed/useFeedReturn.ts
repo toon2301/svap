@@ -18,8 +18,7 @@ import { scrollDebugTag } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugs
 /**
  * Scrollovateľná plocha dashboardu.
  *
- * Feed vlastný scroller nemá – scrolluje sa `<main data-dashboard-main>`, ten
- * istý, na ktorom si po uložení profilu drží pozíciu `ProfileModule`.
+ * Feed vlastný scroller nemá – scrolluje sa `<main data-dashboard-main>`.
  */
 const DASHBOARD_MAIN_SELECTOR = '[data-dashboard-main]';
 
@@ -122,8 +121,7 @@ export function useFeedReturn({
     restoredRef.current = true;
 
     // Dva snímky: v prvom React karty commitne, až v druhom má `<main>`
-    // výšku, do ktorej sa dá scrollovať. Rovnaký postup, akým si scroll po
-    // uložení profilu obnovuje `ProfileModule`.
+    // výšku, do ktorej sa dá scrollovať.
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {

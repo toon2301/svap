@@ -307,25 +307,9 @@ export default function ProfileModule({
           assignUserField(nextPartial, responseUser, key);
         }
         try {
-          const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
-          // Na mobile je formulár samostatná obrazovka – jeho scroll sa do profilu neprenáša.
-          const scrollTop = isMobile ? 0 : (scrollEl?.scrollTop ?? 0);
           mergeUserIfChanged(nextPartial);
           onboarding?.notifyProfileSaved();
           onEditCancel(responseUser);
-          // Zachovať scroll – po save sa obsah prepne a prehliadač resetuje scroll; obnoviť po re-renderi
-          const restoreScroll = () => {
-            const el = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
-            // Len do <main>, z ktorého sa scroll prečítal – po výmene obrazovky (mobil, zmena breakpointu) je nový.
-            if (el && el === scrollEl && scrollTop > 0) {
-              el.scrollTop = scrollTop;
-            }
-          };
-          requestAnimationFrame(() => {
-            requestAnimationFrame(restoreScroll);
-          });
-          setTimeout(restoreScroll, 50);
-          setTimeout(restoreScroll, 150);
         } catch (postSuccessError) {
           console.error('Error after successful save:', postSuccessError);
           onEditCancel(responseUser);
@@ -342,7 +326,7 @@ export default function ProfileModule({
     } finally {
       endAction(actionId);
     }
-  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, isActionActive, mergeUserIfChanged, onboarding, isMobile]);
+  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, isActionActive, mergeUserIfChanged, onboarding]);
 
   const handleCancel = useCallback(() => {
     onEditCancel?.();
