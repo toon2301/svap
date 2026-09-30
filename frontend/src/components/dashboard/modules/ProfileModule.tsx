@@ -325,7 +325,8 @@ export default function ProfileModule({
         }
         try {
           const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
-          const scrollTop = scrollEl?.scrollTop ?? 0;
+          // Na mobile je formulár samostatná obrazovka – jeho scroll sa do profilu neprenáša.
+          const scrollTop = isMobile ? 0 : (scrollEl?.scrollTop ?? 0);
           mergeUserIfChanged(nextPartial);
           onboarding?.notifyProfileSaved();
           onEditCancel(responseUser);
@@ -357,7 +358,7 @@ export default function ProfileModule({
     } finally {
       endAction(actionId);
     }
-  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged, onboarding]);
+  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged, onboarding, isMobile]);
 
   const handleCancel = useCallback(() => {
     onEditCancel?.();

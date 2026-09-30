@@ -24,9 +24,12 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// Test riadi, či ide o mobil – iba tam je „Upraviť profil" samostatná obrazovka
+// (posledný `describe` pred zámkom scrollu); predvolene desktop.
+let mockIsMobile = false;
 jest.mock('@/hooks', () => ({
-  useIsMobile: () => false,
-  useIsMobileState: () => ({ isMobile: false, isResolved: true }),
+  useIsMobile: () => mockIsMobile,
+  useIsMobileState: () => ({ isMobile: mockIsMobile, isResolved: true }),
 }));
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -98,6 +101,18 @@ function dashboardMain(): HTMLElement {
   return main;
 }
 
+/** Nechá dobehnúť MutationObserver zámku scrollu (výmenu `<main>` spracuje až po commite). */
+async function flushMutationObservers() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+beforeEach(() => {
+  mockIsMobile = false;
+});
+
 // Reprezentatívny prierez katalógu z `ModuleRouter.tsx` – hlavné obrazovky
 // (Nástenka, profil, vyhľadávanie, správy, upozornenia, žiadosti, obľúbené,
 // štatistiky, sledované, nastavenia, cudzí profil) aj jedna vnorená (ponuky).
@@ -151,7 +166,7 @@ describe('<main> dostáva nový element pri zmene modulu (naprieč celým katal�
     expect(seen.size).toBe(MODULES.length);
   });
 
-  it('zmena INÝCH props (pravý panel) bez zmeny modulu nevytvorí nový element', () => {
+  it('desktop: zmena INÝCH props (pravý panel, úprava profilu) bez zmeny modulu nevytvorí nový element', () => {
     const { rerender } = render(layoutFor({ activeModule: 'profile', isRightSidebarOpen: false }));
     const before = dashboardMain();
 
@@ -182,6 +197,146 @@ describe('<main> dostáva nový element pri zmene modulu (naprieč celým katal�
   });
 });
 
+/**
+ * Na mobile je „Upraviť profil" ten istý modul `profile` (mení sa len pravý
+ * panel), takže formulár – s tlačidlom „Uložiť" úplne dole – zdieľal scroll
+ * s profilom: po uložení sa profil otvoril odscrollovaný, a naopak. Preto je
+ * úprava profilu na mobile samostatná obrazovka s vlastným `<main>`.
+ */
+describe('mobil: „Upraviť profil" je samostatná obrazovka s vlastným <main>', () => {
+  const profile = () => layoutFor({ activeModule: 'profile' });
+  const profileEdit = () =>
+    layoutFor({ activeModule: 'profile', activeRightItem: 'edit-profile', isRightSidebarOpen: true });
+
+  beforeEach(() => {
+    mockIsMobile = true;
+  });
+
+  it('profil → úprava: iný element `<main>`, starý sa odpojí', () => {
+    const { rerender } = render(profile());
+    const before = dashboardMain();
+
+    rerender(profileEdit());
+
+    const after = dashboardMain();
+    expect(after).not.toBe(before);
+    expect(before.isConnected).toBe(false);
+    expect(screen.getByTestId('module-content')).toHaveTextContent('profile');
+  });
+
+  it('úprava → profil (uloženie aj zrušenie): iný element `<main>`, starý sa odpojí', () => {
+    const { rerender } = render(profileEdit());
+    const before = dashboardMain();
+
+    rerender(profile());
+
+    const after = dashboardMain();
+    expect(after).not.toBe(before);
+    expect(before.isConnected).toBe(false);
+  });
+
+  it('cyklus profil → úprava → profil: každá obrazovka má vlastný element', () => {
+    const { rerender } = render(profile());
+    const first = dashboardMain();
+    rerender(profileEdit());
+    const second = dashboardMain();
+    rerender(profile());
+    const third = dashboardMain();
+
+    expect(new Set([first, second, third]).size).toBe(3);
+  });
+
+  it('úprava → iný modul: element sa vymení práve raz', () => {
+    const { rerender } = render(profileEdit());
+    const edit = dashboardMain();
+
+    rerender(layoutFor({ activeModule: 'home' }));
+    const home = dashboardMain();
+    expect(home).not.toBe(edit);
+
+    rerender(layoutFor({ activeModule: 'home' }));
+    expect(dashboardMain()).toBe(home);
+  });
+
+  it('iná položka pravého panela na profile (nie úprava) element nemení', () => {
+    const { rerender } = render(profile());
+    const before = dashboardMain();
+
+    rerender(layoutFor({ activeModule: 'profile', activeRightItem: 'language', isRightSidebarOpen: true }));
+
+    expect(dashboardMain()).toBe(before);
+  });
+
+  it('položka `edit-profile` pri zatvorenom pravom paneli nie je úprava – element sa nemení', () => {
+    const { rerender } = render(profile());
+    const before = dashboardMain();
+
+    rerender(layoutFor({ activeModule: 'profile', activeRightItem: 'edit-profile', isRightSidebarOpen: false }));
+
+    expect(dashboardMain()).toBe(before);
+  });
+
+  it('opakované prekreslenie tej istej obrazovky nevytvára ďalšie elementy', () => {
+    const { rerender } = render(profile());
+    rerender(profileEdit());
+    const edit = dashboardMain();
+
+    for (let i = 0; i < 4; i += 1) rerender(profileEdit());
+
+    expect(dashboardMain()).toBe(edit);
+  });
+
+  it('StrictMode: dvojitý render nevytvorí extra element navyše', () => {
+    const { rerender } = render(<React.StrictMode>{profile()}</React.StrictMode>);
+    const before = dashboardMain();
+
+    rerender(<React.StrictMode>{profile()}</React.StrictMode>);
+    expect(dashboardMain()).toBe(before);
+
+    rerender(<React.StrictMode>{profileEdit()}</React.StrictMode>);
+    const edit = dashboardMain();
+    expect(edit).not.toBe(before);
+
+    rerender(<React.StrictMode>{profileEdit()}</React.StrictMode>);
+    expect(dashboardMain()).toBe(edit);
+  });
+
+  it('viewport sa vyrieši až po prvom renderi (priama adresa úpravy): jedna výmena, potom stabilný', () => {
+    mockIsMobile = false;
+    const { rerender } = render(profileEdit());
+    const unresolved = dashboardMain();
+
+    mockIsMobile = true;
+    rerender(profileEdit());
+    const resolved = dashboardMain();
+    expect(resolved).not.toBe(unresolved);
+
+    rerender(profileEdit());
+    expect(dashboardMain()).toBe(resolved);
+  });
+
+  it('zámok scrollu tutoriálu prejde na nový <main> aj pri prepnutí úpravy profilu', async () => {
+    mockOnboardingOverlayVisible = true;
+    const withScrollLock = (layout: React.ReactElement) => (
+      <>
+        {layout}
+        <OnboardingScrollLock />
+      </>
+    );
+
+    const { rerender } = render(withScrollLock(profile()));
+    const before = dashboardMain();
+    expect(before.style.overflowY).toBe('hidden');
+
+    rerender(withScrollLock(profileEdit()));
+    await flushMutationObservers();
+
+    const after = dashboardMain();
+    expect(after).not.toBe(before);
+    expect(after.style.overflowY).toBe('hidden');
+  });
+});
+
 describe('zámok scrollu tutoriálu sleduje aktuálny <main> (viditeľnosť tutoriálu sa pri zmene modulu nemení)', () => {
   /** Tutoriál posúva krok aj modul v jednom kroku – zámok zostáva zapnutý, efekt sa nespustí znova. */
   function layoutWithScrollLock(activeModule: string) {
@@ -191,13 +346,6 @@ describe('zámok scrollu tutoriálu sleduje aktuálny <main> (viditeľnosť tuto
         <OnboardingScrollLock />
       </>
     );
-  }
-
-  async function flushMutationObservers() {
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
   }
 
   beforeEach(() => {
