@@ -220,7 +220,11 @@ export default function ModuleRouter({
   }
 
   if (isRightSidebarOpen && activeRightItem === 'privacy') {
-    return <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />;
+    return isMobile ? (
+      <PrivacySettingsMobileSection user={user} onUserUpdate={onUserUpdate} />
+    ) : (
+      <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />
+    );
   }
 
   if (isRightSidebarOpen && activeRightItem === 'account-settings') {
@@ -424,11 +428,10 @@ export default function ModuleRouter({
         />
       );
     case 'privacy':
-      return (
-        <PrivacySettingsMobileSection
-          user={user}
-          onUserUpdate={onUserUpdate}
-        />
+      return isMobile ? (
+        <PrivacySettingsMobileSection user={user} onUserUpdate={onUserUpdate} />
+      ) : (
+        <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />
       );
     default:
       return (

@@ -7,6 +7,7 @@ import {
   profileIdentifier,
 } from '../useDashboardNavigation';
 import {
+  readDesktopSettingsDepth,
   readDesktopSettingsOriginTarget,
   readDesktopSettingsReturnTarget,
   withDesktopSettingsHistory,
@@ -124,7 +125,13 @@ describe('profile edit navigation flow', () => {
     expect(result.current.activeModule).toBe('profile');
     expect(result.current.isRightSidebarOpen).toBe(true);
     expect(result.current.activeRightItem).toBe('edit-profile');
-    expect(pushStateSpy).toHaveBeenLastCalledWith(null, '', '/dashboard/users/test-user/edit');
+    const [editState, , editUrl] = pushStateSpy.mock.calls.at(-1) ?? [];
+    expect(editUrl).toBe('/dashboard/users/test-user/edit');
+    expect(readDesktopSettingsReturnTarget(editState)).toEqual({
+      moduleId: 'profile',
+      url: '/dashboard/users/test-user',
+    });
+    expect(readDesktopSettingsDepth(editState)).toBe(0);
 
     act(() => {
       result.current.closeOwnProfileEdit({ ...baseUser, slug: 'updated-user' });
@@ -171,9 +178,10 @@ describe('profile edit navigation flow', () => {
     expect(result.current.activeRightItem).toBe('');
   });
 
-  it('opens desktop settings on edit profile and keeps the origin across sections', () => {
+  it('opens desktop settings on edit profile and jumps straight to the origin from a section', () => {
     window.history.replaceState(null, '', '/dashboard/messages/42?focus=latest');
     const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => undefined);
+    const goSpy = jest.spyOn(window.history, 'go').mockImplementation(() => undefined);
     const { result } = renderHook(() => useDashboardState(baseUser, 'messages'));
 
     act(() => {
@@ -207,8 +215,11 @@ describe('profile edit navigation flow', () => {
     expect(result.current.activeModule).toBe('messages');
     expect(result.current.isRightSidebarOpen).toBe(false);
     expect(result.current.activeRightItem).toBe('');
-    expect(backSpy).toHaveBeenCalledTimes(1);
+    expect(goSpy).toHaveBeenCalledTimes(1);
+    expect(goSpy).toHaveBeenCalledWith(-2);
+    expect(backSpy).not.toHaveBeenCalled();
     backSpy.mockRestore();
+    goSpy.mockRestore();
   });
 
   it('falls back to the own profile when settings were opened directly', async () => {
