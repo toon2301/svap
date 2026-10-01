@@ -50,6 +50,18 @@ jest.mock('../modules/offer-watch/results/OfferWatchResultsDesktop', () => ({
     </button>
   ),
 }));
+jest.mock('../modules/PrivacySettingsModule', () => ({
+  __esModule: true,
+  default: ({ onBack }: { onBack?: () => void }) => (
+    <button type="button" data-testid="privacy-panel-variant" onClick={onBack}>
+      PrivacySettingsModule
+    </button>
+  ),
+}));
+jest.mock('../modules/PrivacySettingsMobileSection', () => ({
+  __esModule: true,
+  default: () => <div data-testid="privacy-mobile-variant">PrivacySettingsMobileSection</div>,
+}));
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
@@ -219,5 +231,66 @@ describe('ModuleRouter – home', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Spravovať sledovania' }));
     expect(props.onManageOfferWatches).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ModuleRouter – privacy follows the viewport, not the panel state', () => {
+  beforeEach(() => {
+    mockIsMobile = false;
+  });
+
+  it('shows the desktop privacy screen on the privacy route when the right panel is closed', () => {
+    render(<ModuleRouter {...baseProps()} activeModule="privacy" />);
+
+    expect(screen.getByTestId('privacy-panel-variant')).toBeInTheDocument();
+    expect(screen.queryByTestId('privacy-mobile-variant')).not.toBeInTheDocument();
+  });
+
+  it('shows the mobile privacy page on the privacy route when the right panel is closed', () => {
+    mockIsMobile = true;
+
+    render(<ModuleRouter {...baseProps()} activeModule="privacy" />);
+
+    expect(screen.getByTestId('privacy-mobile-variant')).toBeInTheDocument();
+    expect(screen.queryByTestId('privacy-panel-variant')).not.toBeInTheDocument();
+  });
+
+  it('shows the desktop privacy screen for the open right panel', () => {
+    render(
+      <ModuleRouter
+        {...baseProps()}
+        activeModule="profile"
+        activeRightItem="privacy"
+        isRightSidebarOpen
+      />,
+    );
+
+    expect(screen.getByTestId('privacy-panel-variant')).toBeInTheDocument();
+    expect(screen.queryByTestId('privacy-mobile-variant')).not.toBeInTheDocument();
+  });
+
+  it('shows the mobile privacy page when an open right panel meets a mobile viewport', () => {
+    mockIsMobile = true;
+
+    render(
+      <ModuleRouter
+        {...baseProps()}
+        activeModule="privacy"
+        activeRightItem="privacy"
+        isRightSidebarOpen
+      />,
+    );
+
+    expect(screen.getByTestId('privacy-mobile-variant')).toBeInTheDocument();
+    expect(screen.queryByTestId('privacy-panel-variant')).not.toBeInTheDocument();
+  });
+
+  it('gives the desktop privacy screen the arrow handler on the privacy route too', () => {
+    const props = baseProps();
+
+    render(<ModuleRouter {...props} activeModule="privacy" />);
+    fireEvent.click(screen.getByTestId('privacy-panel-variant'));
+
+    expect(props.closeOwnProfileEdit).toHaveBeenCalledTimes(1);
   });
 });

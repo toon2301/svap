@@ -18,6 +18,7 @@ export interface DesktopSettingsReturnTarget {
 interface DesktopSettingsHistoryMarker {
   version: 1;
   returnTarget: DesktopSettingsReturnTarget;
+  depth?: number;
 }
 
 interface DesktopSettingsOriginHistoryMarker {
@@ -29,6 +30,9 @@ type HistoryStateRecord = Record<string, unknown>;
 
 const HISTORY_KEY = '__svaplyDesktopSettings';
 const ORIGIN_HISTORY_KEY = '__svaplyDesktopSettingsOrigin';
+
+// Hlbšie sa kroky nesledujú: neznáma hĺbka znamená jeden krok späť ako doteraz.
+const MAX_TRACKED_DEPTH = 40;
 
 const RETURNABLE_MODULES = new Set([
   'home',
@@ -161,17 +165,34 @@ export function isDesktopSettingsReturnTarget(
   );
 }
 
+function normalizeDepth(value: unknown): number | null {
+  return typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= MAX_TRACKED_DEPTH
+    ? value
+    : null;
+}
+
+function createHistoryMarker(
+  returnTarget: DesktopSettingsReturnTarget,
+  depth?: number | null,
+): DesktopSettingsHistoryMarker {
+  const normalizedDepth = normalizeDepth(depth);
+  return normalizedDepth === null
+    ? { version: 1, returnTarget }
+    : { version: 1, returnTarget, depth: normalizedDepth };
+}
+
 export function withDesktopSettingsHistory(
   historyState: unknown,
   returnTarget: DesktopSettingsReturnTarget,
+  depth?: number,
 ): HistoryStateRecord {
   const nextState = withoutDesktopSettingsOriginHistory(historyState);
   return {
     ...nextState,
-    [HISTORY_KEY]: {
-      version: 1,
-      returnTarget,
-    } satisfies DesktopSettingsHistoryMarker,
+    [HISTORY_KEY]: createHistoryMarker(returnTarget, depth),
   };
 }
 
@@ -231,6 +252,80 @@ export function readDesktopSettingsOriginTarget(
   }
 
   return candidate.returnTarget;
+}
+
+/** Koľko záznamov histórie leží medzi aktuálnym a prvou obrazovkou Nastavení; `null` = neznáme. */
+export function readDesktopSettingsDepth(historyState: unknown): number | null {
+  if (!readDesktopSettingsReturnTarget(historyState)) return null;
+
+  const marker = asHistoryStateRecord(historyState)[HISTORY_KEY] as Partial<DesktopSettingsHistoryMarker>;
+  return normalizeDepth(marker.depth);
+}
+
+/** O koľko krokov späť leží pôvod Nastavení; pri neznámej hĺbke jeden krok ako doteraz. */
+export function getDesktopSettingsStepsToOrigin(historyState: unknown): number {
+  const depth = readDesktopSettingsDepth(historyState);
+  return depth === null ? 1 : depth + 1;
+}
+
+/** Stav pre nový záznam, ktorý kopíruje aktuálny (vrátane Next.js údajov) o krok hlbšie. */
+export function withDesktopSettingsStep(historyState: unknown): unknown {
+  const returnTarget = readDesktopSettingsReturnTarget(historyState);
+  const depth = readDesktopSettingsDepth(historyState);
+  if (!returnTarget || depth === null) return historyState;
+
+  return withDesktopSettingsHistory(historyState, returnTarget, depth + 1);
+}
+
+/** Stav pre nový záznam, ktorý doteraz nenášal nič: len marker o krok hlbšie, inak `null`. */
+export function createDesktopSettingsStepState(historyState: unknown): HistoryStateRecord | null {
+  const returnTarget = readDesktopSettingsReturnTarget(historyState);
+  const depth = readDesktopSettingsDepth(historyState);
+  if (!returnTarget || depth === null || normalizeDepth(depth + 1) === null) return null;
+
+  return { [HISTORY_KEY]: createHistoryMarker(returnTarget, depth + 1) };
+}
+
+/** Stav pre záznam „Upraviť profil": pokračuje v rozbehnutej session, alebo ju začne na vlastnom profile. */
+export function createProfileEditHistoryState(
+  historyState: unknown,
+  currentUrl: string,
+  ownProfilePath: string,
+): HistoryStateRecord | null {
+  if (readDesktopSettingsReturnTarget(historyState)) {
+    return createDesktopSettingsStepState(historyState);
+  }
+
+  const normalizedUrl = normalizeDashboardUrl(currentUrl);
+  if (!normalizedUrl) return null;
+
+  const { pathname } = new URL(normalizedUrl, 'https://swaply.local');
+  if (pathname.replace(/\/+$/, '') !== ownProfilePath) return null;
+
+  const returnTarget = createDesktopSettingsReturnTarget('profile', currentUrl);
+  return returnTarget ? { [HISTORY_KEY]: createHistoryMarker(returnTarget, 0) } : null;
+}
+
+/** Stav pre záznam „Sledované ponuky" mimo modulu Nastavení: zachová pôvod rozbehnutej session. */
+export function createOfferWatchesSettingsHistoryState(
+  historyState: unknown,
+  fallbackTarget: DesktopSettingsReturnTarget,
+): HistoryStateRecord {
+  const returnTarget = readDesktopSettingsReturnTarget(historyState);
+  const depth = readDesktopSettingsDepth(historyState);
+  if (returnTarget && depth !== null) {
+    return withDesktopSettingsHistory(historyState, returnTarget, depth + 1);
+  }
+
+  return withDesktopSettingsHistory(historyState, fallbackTarget);
+}
+
+/** Šípky v Nastaveniach volajú handler priamo z `onClick`, takže namiesto používateľa príde udalosť kliku; tú zahoď. */
+export function normalizeSettingsTargetUser<T extends { id?: number; slug?: string | null }>(
+  value: T | null | undefined,
+): T | null {
+  if (typeof value !== 'object' || value === null) return null;
+  return typeof value.id === 'number' || typeof value.slug === 'string' ? value : null;
 }
 
 export function getDesktopSettingsSectionPath(section: string): string | null {

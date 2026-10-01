@@ -245,12 +245,6 @@ describe('modul podľa adresy', () => {
     ['/dashboard/statistics', 'statistics'],
     ['/dashboard/settings', 'settings'],
     ['/dashboard/settings/watches', 'settings'],
-    ['/dashboard/settings/notifications', 'notification-settings'],
-    ['/dashboard/settings/account', 'account-settings'],
-    ['/dashboard/settings/blocked', 'blocked-users'],
-    ['/dashboard/language', 'language'],
-    ['/dashboard/privacy', 'privacy'],
-    ['/dashboard/account-type', 'account-type'],
     ['/dashboard/skills', 'skills'],
     ['/dashboard/skills/offer', 'skills-offer'],
     ['/dashboard/skills/search', 'skills-search'],
@@ -264,6 +258,38 @@ describe('modul podľa adresy', () => {
     await popTo(path);
 
     expect(activeModule()).toBe(expected);
+  });
+
+  it.each([
+    ['/dashboard/settings/notifications', 'notification-settings'],
+    ['/dashboard/settings/account', 'account-settings'],
+    ['/dashboard/settings/blocked', 'blocked-users'],
+    ['/dashboard/language', 'language'],
+    ['/dashboard/privacy', 'privacy'],
+    ['/dashboard/account-type', 'account-type'],
+  ])('mobil: krok na %s otvorí modul %s', async (path, expected) => {
+    await renderDashboard(true);
+
+    await popTo(path);
+
+    expect(activeModule()).toBe(expected);
+  });
+
+  it.each([
+    ['/dashboard/settings/notifications', 'notifications'],
+    ['/dashboard/settings/account', 'account-settings'],
+    ['/dashboard/settings/blocked', 'blocked-users'],
+    ['/dashboard/language', 'language'],
+    ['/dashboard/privacy', 'privacy'],
+    ['/dashboard/account-type', 'account-type'],
+  ])('desktop: krok na %s otvorí Nastavenia s pravým panelom a položkou %s', async (path, item) => {
+    await renderDashboard();
+
+    await popTo(path);
+
+    await waitFor(() => expect(activeModule()).toBe('settings'));
+    expect(layoutProps().isRightSidebarOpen).toBe(true);
+    expect(layoutProps().activeRightItem).toBe(item);
   });
 
   it.each(['/dashboard', '/dashboard/', '/dashboard/home'])('krok na %s vráti Nástenku', async (path) => {

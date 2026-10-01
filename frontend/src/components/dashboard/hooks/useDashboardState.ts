@@ -12,11 +12,18 @@ import {
 } from '../modules/skills/skillsDescribeReturnSession';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  createDesktopSettingsStepState,
+  createOfferWatchesSettingsHistoryState,
+  createProfileEditHistoryState,
   getDesktopSettingsSectionFromModule,
   getDesktopSettingsSectionFromPath,
   getDesktopSettingsSectionPath,
+  getDesktopSettingsStepsToOrigin,
+  normalizeSettingsTargetUser,
+  readDesktopSettingsDepth,
   readDesktopSettingsReturnTarget,
   withDesktopSettingsHistory,
+  withDesktopSettingsStep,
   isSettingsSectionModule,
   withoutDesktopSettingsHistory,
   type DesktopSettingsReturnTarget,
@@ -106,15 +113,16 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     const hasSettingsReturnTarget =
       typeof window !== 'undefined' &&
       readDesktopSettingsReturnTarget(window.history.state) !== null;
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
     const shouldRestoreDesktopSettings =
-      typeof window !== 'undefined' &&
-      window.innerWidth >= 1024 &&
+      isDesktop &&
       settingsSection !== null &&
       (initialModule === 'settings' || hasSettingsReturnTarget);
     const nextModule = shouldRestoreDesktopSettings ? 'settings' : initialModule;
 
     setActiveModule(nextModule);
-    if (shouldRestoreDesktopSettings) {
+    // Pravá navigácia patrí ku každej sekcii Nastavení na desktope, aj bez štítku.
+    if (isDesktop && settingsSection !== null) {
       setIsRightSidebarOpen(true);
       setActiveRightItem(settingsSection);
       setIsMobileMenuOpen(false);
@@ -171,11 +179,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       }
 
       if (typeof window !== 'undefined') {
+        const isReplace = activeModule === 'settings';
         const historyState = withDesktopSettingsHistory(
           window.history.state,
           effectiveReturnTarget,
+          isReplace ? readDesktopSettingsDepth(window.history.state) ?? undefined : 0,
         );
-        const historyMethod = activeModule === 'settings' ? 'replaceState' : 'pushState';
+        const historyMethod = isReplace ? 'replaceState' : 'pushState';
         window.history[historyMethod](historyState, '', '/dashboard/settings');
       }
     },
@@ -213,7 +223,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       if (typeof window === 'undefined') return;
 
       if (rememberedTarget) {
-        window.history.back();
+        // Šípka vedie rovno na pôvod Nastavení, nie po jednej sekcii; uloženie profilu ostáva jeden krok.
+        const steps = targetUser ? 1 : getDesktopSettingsStepsToOrigin(window.history.state);
+        if (steps > 1) {
+          window.history.go(-steps);
+        } else {
+          window.history.back();
+        }
         return;
       }
 
@@ -241,15 +257,34 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
     const identifier = getOwnProfileIdentifier();
     if (identifier && typeof window !== 'undefined') {
-      window.history.pushState(null, '', `/dashboard/users/${identifier}/edit`);
+      window.history.pushState(
+        createProfileEditHistoryState(
+          window.history.state,
+          `${window.location.pathname}${window.location.search}`,
+          `/dashboard/users/${identifier}`,
+        ),
+        '',
+        `/dashboard/users/${identifier}/edit`,
+      );
     }
   }, [getOwnProfileIdentifier]);
 
   const closeOwnProfileEdit = useCallback(
-    (targetUser?: Pick<User, 'id' | 'slug'> | null) => {
+    (requestedUser?: Pick<User, 'id' | 'slug'> | null) => {
+      const targetUser = normalizeSettingsTargetUser(requestedUser);
+
       if (activeModule === 'settings') {
         closeDesktopSettings(targetUser);
         return;
+      }
+
+      // Hlbšie v rozbehnutej session (sekcia po sekcii z „Upraviť profil") vedie šípka rovno na pôvod.
+      if (!targetUser && typeof window !== 'undefined') {
+        const depth = readDesktopSettingsDepth(window.history.state);
+        if (depth !== null && depth >= 1) {
+          closeDesktopSettings();
+          return;
+        }
       }
 
       setActiveModule('profile');
@@ -272,26 +307,45 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     [activeModule, closeDesktopSettings, getOwnProfileIdentifier]
   );
 
-  // Browser Forward môže znovu otvoriť settings položku s uloženým markerom.
-  // Obnovu odložíme o jeden tick, aby mala prednosť pred všeobecným popstate
-  // listenerom Dashboardu, ktorý nepozná desktopový settings kontext.
+  // Browser Back/Forward môže otvoriť sekciu Nastavení alebo úpravu vlastného
+  // profilu. Pravá navigácia sa obnovuje pri každom takom zázname – aj bez
+  // štítku (záznamy z mobilu či spred nasadenia ho nemajú), inak by sekcia
+  // ostala bez nej. Obnovu odložíme o jeden tick, aby mala prednosť pred
+  // všeobecným popstate listenerom Dashboardu, ktorý nepozná desktopový kontext.
   useEffect(() => {
     let restoreTimer: ReturnType<typeof setTimeout> | null = null;
 
     const restoreDesktopSettingsFromHistory = () => {
       if (window.innerWidth < 1024) return;
-      if (!readDesktopSettingsReturnTarget(window.history.state)) return;
 
       const section = getDesktopSettingsSectionFromPath(window.location.pathname);
-      if (!section) return;
+      if (section) {
+        restoreTimer = setTimeout(() => {
+          setActiveModule('settings');
+          setIsRightSidebarOpen(true);
+          setActiveRightItem(section);
+          setIsMobileMenuOpen(false);
+          try {
+            localStorage.setItem('activeModule', 'settings');
+          } catch {
+            // ignore
+          }
+        }, 0);
+        return;
+      }
+
+      const editedIdentifier = /^\/dashboard\/users\/([^/]+)\/edit\/?$/.exec(window.location.pathname)?.[1];
+      const ownIdentifier = getOwnProfileIdentifier();
+      if (!editedIdentifier || !ownIdentifier) return;
+      if (editedIdentifier !== ownIdentifier && editedIdentifier !== encodeURIComponent(ownIdentifier)) return;
 
       restoreTimer = setTimeout(() => {
-        setActiveModule('settings');
+        setActiveModule('profile');
         setIsRightSidebarOpen(true);
-        setActiveRightItem(section);
+        setActiveRightItem('edit-profile');
         setIsMobileMenuOpen(false);
         try {
-          localStorage.setItem('activeModule', 'settings');
+          localStorage.setItem('activeModule', 'profile');
         } catch {
           // ignore
         }
@@ -303,7 +357,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       window.removeEventListener('popstate', restoreDesktopSettingsFromHistory);
       if (restoreTimer) clearTimeout(restoreTimer);
     };
-  }, []);
+  }, [getOwnProfileIdentifier]);
 
   // Synchronizácia accountType s user.user_type z databázy
   useEffect(() => {
@@ -460,7 +514,11 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
           // už aktívnu záložku profilu. Inak by sa cez prázdne kroky musel
           // používateľ preklikať späť.
           if (window.location.pathname !== settingsPath) {
-            window.history.pushState(window.history.state, '', settingsPath);
+            window.history.pushState(
+              withDesktopSettingsStep(window.history.state),
+              '',
+              settingsPath,
+            );
           }
           try {
             localStorage.setItem('activeModule', 'settings');
@@ -484,16 +542,11 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('settings');
         if (typeof window !== 'undefined') {
           // Rovnaký návratový štítok, aký do histórie zapisuje
-          // `openDesktopSettings`. Bez neho by tento záznam vyzeral ako
-          // obyčajná adresa: `restoreDesktopSettingsFromHistory` obnovuje
-          // nastavenia pri `popstate` LEN podľa prítomnosti tohto štítku,
-          // takže krok dopredu späť na sledované ponuky by sekciu neobnovil.
-          //
-          // Cieľ sa berie z `getSettingsFallbackTarget()` – sem sa dá dostať
-          // iba mimo nastavení (vetva vyššie sa vracia skôr), takže starší
-          // štítok, ktorý by `openDesktopSettings` v nastaveniach prebral,
-          // tu existovať nemôže.
-          const historyState = withDesktopSettingsHistory(
+          // `openDesktopSettings`: nesie pôvod, na ktorý vedie šípka späť.
+          // V rozbehnutej session z „Upraviť profil" sa pôvod aj hĺbka
+          // prevezmú z aktuálneho záznamu, inak je cieľom
+          // `getSettingsFallbackTarget()`.
+          const historyState = createOfferWatchesSettingsHistoryState(
             window.history.state,
             getSettingsFallbackTarget(),
           );
@@ -520,7 +573,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         const url = '/dashboard/settings/notifications';
         if (typeof window !== 'undefined') {
           // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-          window.history.pushState(null, '', url);
+          window.history.pushState(createDesktopSettingsStepState(window.history.state), '', url);
           try {
             localStorage.setItem('activeModule', 'notification-settings');
           } catch {
@@ -532,7 +585,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         const url = '/dashboard/language';
         if (typeof window !== 'undefined') {
           // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-          window.history.pushState(null, '', url);
+          window.history.pushState(createDesktopSettingsStepState(window.history.state), '', url);
           try {
             localStorage.setItem('activeModule', 'language');
           } catch {
@@ -544,7 +597,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         const url = '/dashboard/account-type';
         if (typeof window !== 'undefined') {
           // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-          window.history.pushState(null, '', url);
+          window.history.pushState(createDesktopSettingsStepState(window.history.state), '', url);
           try {
             localStorage.setItem('activeModule', 'account-type');
           } catch {
@@ -556,7 +609,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         const url = '/dashboard/privacy';
         if (typeof window !== 'undefined') {
           // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-          window.history.pushState(null, '', url);
+          window.history.pushState(createDesktopSettingsStepState(window.history.state), '', url);
           try {
             localStorage.setItem('activeModule', 'privacy');
           } catch {
@@ -567,7 +620,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('account-settings');
         const url = '/dashboard/settings/account';
         if (typeof window !== 'undefined') {
-          window.history.pushState(null, '', url);
+          window.history.pushState(createDesktopSettingsStepState(window.history.state), '', url);
           try {
             localStorage.setItem('activeModule', 'account-settings');
           } catch {
@@ -578,7 +631,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('blocked-users');
         const url = '/dashboard/settings/blocked';
         if (typeof window !== 'undefined') {
-          window.history.pushState(null, '', url);
+          window.history.pushState(createDesktopSettingsStepState(window.history.state), '', url);
           try {
             localStorage.setItem('activeModule', 'blocked-users');
           } catch {
@@ -642,8 +695,10 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
               // ignore
             }
           }
-          // Neotvárať sidebar v mobilnej verzii
-          setIsRightSidebarOpen(false);
+          // Neotvárať sidebar v mobilnej verzii; na desktope pravý panel ostáva otvorený.
+          if (typeof window === 'undefined' || window.innerWidth < 1024) {
+            setIsRightSidebarOpen(false);
+          }
           return 'privacy';
         }
         
