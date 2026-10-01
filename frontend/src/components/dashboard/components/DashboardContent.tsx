@@ -88,7 +88,6 @@ import {
 import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
 import {
   dashboardModuleFromPath,
-  dashboardUserIdentifierFromPath,
   useDashboardMountRoute,
 } from './dashboardMountRoute';
 import {
@@ -97,6 +96,14 @@ import {
   dashboardSectionPath,
   isSameDashboardPath,
 } from './dashboardRoutes';
+import {
+  getDashboardHighlightIdFromTarget,
+  getDashboardModuleFromTarget,
+  getDashboardUserIdentifierFromTarget,
+  parseDashboardHighlightId,
+} from './dashboardTargetUrl';
+import { resolveInitialOwnProfileTab } from './ownProfileTab';
+import { getSkillActionErrorMessage } from './skillActionError';
 import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 import { useOfferWatchResultsNavigation } from '../modules/offer-watch/results/offerWatchResultsNavigation';
@@ -113,106 +120,6 @@ interface DashboardContentProps {
   initialOfferId?: number | null;
   initialPortfolioItemId?: number | null;
   initialFeedPostId?: number | null;
-}
-
-function getDashboardModuleFromTarget(targetUrl: string): string | null {
-  if (targetUrl !== '/dashboard' && !targetUrl.startsWith('/dashboard/')) {
-    return null;
-  }
-
-  try {
-    const path = new URL(targetUrl, 'https://swaply.local').pathname;
-    if (path === '/dashboard' || path === '/dashboard/') return 'home';
-    if (/^\/dashboard\/requests\/?$/.test(path)) return 'requests';
-    if (/^\/dashboard\/messages(?:\/\d+)?\/?$/.test(path)) return 'messages';
-    if (/^\/dashboard\/offers\/\d+\/reviews\/?$/.test(path)) return 'offer-reviews';
-    if (/^\/dashboard\/settings\/notifications\/?$/.test(path)) return 'notification-settings';
-    if (/^\/dashboard\/settings\/account\/?$/.test(path)) return 'account-settings';
-    if (/^\/dashboard\/settings\/blocked\/?$/.test(path)) return 'blocked-users';
-    if (/^\/dashboard\/notifications\/?$/.test(path)) return 'notifications';
-    if (/^\/dashboard\/favorites\/?$/.test(path)) return 'favorites';
-    if (/^\/dashboard\/search\/?$/.test(path)) return 'search';
-    if (/^\/dashboard\/settings\/?$/.test(path)) return 'settings';
-    if (/^\/dashboard\/language\/?$/.test(path)) return 'language';
-    if (/^\/dashboard\/account-type\/?$/.test(path)) return 'account-type';
-    if (/^\/dashboard\/privacy\/?$/.test(path)) return 'privacy';
-    if (/^\/dashboard\/skills\/offer\/?$/.test(path)) return 'skills-offer';
-    if (/^\/dashboard\/skills\/search\/?$/.test(path)) return 'skills-search';
-    if (/^\/dashboard\/skills\/?$/.test(path)) return 'skills';
-    if (/^\/dashboard\/profile\/?$/.test(path)) return 'profile';
-    if (/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/.test(path)) return 'portfolio-detail';
-    if (/^\/dashboard\/users\/[^/]+\/portfolio\/create\/?$/.test(path)) return 'portfolio-create';
-    if (/^\/dashboard\/users\/[^/]+\/portfolio\/?$/.test(path)) return 'user-profile';
-    if (/^\/dashboard\/users\/[^/]+\/?$/.test(path)) return 'user-profile';
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null {
-  try {
-    const path = new URL(targetUrl, 'https://swaply.local').pathname;
-    return dashboardUserIdentifierFromPath(path);
-  } catch {
-    return null;
-  }
-}
-
-function parseDashboardHighlightId(value: number | string | null | undefined): number | null {
-  const id =
-    typeof value === 'number'
-      ? value
-      : value != null && String(value).trim()
-        ? Number(value)
-        : null;
-  return id != null && Number.isFinite(id) && Number.isInteger(id) && id >= 1 ? id : null;
-}
-
-function getDashboardHighlightIdFromTarget(targetUrl: string): number | null {
-  try {
-    const searchParams = new URL(targetUrl, 'https://swaply.local').searchParams;
-    const raw = searchParams.get('offer') ?? searchParams.get('highlight');
-    return parseDashboardHighlightId(raw);
-  } catch {
-    return null;
-  }
-}
-
-function getSkillActionErrorMessage(error: unknown, fallback: string): string {
-  const data = (error as { response?: { data?: { error?: unknown; detail?: unknown } } })?.response?.data;
-  if (typeof data?.error === 'string' && data.error.trim()) return data.error;
-  if (typeof data?.detail === 'string' && data.detail.trim()) return data.detail;
-  return fallback;
-}
-
-function resolveInitialOwnProfileTab(
-  initialRoute: string | undefined,
-  initialProfileTab: ProfileTab | undefined,
-  user: User | null | undefined,
-  initialProfileSlug: string | null | undefined,
-  initialViewedUserId: number | null | undefined,
-): ProfileTab {
-  if (
-    initialRoute === 'profile' ||
-    initialRoute === 'portfolio-create' ||
-    initialRoute === 'portfolio-detail'
-  ) {
-    return initialProfileTab ?? 'offers';
-  }
-
-  if (initialRoute === 'user-profile' && initialProfileTab) {
-    const slug = String(initialProfileSlug ?? '').trim();
-    const isSelfSlug = Boolean(user?.slug && slug && user.slug === slug);
-    const isSelfId =
-      initialViewedUserId != null && user?.id != null && initialViewedUserId === user.id;
-    if (isSelfSlug || isSelfId) {
-      return initialProfileTab;
-    }
-  }
-
-  return 'offers';
 }
 
 /**
