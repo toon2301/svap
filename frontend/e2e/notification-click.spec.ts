@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import {
   bottomNav,
@@ -15,31 +15,79 @@ import { FEED_HOME_PATHS } from './support/feed';
 
 // Klik na upozornenie vedie na príspevok, Späť sa vráti. Klikajú sa VÝLUČNE prečítané upozornenia –
 // klik na neprečítané by do produkcie zapísal „prečítané". Bez takého upozornenia sa test preskočí.
+// Upozornenie môže ostať aj po zmazaní príspevku (adresu skladá backend z uloženého ID bez kontroly) –
+// aplikácia takýto cieľ správne odmietne, preto sa pred klikom cez API overí, že príspevok existuje.
+
+/** Prvá stránka zoznamu upozornení má v aplikácii 15 položiek (`useNotificationsFeed`). */
+const NOTIFICATIONS_PAGE_SIZE = 15;
 
 const FEED_NOTIFICATIONS = [
-  { name: 'like', title: 'Páči sa mi tvoj príspevok', commentTarget: false },
-  { name: 'comment', title: 'Komentár k príspevku', commentTarget: true },
-  { name: 'reply', title: 'Odpoveď na komentár', commentTarget: true },
+  { name: 'like', type: 'feed_post_liked', title: 'Páči sa mi tvoj príspevok', commentTarget: false },
+  { name: 'comment', type: 'feed_post_commented', title: 'Komentár k príspevku', commentTarget: true },
+  { name: 'reply', type: 'feed_post_comment_replied', title: 'Odpoveď na komentár', commentTarget: true },
 ] as const;
 
-/** Prečítaná položka = bez fialovej bodky neprečítaného; titulok je v sr-only texte. */
-function readNotification(page: Page, title: string) {
+/** Viditeľné prečítané položky daného typu v poradí zoznamu; prečítaná = bez fialovej bodky neprečítaného, titulok je v sr-only texte. */
+function readNotifications(page: Page, title: string): Locator {
   return page
     .locator('button')
     .filter({ has: page.locator('.sr-only', { hasText: title }) })
     .filter({ hasNot: page.locator('span.bg-purple-600') })
-    .first();
+    .filter({ visible: true });
 }
 
-/** Počká na prečítanú položku daného typu; ak žiadna nie je, test preskočí (nikdy neklikne na neprečítanú). */
-async function readNotificationOrSkip(page: Page, title: string) {
-  const item = readNotification(page, title);
-  const found = await item.waitFor({ state: 'visible', timeout: 15_000 }).then(
-    () => true,
-    () => false,
+/** Čisté čítanie API: adresy cieľov PREČÍTANÝCH upozornení daného typu z prvej stránky zoznamu, v poradí zoznamu. */
+async function readNotificationTargets(page: Page, type: string): Promise<string[]> {
+  return page.evaluate(
+    async ({ wanted, pageSize }) => {
+      const response = await fetch(`/api/auth/notifications/?type=all&page=1&page_size=${pageSize}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Príprava: zoznam upozornení vrátil HTTP ${response.status}.`);
+      const data = await response.json().catch(() => null);
+      const items: Array<{ type?: string; is_read?: boolean; target_url?: string | null }> = data?.results ?? [];
+      return items
+        .filter((item) => item.type === wanted && item.is_read === true)
+        .map((item) => item.target_url ?? '');
+    },
+    { wanted: type, pageSize: NOTIFICATIONS_PAGE_SIZE },
   );
-  test.skip(!found, `Účet nemá PREČÍTANÉ upozornenie „${title}" – klik na neprečítané by zapísal „prečítané".`);
-  return item;
+}
+
+/** Index prvej adresy, ktorej príspevok ešte existuje (čisté GET čítanie), inak -1. */
+async function firstLivePostIndex(page: Page, targets: string[]): Promise<number> {
+  return page.evaluate(async (urls) => {
+    for (let index = 0; index < urls.length; index += 1) {
+      const postId = /^\/dashboard\/feed\/(\d+)(?:\?|$)/.exec(urls[index])?.[1];
+      if (!postId) continue;
+      const response = await fetch(`/api/auth/feed/posts/${postId}/`, { credentials: 'include' });
+      if (response.ok) return index;
+      if (![403, 404, 410].includes(response.status)) {
+        throw new Error(`Príprava: detail príspevku vrátil HTTP ${response.status}.`);
+      }
+    }
+    return -1;
+  }, targets);
+}
+
+/** Prečítané upozornenie daného typu s existujúcim príspevkom; inak test preskočí (nikdy neklikne na neprečítané ani na zmazaný cieľ). */
+async function liveReadNotificationOrSkip(page: Page, type: string, title: string): Promise<Locator> {
+  const candidates = readNotifications(page, title);
+  let targets: string[] = [];
+  await expect
+    .poll(
+      async () => {
+        targets = await readNotificationTargets(page, type);
+        return (await candidates.count()) === targets.length;
+      },
+      { message: `Upozornenia „${title}": zoznam na stránke nesedí s API`, timeout: 15_000 },
+    )
+    .toBe(true);
+  test.skip(targets.length === 0, `Účet nemá PREČÍTANÉ upozornenie „${title}" – klik na neprečítané by zapísal „prečítané".`);
+
+  const live = await firstLivePostIndex(page, targets);
+  test.skip(live < 0, `Všetky PREČÍTANÉ upozornenia „${title}" vedú na zmazaný alebo nedostupný príspevok.`);
+  return candidates.nth(live);
 }
 
 function expectPostTarget(page: Page, commentTarget: boolean) {
@@ -58,7 +106,7 @@ test.describe('mobil', () => {
     await gotoDashboardHome(page);
   });
 
-  for (const { name, title, commentTarget } of FEED_NOTIFICATIONS) {
+  for (const { name, type, title, commentTarget } of FEED_NOTIFICATIONS) {
     test(`a read "${name}" notification opens the post page and Back returns to the list with a fresh <main>`, async ({
       page,
     }) => {
@@ -70,7 +118,7 @@ test.describe('mobil', () => {
       );
       await expect(heading).toBeVisible();
 
-      const item = await readNotificationOrSkip(page, title);
+      const item = await liveReadNotificationOrSkip(page, type, title);
       await item.tap();
       await expect.poll(() => pathOf(page).startsWith('/dashboard/feed/'), { message: 'Klik nešiel na príspevok' }).toBe(
         true,
@@ -96,7 +144,7 @@ test.describe('desktop', () => {
     await gotoDashboardHome(page);
   });
 
-  for (const { name, title, commentTarget } of FEED_NOTIFICATIONS) {
+  for (const { name, type, title, commentTarget } of FEED_NOTIFICATIONS) {
     test(`a read "${name}" notification opens the post overlay and Back closes it without touching <main>`, async ({
       page,
     }) => {
@@ -106,7 +154,7 @@ test.describe('desktop', () => {
       await sideNav(page, 'Upozornenia').click();
       await expect(page.getByRole('heading', { level: 1, name: 'Upozornenia' }).first()).toBeVisible();
 
-      const item = await readNotificationOrSkip(page, title);
+      const item = await liveReadNotificationOrSkip(page, type, title);
       await item.click();
       await expect(overlay).toBeVisible();
       expectPostTarget(page, commentTarget);

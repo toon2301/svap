@@ -6,14 +6,15 @@ import { FEED_HOME_PATHS } from './feed';
 
 export const MAIN = '[data-dashboard-main]';
 
-/** Značí každý `<main>` narastajúcim počítadlom (nový element = nové číslo). Volať PRED `page.goto`. */
+/** Značí každý `<main>` identitou „<dokument>-<počítadlo>" (po plnej navigácii sa počítadlo začína odznova). Volať PRED `page.goto`. */
 export async function recordMainInstance(page: Page): Promise<void> {
   await page.addInitScript(() => {
+    const documentId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     let counter = 0;
     const tag = (main: Element | null) => {
       if (main && !main.hasAttribute('data-main-instance')) {
         counter += 1;
-        main.setAttribute('data-main-instance', String(counter));
+        main.setAttribute('data-main-instance', `${documentId}-${counter}`);
       }
     };
     tag(document.querySelector('[data-dashboard-main]'));

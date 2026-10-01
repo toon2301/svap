@@ -18,6 +18,10 @@ import {
 // účtu, jej otvorenie ju označí za prečítanú (druhý účet uvidí „Videné"); otvorenie jeho profilu zapíše
 // 1 návštevu profilu na účet a deň. Nič sa neodosiela, nemaže ani neprepína. Meno ani slug druhého účtu
 // sa nedostane do správ o chybe.
+// Konverzácia musí byť medzi najnovšími v Správach (prvá stránka zoznamu, teraz 20): aplikácia zoznam aj meno
+// v mobilnej hlavičke berie len z nej, staršiu otvorí s názvom „Používateľ" a neklikateľnou hlavičkou – test by
+// tam nemal čo overiť. Riadok sa rozpoznáva podľa názvu, preto musí byť názov medzi nimi jedinečný. Inak skončí
+// príprava chybou.
 
 const PEER_SLUG = (process.env.E2E_PEER_SLUG ?? '').trim();
 const PEER_HEADER = 'button[aria-label="Otvoriť profil používateľa"]';
@@ -32,30 +36,44 @@ test.beforeEach(async ({ page }, testInfo) => {
   await gotoDashboardHome(page);
 });
 
-/** Čisté čítanie zoznamu konverzácií (rovnaké volanie ako pri otvorení Správ) – nič sa neotvára. */
+/** Čisté čítanie zoznamu konverzácií – rovnaké volanie ako pri otvorení Správ, takže vidí presne tú prvú stránku, ktorú ukazuje aplikácia. Nič sa neotvára. */
 async function requirePeerConversation(page: Page): Promise<PeerConversation> {
   const peer = await page.evaluate(async (slug) => {
-    const response = await fetch('/api/auth/messaging/conversations/', { credentials: 'include' });
-    if (!response.ok) return null;
-    const data = await response.json().catch(() => null);
-    const items: Array<{
+    type Item = {
       id?: number;
       is_group?: boolean;
+      name?: string | null;
       other_user?: { slug?: string | null; display_name?: string; is_deleted?: boolean } | null;
-    }> = Array.isArray(data) ? data : (data?.results ?? []);
+    };
+    const response = await fetch('/api/auth/messaging/conversations/', { credentials: 'include' });
+    if (!response.ok) throw new Error(`Príprava: zoznam konverzácií vrátil HTTP ${response.status}.`);
+    const data = await response.json().catch(() => null);
+    const items: Item[] = Array.isArray(data) ? data : (data?.results ?? []);
+
     const match = items.find(
       (item) => !item.is_group && !item.other_user?.is_deleted && item.other_user?.slug === slug,
     );
     const displayName = (match?.other_user?.display_name ?? '').trim();
-    return match && typeof match.id === 'number' && displayName ? { id: match.id, displayName } : null;
+    if (!match || typeof match.id !== 'number' || !displayName) return null;
+    const sameTitle = items.filter((item) =>
+      item.is_group
+        ? (item.name ?? '').trim() === displayName
+        : !item.other_user?.is_deleted && (item.other_user?.display_name ?? '').trim() === displayName,
+    ).length;
+    return { id: match.id, displayName, sameTitle };
   }, PEER_SLUG);
 
   if (!peer) {
     throw new Error(
-      'Príprava: v zozname Správ nie je prijatá priama konverzácia s účtom z E2E_PEER_SLUG (alebo ten účet nemá zobrazované meno).',
+      'Príprava: medzi najnovšími konverzáciami v Správach (prvá stránka zoznamu) nie je prijatá priama konverzácia s účtom z E2E_PEER_SLUG – staršie aplikácia v mobilnej hlavičke nevie pomenovať. Účet musí mať aj zobrazované meno.',
     );
   }
-  return peer;
+  if (peer.sameTitle > 1) {
+    throw new Error(
+      'Príprava: medzi najnovšími konverzáciami v Správach má viac konverzácií rovnaký názov ako účet z E2E_PEER_SLUG – riadok sa hľadá podľa názvu, ten musí byť jedinečný.',
+    );
+  }
+  return { id: peer.id, displayName: peer.displayName };
 }
 
 /** Označí viditeľné tlačidlo riadku s daným menom; označí len pri presne jednej zhode. Vráti počet zhôd. */
@@ -78,6 +96,7 @@ async function tagPeerRow(page: Page, displayName: string): Promise<number> {
 async function openPeerConversation(page: Page, peer: PeerConversation): Promise<void> {
   await bottomNav(page, 'Správy').tap();
   await expect.poll(() => pathOf(page), { message: 'Správy: nesprávna adresa' }).toBe('/dashboard/messages');
+  // Pole hľadania sa vykreslí spolu s riadkami, takže po jeho zobrazení je zoznam už načítaný.
   await expect(visiblePlaceholder(page, LIST_SEARCH)).toBeVisible();
 
   await expect
