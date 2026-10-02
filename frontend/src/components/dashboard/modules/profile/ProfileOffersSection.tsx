@@ -579,7 +579,7 @@ export default function ProfileOffersSection({
     } catch {
       // ignore scroll errors
     }
-  }, [offers]);
+  }, [offers, highlightedSkillId]);
 
   // Status polling: iba keď user, isOtherUserProfile, activeTab=offers, visible; single interval + cleanup + no overlap
   useEffect(() => {
