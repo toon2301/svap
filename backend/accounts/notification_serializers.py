@@ -168,6 +168,13 @@ class NotificationSerializer(serializers.ModelSerializer):
         }
 
     def get_target_url(self, obj):
+        """Adresa v appke, na ktorú upozornenie vedie po kliknutí (``None`` = bez cieľa).
+
+        Počíta sa pri čítaní z typu a dát upozornenia, takže zmena platí aj pre už
+        existujúce upozornenia. OFFER_LIKED vedie na vlastný profil so zvýraznenou
+        ponukou (``highlight``); ``side=back`` sa tu schválne nepridáva – karta sa
+        len zvýrazní a ostane na prednej strane.
+        """
         if obj.type == NotificationType.GROUP_INVITATION and obj.conversation_id:
             return f"/dashboard/messages?conversationId={obj.conversation_id}"
         if obj.type == NotificationType.SKILL_REQUEST:
@@ -205,7 +212,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             except (TypeError, ValueError):
                 offer_id = 0
             if offer_id > 0:
-                return f"/dashboard/profile?highlight={offer_id}&side=back"
+                return f"/dashboard/profile?highlight={offer_id}"
         if obj.type == NotificationType.OFFER_WATCH_MATCH:
             data = obj.data if isinstance(obj.data, dict) else {}
             try:
