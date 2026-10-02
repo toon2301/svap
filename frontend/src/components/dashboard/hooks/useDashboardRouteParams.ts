@@ -6,6 +6,15 @@ import { parseConversationId, parseTargetUserId } from '../modules/messages/mess
 
 type SearchParamsReader = { get(name: string): string | null } | null | undefined;
 
+/** Chybné percentové kódovanie dá null (ako decodeIdentifier v dashboardRoutes), nie výnimku pri vykresľovaní. */
+function decodePathSegment(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return null;
+  }
+}
+
 /** Hodnoty odvodené z adresy (cesta a query): recenzie, príspevok, portfólio a správy. */
 export function useDashboardRouteParams(
   pathname: string | null | undefined,
@@ -33,7 +42,7 @@ export function useDashboardRouteParams(
   );
 
   const portfolioOwnerIdentifierFromPath = React.useMemo(
-    () => (portfolioDetailMatch?.[1] ? decodeURIComponent(portfolioDetailMatch[1]) : null),
+    () => (portfolioDetailMatch?.[1] ? decodePathSegment(portfolioDetailMatch[1]) : null),
     [portfolioDetailMatch],
   );
 
@@ -48,7 +57,7 @@ export function useDashboardRouteParams(
   );
 
   const portfolioCreateOwnerIdentifierFromPath = React.useMemo(
-    () => (portfolioCreateMatch?.[1] ? decodeURIComponent(portfolioCreateMatch[1]) : null),
+    () => (portfolioCreateMatch?.[1] ? decodePathSegment(portfolioCreateMatch[1]) : null),
     [portfolioCreateMatch],
   );
 

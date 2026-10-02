@@ -160,6 +160,8 @@ describe('detail portfólia z adresy', () => {
     ['/dashboard/users/17/portfolio/42', '17', 42],
     ['/dashboard/users/jana%20novak/portfolio/42', 'jana novak', 42],
     ['/dashboard/users/%C5%A1tefan/portfolio/42', 'štefan', 42],
+    ['/dashboard/users/100%25/portfolio/42', '100%', 42],
+    ['/dashboard/users/a%40b/portfolio/42', 'a@b', 42],
     ['/dashboard/users/jana/portfolio/007', 'jana', 7],
     ['/dashboard/users/jana/portfolio/0', 'jana', 0],
     ['/dashboard/users/jana/portfolio/abc', null, null],
@@ -189,6 +191,8 @@ describe('vytvorenie portfólia z adresy', () => {
     ['/dashboard/users/jana-novak-1/portfolio/create/', 'jana-novak-1'],
     ['/dashboard/users/jana%20novak/portfolio/create', 'jana novak'],
     ['/dashboard/users/%C5%A1tefan/portfolio/create', 'štefan'],
+    ['/dashboard/users/100%25/portfolio/create', '100%'],
+    ['/dashboard/users/a%40b/portfolio/create', 'a@b'],
     ['/dashboard/users/jana/portfolio/create/extra', null],
     ['/dashboard/users/jana/extra/portfolio/create', null],
     ['/x/dashboard/users/jana/portfolio/create', null],
@@ -219,17 +223,33 @@ describe('vytvorenie portfólia z adresy', () => {
 });
 
 describe('neplatné percentové kódovanie v adrese', () => {
-  // Súčasné správanie: hook pri vykresľovaní vyhodí URIError (zaznamenané ako nález, nemení sa).
-  it.each([
-    ['detail portfólia', '/dashboard/users/%E0%A4%A/portfolio/42'],
-    ['vytvorenie portfólia', '/dashboard/users/%E0%A4%A/portfolio/create'],
-  ])('%s: dekódovanie vyhodí URIError', (_title, pathname) => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    try {
-      expect(() => renderHook(() => useDashboardRouteParams(pathname, null))).toThrow(URIError);
-    } finally {
-      consoleError.mockRestore();
-    }
+  // Chybné kódovanie sa nesmie zmeniť na výnimku pri vykresľovaní: vlastník je null (rovnako ako
+  // decodeIdentifier v dashboardRoutes), ostatné hodnoty z adresy ostávajú.
+  const MALFORMED_SEGMENTS = ['%E0%A4%A', '%', '%zz', '%FF', 'jana%'];
+
+  it.each(MALFORMED_SEGMENTS)('detail portfólia (%s): vlastník je null, položka ostáva', (segment) => {
+    const values = paramsFor(`/dashboard/users/${segment}/portfolio/42`);
+    expect(values.portfolioOwnerIdentifierFromPath).toBeNull();
+    expect(values.portfolioItemIdFromPath).toBe(42);
+  });
+
+  it.each(MALFORMED_SEGMENTS)('vytvorenie portfólia (%s): vlastník je null, zhoda ostáva', (segment) => {
+    const values = paramsFor(`/dashboard/users/${segment}/portfolio/create`);
+    expect(values.portfolioCreateOwnerIdentifierFromPath).toBeNull();
+    expect(values.portfolioCreateMatch?.[1]).toBe(segment);
+  });
+
+  it('ostatné hodnoty hooku ostávajú dostupné', () => {
+    const values = paramsFor(
+      '/dashboard/users/%E0%A4%A/portfolio/42',
+      new URLSearchParams('conversationId=9&targetUserId=5'),
+    );
+    expect(values).toMatchObject({
+      portfolioOwnerIdentifierFromPath: null,
+      portfolioItemIdFromPath: 42,
+      selectedConversationId: 9,
+      targetUserIdFromMessagesQuery: 5,
+    });
   });
 });
 
