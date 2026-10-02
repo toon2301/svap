@@ -8,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobileState } from '@/hooks';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
-import { parseFeedPostId } from '@/lib/feedApi';
 import type { ProfileTab } from '../modules/profile/profileTypes';
 import type { Offer } from '../modules/profile/profileOffersTypes';
 import DashboardLayout from '../DashboardLayout';
@@ -25,15 +24,10 @@ import DesktopOnboardingOverlay from '../onboarding/DesktopOnboardingOverlay';
 import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
 import MobileOnboardingOverlay from '../onboarding/MobileOnboardingOverlay';
 import OnboardingScrollLock from '../onboarding/OnboardingScrollLock';
-import { isMobileOnboardingBlockedByUi } from '../onboarding/mobileOnboardingScene';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
-import {
-  navigateMessagesUrl,
-  parseConversationId,
-  parseTargetUserId,
-} from '../modules/messages/messagesRouting';
+import { navigateMessagesUrl } from '../modules/messages/messagesRouting';
 import {
   parseRequestsTargetUrl,
   type RequestsRouteIntent,
@@ -41,7 +35,6 @@ import {
 import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
 import { listConversations, listMessageRequests, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
-import { messagingUserName } from '../modules/messages/messagingUserName';
 import {
   PROFILE_OFFER_DETAIL_CLOSE_EVENT,
   PROFILE_OFFER_DETAIL_OPEN_EVENT,
@@ -61,6 +54,8 @@ import { useDashboardHighlighting } from '../hooks/useDashboardHighlighting';
 import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
+import { useDashboardRouteParams } from '../hooks/useDashboardRouteParams';
+import { useOwnProfileTabFromRoute } from '../hooks/useOwnProfileTabFromRoute';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import {
   FeedPostOverlayProvider,
@@ -104,6 +99,7 @@ import {
 } from './dashboardTargetUrl';
 import { resolveInitialOwnProfileTab } from './ownProfileTab';
 import { getSkillActionErrorMessage } from './skillActionError';
+import { getDashboardRenderValues } from './dashboardRenderValues';
 import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 import { useOfferWatchResultsNavigation } from '../modules/offer-watch/results/offerWatchResultsNavigation';
@@ -153,57 +149,16 @@ export default function DashboardContent({
     initialFeedPostId,
   } = useDashboardMountRoute(pageRouteProps, pathname, searchParams?.toString() ?? '');
 
-  // OdvodiÅ¥ offerId pre recenzie z URL (fix: client-side navigÃ¡cia bez full reloadu)
-  const offerIdFromReviewsPath = React.useMemo(() => {
-    const m = pathname?.match(/^\/dashboard\/offers\/(\d+)\/reviews\/?$/);
-    return m ? Number(m[1]) : null;
-  }, [pathname]);
-
-  const feedPostIdFromPath = React.useMemo(() => {
-    const m = pathname?.match(/^\/dashboard\/feed\/(\d+)\/?$/);
-    return m ? parseFeedPostId(m[1]) : null;
-  }, [pathname]);
-
-  const conversationIdFromMessagesPath = React.useMemo(() => {
-    const m = pathname?.match(/^\/dashboard\/messages\/(\d+)\/?$/);
-    return m ? Number(m[1]) : null;
-  }, [pathname]);
-
-  const portfolioDetailMatch = React.useMemo(
-    () => pathname?.match(/^\/dashboard\/users\/([^/]+)\/portfolio\/(\d+)\/?$/) ?? null,
-    [pathname],
-  );
-
-  const portfolioOwnerIdentifierFromPath = React.useMemo(
-    () => (portfolioDetailMatch?.[1] ? decodeURIComponent(portfolioDetailMatch[1]) : null),
-    [portfolioDetailMatch],
-  );
-
-  const portfolioItemIdFromPath = React.useMemo(
-    () => (portfolioDetailMatch?.[2] ? Number(portfolioDetailMatch[2]) : null),
-    [portfolioDetailMatch],
-  );
-
-  const portfolioCreateMatch = React.useMemo(
-    () => pathname?.match(/^\/dashboard\/users\/([^/]+)\/portfolio\/create\/?$/) ?? null,
-    [pathname],
-  );
-
-  const portfolioCreateOwnerIdentifierFromPath = React.useMemo(
-    () => (portfolioCreateMatch?.[1] ? decodeURIComponent(portfolioCreateMatch[1]) : null),
-    [portfolioCreateMatch],
-  );
-
-  const conversationIdFromMessagesQuery = React.useMemo(
-    () => parseConversationId(searchParams?.get('conversationId')),
-    [searchParams],
-  );
-  const targetUserIdFromMessagesQuery = React.useMemo(
-    () => parseTargetUserId(searchParams?.get('targetUserId')),
-    [searchParams],
-  );
-
-  const selectedConversationId = conversationIdFromMessagesQuery ?? conversationIdFromMessagesPath ?? null;
+  const {
+    offerIdFromReviewsPath,
+    feedPostIdFromPath,
+    portfolioOwnerIdentifierFromPath,
+    portfolioItemIdFromPath,
+    portfolioCreateMatch,
+    portfolioCreateOwnerIdentifierFromPath,
+    targetUserIdFromMessagesQuery,
+    selectedConversationId,
+  } = useDashboardRouteParams(pathname, searchParams);
 
   // Core Dashboard State
   const dashboardState = useDashboardState(initialUser, initialRoute);
@@ -259,25 +214,14 @@ export default function DashboardContent({
     setHighlightedSkillId: highlighting.setHighlightedSkillId,
   });
 
-  useEffect(() => {
-    if (!dashboardState.user || !initialProfileTab || initialRoute !== 'user-profile') return;
-
-    const slug = String(initialProfileSlug ?? '').trim();
-    const isSelfSlug = Boolean(
-      dashboardState.user.slug && slug && dashboardState.user.slug === slug,
-    );
-    const isSelfId =
-      initialViewedUserId != null && dashboardState.user.id === initialViewedUserId;
-    if (!isSelfSlug && !isSelfId) return;
-
-    setOwnProfileTab(initialProfileTab);
-  }, [
-    dashboardState.user,
-    initialProfileSlug,
-    initialProfileTab,
+  useOwnProfileTabFromRoute({
+    user: dashboardState.user,
     initialRoute,
+    initialProfileTab,
+    initialProfileSlug,
     initialViewedUserId,
-  ]);
+    setOwnProfileTab,
+  });
   const setViewedUserId = userProfile.setViewedUserId;
   const setViewedUserSlug = userProfile.setViewedUserSlug;
   const setViewedUserSummary = userProfile.setViewedUserSummary;
@@ -1410,42 +1354,29 @@ export default function DashboardContent({
     />
   );
 
-  // Meno čítame z AuthContextu (authUser) – kanonického zdroja pravdy, ktorý sa
-  // aktualizuje po zmene mena aj po refreshi. Fallback na dashboardState.user
-  // počas krátkeho auth bootstrapu.
-  const accountNameUser = authUser ?? user;
-  const mobileAccountName =
-    [accountNameUser?.first_name, accountNameUser?.last_name].filter(Boolean).join(' ').trim() ||
-    (accountNameUser?.company_name || '').trim() ||
-    (accountNameUser?.username || '').trim() ||
-    t('navigation.profile', 'Profil');
-  // Anonymizovaný/zmazaný peer nemá profil → žiadny identifier (klik nikam nevedie).
-  const mobileMessagePeerIdentifier = mobileMessagePeer?.is_deleted
-    ? null
-    : (mobileMessagePeer?.slug || '').trim() ||
-      (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
-  const mobileMessageTitle =
-    mobileMessageGroup?.name ||
-    (mobileMessagePeer ? messagingUserName(mobileMessagePeer, t) : undefined);
-  const mobileMessageAvatarUrl = mobileMessageGroup ? null : mobileMessagePeer?.avatar_url ?? null;
-  const isProfileEditMode =
-    activeModule === 'profile' &&
-    activeRightItem === 'edit-profile' &&
-    isRightSidebarOpen;
-  const isMobileMessageConversationOpen = Boolean(
-    activeModule === 'messages' &&
-      (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
-  );
-  const showMobileOfferDetailTopBar =
-    isMobileOfferDetailOpen &&
-    (activeModule === 'profile' || activeModule === 'user-profile');
-  const isMobileOnboardingBlocked = isMobileOnboardingBlockedByUi({
+  const {
+    mobileAccountName,
+    mobileMessagePeerIdentifier,
+    mobileMessageTitle,
+    mobileMessageAvatarUrl,
+    isProfileEditMode,
+    isMobileMessageConversationOpen,
+    showMobileOfferDetailTopBar,
+    isMobileOnboardingBlocked,
+  } = getDashboardRenderValues({
+    authUser,
+    user,
+    t,
+    mobileMessagePeer,
+    mobileMessageGroup,
     activeModule,
     activeRightItem,
     isRightSidebarOpen,
     isMobileMenuOpen,
     isNotificationsPanelOpen,
-    isMessageConversationOpen: isMobileMessageConversationOpen,
+    isMobileOfferDetailOpen,
+    selectedConversationId,
+    targetUserIdFromMessagesQuery,
   });
   return (
     <RequestsNotificationsProvider
