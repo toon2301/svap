@@ -80,6 +80,48 @@ describe('zápis záložky do adresy', () => {
   });
 });
 
+describe('zápis záložky do adresy – zvýraznenie ponuky', () => {
+  it('leaves the highlight parameters alone unless told to drop them', () => {
+    expect(
+      buildProfileTabUrl('/dashboard/users/peter?highlight=5&tab=offers', 'portfolio'),
+    ).toBe('/dashboard/users/peter?highlight=5&tab=portfolio');
+  });
+
+  it('drops highlight, offer and the back side of the card when asked to', () => {
+    expect(
+      buildProfileTabUrl(
+        '/dashboard/users/peter?highlight=5&offer=6&side=back&tab=offers',
+        'portfolio',
+        { dropHighlight: true },
+      ),
+    ).toBe('/dashboard/users/peter?tab=portfolio');
+  });
+
+  it('writes the tab even when there was nothing but the highlight', () => {
+    expect(
+      buildProfileTabUrl('/dashboard/users/peter?highlight=5', 'posts', { dropHighlight: true }),
+    ).toBe('/dashboard/users/peter?tab=posts');
+  });
+
+  it('keeps every other parameter and the fragment', () => {
+    expect(
+      buildProfileTabUrl(
+        '/dashboard/users/peter?highlight=5&ref=abc&tab=offers#sekcia',
+        'posts',
+        { dropHighlight: true },
+      ),
+    ).toBe('/dashboard/users/peter?ref=abc&tab=posts#sekcia');
+  });
+
+  it('drops `side` only when it names the back side', () => {
+    // Rovnaké pravidlo ako pri zrušení zvýraznenia: len `side=back` patrí ku
+    // zvýrazneniu, iná hodnota je cudzí parameter.
+    expect(
+      buildProfileTabUrl('/dashboard/users/peter?side=front', 'posts', { dropHighlight: true }),
+    ).toBe('/dashboard/users/peter?side=front&tab=posts');
+  });
+});
+
 describe('useProfileTabQuery', () => {
   it('falls back to the path-derived tab when the URL carries none', () => {
     window.history.replaceState(null, '', '/dashboard/users/peter/portfolio');
@@ -223,6 +265,80 @@ describe('useProfileTabQuery', () => {
     // Návrat z nastavení aj mobilný panel sledovaných ponúk si v stave
     // histórie nesú vlastné štítky – prepnutie záložky im ich nesmie zmazať.
     expect(window.history.state).toEqual({ marker: 'keep-me' });
+  });
+});
+
+/**
+ * Zvýraznená ponuka patrí záložke Ponuky.
+ *
+ * Záznam histórie, ktorý vznikne kliknutím na INÚ záložku, preto zvýraznenie
+ * nenesie: krok späť naň (napr. z detailu portfólia) má vrátiť Portfólio, nie
+ * ho znova prehodiť na Ponuky a odscrollovať ku karte. Pôvodný záznam so
+ * zvýraznením ostáva, takže návrat až na neho kartu rozsvieti ako predtým.
+ */
+describe('záložka mimo ponúk zahodí zvýraznenie z adresy', () => {
+  it('a click on another tab writes a record without the highlight', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=offers');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    act(() => result.current[1]('portfolio'));
+
+    expect(result.current[0]).toBe('portfolio');
+    expect(window.location.search).toBe('?tab=portfolio');
+  });
+
+  it('drops the back side of the card with it', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?offer=5&side=back&tab=offers');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    act(() => result.current[1]('posts'));
+
+    expect(window.location.search).toBe('?tab=posts');
+  });
+
+  it('leaves the record the user came from untouched', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=offers');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    act(() => result.current[1]('portfolio'));
+    expect(window.location.search).toBe('?tab=portfolio');
+
+    await act(async () => {
+      window.history.back();
+    });
+
+    // Starší záznam si zvýraznenie drží – krok späť až na neho ho rozsvieti znova.
+    await waitFor(() => expect(window.location.search).toBe('?highlight=5&tab=offers'));
+    expect(result.current[0]).toBe('offers');
+  });
+
+  it('keeps the highlight when the offers tab is the target', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=portfolio');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    // Odvodený prepis na Ponuky (zvýraznenie ich vyžaduje) – parameter, ktorý
+    // ho spôsobil, sa nesmie stratiť.
+    act(() => result.current[1]('offers', { replace: true }));
+
+    expect(result.current[0]).toBe('offers');
+    expect(window.location.search).toBe('?highlight=5&tab=offers');
+  });
+
+  it('does not strip the highlight when the entry only writes the missing tab', async () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5');
+    renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    await waitFor(() => expect(window.location.search).toBe('?highlight=5&tab=offers'));
+  });
+
+  it('keeps unrelated parameters and the fragment on a tab click', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&ref=abc&tab=offers#sekcia');
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    act(() => result.current[1]('tagged'));
+
+    expect(window.location.search).toBe('?ref=abc&tab=tagged');
+    expect(window.location.hash).toBe('#sekcia');
   });
 });
 

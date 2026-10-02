@@ -27,21 +27,29 @@ export function supportsSkillHighlight(activeModule: string): boolean {
   return activeModule === 'profile' || activeModule === 'user-profile';
 }
 
-function clearHighlightSearchParams(url: URL): boolean {
+/**
+ * Zmaže z parametrov adresy všetko, čo určuje zvýraznenú kartu: `highlight`,
+ * `offer` a otočenie karty na zadnú stranu (`side=back`). Vracia, či sa niečo
+ * zmazalo.
+ *
+ * Definícia je jedna pre odchod z profilu aj pre záložky profilu mimo ponúk
+ * (`buildProfileTabUrl`) – dva zoznamy parametrov by sa po čase rozišli.
+ */
+export function clearHighlightParams(params: URLSearchParams): boolean {
   let changed = false;
 
-  if (url.searchParams.has('highlight')) {
-    url.searchParams.delete('highlight');
+  if (params.has('highlight')) {
+    params.delete('highlight');
     changed = true;
   }
 
-  if (url.searchParams.has('offer')) {
-    url.searchParams.delete('offer');
+  if (params.has('offer')) {
+    params.delete('offer');
     changed = true;
   }
 
-  if (url.searchParams.get('side') === 'back') {
-    url.searchParams.delete('side');
+  if (params.get('side') === 'back') {
+    params.delete('side');
     changed = true;
   }
 
@@ -228,7 +236,7 @@ export function useDashboardHighlighting({
           
           // Odstrániť parametre zvýraznenia z URL
           const currentUrl = new URL(window.location.href);
-          if (clearHighlightSearchParams(currentUrl)) {
+          if (clearHighlightParams(currentUrl.searchParams)) {
             // Odstraňujú sa VÝHRADNE parametre zvýraznenia – fragment patrí
             // stránke rovnako ako zvyšok query, takže ostáva.
             window.history.replaceState(
@@ -279,7 +287,7 @@ export function useDashboardHighlighting({
             sessionStorage.removeItem('highlightedSkillTime');
             
             const currentUrl = new URL(window.location.href);
-            if (clearHighlightSearchParams(currentUrl)) {
+            if (clearHighlightParams(currentUrl.searchParams)) {
               // Odstraňujú sa VÝHRADNE parametre zvýraznenia; fragment ostáva.
               router.replace(
                 currentUrl.pathname + currentUrl.search + currentUrl.hash,
