@@ -308,6 +308,8 @@ export default function DashboardLayout({
         activeModule !== 'portfolio-create' &&
         activeModule !== 'feed-post-create' &&
         activeModule !== 'statistics' &&
+        activeModule !== 'offer-reviews' &&
+        activeModule !== 'portfolio-detail' &&
         !(activeModule === 'messages' && isMobileMessageConversationOpen) &&
         !isMobileOfferDetailOpen && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
