@@ -78,6 +78,7 @@ async function mobileArrow(router: ReturnType<typeof historyRouter>, owner: stri
 
 beforeEach(() => {
   resetPortfolioDetailOrigin();
+  sessionStorage.clear();
 });
 
 describe('scenár z mapovania: Nástenka → Vyhľadávanie → cudzí profil → Portfólio', () => {
@@ -111,6 +112,24 @@ describe('scenár z mapovania: Nástenka → Vyhľadávanie → cudzí profil �
     expect(url()).toBe(`${PROFILE}?tab=offers`);
     await goBack();
     expect(url()).toBe(SEARCH);
+  });
+});
+
+describe('otvorenie detailu', () => {
+  it('forgets the stored highlight of the profile it leaves', () => {
+    // Detail sa môže otvoriť ako NOVÝ dokument (zastaraný service worker mení
+    // klientsku navigáciu na tvrdú). Nič z profilu sa vtedy neupratuje, takže
+    // záloha zvýraznenia by prežila a vzkriesila ho po návrate na zoznam.
+    sessionStorage.setItem('highlightedSkillId', '5');
+    sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+    sessionStorage.setItem('unrelated', 'keep');
+
+    openPortfolioDetail(historyRouter(), 'peter', 5);
+
+    expect(sessionStorage.getItem('highlightedSkillId')).toBeNull();
+    expect(sessionStorage.getItem('highlightedSkillTime')).toBeNull();
+    expect(sessionStorage.getItem('unrelated')).toBe('keep');
+    expect(url()).toBe(ITEM);
   });
 });
 

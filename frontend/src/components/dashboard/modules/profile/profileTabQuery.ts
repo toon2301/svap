@@ -19,7 +19,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { clearHighlightParams } from '../../hooks/useDashboardHighlighting';
+import {
+  clearHighlightParams,
+  clearPersistedHighlight,
+} from '../../hooks/useDashboardHighlighting';
 import type { ProfileTab } from './profileTypes';
 import { withProfileOriginStep } from './profileOriginHistory';
 
@@ -191,9 +194,13 @@ export function useProfileTabQuery(
 
       // Zvýraznená ponuka patrí len do záložky Ponuky, takže záznam pre inú
       // záložku ju z adresy zahodí – pozri `dropHighlight`.
+      const leavesOffers = tab !== 'offers';
       const url = buildProfileTabUrl(currentUrl(), tab, {
-        dropHighlight: tab !== 'offers',
+        dropHighlight: leavesOffers,
       });
+      // Rovnako jej záloha pre F5 v `sessionStorage`: dokument načítaný nanovo
+      // (tvrdá navigácia, F5) by ju na profile bez parametra vzkriesil.
+      if (leavesOffers) clearPersistedHighlight();
       // Stav histórie sa PONECHÁVA – nesú v ňom svoje štítky iné časti appky
       // (návrat z nastavení, mobilný panel sledovaných ponúk) a prepnutie
       // záložky im do toho nemá čo hovoriť.

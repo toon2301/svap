@@ -56,6 +56,27 @@ export function clearHighlightParams(params: URLSearchParams): boolean {
   return changed;
 }
 
+/**
+ * Zahodí zálohu zvýraznenia zo `sessionStorage` (jej účel opisuje `entryCycle`).
+ *
+ * Záloha patrí záložke Ponuky. Keď z nej používateľ odíde – iná záložka profilu,
+ * detail portfólia – appka ju zahadzuje SAMA, lebo upratať ju nikto iný nestihne:
+ * pri tvrdej navigácii (zastaraný service worker mení klientsku navigáciu na
+ * načítanie nového dokumentu) nebeží žiadny cleanup. Zvyšná záloha by potom
+ * prvým cyklom posledného dokumentu zvýraznenie vzkriesila a profil by sa po
+ * návrate z detailu prepol na Ponuky.
+ */
+export function clearPersistedHighlight(): void {
+  try {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('highlightedSkillId');
+      sessionStorage.removeItem('highlightedSkillTime');
+    }
+  } catch {
+    // ignore
+  }
+}
+
 /** Parameter zvýraznenia v adrese – `offer` znamená to isté čo `highlight`. */
 function highlightParamOf(params: Pick<URLSearchParams, 'get'> | null | undefined): string | null {
   return params?.get('offer') ?? params?.get('highlight') ?? null;

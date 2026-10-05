@@ -343,6 +343,82 @@ describe('záložka mimo ponúk zahodí zvýraznenie z adresy', () => {
 });
 
 /**
+ * Zvýraznená ponuka má okrem adresy aj zálohu v `sessionStorage` – na F5, keď
+ * adresa parameter už nemá (obnoví sa len na prvom cykle dokumentu a len ak je
+ * mladšia ako minúta).
+ *
+ * Odchod z Ponúk preto musí zrušiť aj tú zálohu. Tvrdá navigácia (appka ju
+ * dostane, keď service worker podsunie zastaraný RSC a Next spraví
+ * `location.assign`) nespustí žiadne upratovanie, takže nasledujúci dokument by
+ * zálohu našiel, znova zapálil zvýraznenie a profil by prepol na Ponuky.
+ */
+describe('záložka mimo ponúk zruší aj zálohu zvýraznenia', () => {
+  const HIGHLIGHT_KEYS = ['highlightedSkillId', 'highlightedSkillTime'] as const;
+
+  function storeHighlight(id = 5) {
+    sessionStorage.setItem('highlightedSkillId', String(id));
+    sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+  }
+
+  function storedHighlight() {
+    return HIGHLIGHT_KEYS.map((key) => sessionStorage.getItem(key));
+  }
+
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it.each(['portfolio', 'posts', 'tagged'] as const)(
+    'a click on the %s tab forgets the stored highlight',
+    (tab) => {
+      window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=offers');
+      storeHighlight();
+      sessionStorage.setItem('unrelated', 'keep');
+      const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+      act(() => result.current[1](tab));
+
+      expect(result.current[0]).toBe(tab);
+      expect(storedHighlight()).toEqual([null, null]);
+      // Maže sa len záloha zvýraznenia, nie celé úložisko.
+      expect(sessionStorage.getItem('unrelated')).toBe('keep');
+    },
+  );
+
+  it('forgets it on a derived replace to another tab as well', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=offers');
+    storeHighlight();
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    act(() => result.current[1]('posts', { replace: true }));
+
+    expect(storedHighlight()).toEqual([null, null]);
+  });
+
+  it('keeps it when the offers tab is the target', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=portfolio');
+    storeHighlight();
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    // Odvodený prepis na Ponuky: zvýraznenie práve vyžiadalo túto záložku.
+    act(() => result.current[1]('offers', { replace: true }));
+
+    expect(result.current[0]).toBe('offers');
+    expect(storedHighlight()).toEqual(['5', expect.any(String)]);
+  });
+
+  it('keeps it when the click does not change the tab', () => {
+    window.history.replaceState(null, '', '/dashboard/users/peter?highlight=5&tab=offers');
+    storeHighlight();
+    const { result } = renderHook(() => useProfileTabQuery('offers', 'peter'));
+
+    act(() => result.current[1]('offers'));
+
+    expect(storedHighlight()).toEqual(['5', expect.any(String)]);
+  });
+});
+
+/**
  * Krok späť medzi záložkami VLASTNÉHO profilu.
  *
  * Vlastný profil si „poslednú voľbu" drží v JS stave (`ownProfileTab`), ktorý
