@@ -27,10 +27,11 @@
  */
 
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AuthProvider, __resetAuthBootstrapSnapshotForTests } from '@/contexts/AuthContext';
 import DashboardContent from '../../../components/DashboardContent';
+import { matchDashboardRoute } from '../../../components/dashboardRoutes';
 import { __resetHighlightDocumentEntryForTests } from '../../../hooks/useDashboardHighlighting';
 import { setCurrentAccountId } from '@/lib/currentAccount';
 import { resetFeedReturnState } from '../../feed/feedReturnState';
@@ -469,4 +470,157 @@ describe('krok späť až k záznamu so zvýraznením', () => {
     expect(query().get('highlight')).toBe(String(OFFER.id));
     expect(scrolledTo[1]).toContain('skska');
   });
+});
+
+/**
+ * Tvrdé navigácie – zastaraný service worker.
+ *
+ * Po nasadení novej verzie podsúva service worker z cache RSC odpovede so starým
+ * id buildu. Next ich odmietne a každú klientskú navigáciu (upozornenie, otvorenie
+ * detailu, appkové Späť) spraví ako načítanie NOVÉHO dokumentu. Žiadny starý kód sa
+ * pritom neupratuje: ostáva len `sessionStorage` a adresa. Zvýraznenie, ktoré tam
+ * profil nechal ako zálohu na F5, potom vzkriesil prvý cyklus posledného dokumentu –
+ * profil sa po návrate z detailu prepol na Ponuky, odscrolloval a kartu rozsvietil.
+ *
+ * Jest nevie zahrať skutočný Next (`next/navigation` je mock), preto sa tvrdá
+ * navigácia modeluje tu: router adresu len zapíše (ako `location.assign` / `replace`),
+ * starý strom zanikne bez upratovania, modulový stav sa vynuluje a stránka
+ * z `app/dashboard` namontuje to, čo pre adresu skladá (`matchDashboardRoute`).
+ *
+ * Detail sa preto otvára tvrdo už pri kliku na položku. Mäkké otvorenie by zálohu
+ * zrušilo samo – odchod z profilu v tej istej inštancii spúšťa upratovanie, ktoré
+ * pri tvrdej navigácii nikdy nebeží.
+ */
+describe('návrat z detailu portfólia po tvrdých navigáciách', () => {
+  const softPush = mockRouter.push.getMockImplementation();
+  const softReplace = mockRouter.replace.getMockImplementation();
+  /** Adresa, o ktorú si posledná tvrdá navigácia vyžiadala nový dokument. */
+  let requestedUrl: string | null = null;
+
+  beforeEach(() => {
+    requestedUrl = null;
+  });
+
+  afterEach(() => {
+    // Nespotrebované `mockImplementationOnce` z neúspešného testu by inak zasiahlo ďalší.
+    mockRouter.push.mockReset();
+    mockRouter.replace.mockReset();
+    if (softPush) mockRouter.push.mockImplementation(softPush);
+    if (softReplace) mockRouter.replace.mockImplementation(softReplace);
+  });
+
+  /** Najbližšie volanie routera je tvrdá navigácia: adresu zapíše, `popstate` nevyvolá – okno zaniká. */
+  function makeNextNavigationHard(method: 'push' | 'replace') {
+    mockRouter[method].mockImplementationOnce((target: string) => {
+      if (method === 'push') {
+        window.history.pushState(null, '', target);
+      } else {
+        window.history.replaceState(null, '', target);
+      }
+      requestedUrl = target;
+    });
+  }
+
+  /**
+   * Nový dokument: starý strom zanikne BEZ upratovania, modulový stav sa vynuluje
+   * a namontuje sa to, čo pre adresu skladá stránka z `app/dashboard`.
+   *
+   * `hardTarget` je adresa, o ktorú si dokument vyžiadala tvrdá navigácia – jej záznam
+   * histórie nenesie nič z predošlého dokumentu. Pri kroku späť sa adresa aj stav
+   * záznamu nechávajú také, aké ich drží história.
+   */
+  function loadFreshDocument(hardTarget?: string) {
+    cleanup();
+    if (hardTarget) window.history.replaceState(null, '', hardTarget);
+    __resetAuthBootstrapSnapshotForTests();
+    __resetHighlightDocumentEntryForTests();
+    resetPortfolioDetailOrigin();
+    resetFeedReturnState();
+    render(
+      <AuthProvider>
+        <DashboardContent {...(matchDashboardRoute(window.location.pathname, window.location.search) ?? {})} />
+      </AuthProvider>,
+    );
+  }
+
+  /**
+   * Nástenka → profil → záložka Portfólio → detail položky → Späť. Profil sa otvorí
+   * ako v ostatných testoch (zálohu zvýraznenia zapisuje tá istá vetva efektu, nech
+   * dokument vznikol hocijako); detail a návrat z neho sú tvrdé navigácie.
+   *
+   * Skončí na tom, čo vidí používateľ po návrate z detailu.
+   */
+  async function walkThroughHardNavigations(viewport: Viewport, owner: Owner, entry: Entry) {
+    await mountOnFeed();
+    openProfileFromFeed(owner, entry);
+    await screen.findAllByText(/skska/, undefined, WAIT);
+    await settle();
+
+    if (entry !== 'none') {
+      // Východisko: profil sa naozaj otvoril na ponuke a odscrolloval sa na ňu.
+      expect(query().get(entry)).toBe(String(OFFER.id));
+      expect(selectedTab()).toBe(OFFERS_TAB);
+      expect(scrolledTo).toHaveLength(1);
+    }
+
+    fireEvent.click(screen.getByRole('tab', { name: PORTFOLIO_TAB }));
+
+    // Klik na položku: detail sa otvorí ako NOVÝ dokument.
+    makeNextNavigationHard('push');
+    fireEvent.click(await screen.findByRole('button', { name: PORTFOLIO_ITEM.title }, WAIT));
+    expect(requestedUrl).toBe(detailPath(owner));
+    loadFreshDocument(detailPath(owner));
+    // Detail je na obrazovke, až keď si modul vyžiada položku – dovtedy je tam len načítavanie dashboardu.
+    await waitFor(() => expect(portfolioApi.getPortfolioItem).toHaveBeenCalledWith(PORTFOLIO_ITEM.id), WAIT);
+
+    if (viewport === 'mobile') {
+      // Appkové Späť: nový dokument pôvod otvorenia nepozná, preto ide cez
+      // `router.replace` na zoznam, ktorý sa načíta opäť ako nový dokument.
+      makeNextNavigationHard('replace');
+      fireEvent.click(await screen.findByRole('button', { name: 'Späť' }, WAIT));
+      expect(requestedUrl).toBe(`${profilePath(owner)}/portfolio`);
+      loadFreshDocument(`${profilePath(owner)}/portfolio`);
+    } else {
+      // Prehliadačové Späť na záznam profilu, ktorý patrí staršiemu dokumentu,
+      // takže sa načíta nanovo.
+      cleanup();
+      window.history.back();
+      await waitFor(() => expect(window.location.pathname).toBe(profilePath(owner)), WAIT);
+      loadFreshDocument();
+    }
+
+    await waitFor(() => expect(screen.queryAllByRole('tab').length).toBeGreaterThan(0), WAIT);
+    await settle(600);
+  }
+
+  describe.each(SCENARIOS)('$viewport, $owner profile, ?$entry=', ({ viewport, owner, entry }) => {
+    it('still lands on the Portfolio tab, without scrolling to the offer or highlighting it', async () => {
+      useViewport(viewport);
+      await walkThroughHardNavigations(viewport, owner, entry);
+
+      expect(selectedTab()).toBe(PORTFOLIO_TAB);
+      // Jediné odscrollovanie bolo pri otvorení profilu, ešte pred prvou tvrdou navigáciou.
+      expect(scrolledTo).toHaveLength(1);
+      expect(query().has('highlight')).toBe(false);
+      expect(query().has('offer')).toBe(false);
+      expect(query().get('tab')).not.toBe('offers');
+      expect(await screen.findByRole('button', { name: PORTFOLIO_ITEM.title }, WAIT)).toBeInTheDocument();
+    });
+  });
+
+  // Kontrola, že tvrdé prechody samy profil na Ponuky neprepnú: bez zvýraznenia
+  // nie je čo vzkriesiť, takže návrat musí skončiť na Portfóliu aj bez opravy.
+  describe.each(CONTROL_SCENARIOS.filter(({ owner }) => owner === 'own'))(
+    'kontrola bez zvýraznenia – $viewport, $owner profile',
+    ({ viewport, owner }) => {
+      it('a profile opened without a highlight lands on the Portfolio tab as well', async () => {
+        useViewport(viewport);
+        await walkThroughHardNavigations(viewport, owner, 'none');
+
+        expect(selectedTab()).toBe(PORTFOLIO_TAB);
+        expect(scrolledTo).toHaveLength(0);
+        expect(await screen.findByRole('button', { name: PORTFOLIO_ITEM.title }, WAIT)).toBeInTheDocument();
+      });
+    },
+  );
 });

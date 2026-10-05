@@ -33,6 +33,7 @@ jest.mock('next/navigation', () => ({
 
 import {
   __resetHighlightDocumentEntryForTests,
+  clearPersistedHighlight,
   useDashboardHighlighting,
 } from '../useDashboardHighlighting';
 
@@ -97,6 +98,47 @@ describe('F5 priamo na profile', () => {
 
     // Adresa má prednosť pred zálohou.
     expect(result.current.highlightedSkillId).toBe(9);
+  });
+});
+
+describe('záloha, ktorú appka sama zrušila', () => {
+  it('is not restored after a reload once the highlight was retired', () => {
+    // Zvýraznenie z profilu odišlo (iná záložka, detail portfólia) a ďalší
+    // dokument sa načíta na profile bez parametra v adrese – napr. po tvrdej
+    // navigácii, ktorá žiadne upratovanie nespustila.
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    nextCatchesUp();
+    storeRecentHighlight(55);
+
+    clearPersistedHighlight();
+    const { result } = renderHighlighting('user-profile');
+
+    expect(result.current.highlightedSkillId).toBeNull();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it('removes only the backup of the highlight', () => {
+    storeRecentHighlight(55);
+    sessionStorage.setItem('unrelated', 'keep');
+
+    clearPersistedHighlight();
+
+    expect(sessionStorage.getItem('highlightedSkillId')).toBeNull();
+    expect(sessionStorage.getItem('highlightedSkillTime')).toBeNull();
+    expect(sessionStorage.getItem('unrelated')).toBe('keep');
+  });
+
+  it('never throws when the storage is not available', () => {
+    // Zruší sa pri kliku na záložku a pri otvorení detailu – chyba úložiska
+    // (súkromný režim, zakázané dáta stránok) nesmie zablokovať navigáciu.
+    const spy = jest.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('storage denied');
+    });
+    try {
+      expect(() => clearPersistedHighlight()).not.toThrow();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

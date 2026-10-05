@@ -1,3 +1,5 @@
+import { clearPersistedHighlight } from '../../hooks/useDashboardHighlighting';
+
 export function getPortfolioOwnerIdentifier(
   ownerUserId?: number,
   ownerSlug?: string | null,
@@ -104,6 +106,9 @@ export function openPortfolioDetail(
 ): void {
   const path = buildPortfolioDetailPath(ownerIdentifier, portfolioItemId);
   pendingDetailPath = path;
+  // Zálohu zvýraznenia z profilu, ktorý detail opúšťa, zahodí appka sama – pri
+  // tvrdej navigácii by ju inak nikto neupratal (viď `clearPersistedHighlight`).
+  clearPersistedHighlight();
   router.push(path);
 }
 
