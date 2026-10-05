@@ -33,8 +33,6 @@ import {
   type RequestsRouteIntent,
 } from '../modules/requests/requestsRouting';
 import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
-import { listConversations, listMessageRequests, openConversation } from '../modules/messages/messagingApi';
-import type { MessagingUserBrief } from '../modules/messages/types';
 import {
   PROFILE_OFFER_DETAIL_CLOSE_EVENT,
   PROFILE_OFFER_DETAIL_OPEN_EVENT,
@@ -56,6 +54,7 @@ import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
 import { useDashboardRouteParams } from '../hooks/useDashboardRouteParams';
 import { useOwnProfileTabFromRoute } from '../hooks/useOwnProfileTabFromRoute';
+import { useMobileMessagePeer } from '../hooks/useMobileMessagePeer';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import {
   FeedPostOverlayProvider,
@@ -174,11 +173,6 @@ export default function DashboardContent({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
   const [requestsRouteIntent, setRequestsRouteIntent] = useState<RequestsRouteIntent | null>(null);
-  const [mobileMessagePeer, setMobileMessagePeer] = useState<MessagingUserBrief | null>(null);
-  const [mobileMessageGroup, setMobileMessageGroup] = useState<{
-    name: string;
-    avatarMembers: MessagingUserBrief[];
-  } | null>(null);
   const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
   const [mobileAccountSettingsView, setMobileAccountSettingsView] =
     useState<AccountSettingsMobileView>('overview');
@@ -963,89 +957,15 @@ export default function DashboardContent({
     }
   }, [portfolioCreateMatch, setActiveModule]);
 
+  const { mobileMessagePeer, mobileMessageGroup } = useMobileMessagePeer({
+    activeModule,
+    selectedConversationId,
+    targetUserIdFromMessagesQuery,
+    t,
+  });
+
   // Po stlaÄenÃ­ spÃ¤Å¥ z cudzieho profilu (user-profile) URL skoÄÃ­ sprÃ¡vne, ale activeModule ostÃ¡va
   // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
-  useEffect(() => {
-    let cancelled = false;
-
-    if (activeModule !== 'messages') {
-      setMobileMessagePeer(null);
-      setMobileMessageGroup(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const targetUserId =
-      targetUserIdFromMessagesQuery != null && Number.isFinite(targetUserIdFromMessagesQuery)
-        ? targetUserIdFromMessagesQuery
-        : null;
-
-    if (targetUserId != null) {
-      void (async () => {
-        try {
-          const result = await openConversation(targetUserId);
-          if (cancelled) return;
-          setMobileMessagePeer(result.other_user ?? null);
-          setMobileMessageGroup(null);
-        } catch {
-          if (!cancelled) {
-            setMobileMessagePeer(null);
-            setMobileMessageGroup(null);
-          }
-        }
-      })();
-
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const conversationId =
-      selectedConversationId != null && Number.isFinite(selectedConversationId)
-        ? selectedConversationId
-        : null;
-
-    if (conversationId == null) {
-      setMobileMessagePeer(null);
-      setMobileMessageGroup(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    void (async () => {
-      try {
-        const conversations = await listConversations();
-        if (cancelled) return;
-        let match = conversations.find((item) => item.id === conversationId) ?? null;
-        if (!match) {
-          const requests = await listMessageRequests();
-          if (cancelled) return;
-          match = requests.find((item) => item.id === conversationId) ?? null;
-        }
-        if (match?.is_group) {
-          setMobileMessagePeer(null);
-          setMobileMessageGroup({
-            name: (match.name || '').trim() || t('messages.unknownGroup', 'Skupina'),
-            avatarMembers: match.avatar_members ?? [],
-          });
-        } else {
-          setMobileMessagePeer(match?.other_user ?? null);
-          setMobileMessageGroup(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setMobileMessagePeer(null);
-          setMobileMessageGroup(null);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeModule, selectedConversationId, targetUserIdFromMessagesQuery, t]);
   useEffect(() => {
     const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
