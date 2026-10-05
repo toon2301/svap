@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clearHighlightParams } from '../../hooks/useDashboardHighlighting';
 import type { ProfileTab } from './profileTypes';
 import { withProfileOriginStep } from './profileOriginHistory';
 
@@ -61,13 +62,32 @@ export function readProfileTabFromSearch(search: string): ProfileTab | null {
   );
 }
 
+export type BuildProfileTabUrlOptions = {
+  /**
+   * Zahodiť z adresy parametre zvýraznenej ponuky (`highlight`, `offer`,
+   * `side=back`).
+   *
+   * Zvýraznená ponuka patrí výhradne do záložky Ponuky. Záznam histórie pre
+   * inú záložku ju preto nesmie niesť: keby ju niesol, krok späť z detailu
+   * portfólia by ho znova načítal, zvýraznenie by sa z adresy znova zapálilo
+   * a vynútilo by prepnutie na Ponuky aj opätovné odscrollovanie na kartu.
+   */
+  dropHighlight?: boolean;
+};
+
 /**
  * Tá istá adresa s prepísaným `?tab=`.
  *
  * Ostatné parametre ostávajú – na profile s nimi appka počíta (`?offer=`,
- * `?highlight=`), takže prepnutie záložky ich nesmie zmazať.
+ * `?highlight=`), takže prepnutie záložky ich nesmie zmazať. Výnimku robí len
+ * `dropHighlight`, o ktorý žiada volajúci, ktorý vie, že cieľová záložka nie
+ * sú Ponuky.
  */
-export function buildProfileTabUrl(currentUrl: string, tab: ProfileTab): string {
+export function buildProfileTabUrl(
+  currentUrl: string,
+  tab: ProfileTab,
+  options?: BuildProfileTabUrlOptions,
+): string {
   // Delí sa na PRVOM oddeľovači, nie na každom: fragment smie obsahovať ďalšie
   // `#` a hodnota v query ďalšie `?` (napr. `?redirect=/x?y=1`). `split()` by
   // takú adresu ticho skrátil – z návratovej cesty by zmizol kus parametra.
@@ -82,6 +102,7 @@ export function buildProfileTabUrl(currentUrl: string, tab: ProfileTab): string 
 
   const params = new URLSearchParams(query);
   params.set(PROFILE_TAB_QUERY_KEY, tab);
+  if (options?.dropHighlight) clearHighlightParams(params);
   const search = params.toString();
   return `${path}${search ? `?${search}` : ''}${hash ? `#${hash}` : ''}`;
 }
@@ -168,7 +189,11 @@ export function useProfileTabQuery(
       setActiveTab(tab);
       if (typeof window === 'undefined') return;
 
-      const url = buildProfileTabUrl(currentUrl(), tab);
+      // Zvýraznená ponuka patrí len do záložky Ponuky, takže záznam pre inú
+      // záložku ju z adresy zahodí – pozri `dropHighlight`.
+      const url = buildProfileTabUrl(currentUrl(), tab, {
+        dropHighlight: tab !== 'offers',
+      });
       // Stav histórie sa PONECHÁVA – nesú v ňom svoje štítky iné časti appky
       // (návrat z nastavení, mobilný panel sledovaných ponúk) a prepnutie
       // záložky im do toho nemá čo hovoriť.
