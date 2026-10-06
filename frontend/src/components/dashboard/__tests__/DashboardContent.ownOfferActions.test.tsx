@@ -124,6 +124,9 @@ const { t } = jest.requireMock('@/contexts/LanguageContext').useLanguage() as {
 const editFailedText = t('skills.cardEditFailed', 'Kartu sa nepodarilo otvoriť na úpravu. Skúste to znova.');
 const deleteFailedText = t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.');
 const deleteSuccessText = t('skills.cardDeleteSuccess', 'Karta bola vymazaná.');
+const languageContext = jest.requireMock('@/contexts/LanguageContext').useLanguage() as {
+  t: (key: string, fallback?: string) => string;
+};
 
 const routerProps = () => mockRouterProps as unknown as ModuleRouterProps;
 const layoutProps = () => mockLayoutProps as unknown as DashboardLayoutProps;
@@ -337,6 +340,38 @@ describe('úprava vlastnej karty', () => {
       expect(localStorage.getItem('skillsDescribeMode')).toBe('offer');
       expect(getSkillsDescribeReturnModule(7)).toBe('profile');
       expect(skillsState().selectedSkillsCategory).toMatchObject({ id: 7 });
+    });
+
+    it('zatvorí aj samotný otvorený panel upozornení', async () => {
+      mockApiGet.mockImplementation((url: string) =>
+        url === '/auth/skills/7/'
+          ? Promise.resolve({ data: skillDetail(7) })
+          : Promise.resolve({ data: [] }),
+      );
+      await renderDashboard({ mobile: true });
+      act(() => layoutProps().onSidebarNotificationsClick?.());
+      expect(layoutProps().isNotificationsPanelOpen).toBe(true);
+
+      await editOffer(makeOffer(7));
+
+      expect(layoutProps().isNotificationsPanelOpen).toBe(false);
+      expect(activeModule()).toBe('skills-describe');
+    });
+
+    it('príznak mobilu zo stavu rozlíšenia stačí, aj keď živý dotaz na šírku už mobil nehlási', async () => {
+      mockApiGet.mockImplementation((url: string) =>
+        url === '/auth/skills/7/'
+          ? Promise.resolve({ data: skillDetail(7) })
+          : Promise.resolve({ data: [] }),
+      );
+      await renderDashboard({ mobile: true });
+      installViewport(false);
+
+      await editOffer(makeOffer(7));
+
+      expect(activeModule()).toBe('skills-describe');
+      expect(skillsState().isSkillDescriptionModalOpen).toBe(false);
+      expect(getSkillsDescribeReturnModule(7)).toBe('profile');
     });
 
     it('chyba localStorage stránku úpravy nezruší', async () => {
@@ -637,5 +672,31 @@ describe('mazanie vlastnej karty', () => {
       expect(queryDialog()).toBeNull();
       expect(toast.error).toHaveBeenCalledWith(deleteFailedText);
     });
+  });
+});
+
+describe('texty hlášok', () => {
+  it('berú sa z prekladača komponentu: kľúč aj záložný text sa naň odovzdajú', async () => {
+    jest
+      .spyOn(languageContext, 't')
+      .mockImplementation((key: string, fallback?: string) => `[${key}] ${fallback}`);
+    mockApiDelete.mockResolvedValue({});
+    await renderDashboard();
+
+    await editOffer(makeOffer(0));
+    expect(toast.error).toHaveBeenLastCalledWith(
+      '[skills.cardEditFailed] Kartu sa nepodarilo otvoriť na úpravu. Skúste to znova.',
+    );
+
+    await deleteOffer(makeOffer(0));
+    expect(toast.error).toHaveBeenLastCalledWith(
+      '[skills.cardDeleteFailed] Kartu sa nepodarilo odstrániť. Skúste to znova.',
+    );
+
+    await deleteOffer(makeOffer(7));
+    await act(async () => {
+      fireEvent.click(dialogButtons().confirm);
+    });
+    expect(toast.success).toHaveBeenLastCalledWith('[skills.cardDeleteSuccess] Karta bola vymazaná.');
   });
 });
