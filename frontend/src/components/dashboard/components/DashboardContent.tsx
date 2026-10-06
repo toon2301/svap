@@ -22,10 +22,7 @@ import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
 import { navigateMessagesUrl } from '../modules/messages/messagesRouting';
-import {
-  parseRequestsTargetUrl,
-  type RequestsRouteIntent,
-} from '../modules/requests/requestsRouting';
+import type { RequestsRouteIntent } from '../modules/requests/requestsRouting';
 import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
 import {
   PROFILE_OFFER_DETAIL_CLOSE_EVENT,
@@ -48,24 +45,15 @@ import { useDashboardRouteParams } from '../hooks/useDashboardRouteParams';
 import { useOwnProfileTabFromRoute } from '../hooks/useOwnProfileTabFromRoute';
 import { useMobileMessagePeer } from '../hooks/useMobileMessagePeer';
 import { useOwnProfileOfferActions } from '../hooks/useOwnProfileOfferActions';
+import { useFeedOverlayTarget } from '../hooks/useFeedOverlayTarget';
+import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
-import {
-  FeedPostOverlayProvider,
-  type FeedPostOverlayTarget,
-} from '../contexts/FeedPostOverlayContext';
+import { FeedPostOverlayProvider } from '../contexts/FeedPostOverlayContext';
 import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
 import {
-  buildFeedPostPath,
-  parseFeedPostTargetUrl,
-} from '../modules/feed/feedPostRouting';
-import {
   adoptFeedOverlayHistory,
-  forgetFeedOverlayHistory,
   isFeedOverlayHistoryBusy,
-  popFeedOverlayHistory,
-  pushFeedOverlayHistory,
 } from '../modules/feed/feedOverlayHistory';
-import type { FeedPostOverlayCloseOptions } from '../contexts/FeedPostOverlayContext';
 import { decideFeedPostEntry } from '../modules/feed/feedPostEntryDecision';
 import { getUserIdBySlug } from '../modules/profile/profileUserCache';
 import {
@@ -84,8 +72,6 @@ import {
   isSameDashboardPath,
 } from './dashboardRoutes';
 import {
-  getDashboardHighlightIdFromTarget,
-  getDashboardModuleFromTarget,
   getDashboardUserIdentifierFromTarget,
   parseDashboardHighlightId,
 } from './dashboardTargetUrl';
@@ -494,146 +480,32 @@ export default function DashboardContent({
     desktopOnboardingSkillCreatedHandlerRef.current = handler;
   }, []);
 
-  // --- Okno detailu prispevku -------------------------------------------
-  // Vrstva nad appkou: URL sa meni cez history API, teda BEZ Next navigacie,
-  // takze sa nic pod oknom neodmountuje ani nestrati scroll. Otvorenie prida
-  // presne jeden zaznam historie a zatvorenie ho odoberie - detaily aj s
-  // odovodnenim su vo `feedOverlayHistory`.
-  const [feedOverlayTarget, setFeedOverlayTarget] =
-    useState<FeedPostOverlayTarget | null>(null);
-
-  const handleFeedOverlayTargetChange = useCallback(
-    (
-      target: FeedPostOverlayTarget | null,
-      options?: FeedPostOverlayCloseOptions,
-    ) => {
-      setFeedOverlayTarget(target);
-      if (target) {
-        pushFeedOverlayHistory(
-          buildFeedPostPath(target.postId, target.highlightCommentId),
-        );
-        return;
-      }
-      // Appka práve naviguje inam a adresu si rieši sama - krok spat by tu
-      // navigaciu vzapati zrusil.
-      if (options?.keepHistory) {
-        forgetFeedOverlayHistory();
-        return;
-      }
-      popFeedOverlayHistory();
-    },
-    [],
-  );
-
-  // Tlacidlo spat v prehliadaci zavrie okno namiesto navigacie prec.
-  useEffect(() => {
-    if (!feedOverlayTarget || typeof window === 'undefined') return;
-    const handlePopState = () => {
-      // Zaznam okna prave zmizol - zatvorenie uz nema co odoberat.
-      forgetFeedOverlayHistory();
-      setFeedOverlayTarget(null);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [feedOverlayTarget]);
+  const {
+    feedOverlayTarget,
+    setFeedOverlayTarget,
+    handleFeedOverlayTargetChange,
+  } = useFeedOverlayTarget();
 
   const handleNotificationsPanelClose = useCallback(() => {
     setIsNotificationsPanelOpen(false);
   }, []);
 
-  const handleNotificationNavigate = useCallback(
-    (targetUrl: string) => {
-      if (targetUrl !== '/dashboard' && !targetUrl.startsWith('/dashboard/')) {
-        return;
-      }
-
-      // Feedove notifikacie (lajk, komentar, odpoved, oznacenie, zdielanie)
-      // vedu na `/dashboard/feed/<id>`. Na DESKTOPE ich otvori okno nad
-      // appkou - pouzivatel tak nepride o to, kde prave bol. Mobil ostava
-      // pri celoobrazovkovej stranke.
-      const feedTarget = parseFeedPostTargetUrl(targetUrl);
-      if (feedTarget && !isMobile) {
-        setIsNotificationsPanelOpen(false);
-        setIsSearchOpen(false);
-        setIsMobileMenuOpen(false);
-        handleFeedOverlayTargetChange(feedTarget);
-        return;
-      }
-
-      const moduleId = getDashboardModuleFromTarget(targetUrl);
-      if (moduleId) {
-        setActiveModule(moduleId);
-        try {
-          localStorage.setItem('activeModule', moduleId);
-        } catch {
-          // ignore
-        }
-      }
-
-      if (moduleId === 'requests') {
-        const requestsTarget = parseRequestsTargetUrl(targetUrl);
-        if (requestsTarget) {
-          setRequestsRouteIntent((current) => ({
-            ...requestsTarget,
-            key: (current?.key ?? 0) + 1,
-          }));
-        }
-      } else {
-        setRequestsRouteIntent(null);
-      }
-
-      if (moduleId === 'user-profile' || moduleId === 'portfolio-detail') {
-        const identifier = getDashboardUserIdentifierFromTarget(targetUrl);
-        setViewedUserSummary(null);
-        if (identifier && /^\d+$/.test(identifier)) {
-          setViewedUserId(Number(identifier));
-          setViewedUserSlug(null);
-        } else if (identifier) {
-          setViewedUserId(null);
-          setViewedUserSlug(identifier);
-        }
-      } else if (moduleId) {
-        setViewedUserId(null);
-        setViewedUserSlug(null);
-        setViewedUserSummary(null);
-      }
-
-      if (moduleId === 'profile' || moduleId === 'user-profile') {
-        const highlightId = getDashboardHighlightIdFromTarget(targetUrl);
-        if (highlightId != null) {
-          highlighting.setHighlightedSkillId(highlightId);
-          try {
-            sessionStorage.setItem('highlightedSkillId', String(highlightId));
-            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
-          } catch {
-            // ignore
-          }
-        }
-      }
-
-      setIsNotificationsPanelOpen(false);
-      setIsSearchOpen(false);
-      setIsRightSidebarOpen(false);
-      setActiveRightItem('');
-      setIsMobileMenuOpen(false);
-      router.push(targetUrl);
-    },
-    [
-      router,
-      setActiveModule,
-      setActiveRightItem,
-      setIsMobileMenuOpen,
-      setIsNotificationsPanelOpen,
-      setIsRightSidebarOpen,
-      setIsSearchOpen,
-      setViewedUserId,
-      setViewedUserSlug,
-      setViewedUserSummary,
-      highlighting,
-      handleFeedOverlayTargetChange,
-      isMobile,
-    ],
-  );
+  const { handleNotificationNavigate } = useNotificationNavigation({
+    router,
+    isMobile,
+    highlighting,
+    handleFeedOverlayTargetChange,
+    setActiveModule,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsNotificationsPanelOpen,
+    setIsRightSidebarOpen,
+    setIsSearchOpen,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+    setRequestsRouteIntent,
+  });
 
   const offerReviewsReturnTo = React.useMemo(
     () => getSafeDashboardReturnTo(searchParams?.get('returnTo') ?? null),
@@ -837,6 +709,7 @@ export default function DashboardContent({
     feedPostIdFromPath,
     setActiveModule,
     feedOverlayTarget,
+    setFeedOverlayTarget,
     isMobile,
     isViewportResolved,
   ]);

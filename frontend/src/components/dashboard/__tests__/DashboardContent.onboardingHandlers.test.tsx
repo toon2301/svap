@@ -399,6 +399,23 @@ describe('desktopový sprievodca otvára obrazovky', () => {
     expect(mobile().isBlockedByUi).toBe(true);
   });
 
+  it('mobilné menu otvorené krokom späť z upozornení blokuje sprievodcu a klik na upozornenie ho zavrie', async () => {
+    await renderDashboard(true);
+    // Router, ktorý ako Next skutočne zmení adresu.
+    mockRouter.push.mockImplementation((url: string) => {
+      window.history.pushState(null, '', url);
+      mockPathname = new URL(url, 'http://localhost').pathname;
+    });
+    act(() => routerProps().onNotificationNavigate?.('/dashboard/notifications'));
+    act(() => layoutProps().onMobileBack?.());
+    expect(activeModule()).toBe('');
+    expect(mobile().isBlockedByUi).toBe(true);
+
+    act(() => routerProps().onNotificationNavigate?.('/dashboard/unknown-section'));
+
+    expect(mobile().isBlockedByUi).toBe(false);
+  });
+
   it('otvorená konverzácia v Správach blokuje mobilného sprievodcu, zoznam konverzácií nie', async () => {
     await renderDashboard(true, { route: 'messages', pathname: '/dashboard/messages', search: 'conversationId=5' });
     expect(mobile().activeModule).toBe('messages');
