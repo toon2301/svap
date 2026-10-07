@@ -6,12 +6,14 @@ test.use({ trace: 'off', screenshot: 'off' });
 
 const EMPTY_STORAGE = { cookies: [], origins: [] };
 
+/** Assert that the browser is on the public login screen with no dashboard content. */
 async function expectPublicLogin(page: Page) {
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('#login-email')).toBeVisible();
   await expect(page.locator('[data-dashboard-main]')).toHaveCount(0);
 }
 
+/** Log out through the utility menu appropriate to the current viewport. */
 async function logoutFromDashboard(page: Page, mobile: boolean) {
   if (mobile) {
     await page.locator('button[aria-label="Profil"]').first().click();

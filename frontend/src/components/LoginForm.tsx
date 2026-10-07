@@ -197,7 +197,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
           try {
             trace('login_google_refresh_user_start');
-            await refreshUser({ force: true });
+            await refreshUser({ force: true, verifyLogin: true });
             trace('login_google_refresh_user_success');
             trace('login_google_csrf_prime_start');
             await fetchCsrfToken();
@@ -284,7 +284,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       await ensureCsrfToken();
       await api.post(endpoints.auth.login, loginData);
       // Overenie session cez /me (HttpOnly cookies)
-      await refreshUser({ force: true });
+      await refreshUser({ force: true, verifyLogin: true });
 
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {

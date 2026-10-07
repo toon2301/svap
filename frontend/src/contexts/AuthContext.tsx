@@ -19,7 +19,7 @@ interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
-  refreshUser: (options?: { force?: boolean }) => Promise<void>;
+  refreshUser: (options?: { force?: boolean; verifyLogin?: boolean }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,11 +81,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setCurrentAccountId(nextUser?.id ?? null);
   }, []);
 
-  const refreshUser = useCallback(async (options?: { force?: boolean }) => {
-    const force = Boolean(options?.force);
-    // Login starts without a user: its forced /me check must confirm the new session.
-    // Background refreshes of an existing user retain their best-effort behavior.
-    const mustVerifyLogin = force && !userRef.current;
+  const refreshUser = useCallback(async (options?: { force?: boolean; verifyLogin?: boolean }) => {
+    const mustVerifyLogin = Boolean(options?.verifyLogin);
+    const force = Boolean(options?.force || mustVerifyLogin);
     // Explicit logout in progress => do not run /me requests.
     if (logoutInProgressRef.current) {
       if (mustVerifyLogin) throw new Error('Session verification interrupted');
@@ -114,6 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const controller = new AbortController();
     meAbortControllerRef.current = controller;
+    let loginUserVerified = false;
 
     const p: Promise<void> = (async () => {
       try {
@@ -126,6 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (resp?.status === 200 && resp.data) {
           applyResolvedUser(resp.data);
           setMayHaveRefreshCookie(true);
+          loginUserVerified = true;
           return;
         }
 
@@ -171,11 +171,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     mePromiseRef.current = p;
     await p;
-    // A 401, empty /me response, cancellation or superseded request may resolve
-    // without a user. In a login flow that is not a verified session.
+    // Only this request's successful /me response can verify the login. A user
+    // left by another concurrent request must not make a failed check succeed.
     if (mustVerifyLogin && (
       requestId !== latestRequestIdRef.current ||
       logoutInProgressRef.current ||
+      !loginUserVerified ||
       !userRef.current
     )) {
       throw new Error('Session verification failed');
@@ -302,7 +303,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Prihlásenie zlyhalo');
       }
       // Overenie cez /me/ (cookie auth) – jediný zdroj pravdy pre auth stav
-      await refreshUser({ force: true });
+      await refreshUser({ force: true, verifyLogin: true });
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         clearMobileOnboardingPostponedForSession();

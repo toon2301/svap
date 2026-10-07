@@ -35,12 +35,18 @@ const isTransient = isTransientAuthFailureError as jest.Mock;
 
 const user = { id: 71, email: 'session@example.com', is_verified: true };
 
+/** Control when a mocked /me request settles so race assertions are deterministic. */
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((finish) => { resolve = finish; });
-  return { promise, resolve };
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((finish, fail) => {
+    resolve = finish;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
 }
 
+/** Expose auth actions and resolved identity to the session lifecycle tests. */
 function SessionControls() {
   const { user: currentUser, isLoading, login, logout, refreshUser } = useAuth();
   const [loginError, setLoginError] = useState(false);
@@ -58,6 +64,7 @@ function SessionControls() {
   );
 }
 
+/** Mount a fresh auth provider with the test controls. */
 function mount() {
   render(<AuthProvider><SessionControls /></AuthProvider>);
 }
@@ -112,11 +119,18 @@ describe('AuthContext session lifecycle', () => {
     mount();
     await screen.findByText(user.email);
     isTransient.mockReturnValue(true);
-    get.mockRejectedValueOnce(new Error('temporary network failure'));
+    const failure = new Error('temporary network failure');
+    const request = deferred<unknown>();
+    get.mockImplementationOnce(() => request.promise);
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      request.reject(failure);
+      await request.promise.catch(() => undefined);
+    });
+    await waitFor(() => expect(isTransient).toHaveBeenCalledWith(failure));
     expect(screen.getByTestId('identity')).toHaveTextContent(user.email);
     expect(replace).not.toHaveBeenCalled();
   });
@@ -203,6 +217,35 @@ describe('AuthContext session lifecycle', () => {
     await screen.findByText('failed');
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+  });
+
+  it.each([
+    ['401', { response: { status: 401 } }, false],
+    ['a temporary failure', new Error('temporary network failure'), true],
+  ])('does not reuse an existing user when login /me fails with %s', async (_label, failure, transient) => {
+    get.mockResolvedValueOnce({ status: 200, data: user });
+    mount();
+    await screen.findByText(user.email);
+    isTransient.mockReturnValue(transient);
+    get.mockRejectedValueOnce(failure);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+
+    await screen.findByText('failed');
+    expect(push).not.toHaveBeenCalled();
+    expect(localStorage.getItem('activeModule')).toBeNull();
+  });
+
+  it('does not reuse an existing user when login /me returns an empty response', async () => {
+    get.mockResolvedValueOnce({ status: 200, data: user });
+    mount();
+    await screen.findByText(user.email);
+    get.mockResolvedValueOnce({ status: 200, data: null });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+
+    await screen.findByText('failed');
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('does not navigate after login when its /me check is superseded', async () => {

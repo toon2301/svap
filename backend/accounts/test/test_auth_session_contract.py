@@ -49,7 +49,7 @@ def _login(client):
 
 
 def test_login_me_logout_and_protected_route(session_client, session_user):
-    """A logged-out client cannot recover the previous identity via /me."""
+    """Logout expires scoped auth cookies and removes access to the prior identity."""
     me_url = reverse("accounts:me")
     logout_url = reverse("accounts:logout")
 
@@ -74,8 +74,13 @@ def test_login_me_logout_and_protected_route(session_client, session_user):
     logout = session_client.post(logout_url, {}, format="json")
     assert logout.status_code == 200
     assert logout["Clear-Site-Data"] == '"cookies"'
-    assert logout.cookies["access_token"].value == ""
-    assert logout.cookies["refresh_token"].value == ""
+    for name in ("access_token", "refresh_token"):
+        logout_cookie = logout.cookies[name]
+        login_cookie = login.cookies[name]
+        assert logout_cookie.value == ""
+        assert int(logout_cookie["max-age"]) == 0
+        assert logout_cookie["path"] == login_cookie["path"]
+        assert logout_cookie["domain"] == login_cookie["domain"]
     assert session_client.get(me_url).status_code == 401
 
 

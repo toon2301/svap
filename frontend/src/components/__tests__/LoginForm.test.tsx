@@ -221,7 +221,7 @@ describe('LoginForm', () => {
     );
 
     await waitFor(() => {
-      expect(mockRefreshUser).toHaveBeenCalledWith({ force: true });
+      expect(mockRefreshUser).toHaveBeenCalledWith({ force: true, verifyLogin: true });
       expect(mockFetchCsrfToken).toHaveBeenCalledTimes(1);
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
@@ -252,7 +252,7 @@ describe('LoginForm', () => {
       }));
 
       await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/Google/i));
-      expect(mockRefreshUser).toHaveBeenCalledWith({ force: true });
+      expect(mockRefreshUser).toHaveBeenCalledWith({ force: true, verifyLogin: true });
       expect(mockPush).not.toHaveBeenCalled();
     } finally {
       openSpy.mockRestore();
@@ -263,6 +263,7 @@ describe('LoginForm', () => {
     }
   });
 
+  /** Submit a valid form so tests can focus on the resulting auth state. */
   const submitValidCredentials = () => {
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'test@example.com' },
@@ -286,7 +287,7 @@ describe('LoginForm', () => {
     expect(mockFetchCsrfToken.mock.invocationCallOrder[0]).toBeLessThan(
       mockApiPost.mock.invocationCallOrder[0],
     );
-    expect(mockRefreshUser).toHaveBeenCalledWith({ force: true });
+    expect(mockRefreshUser).toHaveBeenCalledWith({ force: true, verifyLogin: true });
   });
 
   it('shows the rate limit and unlocks submit after HTTP 429', async () => {
