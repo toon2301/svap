@@ -7,6 +7,7 @@ import LoginForm from '../LoginForm';
 import { api } from '@/lib/api';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { useAuth } from '@/contexts/AuthContext';
+import { SessionVerificationError } from '@/lib/authSessionVerification';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -233,7 +234,7 @@ describe('LoginForm', () => {
     });
   });
 
-  it('does not redirect after Google login when /me cannot verify the session', async () => {
+  it.each(['session verification', 'CSRF priming'])('distinguishes a failed %s after Google login', async (failureStage) => {
     const popup = { closed: false } as Window;
     const openSpy = jest.spyOn(window, 'open').mockReturnValue(popup);
     const originalCrypto = global.crypto;
@@ -241,7 +242,11 @@ describe('LoginForm', () => {
       value: { ...(originalCrypto || {}), randomUUID: () => 'oauth-nonce' },
       configurable: true,
     });
-    mockRefreshUser.mockRejectedValueOnce(new Error('Session verification failed'));
+    if (failureStage === 'session verification') {
+      mockRefreshUser.mockRejectedValueOnce(new SessionVerificationError());
+    } else {
+      mockFetchCsrfToken.mockRejectedValueOnce(new Error('CSRF request failed'));
+    }
 
     try {
       render(<LoginForm />);
@@ -251,9 +256,13 @@ describe('LoginForm', () => {
         data: { type: 'OAUTH_SUCCESS', nonce: 'oauth-nonce' },
       }));
 
-      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/Google/i));
+      const expectedMessage = failureStage === 'session verification'
+        ? 'Reláciu po prihlásení sa nepodarilo overiť. Skús to znova.'
+        : 'Google prihlásenie sa nepodarilo dokončiť';
+      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(expectedMessage));
       expect(mockRefreshUser).toHaveBeenCalledWith({ force: true, verifyLogin: true });
       expect(mockPush).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /Google/i })).toBeEnabled();
     } finally {
       openSpy.mockRestore();
       Object.defineProperty(global, 'crypto', {
@@ -316,13 +325,40 @@ describe('LoginForm', () => {
 
   it('does not navigate when /me verification fails after the login request', async () => {
     mockApiPost.mockResolvedValueOnce({ status: 200, data: {} } as never);
-    mockRefreshUser.mockRejectedValueOnce(new Error('Session verification failed'));
+    mockRefreshUser.mockRejectedValueOnce(new SessionVerificationError());
+    render(<LoginForm />);
+
+    submitValidCredentials();
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(
+      'Reláciu po prihlásení sa nepodarilo overiť. Skús to znova.',
+    ));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Prihlásiť sa' })).toBeEnabled();
+  });
+
+  it('keeps the invalid-credentials message for a rejected password login', async () => {
+    mockApiPost.mockRejectedValueOnce({ response: { status: 400 } });
     render(<LoginForm />);
 
     submitValidCredentials();
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Neplatné prihlasovacie údaje.'));
+    expect(mockRefreshUser).not.toHaveBeenCalled();
     expect(mockPush).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Prihlásiť sa' })).toBeEnabled();
+  });
+
+  it('can retry after a session verification failure', async () => {
+    mockApiPost.mockResolvedValue({ status: 200, data: {} } as never);
+    mockRefreshUser.mockRejectedValueOnce(new SessionVerificationError());
+    render(<LoginForm />);
+    submitValidCredentials();
+    await screen.findByRole('alert');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Prihlásiť sa' }));
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/dashboard'));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

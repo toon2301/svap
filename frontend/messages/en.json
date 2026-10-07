@@ -990,6 +990,7 @@
     "verificationSent": "✓ Verification email sent!",
     "invalidCredentials": "Invalid login credentials",
     "googleLoginFailed": "Google login failed to complete",
+    "sessionVerificationFailed": "We couldn't verify your session after signing in. Please try again.",
     "forgotPassword": "Forgot Password?",
     "noAccount": "Don't have an account?",
     "registerHere": "Register",

@@ -11,6 +11,7 @@ import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { logClientDebug, logClientError } from '@/utils/clientLogging';
+import { SessionVerificationError } from '@/lib/authSessionVerification';
 // auth_state cookie sa nesmie nastavovať z frontendu
 
 interface LoginData {
@@ -204,11 +205,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             trace('login_google_csrf_prime_done', {
               hasCsrf: hasCsrfToken(),
             });
-          } catch {
+          } catch (error) {
             // Ak /me zlyhá, neskúšaj presmerovať na dashboard
             trace('login_google_refresh_user_failed');
             setIsGoogleLoading(false);
-            setLoginErrors({ general: t('auth.googleLoginFailed') });
+            setLoginErrors({ general: error instanceof SessionVerificationError
+              ? t('auth.sessionVerificationFailed') : t('auth.googleLoginFailed') });
             return;
           }
 
@@ -299,6 +301,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       
     } catch (error: any) {
       logClientError('Login failed', error);
+
+      if (error instanceof SessionVerificationError) {
+        setLoginErrors({ general: t('auth.sessionVerificationFailed') });
+        return;
+      }
       
       // Rate limit (429) - špeciálna správa
       if (error.response?.status === 429) {

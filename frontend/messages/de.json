@@ -990,6 +990,7 @@
     "verificationSent": "✓ Verifizierungs-E-Mail wurde gesendet!",
     "invalidCredentials": "Ungültige Anmeldedaten.",
     "googleLoginFailed": "Google-Anmeldung konnte nicht abgeschlossen werden",
+    "sessionVerificationFailed": "Deine Sitzung konnte nach der Anmeldung nicht überprüft werden. Bitte versuche es erneut.",
     "forgotPassword": "Passwort vergessen?",
     "noAccount": "Haben Sie kein Konto?",
     "registerHere": "Registrieren",

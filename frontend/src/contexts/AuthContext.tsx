@@ -9,6 +9,7 @@ import { clearFeedReturn } from '@/components/dashboard/modules/feed/feedReturnS
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { logClientError } from '@/utils/clientLogging';
+import { SessionVerificationError } from '@/lib/authSessionVerification';
 import type { User } from '@/types';
 
 interface AuthContextType {
@@ -60,12 +61,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Deterministic /me refresh:
   // - Each refreshUser call gets a requestId and sets latestRequestId.
-  // - Only the latest request is allowed to update user state.
+  // - Only the latest request is allowed to confirm user state.
   // - Forced refresh aborts any previous pending request.
   const meAbortControllerRef = useRef<AbortController | null>(null);
   const mePromiseRef = useRef<Promise<void> | null>(null);
   const refreshSeqRef = useRef(0);
   const latestRequestIdRef = useRef(0);
+  const lastVerifiedUserRequestIdRef = useRef(0);
   const logoutInProgressRef = useRef(false);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const force = Boolean(options?.force || mustVerifyLogin);
     // Explicit logout in progress => do not run /me requests.
     if (logoutInProgressRef.current) {
-      if (mustVerifyLogin) throw new Error('Session verification interrupted');
+      if (mustVerifyLogin) throw new SessionVerificationError();
       return;
     }
 
@@ -126,6 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           applyResolvedUser(resp.data);
           setMayHaveRefreshCookie(true);
           loginUserVerified = true;
+          lastVerifiedUserRequestIdRef.current = requestId;
           return;
         }
 
@@ -170,16 +173,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })();
 
     mePromiseRef.current = p;
-    await p;
-    // Only this request's successful /me response can verify the login. A user
-    // left by another concurrent request must not make a failed check succeed.
-    if (mustVerifyLogin && (
-      requestId !== latestRequestIdRef.current ||
-      logoutInProgressRef.current ||
-      !loginUserVerified ||
-      !userRef.current
-    )) {
-      throw new Error('Session verification failed');
+    try {
+      await p;
+      // Only this request's successful /me response can verify the login. A user
+      // left by another concurrent request must not make a failed check succeed.
+      if (mustVerifyLogin && (
+        requestId !== latestRequestIdRef.current ||
+        logoutInProgressRef.current ||
+        !loginUserVerified ||
+        !userRef.current
+      )) {
+        throw new SessionVerificationError();
+      }
+    } catch (error) {
+      if (mustVerifyLogin) {
+        // Clear all client identity through the shared setter, but never erase
+        // an identity resolved by a newer request or interfere with logout.
+        if (lastVerifiedUserRequestIdRef.current <= requestId && !logoutInProgressRef.current) {
+          applyResolvedUser(null);
+        }
+        throw new SessionVerificationError();
+      }
+      throw error;
     }
   }, [applyResolvedUser]);
 

@@ -4,9 +4,12 @@ import { useState } from 'react';
 import { AuthProvider, __resetAuthBootstrapSnapshotForTests, useAuth } from '../AuthContext';
 import { api, invalidateSession, isTransientAuthFailureError } from '@/lib/api';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
+import { getCurrentAccountId } from '@/lib/currentAccount';
+import { SessionVerificationError } from '@/lib/authSessionVerification';
 
 const push = jest.fn();
 const replace = jest.fn();
+const loginFailures = jest.fn();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace }),
@@ -55,7 +58,10 @@ function SessionControls() {
     <>
       <span data-testid="identity">{isLoading ? 'loading' : currentUser?.email ?? 'anonymous'}</span>
       <span data-testid="login-error">{loginError ? 'failed' : 'none'}</span>
-      <button onClick={() => void login(user.email, 'test-password').catch(() => setLoginError(true))}>
+      <button onClick={() => void login(user.email, 'test-password').catch((error) => {
+        loginFailures(error);
+        setLoginError(true);
+      })}>
         Login
       </button>
       <button onClick={logout}>Logout</button>
@@ -66,7 +72,7 @@ function SessionControls() {
 
 /** Mount a fresh auth provider with the test controls. */
 function mount() {
-  render(<AuthProvider><SessionControls /></AuthProvider>);
+  return render(<AuthProvider><SessionControls /></AuthProvider>);
 }
 
 describe('AuthContext session lifecycle', () => {
@@ -219,10 +225,27 @@ describe('AuthContext session lifecycle', () => {
     expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
   });
 
+  it('reports a verification error when an anonymous login /me request rejects', async () => {
+    mount();
+    await screen.findByText('anonymous');
+    get.mockRejectedValueOnce(new Error('network unavailable'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+
+    await screen.findByText('failed');
+    expect(loginFailures).toHaveBeenCalledWith(expect.any(SessionVerificationError));
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+    expect(getCurrentAccountId()).toBeNull();
+  });
+
   it.each([
     ['401', { response: { status: 401 } }, false],
     ['a temporary failure', new Error('temporary network failure'), true],
-  ])('does not reuse an existing user when login /me fails with %s', async (_label, failure, transient) => {
+    ['500', { response: { status: 500 } }, false],
+    ['403', { response: { status: 403 } }, false],
+    ['cancellation', { code: 'ERR_CANCELED' }, false],
+  ])('clears the previous identity when the current login /me fails with %s', async (_label, failure, transient) => {
     get.mockResolvedValueOnce({ status: 200, data: user });
     mount();
     await screen.findByText(user.email);
@@ -234,6 +257,9 @@ describe('AuthContext session lifecycle', () => {
     await screen.findByText('failed');
     expect(push).not.toHaveBeenCalled();
     expect(localStorage.getItem('activeModule')).toBeNull();
+    expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+    expect(getCurrentAccountId()).toBeNull();
+    expect(loginFailures).toHaveBeenCalledWith(expect.any(SessionVerificationError));
   });
 
   it('does not reuse an existing user when login /me returns an empty response', async () => {
@@ -246,25 +272,85 @@ describe('AuthContext session lifecycle', () => {
 
     await screen.findByText('failed');
     expect(push).not.toHaveBeenCalled();
+    expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+    expect(getCurrentAccountId()).toBeNull();
   });
 
-  it('does not navigate after login when its /me check is superseded', async () => {
-    mount();
-    await screen.findByText('anonymous');
-    const loginCheck = deferred<unknown>();
-    get.mockImplementationOnce(() => loginCheck.promise);
+  it('clears the previous identity from the bootstrap snapshot after failed verification', async () => {
     get.mockResolvedValueOnce({ status: 200, data: user });
+    const view = mount();
+    await screen.findByText(user.email);
+    expect(getCurrentAccountId()).toBe(user.id);
+    get.mockRejectedValueOnce(new Error('temporary network failure'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+    await screen.findByText('failed');
+    view.unmount();
+    mount();
+
+    expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+    expect(getCurrentAccountId()).toBeNull();
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['response', 'rejection'])('preserves a newer confirmed identity after a superseded login %s', async (completion) => {
+    get.mockResolvedValueOnce({ status: 200, data: user });
+    const view = mount();
+    await screen.findByText(user.email);
+    const loginCheck = deferred<unknown>();
+    const nextUser = { ...user, id: 72, email: 'next@example.com' };
+    get.mockImplementationOnce(() => loginCheck.promise);
+    get.mockResolvedValueOnce({ status: 200, data: nextUser });
 
     fireEvent.click(screen.getByRole('button', { name: 'Login' }));
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await screen.findByText(user.email);
+    await screen.findByText(nextUser.email);
 
     await act(async () => {
-      loginCheck.resolve({ status: 200, data: user });
-      await loginCheck.promise;
+      if (completion === 'response') {
+        loginCheck.resolve({ status: 200, data: user });
+      } else {
+        loginCheck.reject(new Error('old request failed'));
+      }
+      await loginCheck.promise.catch(() => undefined);
     });
     await screen.findByText('failed');
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByTestId('identity')).toHaveTextContent(nextUser.email);
+    expect(getCurrentAccountId()).toBe(nextUser.id);
+
+    view.unmount();
+    mount();
+    expect(screen.getByTestId('identity')).toHaveTextContent(nextUser.email);
+  });
+
+  it('clears stale identity if a newer background request also fails to verify it', async () => {
+    get.mockResolvedValueOnce({ status: 200, data: user });
+    mount();
+    await screen.findByText(user.email);
+    const loginCheck = deferred<unknown>();
+    const backgroundCheck = deferred<unknown>();
+    get.mockImplementationOnce(() => loginCheck.promise);
+    get.mockImplementationOnce(() => backgroundCheck.promise);
+    isTransient.mockReturnValue(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(3));
+    await act(async () => {
+      backgroundCheck.reject(new Error('newer request failed'));
+      await backgroundCheck.promise.catch(() => undefined);
+    });
+    await act(async () => {
+      loginCheck.reject(new Error('login verification failed'));
+      await loginCheck.promise.catch(() => undefined);
+    });
+
+    await screen.findByText('failed');
+    expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+    expect(getCurrentAccountId()).toBeNull();
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -280,7 +366,7 @@ describe('AuthContext session lifecycle', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('cancels an in-flight /me request during logout', async () => {
+  it.each(['Refresh', 'Login'])('cancels an in-flight %s /me request during logout', async (action) => {
     get.mockResolvedValueOnce({ status: 200, data: user });
     mount();
     await screen.findByText(user.email);
@@ -292,12 +378,13 @@ describe('AuthContext session lifecycle', () => {
       }, { once: true });
     }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    fireEvent.click(screen.getByRole('button', { name: action }));
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'));
 
     expect(abortObserved).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('identity')).toHaveTextContent('anonymous');
+    expect(getCurrentAccountId()).toBeNull();
   });
 });
