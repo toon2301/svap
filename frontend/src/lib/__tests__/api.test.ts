@@ -4,6 +4,7 @@ import Cookies from 'js-cookie';
 import api, {
   endpoints,
   ensureFreshSessionForBackgroundWork,
+  ensureSessionRefreshed,
   isSessionFreshEnough,
   setMayHaveRefreshCookie,
 } from '../api';
@@ -243,6 +244,67 @@ describe('lib/api axios instance', () => {
     expect(isSessionFreshEnough(1_000)).toBe(true);
 
     postSpy.mockRestore();
+  });
+
+  it('spojí súbežné refresh požiadavky do jediného serverového volania', async () => {
+    (Cookies.get as jest.Mock).mockImplementation((key: string) =>
+      key === 'csrftoken' ? 'csrf123' : undefined,
+    );
+    let finish!: (value: unknown) => void;
+    const pending = new Promise((resolve) => { finish = resolve; });
+    const postSpy = jest.spyOn(axios as any, 'post').mockReturnValueOnce(pending as never);
+
+    try {
+      const first = ensureSessionRefreshed();
+      const second = ensureSessionRefreshed();
+      expect(postSpy).toHaveBeenCalledTimes(1);
+
+      finish({ status: 200, headers: {} });
+      await expect(Promise.all([first, second])).resolves.toEqual(['refreshed', 'refreshed']);
+    } finally {
+      postSpy.mockRestore();
+    }
+  });
+
+  it('po limite 429 drží refresh v cooldowne bez ďalšieho volania', async () => {
+    (Cookies.get as jest.Mock).mockImplementation((key: string) =>
+      key === 'csrftoken' ? 'csrf123' : undefined,
+    );
+    const postSpy = jest.spyOn(axios as any, 'post').mockRejectedValueOnce({ response: { status: 429 } });
+
+    try {
+      await expect(ensureSessionRefreshed()).resolves.toBe('transient_failure');
+      await expect(ensureSessionRefreshed()).resolves.toBe('transient_failure');
+      expect(postSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      postSpy.mockRestore();
+    }
+  });
+
+  it('po neúspešnom refreshi aj recovery označí reláciu za neplatnú iba raz', async () => {
+    (Cookies.get as jest.Mock).mockImplementation((key: string) =>
+      key === 'csrftoken' ? 'csrf123' : undefined,
+    );
+    const postSpy = jest.spyOn(axios as any, 'post').mockRejectedValueOnce({ response: { status: 401 } });
+    const getSpy = jest.spyOn(axios as any, 'get').mockRejectedValueOnce({ response: { status: 401 } });
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+    const rejected = (api as any).interceptors.response.handlers[0].rejected;
+    const failure = () => rejected({
+      response: { status: 401 },
+      config: { url: '/auth/me/', method: 'get', headers: {} },
+    });
+
+    try {
+      await expect(failure()).rejects.toMatchObject({ __svaplyAuthFailure: 'invalid_session' });
+      await expect(failure()).rejects.toMatchObject({ response: { status: 401 } });
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      expect(getSpy).toHaveBeenCalledTimes(1);
+      expect(dispatchSpy.mock.calls.filter(([event]) => event.type === 'auth:session-invalid')).toHaveLength(1);
+    } finally {
+      postSpy.mockRestore();
+      getSpy.mockRestore();
+      dispatchSpy.mockRestore();
+    }
   });
 
   it('exportuje endpoints', () => {

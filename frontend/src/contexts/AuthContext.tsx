@@ -82,9 +82,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
-    // Explicit logout in progress => do not run /me requests.
-    if (logoutInProgressRef.current) return;
     const force = Boolean(options?.force);
+    // Login starts without a user: its forced /me check must confirm the new session.
+    // Background refreshes of an existing user retain their best-effort behavior.
+    const mustVerifyLogin = force && !userRef.current;
+    // Explicit logout in progress => do not run /me requests.
+    if (logoutInProgressRef.current) {
+      if (mustVerifyLogin) throw new Error('Session verification interrupted');
+      return;
+    }
 
     const requestId = ++refreshSeqRef.current;
     latestRequestIdRef.current = requestId;
@@ -164,7 +170,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })();
 
     mePromiseRef.current = p;
-    return p;
+    await p;
+    // A 401, empty /me response, cancellation or superseded request may resolve
+    // without a user. In a login flow that is not a verified session.
+    if (mustVerifyLogin && (
+      requestId !== latestRequestIdRef.current ||
+      logoutInProgressRef.current ||
+      !userRef.current
+    )) {
+      throw new Error('Session verification failed');
+    }
   }, [applyResolvedUser]);
 
   // Cleanup: abort pending /me request on unmount
