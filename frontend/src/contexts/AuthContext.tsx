@@ -9,6 +9,7 @@ import { clearFeedReturn } from '@/components/dashboard/modules/feed/feedReturnS
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { logClientError } from '@/utils/clientLogging';
+import { SessionVerificationError } from '@/lib/authSessionVerification';
 import type { User } from '@/types';
 
 interface AuthContextType {
@@ -19,7 +20,7 @@ interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
-  refreshUser: (options?: { force?: boolean }) => Promise<void>;
+  refreshUser: (options?: { force?: boolean; verifyLogin?: boolean }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,12 +61,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Deterministic /me refresh:
   // - Each refreshUser call gets a requestId and sets latestRequestId.
-  // - Only the latest request is allowed to update user state.
+  // - Only the latest request is allowed to confirm user state.
   // - Forced refresh aborts any previous pending request.
   const meAbortControllerRef = useRef<AbortController | null>(null);
   const mePromiseRef = useRef<Promise<void> | null>(null);
   const refreshSeqRef = useRef(0);
   const latestRequestIdRef = useRef(0);
+  const lastVerifiedUserRequestIdRef = useRef(0);
   const logoutInProgressRef = useRef(false);
 
   useEffect(() => {
@@ -81,10 +83,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setCurrentAccountId(nextUser?.id ?? null);
   }, []);
 
-  const refreshUser = useCallback(async (options?: { force?: boolean }) => {
+  const refreshUser = useCallback(async (options?: { force?: boolean; verifyLogin?: boolean }) => {
+    const mustVerifyLogin = Boolean(options?.verifyLogin);
+    const force = Boolean(options?.force || mustVerifyLogin);
     // Explicit logout in progress => do not run /me requests.
-    if (logoutInProgressRef.current) return;
-    const force = Boolean(options?.force);
+    if (logoutInProgressRef.current) {
+      if (mustVerifyLogin) throw new SessionVerificationError();
+      return;
+    }
 
     const requestId = ++refreshSeqRef.current;
     latestRequestIdRef.current = requestId;
@@ -108,6 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const controller = new AbortController();
     meAbortControllerRef.current = controller;
+    let loginUserVerified = false;
 
     const p: Promise<void> = (async () => {
       try {
@@ -120,6 +127,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (resp?.status === 200 && resp.data) {
           applyResolvedUser(resp.data);
           setMayHaveRefreshCookie(true);
+          loginUserVerified = true;
+          lastVerifiedUserRequestIdRef.current = requestId;
           return;
         }
 
@@ -164,7 +173,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })();
 
     mePromiseRef.current = p;
-    return p;
+    try {
+      await p;
+      // Only this request's successful /me response can verify the login. A user
+      // left by another concurrent request must not make a failed check succeed.
+      if (mustVerifyLogin && (
+        requestId !== latestRequestIdRef.current ||
+        logoutInProgressRef.current ||
+        !loginUserVerified ||
+        !userRef.current
+      )) {
+        throw new SessionVerificationError();
+      }
+    } catch (error) {
+      if (mustVerifyLogin) {
+        // Clear all client identity through the shared setter, but never erase
+        // an identity resolved by a newer request or interfere with logout.
+        if (lastVerifiedUserRequestIdRef.current <= requestId && !logoutInProgressRef.current) {
+          applyResolvedUser(null);
+        }
+        throw new SessionVerificationError();
+      }
+      throw error;
+    }
   }, [applyResolvedUser]);
 
   // Cleanup: abort pending /me request on unmount
@@ -287,7 +318,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Prihlásenie zlyhalo');
       }
       // Overenie cez /me/ (cookie auth) – jediný zdroj pravdy pre auth stav
-      await refreshUser({ force: true });
+      await refreshUser({ force: true, verifyLogin: true });
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         clearMobileOnboardingPostponedForSession();

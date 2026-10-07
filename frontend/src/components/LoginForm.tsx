@@ -11,6 +11,7 @@ import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { logClientDebug, logClientError } from '@/utils/clientLogging';
+import { SessionVerificationError } from '@/lib/authSessionVerification';
 // auth_state cookie sa nesmie nastavovať z frontendu
 
 interface LoginData {
@@ -197,18 +198,19 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
           try {
             trace('login_google_refresh_user_start');
-            await refreshUser({ force: true });
+            await refreshUser({ force: true, verifyLogin: true });
             trace('login_google_refresh_user_success');
             trace('login_google_csrf_prime_start');
             await fetchCsrfToken();
             trace('login_google_csrf_prime_done', {
               hasCsrf: hasCsrfToken(),
             });
-          } catch {
+          } catch (error) {
             // Ak /me zlyhá, neskúšaj presmerovať na dashboard
             trace('login_google_refresh_user_failed');
             setIsGoogleLoading(false);
-            setLoginErrors({ general: t('auth.googleLoginFailed') });
+            setLoginErrors({ general: error instanceof SessionVerificationError
+              ? t('auth.sessionVerificationFailed') : t('auth.googleLoginFailed') });
             return;
           }
 
@@ -284,7 +286,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       await ensureCsrfToken();
       await api.post(endpoints.auth.login, loginData);
       // Overenie session cez /me (HttpOnly cookies)
-      await refreshUser({ force: true });
+      await refreshUser({ force: true, verifyLogin: true });
 
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
@@ -299,6 +301,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       
     } catch (error: any) {
       logClientError('Login failed', error);
+
+      if (error instanceof SessionVerificationError) {
+        setLoginErrors({ general: t('auth.sessionVerificationFailed') });
+        return;
+      }
       
       // Rate limit (429) - špeciálna správa
       if (error.response?.status === 429) {

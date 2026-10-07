@@ -990,6 +990,7 @@
     "verificationSent": "✓ E-mail weryfikacyjny został wysłany!",
     "invalidCredentials": "Nieprawidłowe dane logowania.",
     "googleLoginFailed": "Logowanie przez Google nie zostało zakończone pomyślnie",
+    "sessionVerificationFailed": "Nie udało się zweryfikować sesji po zalogowaniu. Spróbuj ponownie.",
     "forgotPassword": "Zapomniałeś hasła?",
     "noAccount": "Nie masz konta?",
     "registerHere": "Zarejestruj się",
