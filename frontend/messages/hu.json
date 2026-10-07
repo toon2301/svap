@@ -990,6 +990,7 @@
     "verificationSent": "✓ Megerősítő e-mail elküldve!",
     "invalidCredentials": "Érvénytelen bejelentkezési adatok.",
     "googleLoginFailed": "A Google-bejelentkezés nem fejeződött be",
+    "sessionVerificationFailed": "Bejelentkezés után nem sikerült ellenőrizni a munkamenetet. Próbáld újra.",
     "forgotPassword": "Elfelejtette a jelszavát?",
     "noAccount": "Nincs fiókja?",
     "registerHere": "Regisztráció",

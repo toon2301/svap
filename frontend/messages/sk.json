@@ -990,6 +990,7 @@
     "verificationSent": "✓ Verifikačný email bol odoslaný!",
     "invalidCredentials": "Neplatné prihlasovacie údaje.",
     "googleLoginFailed": "Google prihlásenie sa nepodarilo dokončiť",
+    "sessionVerificationFailed": "Reláciu po prihlásení sa nepodarilo overiť. Skús to znova.",
     "forgotPassword": "Zabudli ste heslo?",
     "noAccount": "Nemáte účet?",
     "registerHere": "Registrovať sa",
