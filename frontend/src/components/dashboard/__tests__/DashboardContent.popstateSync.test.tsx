@@ -248,7 +248,6 @@ describe('modul podľa adresy', () => {
     ['/dashboard/skills', 'skills'],
     ['/dashboard/skills/offer', 'skills-offer'],
     ['/dashboard/skills/search', 'skills-search'],
-    ['/dashboard/feed/7', 'feed-post-detail'],
     ['/dashboard/offers/3/reviews', 'offer-reviews'],
     ['/dashboard/profile', 'profile'],
     ['/dashboard/settings/', 'settings'],
@@ -299,6 +298,60 @@ describe('modul podľa adresy', () => {
     await popTo(path);
 
     expect(activeModule()).toBe('home');
+  });
+
+  it('desktop: krok na adresu príspevku nechá Nástenku, okno nad ňou otvára efekt priameho vstupu', async () => {
+    await renderDashboard();
+
+    await popTo('/dashboard/feed/7');
+
+    expect(activeModule()).toBe('home');
+  });
+
+  it('desktop: adresa príspevku s komentárom sa berie rovnako', async () => {
+    await renderDashboard();
+
+    await popTo('/dashboard/feed/7?comment=3');
+
+    expect(activeModule()).toBe('home');
+  });
+
+  it('desktop: krok z cudzieho profilu na adresu príspevku zahodí zobrazeného používateľa a ukáže Nástenku', async () => {
+    await renderDashboard(false, FOREIGN_PROFILE);
+    act(() => routerProps().onViewUserProfile?.(55, 'jana', summary));
+
+    await popTo('/dashboard/feed/7');
+
+    expect(activeModule()).toBe('home');
+    expect(routerProps().viewedUserId).toBeNull();
+    expect(routerProps().viewedUserSlug).toBeNull();
+    expect(routerProps().viewedUserSummary).toBeNull();
+  });
+
+  it('desktop: do localStorage sa zapíše Nástenka, nie celostránkový detail príspevku', async () => {
+    await renderDashboard();
+    localStorage.clear();
+
+    await popTo('/dashboard/feed/7');
+
+    expect(localStorage.getItem('activeModule')).toBe('home');
+  });
+
+  it('mobil: krok na adresu príspevku otvorí celostránkový detail', async () => {
+    await renderDashboard(true);
+
+    await popTo('/dashboard/feed/7');
+
+    expect(activeModule()).toBe('feed-post-detail');
+  });
+
+  it('mobil: do localStorage sa zapíše detail príspevku', async () => {
+    await renderDashboard(true);
+    localStorage.clear();
+
+    await popTo('/dashboard/feed/7');
+
+    expect(localStorage.getItem('activeModule')).toBe('feed-post-detail');
   });
 
   it('modul sa berie z adresy v okne, nie zo stavu udalosti', async () => {

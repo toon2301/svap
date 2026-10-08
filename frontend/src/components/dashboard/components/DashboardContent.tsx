@@ -734,7 +734,9 @@ export default function DashboardContent({
       if (typeof window === 'undefined') return;
       const p = window.location.pathname || '';
       // To iste mapovanie ako pri mounte (`useDashboardMountRoute`).
-      const moduleId = dashboardModuleFromPath(p);
+      const pathModule = dashboardModuleFromPath(p);
+      // Na desktope adresa príspevku znamená Nástenku s oknom (otvára ho efekt priameho vstupu), nie celú stránku.
+      const moduleId = pathModule === 'feed-post-detail' && !isMobile ? 'home' : pathModule;
       if (moduleId !== null) {
         setActiveModule(moduleId);
         try {
@@ -765,7 +767,7 @@ export default function DashboardContent({
 
     window.addEventListener('popstate', syncModuleFromPath);
     return () => window.removeEventListener('popstate', syncModuleFromPath);
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary]);
+  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary, isMobile]);
 
   // GlobÃ¡lna navigÃ¡cia na cudzÃ­ profil (napr. zo Å½iadostÃ­).
   // PouÅ¾Ã­vame event, aby UI reagovalo okamÅ¾ite aj v prÃ­padoch, keÄ sa URL zmenÃ­ bez
