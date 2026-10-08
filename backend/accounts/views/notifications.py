@@ -85,6 +85,7 @@ def _parse_notifications_page_params(request):
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def notifications_list_view(request):
+    """Zoznam upozornení prihláseného používateľa, plochý alebo stránkovaný."""
     qs = (
         Notification.objects.filter(user=request.user)
         .select_related("actor", "conversation", "group_invitation", "skill_request")
