@@ -166,6 +166,28 @@ function installViewport(isMobile: boolean) {
   }));
 }
 
+/**
+ * Zmena viewportu za behu: media query zmení `matches` a zavolá poslucháča `change`,
+ * ktorý si zaregistrovala (`useIsMobileState`). `window.innerWidth` sa mení spolu s ňou.
+ */
+function flipViewport(isMobile: boolean) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: isMobile ? MOBILE_WIDTH : DESKTOP_WIDTH,
+  });
+  act(() => {
+    (window.matchMedia as jest.Mock).mock.results.forEach((result) => {
+      const mediaQuery = result.value as { matches: boolean; media: string; addEventListener: jest.Mock };
+      if (!mediaQuery.media.includes('max-width: 1023px')) return;
+      mediaQuery.matches = isMobile;
+      mediaQuery.addEventListener.mock.calls
+        .filter(([type]) => type === 'change')
+        .forEach(([, listener]) => listener());
+    });
+  });
+}
+
 const settle = () =>
   act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -647,6 +669,20 @@ describe('detail príspevku podľa adresy: desktop', () => {
     expect(activeModule()).toBe('home');
     expect(window.history.length).toBe(lengthBefore);
     expect(mockOverlayRenders - rendersBefore).toBeLessThan(5);
+  });
+
+  it('okno otvorené priamym vstupom ostáva, aj keď sa viewport zmení na mobil', async () => {
+    await renderDashboard(false, FEED_7, 'home');
+    expect(isOverlayOpen()).toBe(true);
+    mockModuleRenders = [];
+
+    flipViewport(true);
+    await settle();
+
+    expect(isOverlayOpen()).toBe(true);
+    expect(overlayProps().postId).toBe(7);
+    expect(activeModule()).toBe('home');
+    expect(mockModuleRenders).not.toContain('feed-post-detail');
   });
 
   it('okno zatvorené krokom späť sa nevráti, kým adresa príspevku ešte visí v routeri', async () => {
