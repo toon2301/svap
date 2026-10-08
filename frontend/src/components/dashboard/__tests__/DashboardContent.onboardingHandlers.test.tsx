@@ -209,6 +209,18 @@ afterEach(() => {
 const openNotificationsPanel = () => act(() => layoutProps().onSidebarNotificationsClick?.());
 const openSearchPanel = () => act(() => layoutProps().onSidebarSearchClick?.());
 
+/** Surový príznak mobilného menu otvorí krok späť z upozornení (modul ostane prázdny). */
+const openRawMobileMenu = () => {
+  // Router, ktorý ako Next skutočne zmení adresu.
+  mockRouter.push.mockImplementation((url: string) => {
+    window.history.pushState(null, '', url);
+    mockPathname = new URL(url, 'http://localhost').pathname;
+  });
+  act(() => routerProps().onNotificationNavigate?.('/dashboard/notifications'));
+  act(() => layoutProps().onMobileBack?.());
+  expect(activeModule()).toBe('');
+};
+
 describe('mobilný sprievodca otvára obrazovky', () => {
   it.each([
     ['onOpenHome', 'home', 'messages'],
@@ -401,14 +413,7 @@ describe('desktopový sprievodca otvára obrazovky', () => {
 
   it('mobilné menu otvorené krokom späť z upozornení blokuje sprievodcu a klik na upozornenie ho zavrie', async () => {
     await renderDashboard(true);
-    // Router, ktorý ako Next skutočne zmení adresu.
-    mockRouter.push.mockImplementation((url: string) => {
-      window.history.pushState(null, '', url);
-      mockPathname = new URL(url, 'http://localhost').pathname;
-    });
-    act(() => routerProps().onNotificationNavigate?.('/dashboard/notifications'));
-    act(() => layoutProps().onMobileBack?.());
-    expect(activeModule()).toBe('');
+    openRawMobileMenu();
     expect(mobile().isBlockedByUi).toBe(true);
 
     act(() => routerProps().onNotificationNavigate?.('/dashboard/unknown-section'));
@@ -488,6 +493,17 @@ describe('desktopový sprievodca otvára vlastný profil', () => {
     expect(layoutProps().isNotificationsPanelOpen).toBe(false);
   });
 
+  it('zavrie mobilné menu, ktoré blokovalo mobilného sprievodcu', async () => {
+    await renderDashboard(true);
+    openRawMobileMenu();
+    expect(mobile().isBlockedByUi).toBe(true);
+
+    act(() => desktop().onOpenProfile?.());
+
+    expect(activeModule()).toBe('profile');
+    expect(mobile().isBlockedByUi).toBe(false);
+  });
+
   it('zabudne cudzí profil, ktorý bol otvorený', async () => {
     await renderDashboard();
     act(() => routerProps().onViewUserProfile?.(42, 'anna', summary));
@@ -538,6 +554,36 @@ describe('desktopový sprievodca otvára vlastný profil', () => {
   });
 });
 
+describe('šípky späť zatvárajú mobilné menu, ktoré blokuje mobilného sprievodcu', () => {
+  it('krok späť z konverzácie v Správach', async () => {
+    await renderDashboard(true);
+    openRawMobileMenu();
+    expect(mobile().isBlockedByUi).toBe(true);
+
+    act(() => layoutProps().onMobileMessagesBack?.());
+
+    expect(activeModule()).toBe('messages');
+    expect(mobile().isBlockedByUi).toBe(false);
+  });
+
+  it('krok späť z detailu portfólia', async () => {
+    await renderDashboard(true, {
+      route: 'portfolio-detail',
+      pathname: '/dashboard/users/anna/portfolio/5',
+      search: '',
+    });
+    // Handler „späť“ platí len pri module detailu, preto sa berie z chvíle, keď detail je aktívny.
+    const back = layoutProps().onMobileBack as () => void;
+    openRawMobileMenu();
+    expect(mobile().isBlockedByUi).toBe(true);
+
+    act(() => back());
+
+    expect(activeModule()).toBe('user-profile');
+    expect(mobile().isBlockedByUi).toBe(false);
+  });
+});
+
 describe('oznam „prvá ponuka je vytvorená“', () => {
   it('bez zaregistrovaných obsluh nič nespadne', async () => {
     await renderDashboard();
@@ -555,6 +601,17 @@ describe('oznam „prvá ponuka je vytvorená“', () => {
 
     expect(onMobile).toHaveBeenCalledTimes(1);
     expect(onDesktop).toHaveBeenCalledTimes(1);
+  });
+
+  it('mobilný sprievodca dostane oznam skôr ako desktopový', async () => {
+    await renderDashboard();
+    const order: string[] = [];
+    mobile().onSkillCreatedHandlerSet?.(() => order.push('mobilný'));
+    desktop().onSkillCreatedHandlerSet?.(() => order.push('desktopový'));
+
+    act(() => (mockModalsProps?.onCreatedSkillSaved as () => void)());
+
+    expect(order).toEqual(['mobilný', 'desktopový']);
   });
 
   it('funguje aj po uložení karty cez ukladací hook', async () => {

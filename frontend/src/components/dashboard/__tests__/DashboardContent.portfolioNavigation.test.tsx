@@ -23,6 +23,7 @@ import {
   openPortfolioDetail,
   resetPortfolioDetailOrigin,
 } from '../modules/profile/portfolioRouting';
+import type { SearchUserResult } from '../modules/search/types';
 
 type ModuleRouterProps = ComponentProps<typeof ModuleRouter>;
 type DashboardLayoutProps = ComponentProps<typeof DashboardLayout>;
@@ -312,6 +313,19 @@ describe('krok späť z detailu portfólia', () => {
 
       expect(routerProps().viewedUserId).toBe(42);
       expect(routerProps().viewedUserSlug).toBeNull();
+    });
+
+    it('zabudne zhrnutie cudzieho používateľa, ktoré bolo otvorené', async () => {
+      await renderPortfolioDetail('/dashboard/users/anna/portfolio/5', { initialProfileSlug: 'anna' });
+      // Handler „späť“ platí len pri module detailu, preto sa berie z chvíle, keď detail je aktívny.
+      const back = layoutProps().onMobileBack as () => void;
+      const summary = { id: 77, username: 'bob' } as unknown as SearchUserResult;
+      act(() => routerProps().onViewUserProfile?.(77, 'bob', summary));
+      expect(routerProps().viewedUserSummary).toBe(summary);
+
+      act(() => back());
+
+      expect(routerProps().viewedUserSummary).toBeNull();
     });
 
     it('vlastník z medzier sa berie ako žiadny a vráti na vlastný profil', async () => {
