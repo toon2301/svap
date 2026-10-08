@@ -42,32 +42,23 @@ import { useMobileSettings } from '../hooks/useMobileSettings';
 import { useOnboardingHandlers } from '../hooks/useOnboardingHandlers';
 import { useDashboardBackHandlers } from '../hooks/useDashboardBackHandlers';
 import { usePortfolioNavigation } from '../hooks/usePortfolioNavigation';
+import { usePathModuleEffects } from '../hooks/usePathModuleEffects';
+import { usePopstateModuleSync } from '../hooks/usePopstateModuleSync';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { FeedPostOverlayProvider } from '../contexts/FeedPostOverlayContext';
 import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
-import {
-  adoptFeedOverlayHistory,
-  isFeedOverlayHistoryBusy,
-} from '../modules/feed/feedOverlayHistory';
-import { decideFeedPostEntry } from '../modules/feed/feedPostEntryDecision';
 import { getUserIdBySlug } from '../modules/profile/profileUserCache';
 import {
   markProfileFreshEntry,
   profileEntryTargetFromIdentifier,
 } from '../modules/profile/profileFreshEntry';
 import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
-import {
-  dashboardModuleFromPath,
-  useDashboardMountRoute,
-} from './dashboardMountRoute';
+import { useDashboardMountRoute } from './dashboardMountRoute';
 import {
   dashboardProfilePath,
   dashboardSectionPath,
 } from './dashboardRoutes';
-import {
-  getDashboardUserIdentifierFromTarget,
-  parseDashboardHighlightId,
-} from './dashboardTargetUrl';
+import { parseDashboardHighlightId } from './dashboardTargetUrl';
 import { resolveInitialOwnProfileTab } from './ownProfileTab';
 import { getDashboardRenderValues } from './dashboardRenderValues';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
@@ -490,62 +481,18 @@ export default function DashboardContent({
     setViewedUserSlug,
     setViewedUserSummary,
   });
-  useEffect(() => {
-    if (offerIdFromReviewsPath != null) {
-      setActiveModule('offer-reviews');
-    }
-  }, [offerIdFromReviewsPath, setActiveModule]);
 
-  useEffect(() => {
-    if (portfolioItemIdFromPath != null && Number.isFinite(portfolioItemIdFromPath)) {
-      setActiveModule('portfolio-detail');
-    }
-  }, [portfolioItemIdFromPath, setActiveModule]);
-
-  useEffect(() => {
-    // Priamy vstup na /dashboard/feed/<id> (odkaz, F5, aj preklik na zdielany
-    // prispevok): na desktope ma appka vzdy ukazat Nastenku a NAD nou to iste
-    // okno, ake sa otvara klikom vo feede. Samotne rozhodovanie (aj s oboma
-    // oneskoreniami adresy) je vo `feedPostEntryDecision`.
-    const decision = decideFeedPostEntry({
-      pathPostId: feedPostIdFromPath,
-      overlayOpen: feedOverlayTarget !== null,
-      historyBusy: isFeedOverlayHistoryBusy(),
-      liveUrl:
-        typeof window === 'undefined'
-          ? null
-          : window.location.pathname + window.location.search,
-      viewportResolved: isViewportResolved,
-      isMobile,
-    });
-
-    if (decision.kind === 'full-page') {
-      setActiveModule('feed-post-detail');
-      return;
-    }
-    if (decision.kind !== 'overlay') return;
-
-    // Predvoleny modul ako pozadie: pri priamom vstupe neexistuje ziadny
-    // predosly stav appky, na ktory by sa dalo vratit.
-    setActiveModule('home');
-    // Adresa uz na prispevok ukazuje - okno ju len prevezme, nepridava dalsi
-    // zaznam do historie.
-    adoptFeedOverlayHistory();
-    setFeedOverlayTarget(decision.target);
-  }, [
+  usePathModuleEffects({
+    offerIdFromReviewsPath,
+    portfolioItemIdFromPath,
+    portfolioCreateMatch,
     feedPostIdFromPath,
-    setActiveModule,
     feedOverlayTarget,
     setFeedOverlayTarget,
+    setActiveModule,
     isMobile,
     isViewportResolved,
-  ]);
-
-  useEffect(() => {
-    if (portfolioCreateMatch) {
-      setActiveModule('portfolio-create');
-    }
-  }, [portfolioCreateMatch, setActiveModule]);
+  });
 
   const { mobileMessagePeer, mobileMessageGroup } = useMobileMessagePeer({
     activeModule,
@@ -556,45 +503,16 @@ export default function DashboardContent({
 
   // Po stlaÄenÃ­ spÃ¤Å¥ z cudzieho profilu (user-profile) URL skoÄÃ­ sprÃ¡vne, ale activeModule ostÃ¡va
   // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
-  useEffect(() => {
-    const syncModuleFromPath = () => {
-      if (typeof window === 'undefined') return;
-      const p = window.location.pathname || '';
-      // To iste mapovanie ako pri mounte (`useDashboardMountRoute`).
-      const pathModule = dashboardModuleFromPath(p);
-      // Na desktope adresa príspevku znamená Nástenku s oknom (otvára ho efekt priameho vstupu), nie celú stránku.
-      const moduleId = pathModule === 'feed-post-detail' && !isMobile ? 'home' : pathModule;
-      if (moduleId !== null) {
-        setActiveModule(moduleId);
-        try {
-          localStorage.setItem('activeModule', moduleId);
-        } catch {
-          // ignore
-        }
-        if (moduleId === 'user-profile' || moduleId === 'portfolio-detail') {
-          const identifier = getDashboardUserIdentifierFromTarget(p);
-          setViewedUserSummary(null);
-          if (identifier && /^\d+$/.test(identifier)) {
-            setViewedUserId(Number(identifier));
-            setViewedUserSlug(null);
-          } else if (identifier) {
-            setViewedUserId(null);
-            setViewedUserSlug(identifier);
-          }
-        } else {
-          setViewedUserId(null);
-          setViewedUserSlug(null);
-          setViewedUserSummary(null);
-        }
-        setIsRightSidebarOpen(false);
-        setActiveRightItem('');
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('popstate', syncModuleFromPath);
-    return () => window.removeEventListener('popstate', syncModuleFromPath);
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary, isMobile]);
+  usePopstateModuleSync({
+    isMobile,
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+  });
 
   // GlobÃ¡lna navigÃ¡cia na cudzÃ­ profil (napr. zo Å½iadostÃ­).
   // PouÅ¾Ã­vame event, aby UI reagovalo okamÅ¾ite aj v prÃ­padoch, keÄ sa URL zmenÃ­ bez
