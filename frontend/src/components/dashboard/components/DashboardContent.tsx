@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,6 @@ import type { User } from '@/types';
 import type { ProfileTab } from '../modules/profile/profileTypes';
 import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
-import type { AccountSettingsMobileView } from '../modules/AccountSettingsModule';
 import DashboardModals from '../DashboardModals';
 import { DeleteSkillConfirmModal } from '../modules/skills/DeleteSkillConfirmModal';
 import { clearSkillsDescribeReturnModule } from '../modules/skills/skillsDescribeReturnSession';
@@ -21,19 +20,11 @@ import OnboardingScrollLock from '../onboarding/OnboardingScrollLock';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
-import { navigateMessagesUrl } from '../modules/messages/messagesRouting';
 import type { RequestsRouteIntent } from '../modules/requests/requestsRouting';
-import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
 import {
   PROFILE_OFFER_DETAIL_CLOSE_EVENT,
   PROFILE_OFFER_DETAIL_OPEN_EVENT,
 } from '../modules/profile/profileOfferDetailEvents';
-import {
-  buildPortfolioCreatePath,
-  navigateBackFromPortfolioDetail,
-  portfolioDetailBackTarget,
-  returnToPortfolioDetailOrigin,
-} from '../modules/profile/portfolioRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -47,6 +38,10 @@ import { useMobileMessagePeer } from '../hooks/useMobileMessagePeer';
 import { useOwnProfileOfferActions } from '../hooks/useOwnProfileOfferActions';
 import { useFeedOverlayTarget } from '../hooks/useFeedOverlayTarget';
 import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
+import { useMobileSettings } from '../hooks/useMobileSettings';
+import { useOnboardingHandlers } from '../hooks/useOnboardingHandlers';
+import { useDashboardBackHandlers } from '../hooks/useDashboardBackHandlers';
+import { usePortfolioNavigation } from '../hooks/usePortfolioNavigation';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { FeedPostOverlayProvider } from '../contexts/FeedPostOverlayContext';
 import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
@@ -66,10 +61,8 @@ import {
   useDashboardMountRoute,
 } from './dashboardMountRoute';
 import {
-  DASHBOARD_HOME_PATH,
   dashboardProfilePath,
   dashboardSectionPath,
-  isSameDashboardPath,
 } from './dashboardRoutes';
 import {
   getDashboardUserIdentifierFromTarget,
@@ -77,7 +70,6 @@ import {
 } from './dashboardTargetUrl';
 import { resolveInitialOwnProfileTab } from './ownProfileTab';
 import { getDashboardRenderValues } from './dashboardRenderValues';
-import { stepBackFromMobileSettings } from '../hooks/mobileSettingsOrigin';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 import { useOfferWatchResultsNavigation } from '../modules/offer-watch/results/offerWatchResultsNavigation';
 
@@ -152,8 +144,6 @@ export default function DashboardContent({
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
   const [requestsRouteIntent, setRequestsRouteIntent] = useState<RequestsRouteIntent | null>(null);
   const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
-  const [mobileAccountSettingsView, setMobileAccountSettingsView] =
-    useState<AccountSettingsMobileView>('overview');
   const [ownProfileTab, setOwnProfileTab] = useState<ProfileTab>(() =>
     resolveInitialOwnProfileTab(
       initialRoute,
@@ -163,9 +153,6 @@ export default function DashboardContent({
       initialViewedUserId,
     ),
   );
-  const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
-  const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
-  const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
 
   // Custom hooks pre rozdelenie logiky
   const highlighting = useDashboardHighlighting({
@@ -253,21 +240,6 @@ export default function DashboardContent({
   // z ktorej sa do nich vošlo, a držia ho aj medzi sekciami.
   useSettingsScrollReset(activeModule, activeRightItem, isRightSidebarOpen);
 
-  useEffect(() => {
-    if (activeModule !== 'account-settings' && activeRightItem !== 'account-settings') {
-      setMobileAccountSettingsView('overview');
-    }
-  }, [activeModule, activeRightItem]);
-
-  const handleAccountSettingsMobileBack = useCallback(() => {
-    if (mobileAccountSettingsView !== 'overview') {
-      setMobileAccountSettingsView('overview');
-      return;
-    }
-
-    handleMobileBack();
-  }, [handleMobileBack, mobileAccountSettingsView]);
-
   const {
     selectedSkillsCategory,
     setSelectedSkillsCategory,
@@ -310,46 +282,19 @@ export default function DashboardContent({
   // sekcia sa otvára bežnou navigáciou a návrat naň obstará krok späť.
   const handleDashboardModuleChange = handleMainModuleChange;
 
-  /**
-   * Hamburger = vstup do Nastavení, teda navigácia, nie len otvorenie menu.
-   *
-   * Keď už adresa na zozname stojí, nenaviguje sa znova – len sa zosúladí
-   * modul. Sem sa totiž dá prísť aj „zvnútra": hostiteľ sledovaných ponúk si
-   * po kroku späť pýta zobrazenie zoznamu a druhý záznam by bol navyše.
-   */
-  const handleMobileSettingsOpen = useCallback(() => {
-    const settingsPath = dashboardSectionPath('settings');
-    if (typeof window !== 'undefined' && isSameDashboardPath(window.location.pathname, settingsPath)) {
-      setActiveModule('settings');
-      return;
-    }
-    handleMainModuleChange('settings');
-  }, [handleMainModuleChange, setActiveModule]);
-
-  /**
-   * Krížik zavrie zoznam tak, ako ho otvorila história – krokom späť.
-   *
-   * Pri priamom vstupe (odkaz, nová karta) pod zoznamom žiadny záznam appky
-   * nie je a krok späť by z nej odišiel; vtedy sa ide na Nástenku.
-   *
-   * Zoznam sa zatvára LEN kým je naozaj zobrazený. Jeho riadky totiž po
-   * navigácii do sekcie volajú zatvorenie ešte raz (z čias, keď bol zoznam iba
-   * stavom menu a zatvorenie nič nenavigovalo). Odkedy je zoznam obrazovkou
-   * s adresou, bol by to druhý krok, ktorý by práve otvorenú sekciu vzápätí
-   * vrátil – obrazovka ostala na zozname a sekcia bola dosiahnuteľná až
-   * tlačidlom „dopredu".
-   */
-  const handleMobileSettingsClose = useCallback(() => {
-    const settingsPath = dashboardSectionPath('settings');
-    if (typeof window !== 'undefined' && !isSameDashboardPath(window.location.pathname, settingsPath)) {
-      return;
-    }
-    if (stepBackFromMobileSettings()) return;
-    setActiveModule('home');
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', DASHBOARD_HOME_PATH);
-    }
-  }, [setActiveModule]);
+  const {
+    mobileAccountSettingsView,
+    setMobileAccountSettingsView,
+    handleAccountSettingsMobileBack,
+    handleMobileSettingsOpen,
+    handleMobileSettingsClose,
+  } = useMobileSettings({
+    activeModule,
+    activeRightItem,
+    handleMobileBack,
+    handleMainModuleChange,
+    setActiveModule,
+  });
 
   const handleMobileProfileOpen = useCallback(() => {
     setOwnProfileTab('offers');
@@ -396,65 +341,21 @@ export default function DashboardContent({
     }
   }, [activeModule, handleMainModuleChange]);
 
-  const handleOnboardingSearchOpen = useCallback(() => {
-    handleMainModuleChange('search');
-  }, [handleMainModuleChange]);
-
-  const handleDesktopOnboardingSearchOpen = useCallback(() => {
-    setIsNotificationsPanelOpen(false);
-    if (activeModule === 'search') {
-      handleMainModuleChange('home');
-    }
-    setIsSearchOpen(true);
-  }, [activeModule, handleMainModuleChange]);
-
-  const handleDesktopOnboardingSearchClose = useCallback(() => {
-    setIsSearchOpen(false);
-  }, []);
-
-  const handleOnboardingRequestsOpen = useCallback(() => {
-    handleMainModuleChange('requests');
-  }, [handleMainModuleChange]);
-
-  const handleDesktopOnboardingRequestsOpen = useCallback(() => {
-    setIsSearchOpen(false);
-    handleMainModuleChange('requests');
-  }, [handleMainModuleChange]);
-
-  const handleOnboardingMessagesOpen = useCallback(() => {
-    handleMainModuleChange('messages');
-  }, [handleMainModuleChange]);
-
-  const handleOnboardingHomeOpen = useCallback(() => {
-    handleMainModuleChange('home');
-  }, [handleMainModuleChange]);
-
-  const handleDesktopOnboardingProfileOpen = useCallback(() => {
-    setOwnProfileTab('offers');
-    setActiveModule('profile');
-    setIsRightSidebarOpen(false);
-    setActiveRightItem('');
-    setIsMobileMenuOpen(false);
-    setIsSearchOpen(false);
-    setIsNotificationsPanelOpen(false);
-    setViewedUserId(null);
-    setViewedUserSlug(null);
-    setViewedUserSummary(null);
-    highlighting.setHighlightedSkillId(null);
-
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', 'profile');
-      }
-    } catch {
-      // Navigation state is already updated; ignore storage failures.
-    }
-
-    const ownProfilePath = dashboardSectionPath('profile');
-    if (typeof window !== 'undefined' && ownProfilePath) {
-      window.history.pushState(null, '', ownProfilePath);
-    }
-  }, [
+  const {
+    handleOnboardingSearchOpen,
+    handleDesktopOnboardingSearchOpen,
+    handleDesktopOnboardingSearchClose,
+    handleOnboardingRequestsOpen,
+    handleDesktopOnboardingRequestsOpen,
+    handleOnboardingMessagesOpen,
+    handleOnboardingHomeOpen,
+    handleDesktopOnboardingProfileOpen,
+    handleOnboardingSkillCreated,
+    handleMobileOnboardingSkillCreatedHandlerSet,
+    handleDesktopOnboardingSkillCreatedHandlerSet,
+  } = useOnboardingHandlers({
+    activeModule,
+    handleMainModuleChange,
     highlighting,
     setActiveModule,
     setActiveRightItem,
@@ -462,23 +363,11 @@ export default function DashboardContent({
     setIsNotificationsPanelOpen,
     setIsRightSidebarOpen,
     setIsSearchOpen,
+    setOwnProfileTab,
     setViewedUserId,
     setViewedUserSlug,
     setViewedUserSummary,
-  ]);
-
-  const handleOnboardingSkillCreated = useCallback(() => {
-    mobileOnboardingSkillCreatedHandlerRef.current?.();
-    desktopOnboardingSkillCreatedHandlerRef.current?.();
-  }, []);
-
-  const handleMobileOnboardingSkillCreatedHandlerSet = useCallback((handler: (() => void) | null) => {
-    mobileOnboardingSkillCreatedHandlerRef.current = handler;
-  }, []);
-
-  const handleDesktopOnboardingSkillCreatedHandlerSet = useCallback((handler: (() => void) | null) => {
-    desktopOnboardingSkillCreatedHandlerRef.current = handler;
-  }, []);
+  });
 
   const {
     feedOverlayTarget,
@@ -507,23 +396,22 @@ export default function DashboardContent({
     setRequestsRouteIntent,
   });
 
-  const offerReviewsReturnTo = React.useMemo(
-    () => getSafeDashboardReturnTo(searchParams?.get('returnTo') ?? null),
-    [searchParams],
-  );
-
-  const handleOfferReviewsBack = useCallback(() => {
-    if (offerReviewsReturnTo) {
-      handleNotificationNavigate(offerReviewsReturnTo);
-      return;
-    }
-
-    handleMobileBack();
-  }, [handleMobileBack, handleNotificationNavigate, offerReviewsReturnTo]);
-
-  const handleSkillsDescribeMobileBack = useCallback(() => {
-    handleMobileBack(false, selectedSkillsCategory?.id ?? null);
-  }, [handleMobileBack, selectedSkillsCategory?.id]);
+  const {
+    skillsCategoryBackHandlerRef,
+    handleOfferReviewsBack,
+    handleSkillsDescribeMobileBack,
+    handleSkillsCategoryBack,
+    handleMobileMessagesBack,
+  } = useDashboardBackHandlers({
+    searchParams,
+    handleMobileBack,
+    handleNotificationNavigate,
+    selectedSkillsCategory,
+    setActiveModule,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsRightSidebarOpen,
+  });
 
   // Funkcia na uloÅ¾enie karty (presunutÃ¡ do samostatnÃ©ho hooku pre prehÄ¾adnosÅ¥)
   const handleSkillSave = useSkillSaveHandler({
@@ -569,15 +457,6 @@ export default function DashboardContent({
     setOwnProfileTab,
   });
 
-  // Skills category back handler
-  const handleSkillsCategoryBack = useCallback(() => {
-    if (skillsCategoryBackHandlerRef.current) {
-      skillsCategoryBackHandlerRef.current();
-    } else {
-      handleMobileBack();
-    }
-  }, [handleMobileBack]);
-
   // NaÄÃ­taÅ¥ karty pri navigÃ¡cii na skills-offer alebo skills-search
   useEffect(() => {
     if (activeModule === 'skills-offer' || activeModule === 'skills-search') {
@@ -596,48 +475,10 @@ export default function DashboardContent({
     (typeof initialViewedUserId === 'number' ? String(initialViewedUserId) : null);
   const effectivePortfolioCreateOwnerIdentifier = portfolioCreateOwnerIdentifierFromPath ?? null;
 
-  const handlePortfolioDetailBack = useCallback(() => {
-    // Polozku otvorila appka (zalozka Portfolio, zdielana karta na Nastenke):
-    // skutocny krok spat. Modul si podla adresy doladi `syncModuleFromPath`.
-    // Bez znameho povodu (odkaz, F5) ostava replace na zoznam vlastnika.
-    if (returnToPortfolioDetailOrigin()) return;
-
-    const identifier = String(effectivePortfolioOwnerIdentifier || '').trim();
-    const { target, module: targetModule } = portfolioDetailBackTarget(identifier);
-
-    setActiveModule(targetModule);
-    setIsRightSidebarOpen(false);
-    setActiveRightItem('');
-    setIsMobileMenuOpen(false);
-    setIsSearchOpen(false);
-    setIsNotificationsPanelOpen(false);
-    setViewedUserSummary(null);
-
-    if (identifier) {
-      if (/^\d+$/.test(identifier)) {
-        setViewedUserId(Number(identifier));
-        setViewedUserSlug(null);
-      } else {
-        setViewedUserId(null);
-        setViewedUserSlug(identifier);
-      }
-    } else {
-      setViewedUserId(null);
-      setViewedUserSlug(null);
-      setOwnProfileTab('portfolio');
-    }
-
-    try {
-      localStorage.setItem('activeModule', targetModule);
-    } catch {
-      // ignore
-    }
-
-    // `replace`, nie `push` – odôvodnenie voľby je pri samotnom helperi.
-    navigateBackFromPortfolioDetail(router, target);
-  }, [
-    effectivePortfolioOwnerIdentifier,
+  const { handlePortfolioDetailBack, handleCreatePortfolio } = usePortfolioNavigation({
     router,
+    user,
+    effectivePortfolioOwnerIdentifier,
     setActiveModule,
     setActiveRightItem,
     setIsMobileMenuOpen,
@@ -648,21 +489,7 @@ export default function DashboardContent({
     setViewedUserId,
     setViewedUserSlug,
     setViewedUserSummary,
-  ]);
-
-  const handleCreatePortfolio = useCallback(() => {
-    const identifier = user?.slug || (user?.id ? String(user.id) : null);
-    setOwnProfileTab('portfolio');
-    setActiveModule('portfolio-create');
-    try {
-      localStorage.setItem('activeModule', 'portfolio-create');
-    } catch {
-      // ignore
-    }
-    if (identifier && typeof window !== 'undefined') {
-      window.history.pushState(null, '', buildPortfolioCreatePath(identifier));
-    }
-  }, [user, setActiveModule]);
+  });
   useEffect(() => {
     if (offerIdFromReviewsPath != null) {
       setActiveModule('offer-reviews');
@@ -922,14 +749,6 @@ export default function DashboardContent({
     user?.id,
     user?.slug,
   ]);
-
-  const handleMobileMessagesBack = useCallback(() => {
-    setActiveModule('messages');
-    setIsRightSidebarOpen(false);
-    setActiveRightItem('');
-    setIsMobileMenuOpen(false);
-    navigateMessagesUrl();
-  }, [setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
 
   useEffect(() => {
     const onOpen = () => setIsMobileOfferDetailOpen(true);
