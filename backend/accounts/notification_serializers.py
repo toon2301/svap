@@ -37,6 +37,33 @@ def existing_review_offer_ids(notifications) -> set[int]:
     )
 
 
+def existing_liked_offer_ids(notifications) -> set[int]:
+    """Množina offer_id z upozornení „páči sa mi ponuka“, ktorých ponuka existuje.
+
+    Context pre ``NotificationSerializer`` pri serializácii ZOZNAMU: ponuka sa maže
+    natvrdo, ale upozornenia na ňu ostávajú (``data.offer_id`` je len číslo).
+    ``get_target_url`` pre zmazanú ponuku preto vráti ``None`` (appka vysvetlí, že
+    obsah už nie je dostupný) namiesto adresy so zvýraznením karty, ktorá
+    neexistuje. Jeden dotaz (``id__in``) pre celú stránku → žiadny N+1.
+    """
+    offer_ids: set[int] = set()
+    for notification in notifications:
+        if getattr(notification, "type", None) != NotificationType.OFFER_LIKED:
+            continue
+        data = notification.data if isinstance(notification.data, dict) else {}
+        try:
+            offer_id = int(data.get("offer_id") or 0)
+        except (TypeError, ValueError):
+            offer_id = 0
+        if offer_id > 0:
+            offer_ids.add(offer_id)
+    if not offer_ids:
+        return set()
+    return set(
+        OfferedSkill.objects.filter(id__in=offer_ids).values_list("id", flat=True)
+    )
+
+
 def _review_notification_reviewed_user_id(notification) -> int:
     if getattr(notification, "type", None) not in _REVIEW_NOTIFICATION_TYPES:
         return 0
@@ -173,7 +200,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         Počíta sa pri čítaní z typu a dát upozornenia, takže zmena platí aj pre už
         existujúce upozornenia. OFFER_LIKED vedie na vlastný profil so zvýraznenou
         ponukou (``highlight``); ``side=back`` sa tu schválne nepridáva – karta sa
-        len zvýrazní a ostane na prednej strane.
+        len zvýrazní a ostane na prednej strane. Zmazaná ponuka cieľ nemá (``None``).
         """
         if obj.type == NotificationType.GROUP_INVITATION and obj.conversation_id:
             return f"/dashboard/messages?conversationId={obj.conversation_id}"
@@ -212,6 +239,16 @@ class NotificationSerializer(serializers.ModelSerializer):
             except (TypeError, ValueError):
                 offer_id = 0
             if offer_id > 0:
+                # Ponuka mohla byť odvtedy zmazaná (maže sa natvrdo, upozornenie
+                # ostáva). Zoznam dostane cez context množinu reálne existujúcich
+                # offer_id (jeden dotaz). Bez contextu (realtime push čerstvej
+                # notifikácie, kde je ponuka aktuálna) ostáva pôvodné správanie.
+                existing_offer_ids = self.context.get("existing_liked_offer_ids")
+                offer_exists = (
+                    existing_offer_ids is None or offer_id in existing_offer_ids
+                )
+                if not offer_exists:
+                    return None
                 return f"/dashboard/profile?highlight={offer_id}"
         if obj.type == NotificationType.OFFER_WATCH_MATCH:
             data = obj.data if isinstance(obj.data, dict) else {}

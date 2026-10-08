@@ -17,6 +17,7 @@ from swaply.rate_limiting import api_rate_limit
 from ..models import Notification, NotificationType
 from ..serializers import NotificationSerializer
 from ..notification_serializers import (
+    existing_liked_offer_ids,
     existing_offer_watch_targets,
     existing_review_offer_ids,
     review_profile_slugs,
@@ -84,6 +85,7 @@ def _parse_notifications_page_params(request):
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def notifications_list_view(request):
+    """Zoznam upozornení prihláseného používateľa, plochý alebo stránkovaný."""
     qs = (
         Notification.objects.filter(user=request.user)
         .select_related("actor", "conversation", "group_invitation", "skill_request")
@@ -122,6 +124,7 @@ def notifications_list_view(request):
                     context={
                         "request": request,
                         "existing_review_offer_ids": existing_review_offer_ids(items),
+                        "existing_liked_offer_ids": existing_liked_offer_ids(items),
                         "review_profile_slugs": review_profile_slugs(items),
                         "offer_watch_targets": existing_offer_watch_targets(
                             items,
@@ -152,6 +155,7 @@ def notifications_list_view(request):
             context={
                 "request": request,
                 "existing_review_offer_ids": existing_review_offer_ids(items),
+                "existing_liked_offer_ids": existing_liked_offer_ids(items),
                 "review_profile_slugs": review_profile_slugs(items),
                 "offer_watch_targets": existing_offer_watch_targets(
                     items,
