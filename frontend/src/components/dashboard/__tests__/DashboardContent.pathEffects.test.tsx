@@ -37,11 +37,13 @@ jest.mock('framer-motion', () => ({
 }));
 
 let mockRouterProps: Record<string, unknown> | null = null;
+let mockModuleRenders: string[] = [];
 let mockOverlayApi: ReturnType<typeof useFeedPostOverlay> = null;
 jest.mock('../ModuleRouter', () => ({
   __esModule: true,
   default: function MockModuleRouter(props: Record<string, unknown>) {
     mockRouterProps = props;
+    mockModuleRenders.push(String(props.activeModule));
     // Odberateľ kontextu v strome pod dashboardom – ako karta príspevku vo feede.
     mockOverlayApi = useFeedPostOverlay();
     return <div data-testid="module-state" data-module={String(props.activeModule)} />;
@@ -259,6 +261,7 @@ beforeEach(() => {
   mockOverlayApi = null;
   mockOverlayProps = null;
   mockOverlayRenders = 0;
+  mockModuleRenders = [];
   mountedEntry = HOME;
   mockPathname = '/dashboard';
   mockSearchParams = new URLSearchParams();
@@ -668,6 +671,46 @@ describe('detail príspevku podľa adresy: desktop', () => {
     expect(activeModule()).toBe('home');
   });
 
+  it('krok v histórii na adresu príspevku po dobehnutí cesty v routeri nikdy nevykreslí celostránkový detail', async () => {
+    const view = await renderDashboard();
+    await navigateTo(view, '/dashboard/feed/7');
+    expect(isOverlayOpen()).toBe(true);
+    expect(activeModule()).toBe('home');
+    mockModuleRenders = [];
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await settle();
+
+    expect(mockModuleRenders).not.toContain('feed-post-detail');
+    expect(activeModule()).toBe('home');
+    expect(routerProps().feedPostIdForDetail).toBe(7);
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('krok v histórii na adresu príspevku pred dobehnutím cesty v routeri nikdy nevykreslí celostránkový detail', async () => {
+    const view = await renderDashboard();
+    window.history.replaceState(null, '', '/dashboard/feed/7');
+    mockModuleRenders = [];
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await settle();
+
+    expect(mockModuleRenders).not.toContain('feed-post-detail');
+    expect(activeModule()).toBe('home');
+
+    await navigateTo(view, '/dashboard/feed/7');
+
+    expect(mockModuleRenders).not.toContain('feed-post-detail');
+    expect(activeModule()).toBe('home');
+    expect(isOverlayOpen()).toBe(true);
+    expect(overlayProps().postId).toBe(7);
+  });
+
   it.each([
     ['nulové ID', '/dashboard/feed/0'],
     ['ID nie je číslo', '/dashboard/feed/abc'],
@@ -701,6 +744,20 @@ describe('detail príspevku podľa adresy: mobil', () => {
     const view = await renderDashboard(true, SETTINGS);
 
     await navigateTo(view, '/dashboard/feed/7');
+
+    expect(activeModule()).toBe('feed-post-detail');
+    expect(routerProps().feedPostIdForDetail).toBe(7);
+    expect(isOverlayOpen()).toBe(false);
+  });
+
+  it('krok v histórii na adresu príspevku ostáva celostránkový detail bez okna', async () => {
+    const view = await renderDashboard(true);
+    await navigateTo(view, '/dashboard/feed/7');
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await settle();
 
     expect(activeModule()).toBe('feed-post-detail');
     expect(routerProps().feedPostIdForDetail).toBe(7);
