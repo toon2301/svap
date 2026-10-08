@@ -89,6 +89,8 @@ export default function ProfileDesktopView({
   onDeleteOffer,
 }: ProfileDesktopViewProps) {
   const displayUser = displayUserProp ?? user;
+  // Sekcia ponúk ostáva namountovaná aj na iných kartách; zvýraznenie jej patrí až s kartou Ponuky, inak scroll efekt zmenu karty nezachytí.
+  const offersHighlightedSkillId = activeTab === 'offers' ? (highlightedSkillId ?? null) : null;
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -149,7 +151,7 @@ export default function ProfileDesktopView({
                 accountType={accountType}
                 ownerUserId={offersOwnerId ?? displayUser.id}
                 ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
-                highlightedSkillId={highlightedSkillId ?? null}
+                highlightedSkillId={offersHighlightedSkillId}
                 isOtherUserProfile={isOtherUserProfile}
                 onEditOffer={onEditOffer}
                 onDeleteOffer={onDeleteOffer}
