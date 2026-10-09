@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { useAuth } from '@/contexts/AuthContext';
 import { SessionVerificationError } from '@/lib/authSessionVerification';
+import { setCurrentAccountId } from '@/lib/currentAccount';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -57,9 +58,12 @@ describe('LoginForm', () => {
     mockHasCsrfToken.mockReset();
     mockHasCsrfToken.mockReturnValue(true);
     mockRefreshUser.mockReset();
-    mockRefreshUser.mockResolvedValue(undefined);
+    setCurrentAccountId(null);
+    mockRefreshUser.mockImplementation(async () => { setCurrentAccountId(71); });
     mockPush.mockClear();
   });
+
+  afterEach(() => { setCurrentAccountId(null); });
 
   it('renders login form correctly', () => {
     render(<LoginForm />);

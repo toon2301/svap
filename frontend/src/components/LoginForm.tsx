@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
@@ -9,8 +9,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { clearMobileOnboardingPostponedForSession, clearMobileOnboardingResumePhase2 } from '@/lib/mobileOnboardingSession';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
+import { useGoogleLogin } from './login/useGoogleLogin';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
-import { logClientDebug, logClientError } from '@/utils/clientLogging';
+import { logClientError } from '@/utils/clientLogging';
 import { SessionVerificationError } from '@/lib/authSessionVerification';
 // auth_state cookie sa nesmie nastavovať z frontendu
 
@@ -30,11 +31,11 @@ interface LoginFormProps {
   onSuccess?: () => void;
 }
 
+/** Render credential and Google login with shared feedback and mutually exclusive active attempts. */
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const { t } = useLanguage();
   const { refreshUser } = useAuth();
-  const oauthHandledRef = useRef(false);
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
@@ -44,14 +45,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const trace = (event: string, meta?: Record<string, unknown>) => {
-    try {
-      (window as any).__OAUTH_TRACE__?.log?.(event, meta);
-    } catch {
-      // best-effort debug only
-    }
-  };
+  const { isGoogleLoading, handleGoogleLogin, cancelGoogleLogin } = useGoogleLogin({
+    onStart: () => setLoginErrors({}),
+    onError: general => setLoginErrors({ general }),
+  });
 
   const ensureCsrfToken = async () => {
     if (!hasCsrfToken()) {
@@ -133,152 +130,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    trace('login_google_start');
-    setIsGoogleLoading(true);
-    setLoginErrors({});
-    oauthHandledRef.current = false;
-
-    try {
-      // Použi rovnakú baseURL ako Axios klient (rešpektuje dev runtime override cez sessionStorage)
-      const axiosBase = (api.defaults.baseURL as string) || '';
-      const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN || '';
-      const baseApi = axiosBase || (backendOrigin ? `${backendOrigin}/api` : (process.env.NEXT_PUBLIC_API_URL || '/api'));
-      const callbackUrl = `${window.location.origin}/auth/callback`; // bez trailing slash
-      const googleLoginUrl = `${baseApi}/oauth/google/login/?callback=${encodeURIComponent(callbackUrl)}`;
-      trace('login_google_url_prepared', {
-        baseApi,
-        callbackOrigin: window.location.origin,
-      });
-      
-      const oauthNonce = crypto.randomUUID();
-      sessionStorage.setItem('oauth_nonce', oauthNonce);
-      trace('login_google_nonce_set');
-      
-      // Otvor Google OAuth v novom okne
-      const popup = window.open(
-        googleLoginUrl,
-        'google-login',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
-      );
-
-      if (!popup) {
-        trace('login_google_popup_blocked');
-        setLoginErrors({ general: t('auth.googleLoginFailed') });
-        setIsGoogleLoading(false);
-        return;
-      }
-      trace('login_google_popup_opened');
-
-      // Počúvaj na správy z popup okna
-      const handleMessage = async (event: MessageEvent) => {
-        trace('login_google_popup_message', {
-          origin: event.origin,
-          type: event?.data?.type,
-          handled: oauthHandledRef.current,
-        });
-        if (event.origin !== window.location.origin) return;
-        if (oauthHandledRef.current) return;
-        logClientDebug('Received message from popup');
-        
-        if (event.data.type === 'OAUTH_SUCCESS') {
-          const storedNonce = sessionStorage.getItem('oauth_nonce');
-          trace('login_google_success_msg_received', {
-            hasStoredNonce: Boolean(storedNonce),
-            nonceMatch: Boolean(storedNonce && event.data.nonce === storedNonce),
-          });
-          if (!storedNonce || event.data.nonce !== storedNonce) {
-            return;
-          }
-          oauthHandledRef.current = true;
-          sessionStorage.removeItem('oauth_nonce');
-          logClientDebug('OAuth success message received');
-          clearInterval(checkClosed);
-          window.removeEventListener('message', handleMessage);
-          // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
-          try {
-            trace('login_google_refresh_user_start');
-            await refreshUser({ force: true, verifyLogin: true });
-            trace('login_google_refresh_user_success');
-            trace('login_google_csrf_prime_start');
-            await fetchCsrfToken();
-            trace('login_google_csrf_prime_done', {
-              hasCsrf: hasCsrfToken(),
-            });
-          } catch (error) {
-            // Ak /me zlyhá, neskúšaj presmerovať na dashboard
-            trace('login_google_refresh_user_failed');
-            setIsGoogleLoading(false);
-            setLoginErrors({ general: error instanceof SessionVerificationError
-              ? t('auth.sessionVerificationFailed') : t('auth.googleLoginFailed') });
-            return;
-          }
-
-          // Reset preferovaného modulu a nastav flag na vynútenie HOME
-          try {
-            clearMobileOnboardingPostponedForSession();
-            clearMobileOnboardingResumePhase2();
-            localStorage.setItem('activeModule', 'home');
-            sessionStorage.setItem('forceHome', '1');
-          } catch (e) {}
-
-          setIsGoogleLoading(false);
-          trace('login_google_router_push_dashboard');
-          router.push('/dashboard');
-        } else if (event.data.type === 'OAUTH_ERROR') {
-          trace('login_google_error_msg_received');
-          logClientDebug('OAuth error message received');
-          oauthHandledRef.current = true;
-          clearInterval(checkClosed);
-          window.removeEventListener('message', handleMessage);
-          setIsGoogleLoading(false);
-          setLoginErrors({ general: event.data.error });
-        }
-      };
-      
-      // Pridaj event listener pre správy z popup okna
-      window.addEventListener('message', handleMessage);
-      
-      // Kontrola či sa popup zatvoril (fallback)
-      const checkClosed = setInterval(async () => {
-        try {
-          // Bezpečne skontroluj, či je popup zatvorený
-          let popupClosed = false;
-          try {
-            popupClosed = popup.closed;
-          } catch (e) {
-            // Ignoruj Cross-Origin-Opener-Policy chyby
-            popupClosed = true;
-          }
-          
-          if (popupClosed) {
-            trace('login_google_popup_closed_detected');
-            clearInterval(checkClosed);
-            window.removeEventListener('message', handleMessage);
-            sessionStorage.removeItem('oauth_nonce');
-            setIsGoogleLoading(false);
-          }
-        } catch (error) {
-          trace('login_google_popup_poll_error');
-          logClientDebug('Error checking popup status');
-        }
-      }, 1000);
-
-    } catch (error: any) {
-      trace('login_google_exception', { status: error?.response?.status ?? null });
-      logClientError('Google login failed', error);
-      setLoginErrors({ 
-        general: error.response?.data?.error || t('auth.googleLoginFailed') 
-      });
-      setIsGoogleLoading(false);
-    }
-  };
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isGoogleLoading) return;
     
     if (!validateLoginForm()) return;
 
+    cancelGoogleLogin();
     setIsLoginLoading(true);
     setLoginErrors({});
 
@@ -483,9 +341,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           
           <motion.button
             type="submit"
-            disabled={isLoginLoading}
+            disabled={isLoginLoading || isGoogleLoading}
             className={`w-full text-white px-4 py-[clamp(0.5rem,1.5vw,0.625rem)] rounded-2xl font-semibold text-[clamp(0.875rem,2vw,1.25rem)] transition-all ${
-              isLoginLoading ? 'cursor-not-allowed bg-purple-400 opacity-80' : 'cursor-pointer bg-purple-600 hover:bg-purple-700'
+              isLoginLoading || isGoogleLoading ? 'cursor-not-allowed bg-purple-400 opacity-80' : 'cursor-pointer bg-purple-600 hover:bg-purple-700'
             }`}
             style={{
               boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
@@ -493,8 +351,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 1.1 }}
-            whileHover={!isLoginLoading ? { scale: 1.02 } : {}}
-            whileTap={!isLoginLoading ? { scale: 0.98 } : {}}
+            whileHover={!isLoginLoading && !isGoogleLoading ? { scale: 1.02 } : {}}
+            whileTap={!isLoginLoading && !isGoogleLoading ? { scale: 0.98 } : {}}
             tabIndex={3}
           >
             <div className="flex items-center justify-center gap-3">
