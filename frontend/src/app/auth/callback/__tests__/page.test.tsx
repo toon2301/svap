@@ -33,7 +33,8 @@ beforeEach(() => {
   sessionStorage.setItem('oauth_nonce', NONCE);
   mockTheme = 'light';
   postMessage = jest.fn();
-  Object.defineProperty(window, 'opener', { configurable: true, value: { postMessage } });
+  // Node 18/JSDOM needs writable globals for later scenario overrides.
+  Object.defineProperty(window, 'opener', { configurable: true, writable: true, value: { postMessage } });
   closePopup = jest.spyOn(window, 'close').mockImplementation(() => {});
 });
 
@@ -105,7 +106,7 @@ it.each(['error=access_denied', ''])('sends the %s error only once across theme 
 });
 
 it.each(['error=access_denied', ''])('keeps a standalone %s error usable without an opener', async query => {
-  Object.defineProperty(window, 'opener', { configurable: true, value: null });
+  Object.defineProperty(window, 'opener', { configurable: true, writable: true, value: null });
   mountCallback(query);
   expect(postMessage).not.toHaveBeenCalled();
   expect(screen.getByRole('heading', { name: 'auth.loginError' })).toBeVisible();

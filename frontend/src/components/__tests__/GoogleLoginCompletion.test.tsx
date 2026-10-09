@@ -142,8 +142,10 @@ beforeEach(() => {
     if (status !== 200) throw { response: { status } };
     return { status, data: VERIFIED_USER };
   });
+  // Node 18/JSDOM needs writable globals for later scenario overrides.
   Object.defineProperty(globalThis, 'crypto', {
     configurable: true,
+    writable: true,
     value: { randomUUID: () => TEST_NONCE },
   });
   jest.spyOn(window, 'open').mockReturnValue({
@@ -170,6 +172,7 @@ describe('Google completion controls', () => {
     const newNonce = '00000000-0000-4000-8000-000000000072';
     Object.defineProperty(globalThis, 'crypto', {
       configurable: true,
+      writable: true,
       value: { randomUUID: jest.fn().mockReturnValueOnce(TEST_NONCE).mockReturnValue(newNonce) },
     });
     await startGoogle();
