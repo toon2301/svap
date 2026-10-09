@@ -66,6 +66,27 @@ for (const status of [500, 429]) {
       await audit.cleanupSession();
     }
   });
+
+  test(`a valid late completion after a ${status} probe opens the dashboard without reload`, async ({ page, context }) => {
+    const audit = await GoogleLoginAudit.start(page, context);
+    try {
+      const consumed = await audit.overrideNextMeStatuses([status]);
+      const popup = await audit.openPopup(true);
+      await popup.close();
+      const alerts = page.locator('div:has(> form:has(#login-email))').getByRole('alert');
+      await expect(alerts).toHaveCount(1);
+      await expect(page.getByRole('button', { name: /Google/i })).toBeEnabled();
+      expect(new URL(page.url()).pathname).toBe('/');
+      expect(consumed()).toBe(1);
+
+      await audit.deliverLateSuccess();
+      await expect(page).toHaveURL(/\/dashboard(?:\/|$)/);
+      await expect(page.locator('[data-dashboard-main]')).toBeVisible();
+      expect(await audit.serverSessionStatus()).toBe(200);
+    } finally {
+      await audit.cleanupSession();
+    }
+  });
 }
 
 for (const delivery of ['missing', 'late'] as const) {

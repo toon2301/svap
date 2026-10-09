@@ -186,10 +186,18 @@ describe('Google completion controls', () => {
     expect(mockPost).not.toHaveBeenCalled();
   });
 
-  it.each(['success', 'rejected'])('password login after an idle Google attempt cancels old completion: %s', async outcome => {
+  it.each([
+    ['anonymous recovery', 'success'],
+    ['anonymous recovery', 'rejected'],
+    ['probe failure', 'success'],
+    ['probe failure', 'rejected'],
+  ])('password login after %s cancels old completion: %s', async (recovery, outcome) => {
     await startGoogle();
     popupClosed = true;
+    if (recovery === 'probe failure') serverFailureStatus = 500;
     await advancePopupClock(4000);
+    expect(sessionStorage.getItem('oauth_nonce')).toBe(TEST_NONCE);
+    serverFailureStatus = null;
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'password-test@example.com' } });
     fireEvent.change(screen.getByLabelText('Heslo'), { target: { value: 'test-password' } });
     mockPost.mockImplementation(async () => {
@@ -296,6 +304,31 @@ describe('Google completion controls', () => {
 });
 
 describe('Google completion recovery', () => {
+  it.each([500, 429])('accepts a late confirmation after a %i probe without repeating recovery', async status => {
+    await startGoogle();
+    serverSignedIn = true;
+    serverFailureStatus = status;
+    popupClosed = true;
+    await advancePopupClock(1000);
+    expect(readCompletionState()).toEqual({
+      identity: 'anonymous', navigatedToDashboard: false, googleButtonEnabled: true, alertCount: 1,
+    });
+    expect(mockGet).toHaveBeenCalledTimes(2); // Anonymous bootstrap + failed probe.
+    expect(sessionStorage.getItem('oauth_nonce')).toBe(TEST_NONCE);
+    serverFailureStatus = null;
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    await advancePopupClock(5000);
+    expect(mockGet).toHaveBeenCalledTimes(2);
+
+    await confirmGoogle();
+    expect(mockGet).toHaveBeenCalledTimes(3); // One additional strict verification.
+    expect(mockFetchCsrf).toHaveBeenCalledTimes(1);
+    expect(getCurrentAccountId()).toBe(VERIFIED_USER.id);
+    expect(readCompletionState()).toEqual({
+      identity: String(VERIFIED_USER.id), navigatedToDashboard: true, googleButtonEnabled: false, alertCount: 0,
+    });
+  });
+
   it.each(['missing message', 'late message', 'unreadable popup'])('%s must not leave a newly authenticated session stranded until reload', async (scenario) => {
     const view = await startGoogle();
     serverSignedIn = true;

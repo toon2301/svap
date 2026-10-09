@@ -40,15 +40,18 @@ export function useGoogleLogin(callbacks: Callbacks) {
     };
   }, []);
 
+  /** Update loading only while the form still owns a mounted hook. */
   const setLoading = (value: boolean) => {
     if (mounted.current) setIsGoogleLoading(value);
   };
 
+  /** Fully cancel an older Google attempt before another login or explicit dismissal. */
   const cancelGoogleLogin = () => {
     active.current?.cancel(true);
     setLoading(false);
   };
 
+  /** Start an isolated nonce-backed attempt and open the popup inside the user's click gesture. */
   const handleGoogleLogin = () => {
     cancelGoogleLogin();
     latestCallbacks.current.onStart();
@@ -94,13 +97,15 @@ export function useGoogleLogin(callbacks: Callbacks) {
     active.current = attempt;
     const current = () => active.current === attempt && !cancelled;
 
+    /** Remove this attempt's nonce without erasing the state of a newer attempt. */
     function clearNonce() {
       try {
         if (sessionStorage.getItem('oauth_nonce') === nonce) sessionStorage.removeItem('oauth_nonce');
       } catch { /* Storage can become unavailable in private browsing. */ }
     }
 
-    function detach() {
+    /** Stop recovery resources; retain the callback listener only for a failed, non-final probe. */
+    function detach(preserveMessage = false) {
       if (poll !== null) clearInterval(poll);
       poll = null;
       if (delayTimer !== null) clearTimeout(delayTimer);
@@ -109,18 +114,21 @@ export function useGoogleLogin(callbacks: Callbacks) {
       resolveDelay = null;
       probe?.abort();
       probe = null;
-      window.removeEventListener('message', onMessage);
+      if (!preserveMessage) window.removeEventListener('message', onMessage);
       window.removeEventListener('focus', onReturn);
       document.removeEventListener('visibilitychange', onReturn);
     }
 
-    function fail(message: string) {
+    /** Report an error and unlock; probe errors preserve late completion, definitive errors cancel. */
+    function fail(message: string, preserveMessage = false) {
       if (!current()) return;
-      attempt.cancel();
+      if (preserveMessage) detach(true);
+      else attempt.cancel();
       setLoading(false);
       if (mounted.current) latestCallbacks.current.onError(message);
     }
 
+    /** Resolve a retry delay only while its attempt is active and not already completing. */
     function wait(ms: number) {
       return new Promise<boolean>(resolve => {
         resolveDelay = resolve;
@@ -132,6 +140,7 @@ export function useGoogleLogin(callbacks: Callbacks) {
       });
     }
 
+    /** Verify backend identity and finalize the current attempt once, with lifecycle-safe cleanup. */
     async function complete() {
       if (!current() || completing) return;
       completing = true;
@@ -171,6 +180,7 @@ export function useGoogleLogin(callbacks: Callbacks) {
       }
     }
 
+    /** Probe cookies without assigning identity; retry only anonymous results within this attempt. */
     async function recover() {
       if (!current() || completing || probing || document.visibilityState === 'hidden') return;
       probing = true;
@@ -201,7 +211,7 @@ export function useGoogleLogin(callbacks: Callbacks) {
             return;
           }
           if (status !== 401) {
-            fail(t(status === 429 ? 'auth.tooManyRequests' : 'auth.sessionVerificationFailed'));
+            fail(t(status === 429 ? 'auth.tooManyRequests' : 'auth.sessionVerificationFailed'), true);
             return;
           }
           if (index < 2 && !await wait(index === 0 ? 500 : 1500)) return;
@@ -216,10 +226,12 @@ export function useGoogleLogin(callbacks: Callbacks) {
       }
     }
 
+    /** Request recovery on a return event while the attempt still owns its return listeners. */
     function onReturn() {
       void recover();
     }
 
+    /** Validate success origin and nonce before verification, or process a definitive OAuth error. */
     function onMessage(event: MessageEvent) {
       if (!current() || completing || event.origin !== window.location.origin) return;
       if (!event.data || typeof event.data !== 'object') return;

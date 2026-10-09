@@ -31,6 +31,7 @@ interface LoginFormProps {
   onSuccess?: () => void;
 }
 
+/** Render credential and Google login with shared feedback and mutually exclusive active attempts. */
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const { t } = useLanguage();

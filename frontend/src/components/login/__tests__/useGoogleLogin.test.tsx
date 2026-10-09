@@ -219,13 +219,15 @@ it.each([
   ['null error', null, 'auth.sessionVerificationFailed'],
 ])('reports %s failure instead of pretending it is cancellation', async (_name, error, key) => {
   mockGet.mockRejectedValue(error);
-  const view = begin(); closed = true;
+  const view = begin(); const nonce = sessionStorage.getItem('oauth_nonce'); closed = true;
   await advance(1000);
   expect(onError).toHaveBeenCalledWith(key);
   expect(mockGet).toHaveBeenCalledTimes(1);
   expect(mockRefreshUser).not.toHaveBeenCalled();
   expect(mockPush).not.toHaveBeenCalled();
   expect(view.result.current.isGoogleLoading).toBe(false);
+  expect(sessionStorage.getItem('oauth_nonce')).toBe(nonce);
+  view.unmount();
   expect(sessionStorage.getItem('oauth_nonce')).toBeNull();
 });
 
