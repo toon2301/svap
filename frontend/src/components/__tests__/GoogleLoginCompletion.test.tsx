@@ -166,6 +166,53 @@ afterEach(() => {
 });
 
 describe('Google completion controls', () => {
+  it.each(['success', 'error'])('the real form ignores an old popup error before the new attempt returns %s', async outcome => {
+    const newNonce = '00000000-0000-4000-8000-000000000072';
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: { randomUUID: jest.fn().mockReturnValueOnce(TEST_NONCE).mockReturnValue(newNonce) },
+    });
+    await startGoogle();
+    popupClosed = true;
+    await advancePopupClock(4000);
+    expect(screen.getByRole('button', { name: /Google/i })).toBeEnabled();
+    popupClosed = false;
+    fireEvent.click(screen.getByRole('button', { name: /Google/i }));
+    expect(sessionStorage.getItem('oauth_nonce')).toBe(newNonce);
+    const requestsBeforeResult = mockGet.mock.calls.length;
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', {
+        origin: window.location.origin,
+        data: { type: 'OAUTH_ERROR', nonce: TEST_NONCE, error: 'Old popup rejected' },
+      }));
+    });
+    expect(readCompletionState()).toEqual({
+      identity: 'anonymous', navigatedToDashboard: false, googleButtonEnabled: false, alertCount: 0,
+    });
+    expect(sessionStorage.getItem('oauth_nonce')).toBe(newNonce);
+    expect(mockGet).toHaveBeenCalledTimes(requestsBeforeResult);
+
+    if (outcome === 'success') {
+      serverSignedIn = true;
+      await confirmGoogle(newNonce);
+      expect(getCurrentAccountId()).toBe(VERIFIED_USER.id);
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    } else {
+      await act(async () => {
+        window.dispatchEvent(new MessageEvent('message', {
+          origin: window.location.origin,
+          data: { type: 'OAUTH_ERROR', nonce: newNonce, error: 'Current popup rejected' },
+        }));
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent('Current popup rejected');
+      expect(screen.getByRole('button', { name: /Google/i })).toBeEnabled();
+      expect(getCurrentAccountId()).toBeNull();
+      expect(mockPush).not.toHaveBeenCalled();
+    }
+    expect(mockGet).toHaveBeenCalledTimes(requestsBeforeResult + (outcome === 'success' ? 1 : 0));
+    expect(mockFetchCsrf).toHaveBeenCalledTimes(outcome === 'success' ? 1 : 0);
+  });
+
   it('blocks password submission by click, Enter and submit while Google is in progress', async () => {
     await startGoogle();
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'password-test@example.com' } });

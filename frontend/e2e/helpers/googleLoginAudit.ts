@@ -140,6 +140,27 @@ export class GoogleLoginAudit {
     }, { nonce: this.nonce, origin: this.publicOrigin });
   }
 
+  /** Deliver a provider error belonging to the currently open controlled popup. */
+  async sendError(popup: Page) {
+    await popup.evaluate(({ nonce, origin }) => {
+      if (!window.opener) throw new Error('Controlled callback has no opener');
+      window.opener.postMessage({ type: 'OAUTH_ERROR', nonce, error: 'Controlled OAuth rejection' }, origin);
+    }, { nonce: this.nonce, origin: this.publicOrigin });
+  }
+
+  /** Capture an old attempt's queued error privately, then deliver it after a new attempt starts. */
+  captureLateErrorDelivery() {
+    const nonce = this.nonce;
+    return async () => {
+      await this.page.evaluate(oldNonce => {
+        window.dispatchEvent(new MessageEvent('message', {
+          origin: window.location.origin,
+          data: { type: 'OAUTH_ERROR', nonce: oldNonce, error: 'Old controlled OAuth rejection' },
+        }));
+      }, nonce);
+    };
+  }
+
   /** Inject an already queued completion after closure, with the original valid nonce and origin. */
   async deliverLateSuccess() {
     await this.page.evaluate(nonce => {

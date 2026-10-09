@@ -265,7 +265,7 @@ it('rejects a valid nonce from the wrong origin', async () => {
 });
 
 it.each(['OAuth rejected', undefined])('preserves the existing OAuth error flow: %s', async error => {
-  const view = begin(); await message({ type: 'OAUTH_ERROR', error });
+  const view = begin(); await message({ type: 'OAUTH_ERROR', nonce: sessionStorage.getItem('oauth_nonce'), error });
   expect(onError).toHaveBeenCalledWith(error ?? 'auth.googleLoginFailed');
   expect(view.result.current.isGoogleLoading).toBe(false);
   expect(jest.getTimerCount()).toBe(0);
@@ -380,7 +380,7 @@ it('does not leak a polling interval if a callback arrives synchronously during 
 it('uses current callbacks without restarting an attempt on an unrelated form render', async () => {
   const view = begin(); const previousError = onError; onError = jest.fn();
   view.rerender();
-  await message({ type: 'OAUTH_ERROR', error: 'OAuth rejected' });
+  await message({ type: 'OAUTH_ERROR', nonce: sessionStorage.getItem('oauth_nonce'), error: 'OAuth rejected' });
   expect(onError).toHaveBeenCalledWith('OAuth rejected');
   expect(previousError).not.toHaveBeenCalled();
   expect(openPopup).toHaveBeenCalledTimes(1);

@@ -1,7 +1,7 @@
 # B11 – implementácia a overenie Google login recovery
 
 Dátum: 9. 10. 2026.
-Stav: **oprava aj následný Rabbit nález implementované, automaticky overené;
+Stav: **oprava aj oba následné Rabbit nálezy implementované, automaticky overené;
 nie nasadená**.
 Pôvodný incident na fyzickom iPhone zatiaľ nie je uzatvorený.
 
@@ -24,11 +24,12 @@ na starší auth základ v hlavnom pracovnom priečinku.
 
 Google handler bol vyňatý do samostatného hooku. Odsúhlasené prepojenie vo formulári
 zahŕňa iba import, použitie hooku a ochranu proti súbežnému heslovému loginu.
-Formulár sa zmenšil z 534 na 392 riadkov; nový hook má 284 riadkov.
+Formulár sa zmenšil z 534 na 392 riadkov; nový hook má 285 riadkov.
 Nejde o refaktor zvyšku formulára.
 
 Bez zmien backendu, migrácií, `AuthContext.tsx`, `api.ts`, `currentAccount.ts`,
-callback stránky, registrácie, mazania účtu, avatarov alebo dashboardu.
+registrácie, mazania účtu, avatarov alebo dashboardu. Callback stránka má malú
+naväzujúcu opravu: nonce pôvodného pokusu sa posiela aj v chybových správach.
 Žiadne nové používateľské texty; používajú sa existujúce preklady vo všetkých
 šiestich jazykoch.
 
@@ -39,7 +40,9 @@ v hlavnom checkoute, vrátane `DashboardContent.tsx`, `useDashboardState.ts`,
 ## Čo sa zmenilo v správaní
 
 - Popup sa otvára synchronizovane z kliknutia, pred sieťovým `await`.
-- Normálne potvrdenie stále vyžaduje správny origin a nonce aktuálneho pokusu.
+- Úspešná aj chybová správa vyžaduje správny origin, nonce aktuálneho pokusu
+  v správe aj zhodný nonce v storage openera. Stará alebo neoveriteľná chyba
+  nezruší novší pokus. Platná chyba aktuálneho pokusu zachová pôvodné ukončenie.
 - Zatvorenie/neprístupnosť popupu alebo návrat cez focus/visibility spustí pomocnú
   cookie sondu `/auth/me/`. Skrytá stránka čaká na návrat do popredia.
 - Sonda sama nenastavuje identitu a nepresmeruje. Pri platnom 200 nasleduje pôvodné
@@ -77,6 +80,8 @@ Google loginu. Strict overenie a CSRF utility si zachovávajú existujúce sprá
 Zmenené:
 
 - `frontend/src/components/LoginForm.tsx` – vyňatie Google handlera a ochrana súbehu.
+- `frontend/src/app/auth/callback/page.tsx` – nonce aj v oboch chybových vetvách,
+  bez logovania nonce a bez zmeny existujúcich textov či časov zatvorenia popupu.
 - `frontend/src/components/__tests__/LoginForm.test.tsx` – mock úspešného strict
   overenia teraz synchronizuje ID rovnako ako reálny provider; reset izolácie testov.
 
@@ -85,6 +90,8 @@ Nové, prípadne rozšírené diagnostické súbory z predchádzajúceho auditu:
 - `frontend/src/components/login/useGoogleLogin.ts`
 - `frontend/src/components/login/__tests__/useGoogleLogin.test.tsx`
 - `frontend/src/components/login/__tests__/useGoogleLogin.probeFailure.test.tsx`
+- `frontend/src/components/login/__tests__/useGoogleLogin.errorNonce.test.tsx`
+- `frontend/src/app/auth/callback/__tests__/page.test.tsx`
 - `frontend/src/components/__tests__/GoogleLoginCompletion.test.tsx`
 - `frontend/e2e/helpers/googleLoginAudit.ts`
 - `frontend/e2e/google-login-completion.spec.ts`
@@ -104,7 +111,7 @@ Pri čítaní bol opäť zistený `api.ts` s 907 riadkami; iba nahlásený, bez 
 Príkazy z `C:\Projects\svap-google-login-audit\frontend`:
 
 ```powershell
-npx jest src/components/login/__tests__/useGoogleLogin.test.tsx src/components/login/__tests__/useGoogleLogin.probeFailure.test.tsx src/components/__tests__/GoogleLoginCompletion.test.tsx src/components/__tests__/LoginForm.test.tsx src/contexts/__tests__/AuthContext.session.test.tsx src/contexts/__tests__/AuthContext.test.tsx src/lib/__tests__/api.test.ts --runInBand --silent --detectOpenHandles --coverage --collectCoverageFrom=src/components/login/useGoogleLogin.ts --coverageReporters=text --coverageReporters=json-summary
+npx jest src/components/login/__tests__/useGoogleLogin.test.tsx src/components/login/__tests__/useGoogleLogin.probeFailure.test.tsx src/components/login/__tests__/useGoogleLogin.errorNonce.test.tsx src/app/auth/callback/__tests__/page.test.tsx src/components/__tests__/GoogleLoginCompletion.test.tsx src/components/__tests__/LoginForm.test.tsx src/contexts/__tests__/AuthContext.session.test.tsx src/contexts/__tests__/AuthContext.test.tsx src/lib/__tests__/api.test.ts --runInBand --silent --detectOpenHandles --coverage --collectCoverageFrom=src/components/login/useGoogleLogin.ts --collectCoverageFrom=src/app/auth/callback/page.tsx --coverageReporters=text --coverageReporters=json-summary --coverageReporters=json
 npx jest --runInBand --silent
 npx tsc --noEmit --pretty false
 npm run check:missing-translations
@@ -115,25 +122,25 @@ npx playwright test --config=playwright.google-login-audit.config.ts --list
 
 | Kontrola | Výsledok |
 | --- | --- |
-| Cielená auth regresia + detekcia otvorených operácií | 7 suites / 137 PASS, exit 0, bez open-handle upozornenia |
-| Kompletný frontend Jest po oprave review nálezu | 379 suites / 4 948 PASS, exit 0 |
+| Cielená auth regresia + detekcia otvorených operácií | 9 suites / 171 PASS, exit 0, bez open-handle upozornenia |
+| Kompletný frontend Jest po druhom review náleze | 381 suites / 4 982 PASS, exit 0, bez open-handle upozornenia |
 | TypeScript po posledných zmenách | PASS, exit 0 |
 | Zhoda prekladových katalógov | 0 missing / 0 extra |
 | Použité prekladové kľúče | FAIL, tri existujúce feed kľúče – podrobnosti nižšie |
-| Produkčný build | PASS, exit 0, po povolení siete pre Google Fonts |
-| Playwright discovery | 27 testov: 9 scenárov × 3 projekty; **nie vykonaný E2E beh opravy** |
-| Dokumentácia pomenovaných funkcií (lokálna TypeScript AST kontrola) | 25/25, 100 %; pred doplnením 13/22, 59,09 % |
+| Produkčný build po druhom review náleze | PASS, exit 0, po povolení siete pre Google Fonts |
+| Playwright discovery | 30 testov: 10 scenárov × 3 projekty; **nie vykonaný E2E beh opravy** |
+| Dokumentácia pomenovaných funkcií (lokálna TypeScript AST kontrola) | 32/32, 100 %; po prvom review 25/25, pred doplnením 13/22, 59,09 % |
 | `git diff --check` | PASS |
 | Registre krajín/okresov po prebuild synchronizácii | Bez zdrojových zmien |
 
-Pokrytie **iba nového `useGoogleLogin.ts`**, nie celej aplikácie:
+Pokrytie **iba `useGoogleLogin.ts` a callback stránky**, nie celej aplikácie:
 
-| Metrika | Pokrytie |
-| --- | --- |
-| Riadky | 100 % (166/166) |
-| Funkcie | 100 % (22/22) |
-| Vetvy | 97,91 % (94/96) |
-| Statements | 98,97 % (194/196) |
+| Metrika | Hook | Callback |
+| --- | --- | --- |
+| Riadky | 100 % (166/166) | 100 % (63/63) |
+| Funkcie | 100 % (22/22) | 100 % (10/10) |
+| Vetvy | 97,95 % (96/98) | 100 % (18/18) |
+| Statements | 98,98 % (195/197) | 98,50 % (66/67) |
 
 Pôvodné tri zlyhávajúce integračné scenáre teraz prechádzajú bez skip alebo
 expected-failure a bez oslabenia požiadavky automatického zotavenia pred reloadom.
@@ -170,6 +177,53 @@ Oprava necháva zámernú hranicu obnovy: ak po technickej chybe nepríde žiadn
 potvrdenie, automatické sondovanie už nepokračuje a používateľ môže začať nový pokus.
 Nie je to neobmedzené pollovanie ani záruka dokončenia na ľubovoľne pomalej sieti.
 
+## Druhý Rabbit nález: oneskorená OAuth chyba zo starého pokusu
+
+Review revízie `b0161cae` obsahovalo jeden nový platný funkčný nález mimo diffu:
+`OAUTH_ERROR` nekontroloval nonce a callback ho v chybových vetvách neposielal.
+Oneskorená chyba zo starého popupu preto mohla zrušiť nový pokus o prihlásenie.
+
+Pred produkčnou úpravou pribudlo 32 testov hooku a skutočnej callback stránky.
+Na pôvodnom kóde 20 zlyhalo a 12 prešlo; failures zachytili práve chýbajúci nonce
+aj zrušenie novšieho pokusu. Po oprave všetkých 32 prechádza. Ďalšie dva integračné
+scenáre s reálnym `AuthProvider`, Home a formulárom overujú, že po ignorovaní starej
+chyby nový pokus stále dokáže skončiť úspechom alebo správne spracovať vlastnú chybu.
+
+Obe chybové vetvy callbacku posielajú nonce z vlastného popup `sessionStorage`,
+nie z openera ani query parametrov. Ak čítanie storage zlyhá, hodnota je null;
+hláška a zatvorenie popupu zostanú funkčné, ale opener takúto správu neprijme.
+Hook kontroluje úspešné aj chybové správy rovnakým origin/nonce guardom.
+Definitívna chyba správneho pokusu stále ukončí loading, odstráni listenery,
+timery aj vlastný nonce a nemôže sa spracovať druhýkrát.
+
+Regresia zahŕňa starú chybu po anonymnej aj chybovej sonde, chýbajúci/null/prázdny
+nonce, chybný origin, zmenený/chýbajúci/neprístupný storage, chybu počas čakajúcej
+sondy, oneskorené výsledky po zrušení a callback one-shot pri zmenách témy/query.
+Neoslabuje strict backendové overenie ani nenastavuje identitu zo správy.
+
+Playwright pribudol scenár dvoch pokusov: stará queued chyba sa ignoruje,
+platná chyba nového popupu sa spracuje a backend zostáva anonymný. Je pripravený
+pre WebKit desktop, WebKit mobil a Chromium; teraz sa vykonal iba discovery.
+Používateľ odsúhlasil samostatný commit a push tohto patchu do existujúceho PR #157
+na ďalšie Rabbit review. Zlúčenie ani nasadenie nie sú súčasťou tohto kroku.
+Lokálne testy nie sú vyhlásením nového Rabbit review ani fyzického iPhone retestu.
+
+Súbory upravené iba v tomto poslednom kole oproti `b0161cae`:
+
+- produkčné: `frontend/src/components/login/useGoogleLogin.ts`,
+  `frontend/src/app/auth/callback/page.tsx`;
+- existujúce Jest testy: `frontend/src/components/login/__tests__/useGoogleLogin.test.tsx`,
+  `frontend/src/components/__tests__/GoogleLoginCompletion.test.tsx`;
+- nové Jest testy: `frontend/src/components/login/__tests__/useGoogleLogin.errorNonce.test.tsx`,
+  `frontend/src/app/auth/callback/__tests__/page.test.tsx`;
+- Playwright: `frontend/e2e/helpers/googleLoginAudit.ts`,
+  `frontend/e2e/google-login-completion.spec.ts`;
+- dokumentácia: tento záznam.
+
+Všetkých osem dotknutých TS/TSX súborov má menej než 500 riadkov; najdlhší má
+423. Po celom Jest behu a produkčnom builde bol znovu overený stav hlavného checkoutu
+aj nezmenenosť deviatich chránených súborov. Prebuild nevytvoril zmeny registrov.
+
 ## Upozornenia, ktoré neboli potichu opravované
 
 1. Kontrola použitých prekladov hlási `feed.captionPlaceholder`,
@@ -193,7 +247,8 @@ Nie je to neobmedzené pollovanie ani záruka dokončenia na ľubovoľne pomalej
 2. Po nasadení zopakovať celú Google Playwright sadu proti odsúhlasenému Railway:
    WebKit desktop, WebKit iPhone 15 emulácia a Chromium desktop. Pripravené scenáre:
    bežné potvrdenie, skutočné zrušenie, 401 → 401 → 200, 500, 429, platné potvrdenie
-   po 500/429, chýbajúce a neskoré potvrdenie. Windows WebKit je blokovaný systémovou
+   po 500/429, chýbajúce a neskoré potvrdenie a stará chyba počas nového pokusu.
+   Windows WebKit je blokovaný systémovou
    politikou; použiť už overený oficiálny Linux Playwright kontajner.
 3. Fyzický iPhone Safari a nainštalovaná PWA: skutočné Google prihlásenie bez reloadu,
    zrušenie, návrat medzi kartami/apkami, opakované odhlásenie/prihlásenie a pomalšia

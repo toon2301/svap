@@ -31,6 +31,29 @@ test('cancelling without a server login stays anonymous and unlocks Google', asy
   await expect(page.locator('[data-dashboard-main]')).toHaveCount(0);
 });
 
+test('an old popup error cannot cancel a new attempt, but its current error still unlocks the form', async ({ page, context }) => {
+  const audit = await GoogleLoginAudit.start(page, context);
+  const oldPopup = await audit.openPopup(false);
+  const deliverOldError = audit.captureLateErrorDelivery();
+  await oldPopup.close();
+  await audit.waitForCompletionOrUnlock();
+
+  const currentPopup = await audit.openPopup(false);
+  await deliverOldError();
+  await expect(page.getByRole('button', { name: /Google/i })).toBeDisabled();
+  const alerts = page.locator('div:has(> form:has(#login-email))').getByRole('alert');
+  await expect(alerts).toHaveCount(0);
+  expect(new URL(page.url()).pathname).toBe('/');
+
+  await audit.sendError(currentPopup);
+  await expect(alerts).toHaveCount(1);
+  await expect(alerts).toHaveText('Controlled OAuth rejection');
+  await expect(page.getByRole('button', { name: /Google/i })).toBeEnabled();
+  expect(await audit.serverSessionStatus()).toBe(401);
+  await expect(page.locator('[data-dashboard-main]')).toHaveCount(0);
+  await currentPopup.close();
+});
+
 test('delayed cookie visibility recovers after two anonymous probes without a callback', async ({ page, context }) => {
   const audit = await GoogleLoginAudit.start(page, context);
   try {

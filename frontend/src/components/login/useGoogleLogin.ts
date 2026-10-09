@@ -231,16 +231,17 @@ export function useGoogleLogin(callbacks: Callbacks) {
       void recover();
     }
 
-    /** Validate success origin and nonce before verification, or process a definitive OAuth error. */
+    /** Accept success or error only from this origin and the currently stored attempt nonce. */
     function onMessage(event: MessageEvent) {
       if (!current() || completing || event.origin !== window.location.origin) return;
       if (!event.data || typeof event.data !== 'object') return;
+      if (event.data.type !== 'OAUTH_SUCCESS' && event.data.type !== 'OAUTH_ERROR') return;
+      let storedNonce: string | null = null;
+      try { storedNonce = sessionStorage.getItem('oauth_nonce'); } catch { /* Ignore unverifiable messages. */ }
+      if (storedNonce !== nonce || event.data.nonce !== nonce) return;
       if (event.data.type === 'OAUTH_SUCCESS') {
-        let storedNonce: string | null = null;
-        try { storedNonce = sessionStorage.getItem('oauth_nonce'); } catch { /* Ignore unverifiable messages. */ }
-        if (storedNonce !== nonce || event.data.nonce !== nonce) return;
         void complete();
-      } else if (event.data.type === 'OAUTH_ERROR') {
+      } else {
         fail(typeof event.data.error === 'string' && event.data.error
           ? event.data.error : t('auth.googleLoginFailed'));
       }

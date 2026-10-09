@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logClientDebug, logClientError } from '@/utils/clientLogging';
 
+/** Show the provider result and send one attempt-scoped completion message to the opener. */
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -15,6 +16,7 @@ function OAuthCallbackContent() {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const handledRef = useRef(false);
+  /** Record result state only, without credentials, identity or the attempt nonce. */
   const trace = (event: string, meta?: Record<string, unknown>) => {
     try {
       (window as any).__OAUTH_TRACE__?.log?.(event, meta);
@@ -33,6 +35,7 @@ function OAuthCallbackContent() {
   }, [theme]);
 
   useEffect(() => {
+    /** Deliver the originating popup's result once and keep the existing close delay. */
     const handleCallback = async () => {
       // One-shot: prevent duplicate postMessage + close loops due to re-renders (theme/language).
       if (handledRef.current) {
@@ -55,6 +58,12 @@ function OAuthCallbackContent() {
         hasUserId: Boolean(userId),
         hasError: Boolean(error),
       });
+
+      let oauthNonce: string | null = null;
+      if (window.opener) {
+        try { oauthNonce = sessionStorage.getItem('oauth_nonce'); }
+        catch { /* The opener ignores unverifiable messages; keep error display and closure usable. */ }
+      }
       
       if (error) {
         trace('oauth_callback_error_param', { hasError: true });
@@ -68,6 +77,7 @@ function OAuthCallbackContent() {
           logClientDebug('Sending OAuth error message to parent window');
           window.opener.postMessage({
             type: 'OAUTH_ERROR',
+            nonce: oauthNonce,
             error: `${t('auth.oauthLoginFailed')}: ${error}`
           }, window.location.origin);
         }
@@ -84,7 +94,6 @@ function OAuthCallbackContent() {
       if (oauthSuccess === 'success') {
         setStatus('success');
         if (window.opener) {
-          const oauthNonce = sessionStorage.getItem('oauth_nonce');
           trace('oauth_callback_postmessage_success', {
             hasNonce: Boolean(oauthNonce),
           });
@@ -103,7 +112,7 @@ function OAuthCallbackContent() {
       trace('oauth_callback_unexpected_state');
       if (window.opener) {
         trace('oauth_callback_postmessage_generic_error');
-        window.opener.postMessage({ type: 'OAUTH_ERROR', error: t('auth.oauthLoginFailed') }, window.location.origin);
+        window.opener.postMessage({ type: 'OAUTH_ERROR', nonce: oauthNonce, error: t('auth.oauthLoginFailed') }, window.location.origin);
       }
       setTimeout(() => window.close(), 3000);
     };
@@ -168,6 +177,7 @@ function OAuthCallbackContent() {
   );
 }
 
+/** Provide the suspense boundary required for callback query parameters. */
 export default function OAuthCallback() {
   return (
     <Suspense fallback={
