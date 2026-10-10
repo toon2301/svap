@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Hook na detekciu mobilnej verzie
@@ -40,6 +40,21 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
   const [tagError, setTagError] = useState('');
   // Lokálna kópia tagov pre okamžité UI aktualizácie bez čakania na prop update od rodiča
   const [localTags, setLocalTags] = useState<string[]>(tags);
+
+  // Posledný obsah props, s ktorým sa lokálna kópia zosúladila.
+  const syncedTagsRef = useRef<string[]>(tags);
+
+  // Rodič môže zoznam doplniť alebo zmeniť aj po prvom vykreslení (okno úpravy
+  // ponuky sa otvorí s prázdnym zoznamom a uložené tagy dostane až v efekte).
+  // Kópia sa preto zosúladí vždy, keď sa zmení OBSAH props; nové pole s rovnakým
+  // obsahom ju nezmení, takže tag pridaný používateľom nezmizne pri nesúvisiacom
+  // vykreslení rodiča.
+  useEffect(() => {
+    const synced = syncedTagsRef.current;
+    if (synced.length === tags.length && synced.every((tag, i) => tag === tags[i])) return;
+    syncedTagsRef.current = tags;
+    setLocalTags(tags);
+  }, [tags]);
 
   useEffect(() => {
     if (isOpen) {
