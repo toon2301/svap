@@ -29,6 +29,7 @@ import {
 import { invalidateUserProfileCache } from '../modules/profile/profileUserCache';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider, __resetAuthBootstrapSnapshotForTests } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import type { User } from '@/types';
@@ -141,7 +142,11 @@ jest.mock('@/lib/api', () => ({
       userProfileBySlug: (slug: string) => `/profile/slug/${slug}/`,
       userProfile: (id: number) => `/profile/${id}/`,
     },
-    skills: { list: '/auth/skills/', detail: (id: number) => `/auth/skills/${id}/` },
+    skills: {
+      list: '/auth/skills/',
+      detail: (id: number) => `/auth/skills/${id}/`,
+      imageDetail: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/`,
+    },
   },
   invalidateSession: jest.fn(),
   isTransientAuthFailureError: jest.fn(() => false),
@@ -571,6 +576,201 @@ describe('sada props pre podriadené komponenty', () => {
     expect(routerProps().conversationIdForMessages).toBeNull();
     expect(routerProps().targetUserIdForMessages).toBeNull();
     expect(layoutProps().isMobileMessageConversationOpen).toBe(false);
+  });
+});
+
+describe('prepojenie ModuleRouteru, modálov a rozloženia na spoločný stav', () => {
+  type Fn = (...args: unknown[]) => unknown;
+  const call = (fn: unknown, ...args: unknown[]) => (fn as Fn)(...args);
+  const router = () => routerProps() as unknown as Record<string, unknown>;
+  const modals = () => mockModalsProps as Record<string, unknown>;
+  const skills = () => modals().skillsState as Record<string, unknown>;
+
+  it('ModuleRouter a modály dostanú tie isté obsluhy, zoznamy zručností aj obsluhy účtu', async () => {
+    await renderDashboard();
+
+    [
+      'setSelectedSkillsCategory', 'setIsSkillsCategoryModalOpen', 'setIsSkillDescriptionModalOpen',
+      'setIsAddCustomCategoryModalOpen', 'setEditingCustomCategoryIndex', 'setEditingStandardCategoryIndex',
+      'standardCategories', 'customCategories', 'removeStandardCategory', 'removeCustomCategory',
+    ].forEach((key) => {
+      expect(skills()[key]).toBeDefined();
+      expect(router()[key]).toBe(skills()[key]);
+    });
+    ['setAccountType', 'setIsAccountTypeModalOpen', 'setIsPersonalAccountModalOpen'].forEach((key) => {
+      expect(typeof modals()[key]).toBe('function');
+      expect(router()[key]).toBe(modals()[key]);
+    });
+  });
+
+  it('modály dostanú ten istý prekladač ako zvyšok appky', async () => {
+    await renderDashboard();
+
+    expect(mockModalsProps?.t).toBe(useLanguage().t);
+  });
+
+  it('obsluhy ModuleRouteru menia stav účtu, ktorý vidia modály aj ModuleRouter', async () => {
+    await renderDashboard();
+
+    act(() => routerProps().setAccountType('business'));
+    expect(mockModalsProps?.accountType).toBe('business');
+    expect(routerProps().accountType).toBe('business');
+
+    act(() => routerProps().setIsAccountTypeModalOpen(true));
+    expect(mockModalsProps?.isAccountTypeModalOpen).toBe(true);
+
+    act(() => routerProps().setIsPersonalAccountModalOpen(true));
+    expect(mockModalsProps?.isPersonalAccountModalOpen).toBe(true);
+  });
+
+  it('obsluhy ModuleRouteru menia stav zručností, ktorý vidia modály', async () => {
+    await renderDashboard();
+
+    act(() => routerProps().setIsSkillsCategoryModalOpen(true));
+    expect(skills().isSkillsCategoryModalOpen).toBe(true);
+
+    act(() => routerProps().setIsSkillDescriptionModalOpen(true));
+    expect(skills().isSkillDescriptionModalOpen).toBe(true);
+
+    act(() => routerProps().setIsAddCustomCategoryModalOpen(true));
+    expect(skills().isAddCustomCategoryModalOpen).toBe(true);
+
+    act(() => routerProps().setEditingCustomCategoryIndex(3));
+    expect(skills().editingCustomCategoryIndex).toBe(3);
+
+    act(() => routerProps().setEditingStandardCategoryIndex(4));
+    expect(skills().editingStandardCategoryIndex).toBe(4);
+
+    const category = { category: 'Doučovanie', subcategory: 'Matematika' };
+    act(() => routerProps().setSelectedSkillsCategory(category));
+    expect(skills().selectedSkillsCategory).toMatchObject(category);
+    expect(routerProps().selectedSkillsCategory).toBe(skills().selectedSkillsCategory);
+  });
+
+  it('zoznamy zručností z modálov sa dostanú do ModuleRouteru každý na svoje miesto', async () => {
+    await renderDashboard();
+    const standard = [{ id: 11, category: 'Doučovanie', subcategory: 'Matematika' }];
+    const custom = [{ id: 12, category: 'Moja kategória', subcategory: 'Moja kategória' }];
+
+    act(() => call(skills().setStandardCategories, standard));
+    act(() => call(skills().setCustomCategories, custom));
+
+    expect(routerProps().standardCategories).toBe(standard);
+    expect(routerProps().customCategories).toBe(custom);
+  });
+
+  it('modály dostanú funkcie zručností, ktoré robia to, čo majú', async () => {
+    await renderDashboard();
+    const state = skills();
+
+    expect(call(state.toLocalSkill, { id: 5, category: 'Doučovanie', subcategory: 'Matematika' })).toMatchObject({
+      id: 5,
+      category: 'Doučovanie',
+      subcategory: 'Matematika',
+      description: '',
+    });
+
+    mockApiGet.mockClear();
+    act(() => {
+      void call(state.loadSkills);
+    });
+    expect(mockApiGet).toHaveBeenCalledWith('/auth/skills/');
+
+    mockApiGet.mockClear();
+    act(() => {
+      void call(state.fetchSkillDetail, 7);
+    });
+    expect(mockApiGet).toHaveBeenCalledWith('/auth/skills/7/');
+
+    act(() => {
+      void call(state.handleRemoveSkillImage, 7, 3);
+    });
+    expect(api.delete).toHaveBeenCalledWith('/auth/skills/7/images/3/');
+  });
+
+  it('aktualizácia zručnosti z modálov ju zaradí do zoznamu podľa druhu kategórie', async () => {
+    await renderDashboard();
+    const standard = { id: 21, category: 'Doučovanie', subcategory: 'Matematika' };
+    const custom = { id: 22, category: 'Moja kategória', subcategory: 'Moja kategória' };
+
+    act(() => call(skills().applySkillUpdate, standard));
+    act(() => call(skills().applySkillUpdate, custom));
+
+    expect(skills().standardCategories).toEqual([standard]);
+    expect(skills().customCategories).toEqual([custom]);
+  });
+
+  it('ModuleRouter prepína stav podkategórií', async () => {
+    await renderDashboard();
+    expect(routerProps().isInSubcategories).toBe(false);
+
+    act(() => routerProps().setIsInSubcategories?.(true));
+
+    expect(routerProps().isInSubcategories).toBe(true);
+  });
+
+  it('prepínač pravého panela a zatvorenie úpravy profilu z ModuleRouteru menia pravý panel', async () => {
+    await renderDashboard(false, PROFILE);
+    expect(routerProps().isRightSidebarOpen).toBe(false);
+
+    act(() => routerProps().handleRightSidebarToggle());
+    expect(routerProps().isRightSidebarOpen).toBe(true);
+    expect(routerProps().activeRightItem).toBe('edit-profile');
+
+    act(() => routerProps().closeOwnProfileEdit());
+    expect(routerProps().isRightSidebarOpen).toBe(false);
+    expect(routerProps().activeRightItem).toBe('');
+    expect(activeModule()).toBe('profile');
+  });
+
+  it('správa sledovaní z ModuleRouteru otvorí sekciu sledovaní v Nastaveniach', async () => {
+    await renderDashboard();
+
+    act(() => routerProps().onManageOfferWatches?.());
+
+    expect(activeModule()).toBe('settings');
+    expect(routerProps().activeRightItem).toBe('offer-watches');
+  });
+
+  it('odhlásenie z rozloženia zavolá odhlásenie na serveri a presmeruje na úvodnú stránku', async () => {
+    await renderDashboard();
+
+    await act(async () => {
+      await layoutProps().onLogout();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(api.post).toHaveBeenCalledWith('/auth/logout/', {});
+    expect(mockRouter.replace).toHaveBeenCalledWith('/');
+  });
+
+  it('ModuleRouter dostane vybranú konverzáciu z dotazu a nie cieľového používateľa', async () => {
+    await renderDashboard(false, { ...MESSAGES, search: 'conversationId=9' });
+
+    expect(routerProps().conversationIdForMessages).toBe(9);
+    expect(routerProps().targetUserIdForMessages).toBeNull();
+  });
+
+  it('ModuleRouter dostane cieľového používateľa z dotazu a nie konverzáciu', async () => {
+    await renderDashboard(false, { ...MESSAGES, search: 'targetUserId=12' });
+
+    expect(routerProps().targetUserIdForMessages).toBe(12);
+    expect(routerProps().conversationIdForMessages).toBeNull();
+  });
+
+  it('ModuleRouter dostane záložku profilu z adresy vlastného profilu', async () => {
+    await mountDashboard(
+      false,
+      {
+        route: 'profile',
+        pathname: '/dashboard/users/testuser/portfolio',
+        search: '',
+        props: { initialProfileSlug: 'testuser', initialProfileTab: 'portfolio' },
+      },
+      baseUser,
+    );
+
+    await waitFor(() => expect(routerProps().initialProfileTab).toBe('portfolio'));
   });
 });
 
