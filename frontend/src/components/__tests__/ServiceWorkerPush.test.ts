@@ -15,6 +15,40 @@ function createWaitUntilEvent(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function createFetchRequest(
+  url: string,
+  headers: Record<string, string> = {},
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    url,
+    method: 'GET',
+    destination: '',
+    headers: {
+      get: jest.fn((name: string) => headers[name.toLowerCase()] ?? null),
+    },
+    ...overrides,
+  };
+}
+
+async function dispatchFetch(
+  handlers: RegisteredHandlers,
+  request: ReturnType<typeof createFetchRequest>,
+) {
+  const responsePromises: Promise<unknown>[] = [];
+  const fetchEvent = {
+    request,
+    respondWith: jest.fn((response: Promise<unknown>) => {
+      responsePromises.push(Promise.resolve(response));
+    }),
+  };
+
+  handlers.fetch(fetchEvent);
+  const responses = await Promise.all(responsePromises);
+
+  return { fetchEvent, responses };
+}
+
 function loadServiceWorker() {
   const source = fs.readFileSync(
     path.join(process.cwd(), 'public', 'sw.js'),
@@ -53,6 +87,7 @@ function loadServiceWorker() {
   const cacheStorage = {
     open: jest.fn().mockResolvedValue({
       put: jest.fn().mockResolvedValue(undefined),
+      add: jest.fn().mockResolvedValue(undefined),
     }),
     keys: jest.fn(),
     delete: jest.fn(),
@@ -153,6 +188,130 @@ describe('service worker media flow', () => {
     await Promise.all(responsePromises);
 
     expect(cacheStorage.match).toHaveBeenCalledWith(request);
+  });
+});
+
+describe('service worker Next.js RSC flow', () => {
+  // Odpoveď RSC nesie id buildu, z ktorého prišla. Cache-first ju po nasadení
+  // novej verzie vracia ešte raz, Next ju kvôli inému buildu odmietne
+  // a klientska navigácia sa zmení na tvrdé načítanie stránky.
+  it.each([
+    [
+      'carries the RSC header',
+      'https://svaply.com/dashboard/users/peter',
+      { rsc: '1' },
+    ],
+    [
+      'carries the _rsc query parameter',
+      'https://svaply.com/dashboard/users/peter?_rsc=1abcd',
+      {},
+    ],
+    [
+      'is a router prefetch',
+      'https://svaply.com/dashboard/users/peter/portfolio?tab=portfolio&_rsc=9xz',
+      { rsc: '1', 'next-router-prefetch': '1' },
+    ],
+  ])(
+    'loads a same-origin request that %s from the network without reading or writing a cache',
+    async (_label, url, headers) => {
+      const { handlers, fetchMock, cacheStorage } = loadServiceWorker();
+      const request = createFetchRequest(url, headers);
+
+      const { fetchEvent } = await dispatchFetch(handlers, request);
+
+      expect(fetchEvent.respondWith).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(request);
+      expect(cacheStorage.match).not.toHaveBeenCalled();
+      expect(cacheStorage.open).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not return a cached RSC response that an earlier build left behind', async () => {
+    const { handlers, fetchMock, cacheStorage } = loadServiceWorker();
+    const staleResponse = { status: 200, type: 'basic', build: 'old' };
+    const freshResponse = { status: 200, type: 'basic', build: 'new' };
+    cacheStorage.match.mockResolvedValue(staleResponse);
+    fetchMock.mockResolvedValue(freshResponse);
+
+    const { responses } = await dispatchFetch(
+      handlers,
+      createFetchRequest('https://svaply.com/dashboard/users/peter?_rsc=1abcd', {
+        rsc: '1',
+      }),
+    );
+
+    expect(responses).toEqual([freshResponse]);
+  });
+
+  it('does not intercept a non-GET request that carries the RSC header', async () => {
+    const { handlers, fetchMock, cacheStorage } = loadServiceWorker();
+    const request = createFetchRequest(
+      'https://svaply.com/dashboard/users/peter',
+      { rsc: '1' },
+      { method: 'POST' },
+    );
+
+    const { fetchEvent } = await dispatchFetch(handlers, request);
+
+    expect(fetchEvent.respondWith).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(cacheStorage.match).not.toHaveBeenCalled();
+  });
+
+  it('keeps the cache flow for other same-origin GET requests with a query string', async () => {
+    const { handlers, cacheStorage } = loadServiceWorker();
+    const request = createFetchRequest(
+      'https://svaply.com/media/offers/photo.webp?v=2',
+      { accept: 'image/webp' },
+      { destination: 'image' },
+    );
+
+    await dispatchFetch(handlers, request);
+
+    expect(cacheStorage.match).toHaveBeenCalledWith(request);
+  });
+
+  it('keeps the existing flow for a request to another origin that carries the RSC marker', async () => {
+    const { handlers, cacheStorage } = loadServiceWorker();
+    const request = createFetchRequest('https://cdn.example.com/dashboard?_rsc=1abcd', {
+      rsc: '1',
+    });
+
+    await dispatchFetch(handlers, request);
+
+    expect(cacheStorage.open).toHaveBeenCalled();
+  });
+});
+
+describe('service worker cache versions', () => {
+  it('purges the caches of the previous version on activate, where stale RSC responses may sit', async () => {
+    const { handlers, cacheStorage } = loadServiceWorker();
+    const installEvent = createWaitUntilEvent();
+    handlers.install(installEvent);
+    await Promise.all(installEvent.pending);
+    const currentVersion = String(cacheStorage.open.mock.calls[0][0]).replace(
+      'svaply-static-',
+      '',
+    );
+
+    cacheStorage.keys.mockResolvedValue([
+      'svaply-static-v9',
+      'svaply-dynamic-v9',
+      'svaply-cache-v9',
+      `svaply-static-${currentVersion}`,
+      `svaply-dynamic-${currentVersion}`,
+    ]);
+    cacheStorage.delete.mockResolvedValue(true);
+    const activateEvent = createWaitUntilEvent();
+    handlers.activate(activateEvent);
+    await Promise.all(activateEvent.pending);
+
+    expect(currentVersion).not.toBe('v9');
+    expect(cacheStorage.delete.mock.calls.map(([name]) => name).sort()).toEqual([
+      'svaply-cache-v9',
+      'svaply-dynamic-v9',
+      'svaply-static-v9',
+    ]);
   });
 });
 
