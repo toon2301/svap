@@ -7,19 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobileState } from '@/hooks';
 import type { User } from '@/types';
 import type { ProfileTab } from '../modules/profile/profileTypes';
-import DashboardLayout from '../DashboardLayout';
-import ModuleRouter from '../ModuleRouter';
-import DashboardModals from '../DashboardModals';
-import { DeleteSkillConfirmModal } from '../modules/skills/DeleteSkillConfirmModal';
 import { clearSkillsDescribeReturnModule } from '../modules/skills/skillsDescribeReturnSession';
-import { DesktopOnboardingProvider } from '../onboarding/DesktopOnboardingContext';
-import DesktopOnboardingOverlay from '../onboarding/DesktopOnboardingOverlay';
-import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
-import MobileOnboardingOverlay from '../onboarding/MobileOnboardingOverlay';
-import OnboardingScrollLock from '../onboarding/OnboardingScrollLock';
-import SearchModule from '../modules/SearchModule';
-import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
-import NotificationsFeed from '../modules/notifications/NotificationsFeed';
 import type { RequestsRouteIntent } from '../modules/requests/requestsRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
@@ -41,12 +29,11 @@ import { usePortfolioNavigation } from '../hooks/usePortfolioNavigation';
 import { usePathModuleEffects } from '../hooks/usePathModuleEffects';
 import { usePopstateModuleSync } from '../hooks/usePopstateModuleSync';
 import { useProfileWindowEvents } from '../hooks/useProfileWindowEvents';
-import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
-import { FeedPostOverlayProvider } from '../contexts/FeedPostOverlayContext';
-import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
 import { useDashboardMountRoute } from './dashboardMountRoute';
 import { resolveInitialOwnProfileTab } from './ownProfileTab';
 import { getDashboardRenderValues } from './dashboardRenderValues';
+import DashboardModuleContent from './DashboardModuleContent';
+import DashboardContentView from './DashboardContentView';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
 import { useOfferWatchResultsNavigation } from '../modules/offer-watch/results/offerWatchResultsNavigation';
 
@@ -535,13 +522,13 @@ export default function DashboardContent({
 
   // Module content pre ModuleRouter
   const moduleContent = (
-    <ModuleRouter
+    <DashboardModuleContent
       user={user}
       activeModule={activeModule}
       activeRightItem={activeRightItem}
       isRightSidebarOpen={isRightSidebarOpen}
       accountType={accountType}
-      onUserUpdate={handleUserUpdate}
+      handleUserUpdate={handleUserUpdate}
       handleRightSidebarToggle={handleRightSidebarToggle}
       closeOwnProfileEdit={closeOwnProfileEdit}
       setActiveModule={setActiveModule}
@@ -561,51 +548,30 @@ export default function DashboardContent({
       selectedSkillsCategory={selectedSkillsCategory}
       isInSubcategories={isInSubcategories}
       setIsInSubcategories={setIsInSubcategories}
-      onSkillsCategoryBackHandlerSet={(handler) => {
-        skillsCategoryBackHandlerRef.current = handler;
-      }}
-      viewedUserId={userProfile.viewedUserId}
-      viewedUserSlug={userProfile.viewedUserSlug}
-      viewedUserNotFound={userProfile.viewedUserNotFound}
-      viewedUserLoadError={userProfile.viewedUserLoadError}
-      onRetryViewedUserLoad={userProfile.retryViewedUserLoad}
-      viewedUserSummary={userProfile.viewedUserSummary}
-      onEditProfileClick={navigation.handleEditProfileClick}
-      onViewUserProfile={navigation.handleViewUserProfileFromSearch}
-      highlightedSkillId={highlighting.highlightedSkillId}
-      onViewUserSkillFromSearch={navigation.handleViewUserSkillFromSearch}
+      skillsCategoryBackHandlerRef={skillsCategoryBackHandlerRef}
+      userProfile={userProfile}
+      navigation={navigation}
+      highlighting={highlighting}
       initialProfileTab={initialProfileTab}
       ownProfileTab={ownProfileTab}
-      onOwnProfileTabChange={setOwnProfileTab}
-      onSkillsClick={handleProfileSkillsClick}
-      onSkillsOfferClick={navigation.handleSkillsOfferClick}
-      onSkillsSearchClick={navigation.handleSkillsSearchClick}
-      onSkillsModeToggle={handleSkillsModeToggle}
-      offerIdForReviews={effectiveOfferIdForReviews}
-      feedPostIdForDetail={effectiveFeedPostId}
-      portfolioItemIdForDetail={
-        effectivePortfolioItemId != null && Number.isFinite(effectivePortfolioItemId)
-          ? effectivePortfolioItemId
-          : null
-      }
-      portfolioOwnerIdentifier={effectivePortfolioOwnerIdentifier}
-      portfolioCreateOwnerIdentifier={effectivePortfolioCreateOwnerIdentifier}
-      onCreatePortfolio={handleCreatePortfolio}
-      conversationIdForMessages={
-        selectedConversationId != null && Number.isFinite(selectedConversationId) ? selectedConversationId : null
-      }
-      targetUserIdForMessages={
-        targetUserIdFromMessagesQuery != null && Number.isFinite(targetUserIdFromMessagesQuery)
-          ? targetUserIdFromMessagesQuery
-          : null
-      }
-      onNotificationNavigate={handleNotificationNavigate}
+      setOwnProfileTab={setOwnProfileTab}
+      handleProfileSkillsClick={handleProfileSkillsClick}
+      handleSkillsModeToggle={handleSkillsModeToggle}
+      effectiveOfferIdForReviews={effectiveOfferIdForReviews}
+      effectiveFeedPostId={effectiveFeedPostId}
+      effectivePortfolioItemId={effectivePortfolioItemId}
+      effectivePortfolioOwnerIdentifier={effectivePortfolioOwnerIdentifier}
+      effectivePortfolioCreateOwnerIdentifier={effectivePortfolioCreateOwnerIdentifier}
+      handleCreatePortfolio={handleCreatePortfolio}
+      selectedConversationId={selectedConversationId}
+      targetUserIdFromMessagesQuery={targetUserIdFromMessagesQuery}
+      handleNotificationNavigate={handleNotificationNavigate}
       requestsRouteIntent={requestsRouteIntent}
-      onEditOwnProfileOffer={handleEditOwnProfileOffer}
-      onDeleteOwnProfileOffer={handleDeleteOwnProfileOffer}
+      handleEditOwnProfileOffer={handleEditOwnProfileOffer}
+      handleDeleteOwnProfileOffer={handleDeleteOwnProfileOffer}
       mobileAccountSettingsView={mobileAccountSettingsView}
-      onMobileAccountSettingsViewChange={setMobileAccountSettingsView}
-      onManageOfferWatches={handleManageOfferWatches}
+      setMobileAccountSettingsView={setMobileAccountSettingsView}
+      handleManageOfferWatches={handleManageOfferWatches}
     />
   );
 
@@ -634,193 +600,96 @@ export default function DashboardContent({
     targetUserIdFromMessagesQuery,
   });
   return (
-    <RequestsNotificationsProvider
-      acknowledgeNotificationsBadge={activeModule === 'notifications' || isNotificationsPanelOpen}
-      acknowledgeMessagesBadge={activeModule === 'messages'}
-    >
-      <FeedPostOverlayProvider onTargetChange={handleFeedOverlayTargetChange}>
-      <DesktopOnboardingProvider
-        activeModule={activeModule}
-        isSearchOpen={isSearchOpen}
-        isProfileEditMode={isProfileEditMode}
-        isRightSidebarOpen={isRightSidebarOpen}
-        isNotificationsPanelOpen={isNotificationsPanelOpen}
-        isMobileMenuOpen={showMobileSettingsList}
-        onOpenHome={handleOnboardingHomeOpen}
-        onOpenProfile={handleDesktopOnboardingProfileOpen}
-        onOpenEditProfile={navigation.handleEditProfileClick}
-        onOpenSearch={handleDesktopOnboardingSearchOpen}
-        onCloseSearch={handleDesktopOnboardingSearchClose}
-        onOpenRequests={handleDesktopOnboardingRequestsOpen}
-        onOpenMessages={handleOnboardingMessagesOpen}
-        onSkillCreatedHandlerSet={handleDesktopOnboardingSkillCreatedHandlerSet}
-        serverState={user?.desktop_onboarding ?? null}
-      >
-        <MobileOnboardingProvider
-          activeModule={activeModule}
-          isProfileEditMode={isProfileEditMode}
-          isBlockedByUi={isMobileOnboardingBlocked}
-          onOpenHome={handleOnboardingHomeOpen}
-          onOpenProfile={handleMobileProfileOpen}
-          onOpenEditProfile={navigation.handleEditProfileClick}
-          onOpenSearch={handleOnboardingSearchOpen}
-          onOpenRequests={handleOnboardingRequestsOpen}
-          onOpenMessages={handleOnboardingMessagesOpen}
-          onSkillCreatedHandlerSet={handleMobileOnboardingSkillCreatedHandlerSet}
-          serverState={user?.mobile_onboarding ?? null}
-          userId={user?.id ?? null}
-        >
-          <DashboardLayout
-            activeModule={activeModule}
-            activeRightItem={activeRightItem}
-            // Aj profil, ktorý sa nepodarilo načítať, je nedostupný (hamburger bez možností).
-            viewedUserNotFound={userProfile.viewedUserNotFound || userProfile.viewedUserLoadError}
-            isRightSidebarOpen={isRightSidebarOpen}
-            isMobileMenuOpen={showMobileSettingsList}
-            onModuleChange={handleDashboardModuleChange}
-            onLogout={handleLogout}
-            onRightSidebarClose={navigation.handleRightSidebarClose}
-            onRightItemClick={handleRightItemClick}
-            onMobileMenuOpen={handleMobileSettingsOpen}
-            onMobileMenuClose={handleMobileSettingsClose}
-            onMobileBack={
-              activeModule === 'skills-select-category'
-                ? handleSkillsCategoryBack
-                : activeModule === 'skills-describe'
-                  ? handleSkillsDescribeMobileBack
-                  : activeModule === 'offer-reviews'
-                    ? handleOfferReviewsBack
-                    : activeModule === 'portfolio-detail'
-                      ? handlePortfolioDetailBack
-                      : activeModule === 'account-settings' || activeRightItem === 'account-settings'
-                        ? handleAccountSettingsMobileBack
-                        : handleMobileBack
-            }
-            onMobileProfileClick={handleMobileProfileOpen}
-            onSkillsModeToggle={handleSkillsModeToggle}
-            onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
-            onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
-            onSidebarAccountSettingsClick={navigation.handleSidebarAccountSettingsClick}
-            onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
-            isSearchOpen={isSearchOpen}
-            isNotificationsPanelOpen={isNotificationsPanelOpen}
-            onSidebarSearchClick={handleSidebarSearchClick}
-            onSidebarNotificationsClick={handleSidebarNotificationsClick}
-            onSearchClose={navigation.handleSearchClose}
-            onNotificationsPanelClose={handleNotificationsPanelClose}
-            searchOverlay={
-              user ? (
-                <div className="h-full" data-desktop-onboarding="search-panel">
-                  <SearchModule
-                    user={user}
-                    onUserClick={navigation.handleViewUserProfileFromSearch}
-                    onSkillClick={navigation.handleViewUserSkillFromSearch}
-                    isOverlay
-                    isActive={isSearchOpen}
-                    onClose={navigation.handleSearchClose}
-                  />
-                </div>
-              ) : null
-            }
-            notificationsOverlay={
-              <NotificationsFeed
-                variant="panel"
-                onNavigate={handleNotificationNavigate}
-              />
-            }
-            desktopRightRail={
-              activeModule === 'messages' ? (
-                <MessagesDesktopRail
-                  currentUserId={user.id}
-                  selectedConversationId={
-                    selectedConversationId != null && Number.isFinite(selectedConversationId)
-                      ? selectedConversationId
-                      : null
-                  }
-                />
-              ) : null
-            }
-            subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
-            onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
-            mobileAccountName={mobileAccountName}
-            mobileMessagePeerName={mobileMessageTitle}
-            mobileMessagePeerAvatarUrl={mobileMessageAvatarUrl}
-            mobileMessagePeerAvatarMembers={mobileMessageGroup?.avatarMembers ?? []}
-            mobileMessagePeerIsGroup={Boolean(mobileMessageGroup)}
-            mobileMessagePeerIdentifier={mobileMessageGroup ? null : mobileMessagePeerIdentifier}
-            isMobileMessageConversationOpen={isMobileMessageConversationOpen}
-            onMobileMessagesBack={handleMobileMessagesBack}
-            isMobileOfferDetailOpen={showMobileOfferDetailTopBar}
-            currentUser={user}
-            mobileAccountSettingsView={mobileAccountSettingsView}
-          >
-            {moduleContent}
-          </DashboardLayout>
-          <OnboardingScrollLock />
-          <MobileOnboardingOverlay />
-          <DesktopOnboardingOverlay />
-        </MobileOnboardingProvider>
-      </DesktopOnboardingProvider>
-
-      <DashboardModals
-        accountType={accountType}
-        setAccountType={setAccountType}
-        isAccountTypeModalOpen={isAccountTypeModalOpen}
-        setIsAccountTypeModalOpen={setIsAccountTypeModalOpen}
-        isPersonalAccountModalOpen={isPersonalAccountModalOpen}
-        setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
-        user={user}
-        onUserUpdate={dashboardState.handleUserUpdate}
-        skillsState={{
-          selectedSkillsCategory,
-          setSelectedSkillsCategory,
-          standardCategories,
-          setStandardCategories,
-          customCategories,
-          setCustomCategories,
-          isSkillsCategoryModalOpen,
-          setIsSkillsCategoryModalOpen,
-          isSkillDescriptionModalOpen,
-          setIsSkillDescriptionModalOpen,
-          isAddCustomCategoryModalOpen,
-          setIsAddCustomCategoryModalOpen,
-          editingCustomCategoryIndex,
-          setEditingCustomCategoryIndex,
-          editingStandardCategoryIndex,
-          setEditingStandardCategoryIndex,
-          toLocalSkill,
-          applySkillUpdate,
-          loadSkills,
-          fetchSkillDetail,
-          handleRemoveSkillImage,
-          removeStandardCategory,
-          removeCustomCategory,
-        }}
-        activeModule={activeModule}
-        t={t}
-        onCreatedSkillSaved={handleOnboardingSkillCreated}
-      />
-      <DeleteSkillConfirmModal
-        open={Boolean(pendingDeleteOffer)}
-        onClose={() => {
-          if (!isDeletingOwnProfileOffer) {
-            setPendingDeleteOffer(null);
-          }
-        }}
-        onConfirm={handleConfirmDeleteOwnProfileOffer}
-        isDeleting={isDeletingOwnProfileOffer}
-      />
-      {/* Okno lezi NAD celou appkou a mountuje sa az pri otvoreni, takze
-          zavretim sa vrati presne povodny stav pod nim. */}
-      {feedOverlayTarget ? (
-        <FeedPostDetailOverlay
-          postId={feedOverlayTarget.postId}
-          highlightCommentId={feedOverlayTarget.highlightCommentId ?? null}
-          onClose={() => handleFeedOverlayTargetChange(null)}
-        />
-      ) : null}
-      </FeedPostOverlayProvider>
-    </RequestsNotificationsProvider>
+    <DashboardContentView
+      activeModule={activeModule}
+      isNotificationsPanelOpen={isNotificationsPanelOpen}
+      handleFeedOverlayTargetChange={handleFeedOverlayTargetChange}
+      isSearchOpen={isSearchOpen}
+      isProfileEditMode={isProfileEditMode}
+      isRightSidebarOpen={isRightSidebarOpen}
+      showMobileSettingsList={showMobileSettingsList}
+      handleOnboardingHomeOpen={handleOnboardingHomeOpen}
+      handleDesktopOnboardingProfileOpen={handleDesktopOnboardingProfileOpen}
+      navigation={navigation}
+      handleDesktopOnboardingSearchOpen={handleDesktopOnboardingSearchOpen}
+      handleDesktopOnboardingSearchClose={handleDesktopOnboardingSearchClose}
+      handleDesktopOnboardingRequestsOpen={handleDesktopOnboardingRequestsOpen}
+      handleOnboardingMessagesOpen={handleOnboardingMessagesOpen}
+      handleDesktopOnboardingSkillCreatedHandlerSet={handleDesktopOnboardingSkillCreatedHandlerSet}
+      user={user}
+      isMobileOnboardingBlocked={isMobileOnboardingBlocked}
+      handleMobileProfileOpen={handleMobileProfileOpen}
+      handleOnboardingSearchOpen={handleOnboardingSearchOpen}
+      handleOnboardingRequestsOpen={handleOnboardingRequestsOpen}
+      handleMobileOnboardingSkillCreatedHandlerSet={handleMobileOnboardingSkillCreatedHandlerSet}
+      activeRightItem={activeRightItem}
+      userProfile={userProfile}
+      handleDashboardModuleChange={handleDashboardModuleChange}
+      handleLogout={handleLogout}
+      handleRightItemClick={handleRightItemClick}
+      handleMobileSettingsOpen={handleMobileSettingsOpen}
+      handleMobileSettingsClose={handleMobileSettingsClose}
+      handleSkillsCategoryBack={handleSkillsCategoryBack}
+      handleSkillsDescribeMobileBack={handleSkillsDescribeMobileBack}
+      handleOfferReviewsBack={handleOfferReviewsBack}
+      handlePortfolioDetailBack={handlePortfolioDetailBack}
+      handleAccountSettingsMobileBack={handleAccountSettingsMobileBack}
+      handleMobileBack={handleMobileBack}
+      handleSkillsModeToggle={handleSkillsModeToggle}
+      handleSidebarSearchClick={handleSidebarSearchClick}
+      handleSidebarNotificationsClick={handleSidebarNotificationsClick}
+      handleNotificationsPanelClose={handleNotificationsPanelClose}
+      handleNotificationNavigate={handleNotificationNavigate}
+      selectedConversationId={selectedConversationId}
+      selectedSkillsCategory={selectedSkillsCategory}
+      handleSkillSave={handleSkillSave}
+      mobileAccountName={mobileAccountName}
+      mobileMessageTitle={mobileMessageTitle}
+      mobileMessageAvatarUrl={mobileMessageAvatarUrl}
+      mobileMessageGroup={mobileMessageGroup}
+      mobileMessagePeerIdentifier={mobileMessagePeerIdentifier}
+      isMobileMessageConversationOpen={isMobileMessageConversationOpen}
+      handleMobileMessagesBack={handleMobileMessagesBack}
+      showMobileOfferDetailTopBar={showMobileOfferDetailTopBar}
+      mobileAccountSettingsView={mobileAccountSettingsView}
+      moduleContent={moduleContent}
+      accountType={accountType}
+      setAccountType={setAccountType}
+      isAccountTypeModalOpen={isAccountTypeModalOpen}
+      setIsAccountTypeModalOpen={setIsAccountTypeModalOpen}
+      isPersonalAccountModalOpen={isPersonalAccountModalOpen}
+      setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
+      dashboardState={dashboardState}
+      setSelectedSkillsCategory={setSelectedSkillsCategory}
+      standardCategories={standardCategories}
+      setStandardCategories={setStandardCategories}
+      customCategories={customCategories}
+      setCustomCategories={setCustomCategories}
+      isSkillsCategoryModalOpen={isSkillsCategoryModalOpen}
+      setIsSkillsCategoryModalOpen={setIsSkillsCategoryModalOpen}
+      isSkillDescriptionModalOpen={isSkillDescriptionModalOpen}
+      setIsSkillDescriptionModalOpen={setIsSkillDescriptionModalOpen}
+      isAddCustomCategoryModalOpen={isAddCustomCategoryModalOpen}
+      setIsAddCustomCategoryModalOpen={setIsAddCustomCategoryModalOpen}
+      editingCustomCategoryIndex={editingCustomCategoryIndex}
+      setEditingCustomCategoryIndex={setEditingCustomCategoryIndex}
+      editingStandardCategoryIndex={editingStandardCategoryIndex}
+      setEditingStandardCategoryIndex={setEditingStandardCategoryIndex}
+      toLocalSkill={toLocalSkill}
+      applySkillUpdate={applySkillUpdate}
+      loadSkills={loadSkills}
+      fetchSkillDetail={fetchSkillDetail}
+      handleRemoveSkillImage={handleRemoveSkillImage}
+      removeStandardCategory={removeStandardCategory}
+      removeCustomCategory={removeCustomCategory}
+      t={t}
+      handleOnboardingSkillCreated={handleOnboardingSkillCreated}
+      pendingDeleteOffer={pendingDeleteOffer}
+      isDeletingOwnProfileOffer={isDeletingOwnProfileOffer}
+      setPendingDeleteOffer={setPendingDeleteOffer}
+      handleConfirmDeleteOwnProfileOffer={handleConfirmDeleteOwnProfileOffer}
+      feedOverlayTarget={feedOverlayTarget}
+    />
   );
 }
 
