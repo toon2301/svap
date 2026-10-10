@@ -21,10 +21,6 @@ import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
 import type { RequestsRouteIntent } from '../modules/requests/requestsRouting';
-import {
-  PROFILE_OFFER_DETAIL_CLOSE_EVENT,
-  PROFILE_OFFER_DETAIL_OPEN_EVENT,
-} from '../modules/profile/profileOfferDetailEvents';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -44,21 +40,11 @@ import { useDashboardBackHandlers } from '../hooks/useDashboardBackHandlers';
 import { usePortfolioNavigation } from '../hooks/usePortfolioNavigation';
 import { usePathModuleEffects } from '../hooks/usePathModuleEffects';
 import { usePopstateModuleSync } from '../hooks/usePopstateModuleSync';
+import { useProfileWindowEvents } from '../hooks/useProfileWindowEvents';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { FeedPostOverlayProvider } from '../contexts/FeedPostOverlayContext';
 import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
-import { getUserIdBySlug } from '../modules/profile/profileUserCache';
-import {
-  markProfileFreshEntry,
-  profileEntryTargetFromIdentifier,
-} from '../modules/profile/profileFreshEntry';
-import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
 import { useDashboardMountRoute } from './dashboardMountRoute';
-import {
-  dashboardProfilePath,
-  dashboardSectionPath,
-} from './dashboardRoutes';
-import { parseDashboardHighlightId } from './dashboardTargetUrl';
 import { resolveInitialOwnProfileTab } from './ownProfileTab';
 import { getDashboardRenderValues } from './dashboardRenderValues';
 import { useSettingsScrollReset } from '../hooks/useSettingsScrollReset';
@@ -514,171 +500,18 @@ export default function DashboardContent({
     setViewedUserSummary,
   });
 
-  // GlobÃ¡lna navigÃ¡cia na cudzÃ­ profil (napr. zo Å½iadostÃ­).
-  // PouÅ¾Ã­vame event, aby UI reagovalo okamÅ¾ite aj v prÃ­padoch, keÄ sa URL zmenÃ­ bez
-  // toho, aby Next router prerenderoval strÃ¡nku (napr. window.history.pushState).
-  useEffect(() => {
-    const handler = (evt: Event) => {
-      const detail = (evt as CustomEvent<{
-        identifier?: string;
-        highlightId?: number | string | null;
-        offerId?: number | string | null;
-      }>).detail;
-      const identifier = (detail?.identifier || '').trim();
-      if (!identifier) return;
-
-      // Programovy vstup do profilu = novy vstup (od vrchu, na Ponukach) pre
-      // VSETKYCH, co tento event posielaju. Traversal historie ho nenastavuje.
-      markProfileFreshEntry(profileEntryTargetFromIdentifier(identifier));
-
-      const rawHighlight = detail?.offerId ?? detail?.highlightId;
-      const useOfferParam = detail?.offerId != null;
-      const highlightId = parseDashboardHighlightId(rawHighlight);
-
-      // Prepni modul a zavri vedÄ¾ajÅ¡ie UI
-      setActiveModule('user-profile');
-      setIsRightSidebarOpen(false);
-      setActiveRightItem('');
-      setIsMobileMenuOpen(false);
-      setIsSearchOpen(false);
-      setIsNotificationsPanelOpen(false);
-
-      // Nastav, akÃ½ profil sa mÃ¡ zobraziÅ¥
-      if (/^\d+$/.test(identifier)) {
-        userProfile.setViewedUserId(Number(identifier));
-        userProfile.setViewedUserSlug(null);
-      } else {
-        userProfile.setViewedUserSlug(identifier);
-        userProfile.setViewedUserId(null);
-
-        // Známe ID z cache sa použije hneď (bez siete). Inak slug -> ID prekladá
-        // JEDINE efekt v useDashboardUserProfile – so zrušením aj ošetrením chýb.
-        // Vlastný fetch tu posielal druhý súbežný request bez zrušenia.
-        const cachedId = getUserIdBySlug(identifier);
-        if (cachedId) {
-          userProfile.setViewedUserId(cachedId);
-        }
-      }
-      userProfile.setViewedUserSummary(null);
-
-      // Highlight skill (ak je)
-      if (highlightId != null) {
-        highlighting.setHighlightedSkillId(highlightId);
-        try {
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('highlightedSkillId', String(highlightId));
-            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
-          }
-        } catch {
-          // ignore
-        }
-      } else {
-        highlighting.setHighlightedSkillId(null);
-      }
-
-      // Aktualizuj URL bez reloadu
-      const profilePath = dashboardProfilePath(identifier);
-      if (typeof window !== 'undefined' && profilePath) {
-        const url = `${profilePath}${
-          highlightId != null
-            ? `?${useOfferParam ? 'offer' : 'highlight'}=${encodeURIComponent(String(highlightId))}`
-            : ''
-        }`;
-        window.history.pushState(withProfileOriginEntry(null), '', url);
-      }
-    };
-
-    window.addEventListener('goToUserProfile', handler as EventListener);
-    return () => {
-      window.removeEventListener('goToUserProfile', handler as EventListener);
-    };
-  }, [
+  useProfileWindowEvents({
+    user,
+    userProfile,
+    highlighting,
     setActiveModule,
     setIsRightSidebarOpen,
     setActiveRightItem,
     setIsMobileMenuOpen,
     setIsSearchOpen,
     setIsNotificationsPanelOpen,
-    userProfile,
-    highlighting,
-  ]);
-
-  // GlobÃ¡lna navigÃ¡cia na vlastnÃ½ profil (napr. zo Å½iadostÃ­ pri prijatej Å¾iadosti).
-  useEffect(() => {
-    const handler = (evt: Event) => {
-      const detail = (evt as CustomEvent<{ highlightId?: number | string | null }>).detail;
-      const highlightId = parseDashboardHighlightId(detail?.highlightId);
-
-      // Novy vstup do vlastneho profilu – rovnako ako `goToUserProfile`.
-      markProfileFreshEntry({ id: user?.id, slug: user?.slug });
-
-      setActiveModule('profile');
-      setIsRightSidebarOpen(false);
-      setActiveRightItem('');
-      setIsMobileMenuOpen(false);
-      setIsSearchOpen(false);
-      setIsNotificationsPanelOpen(false);
-
-      // vyÄisti stav cudzÃ­ch profilov, aby sa UI nemieÅ¡alo
-      try {
-        userProfile.setViewedUserId(null);
-        userProfile.setViewedUserSlug(null);
-        userProfile.setViewedUserSummary(null);
-      } catch {
-        // ignore
-      }
-
-      if (highlightId != null) {
-        highlighting.setHighlightedSkillId(highlightId);
-        try {
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('highlightedSkillId', String(highlightId));
-            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
-          }
-        } catch {
-          // ignore
-        }
-      } else {
-        highlighting.setHighlightedSkillId(null);
-      }
-
-      const ownProfilePath = dashboardSectionPath('profile');
-      if (typeof window !== 'undefined' && ownProfilePath) {
-        const url = `${ownProfilePath}${
-          highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
-        }`;
-        window.history.pushState(withProfileOriginEntry(null), '', url);
-      }
-    };
-
-    window.addEventListener('goToMyProfile', handler as EventListener);
-    return () => {
-      window.removeEventListener('goToMyProfile', handler as EventListener);
-    };
-  }, [
-    setActiveModule,
-    setIsRightSidebarOpen,
-    setActiveRightItem,
-    setIsMobileMenuOpen,
-    setIsSearchOpen,
-    setIsNotificationsPanelOpen,
-    userProfile,
-    highlighting,
-    user?.id,
-    user?.slug,
-  ]);
-
-  useEffect(() => {
-    const onOpen = () => setIsMobileOfferDetailOpen(true);
-    const onClose = () => setIsMobileOfferDetailOpen(false);
-
-    window.addEventListener(PROFILE_OFFER_DETAIL_OPEN_EVENT, onOpen);
-    window.addEventListener(PROFILE_OFFER_DETAIL_CLOSE_EVENT, onClose);
-    return () => {
-      window.removeEventListener(PROFILE_OFFER_DETAIL_OPEN_EVENT, onOpen);
-      window.removeEventListener(PROFILE_OFFER_DETAIL_CLOSE_EVENT, onClose);
-    };
-  }, []);
+    setIsMobileOfferDetailOpen,
+  });
 
   const dashboardLoadingScreen = (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
