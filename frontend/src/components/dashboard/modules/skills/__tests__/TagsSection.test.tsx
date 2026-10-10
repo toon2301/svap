@@ -159,3 +159,118 @@ describe('TagsSection – desktop', () => {
     expect(screen.queryByLabelText('Pridať tag')).not.toBeInTheDocument();
   });
 });
+
+// ──────────────────────────────────────────────
+// Synchronizácia s hodnotou od rodiča
+// ──────────────────────────────────────────────
+describe('TagsSection – synchronizácia s hodnotou od rodiča', () => {
+  // Okno úpravy ponuky sa otvorí s prázdnym zoznamom a uložené tagy mu rodič
+  // doplní až po prvom vykreslení.
+  it('zobrazí tagy, ktoré prídu v props až po prvom vykreslení', () => {
+    setInnerWidth(1280);
+    const { rerender } = render(<TagsSection tags={[]} onTagsChange={jest.fn()} isOpen />);
+
+    rerender(<TagsSection tags={['alfa', 'beta']} onTagsChange={jest.fn()} isOpen />);
+
+    expect(screen.getByText(/#alfa/)).toBeInTheDocument();
+    expect(screen.getByText(/#beta/)).toBeInTheDocument();
+  });
+
+  it('po oneskorenom príchode tagov pridanie nového ponechá pôvodné', () => {
+    setInnerWidth(1280);
+    const onChange = jest.fn();
+    const { rerender } = render(<TagsSection tags={[]} onTagsChange={onChange} isOpen />);
+    rerender(<TagsSection tags={['alfa', 'beta']} onTagsChange={onChange} isOpen />);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'gama' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith(['alfa', 'beta', 'gama']);
+    expect(screen.getByText(/#alfa/)).toBeInTheDocument();
+    expect(screen.getByText(/#gama/)).toBeInTheDocument();
+  });
+
+  it('po oneskorenom príchode tagov odstránenie jedného pošle rodičovi ostatné', () => {
+    setInnerWidth(1280);
+    const onChange = jest.fn();
+    const { rerender } = render(<TagsSection tags={[]} onTagsChange={onChange} isOpen />);
+    rerender(<TagsSection tags={['alfa', 'beta']} onTagsChange={onChange} isOpen />);
+
+    fireEvent.click(screen.getByLabelText('Odstrániť tag alfa'));
+
+    expect(onChange).toHaveBeenCalledWith(['beta']);
+    expect(screen.queryByText(/#alfa/)).not.toBeInTheDocument();
+  });
+
+  it('zmena zoznamu rodičom sa prejaví aj pri odobratí tagu', () => {
+    setInnerWidth(1280);
+    const { rerender } = render(<TagsSection tags={['alfa', 'beta']} onTagsChange={jest.fn()} isOpen />);
+
+    rerender(<TagsSection tags={['alfa']} onTagsChange={jest.fn()} isOpen />);
+
+    expect(screen.getByText(/#alfa/)).toBeInTheDocument();
+    expect(screen.queryByText(/#beta/)).not.toBeInTheDocument();
+  });
+
+  it('zmena obsahu pri rovnakom počte tagov sa prejaví', () => {
+    setInnerWidth(1280);
+    const { rerender } = render(<TagsSection tags={['alfa', 'beta']} onTagsChange={jest.fn()} isOpen />);
+
+    rerender(<TagsSection tags={['alfa', 'gama']} onTagsChange={jest.fn()} isOpen />);
+
+    expect(screen.getByText(/#gama/)).toBeInTheDocument();
+    expect(screen.queryByText(/#beta/)).not.toBeInTheDocument();
+  });
+
+  it('zmena poradia od rodiča sa prejaví v zozname', () => {
+    setInnerWidth(1280);
+    const { container, rerender } = render(
+      <TagsSection tags={['alfa', 'beta']} onTagsChange={jest.fn()} isOpen />,
+    );
+
+    rerender(<TagsSection tags={['beta', 'alfa']} onTagsChange={jest.fn()} isOpen />);
+
+    const shown = Array.from(container.querySelectorAll('.skill-modal-tags > span')).map((el) =>
+      (el.textContent ?? '').replace('×', ''),
+    );
+    expect(shown).toEqual(['#beta', '#alfa']);
+  });
+
+  it('pridaný tag nezanikne ani pri ďalšom vykreslení po príchode tagov od rodiča', () => {
+    setInnerWidth(1280);
+    const { rerender } = render(<TagsSection tags={[]} onTagsChange={jest.fn()} isOpen />);
+    rerender(<TagsSection tags={['alfa']} onTagsChange={jest.fn()} isOpen />);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'gama' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: 'Enter' });
+    rerender(<TagsSection tags={['alfa']} onTagsChange={jest.fn()} isOpen />);
+
+    expect(screen.getByText(/#alfa/)).toBeInTheDocument();
+    expect(screen.getByText(/#gama/)).toBeInTheDocument();
+  });
+
+  it('nové pole s rovnakým obsahom nič nezmení a nič nepošle rodičovi', () => {
+    setInnerWidth(1280);
+    const onChange = jest.fn();
+    const { rerender } = render(<TagsSection tags={['alfa', 'beta']} onTagsChange={onChange} isOpen />);
+
+    rerender(<TagsSection tags={['alfa', 'beta']} onTagsChange={onChange} isOpen />);
+
+    expect(screen.getByText(/#alfa/)).toBeInTheDocument();
+    expect(screen.getByText(/#beta/)).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  // Lokálna kópia existuje kvôli okamžitej odozve: pridaný tag je vidieť hneď,
+  // aj keď rodič nový zoznam zatiaľ nepošle späť.
+  it('tag pridaný používateľom ostane vidieť, kým rodič nepošle nový zoznam', () => {
+    setInnerWidth(1280);
+    const { rerender } = render(<TagsSection tags={['alfa']} onTagsChange={jest.fn()} isOpen />);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'gama' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: 'Enter' });
+    rerender(<TagsSection tags={['alfa']} onTagsChange={jest.fn()} isOpen />);
+
+    expect(screen.getByText(/#gama/)).toBeInTheDocument();
+  });
+});
