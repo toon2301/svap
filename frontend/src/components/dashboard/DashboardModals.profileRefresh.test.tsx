@@ -187,6 +187,97 @@ describe('okno úpravy ponuky – obnova zoznamu ponúk na profile po zmene foti
     expect(afterFirstDelete.filter((entry) => entry === 'event')).toHaveLength(1);
   });
 
+  // Okno maže fotky po jednej za sebou. Obnovenie profilu po každej z nich by mohlo odísť,
+  // kým sa ešte maže ďalšia (načítanie so zastaraným zoznamom by potom mohlo skončiť
+  // posledné a vrátiť zmazané fotky), preto smie odísť jedno až po celej sérii.
+  it('pri viacerých pomalých zmazaniach neposiela čiastočné obnovenia, ale jedno po celej sérii', async () => {
+    const skillsState = createSkillsState(editedSkill());
+    (skillsState.handleRemoveSkillImage as jest.Mock).mockImplementation(async (_skillId, imageId) => {
+      // Každé zmazanie trvá dlhšie, než je čakanie na zlúčenie obnovení (300 ms).
+      await new Promise((resolve) => setTimeout(resolve, 450));
+      log.push(`delete:${imageId}`);
+      return [];
+    });
+    renderEditWindow(skillsState);
+
+    fireEvent.click(screen.getAllByLabelText('Odstrániť existujúcu fotku')[0]);
+    fireEvent.click(screen.getAllByLabelText('Odstrániť existujúcu fotku')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Aktualizovať' }));
+
+    await waitFor(
+      () => {
+        const lastDeleted = log.indexOf('delete:2');
+        expect(lastDeleted).toBeGreaterThan(-1);
+        expect(log.lastIndexOf('event')).toBeGreaterThan(lastDeleted);
+      },
+      { timeout: 4000 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    const firstDeleted = log.indexOf('delete:1');
+    const lastDeleted = log.indexOf('delete:2');
+    expect(log.slice(firstDeleted, lastDeleted).filter((entry) => entry === 'event')).toHaveLength(0);
+    expect(log.slice(firstDeleted).filter((entry) => entry === 'event')).toHaveLength(1);
+  });
+
+  it('ak posledné zmazanie zlyhá, obnovenie odíde až po celej sérii', async () => {
+    const skillsState = createSkillsState(editedSkill());
+    (skillsState.handleRemoveSkillImage as jest.Mock).mockImplementation(async (_skillId, imageId) => {
+      if (imageId === 1) {
+        log.push('delete:1');
+        return [];
+      }
+      await new Promise((resolve) => setTimeout(resolve, 450));
+      log.push('delete:2');
+      throw new Error('Odstránenie obrázka zlyhalo');
+    });
+    renderEditWindow(skillsState);
+
+    fireEvent.click(screen.getAllByLabelText('Odstrániť existujúcu fotku')[0]);
+    fireEvent.click(screen.getAllByLabelText('Odstrániť existujúcu fotku')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Aktualizovať' }));
+
+    await waitFor(
+      () => {
+        const lastAttempt = log.indexOf('delete:2');
+        expect(lastAttempt).toBeGreaterThan(-1);
+        expect(log.lastIndexOf('event')).toBeGreaterThan(lastAttempt);
+      },
+      { timeout: 4000 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    expect(log.slice(log.indexOf('delete:1'), log.indexOf('delete:2')).filter((entry) => entry === 'event')).toHaveLength(0);
+    expect(log.slice(log.indexOf('delete:1')).filter((entry) => entry === 'event')).toHaveLength(1);
+  });
+
+  it('ak prvé zmazanie zlyhá a druhé prejde, obnovenie odíde raz po druhom', async () => {
+    const skillsState = createSkillsState(editedSkill());
+    (skillsState.handleRemoveSkillImage as jest.Mock).mockImplementation(async (_skillId, imageId) => {
+      if (imageId === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        log.push('delete:1');
+        throw new Error('Odstránenie obrázka zlyhalo');
+      }
+      log.push('delete:2');
+      return [];
+    });
+    renderEditWindow(skillsState);
+
+    fireEvent.click(screen.getAllByLabelText('Odstrániť existujúcu fotku')[0]);
+    fireEvent.click(screen.getAllByLabelText('Odstrániť existujúcu fotku')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Aktualizovať' }));
+
+    await waitFor(
+      () => {
+        const lastDeleted = log.indexOf('delete:2');
+        expect(lastDeleted).toBeGreaterThan(-1);
+        expect(log.lastIndexOf('event')).toBeGreaterThan(lastDeleted);
+      },
+      { timeout: 4000 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    expect(log.slice(log.indexOf('delete:1')).filter((entry) => entry === 'event')).toHaveLength(1);
+  });
+
   it('ak zmazanie fotky zlyhá, žiadne ďalšie obnovenie neodíde', async () => {
     const skillsState = createSkillsState(editedSkill());
     (skillsState.handleRemoveSkillImage as jest.Mock).mockImplementation(async (_skillId, imageId) => {

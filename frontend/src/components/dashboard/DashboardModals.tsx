@@ -12,7 +12,10 @@ import { uploadOfferImage } from '../../lib/offerImageUpload';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
 import { startBoundedImageRefresh } from './hooks/offerImageRefresh';
 import { dispatchProfileOffersRefresh } from './modules/profile/profileOfferEvents';
-import { scheduleProfileOffersRefresh } from './modules/profile/profileOffersRefresh';
+import {
+  removeOfferPhotoAndRefreshProfile,
+  scheduleProfileOffersRefresh,
+} from './modules/profile/profileOffersRefresh';
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -53,7 +56,9 @@ export default function DashboardModals({
 }: DashboardModalsProps) {
   const { refreshUser } = useAuth();
   // Fotky sa dokončujú aj po zavretí okna (zmazanie až po uložení, nové čakajú na
-  // spracovanie), preto profil po nich dostane ešte jedno obnovenie zoznamu ponúk.
+  // spracovanie), preto profil po nich dostane ešte jedno obnovenie zoznamu ponúk
+  // (po zmazaní fotiek cez `removeOfferPhotoAndRefreshProfile`, po nových fotkách
+  // cez `refreshProfileOffers`).
   const refreshProfileOffers = () => scheduleProfileOffersRefresh(user?.id);
   const {
     selectedSkillsCategory,
@@ -436,11 +441,10 @@ export default function DashboardModals({
           initialIsHidden={selectedSkillsCategory.is_hidden || false}
           onRemoveExistingImage={
             selectedSkillsCategory.id
-              ? async (imageId) => {
-                  const images = await handleRemoveSkillImage(selectedSkillsCategory.id!, imageId);
-                  refreshProfileOffers();
-                  return images;
-                }
+              ? (imageId) =>
+                  removeOfferPhotoAndRefreshProfile(user?.id, () =>
+                    handleRemoveSkillImage(selectedSkillsCategory.id!, imageId),
+                  )
               : undefined
           }
           onLocationSave={
