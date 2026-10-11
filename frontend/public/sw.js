@@ -1,4 +1,5 @@
-const CACHE_VERSION = 'v9';
+// v10: odpovede RSC sa už necachujú (pozri `fetch`); nová verzia zahodí staré cache s ich zastaranými kópiami.
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `svaply-cache-${CACHE_VERSION}`;
 const STATIC_CACHE = `svaply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `svaply-dynamic-${CACHE_VERSION}`;
@@ -262,6 +263,20 @@ self.addEventListener('fetch', (event) => {
     request.method === 'GET' &&
     url.origin === location.origin &&
     url.pathname.startsWith('/media/avatars/')
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Odpoveď Next.js (RSC: hlavička `RSC: 1` a parameter `?_rsc=`) nesie id
+  // buildu, z ktorého prišla. Z cache-first (bez revalidácie) by ju prehliadač
+  // po nasadení novej verzie dostal znova, Next by ju kvôli inému buildu
+  // odmietol a klientsku navigáciu zmenil na tvrdé načítanie stránky – pri
+  // každej takto uloženej adrese a natrvalo. Preto vždy zo siete.
+  if (
+    request.method === 'GET' &&
+    url.origin === location.origin &&
+    (request.headers.get('rsc') === '1' || url.searchParams.has('_rsc'))
   ) {
     event.respondWith(fetch(request));
     return;
