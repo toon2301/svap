@@ -6,6 +6,7 @@ import { api, endpoints } from '@/lib/api';
 import { uploadOfferImage } from '@/lib/offerImageUpload';
 import { isValidOfferDistrictSelection } from '@/shared/districtRegistry';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
+import { scheduleProfileOffersRefresh } from '../modules/profile/profileOffersRefresh';
 import {
   clearSkillsDescribeReturnModule,
   getSkillsDescribeReturnModule,
@@ -217,6 +218,9 @@ export function useSkillSaveHandler({
       let savedSkill: DashboardSkill;
       const newImages = Array.isArray(skill._newImages) ? skill._newImages : [];
       let didCreateSkill = false;
+      // Nové fotky čakajú na spracovanie, preto profil po skončení sledovania ich stavu
+      // dostane ešte jedno obnovenie zoznamu ponúk.
+      const refreshProfileOffers = () => scheduleProfileOffersRefresh(ownerUserIdForOffersCache);
 
       if (skill.id) {
         // Update existujúcej karty
@@ -245,7 +249,7 @@ export function useSkillSaveHandler({
           }
           const hasPending = (savedSkill.images ?? []).some((img) => img.status === 'pending');
           if (hasPending) {
-            startBoundedImageRefresh(skill.id, fetchSkillDetail, applySkillUpdate);
+            startBoundedImageRefresh(skill.id, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
           }
         }
       } else {
@@ -301,7 +305,7 @@ export function useSkillSaveHandler({
           }
           const hasPending = (savedSkill.images ?? []).some((img) => img.status === 'pending');
           if (hasPending) {
-            startBoundedImageRefresh(savedSkillId, fetchSkillDetail, applySkillUpdate);
+            startBoundedImageRefresh(savedSkillId, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
           }
         }
       }

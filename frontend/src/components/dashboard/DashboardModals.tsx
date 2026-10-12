@@ -12,6 +12,10 @@ import { uploadOfferImage } from '../../lib/offerImageUpload';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
 import { startBoundedImageRefresh } from './hooks/offerImageRefresh';
 import { dispatchProfileOffersRefresh } from './modules/profile/profileOfferEvents';
+import {
+  removeOfferPhotoAndRefreshProfile,
+  scheduleProfileOffersRefresh,
+} from './modules/profile/profileOffersRefresh';
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -51,6 +55,11 @@ export default function DashboardModals({
   onCreatedSkillSaved,
 }: DashboardModalsProps) {
   const { refreshUser } = useAuth();
+  // Fotky sa dokončujú aj po zavretí okna (zmazanie až po uložení, nové čakajú na
+  // spracovanie), preto profil po nich dostane ešte jedno obnovenie zoznamu ponúk
+  // (po zmazaní fotiek cez `removeOfferPhotoAndRefreshProfile`, po nových fotkách
+  // cez `refreshProfileOffers`).
+  const refreshProfileOffers = () => scheduleProfileOffersRefresh(user?.id);
   const {
     selectedSkillsCategory,
     setSelectedSkillsCategory,
@@ -216,7 +225,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             updatedLocal = await fetchSkillDetail(data.id);
             if ((updatedLocal.images ?? []).some((img) => img.status === 'pending')) {
-              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
             }
           }
           setCustomCategories((prev) => {
@@ -232,7 +241,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
             if ((created.images ?? []).some((img) => img.status === 'pending')) {
-              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
             }
           }
           didCreateSkill = true;
@@ -268,7 +277,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             updated = await fetchSkillDetail(data.id);
             if ((updated.images ?? []).some((img) => img.status === 'pending')) {
-              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
             }
           }
           applySkillUpdate(updated);
@@ -284,7 +293,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
             if ((created.images ?? []).some((img) => img.status === 'pending')) {
-              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
             }
           }
           didCreateSkill = true;
@@ -299,7 +308,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
             if ((created.images ?? []).some((img) => img.status === 'pending')) {
-              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate, refreshProfileOffers);
             }
           }
           didCreateSkill = true;
@@ -432,7 +441,10 @@ export default function DashboardModals({
           initialIsHidden={selectedSkillsCategory.is_hidden || false}
           onRemoveExistingImage={
             selectedSkillsCategory.id
-              ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
+              ? (imageId) =>
+                  removeOfferPhotoAndRefreshProfile(user?.id, () =>
+                    handleRemoveSkillImage(selectedSkillsCategory.id!, imageId),
+                  )
               : undefined
           }
           onLocationSave={
