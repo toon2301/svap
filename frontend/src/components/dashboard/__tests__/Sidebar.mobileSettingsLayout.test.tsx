@@ -44,8 +44,12 @@ const list = () => document.querySelector<HTMLElement>('[data-mobile-settings-li
 const footer = () => document.querySelector<HTMLElement>('[data-mobile-settings-footer]');
 const wrapper = () => document.querySelector<HTMLElement>('[data-mobile-settings-scroll]');
 
-/** Odstup pod lištou „Viac": miesto pre plávajúcu lištu Safari na iPhone (nie veľká prázdna plocha). */
-const FOOTER_CLEARANCE = 'pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+3.5rem))]';
+/**
+ * Pod lištou „Viac" nie je žiadny pevný odstup: Safari 26 na iPhone ukončuje rozloženie stránky nad svojou
+ * plávajúcou lištou (na jeho fotke 754 px z 852), takže lišta má sedieť úplne dole. Bezpečná oblasť dole sa
+ * pridáva len v nainštalovanej appke (PWA), kde nie je žiadna lišta prehliadača.
+ */
+const FOOTER_STANDALONE_PADDING = '[@media(display-mode:standalone)]:pb-[env(safe-area-inset-bottom,0px)]';
 
 describe('Sidebar – mobilné Nastavenia: pevné „Viac"', () => {
   it('všetky riadky nastavení sú v posúvanom zozname', () => {
@@ -85,12 +89,11 @@ describe('Sidebar – mobilné Nastavenia: pevné „Viac"', () => {
     expect(within(wrapper()!).getByRole('button', { name: 'Viac' })).toBeInTheDocument();
   });
 
-  it('spodok je pod zoznamom a drží odstup od plávajúcej lišty prehliadača', () => {
+  it('spodok je pod zoznamom', () => {
     renderMobileSettings();
 
     const children = Array.from(wrapper()!.children);
     expect(children.indexOf(footer()!)).toBeGreaterThan(children.indexOf(list()!));
-    expect(footer()!.className).toContain(FOOTER_CLEARANCE);
   });
 
   it('„Viac" po kliknutí otvorí ponuku s odhlásením', () => {
@@ -117,19 +120,19 @@ describe('Sidebar – mobilné Nastavenia: pevné „Viac"', () => {
 });
 
 /**
- * Nízke okno (na šírku, rozdelená obrazovka, priblíženie): hlavička má ~69 px a pevný spodok ~205 px
- * (odstup 7 rem + „Viac" s rámom), takže pod ~274 px výšky by sa zoznam zmenšil na nulu a riadky by sa
- * nedali dosiahnuť (aj nad touto hranicou ostáva na okne na šírku miesto len pre jeden riadok).
+ * Nízke okno (na šírku, rozdelená obrazovka, priblíženie): hlavička a pevná lišta s „Viac" majú po 69 px,
+ * takže na okne na šírku ostáva zoznamu len ~2-3 riadky a pri veľmi nízkom okne by sa zmenšil až na nulu
+ * (pri pôvodnom 205 px spodku sa to stalo pod ~274 px výšky a riadky sa nedali dosiahnuť).
  * Pod výškou okna 28 rem sa preto zoznam prestane posúvať sám a posúva sa celý obal so spodkom na
  * konci, ako pred pevným spodkom. Media query sa v jsdom nevyhodnotí, preto sa pinujú triedy;
  * skutočné správanie meria beh v prehliadači.
  */
 const SHORT_VIEWPORT = '[@media(max-height:28rem)]';
 
-/** Hranice výšky okna (`[@media(...)]`), ktoré prvok používa vo svojich triedach. */
+/** Hranice výšky okna (`[@media(max-height:...)]`), ktoré prvok používa vo svojich triedach. */
 const heightQueries = (element: HTMLElement) =>
   Array.from(element.classList)
-    .filter((className) => className.startsWith('[@media('))
+    .filter((className) => className.startsWith('[@media(max-height:'))
     .map((className) => className.slice(0, className.indexOf(']:') + 1));
 
 describe('Sidebar – mobilné Nastavenia: nízke okno', () => {
@@ -151,18 +154,18 @@ describe('Sidebar – mobilné Nastavenia: nízke okno', () => {
     expect(new Set([...heightQueries(wrapper()!), ...heightQueries(list()!)])).toEqual(new Set([SHORT_VIEWPORT]));
   });
 
-  it('pevný spodok sa na nízkom okne nemení a drží odstup od lišty prehliadača', () => {
+  it('pevný spodok sa na nízkom okne nemení', () => {
     renderMobileSettings();
 
     expect(heightQueries(footer()!)).toEqual([]);
     expect(footer()).toHaveClass('shrink-0');
-    expect(footer()!.className).toContain(FOOTER_CLEARANCE);
   });
 });
 
 /**
  * Spodná lišta s „Viac" má byť tenká ako hlavička hore (1 px rámik + 12 + 44 + 12 = 69 px, hlavička
- * 16 + 36 + 16 + 1 = 69 px), nie 93 px blok so 7 rem prázdneho miesta pod ním (zmerané v prehliadači).
+ * 16 + 36 + 16 + 1 = 69 px) a sedieť úplne dole: nie 93 px blok so 112 px prázdneho miesta pod ním ani
+ * 88 px odstup (Safari 26 ukončuje rozloženie nad svojou lištou, takže odstup lištu len zdvíhal).
  * Rozmery sa v jsdom nedajú zmerať, preto sa pinujú triedy; skutočné čísla meria beh v prehliadači.
  */
 describe('Sidebar – mobilné Nastavenia: tenká spodná lišta', () => {
@@ -175,10 +178,11 @@ describe('Sidebar – mobilné Nastavenia: tenká spodná lišta', () => {
     expect(within(bar).getByRole('button', { name: 'Viac' })).toBeInTheDocument();
   });
 
-  it('pod lištou je len odstup od plávajúcej lišty prehliadača, nie 7 rem', () => {
+  it('lišta sedí úplne dole: žiadny pevný odstup, bezpečná oblasť len v nainštalovanej appke', () => {
     renderMobileSettings();
 
-    expect(footer()!.className).toContain(FOOTER_CLEARANCE);
-    expect(footer()!.className).not.toContain('7rem');
+    expect(footer()).toHaveClass('shrink-0', FOOTER_STANDALONE_PADDING);
+    expect(footer()!.className).not.toMatch(/(^|\s)pb-/);
+    expect(footer()!.className).not.toMatch(/\d(\.\d+)?rem/);
   });
 });

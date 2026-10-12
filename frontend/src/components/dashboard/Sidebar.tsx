@@ -419,9 +419,10 @@ export default function Sidebar({
           >
             {mobileSettingsItems}
           </div>
-          {/* Tenká lišta s „Viac" (výška ako hlavička); odstup pod ňou drží lištu nad plávajúcou lištou Safari. */}
+          {/* Tenká lišta s „Viac" (výška ako hlavička) sedí úplne dole: Safari 26 na iPhone ukončuje rozloženie
+              stránky nad svojou plávajúcou lištou, preto bez odstupu; bezpečná oblasť len v nainštalovanej appke. */}
           <div
-            className="shrink-0 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+3.5rem))]"
+            className="shrink-0 [@media(display-mode:standalone)]:pb-[env(safe-area-inset-bottom,0px)]"
             data-mobile-settings-footer
           >
             <MobileUtilityMenu onBugReportOpen={onClose} onLogout={onLogout} />
