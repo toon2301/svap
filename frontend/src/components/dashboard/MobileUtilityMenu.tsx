@@ -126,7 +126,7 @@ export default function MobileUtilityMenu({ onBugReportOpen, onLogout }: MobileU
     : null;
 
   return (
-    <div className="border-t border-gray-200 p-6 dark:border-gray-800">
+    <div className="border-t border-gray-200 px-6 py-3 dark:border-gray-800">
       <button
         ref={triggerRef}
         type="button"

@@ -44,6 +44,9 @@ const list = () => document.querySelector<HTMLElement>('[data-mobile-settings-li
 const footer = () => document.querySelector<HTMLElement>('[data-mobile-settings-footer]');
 const wrapper = () => document.querySelector<HTMLElement>('[data-mobile-settings-scroll]');
 
+/** Odstup pod lištou „Viac": miesto pre plávajúcu lištu Safari na iPhone (nie veľká prázdna plocha). */
+const FOOTER_CLEARANCE = 'pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+3.5rem))]';
+
 describe('Sidebar – mobilné Nastavenia: pevné „Viac"', () => {
   it('všetky riadky nastavení sú v posúvanom zozname', () => {
     renderMobileSettings();
@@ -82,12 +85,12 @@ describe('Sidebar – mobilné Nastavenia: pevné „Viac"', () => {
     expect(within(wrapper()!).getByRole('button', { name: 'Viac' })).toBeInTheDocument();
   });
 
-  it('spodok je pod zoznamom a drží odstup od spodnej lišty prehliadača', () => {
+  it('spodok je pod zoznamom a drží odstup od plávajúcej lišty prehliadača', () => {
     renderMobileSettings();
 
     const children = Array.from(wrapper()!.children);
     expect(children.indexOf(footer()!)).toBeGreaterThan(children.indexOf(list()!));
-    expect(footer()!.className).toContain('pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]');
+    expect(footer()!.className).toContain(FOOTER_CLEARANCE);
   });
 
   it('„Viac" po kliknutí otvorí ponuku s odhlásením', () => {
@@ -153,6 +156,29 @@ describe('Sidebar – mobilné Nastavenia: nízke okno', () => {
 
     expect(heightQueries(footer()!)).toEqual([]);
     expect(footer()).toHaveClass('shrink-0');
-    expect(footer()!.className).toContain('pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]');
+    expect(footer()!.className).toContain(FOOTER_CLEARANCE);
+  });
+});
+
+/**
+ * Spodná lišta s „Viac" má byť tenká ako hlavička hore (1 px rámik + 12 + 44 + 12 = 69 px, hlavička
+ * 16 + 36 + 16 + 1 = 69 px), nie 93 px blok so 7 rem prázdneho miesta pod ním (zmerané v prehliadači).
+ * Rozmery sa v jsdom nedajú zmerať, preto sa pinujú triedy; skutočné čísla meria beh v prehliadači.
+ */
+describe('Sidebar – mobilné Nastavenia: tenká spodná lišta', () => {
+  it('lišta s „Viac" má rámik hore a úzke zvislé odsadenie (nie p-6)', () => {
+    renderMobileSettings();
+
+    const bar = footer()!.firstElementChild as HTMLElement;
+    expect(bar).toHaveClass('border-t', 'px-6', 'py-3');
+    expect(bar).not.toHaveClass('p-6');
+    expect(within(bar).getByRole('button', { name: 'Viac' })).toBeInTheDocument();
+  });
+
+  it('pod lištou je len odstup od plávajúcej lišty prehliadača, nie 7 rem', () => {
+    renderMobileSettings();
+
+    expect(footer()!.className).toContain(FOOTER_CLEARANCE);
+    expect(footer()!.className).not.toContain('7rem');
   });
 });

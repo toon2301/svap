@@ -419,9 +419,9 @@ export default function Sidebar({
           >
             {mobileSettingsItems}
           </div>
-          {/* Odstup dole drží „Viac" nad spodnou lištou prehliadača. */}
+          {/* Tenká lišta s „Viac" (výška ako hlavička); odstup pod ňou drží lištu nad plávajúcou lištou Safari. */}
           <div
-            className="shrink-0 pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]"
+            className="shrink-0 pb-[max(5.5rem,calc(env(safe-area-inset-bottom,0px)+3.5rem))]"
             data-mobile-settings-footer
           >
             <MobileUtilityMenu onBugReportOpen={onClose} onLogout={onLogout} />
