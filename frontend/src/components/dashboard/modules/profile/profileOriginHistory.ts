@@ -84,15 +84,10 @@ export function withProfileOriginStep(historyState: unknown): Record<string, unk
 }
 
 /**
- * Ako dlho smie čakajúci pôvod čakať na príchod profilu.
- *
- * Navigácia routerom trvá, kým sa stiahne stránka profilu; po pomalej sieti
- * (alebo neúspešnej navigácii) by sa inak čakajúci pôvod držal donekonečna.
+ * Profil, ktorý appka otvára cez router a ešte nemá svoj záznam: cieľová adresa
+ * a adresa, z ktorej sa vyšlo (kým navigácia nedorazí, stránka ostáva na nej).
  */
-const PENDING_ORIGIN_TTL_MS = 15_000;
-
-/** Profil, ktorý appka otvára cez router a ešte nemá svoj záznam: adresa a okamih žiadosti. */
-let pendingOrigin: { path: string; markedAt: number } | null = null;
+let pendingOrigin: { path: string; fromPath: string } | null = null;
 
 /**
  * Otvorenie profilu cez `router.push` – pôvod sa doplní až po príchode.
@@ -102,7 +97,10 @@ let pendingOrigin: { path: string; markedAt: number } | null = null;
  * detail portfólia (`openPortfolioDetail` / `adoptPortfolioDetailOrigin`).
  */
 export function markProfileOriginPending(path: string): void {
-  pendingOrigin = { path, markedAt: Date.now() };
+  pendingOrigin = {
+    path,
+    fromPath: typeof window === 'undefined' ? '' : window.location.pathname,
+  };
 }
 
 /**
@@ -112,19 +110,23 @@ export function markProfileOriginPending(path: string): void {
  * hneď, `router.push` dokončí navigáciu až po stiahnutí stránky), takže sa
  * profil prvýkrát zobrazí na adrese východiskovej stránky. Pri takom skorom
  * volaní sa preto čakajúci pôvod NEzahadzuje – prevezme ho až záznam, ktorý
- * má adresu profilu (po navigácii sa profil zobrazí znova). Aby profil otvorený
- * odkazom neprevzal pôvod omylom, čakajúci pôvod platí len krátko a prevzatie
- * je jednorazové.
+ * má adresu profilu (po navigácii sa profil zobrazí znova).
+ *
+ * Čakajúci pôvod nestarne podľa hodín: po pomalej sieti alebo s appkou na
+ * pozadí môže navigácia trvať aj minúty. Platí, kým je stránka na východiskovej
+ * adrese. Ak sa profil zobrazí na inej (tretej) adrese, navigáciu zrušila alebo
+ * nahradila iná a pôvod zaniká – inak by si ho mohol privlastniť profil
+ * otvorený inou cestou. Prevzatie je jednorazové.
  */
 export function adoptProfileOrigin(): void {
   if (typeof window === 'undefined') return;
   const pending = pendingOrigin;
   if (!pending) return;
-  if (Date.now() - pending.markedAt > PENDING_ORIGIN_TTL_MS) {
-    pendingOrigin = null;
+  const currentPath = window.location.pathname;
+  if (currentPath !== pending.path) {
+    if (currentPath !== pending.fromPath) pendingOrigin = null;
     return;
   }
-  if (window.location.pathname !== pending.path) return;
   pendingOrigin = null;
   // Záznam už pôvod niesť môže (návrat dopredu na ten istý profil) – vtedy sa
   // hĺbka neprepisuje, patrí tomu záznamu.

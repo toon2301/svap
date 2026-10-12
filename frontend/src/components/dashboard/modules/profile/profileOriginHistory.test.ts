@@ -195,41 +195,77 @@ describe('prevzatie pôvodu po navigácii routerom', () => {
     go.mockRestore();
   });
 
-  describe('platnosť čakajúceho pôvodu', () => {
+  // Router doručí adresu profilu, až keď stiahne stránku – po pomalej sieti alebo s appkou
+  // na pozadí to trvá aj minúty. Čakajúci pôvod preto nesmie starnúť podľa hodín: platí,
+  // kým je stránka na východiskovej adrese, a zaniká, až keď navigáciu zruší alebo
+  // nahradí iná (profil sa zobrazí na tretej adrese).
+  describe('pomalá a zrušená navigácia', () => {
     afterEach(() => {
       jest.useRealTimers();
     });
 
-    it('čakajúci pôvod po uplynutí platnosti zanikne', () => {
+    it('pomalá navigácia: pôvod sa prevezme aj po dlhom čakaní na adresu', () => {
       jest.useFakeTimers();
+      window.history.replaceState(null, '', '/dashboard/search');
       markProfileOriginPending('/dashboard/users/jana');
-
-      jest.advanceTimersByTime(16_000);
       adoptProfileOrigin();
 
-      expect(readProfileOriginDepth(window.history.state)).toBeNull();
-    });
-
-    it('čakajúci pôvod platí ešte krátko pred uplynutím platnosti', () => {
-      jest.useFakeTimers();
-      markProfileOriginPending('/dashboard/users/jana');
-
-      jest.advanceTimersByTime(14_000);
+      jest.advanceTimersByTime(10 * 60_000);
+      window.history.pushState(null, '', '/dashboard/users/jana');
       adoptProfileOrigin();
 
       expect(readProfileOriginDepth(window.history.state)).toBe(0);
     });
 
-    it('po uplynutí platnosti sa nový čakajúci pôvod prijme znova', () => {
+    it('prvé volanie až po dlhom čakaní pôvod nezahodí, kým adresa nedorazí', () => {
       jest.useFakeTimers();
+      window.history.replaceState(null, '', '/dashboard/search');
+      markProfileOriginPending('/dashboard/users/jana');
+
+      jest.advanceTimersByTime(10 * 60_000);
+      adoptProfileOrigin();
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('východisková adresa sa porovnáva bez query (na vyhľadávaní uniká ?tab=offers)', () => {
+      window.history.replaceState(null, '', '/dashboard/search?tab=offers');
+      markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('nová žiadosť si zapamätá aj novú východiskovú adresu', () => {
+      window.history.replaceState(null, '', '/dashboard/search');
       markProfileOriginPending('/dashboard/users/peter');
-      jest.advanceTimersByTime(16_000);
-      adoptProfileOrigin();
-
+      // Používateľ otvorí profil zo stránky všetkých výsledkov na inej adrese.
+      window.history.replaceState(null, '', '/search');
       markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+      window.history.pushState(null, '', '/dashboard/users/jana');
       adoptProfileOrigin();
 
       expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('navigácia, ktorú nahradila iná adresa, čakajúci pôvod zruší', () => {
+      window.history.replaceState(null, '', '/dashboard/search');
+      markProfileOriginPending('/dashboard/users/jana');
+
+      // Používateľ medzitým odišiel inam: profil sa zobrazí na tretej adrese.
+      window.history.replaceState(null, '', '/dashboard/users/peter');
+      adoptProfileOrigin();
+      expect(readProfileOriginDepth(window.history.state)).toBeNull();
+
+      // Neskorší príchod na pôvodne čakajúcu adresu už pôvod nedostane – patril zrušenej navigácii.
+      window.history.replaceState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+      expect(readProfileOriginDepth(window.history.state)).toBeNull();
     });
   });
 
