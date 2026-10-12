@@ -15,7 +15,7 @@
  */
 
 import { dashboardProfilePath } from '../../components/dashboardRoutes';
-import { markProfileOriginPending } from './profileOriginHistory';
+import { cancelProfileOriginPending, markProfileOriginPending } from './profileOriginHistory';
 
 type ProfileRouter = { push: (url: string) => void };
 
@@ -52,12 +52,19 @@ export function openUserProfileFromSearch(
   const path = dashboardProfilePath(identifier);
   if (!path) return;
 
-  markProfileOriginPending(path);
+  const pendingRequestId = markProfileOriginPending(path);
 
   const { highlightSkillId } = options;
-  router.push(
-    highlightSkillId == null
-      ? path
-      : `${path}?highlight=${encodeURIComponent(String(highlightSkillId))}`,
-  );
+  try {
+    router.push(
+      highlightSkillId == null
+        ? path
+        : `${path}?highlight=${encodeURIComponent(String(highlightSkillId))}`,
+    );
+  } catch (error) {
+    // Navigácia sa nespustila, čakajúci pôvod nemá kto prevziať. Zruší sa len
+    // tá naša žiadosť (novšiu nesmie zmazať) a chyba ide ďalej ako doteraz.
+    cancelProfileOriginPending(pendingRequestId);
+    throw error;
+  }
 }

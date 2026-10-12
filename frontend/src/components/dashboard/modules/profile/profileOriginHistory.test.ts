@@ -8,6 +8,7 @@
 
 import {
   adoptProfileOrigin,
+  cancelProfileOriginPending,
   markProfileOriginPending,
   readProfileOriginDepth,
   resetProfileOriginPending,
@@ -266,6 +267,57 @@ describe('prevzatie pôvodu po navigácii routerom', () => {
       window.history.replaceState(null, '', '/dashboard/users/jana');
       adoptProfileOrigin();
       expect(readProfileOriginDepth(window.history.state)).toBeNull();
+    });
+  });
+
+  // `router.push` môže zlyhať ešte pred navigáciou (vyhodí chybu) – čakajúci pôvod potom nemá
+  // kto prevziať. Volajúci ho zruší číslom svojej žiadosti, aby nezmazal novšiu.
+  describe('zrušenie čakajúceho pôvodu', () => {
+    it('zrušená žiadosť pôvod nepripne', () => {
+      const requestId = markProfileOriginPending('/dashboard/users/jana');
+      cancelProfileOriginPending(requestId);
+
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBeNull();
+    });
+
+    it('zrušenie staršej žiadosti novšiu nezruší', () => {
+      const older = markProfileOriginPending('/dashboard/users/peter');
+      markProfileOriginPending('/dashboard/users/jana');
+
+      cancelProfileOriginPending(older);
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('každá žiadosť dostane nové číslo', () => {
+      const first = markProfileOriginPending('/dashboard/users/peter');
+      const second = markProfileOriginPending('/dashboard/users/peter');
+
+      expect(second).not.toBe(first);
+    });
+
+    it('zrušenie bez čakajúcej žiadosti nič nerobí', () => {
+      expect(() => cancelProfileOriginPending(12345)).not.toThrow();
+
+      markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('oneskorené zrušenie už prevzatej žiadosti novú nezruší', () => {
+      const first = markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      markProfileOriginPending('/dashboard/users/peter');
+      cancelProfileOriginPending(first);
+      window.history.replaceState(null, '', '/dashboard/users/peter');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
     });
   });
 

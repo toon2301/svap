@@ -84,10 +84,14 @@ export function withProfileOriginStep(historyState: unknown): Record<string, unk
 }
 
 /**
- * Profil, ktorý appka otvára cez router a ešte nemá svoj záznam: cieľová adresa
- * a adresa, z ktorej sa vyšlo (kým navigácia nedorazí, stránka ostáva na nej).
+ * Profil, ktorý appka otvára cez router a ešte nemá svoj záznam: číslo žiadosti,
+ * cieľová adresa a adresa, z ktorej sa vyšlo (kým navigácia nedorazí, stránka
+ * ostáva na nej).
  */
-let pendingOrigin: { path: string; fromPath: string } | null = null;
+let pendingOrigin: { requestId: number; path: string; fromPath: string } | null = null;
+
+/** Číslo poslednej žiadosti – zrušenie smie zmazať len tú svoju, nie novšiu. */
+let lastRequestId = 0;
 
 /**
  * Otvorenie profilu cez `router.push` – pôvod sa doplní až po príchode.
@@ -95,12 +99,28 @@ let pendingOrigin: { path: string; fromPath: string } | null = null;
  * `router.push` stav histórie neprijíma a záznam vzniká až po dokončení
  * navigácie, takže marker sa naň nedá pripnúť dopredu. Rovnaký postup používa
  * detail portfólia (`openPortfolioDetail` / `adoptPortfolioDetailOrigin`).
+ *
+ * Vracia číslo žiadosti: keď `router.push` zlyhá ešte pred navigáciou, volajúci
+ * ho odovzdá `cancelProfileOriginPending`.
  */
-export function markProfileOriginPending(path: string): void {
+export function markProfileOriginPending(path: string): number {
+  lastRequestId += 1;
   pendingOrigin = {
+    requestId: lastRequestId,
     path,
     fromPath: typeof window === 'undefined' ? '' : window.location.pathname,
   };
+  return lastRequestId;
+}
+
+/**
+ * Navigácia sa nespustila (`router.push` zlyhal): čakajúci pôvod nemá kto prevziať.
+ *
+ * Zruší sa len žiadosť s týmto číslom – novšia žiadosť (iný profil), ktorá ju
+ * medzitým nahradila, ostáva.
+ */
+export function cancelProfileOriginPending(requestId: number): void {
+  if (pendingOrigin?.requestId === requestId) pendingOrigin = null;
 }
 
 /**
