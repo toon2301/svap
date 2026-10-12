@@ -405,14 +405,22 @@ export default function Sidebar({
         </nav>
       )}
 
-      {/* Mobilné nastavenia – scrollovateľný obsah vrátane témy a odhlásenia */}
+      {/* Mobilné nastavenia – zoznam sa posúva medzi hlavičkou a pevným spodkom s „Viac" */}
       {isMobile && (
-        <div
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain elegant-scrollbar pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]"
-          data-mobile-settings-scroll
-        >
-          {mobileSettingsItems}
-          <MobileUtilityMenu onBugReportOpen={onClose} onLogout={onLogout} />
+        <div className="flex-1 min-h-0 flex flex-col" data-mobile-settings-scroll>
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain elegant-scrollbar"
+            data-mobile-settings-list
+          >
+            {mobileSettingsItems}
+          </div>
+          {/* Odstup dole drží „Viac" nad spodnou lištou prehliadača. */}
+          <div
+            className="shrink-0 pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]"
+            data-mobile-settings-footer
+          >
+            <MobileUtilityMenu onBugReportOpen={onClose} onLogout={onLogout} />
+          </div>
         </div>
       )}
 
