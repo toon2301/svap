@@ -405,11 +405,16 @@ export default function Sidebar({
         </nav>
       )}
 
-      {/* Mobilné nastavenia – zoznam sa posúva medzi hlavičkou a pevným spodkom s „Viac" */}
+      {/* Mobilné nastavenia – zoznam sa posúva medzi hlavičkou a pevným spodkom s „Viac".
+          Pod výškou okna 28 rem (na šírku, rozdelená obrazovka, priblíženie) by sa zoznam stlačil
+          na nulu, preto sa tam posúva celý obal a spodok je na jeho konci, ako pred pevným spodkom. */}
       {isMobile && (
-        <div className="flex-1 min-h-0 flex flex-col" data-mobile-settings-scroll>
+        <div
+          className="flex-1 min-h-0 flex flex-col overscroll-contain elegant-scrollbar [@media(max-height:28rem)]:overflow-y-auto"
+          data-mobile-settings-scroll
+        >
           <div
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain elegant-scrollbar"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain elegant-scrollbar [@media(max-height:28rem)]:flex-none [@media(max-height:28rem)]:overflow-visible"
             data-mobile-settings-list
           >
             {mobileSettingsItems}

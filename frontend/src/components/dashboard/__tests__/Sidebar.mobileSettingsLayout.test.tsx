@@ -112,3 +112,47 @@ describe('Sidebar – mobilné Nastavenia: pevné „Viac"', () => {
     expect(screen.getByRole('button', { name: 'Viac' })).toBeInTheDocument();
   });
 });
+
+/**
+ * Nízke okno (na šírku, rozdelená obrazovka, priblíženie): hlavička má ~69 px a pevný spodok ~205 px
+ * (odstup 7 rem + „Viac" s rámom), takže pod ~274 px výšky by sa zoznam zmenšil na nulu a riadky by sa
+ * nedali dosiahnuť (aj nad touto hranicou ostáva na okne na šírku miesto len pre jeden riadok).
+ * Pod výškou okna 28 rem sa preto zoznam prestane posúvať sám a posúva sa celý obal so spodkom na
+ * konci, ako pred pevným spodkom. Media query sa v jsdom nevyhodnotí, preto sa pinujú triedy;
+ * skutočné správanie meria beh v prehliadači.
+ */
+const SHORT_VIEWPORT = '[@media(max-height:28rem)]';
+
+/** Hranice výšky okna (`[@media(...)]`), ktoré prvok používa vo svojich triedach. */
+const heightQueries = (element: HTMLElement) =>
+  Array.from(element.classList)
+    .filter((className) => className.startsWith('[@media('))
+    .map((className) => className.slice(0, className.indexOf(']:') + 1));
+
+describe('Sidebar – mobilné Nastavenia: nízke okno', () => {
+  it('pod výškou okna 28 rem sa posúva celý obal so zoznamom aj spodkom', () => {
+    renderMobileSettings();
+
+    expect(wrapper()).toHaveClass(`${SHORT_VIEWPORT}:overflow-y-auto`, 'overscroll-contain', 'elegant-scrollbar');
+  });
+
+  it('pod výškou okna 28 rem sa zoznam prestane posúvať sám a zmenšovať', () => {
+    renderMobileSettings();
+
+    expect(list()).toHaveClass(`${SHORT_VIEWPORT}:flex-none`, `${SHORT_VIEWPORT}:overflow-visible`);
+  });
+
+  it('obal aj zoznam používajú tú istú hranicu výšky okna', () => {
+    renderMobileSettings();
+
+    expect(new Set([...heightQueries(wrapper()!), ...heightQueries(list()!)])).toEqual(new Set([SHORT_VIEWPORT]));
+  });
+
+  it('pevný spodok sa na nízkom okne nemení a drží odstup od lišty prehliadača', () => {
+    renderMobileSettings();
+
+    expect(heightQueries(footer()!)).toEqual([]);
+    expect(footer()).toHaveClass('shrink-0');
+    expect(footer()!.className).toContain('pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]');
+  });
+});
