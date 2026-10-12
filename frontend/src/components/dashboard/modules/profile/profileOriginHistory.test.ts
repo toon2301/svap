@@ -8,6 +8,7 @@
 
 import {
   adoptProfileOrigin,
+  cancelProfileOriginPending,
   markProfileOriginPending,
   readProfileOriginDepth,
   resetProfileOriginPending,
@@ -150,11 +151,183 @@ describe('prevzatie pôvodu po navigácii routerom', () => {
     expect(readProfileOriginDepth(window.history.state)).toBeNull();
   });
 
-  it('pri nezhode adries sa čakajúci pôvod zahodí', () => {
+  it('záznam s inou adresou si pôvod neprivlastní', () => {
     markProfileOriginPending('/dashboard/users/peter');
     adoptProfileOrigin();
 
     expect(readProfileOriginDepth(window.history.state)).toBeNull();
+  });
+
+  // Dashboard prepne modul na profil ešte PRED zmenou adresy (stav sa nastaví hneď,
+  // `router.push` dokončí navigáciu až po stiahnutí stránky), takže profil sa
+  // prvýkrát zobrazí na adrese východiskovej stránky. Čakajúci pôvod preto nesmie
+  // zaniknúť pri tomto skorom volaní, inak ho záznam profilu už nikdy nedostane.
+  it('pri nezhode adries čakajúci pôvod ostáva a prevezme ho záznam so zhodnou adresou', () => {
+    markProfileOriginPending('/dashboard/users/peter');
+    adoptProfileOrigin();
+    expect(readProfileOriginDepth(window.history.state)).toBeNull();
+
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
+  });
+
+  it('scenár z nálezu: profil sa zobrazí ešte na adrese vyhľadávania, adresa príde neskôr', () => {
+    const go = jest.spyOn(window.history, 'go').mockImplementation(() => {});
+    window.history.replaceState(null, '', '/dashboard/search');
+
+    // Klik na výsledok: stav sa prepne hneď, `router.push` ešte nedoručil adresu.
+    markProfileOriginPending('/dashboard/users/jana');
+    adoptProfileOrigin();
+    // Router doručí adresu profilu ako nový záznam histórie.
+    window.history.pushState(null, '', '/dashboard/users/jana');
+    adoptProfileOrigin();
+    // Používateľ prepne záložku a ťukne na šípku späť.
+    window.history.pushState(
+      withProfileOriginStep(window.history.state),
+      '',
+      '/dashboard/users/jana?tab=portfolio',
+    );
+
+    expect(readProfileOriginDepth(window.history.state)).toBe(1);
+    expect(returnToProfileOrigin()).toBe(true);
+    expect(go).toHaveBeenCalledWith(-2);
+    go.mockRestore();
+  });
+
+  // Router doručí adresu profilu, až keď stiahne stránku – po pomalej sieti alebo s appkou
+  // na pozadí to trvá aj minúty. Čakajúci pôvod preto nesmie starnúť podľa hodín: platí,
+  // kým je stránka na východiskovej adrese, a zaniká, až keď navigáciu zruší alebo
+  // nahradí iná (profil sa zobrazí na tretej adrese).
+  describe('pomalá a zrušená navigácia', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('pomalá navigácia: pôvod sa prevezme aj po dlhom čakaní na adresu', () => {
+      jest.useFakeTimers();
+      window.history.replaceState(null, '', '/dashboard/search');
+      markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      jest.advanceTimersByTime(10 * 60_000);
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('prvé volanie až po dlhom čakaní pôvod nezahodí, kým adresa nedorazí', () => {
+      jest.useFakeTimers();
+      window.history.replaceState(null, '', '/dashboard/search');
+      markProfileOriginPending('/dashboard/users/jana');
+
+      jest.advanceTimersByTime(10 * 60_000);
+      adoptProfileOrigin();
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('východisková adresa sa porovnáva bez query (na vyhľadávaní uniká ?tab=offers)', () => {
+      window.history.replaceState(null, '', '/dashboard/search?tab=offers');
+      markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('nová žiadosť si zapamätá aj novú východiskovú adresu', () => {
+      window.history.replaceState(null, '', '/dashboard/search');
+      markProfileOriginPending('/dashboard/users/peter');
+      // Používateľ otvorí profil zo stránky všetkých výsledkov na inej adrese.
+      window.history.replaceState(null, '', '/search');
+      markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+      window.history.pushState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('navigácia, ktorú nahradila iná adresa, čakajúci pôvod zruší', () => {
+      window.history.replaceState(null, '', '/dashboard/search');
+      markProfileOriginPending('/dashboard/users/jana');
+
+      // Používateľ medzitým odišiel inam: profil sa zobrazí na tretej adrese.
+      window.history.replaceState(null, '', '/dashboard/users/peter');
+      adoptProfileOrigin();
+      expect(readProfileOriginDepth(window.history.state)).toBeNull();
+
+      // Neskorší príchod na pôvodne čakajúcu adresu už pôvod nedostane – patril zrušenej navigácii.
+      window.history.replaceState(null, '', '/dashboard/users/jana');
+      adoptProfileOrigin();
+      expect(readProfileOriginDepth(window.history.state)).toBeNull();
+    });
+  });
+
+  // `router.push` môže zlyhať ešte pred navigáciou (vyhodí chybu) – čakajúci pôvod potom nemá
+  // kto prevziať. Volajúci ho zruší číslom svojej žiadosti, aby nezmazal novšiu.
+  describe('zrušenie čakajúceho pôvodu', () => {
+    it('zrušená žiadosť pôvod nepripne', () => {
+      const requestId = markProfileOriginPending('/dashboard/users/jana');
+      cancelProfileOriginPending(requestId);
+
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBeNull();
+    });
+
+    it('zrušenie staršej žiadosti novšiu nezruší', () => {
+      const older = markProfileOriginPending('/dashboard/users/peter');
+      markProfileOriginPending('/dashboard/users/jana');
+
+      cancelProfileOriginPending(older);
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('každá žiadosť dostane nové číslo', () => {
+      const first = markProfileOriginPending('/dashboard/users/peter');
+      const second = markProfileOriginPending('/dashboard/users/peter');
+
+      expect(second).not.toBe(first);
+    });
+
+    it('zrušenie bez čakajúcej žiadosti nič nerobí', () => {
+      expect(() => cancelProfileOriginPending(12345)).not.toThrow();
+
+      markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+
+    it('oneskorené zrušenie už prevzatej žiadosti novú nezruší', () => {
+      const first = markProfileOriginPending('/dashboard/users/jana');
+      adoptProfileOrigin();
+
+      markProfileOriginPending('/dashboard/users/peter');
+      cancelProfileOriginPending(first);
+      window.history.replaceState(null, '', '/dashboard/users/peter');
+      adoptProfileOrigin();
+
+      expect(readProfileOriginDepth(window.history.state)).toBe(0);
+    });
+  });
+
+  it('nová žiadosť o pôvod nahradí predošlú', () => {
+    markProfileOriginPending('/dashboard/users/peter');
+    markProfileOriginPending('/dashboard/users/jana');
+
+    adoptProfileOrigin();
+
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
   });
 
   it('prevzatie je jednorazové', () => {

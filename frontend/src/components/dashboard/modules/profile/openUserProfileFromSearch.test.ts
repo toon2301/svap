@@ -16,6 +16,7 @@ import {
 } from './openUserProfileFromSearch';
 import {
   adoptProfileOrigin,
+  markProfileOriginPending,
   readProfileOriginDepth,
   resetProfileOriginPending,
   returnToProfileOrigin,
@@ -83,11 +84,61 @@ describe('otvorenie profilu z vyhľadávania', () => {
     go.mockRestore();
   });
 
+  it('pôvod sa označí ešte PRED `router.push`, aj keď sa profil zobrazí hneď', () => {
+    // Profil sa môže zobraziť a volať `adoptProfileOrigin()` už počas `push` – čakajúci pôvod
+    // musí v tom okamihu existovať.
+    const router = {
+      push: jest.fn((url: string) => {
+        window.history.pushState(null, '', url);
+        adoptProfileOrigin();
+      }),
+    };
+
+    openUserProfileFromSearch(router, 'jana');
+
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
+  });
+
   it('bez použiteľného identifikátora nenaviguje nikam', () => {
     const router = testRouter();
 
     openUserProfileFromSearch(router, '');
 
     expect(router.push).not.toHaveBeenCalled();
+  });
+});
+
+describe('zlyhanie navigácie', () => {
+  // `router.push` môže zlyhať ešte pred navigáciou. Čakajúci pôvod potom nemá kto prevziať,
+  // preto sa zruší – a chyba ide ďalej tak ako doteraz.
+  it('router.push zlyhá: chyba sa prepošle a pôvod sa nepripne', () => {
+    const failure = new Error('push zlyhal');
+    const router = {
+      push: jest.fn(() => {
+        throw failure;
+      }),
+    };
+
+    expect(() => openUserProfileFromSearch(router, 'jana')).toThrow(failure);
+
+    window.history.replaceState(null, '', '/dashboard/users/jana');
+    adoptProfileOrigin();
+    expect(readProfileOriginDepth(window.history.state)).toBeNull();
+  });
+
+  it('zlyhanie staršej navigácie novšiu žiadosť nezruší', () => {
+    const router = {
+      push: jest.fn(() => {
+        // Medzitým vznikla novšia žiadosť (iný profil) – zlyhanie staršej ju nesmie zmazať.
+        markProfileOriginPending('/dashboard/users/peter');
+        throw new Error('push zlyhal');
+      }),
+    };
+
+    expect(() => openUserProfileFromSearch(router, 'jana')).toThrow('push zlyhal');
+
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+    adoptProfileOrigin();
+    expect(readProfileOriginDepth(window.history.state)).toBe(0);
   });
 });

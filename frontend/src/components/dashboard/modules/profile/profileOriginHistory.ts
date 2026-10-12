@@ -83,8 +83,15 @@ export function withProfileOriginStep(historyState: unknown): Record<string, unk
   return withDepth(historyState, marker.depth + 1);
 }
 
-/** Adresa profilu, ktorý appka otvára cez router a ešte nemá svoj záznam. */
-let pendingOriginPath: string | null = null;
+/**
+ * Profil, ktorý appka otvára cez router a ešte nemá svoj záznam: číslo žiadosti,
+ * cieľová adresa a adresa, z ktorej sa vyšlo (kým navigácia nedorazí, stránka
+ * ostáva na nej).
+ */
+let pendingOrigin: { requestId: number; path: string; fromPath: string } | null = null;
+
+/** Číslo poslednej žiadosti – zrušenie smie zmazať len tú svoju, nie novšiu. */
+let lastRequestId = 0;
 
 /**
  * Otvorenie profilu cez `router.push` – pôvod sa doplní až po príchode.
@@ -92,22 +99,55 @@ let pendingOriginPath: string | null = null;
  * `router.push` stav histórie neprijíma a záznam vzniká až po dokončení
  * navigácie, takže marker sa naň nedá pripnúť dopredu. Rovnaký postup používa
  * detail portfólia (`openPortfolioDetail` / `adoptPortfolioDetailOrigin`).
+ *
+ * Vracia číslo žiadosti: keď `router.push` zlyhá ešte pred navigáciou, volajúci
+ * ho odovzdá `cancelProfileOriginPending`.
  */
-export function markProfileOriginPending(path: string): void {
-  pendingOriginPath = path;
+export function markProfileOriginPending(path: string): number {
+  lastRequestId += 1;
+  pendingOrigin = {
+    requestId: lastRequestId,
+    path,
+    fromPath: typeof window === 'undefined' ? '' : window.location.pathname,
+  };
+  return lastRequestId;
+}
+
+/**
+ * Navigácia sa nespustila (`router.push` zlyhal): čakajúci pôvod nemá kto prevziať.
+ *
+ * Zruší sa len žiadosť s týmto číslom – novšia žiadosť (iný profil), ktorá ju
+ * medzitým nahradila, ostáva.
+ */
+export function cancelProfileOriginPending(requestId: number): void {
+  if (pendingOrigin?.requestId === requestId) pendingOrigin = null;
 }
 
 /**
  * Profil sa zobrazil: ak ho otvorila appka, označí jeho záznam pôvodom.
  *
- * Prevzatie je jednorazové a zahodí sa aj pri nezhode adries – inak by si ho
- * mohol privlastniť profil otvorený odkazom.
+ * Dashboard prepne modul na profil ešte PRED zmenou adresy (stav sa nastaví
+ * hneď, `router.push` dokončí navigáciu až po stiahnutí stránky), takže sa
+ * profil prvýkrát zobrazí na adrese východiskovej stránky. Pri takom skorom
+ * volaní sa preto čakajúci pôvod NEzahadzuje – prevezme ho až záznam, ktorý
+ * má adresu profilu (po navigácii sa profil zobrazí znova).
+ *
+ * Čakajúci pôvod nestarne podľa hodín: po pomalej sieti alebo s appkou na
+ * pozadí môže navigácia trvať aj minúty. Platí, kým je stránka na východiskovej
+ * adrese. Ak sa profil zobrazí na inej (tretej) adrese, navigáciu zrušila alebo
+ * nahradila iná a pôvod zaniká – inak by si ho mohol privlastniť profil
+ * otvorený inou cestou. Prevzatie je jednorazové.
  */
 export function adoptProfileOrigin(): void {
   if (typeof window === 'undefined') return;
-  const path = pendingOriginPath;
-  pendingOriginPath = null;
-  if (!path || window.location.pathname !== path) return;
+  const pending = pendingOrigin;
+  if (!pending) return;
+  const currentPath = window.location.pathname;
+  if (currentPath !== pending.path) {
+    if (currentPath !== pending.fromPath) pendingOrigin = null;
+    return;
+  }
+  pendingOrigin = null;
   // Záznam už pôvod niesť môže (návrat dopredu na ten istý profil) – vtedy sa
   // hĺbka neprepisuje, patrí tomu záznamu.
   if (readProfileOriginDepth(window.history.state) !== null) return;
@@ -120,7 +160,7 @@ export function adoptProfileOrigin(): void {
 
 /** Len pre testy – vyčistí modulový stav medzi prípadmi. */
 export function resetProfileOriginPending(): void {
-  pendingOriginPath = null;
+  pendingOrigin = null;
 }
 
 /** Hĺbka aktuálneho záznamu v profile; `null` keď pôvod nepoznáme. */
