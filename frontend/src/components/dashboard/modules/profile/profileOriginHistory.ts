@@ -83,8 +83,16 @@ export function withProfileOriginStep(historyState: unknown): Record<string, unk
   return withDepth(historyState, marker.depth + 1);
 }
 
-/** Adresa profilu, ktorý appka otvára cez router a ešte nemá svoj záznam. */
-let pendingOriginPath: string | null = null;
+/**
+ * Ako dlho smie čakajúci pôvod čakať na príchod profilu.
+ *
+ * Navigácia routerom trvá, kým sa stiahne stránka profilu; po pomalej sieti
+ * (alebo neúspešnej navigácii) by sa inak čakajúci pôvod držal donekonečna.
+ */
+const PENDING_ORIGIN_TTL_MS = 15_000;
+
+/** Profil, ktorý appka otvára cez router a ešte nemá svoj záznam: adresa a okamih žiadosti. */
+let pendingOrigin: { path: string; markedAt: number } | null = null;
 
 /**
  * Otvorenie profilu cez `router.push` – pôvod sa doplní až po príchode.
@@ -94,20 +102,30 @@ let pendingOriginPath: string | null = null;
  * detail portfólia (`openPortfolioDetail` / `adoptPortfolioDetailOrigin`).
  */
 export function markProfileOriginPending(path: string): void {
-  pendingOriginPath = path;
+  pendingOrigin = { path, markedAt: Date.now() };
 }
 
 /**
  * Profil sa zobrazil: ak ho otvorila appka, označí jeho záznam pôvodom.
  *
- * Prevzatie je jednorazové a zahodí sa aj pri nezhode adries – inak by si ho
- * mohol privlastniť profil otvorený odkazom.
+ * Dashboard prepne modul na profil ešte PRED zmenou adresy (stav sa nastaví
+ * hneď, `router.push` dokončí navigáciu až po stiahnutí stránky), takže sa
+ * profil prvýkrát zobrazí na adrese východiskovej stránky. Pri takom skorom
+ * volaní sa preto čakajúci pôvod NEzahadzuje – prevezme ho až záznam, ktorý
+ * má adresu profilu (po navigácii sa profil zobrazí znova). Aby profil otvorený
+ * odkazom neprevzal pôvod omylom, čakajúci pôvod platí len krátko a prevzatie
+ * je jednorazové.
  */
 export function adoptProfileOrigin(): void {
   if (typeof window === 'undefined') return;
-  const path = pendingOriginPath;
-  pendingOriginPath = null;
-  if (!path || window.location.pathname !== path) return;
+  const pending = pendingOrigin;
+  if (!pending) return;
+  if (Date.now() - pending.markedAt > PENDING_ORIGIN_TTL_MS) {
+    pendingOrigin = null;
+    return;
+  }
+  if (window.location.pathname !== pending.path) return;
+  pendingOrigin = null;
   // Záznam už pôvod niesť môže (návrat dopredu na ten istý profil) – vtedy sa
   // hĺbka neprepisuje, patrí tomu záznamu.
   if (readProfileOriginDepth(window.history.state) !== null) return;
@@ -120,7 +138,7 @@ export function adoptProfileOrigin(): void {
 
 /** Len pre testy – vyčistí modulový stav medzi prípadmi. */
 export function resetProfileOriginPending(): void {
-  pendingOriginPath = null;
+  pendingOrigin = null;
 }
 
 /** Hĺbka aktuálneho záznamu v profile; `null` keď pôvod nepoznáme. */
