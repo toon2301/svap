@@ -1,5 +1,6 @@
 import { normalizeOfferCountryCode } from '@/shared/countryRegistry';
 import type { OfferWatchDraft, OfferWatchPriceCurrency } from './types';
+import { hasOfferWatchPriceFilter } from './offerWatchPrice';
 
 const EURO_COUNTRY_CODES = new Set([
   'AD', 'AT', 'AX', 'BE', 'BG', 'BL', 'CY', 'DE', 'EE', 'ES', 'FI', 'FR',
@@ -15,6 +16,7 @@ const COUNTRY_CURRENCY: Readonly<Record<string, OfferWatchPriceCurrency>> = {
   US: '$',
 };
 
+/** Resolve a supported country currency, leaving unsupported defaults for manual selection. */
 export function defaultOfferWatchCurrency(
   countryCode: unknown,
 ): OfferWatchPriceCurrency | '' {
@@ -23,17 +25,17 @@ export function defaultOfferWatchCurrency(
   return COUNTRY_CURRENCY[normalizedCountry] || '';
 }
 
+/** Update one raw bound without erasing a typed fraction or a manually selected currency. */
 export function changeOfferWatchPrice(
   draft: OfferWatchDraft,
   field: 'priceMin' | 'priceMax',
   value: string,
 ): OfferWatchDraft {
   const nextDraft = { ...draft, [field]: value };
-  const hadPrice = Boolean(draft.priceMin.trim() || draft.priceMax.trim());
   const hasPrice = Boolean(nextDraft.priceMin.trim() || nextDraft.priceMax.trim());
 
   if (!hasPrice) return { ...nextDraft, priceCurrency: '' };
-  if (!hadPrice && !nextDraft.priceCurrency) {
+  if (hasOfferWatchPriceFilter(nextDraft) && !nextDraft.priceCurrency) {
     return {
       ...nextDraft,
       priceCurrency: defaultOfferWatchCurrency(nextDraft.countryCode),

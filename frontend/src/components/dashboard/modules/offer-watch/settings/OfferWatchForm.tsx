@@ -5,6 +5,7 @@ import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getDistrictOptions, isInactiveOfferDistrictCode } from '@/shared/districtRegistry';
 import { changeOfferWatchPrice } from '../offerWatchCurrency';
+import { normalizeOfferWatchZeroBounds } from '../offerWatchPrice';
 import {
   selectOfferWatchCategory,
   selectOfferWatchCountry,
@@ -42,6 +43,7 @@ type OfferWatchFormProps = {
   onOpenMobilePicker?: (picker: OfferWatchPickerKind) => void;
 };
 
+/** Render the translated validation error referenced by its associated form control. */
 function FieldError({
   id,
   field,
@@ -61,6 +63,7 @@ function FieldError({
   );
 }
 
+/** Share controlled watch filters across desktop creation/editing and mobile forms. */
 export default function OfferWatchForm({
   idPrefix,
   draft,
@@ -89,13 +92,23 @@ export default function OfferWatchForm({
   const categoryError = errors.subcategory || errors.category;
   const controlsDisabled = disabled || isSubmitting;
 
+  /** Delegate saving only when controls are enabled, without native form navigation. */
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!controlsDisabled) onSubmit();
   };
 
+  /** Keep raw typing intact and clear errors for the price/currency fields being edited. */
   const changePrice = (field: 'priceMin' | 'priceMax', value: string) => {
     onChange(changeOfferWatchPrice(draft, field, value), [field, 'priceCurrency']);
+  };
+
+  /** Normalize zeros on blur and clear errors only for fields whose values changed. */
+  const commitPrice = () => {
+    const normalized = normalizeOfferWatchZeroBounds(draft);
+    const clearFields = (['priceMin', 'priceMax', 'priceCurrency'] as const)
+      .filter((field) => normalized[field] !== draft[field]);
+    if (clearFields.length) onChange(normalized, clearFields);
   };
 
   return (
@@ -244,6 +257,7 @@ export default function OfferWatchForm({
                 maxLength={16}
                 value={draft.priceMin}
                 onChange={(event) => changePrice('priceMin', event.target.value)}
+                onBlur={commitPrice}
                 placeholder={t('offerWatch.priceMin', 'Cena od')}
                 aria-invalid={Boolean(errors.priceMin) || undefined}
                 aria-describedby={errors.priceMin ? priceMinErrorId : undefined}
@@ -268,6 +282,7 @@ export default function OfferWatchForm({
                 maxLength={16}
                 value={draft.priceMax}
                 onChange={(event) => changePrice('priceMax', event.target.value)}
+                onBlur={commitPrice}
                 placeholder={t('offerWatch.priceMax', 'Cena do')}
                 aria-invalid={Boolean(errors.priceMax) || undefined}
                 aria-describedby={errors.priceMax ? priceMaxErrorId : undefined}

@@ -7,6 +7,7 @@ import type { OfferWatch } from '../types';
 import { useOfferWatchMatches } from '../useOfferWatchMatches';
 import { offerWatchSubcategoryLabel } from '../settings/offerWatchUi';
 import OfferWatchMatchGrid from './OfferWatchMatchGrid';
+import OfferWatchMatchesErrorNotice from './OfferWatchMatchesErrorNotice';
 
 type OfferWatchResultsMatchesPanelProps = {
   watch: OfferWatch;
@@ -30,6 +31,7 @@ export default function OfferWatchResultsMatchesPanel({
   } = useOfferWatchMatches(watch.id);
   const title = offerWatchSubcategoryLabel(t, watch.category, watch.subcategory);
   const hasMatches = matches.length > 0;
+  const hasPaginationError = Boolean(error && hasMatches && nextCursor);
   const missingWatchRecoveryStartedRef = useRef(false);
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function OfferWatchResultsMatchesPanel({
     onWatchUnavailable();
   }, [error, onWatchUnavailable]);
 
+  /** Retry the preserved next-page cursor, or restart the first page after refresh failure. */
   const retry = () => {
     if (nextCursor && hasMatches) void loadMore();
     else void refresh();
@@ -73,32 +76,13 @@ export default function OfferWatchResultsMatchesPanel({
         </button>
       </div>
 
-      {error && (
-        <div
-          role='alert'
-          className={`mb-5 rounded-2xl border px-5 py-4 ${
-            hasMatches
-              ? 'border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/20'
-              : 'border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/20'
-          }`}
-        >
-          <p className={`text-sm font-medium ${
-            hasMatches
-              ? 'text-amber-900 dark:text-amber-200'
-              : 'text-red-800 dark:text-red-200'
-          }`}>
-            {t('offerWatchResults.matchesLoadFailed', 'Výsledky sa nepodarilo načítať.')}
-          </p>
-          <button
-            type='button'
-            onClick={retry}
-            disabled={isLoading || isLoadingMore}
-            className='mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-current px-4 py-2 text-sm font-semibold transition hover:bg-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500/35 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-black/20'
-          >
-            <ArrowPathIcon className='h-4 w-4' aria-hidden='true' />
-            {t('offerWatch.retry', 'Skúsiť znova')}
-          </button>
-        </div>
+      {error && !hasPaginationError && (
+        <OfferWatchMatchesErrorNotice
+          hasMatches={hasMatches}
+          disabled={isLoading || isLoadingMore}
+          onRetry={retry}
+          className='mb-5'
+        />
       )}
 
       {isLoading && !hasMatches ? (
@@ -126,6 +110,14 @@ export default function OfferWatchResultsMatchesPanel({
             matches={matches}
             watchUpdatedAt={watch.updatedAt}
           />
+          {hasPaginationError && (
+            <OfferWatchMatchesErrorNotice
+              hasMatches={hasMatches}
+              disabled={isLoading || isLoadingMore}
+              onRetry={retry}
+              className='mt-5'
+            />
+          )}
           {nextCursor && !error && (
             <div className='mt-8 flex justify-center'>
               <button

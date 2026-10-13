@@ -62,6 +62,7 @@ class OfferWatch(models.Model):
     updated_at = models.DateTimeField(_("Aktualizované"), auto_now=True)
 
     class Meta:
+        """Enforce owner-scoped uniqueness, five slots, and canonical price bounds."""
         verbose_name = _("Sledovanie")
         verbose_name_plural = _("Sledovania")
         ordering = ["-created_at", "-id"]
@@ -87,12 +88,12 @@ class OfferWatch(models.Model):
                 name="acc_watch_subcategory_required",
             ),
             models.CheckConstraint(
-                check=models.Q(price_min__isnull=True) | models.Q(price_min__gte=0),
-                name="acc_watch_price_min_nonneg",
+                check=models.Q(price_min__isnull=True) | models.Q(price_min__gt=0),
+                name="acc_watch_price_min_positive",
             ),
             models.CheckConstraint(
-                check=models.Q(price_max__isnull=True) | models.Q(price_max__gte=0),
-                name="acc_watch_price_max_nonneg",
+                check=models.Q(price_max__isnull=True) | models.Q(price_max__gt=0),
+                name="acc_watch_price_max_positive",
             ),
             models.CheckConstraint(
                 check=(
@@ -151,6 +152,7 @@ class OfferWatch(models.Model):
         ]
 
     def __str__(self):
+        """Identify the owner's watched card type and subcategory in administration."""
         watch_type = _("Dopyt") if self.is_seeking else _("Ponuka")
         return f"{self.user} – {watch_type}: {self.subcategory}"
 
@@ -164,7 +166,12 @@ class OfferWatch(models.Model):
         super().clean_fields(exclude=exclude)
 
     def clean(self):
+        """Validate canonical filters after treating zero watch bounds as absent."""
         super().clean()
+        if self.price_min == 0:
+            self.price_min = None
+        if self.price_max == 0:
+            self.price_max = None
         errors = {}
         if not self.category:
             errors["category"] = _("Kategória je povinná.")
@@ -277,9 +284,11 @@ class OfferWatchNotification(models.Model):
         ]
 
     def __str__(self):
+        """Identify the recipient and offer without exposing notification content."""
         return f"{self.user} – offer #{self.offer_id}"
 
     def clean(self):
+        """Reject candidates for another owner's watch or the recipient's own card."""
         super().clean()
         if self.watch_id and self.user_id and self.watch.user_id != self.user_id:
             raise ValidationError(
@@ -310,4 +319,5 @@ class OfferWatchMatchOutbox(models.Model):
         verbose_name_plural = _("Čakajúce párovania sledovaní")
 
     def __str__(self):
+        """Show the offer associated with a durable matching intent."""
         return f"Offer watch match intent {self.offer_id}"
