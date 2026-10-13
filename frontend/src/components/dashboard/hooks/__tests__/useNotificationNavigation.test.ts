@@ -36,7 +36,7 @@ const spy = (name: string, impl?: (...args: unknown[]) => unknown) =>
 let base: HookInput;
 
 const makeBase = (): HookInput => ({
-  router: { push: spy('router.push') },
+  router: { push: spy('router.push'), replace: spy('router.replace') },
   isMobile: false,
   highlighting: { setHighlightedSkillId: spy('setHighlightedSkillId') },
   handleFeedOverlayTargetChange: spy('handleFeedOverlayTargetChange'),
@@ -118,6 +118,7 @@ const CLOSE_PANELS = [
   entry('setIsMobileMenuOpen', false),
 ];
 const PUSH = (targetUrl: string) => entry('router.push', targetUrl);
+const REPLACE = (targetUrl: string) => entry('router.replace', targetUrl);
 
 /** Zvyšok cesty, ktorý je pri každej bežnej navigácii rovnaký: zavretie panelov a router. */
 const FINISH = (targetUrl: string) => [...CLOSE_PANELS, PUSH(targetUrl)];
@@ -600,6 +601,69 @@ describe('zatvorenie panelov', () => {
   });
 });
 
+describe('navigácia cez replace (návrat z recenzií bez ďalšieho záznamu v histórii)', () => {
+  const runReplace = (targetUrl: string, overrides: Partial<HookInput> = {}): Mounted => {
+    const mounted = mountHook(overrides);
+    act(() => {
+      mounted.result.current.handleNotificationNavigate(targetUrl, { replace: true });
+    });
+    return mounted;
+  };
+
+  it('adresa ide do router.replace a push sa nevolá', () => {
+    runReplace('/dashboard/users/anna?offer=5&side=back');
+    expect(base.router.replace).toHaveBeenCalledTimes(1);
+    expect(base.router.replace).toHaveBeenCalledWith('/dashboard/users/anna?offer=5&side=back');
+    expect(base.router.push).not.toHaveBeenCalled();
+  });
+
+  it('všetky kroky pred routerom sú rovnaké ako pri push, líši sa len posledný', () => {
+    const target = '/dashboard/users/anna?offer=5&side=back';
+    run(target);
+    const stepsBeforeRouter = calls.slice(0, -1);
+    expect(calls[calls.length - 1]).toBe(PUSH(target));
+
+    calls = [];
+    runReplace(target);
+
+    expect(calls.slice(0, -1)).toEqual(stepsBeforeRouter);
+    expect(calls[calls.length - 1]).toBe(REPLACE(target));
+  });
+
+  it('adresy mimo dashboardu sa ignorujú aj s replace', () => {
+    runReplace('/login');
+    expect(calls).toEqual([]);
+  });
+
+  it('príspevok na desktope otvorí okno nad appkou a nenaviguje ani cez replace', () => {
+    runReplace('/dashboard/feed/42');
+    expect(base.handleFeedOverlayTargetChange).toHaveBeenCalledTimes(1);
+    expect(base.router.replace).not.toHaveBeenCalled();
+    expect(base.router.push).not.toHaveBeenCalled();
+  });
+
+  it('príspevok na mobile ide cez replace', () => {
+    runReplace('/dashboard/feed/42', { isMobile: true });
+    expect(base.router.replace).toHaveBeenCalledWith('/dashboard/feed/42');
+    expect(base.router.push).not.toHaveBeenCalled();
+  });
+
+  it('bez možnosti alebo s replace: false ide adresa cez push', () => {
+    const mounted = mountHook();
+    act(() => {
+      mounted.result.current.handleNotificationNavigate('/dashboard/favorites', { replace: false });
+    });
+    act(() => {
+      mounted.result.current.handleNotificationNavigate('/dashboard/favorites', {});
+    });
+    act(() => {
+      mounted.result.current.handleNotificationNavigate('/dashboard/favorites');
+    });
+    expect(base.router.push).toHaveBeenCalledTimes(3);
+    expect(base.router.replace).not.toHaveBeenCalled();
+  });
+});
+
 describe('úložisko prehliadača nie je dostupné', () => {
   it('chyba localStorage: modul sa nastaví a navigácia pokračuje', () => {
     installStorageSpy(['local']);
@@ -669,7 +733,9 @@ describe('identita handlera', () => {
   ];
 
   const replacementFor = (key: keyof HookInput): Partial<HookInput> => {
-    if (key === 'router') return { router: { push: spy('router#2.push') } };
+    if (key === 'router') {
+      return { router: { push: spy('router#2.push'), replace: spy('router#2.replace') } };
+    }
     if (key === 'isMobile') return { isMobile: !base.isMobile };
     if (key === 'highlighting') {
       return { highlighting: { setHighlightedSkillId: spy('highlighting#2.setHighlightedSkillId') } };
@@ -705,10 +771,20 @@ describe('identita handlera', () => {
 
   it('po zmene routeru nový handler naviguje cez nový router', () => {
     const mounted = mountHook();
-    update(mounted, { router: { push: spy('router#2.push') } });
+    update(mounted, { router: { push: spy('router#2.push'), replace: spy('router#2.replace') } });
     navigate(mounted, '/dashboard/favorites');
     expect(calls[calls.length - 1]).toBe(entry('router#2.push', '/dashboard/favorites'));
     expect(base.router.push).not.toHaveBeenCalled();
+  });
+
+  it('po zmene routeru nový handler s replace naviguje cez replace nového routera', () => {
+    const mounted = mountHook();
+    update(mounted, { router: { push: spy('router#2.push'), replace: spy('router#2.replace') } });
+    act(() => {
+      mounted.result.current.handleNotificationNavigate('/dashboard/favorites', { replace: true });
+    });
+    expect(calls[calls.length - 1]).toBe(entry('router#2.replace', '/dashboard/favorites'));
+    expect(base.router.replace).not.toHaveBeenCalled();
   });
 
   it('nový objekt highlighting s tou istou funkciou tiež vytvorí nový handler (v závislostiach je celý objekt)', () => {

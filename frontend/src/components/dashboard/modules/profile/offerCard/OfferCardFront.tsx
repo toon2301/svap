@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import OfferImageCarousel from '../../shared/OfferImageCarousel';
+import { openOfferReviews } from '../../reviews/offerReviewsOrigin';
 import type { Offer } from '../profileOffersTypes';
 import { FlipButton } from './FlipButton';
 
@@ -172,7 +173,7 @@ export function OfferCardFront({
               onClick={(e) => {
                 e.stopPropagation();
                 if (reviewsHref) {
-                  router.push(reviewsHref);
+                  openOfferReviews(router, reviewsHref);
                 }
               }}
               className="p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"

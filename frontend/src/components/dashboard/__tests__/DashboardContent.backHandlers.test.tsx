@@ -17,6 +17,11 @@ import type { ComponentProps } from 'react';
 import Dashboard from '../Dashboard';
 import type ModuleRouter from '../ModuleRouter';
 import type DashboardLayout from '../DashboardLayout';
+import {
+  adoptOfferReviewsOrigin,
+  markOfferReviewsPending,
+  resetOfferReviewsOrigin,
+} from '../modules/reviews/offerReviewsOrigin';
 import { setSkillsDescribeProfileReturn } from '../modules/skills/skillsDescribeReturnSession';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider, __resetAuthBootstrapSnapshotForTests } from '@/contexts/AuthContext';
@@ -33,10 +38,14 @@ jest.mock('framer-motion', () => ({
 }));
 
 let mockRouterProps: Record<string, unknown> | null = null;
+// Šípka späť, ktorú desktopová stránka recenzií dostáva od dashboardu (kontext).
+let mockOfferReviewsBack: (() => void) | undefined;
 jest.mock('../ModuleRouter', () => ({
   __esModule: true,
-  default: (props: Record<string, unknown>) => {
+  default: function MockModuleRouter(props: Record<string, unknown>) {
+    const { useOfferReviewsBack } = jest.requireActual('../contexts/OfferReviewsBackContext');
     mockRouterProps = props;
+    mockOfferReviewsBack = useOfferReviewsBack();
     return <div data-testid="module-state" data-module={String(props.activeModule)} />;
   },
 }));
@@ -161,9 +170,11 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockRouter.push.mockReset();
   __resetAuthBootstrapSnapshotForTests();
+  resetOfferReviewsOrigin();
   localStorage.clear();
   sessionStorage.clear();
   mockRouterProps = null;
+  mockOfferReviewsBack = undefined;
   mockLayoutProps = null;
   mockPathname = '/dashboard';
   mockSearchParams = new URLSearchParams();
@@ -340,6 +351,10 @@ describe('recenzie ponuky (offer-reviews)', () => {
 
     expect(activeModule()).toBe(target);
     expect(mockRouter.back).not.toHaveBeenCalled();
+    // Záložná adresa nepridáva záznam do histórie: bez `push` slučka nevznikne.
+    expect(mockRouter.replace).toHaveBeenCalledTimes(1);
+    expect(mockRouter.replace).toHaveBeenCalledWith(returnTo);
+    expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
   it('návratová adresa s parametrami sa odovzdá celá (cieľ zo žiadostí)', async () => {
@@ -385,6 +400,59 @@ describe('recenzie ponuky (offer-reviews)', () => {
 
     expect(activeModule()).toBe('requests');
     expect(mockRouter.back).not.toHaveBeenCalled();
+  });
+
+  describe('recenzie otvorila appka z karty ponuky (značka pôvodu)', () => {
+    const RETURN_TO = `returnTo=${encodeURIComponent('/dashboard/users/jana?offer=3&side=back')}`;
+
+    /** Karta ponuky recenzie otvorila a zobrazená stránka prevzala pôvod. */
+    const openedFromCard = () => {
+      markOfferReviewsPending('/dashboard/offers/3/reviews');
+      adoptOfferReviewsOrigin();
+    };
+
+    it('šípka urobí krok späť v histórii a nič nenaviguje ani nemení modul', async () => {
+      const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+      await renderDashboard(true, REVIEWS_ENTRY(RETURN_TO));
+      openedFromCard();
+
+      pressBack();
+
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      expect(mockRouter.push).not.toHaveBeenCalled();
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+      expect(mockRouter.back).not.toHaveBeenCalled();
+      expect(activeModule()).toBe('offer-reviews');
+    });
+
+    it('desktopová šípka na stránke recenzií dostane z dashboardu ten istý handler ako horná lišta', async () => {
+      await renderDashboard(false, REVIEWS_ENTRY(RETURN_TO));
+
+      expect(mockOfferReviewsBack).toBeInstanceOf(Function);
+      expect(mockOfferReviewsBack).toBe(layoutProps().onMobileBack);
+    });
+
+    it('desktopová šípka robí to isté: krok späť v histórii', async () => {
+      const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+      await renderDashboard(false, REVIEWS_ENTRY(RETURN_TO));
+      openedFromCard();
+
+      act(() => mockOfferReviewsBack?.());
+
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      expect(mockRouter.push).not.toHaveBeenCalled();
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+    });
+
+    it('desktopová šípka bez značky ide na návratovú adresu cez replace', async () => {
+      await renderDashboard(false, REVIEWS_ENTRY(RETURN_TO));
+
+      act(() => mockOfferReviewsBack?.());
+
+      expect(mockRouter.replace).toHaveBeenCalledWith('/dashboard/users/jana?offer=3&side=back');
+      expect(mockRouter.push).not.toHaveBeenCalled();
+      expect(activeModule()).toBe('user-profile');
+    });
   });
 });
 

@@ -1,6 +1,11 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
+import {
+  adoptOfferReviewsOrigin,
+  resetOfferReviewsOrigin,
+  returnToOfferReviewsOrigin,
+} from '../reviews/offerReviewsOrigin';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
 import type { Offer } from './profileOffersTypes';
 
@@ -10,8 +15,9 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 jest.mock('../shared/OfferImageCarousel', () => ({
@@ -95,5 +101,62 @@ describe('ProfileOfferCardMobile', () => {
 
     expect(screen.queryByLabelText('Upraviť kartu')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Vymazať kartu')).not.toBeInTheDocument();
+  });
+
+  describe('recenzie ponuky', () => {
+    const reviewsHref = '/dashboard/offers/1/reviews?returnTo=x';
+
+    beforeEach(() => {
+      mockPush.mockReset();
+      resetOfferReviewsOrigin();
+      window.history.replaceState(null, '', '/dashboard/users/peter');
+    });
+
+    it('opens the reviews so that the reviews page can step back to the profile', () => {
+      const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+      try {
+        render(
+          <ProfileOfferCardMobile
+            offer={offer}
+            accountType="personal"
+            isTapped={false}
+            onCardClick={jest.fn()}
+            isOtherUserProfile
+            reviewsHref={reviewsHref}
+          />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Pridať recenziu' }));
+
+        expect(mockPush).toHaveBeenCalledTimes(1);
+        expect(mockPush).toHaveBeenCalledWith(reviewsHref);
+        // Stránka recenzií sa zobrazila: prevezme pôvod a šípka urobí krok späť.
+        window.history.replaceState(null, '', reviewsHref);
+        adoptOfferReviewsOrigin();
+        expect(returnToOfferReviewsOrigin()).toBe(true);
+        expect(backSpy).toHaveBeenCalledTimes(1);
+      } finally {
+        backSpy.mockRestore();
+      }
+    });
+
+    it('does not open anything without an address of the reviews', () => {
+      render(
+        <ProfileOfferCardMobile
+          offer={offer}
+          accountType="personal"
+          isTapped={false}
+          onCardClick={jest.fn()}
+          isOtherUserProfile
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pridať recenziu' }));
+
+      expect(mockPush).not.toHaveBeenCalled();
+      window.history.replaceState(null, '', '/dashboard/offers/1/reviews');
+      adoptOfferReviewsOrigin();
+      expect(returnToOfferReviewsOrigin()).toBe(false);
+    });
   });
 });

@@ -9,6 +9,11 @@
  */
 
 import { act, renderHook, type RenderHookResult } from '@testing-library/react';
+import {
+  adoptOfferReviewsOrigin,
+  markOfferReviewsPending,
+  resetOfferReviewsOrigin,
+} from '../../modules/reviews/offerReviewsOrigin';
 import { useDashboardBackHandlers } from '../useDashboardBackHandlers';
 
 /** Všetko, čo hook zavolá alebo zapíše, sa ukladá sem v poradí volaní. */
@@ -102,9 +107,13 @@ const DEPENDENCIES: Record<HandlerName, Array<keyof HookInput>> = {
 beforeEach(() => {
   calls = [];
   base = makeBase();
+  resetOfferReviewsOrigin();
   window.history.replaceState(null, '', '/dashboard');
   jest.spyOn(window.history, 'pushState').mockImplementation((...args: unknown[]) => {
     record('history.pushState', ...args);
+  });
+  jest.spyOn(window.history, 'back').mockImplementation(() => {
+    record('history.back');
   });
 });
 
@@ -283,12 +292,12 @@ describe('recenzie ponuky (handleOfferReviewsBack)', () => {
     '/dashboard',
     '/dashboard/feed/7#komentare',
     '  /dashboard/messages  ',
-  ])('návratová adresa %p sa odovzdá notifikačnej navigácii a bežný návrat nie', (returnTo) => {
+  ])('návratová adresa %p sa odovzdá notifikačnej navigácii (cez replace) a bežný návrat nie', (returnTo) => {
     const mounted = mountHook({ searchParams: withReturnTo(returnTo) });
 
     fire(mounted, 'handleOfferReviewsBack');
 
-    expect(calls).toEqual([entry('handleNotificationNavigate', returnTo.trim())]);
+    expect(calls).toEqual([entry('handleNotificationNavigate', returnTo.trim(), { replace: true })]);
   });
 
   it('adresa sa odovzdá v normalizovanom tvare (cesta, dotaz a hash)', () => {
@@ -299,7 +308,7 @@ describe('recenzie ponuky (handleOfferReviewsBack)', () => {
     fire(mounted, 'handleOfferReviewsBack');
 
     expect(calls).toEqual([
-      entry('handleNotificationNavigate', '/dashboard/users/j%C3%A1n?a=1&b=2#x'),
+      entry('handleNotificationNavigate', '/dashboard/users/j%C3%A1n?a=1&b=2#x', { replace: true }),
     ]);
   });
 
@@ -336,7 +345,9 @@ describe('recenzie ponuky (handleOfferReviewsBack)', () => {
 
     fire(mounted, 'handleOfferReviewsBack');
 
-    expect(calls).toEqual([entry('handleNotificationNavigate', '/dashboard/requests')]);
+    expect(calls).toEqual([
+      entry('handleNotificationNavigate', '/dashboard/requests', { replace: true }),
+    ]);
   });
 
   it('parameter returnTo sa číta presne podľa názvu', () => {
@@ -374,6 +385,71 @@ describe('recenzie ponuky (handleOfferReviewsBack)', () => {
     update(mounted, { searchParams: withReturnTo('/login') });
 
     expect(mounted.result.current.handleOfferReviewsBack).not.toBe(before);
+  });
+});
+
+describe('recenzie otvorila appka (značka pôvodu)', () => {
+  const REVIEWS_PATH = '/dashboard/offers/7/reviews';
+
+  /** Recenzie otvorené kartou ponuky: otvorenie si cestu zapamätá, zobrazená stránka ju prevezme. */
+  const openedByApp = () => {
+    markOfferReviewsPending(`${REVIEWS_PATH}?returnTo=x`);
+    window.history.replaceState(null, '', REVIEWS_PATH);
+    adoptOfferReviewsOrigin();
+  };
+
+  it('šípka urobí jeden krok späť v histórii a nič iné nezavolá (ani návratovú adresu)', () => {
+    openedByApp();
+    const mounted = mountHook({
+      searchParams: withReturnTo('/dashboard/users/jana?offer=7&side=back'),
+    });
+
+    fire(mounted, 'handleOfferReviewsBack');
+
+    expect(calls).toEqual([entry('history.back')]);
+  });
+
+  it('značka platí aj bez návratovej adresy: krok späť, nie bežný návrat', () => {
+    openedByApp();
+    const mounted = mountHook();
+
+    fire(mounted, 'handleOfferReviewsBack');
+
+    expect(calls).toEqual([entry('history.back')]);
+  });
+
+  it('bez značky (priamy vstup, F5) ostáva návratová adresa, a to cez replace', () => {
+    window.history.replaceState(null, '', REVIEWS_PATH);
+    adoptOfferReviewsOrigin();
+    const mounted = mountHook({ searchParams: withReturnTo('/dashboard/users/jana') });
+
+    fire(mounted, 'handleOfferReviewsBack');
+
+    expect(calls).toEqual([
+      entry('handleNotificationNavigate', '/dashboard/users/jana', { replace: true }),
+    ]);
+  });
+
+  it('značka patrí záznamu histórie: keď sa jeho stav prepíše, ide záložná adresa', () => {
+    openedByApp();
+    window.history.replaceState(null, '', REVIEWS_PATH);
+    const mounted = mountHook({ searchParams: withReturnTo('/dashboard/users/jana') });
+
+    fire(mounted, 'handleOfferReviewsBack');
+
+    expect(calls).toEqual([
+      entry('handleNotificationNavigate', '/dashboard/users/jana', { replace: true }),
+    ]);
+  });
+
+  it('bez značky aj bez návratovej adresy ide bežný návrat', () => {
+    window.history.replaceState(null, '', REVIEWS_PATH);
+    adoptOfferReviewsOrigin();
+    const mounted = mountHook();
+
+    fire(mounted, 'handleOfferReviewsBack');
+
+    expect(calls).toEqual([entry('handleMobileBack')]);
   });
 });
 

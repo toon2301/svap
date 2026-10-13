@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import OfferImageGalleryLightbox from '../shared/OfferImageGalleryLightbox';
+import { openOfferReviews } from '../reviews/offerReviewsOrigin';
 import type { Offer } from './profileOffersTypes';
 import { slugifyLabel } from './profileOffersTypes';
 import { MobileCardFlipHint } from './MobileCardFlipHint';
@@ -240,7 +241,7 @@ export function ProfileOfferCardMobile({
                 e.stopPropagation();
                 if (typeof offer.id !== 'number') return;
                 if (reviewsHref) {
-                  router.push(reviewsHref);
+                  openOfferReviews(router, reviewsHref);
                 }
               }}
             >

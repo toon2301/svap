@@ -20,6 +20,8 @@ import type { Review } from './ReviewCard';
 import type { ReviewsStats } from './reviewsSummary';
 import { invalidateOffersCache } from '../profile/profileOffersCache';
 import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
+import { useOfferReviewsBack } from '../../contexts/OfferReviewsBackContext';
+import { adoptOfferReviewsOrigin } from './offerReviewsOrigin';
 
 const REVIEWS_PAGE_SIZE = 10;
 
@@ -133,6 +135,7 @@ export default function OfferReviewsView({
   const user = dashboardUser ?? authUser;
   const viewerUserId = user?.id ?? null;
   const router = useRouter();
+  const onBack = useOfferReviewsBack();
   const searchParams = useSearchParams();
   const targetReviewId = useMemo(
     () => parsePositiveInteger(searchParams?.get('review_id') ?? null),
@@ -233,6 +236,12 @@ export default function OfferReviewsView({
   useEffect(() => {
     redirectRef.current = redirectToReviewedUserIfOfferDeleted;
   }, [redirectToReviewedUserIfOfferDeleted]);
+
+  // Recenzie otvorila appka z karty ponuky? Označ ich záznam histórie, nech šípka
+  // späť urobí skutočný krok späť (viď `offerReviewsOrigin`).
+  useEffect(() => {
+    adoptOfferReviewsOrigin();
+  }, []);
 
   useEffect(() => {
     if (offerId == null) {
@@ -520,6 +529,7 @@ export default function OfferReviewsView({
       {/* Desktop verzia */}
       <div className="hidden lg:block">
         <OfferReviewsDesktop
+          onBack={onBack}
           offer={offer}
           loading={loading}
           reviews={reviews}
