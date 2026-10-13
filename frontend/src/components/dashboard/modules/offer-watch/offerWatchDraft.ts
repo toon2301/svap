@@ -21,17 +21,20 @@ import {
   parseOfferWatchPrice,
 } from './offerWatchPrice';
 
+/** Narrow a currency to the application's supported watch-price options. */
 function isSupportedCurrency(
   value: string,
 ): value is OfferWatchPriceCurrency {
   return OFFER_WATCH_PRICE_CURRENCIES.some((currency) => currency === value);
 }
 
+/** Require a catalog-owned category/subcategory pair instead of arbitrary text. */
 function isCanonicalCategorySelection(category: string, subcategory: string): boolean {
   return Object.prototype.hasOwnProperty.call(skillsCategories, category)
     && skillsCategories[category]?.includes(subcategory) === true;
 }
 
+/** Create a new draft or normalize stored zero bounds without writing the saved watch. */
 export function createOfferWatchDraft(params: {
   watch?: OfferWatch | null;
   detectedCountryCode?: unknown;
@@ -64,6 +67,7 @@ export function createOfferWatchDraft(params: {
   };
 }
 
+/** Apply only a valid canonical catalog selection, preserving the rest of the draft. */
 export function selectOfferWatchCategory(
   draft: OfferWatchDraft,
   category: string,
@@ -73,6 +77,7 @@ export function selectOfferWatchCategory(
   return { ...draft, category, subcategory };
 }
 
+/** Reset the district on country change and fill a missing currency only for an active bound. */
 export function selectOfferWatchCountry(
   draft: OfferWatchDraft,
   countryCode: unknown,
@@ -90,6 +95,7 @@ export function selectOfferWatchCountry(
   };
 }
 
+/** Accept the current country's canonical district or the all-districts choice. */
 export function selectOfferWatchDistrict(
   draft: OfferWatchDraft,
   districtCode: unknown,
@@ -100,6 +106,7 @@ export function selectOfferWatchDistrict(
   return district ? { ...draft, districtCode: district.code } : draft;
 }
 
+/** Validate draft fields and produce canonical input with zero bounds represented by null. */
 export function validateOfferWatchDraft(
   draft: OfferWatchDraft,
 ): OfferWatchValidationResult {

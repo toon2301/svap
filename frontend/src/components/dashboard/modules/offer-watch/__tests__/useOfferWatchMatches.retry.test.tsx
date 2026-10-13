@@ -10,6 +10,7 @@ jest.mock('../offerWatchApi', () => ({
 
 const listMatches = jest.mocked(listOfferWatchMatches);
 
+/** Build a deterministic matches page with the exact cursor used by retry assertions. */
 function page(ids: number[], nextCursor: string | null = null): OfferWatchMatchesPage {
   return {
     results: ids.map((id) => ({
@@ -21,6 +22,7 @@ function page(ids: number[], nextCursor: string | null = null): OfferWatchMatche
   };
 }
 
+/** Control late resolution/rejection to exercise pending, superseded, and unmounted requests. */
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
@@ -31,6 +33,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+/** Mount the real hook with a completed first page and a reusable next-page cursor. */
 async function loadedHook() {
   listMatches.mockResolvedValueOnce(page([3, 2], 'second-page'));
   const hook = renderHook(({ id }) => useOfferWatchMatches(id), { initialProps: { id: 7 as number | null } });

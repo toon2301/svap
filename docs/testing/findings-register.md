@@ -60,6 +60,17 @@ Testovacia medzera priamo patriaca do OW-02:
 | TECH-02 | `src/lib/api.ts`: 907 riadkov pri kontrole 13. 10. | Zoznam technického dlhu; nie automatická oprava | Rovnaká podmienka pre `.ts` nad 500 riadkov. Zdieľaná API/auth logika potrebuje samostatné mapovanie a regresiu, nie tichý refaktor pri Sledovaní. |
 | TOOL-01 | `next lint` vyžaduje interaktívnu konfiguráciu | Zoznam testovacieho tooling-u | Bez zmeny repo konfigurácie prešiel spoločný cielený ESLint cez existujúce API a `next/core-web-vitals`: 18 súborov, 0 chýb/varovaní. Prípadnú neinteraktívnu konfiguráciu riešiť samostatne, bez oslabenia pravidiel. |
 
+## Nálezy Rabbit review PR #168
+
+| ID | Položka | Odporúčanie | Stav a ďalšie overenie |
+| --- | --- | --- | --- |
+| DOC-01 | Dva platné review komentáre: lokálne Markdown odkazy sú mimo autorovho checkoutu nefunkčné | Opraviť hneď v tomto review kole; nejde o chybu logiky aplikácie | Opravené relatívne odkazy v štyroch dokumentoch. Súkromná chatová príloha je označená ako neprístupná mimo chatu; nekopíruje sa do verejného Gitu. Všetky lokálne repo odkazy boli overené voči existujúcim cieľom. Čaká následná Rabbit kontrola. |
+| DOC-02 | Pre-merge upozornenie: Rabbit dokumentačné pokrytie 67,96 % naprieč FE/BE | Doplniť popisy hneď bez zmeny správania; neodkladať do funkčných fáz | Doplnený JSDoc chýbajúcich pomenovaných FE funkcií a pomocníkov v rozsahu OW-01/02. Lokálny TS AST audit: 55/55, 100 %. Toto nie je rovnaký algoritmus ako Rabbit; jeho nové skóre zatiaľ nepotvrdené. Emitovaný JavaScript všetkých 16 upravených TS/TSX súborov je pri odstránení komentárov identický s HEAD 1265d1d1. Python sa v tomto kole nemenil. |
+
+Podrobnosti rozhodnutí a výsledkov tohto dokumentačného kola:
+[overenie PR #168](offer-watch-rabbit-168-2026-10-13.md).
+APP/ENV/TECH/TOOL a OW-09 týmto review kolom nie sú automaticky uzavreté.
+
 Konkrétne testy ENV-01:
 
 - `swaply/test/test_image_moderation_extra.py::test_racy_only_allows_when_policy_false`
@@ -77,15 +88,17 @@ Konkrétne testy ENV-01:
 ## Zdroje a hranice evidencie
 
 - Manuálny súhrn 24.–25. 9. 2026:
-  [pôvodné výsledky](<C:/Users/info/.codex/attachments/87185b92-42e0-4cd8-9001-a2b051ba5c82/Pasted text.txt>).
+  používateľova súkromná príloha `Pasted text.txt` z tohto chatu. Nie je súčasťou
+  repozitára ani verejne dostupným zdrojom; ostatní čitatelia k nej nemajú prístup.
+  Súpis otvorených bodov z nej je zachovaný v tomto registri. Príloha sa do Gitu nekopíruje.
 - Implementácia a kontroly OW-01:
-  [súhrn nulových cien](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-zero-prices-2026-10-13.md).
+  [súhrn nulových cien](offer-watch-zero-prices-2026-10-13.md).
 - Mapovanie, diagnostické kontroly a plán testov OW-02:
-  [mapovanie stránkovania](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-pagination-map-2026-10-13.md).
+  [mapovanie stránkovania](offer-watch-pagination-map-2026-10-13.md).
 - Implementácia a spoločné lokálne kontroly OW-01/02:
-  [implementácia stránkovania](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-pagination-implementation-2026-10-13.md).
+  [implementácia stránkovania](offer-watch-pagination-implementation-2026-10-13.md).
 - Checklist po review a nasadení:
-  [spoločné manuálne testy](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-ow01-ow02-manual-2026-10-13.md).
+  [spoločné manuálne testy](offer-watch-ow01-ow02-manual-2026-10-13.md).
 - M13/M14/M33 pochádzajú z používateľovho odloženého iOS testovania; nie sú
   nahradené automatickými testami alebo zberom Playwright scenárov.
 - Pri starších nálezoch nie je bez nového overenia tvrdené, že sa odvtedy
@@ -121,3 +134,9 @@ M13/M14/M33 povinne pripomenúť pri tomto testovacom cykle.
   TEST-01 lokálne doplnený; živá geometria čaká. Existujúce APP-01/ENV-01
   zostávajú otvorené, nepribudla nová potvrdená chyba z finálnych lokálnych kontrol.
   Commit/push autorizovaný používateľom, review spúšťa používateľ; nič sa nenasadzuje.
+- 13. 10. 2026, Rabbit PR #168 na 1265d1d1: overené dva platné komentáre o
+  neprenosných odkazoch a dokumentačné pre-merge upozornenie. DOC-01/02 odporučené
+  opraviť hneď a lokálne opravené. Opakovaných 275 testov PASS, cielené vetvy
+  99,58 %, TypeScript a lint PASS; JSDoc audit 55/55. Správanie sa nemenilo,
+  backend/migrácie ani používateľova rozpracovaná práca sa neupravujú.
+  Čaká nový Rabbit výsledok a pôvodný plánovaný živý/manuálny retest OW-01/02.

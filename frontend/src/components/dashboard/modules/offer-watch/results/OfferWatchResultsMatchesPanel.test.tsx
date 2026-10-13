@@ -38,6 +38,7 @@ const watch: OfferWatch = {
   updatedAt: '2026-09-02T08:00:00Z',
 };
 
+/** Generate descending fixture IDs to detect lost, duplicated, or reordered cards. */
 function matches(count = 2): OfferWatchMatch[] {
   return Array.from({ length: count }, (_, index) => ({
     offer: { id: count - index, category: watch.category, subcategory: watch.subcategory, description: '' },
@@ -45,6 +46,7 @@ function matches(count = 2): OfferWatchMatch[] {
   }));
 }
 
+/** Provide selectable hook states and separate spies for refresh versus pagination. */
 function hookResult(overrides: Partial<UseOfferWatchMatchesResult> = {}): UseOfferWatchMatchesResult {
   return {
     matches: [],
@@ -59,11 +61,13 @@ function hookResult(overrides: Partial<UseOfferWatchMatchesResult> = {}): UseOff
   };
 }
 
+/** Render the real panel against a specified loading/error state without network requests. */
 function renderPanel(state: UseOfferWatchMatchesResult) {
   mockedHook.mockReturnValue(state);
   return render(<OfferWatchResultsMatchesPanel watch={watch} onWatchUnavailable={onWatchUnavailable} />);
 }
 
+/** Assert DOM ordering so merely finding the error text cannot conceal its wrong placement. */
 function expectBefore(first: Element, second: Element) {
   expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 }
@@ -132,6 +136,7 @@ describe('OfferWatchResultsMatchesPanel error placement', () => {
     const original = matches(10);
     const state = hookResult({ matches: original, nextCursor: 'next', error: new OfferWatchApiError('network') });
     const { rerender } = renderPanel(state);
+    /** Rerender successive retry states while preserving the original card fixture. */
     const update = (overrides: Partial<UseOfferWatchMatchesResult>) => {
       mockedHook.mockReturnValue({ ...state, ...overrides });
       rerender(<OfferWatchResultsMatchesPanel watch={watch} onWatchUnavailable={onWatchUnavailable} />);

@@ -8,6 +8,7 @@ import { cleanupCreatedWatches, readWatches, type SavedWatch } from './support/o
 // Never mutate existing watches. Keep workers=1 and do not run concurrently on the same account.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+/** Resolve Slovak catalog labels so the E2E test selects a canonical unused pair. */
 function translate(key: string, fallback?: string): string {
   let value: unknown = skMessages;
   for (const part of key.split('.')) {
@@ -16,6 +17,7 @@ function translate(key: string, fallback?: string): string {
   return typeof value === 'string' ? value : fallback || key;
 }
 
+/** Save via the real form and capture a successful new ID before any assertion for cleanup. */
 async function saveWatch(page: Page, createdIds: Set<number>, id?: number): Promise<SavedWatch> {
   const method = id === undefined ? 'POST' : 'PATCH';
   const path = id === undefined ? '/api/auth/offer-watches/' : `/api/auth/offer-watches/${id}/`;
@@ -34,12 +36,14 @@ async function saveWatch(page: Page, createdIds: Set<number>, id?: number): Prom
   return data;
 }
 
+/** Open editing for the test-created watch identified by its unique subcategory label. */
 async function editWatch(page: Page, label: string) {
   await page.locator('article').filter({ has: page.getByRole('heading', { name: label, exact: true }) })
     .getByRole('button', { name: 'Upraviť sledovanie', exact: true }).click();
   await expect(page.getByLabel('Cena od', { exact: true }).filter({ visible: true })).toBeVisible();
 }
 
+/** Exercise fractional typing or fill both bounds, then commit the maximum with blur. */
 async function fillPrices(page: Page, minimum: string, maximum: string) {
   const min = page.getByLabel('Cena od', { exact: true }).filter({ visible: true });
   const max = page.getByLabel('Cena do', { exact: true }).filter({ visible: true });

@@ -189,13 +189,13 @@ Avatar do tohto testovania nepatrí.
 ## Ďalší krok
 
 Spoločná evidencia ďalších nálezov a neuzavretých overení je v
-[registri nálezov](C:/Projects/svap-google-login-audit/docs/testing/findings-register.md).
+[registri nálezov](findings-register.md).
 Stavy sa aktualizujú tam; tento súhrn ostáva záznamom výsledkov konkrétnej opravy.
 
 Následná aktualizácia 13. 10.: OW-02 je tiež implementované a lokálne overené.
 Spoločné výsledky a hranice overenia sú v
-[súhrne OW-02](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-pagination-implementation-2026-10-13.md).
+[súhrne OW-02](offer-watch-pagination-implementation-2026-10-13.md).
 Po Rabbit kontrole a nasadení oboch opráv vrátane 0123 použiť
-[spoločné manuálne testy](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-ow01-ow02-manual-2026-10-13.md).
+[spoločné manuálne testy](offer-watch-ow01-ow02-manual-2026-10-13.md).
 Pri úspešnom uzavretí nasleduje mapovanie OW-03, nie automatická implementácia
 ďalších evidovaných nálezov.

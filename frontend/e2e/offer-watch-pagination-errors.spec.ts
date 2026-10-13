@@ -39,6 +39,7 @@ for (const theme of ['light', 'dark'] as const) {
       let mode: 'fail' | 'hold' = 'fail';
       let release!: () => void;
       const gate = new Promise<void>((resolve) => { release = resolve; });
+      /** Intercept only this fixture's cursor requests, leaving its first page and auth intact. */
       const matcher = (url: URL) => matchesUrl(watch.id, url) && url.searchParams.has('cursor');
       await page.route(matcher, async (route) => {
         if (route.request().method() !== 'GET') { await route.continue(); return; }
@@ -101,6 +102,7 @@ for (const theme of ['light', 'dark'] as const) {
     test('desktop: first-page failure retries the first page without showing a false empty state', async ({ page, isMobile }) => {
       test.skip(isMobile, 'Desktop results only.');
       const watch = await paginatedWatchOrSkip(page);
+      /** Fail only the fixture's initial page so retry must restart without a cursor. */
       const matcher = (url: URL) => matchesUrl(watch.id, url) && !url.searchParams.has('cursor');
       let blocked = true;
       const cursors: (string | null)[] = [];
@@ -136,6 +138,7 @@ for (const theme of ['light', 'dark'] as const) {
       await openResults(page, watch.id);
       const panel = page.locator(RESULTS_PANEL);
       const count = await markOriginalCards(panel);
+      /** Observe this watch's refresh/retry requests without blocking unrelated endpoints. */
       const matcher = (url: URL) => matchesUrl(watch.id, url);
       let blocked = true;
       const cursors: (string | null)[] = [];

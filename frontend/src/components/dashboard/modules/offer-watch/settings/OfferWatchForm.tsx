@@ -43,6 +43,7 @@ type OfferWatchFormProps = {
   onOpenMobilePicker?: (picker: OfferWatchPickerKind) => void;
 };
 
+/** Render the translated validation error referenced by its associated form control. */
 function FieldError({
   id,
   field,
@@ -62,6 +63,7 @@ function FieldError({
   );
 }
 
+/** Share controlled watch filters across desktop creation/editing and mobile forms. */
 export default function OfferWatchForm({
   idPrefix,
   draft,
@@ -90,15 +92,18 @@ export default function OfferWatchForm({
   const categoryError = errors.subcategory || errors.category;
   const controlsDisabled = disabled || isSubmitting;
 
+  /** Delegate saving only when controls are enabled, without native form navigation. */
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!controlsDisabled) onSubmit();
   };
 
+  /** Keep raw typing intact and clear errors for the price/currency fields being edited. */
   const changePrice = (field: 'priceMin' | 'priceMax', value: string) => {
     onChange(changeOfferWatchPrice(draft, field, value), [field, 'priceCurrency']);
   };
 
+  /** Normalize zeros on blur and clear errors only for fields whose values changed. */
   const commitPrice = () => {
     const normalized = normalizeOfferWatchZeroBounds(draft);
     const clearFields = (['priceMin', 'priceMax', 'priceCurrency'] as const)

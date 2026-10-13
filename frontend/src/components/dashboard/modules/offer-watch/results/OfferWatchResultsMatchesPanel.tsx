@@ -40,6 +40,7 @@ export default function OfferWatchResultsMatchesPanel({
     onWatchUnavailable();
   }, [error, onWatchUnavailable]);
 
+  /** Retry the preserved next-page cursor, or restart the first page after refresh failure. */
   const retry = () => {
     if (nextCursor && hasMatches) void loadMore();
     else void refresh();

@@ -6,6 +6,7 @@ import type { OfferWatch, OfferWatchDraft } from '../types';
 
 const [CATEGORY, SUBCATEGORIES] = Object.entries(skillsCategories)[0]!;
 
+/** Build valid catalog filters with overridable bounds for the zero-price contract. */
 function draft(overrides: Partial<OfferWatchDraft> = {}): OfferWatchDraft {
   return {
     category: CATEGORY,

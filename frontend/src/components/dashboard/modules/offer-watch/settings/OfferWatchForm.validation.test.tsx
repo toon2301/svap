@@ -9,6 +9,7 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+/** Render a controlled form variant and return spies for field changes and submission. */
 function renderVariant(overrides: Partial<ComponentProps<typeof OfferWatchForm>> = {}) {
   const props: ComponentProps<typeof OfferWatchForm> = {
     idPrefix: 'validation-watch',

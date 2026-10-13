@@ -16,6 +16,7 @@ const COUNTRY_CURRENCY: Readonly<Record<string, OfferWatchPriceCurrency>> = {
   US: '$',
 };
 
+/** Resolve a supported country currency, leaving unsupported defaults for manual selection. */
 export function defaultOfferWatchCurrency(
   countryCode: unknown,
 ): OfferWatchPriceCurrency | '' {
@@ -24,6 +25,7 @@ export function defaultOfferWatchCurrency(
   return COUNTRY_CURRENCY[normalizedCountry] || '';
 }
 
+/** Update one raw bound without erasing a typed fraction or a manually selected currency. */
 export function changeOfferWatchPrice(
   draft: OfferWatchDraft,
   field: 'priceMin' | 'priceMax',

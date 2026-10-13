@@ -3,6 +3,7 @@ import { readWatches, type SavedWatch } from './offer-watch';
 
 export const RESULTS_PANEL = 'section[aria-labelledby="offer-watch-results-matches-title"]';
 
+/** Match only one watch's results endpoint, excluding authentication and other API routes. */
 export function matchesUrl(watchId: number, url: URL): boolean {
   return url.pathname === `/api/auth/offer-watches/${watchId}/matches/`;
 }
@@ -52,6 +53,7 @@ export async function paginatedWatchOrSkip(page: Page): Promise<SavedWatch> {
   throw new Error('Unreachable after a missing-fixture skip.');
 }
 
+/** Open the deployed results route and wait for its real first-page response and card count. */
 export async function openResults(page: Page, watchId: number): Promise<MatchPage> {
   const responsePromise = page.waitForResponse((response) =>
     response.request().method() === 'GET'
@@ -75,6 +77,7 @@ export async function markOriginalCards(panel: Locator): Promise<number> {
   });
 }
 
+/** Verify that all test-tagged original DOM cards remain in their original order. */
 export async function expectOriginalCards(panel: Locator, count: number): Promise<void> {
   expect(await panel.locator('[data-watch-test-index]').evaluateAll((cards) =>
     cards.map((card) => card.getAttribute('data-watch-test-index')),
@@ -99,6 +102,7 @@ export async function expectErrorAfterAllCards(panel: Locator): Promise<void> {
   expect(geometry.noticeTop).toBeGreaterThanOrEqual(geometry.lastRowBottom - 1);
 }
 
+/** Keep refresh errors before preserved cards, distinct from next-page error placement. */
 export async function expectErrorBeforeCards(panel: Locator): Promise<void> {
   const alert = panel.getByRole('alert');
   await expect(alert).toHaveCount(1);

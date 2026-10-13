@@ -4,6 +4,7 @@ const DECIMAL_PATTERN = /^\d+(?:[.,]\d{1,2})?$/;
 
 type ParsedPrice = { normalized: string; cents: number };
 
+/** Parse an allowed watch bound as exact cents; reject malformed or oversized input. */
 export function parseOfferWatchPrice(value: string): ParsedPrice | null {
   const trimmed = value.trim();
   if (!DECIMAL_PATTERN.test(trimmed)) return null;
@@ -25,6 +26,7 @@ export function normalizeOfferWatchZeroPrice(value: string): string {
   return parseOfferWatchPrice(value)?.cents === 0 ? '' : value;
 }
 
+/** Treat valid zero bounds as absent while retaining invalid text for validation. */
 export function hasOfferWatchPriceFilter(
   draft: Pick<OfferWatchDraft, 'priceMin' | 'priceMax'>,
 ): boolean {

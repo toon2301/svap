@@ -6,14 +6,14 @@ Tento dokument je plán; implementácia OW-02 ešte nezačala.
 
 ## Potvrdená príčina
 
-V [OfferWatchResultsMatchesPanel.tsx](C:/Projects/svap-google-login-audit/frontend/src/components/dashboard/modules/offer-watch/results/OfferWatchResultsMatchesPanel.tsx:73)
+V [OfferWatchResultsMatchesPanel.tsx](../../frontend/src/components/dashboard/modules/offer-watch/results/OfferWatchResultsMatchesPanel.tsx)
 sa spoločný chybový blok vykresľuje pred samotným gridom kariet. Podmienka
 je iba existencia `error`, bez rozlíšenia miesta zlyhania. Preto sa aj chyba
 načítania ďalšej stránky ukazuje nad už načítaným obsahom.
 
 Nie je potrebné meniť backendové stránkovanie ani spôsob skladania výsledkov.
 
-- [useOfferWatchMatches.ts](C:/Projects/svap-google-login-audit/frontend/src/components/dashboard/modules/offer-watch/useOfferWatchMatches.ts:126)
+- [useOfferWatchMatches.ts](../../frontend/src/components/dashboard/modules/offer-watch/useOfferWatchMatches.ts)
   pri `loadMore()` odošle uložený kurzor, pri zlyhaní nezmaže karty ani kurzor
   a vo `finally` uvoľní iba zámok aktuálnej požiadavky.
 - Pri `refresh()` sa kurzor najprv vynuluje. Pri neúspechu zostanú aktuálne

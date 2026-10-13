@@ -116,6 +116,6 @@ APP-01, ENV-01, TECH/TOOL a OW-03 až OW-08 sa týmto kolom neopravovali.
 
 Nasleduje používateľova Rabbit kontrola, potom nasadenie (vrátane 0123),
 reálny Playwright a
-[spoločné manuálne testy](C:/Projects/svap-google-login-audit/docs/testing/offer-watch-ow01-ow02-manual-2026-10-13.md).
+[spoločné manuálne testy](offer-watch-ow01-ow02-manual-2026-10-13.md).
 Povinne zopakovať M13, M14, M33 a regresiu M32/R05. Pri úspešnom uzavretí
 OW-01/OW-02 sa mapuje OW-03 – odstránenie Like iba vo výsledkoch Sledovaní.

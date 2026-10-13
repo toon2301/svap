@@ -6,6 +6,7 @@ import {
 } from '../offerWatchPrice';
 import type { OfferWatchDraft } from '../types';
 
+/** Build a controlled watch draft for parsing and zero-normalization edge cases. */
 function draft(overrides: Partial<OfferWatchDraft> = {}): OfferWatchDraft {
   return {
     category: '', subcategory: '', isSeeking: false, countryCode: 'SK', districtCode: '',

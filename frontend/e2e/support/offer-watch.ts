@@ -28,6 +28,7 @@ async function callWatchApi(page: Page, method: 'GET' | 'DELETE', id?: number) {
   }, { method, path: id === undefined ? WATCHES_API : `${WATCHES_API}${id}/` });
 }
 
+/** Read only the authenticated test account's watches through the app's same-origin API. */
 export async function readWatches(page: Page): Promise<SavedWatch[]> {
   const response = await callWatchApi(page, 'GET');
   if (response.status !== 200 || !Array.isArray(response.data)) {

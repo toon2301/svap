@@ -15,8 +15,10 @@ jest.mock('@/contexts/LanguageContext', () => ({
 
 const [CATEGORY, SUBCATEGORIES] = Object.entries(skillsCategories)[0]!;
 
+/** Mount a stateful desktop/mobile form so typing, blur, and validation run together. */
 function renderForm(mobile: boolean, overrides: Partial<OfferWatchDraft> = {}) {
   const onSubmit = jest.fn();
+  /** Own the draft and expose the shared validator's actual submitted payload to the test. */
   function Form() {
     const [draft, setDraft] = useState<OfferWatchDraft>({
       category: CATEGORY, subcategory: SUBCATEGORIES[0]!, isSeeking: false,

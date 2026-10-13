@@ -24,6 +24,7 @@ jest.mock('@/contexts/LanguageContext', () => ({
 const [CATEGORY, SUBCATEGORIES] = Object.entries(skillsCategories)[0]!;
 const SUBCATEGORY = SUBCATEGORIES[0]!;
 
+/** Supply a saved priced watch that can also represent a legacy zero-valued fixture. */
 function watch(overrides: Partial<OfferWatch> = {}): OfferWatch {
   return {
     id: 7, category: CATEGORY, subcategory: SUBCATEGORY, isSeeking: false,
@@ -34,6 +35,7 @@ function watch(overrides: Partial<OfferWatch> = {}): OfferWatch {
   };
 }
 
+/** Mock successful persistence so the real desktop/mobile forms can be tested in isolation. */
 function hook(): UseOfferWatchesResult {
   return {
     watches: [watch()], isLoading: false, mutation: null, error: null,
@@ -43,6 +45,7 @@ function hook(): UseOfferWatchesResult {
   };
 }
 
+/** Update both controlled price inputs without introducing an implicit blur event. */
 function fillPrices(min: string, max: string) {
   fireEvent.change(screen.getByLabelText('Cena od'), { target: { value: min } });
   fireEvent.change(screen.getByLabelText('Cena do'), { target: { value: max } });
