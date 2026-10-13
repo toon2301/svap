@@ -403,7 +403,7 @@ describe('recenzie ponuky (offer-reviews)', () => {
   });
 
   describe('recenzie otvorila appka z karty ponuky (značka pôvodu)', () => {
-    const RETURN_TO = `returnTo=${encodeURIComponent('/dashboard/users/jana?offer=3&side=back')}`;
+    const RETURN_TO = `returnTo=${encodeURIComponent('/dashboard/users/jana')}`;
 
     /** Karta ponuky recenzie otvorila a zobrazená stránka prevzala pôvod. */
     const openedFromCard = () => {
@@ -449,7 +449,7 @@ describe('recenzie ponuky (offer-reviews)', () => {
 
       act(() => mockOfferReviewsBack?.());
 
-      expect(mockRouter.replace).toHaveBeenCalledWith('/dashboard/users/jana?offer=3&side=back');
+      expect(mockRouter.replace).toHaveBeenCalledWith('/dashboard/users/jana');
       expect(mockRouter.push).not.toHaveBeenCalled();
       expect(activeModule()).toBe('user-profile');
     });

@@ -401,7 +401,7 @@ describe('recenzie otvorila appka (značka pôvodu)', () => {
   it('šípka urobí jeden krok späť v histórii a nič iné nezavolá (ani návratovú adresu)', () => {
     openedByApp();
     const mounted = mountHook({
-      searchParams: withReturnTo('/dashboard/users/jana?offer=7&side=back'),
+      searchParams: withReturnTo('/dashboard/users/jana'),
     });
 
     fire(mounted, 'handleOfferReviewsBack');

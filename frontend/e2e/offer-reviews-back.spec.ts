@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { expect, test, type Page } from '@playwright/test';
 
-import { gotoDashboardHome, historyLength, pathOf, searchOf, topBarBack } from './support/dashboard';
+import { gotoDashboardHome, historyLength, mainScrollTop, pathOf, searchOf, topBarBack } from './support/dashboard';
 import { FEED_HOME_PATHS } from './support/feed';
 
 // Recenzie ponuky otvorené z karty vlastnej ponuky a návrat. Iba čítanie – recenzia sa nepridáva ani nemení.
@@ -14,7 +14,12 @@ import { FEED_HOME_PATHS } from './support/feed';
 //
 // Testovací účet musí mať na vlastnom profile aspoň jednu ponuku (nie „hľadám“) – tá má tlačidlo
 // „Pridať recenziu“, ktoré recenzie otvára.
+//
+// Posledný test (cudzí profil po F5) beží len s E2E_PEER_SLUG – slug TVOJHO druhého testovacieho účtu, ktorý
+// má aspoň jednu ponuku (nie „hľadám“); pozri .env.e2e.example. Otvorenie jeho profilu zapíše 1 návštevu
+// profilu na účet a deň, inak sa nič nezapisuje.
 
+const PEER_SLUG = (process.env.E2E_PEER_SLUG ?? '').trim();
 const REVIEW_BUTTON = 'button[aria-label="Pridať recenziu"]';
 const REVIEWS_PATH = /^\/dashboard\/offers\/\d+\/reviews$/;
 const OWN_PROFILE_PATH = /^\/dashboard\/users\/[^/]+$/;
@@ -124,5 +129,50 @@ test.describe('desktop', () => {
 
     await page.goBack();
     await expectBackOnHome(page, 'Back v prehliadači po šípke');
+  });
+});
+
+test.describe('cudzí profil po F5', () => {
+  test.beforeEach(() => {
+    test.skip(!PEER_SLUG, 'E2E_PEER_SLUG nie je nastavené – test potrebuje druhý testovací účet s ponukou (pozri .env.e2e.example).');
+  });
+
+  // Po F5 appka nevie, odkiaľ sa recenzie otvorili, a šípka ide na záložnú adresu profilu. Tá má byť OBYČAJNÝ
+  // profil: predtým niesla `offer=…&side=back`, takže sa karta zvýraznila, otočila (na mobile otvorila spodný
+  // panel) a stránka na ňu preskočila.
+  test('after a reload the arrow returns to the plain profile without a highlighted or flipped card', async ({ page }, testInfo) => {
+    const tap = testInfo.project.name === 'webkit-mobile';
+    const peerPath = `/dashboard/users/${PEER_SLUG}`;
+
+    await page.goto(peerPath);
+    await expect.poll(() => pathOf(page), { message: 'Profil druhého účtu sa neotvoril' }).toBe(peerPath);
+    const reviewButton = page.locator(REVIEW_BUTTON).filter({ visible: true }).first();
+    await expect(
+      reviewButton,
+      'Príprava: druhý testovací účet nemá ponuku s tlačidlom „Pridať recenziu“ – vytvor aspoň jednu.',
+    ).toBeVisible();
+    if (tap) await reviewButton.tap();
+    else await reviewButton.click();
+    await expect.poll(() => pathOf(page), { message: 'Tlačidlo recenzií neotvorilo stránku recenzií' }).toMatch(REVIEWS_PATH);
+
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+
+    const arrow = tap
+      ? topBarBack(page)
+      : page.getByRole('button', { name: BACK_BUTTON_NAME }).filter({ visible: true }).first();
+    await expect(arrow, 'Na stránke recenzií po F5 chýba šípka Späť').toBeVisible();
+    if (tap) await arrow.tap();
+    else await arrow.click();
+
+    await expect.poll(() => pathOf(page), { message: 'Šípka po F5 nevrátila na profil druhého účtu' }).toBe(peerPath);
+    // Zvýraznenie aj otočenie karty sa v adrese objavia hneď, no appka ich po chvíli z nej zmaže – meria sa
+    // po ustálení a okrem adresy aj to, čo je naozaj vidieť.
+    await page.waitForTimeout(800);
+    expect(searchOf(page), 'Profil sa otvoril so zvýraznenou alebo otočenou kartou').not.toMatch(
+      /side=back|offer=|highlight=/,
+    );
+    await expect(page.locator('.highlight-offer-card'), 'Niektorá karta je zvýraznená').toHaveCount(0);
+    expect(await mainScrollTop(page), 'Profil sa prescrolloval na kartu, z ktorej sa otvorili recenzie').toBe(0);
   });
 });

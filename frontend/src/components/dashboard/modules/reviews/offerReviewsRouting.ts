@@ -46,9 +46,11 @@ export function buildOfferReviewsReturnTo({
   const identifier = String(ownerIdentifier ?? '').trim();
   if (!identifier) return null;
 
-  return `/dashboard/users/${encodeURIComponent(identifier)}?offer=${encodeURIComponent(
-    String(parsedOfferId),
-  )}&side=back`;
+  // The plain profile, same as for the own one: no `offer` (it would highlight the card and scroll
+  // to it) and no `side=back` (it would flip the card, on mobile open its bottom sheet). This target
+  // is only used when the reviews page has no history step to go back to (reload, new tab), and
+  // going back from the reviews must not reopen one particular card there.
+  return `/dashboard/users/${encodeURIComponent(identifier)}`;
 }
 
 export function buildOfferReviewsPath(
