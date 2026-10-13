@@ -1,0 +1,9 @@
+[run]
+branch = True
+source =
+    accounts.models.offer_watches
+    accounts.migrations.0123_normalize_offer_watch_zero_prices
+
+[report]
+fail_under = 95
+show_missing = True

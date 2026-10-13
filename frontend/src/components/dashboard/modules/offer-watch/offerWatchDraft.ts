@@ -15,35 +15,16 @@ import {
   type OfferWatchValidationResult,
 } from './types';
 import { defaultOfferWatchCurrency } from './offerWatchCurrency';
-
-const DECIMAL_PATTERN = /^\d+(?:[.,]\d{1,2})?$/;
-
-type ParsedPrice = {
-  normalized: string;
-  cents: number;
-};
+import {
+  hasOfferWatchPriceFilter,
+  normalizeOfferWatchZeroBounds,
+  parseOfferWatchPrice,
+} from './offerWatchPrice';
 
 function isSupportedCurrency(
   value: string,
 ): value is OfferWatchPriceCurrency {
   return OFFER_WATCH_PRICE_CURRENCIES.some((currency) => currency === value);
-}
-
-function parsePrice(value: string): ParsedPrice | null {
-  const trimmed = value.trim();
-  if (!DECIMAL_PATTERN.test(trimmed)) return null;
-
-  const [integerPart, decimalPart = ''] = trimmed.replace(',', '.').split('.');
-  const normalizedInteger = integerPart.replace(/^0+(?=\d)/, '') || '0';
-  if (normalizedInteger.length > 8) return null;
-  const normalizedDecimal = decimalPart.replace(/0+$/, '');
-  return {
-    normalized: normalizedDecimal
-      ? `${normalizedInteger}.${normalizedDecimal}`
-      : normalizedInteger,
-    cents:
-      Number(normalizedInteger) * 100 + Number(decimalPart.padEnd(2, '0')),
-  };
 }
 
 function isCanonicalCategorySelection(category: string, subcategory: string): boolean {
@@ -57,7 +38,7 @@ export function createOfferWatchDraft(params: {
 } = {}): OfferWatchDraft {
   const watch = params.watch;
   if (watch) {
-    return {
+    return normalizeOfferWatchZeroBounds({
       category: watch.category,
       subcategory: watch.subcategory,
       isSeeking: watch.isSeeking,
@@ -66,7 +47,7 @@ export function createOfferWatchDraft(params: {
       priceMin: watch.priceMin ?? '',
       priceMax: watch.priceMax ?? '',
       priceCurrency: watch.priceCurrency,
-    };
+    });
   }
 
   return {
@@ -98,7 +79,7 @@ export function selectOfferWatchCountry(
 ): OfferWatchDraft {
   const normalized = normalizeOfferCountryCode(countryCode);
   if (normalized === draft.countryCode) return draft;
-  const hasPrice = Boolean(draft.priceMin.trim() || draft.priceMax.trim());
+  const hasPrice = hasOfferWatchPriceFilter(draft);
   return {
     ...draft,
     countryCode: normalized,
@@ -147,15 +128,17 @@ export function validateOfferWatchDraft(
 
   const rawPriceMin = draft.priceMin.trim();
   const rawPriceMax = draft.priceMax.trim();
-  const priceMin = rawPriceMin ? parsePrice(rawPriceMin) : null;
-  const priceMax = rawPriceMax ? parsePrice(rawPriceMax) : null;
-  if (rawPriceMin && !priceMin) errors.priceMin = 'invalid_price';
-  if (rawPriceMax && !priceMax) errors.priceMax = 'invalid_price';
+  const parsedMin = rawPriceMin ? parseOfferWatchPrice(rawPriceMin) : null;
+  const parsedMax = rawPriceMax ? parseOfferWatchPrice(rawPriceMax) : null;
+  if (rawPriceMin && !parsedMin) errors.priceMin = 'invalid_price';
+  if (rawPriceMax && !parsedMax) errors.priceMax = 'invalid_price';
+  const priceMin = parsedMin?.cents ? parsedMin : null;
+  const priceMax = parsedMax?.cents ? parsedMax : null;
   if (priceMin && priceMax && priceMin.cents > priceMax.cents) {
     errors.priceMax = 'price_order';
   }
 
-  const hasPrice = Boolean(rawPriceMin || rawPriceMax);
+  const hasPrice = hasOfferWatchPriceFilter(draft);
   const priceCurrency = draft.priceCurrency;
   if (hasPrice && !priceCurrency) {
     errors.priceCurrency = 'currency_required';

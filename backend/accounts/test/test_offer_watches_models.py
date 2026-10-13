@@ -18,6 +18,7 @@ User = get_user_model()
 
 
 def create_user(suffix):
+    """Create a verified owner for isolated watch model tests."""
     return User.objects.create_user(
         username=f"watch-{suffix}",
         email=f"watch-{suffix}@example.com",
@@ -27,6 +28,7 @@ def create_user(suffix):
 
 
 def watch_fields(**overrides):
+    """Build valid filters and omit currency only when both bounds are absent."""
     values = {
         "category": "Domácnosť a služby",
         "subcategory": "Maliarske práce",
@@ -48,6 +50,7 @@ def watch_fields(**overrides):
 
 
 def create_offer(user, **overrides):
+    """Create a matching card fixture for candidate ownership checks."""
     values = {
         "category": "Domácnosť a služby",
         "subcategory": "Maliarske práce",
@@ -64,6 +67,7 @@ def create_offer(user, **overrides):
 
 @pytest.mark.django_db
 def test_create_offer_watch_normalizes_location_and_assigns_first_free_slot():
+    """Normalize location while allocating the first unused per-owner slot."""
     user = create_user("slots")
     first = create_offer_watch(
         user=user,
@@ -81,6 +85,7 @@ def test_create_offer_watch_normalizes_location_and_assigns_first_free_slot():
 
 @pytest.mark.django_db
 def test_create_offer_watch_stores_canonical_district_code():
+    """Store the canonical district identifier rather than a historical label."""
     user = create_user("canonical-district")
 
     watch = create_offer_watch(
@@ -93,6 +98,7 @@ def test_create_offer_watch_stores_canonical_district_code():
 
 @pytest.mark.django_db
 def test_create_offer_watch_rejects_sixth_watch():
+    """Enforce the five-watch service limit without creating a sixth row."""
     user = create_user("limit")
     for index in range(5):
         create_offer_watch(
@@ -108,6 +114,7 @@ def test_create_offer_watch_rejects_sixth_watch():
 
 @pytest.mark.django_db
 def test_database_slot_constraints_enforce_maximum_and_unique_position():
+    """Reject reused and out-of-range slots even when validation is bypassed."""
     user = create_user("db-slots")
     OfferWatch.objects.create(user=user, slot=1, **watch_fields())
 
@@ -136,6 +143,7 @@ def test_database_slot_constraints_enforce_maximum_and_unique_position():
     ],
 )
 def test_database_rejects_invalid_country_and_price_ranges(overrides):
+    """Keep database protection for unsupported countries and invalid ranges."""
     user = create_user(f"db-check-{len(str(overrides))}")
 
     with pytest.raises(IntegrityError), transaction.atomic():
@@ -145,6 +153,7 @@ def test_database_rejects_invalid_country_and_price_ranges(overrides):
 @pytest.mark.django_db
 @pytest.mark.parametrize("field", ["category", "subcategory"])
 def test_database_rejects_empty_category_fields(field):
+    """Require both category fields at the database boundary."""
     user = create_user(f"empty-{field}")
 
     with pytest.raises(IntegrityError), transaction.atomic():
@@ -157,6 +166,7 @@ def test_database_rejects_empty_category_fields(field):
 
 @pytest.mark.django_db
 def test_duplicate_filters_are_rejected_even_when_optional_prices_are_null():
+    """Make null-bound filter uniqueness independent of SQL null equality."""
     user = create_user("duplicate")
     filters = watch_fields(price_min=None, price_max=None)
     OfferWatch.objects.create(user=user, slot=1, **filters)
@@ -168,6 +178,7 @@ def test_duplicate_filters_are_rejected_even_when_optional_prices_are_null():
 @pytest.mark.django_db
 @pytest.mark.parametrize("currency", ["€", "Kč", "$", "zł", "Ft"])
 def test_offer_watch_accepts_every_supported_price_currency(currency):
+    """Trim and retain every supported currency for positive price bounds."""
     user = create_user(f"currency-{ord(currency[0])}")
 
     watch = create_offer_watch(
@@ -182,12 +193,13 @@ def test_offer_watch_accepts_every_supported_price_currency(currency):
 @pytest.mark.parametrize(
     ("price_min", "price_max"),
     [
-        (Decimal("0.00"), None),
+        (Decimal("0.01"), None),
         (None, Decimal("100.00")),
         (Decimal("50.00"), Decimal("50.00")),
     ],
 )
 def test_offer_watch_accepts_valid_price_boundary_variants(price_min, price_max):
+    """Retain positive one-sided bounds and inclusive equal-bound ranges."""
     user = create_user(f"price-boundary-{price_min}-{price_max}")
 
     watch = create_offer_watch(
@@ -206,6 +218,7 @@ def test_offer_watch_accepts_valid_price_boundary_variants(price_min, price_max)
 
 @pytest.mark.django_db
 def test_offer_watch_requires_supported_currency_for_price_filter():
+    """Reject missing or unsupported currency on an active price filter."""
     user = create_user("currency-validation")
 
     for slot, currency in enumerate(("", "EUR"), start=1):
@@ -223,6 +236,7 @@ def test_offer_watch_requires_supported_currency_for_price_filter():
 
 @pytest.mark.django_db
 def test_offer_watch_removes_currency_when_price_filter_is_empty():
+    """Clear irrelevant currency when neither price bound is present."""
     user = create_user("currency-without-price")
 
     watch = create_offer_watch(
@@ -243,6 +257,7 @@ def test_offer_watch_removes_currency_when_price_filter_is_empty():
     ],
 )
 def test_database_rejects_inconsistent_price_currency(overrides):
+    """Enforce the relationship between nullable bounds and saved currency."""
     user = create_user(f"db-currency-{len(str(overrides))}")
 
     with pytest.raises(IntegrityError), transaction.atomic():
@@ -255,6 +270,7 @@ def test_database_rejects_inconsistent_price_currency(overrides):
 
 @pytest.mark.django_db
 def test_same_price_range_in_different_currencies_is_not_a_duplicate():
+    """Treat the currency as part of positive-range filter uniqueness."""
     user = create_user("currency-uniqueness")
     eur_watch = OfferWatch.objects.create(
         user=user,
@@ -288,6 +304,7 @@ def test_same_price_range_in_different_currencies_is_not_a_duplicate():
     ],
 )
 def test_offer_watch_validates_country_district_and_price_range(overrides, error_field):
+    """Attach invalid location and price errors to the appropriate model field."""
     user = create_user(error_field + str(len(overrides)))
     watch = OfferWatch(user=user, slot=1, **watch_fields(**overrides))
 
@@ -299,6 +316,7 @@ def test_offer_watch_validates_country_district_and_price_range(overrides, error
 
 @pytest.mark.django_db
 def test_offer_watch_accepts_country_without_curated_districts():
+    """Allow supported countries even when no curated district list exists."""
     user = create_user("universal-country")
     watch = OfferWatch(
         user=user,
@@ -314,6 +332,7 @@ def test_offer_watch_accepts_country_without_curated_districts():
 
 @pytest.mark.django_db
 def test_notification_candidate_is_unique_per_user_and_offer_across_watches():
+    """Deduplicate overlapping watches by recipient and card, not by watch."""
     owner = create_user("owner")
     watcher = create_user("recipient")
     watch_a = create_offer_watch(user=watcher, **watch_fields())
@@ -341,6 +360,7 @@ def test_notification_candidate_is_unique_per_user_and_offer_across_watches():
 
 @pytest.mark.django_db
 def test_own_offer_does_not_create_notification_candidate():
+    """Do not register a candidate for the recipient's own card."""
     user = create_user("self")
     watch = create_offer_watch(user=user, **watch_fields())
     offer = create_offer(user)
@@ -354,6 +374,7 @@ def test_own_offer_does_not_create_notification_candidate():
 
 @pytest.mark.django_db
 def test_notification_candidate_model_rejects_own_offer():
+    """Enforce own-card exclusion when a candidate is validated directly."""
     user = create_user("self-model")
     watch = create_offer_watch(user=user, **watch_fields())
     candidate = OfferWatchNotification(
@@ -370,6 +391,7 @@ def test_notification_candidate_model_rejects_own_offer():
 
 @pytest.mark.django_db
 def test_notification_candidate_rejects_watch_owned_by_different_user():
+    """Require the candidate's watch to belong to its recipient."""
     owner = create_user("candidate-owner")
     first_watcher = create_user("candidate-first")
     second_watcher = create_user("candidate-second")
@@ -388,6 +410,7 @@ def test_notification_candidate_rejects_watch_owned_by_different_user():
 
 @pytest.mark.django_db
 def test_watch_deletion_preserves_dedupe_candidate_but_offer_deletion_removes_it():
+    """Preserve deduplication on watch deletion and cascade it on card deletion."""
     owner = create_user("delete-owner")
     watcher = create_user("delete-watcher")
     watch = create_offer_watch(user=watcher, **watch_fields())
@@ -404,6 +427,7 @@ def test_watch_deletion_preserves_dedupe_candidate_but_offer_deletion_removes_it
 
 @pytest.mark.django_db
 def test_user_deletion_removes_watch_and_notification_candidate():
+    """Cascade owner deletion to watches and their candidate history."""
     owner = create_user("gdpr-owner")
     watcher = create_user("gdpr-watcher")
     watch = create_offer_watch(user=watcher, **watch_fields())
@@ -420,5 +444,6 @@ def test_user_deletion_removes_watch_and_notification_candidate():
 
 @pytest.mark.django_db
 def test_offer_watch_models_are_registered_in_admin():
+    """Expose watch and candidate models to the existing administration registry."""
     assert OfferWatch in admin.site._registry
     assert OfferWatchNotification in admin.site._registry
