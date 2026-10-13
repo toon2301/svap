@@ -19,6 +19,7 @@ import {
   returnToOfferReviewsOrigin,
 } from './offerReviewsOrigin';
 import { buildOfferReviewsPath, buildOfferReviewsReturnTo } from './offerReviewsRouting';
+import { readRememberedProfileScroll } from '../profile/profileScrollMemory';
 
 const SEARCH = '/dashboard/search';
 const PROFILE = '/dashboard/users/peter?tab=offers';
@@ -279,5 +280,94 @@ describe('záznam histórie', () => {
 
     expect(await arrow()).toBe(true);
     expect(url()).toBe(PROFILE);
+  });
+});
+
+describe('pozícia profilu pre návrat z recenzií', () => {
+  function mountMain(scrollTop: number): HTMLElement {
+    const main = document.createElement('main');
+    main.setAttribute('data-dashboard-main', '');
+    main.scrollTop = scrollTop;
+    document.body.appendChild(main);
+    return main;
+  }
+
+  afterEach(() => {
+    document.querySelectorAll('[data-dashboard-main]').forEach((node) => node.remove());
+  });
+
+  it('saves the scroll of the profile before the navigation starts', () => {
+    const router = historyRouter();
+    router.push(PROFILE);
+    mountMain(2262);
+    const seenAtPush: Array<number | null> = [];
+
+    openOfferReviews(
+      {
+        push: (target) => {
+          seenAtPush.push(readRememberedProfileScroll());
+          router.push(target);
+        },
+      },
+      REVIEWS,
+    );
+
+    // Pozícia musí byť zapísaná skôr, než router pridá nový záznam – inak by pristála v ňom.
+    expect(seenAtPush).toEqual([2262]);
+  });
+
+  it('saves the scroll for a plain link as well', () => {
+    const router = historyRouter();
+    router.push(PROFILE);
+    mountMain(1500);
+
+    markOfferReviewsPending(REVIEWS);
+
+    expect(readRememberedProfileScroll()).toBe(1500);
+  });
+
+  it('writes it into the profile record: the reviews record carries none, going back finds it', async () => {
+    const router = historyRouter();
+    router.push(SEARCH);
+    router.push(PROFILE);
+    mountMain(2262);
+    openOfferReviews(router, REVIEWS);
+    adoptOfferReviewsOrigin();
+
+    expect(readRememberedProfileScroll()).toBeNull();
+    expect(await arrow()).toBe(true);
+
+    expect(url()).toBe(PROFILE);
+    expect(readRememberedProfileScroll()).toBe(2262);
+  });
+
+  it('keeps the origin marker working next to it', async () => {
+    const router = historyRouter();
+    router.push(PROFILE);
+    mountMain(2262);
+
+    openOfferReviews(router, REVIEWS);
+    adoptOfferReviewsOrigin();
+
+    expect(await arrow()).toBe(true);
+    expect(url()).toBe(PROFILE);
+  });
+
+  it('saves nothing when the profile is at the top', () => {
+    const router = historyRouter();
+    router.push(PROFILE);
+    mountMain(0);
+
+    openOfferReviews(router, REVIEWS);
+
+    expect(window.history.state).toBeNull();
+  });
+
+  it('opens the reviews even when there is no scrollable area to remember', () => {
+    const push = jest.fn();
+
+    openOfferReviews({ push }, REVIEWS);
+
+    expect(push).toHaveBeenCalledWith(REVIEWS);
   });
 });

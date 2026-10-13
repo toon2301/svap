@@ -25,6 +25,8 @@
  * mieste, odkiaľ sa do profilu prišlo.
  */
 
+import { rememberProfileScroll } from '../profile/profileScrollMemory';
+
 const ORIGIN_HISTORY_KEY = '__svaplyOfferReviewsOrigin';
 
 type OfferReviewsOriginMarker = { version: 1 };
@@ -52,8 +54,12 @@ function pathOf(href: string): string {
  * Appka otvára recenzie – navigáciu však robí niekto iný (napr. `<Link>`).
  *
  * Zapamätá si len, čo sa otvára; záznam histórie vznikne až po príchode.
+ * Zároveň uloží, dokiaľ je profil odscrollovaný, aby ho krok späť otvoril na tom
+ * istom mieste (viď `profileScrollMemory`) – musí sa stať PRED navigáciou, kým je
+ * aktuálny záznam ešte profil a jeho plocha ešte na obrazovke.
  */
 export function markOfferReviewsPending(href: string): void {
+  rememberProfileScroll();
   pendingPath = pathOf(href);
 }
 
