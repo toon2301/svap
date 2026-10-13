@@ -17,12 +17,14 @@ interface SearchLayoutProps {
   children: React.ReactNode;
 }
 
+/** Render the standalone search page with shared navigation and a dismissible search panel. */
 export function SearchLayout({ children }: SearchLayoutProps) {
   const router = useRouter();
   const { logout: authLogout, user } = useAuth();
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(true);
   useDashboardWindowScrollReset('search');
 
+  /** Use Next navigation for full-page destinations outside the independent search layout. */
   const handleItemClick = useCallback(
     (itemId: string) => {
       if (itemId === 'search') return;
@@ -30,6 +32,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
       if (itemId === 'home') url = '/dashboard';
       else if (itemId === 'favorites') url = '/dashboard/favorites';
       else if (itemId === 'requests') url = '/dashboard/requests';
+      else if (itemId === 'watches') url = '/dashboard/watches';
       else if (itemId === 'profile') {
         const identifier = user?.slug || (user ? String(user.id) : '');
         url = identifier ? `/dashboard/users/${identifier}` : '/dashboard';
@@ -40,13 +43,16 @@ export function SearchLayout({ children }: SearchLayoutProps) {
     [router, user],
   );
 
+  /** Toggle the desktop search overlay without creating a browser history entry. */
   const handleSidebarSearchClick = useCallback(() => setIsSearchPanelOpen((prev) => !prev), []);
 
+  /** End the current session before navigating back to the public home page. */
   const handleLogout = useCallback(() => {
     authLogout();
     router.push('/');
   }, [authLogout, router]);
 
+  /** Open a selected user through the shared profile-origin navigation helper. */
   const handleViewUserProfile = useCallback(
     (userId: number, slug?: string | null, _summary?: unknown) => {
       openUserProfileFromSearch(router, profileIdentifierFor(userId, slug));
@@ -54,6 +60,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
     [router],
   );
 
+  /** Open the card owner's profile and retain the card highlight parameter. */
   const handleViewUserSkill = useCallback(
     (userId: number, skillId: number, slug?: string | null) => {
       openUserProfileFromSearch(router, profileIdentifierFor(userId, slug), {
@@ -63,6 +70,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
     [router],
   );
 
+  /** Dismiss only the overlay, leaving the main search results and URL intact. */
   const handleCloseSearchPanel = useCallback(() => setIsSearchPanelOpen(false), []);
 
   const searchPanelRef = useRef<HTMLDivElement>(null);
@@ -71,6 +79,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
   useEffect(() => {
     if (!isSearchPanelOpen) return;
 
+    /** Ignore panel/filter interactions but dismiss the search overlay on outside clicks. */
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
@@ -95,6 +104,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
       handleCloseSearchPanel();
     };
 
+    /** Let modal dialogs handle Escape before closing the underlying search panel. */
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       const el = event.target as HTMLElement;

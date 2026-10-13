@@ -10,6 +10,7 @@ import {
   hasOfferWatchSettingsReturnHistory,
   isOfferWatchSettingsPath,
   readOfferWatchMobileHistory,
+  readOfferWatchMobileRequestOrigin,
   withOfferWatchMobileHistory,
   withOfferWatchSettingsReturnHistory,
   withoutOfferWatchMobileHistory,
@@ -32,6 +33,7 @@ type OfferWatchSettingsMobileHostProps = {
 
 const MOBILE_MEDIA_QUERY = '(max-width: 1023px)';
 
+/** Detect the mobile layout, including the older-browser and non-browser fallbacks. */
 function isMobileViewport(): boolean {
   if (typeof window === 'undefined') return false;
   return typeof window.matchMedia === 'function'
@@ -39,6 +41,7 @@ function isMobileViewport(): boolean {
     : window.innerWidth < 1024;
 }
 
+/** Keep a view's entry origin in the versioned browser history marker. */
 function markerFor(
   origin: OfferWatchMobileHistory['origin'],
   view: OfferWatchMobileView,
@@ -46,6 +49,7 @@ function markerFor(
   return { version: 2, origin, view };
 }
 
+/** Host mobile management in a portal and restore its correct origin through browser history. */
 export default function OfferWatchSettingsMobileHost({
   onReturnToSettings,
   isSettingsOpen = false,
@@ -87,6 +91,7 @@ export default function OfferWatchSettingsMobileHost({
     if (markerRef.current) openChangeRef.current?.(false);
   }, []);
 
+  /** Restore the Settings overlay and focus after its navigation has settled. */
   const returnToSettings = useCallback(() => {
     returnToSettingsRef.current();
     requestAnimationFrame(() => {
@@ -98,6 +103,7 @@ export default function OfferWatchSettingsMobileHost({
     });
   }, []);
 
+  /** Defer Settings restoration until the parent popstate listeners have finished. */
   const scheduleSettingsReturn = useCallback(() => {
     if (settingsReturnRequestedRef.current) return;
     settingsReturnRequestedRef.current = true;
@@ -134,10 +140,21 @@ export default function OfferWatchSettingsMobileHost({
     settingsReturnRequestedRef.current = false;
   }, [isSettingsOpen]);
 
-  const openFromSettings = useCallback(() => {
+  /** Separate results origins from Settings, cancelling obsolete Settings restoration work. */
+  const openFromRequest = useCallback((event: Event) => {
     if (!isMobileViewport() || markerRef.current) return;
-    const nextMarker = markerFor('settings', { kind: 'list' });
-    const returnState = withOfferWatchSettingsReturnHistory(window.history.state);
+    const origin = readOfferWatchMobileRequestOrigin(event);
+    if (origin === 'results') {
+      if (settingsReturnTimerRef.current !== null) {
+        clearTimeout(settingsReturnTimerRef.current);
+        settingsReturnTimerRef.current = null;
+      }
+      settingsReturnRequestedRef.current = false;
+    }
+    const nextMarker = markerFor(origin, { kind: 'list' });
+    const returnState = origin === 'results'
+      ? withoutOfferWatchSettingsReturnHistory(window.history.state)
+      : withOfferWatchSettingsReturnHistory(window.history.state);
 
     // Nastavenia sú iba React overlay, nie samostatný history záznam. Označenie
     // pôvodného záznamu umožní ich obnoviť aj po remounte celej route.
@@ -155,11 +172,12 @@ export default function OfferWatchSettingsMobileHost({
   }, []);
 
   useEffect(() => {
-    window.addEventListener(OFFER_WATCH_MOBILE_REQUEST_EVENT, openFromSettings);
-    return () => window.removeEventListener(OFFER_WATCH_MOBILE_REQUEST_EVENT, openFromSettings);
-  }, [openFromSettings]);
+    window.addEventListener(OFFER_WATCH_MOBILE_REQUEST_EVENT, openFromRequest);
+    return () => window.removeEventListener(OFFER_WATCH_MOBILE_REQUEST_EVENT, openFromRequest);
+  }, [openFromRequest]);
 
   useEffect(() => {
+    /** Restore saved mobile views on mount/resize, keeping direct-link and desktop fallbacks. */
     const restoreRoute = () => {
       if (!isMobileViewport()) {
         const hadOverlay = markerRef.current !== null;
@@ -217,6 +235,7 @@ export default function OfferWatchSettingsMobileHost({
   }, [scheduleSettingsReturn]);
 
   useEffect(() => {
+    /** Replay nested steps; reopen Settings only when management was entered from Settings. */
     const handlePopState = () => {
       const previousMarker = markerRef.current;
       const nextMarker = isMobileViewport()
@@ -227,7 +246,7 @@ export default function OfferWatchSettingsMobileHost({
       setMarker(nextMarker);
       navigationPendingRef.current = false;
 
-      if (!nextMarker && previousMarker) {
+      if (!nextMarker && previousMarker && previousMarker.origin !== 'results') {
         if (!hasOfferWatchSettingsReturnHistory(window.history.state)) {
           window.history.replaceState(
             withOfferWatchSettingsReturnHistory(window.history.state),
@@ -242,6 +261,7 @@ export default function OfferWatchSettingsMobileHost({
     return () => window.removeEventListener('popstate', handlePopState);
   }, [scheduleSettingsReturn]);
 
+  /** Add a nested form/picker step while preserving the manager's original entry point. */
   const pushView = useCallback((view: OfferWatchMobileView) => {
     const current = markerRef.current;
     if (!current) return;
@@ -255,6 +275,7 @@ export default function OfferWatchSettingsMobileHost({
     setMarker(nextMarker);
   }, []);
 
+  /** Traverse one history entry and ignore additional taps until popstate completes. */
   const navigateBack = useCallback(() => {
     if (!markerRef.current || navigationPendingRef.current) return;
     navigationPendingRef.current = true;

@@ -29,8 +29,8 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 
 | ID | Druh / položka | Odporúčanie | Aktuálny stav a podmienka uzavretia |
 | --- | --- | --- | --- |
-| OW-01 | Potvrdený nesúlad: nulové cenové hranice | Dokončiť review a spoločný živý retest | Implementované a lokálne overené. Opakovaný BE beh 185 PASS; spoločné FE OW-01/02 275 PASS a celé FE 5 458 PASS. Používateľ autorizoval commit/push oboch 13. 10. Čaká jeho Rabbit kontrola, nasadenie a migrácia 0123, reálny Playwright WebKit desktop/mobil a manuálne overenie. Pri migračnom konflikte nič automaticky nezlučovať ani nemazať. |
-| OW-02 | Potvrdené UX: chyba ďalšej stránky a retry nad kartami | Dokončiť review a spoločný živý retest | Implementované 13. 10. Presunutá iba chyba ďalšej stránky pod všetky zachované karty; prvostránková a refresh chyba zostali na pôvodnom mieste. Presne jeden výsledkový alert/retry. Pred opravou nový test RED pri 1/10/20 kartách, po oprave PASS. Panel/notice/hook coverage 100 %. Hook/API sa nemenili. Čaká Rabbit, nasadenie a skutočný Playwright/manual; nie finálne uzavreté. |
+| OW-01 | Potvrdený nesúlad: nulové cenové hranice | Evidovať výsledky a dokončiť chýbajúce explicitné overenia | Implementované a lokálne overené: BE 185 PASS, spoločné FE OW-01/02 275 PASS, celé FE 5 458 PASS. Používateľ 13. 10. uvádza čistý Rabbit a ostatné vykonané manuálne testy OK; PR #168 je zlúčené. Rozpis zariadení/ID, produkčná 0123 a živý Playwright v tejto novej správe nie sú samostatne potvrdené. Nový navigačný nález je OW-10, nie zlyhanie nulových cien. Pri migračnom konflikte nič automaticky nezlučovať ani nemazať. |
+| OW-02 | Potvrdené UX: chyba ďalšej stránky a retry nad kartami | Evidovať úspešný manuálny výsledok; nemiešať s OW-10 | Implementované 13. 10., panel/notice/hook coverage 100 %, hook/API bez zmien. Používateľ uvádza Rabbit bez nálezov a ostatné vykonané manuálne testy OK; PR #168 zlúčené. Živý Playwright nemožno označiť PASS bez výsledku konkrétneho behu. Výsledok manuálneho kola sa nezahadzuje kvôli novému chýbajúcemu prechodu z /search. |
 | OW-03 | Produktová úprava: odstrániť Like iba vo výsledkoch Sledovaní | Samostatný nasledujúci bod Sledovania | Požiadavka z F03 zostáva otvorená. Aktuálny grid používa zdieľaný `ProfileOfferCard`; pred úpravou zmapovať jeho ovládanie. V iných sekciách Like zachovať, na zadnej strane nepridávať Správu ani Žiadosť. |
 | OW-04 | Hlásená chyba prekladu: poľské „Páči sa mi to“ na zadnej strane karty | Riešiť v samostatnom kroku Sledovania | Nález F12 z manuálneho kola. Znovu overiť aktuálny kľúč a kontext; nezamieňať s tromi chýbajúcimi kľúčmi Nástenky nižšie. Potrebný retest poľštiny a kontrola ostatných jazykov. |
 | OW-05 | Otvorené produktové/UX overenie: vstup do výsledkov v iOS PWA | Spojiť s plánovanými mobilnými výsledkami | M10 prešiel v Safari, v PWA nebol dostupný bežný navigačný vstup. Aktuálne existuje mobilné oznámenie so správcom, nie mobilný výsledkový zoznam. Neprezentovať to ako hotové mobilné výsledky. Pri mobilnej fáze overiť vstup, URL, Späť a dostupný obsah. |
@@ -38,17 +38,23 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 | OW-07 | Neúplné overenie: skutočné vypršanie prihlasovacej relácie | Samostatný povinný test pred uzavretím sekcie | E12 overil odhlásenie v druhej karte a Back, nie samotnú expiráciu. Overiť skutočnú expiráciu a neprístupnosť starých výsledkov na desktope aj mobile. Potvrdený únik alebo obídenie prístupu riešiť hneď. |
 | OW-08 | Opatrné upratanie historických testovacích dát a času karty | Samostatný dátový krok po presnom mapovaní a schválení | Starý súhrn uvádza dočasné účty/karty a kartu ID 165, ktorú nemažeme. Pred zásahom overiť aktuálny stav, vlastníctvo a naviazané údaje a predložiť presné ciele. Žiadne automatické hromadné mazanie podľa názvu. Historicky uvedený pôvodný čas ID 165: `2026-09-24 14:23:42.345562 UTC`; aktuálna hodnota ani potreba zmeny zatiaľ neboli znovu overené. |
 
-Ďalší nález z aktuálneho mapovania (nie jeden z pôvodných ôsmich bodov):
+Ďalšie nálezy z mapovania (nie pôvodných osem bodov):
 
 | ID | Položka | Odporúčanie | Stav a ďalšie overenie |
 | --- | --- | --- | --- |
 | OW-09 | Poškodený kurzor a neexistujúce sledovanie sa na frontende nerozlišujú | Zoznam; samostatné mapovanie pred prípadnou opravou, nie tichá zmena API pri OW-02 | Backendový test a lokálna diagnostika potvrdili 404 pre poškodený kurzor; normalizer mapuje každé 404 na not_found a panel obnovuje zoznam sledovaní. Nejde o novú fyzickú produkčnú reprodukciu ani potvrdený bezpečnostný problém. Bežné serverové kurzory nemajú potvrdené poškodzovanie; Obnoviť umožňuje návrat na prvú stránku. |
+| OW-10 | Desktop /search → hlavné Sledovania nič neurobí | Lokálne implementované; spoločný commit/push s OW-12 schválený po kontrolách | Jedna nová podmienka v SearchLayout posiela watches cez existujúci router.push na /dashboard/watches. Pred opravou 8 nových testov FAIL; po oprave 150 cielených testov PASS, celý SearchLayout má opakovane 100 % všetkých coverage metrík. Reálny Linux/WebKit na Railway potvrdil pôvodný no-op pri priamej /search aj celom reťazci Zobraziť všetko. Živý úspech opravenej verzie čaká na spoločné nasadenie/retest; starý PR #168 je zlúčený. |
+| OW-11 | V SearchLayout chýba aj obsluha Správ, Upozornení a Štatistík | Zoznam; dohodnúť rozsah pred rozšírením OW-10 | Diagnostika pôvodných callbackov potvrdila rovnaký no-op iba v rozložení /search. Nie je to nový fyzický test týchto troch položiek. Upozornenia majú desktopový panelový kontrakt, preto bez ďalšieho mapovania a dohody nepridať presmerovanie na celé okno. Zatiaľ neopravovať. |
+| OW-12 | Mobilný návrat zo správcu otvoreného z oznámenia výsledkov končí v Nastaveniach | Zmapované a lokálne opravené; spoločný review/nasadený retest s OW-10 čaká | Explicitný results pôvod len pre canonical výsledkovú route; origin sa drží pri vnorených krokoch/reloade/Forward. Odchod neotvára Settings ani ich marker, nový výsledkový vstup ruší zastaranú odloženú Settings obnovu. Legacy settings/direct vstupy a desktopová vetva zachované. Predopravovo 7 FAIL/4 PASS; súvisiaci pending-timeout tiež RED pred opravou. Spolu OW-10/12 111 PASS a 100 % všetkých scoped metrík. Skutočný nasadený kontrolný WebKit Settings/direct tok v light/dark 2 PASS; nový výsledkový návrat ešte nie je nasadený ani označený živým PASS. |
 
 Testovacia medzera priamo patriaca do OW-02:
 
 | ID | Položka | Odporúčanie | Stav a podmienka uzavretia |
 | --- | --- | --- | --- |
 | TEST-01 | Existujúce testy nekontrolovali notice za poslednou kartou ani skutočný chybový catch loadMore | Lokálne doplnené pri OW-02; dokončiť živé overenie | Nové testy poradia, retry, zachovania kurzora/kariet, pending/stale/cancelled a unmount tokov PASS. Panel/notice/hook majú 100 % všetkých metrik, spoločné FE vetvy 99,58 % pri zachovanom 95 % gate. Playwright geometriu dopĺňa nový scenár, jeho skutočný beh čaká na nasadenie. Zber 27 project-scenárov nie je E2E PASS. |
+| TEST-02 | SearchLayout testy nenapájajú reálne kliknutie na obsluhu stránky /search | Lokálne doplnené pri OW-10; živý retest po nasadení čaká | Nová sada používa reálny Sidebar aj jeho handler, 32 nových testov. Spolu s viewport sadou opakovane 37 PASS a 100 % statements/branches/functions/lines celého SearchLayout; gate 95 % nezmenený. Nový Playwright má 36 project-scenárov (22 relevantných podľa typu zariadenia), iba existujúci obsah, obe témy, povinné WebKit desktop/mobile aj Chromium. Zber nie je PASS; nasadené desktopové pokusy reprodukujú OW-10 a mobilné OW-12. |
+| TEST-03 | Jednorazový 5-sekundový timeout existujúceho testu vypínania push upozornení | Zoznam testovacej stability; sledovať bez tichej zmeny timeoutov alebo logiky | Prvý plný FE beh: 399 sád PASS, jedna FAIL; 5 489 testov PASS, jeden timeout v NotificationsModule.test.tsx / persists disabling push before unregistering the current browser subscription. Bežal súbežne s ďalšími kontrolami; príčina časovania tým nie je dokázaná. Samostatne následne 5/5 PASS a druhý celý beh bez súbežných náročných kontrol: 400 sád / 5 490 testov PASS. Súbor aj produkčná notifikačná logika sú bez zmien, test nemá väzbu na SearchLayout. Prvé zlyhanie sa nezahadzuje ani neoznačuje za definitívne vyriešené. |
+| TEST-04 | Jednorazový WebKit action timeout pri stabilizácii tlačidla Profil | Zoznam testovacej stability; nie potvrdená chyba navigácie OW-12 | Nasadený kontrolný test počas súbežného buildu: light zlyhal pred vstupom do Settings, dark prešiel. Opakovanie bez buildu s dotykom podľa existujúcej mobilnej navigácie: oba PASS, bez retry/force/zvýšenia timeoutu. Profil ani jeho logika sa nemenili, príčina pomalého kroku nie je definitívne vysvetlená. Skutočný produktový problém tým nie je vyhlásený ani ticho opravený. |
 
 ## Nálezy mimo aktuálneho kroku
 
@@ -58,14 +64,18 @@ Testovacia medzera priamo patriaca do OW-02:
 | ENV-01 | Dva backendové testy kontroly obrázkov blokuje Windows/gRPC | Zoznam problémov prostredia; overiť pred finálnym testovacím uzavretím | Rovnaké zlyhania reprodukované aj na čistom main bez OW-01. `grpc._cython.cygrpc` blokuje Windows Application Control. Overiť v podporovanom prostredí bez vypínania ochrán; meniť kód obrázkov ani avatarov týmto krokom nie je autorizované. Celý backend preto nemožno označiť za úplne zelený. |
 | TECH-01 | `DashboardContent.tsx`: 695 riadkov pri kontrole 13. 10. | Zoznam technického dlhu; nie automatická oprava | Podľa svaply.mdc `.tsx` nad 500 riadkov nahlásiť a nemeniť. Pred prípadnou budúcou prácou znovu overiť aktuálny súbor a vyžiadať potrebnú výnimku, ak pravidlo stále platí. |
 | TECH-02 | `src/lib/api.ts`: 907 riadkov pri kontrole 13. 10. | Zoznam technického dlhu; nie automatická oprava | Rovnaká podmienka pre `.ts` nad 500 riadkov. Zdieľaná API/auth logika potrebuje samostatné mapovanie a regresiu, nie tichý refaktor pri Sledovaní. |
+| TECH-03 | `hooks/useDashboardState.ts`: 921 riadkov | Zoznam; podľa svaply.mdc nemeniť | Nájdené pri mapovaní OW-10. Nie je príčinou tohto prechodu; malá oprava SearchLayout ho nepotrebuje. |
+| TECH-04 | `app/search/page.tsx`: 646 riadkov | Zoznam; podľa svaply.mdc nemeniť | Rieši samotné výsledky, nie rodičovskú obsluhu menu. Pre OW-10 netreba meniť ani deliť tento súbor. |
+| TECH-05 | `hooks/useDashboardNavigation.tsx`: 510 riadkov | Zoznam; podľa svaply.mdc nemeniť | Používa sa v dashboarde, nie ako handler samostatného /search layoutu. Pre OW-10 zostáva bez zásahu. |
 | TOOL-01 | `next lint` vyžaduje interaktívnu konfiguráciu | Zoznam testovacieho tooling-u | Bez zmeny repo konfigurácie prešiel spoločný cielený ESLint cez existujúce API a `next/core-web-vitals`: 18 súborov, 0 chýb/varovaní. Prípadnú neinteraktívnu konfiguráciu riešiť samostatne, bez oslabenia pravidiel. |
+| TOOL-02 | Windows blokuje podpísanie crypto-57.dll pre Playwright WebKit | Existujúci projektový Linux/Docker fallback funguje; nevypínať ochrany | Native launch skončil ešte pred stránkou; Code Integrity udalosti 3077/3033 potvrdili blokovanú DLL. Už nainštalovaný Playwright v1.63.0-noble kontajner následne skutočne spustil desktop aj mobile proti Railway. Žiadne sťahovanie nového obrazu ani zmeny bezpečnostnej politiky. Nie je to chyba aplikácie alebo dôvod označiť živé testy PASS. |
 
 ## Nálezy Rabbit review PR #168
 
 | ID | Položka | Odporúčanie | Stav a ďalšie overenie |
 | --- | --- | --- | --- |
-| DOC-01 | Dva platné review komentáre: lokálne Markdown odkazy sú mimo autorovho checkoutu nefunkčné | Opraviť hneď v tomto review kole; nejde o chybu logiky aplikácie | Opravené relatívne odkazy v štyroch dokumentoch. Súkromná chatová príloha je označená ako neprístupná mimo chatu; nekopíruje sa do verejného Gitu. Všetky lokálne repo odkazy boli overené voči existujúcim cieľom. Čaká následná Rabbit kontrola. |
-| DOC-02 | Pre-merge upozornenie: Rabbit dokumentačné pokrytie 67,96 % naprieč FE/BE | Doplniť popisy hneď bez zmeny správania; neodkladať do funkčných fáz | Doplnený JSDoc chýbajúcich pomenovaných FE funkcií a pomocníkov v rozsahu OW-01/02. Lokálny TS AST audit: 55/55, 100 %. Toto nie je rovnaký algoritmus ako Rabbit; jeho nové skóre zatiaľ nepotvrdené. Emitovaný JavaScript všetkých 16 upravených TS/TSX súborov je pri odstránení komentárov identický s HEAD 1265d1d1. Python sa v tomto kole nemenil. |
+| DOC-01 | Dva platné review komentáre: lokálne Markdown odkazy sú mimo autorovho checkoutu nefunkčné | Opravené v review kole | Relatívne odkazy overené, súkromná príloha nepublikovaná. Používateľ následne uvádza Rabbit bez nálezov; PR #168 je zlúčené. |
+| DOC-02 | Pre-merge upozornenie: Rabbit dokumentačné pokrytie 67,96 % naprieč FE/BE | Opravená dokumentačná medzera, bez zmeny správania | Doplnený JSDoc, lokálny audit 55/55 a identický emitovaný JS vo všetkých 16 súboroch. Používateľ uvádza novú Rabbit kontrolu bez nálezov; presné nové Rabbit percento nie je v správe, nevymýšľa sa. Python nezmenený. |
 
 Podrobnosti rozhodnutí a výsledkov tohto dokumentačného kola:
 [overenie PR #168](offer-watch-rabbit-168-2026-10-13.md).
@@ -99,6 +109,10 @@ Konkrétne testy ENV-01:
   [implementácia stránkovania](offer-watch-pagination-implementation-2026-10-13.md).
 - Checklist po review a nasadení:
   [spoločné manuálne testy](offer-watch-ow01-ow02-manual-2026-10-13.md).
+- Nový desktopový nález a mapovanie prechodu medzi rozloženiami:
+  [mapovanie /search → Sledovania](offer-watch-search-navigation-map-2026-10-13.md).
+- Nový mobilný návratový nález a spoločné overenie OW-10/12:
+  [mapovanie/implementácia mobilného návratu](offer-watch-mobile-return-2026-10-13.md).
 - M13/M14/M33 pochádzajú z používateľovho odloženého iOS testovania; nie sú
   nahradené automatickými testami alebo zberom Playwright scenárov.
 - Pri starších nálezoch nie je bez nového overenia tvrdené, že sa odvtedy
@@ -110,12 +124,18 @@ Konkrétne testy ENV-01:
 
 ## Terajšie odporúčanie
 
-OW-01 aj OW-02 sú implementované a lokálne overené. Používateľ výslovne povolil
-commit a push v tomto kole; Rabbit kontrolu odosiela sám. Nasleduje review,
-nasadenie s 0123 a spoločný živý/manuálny retest. Pri úspechu sa mapuje OW-03.
-APP/ENV/TECH/TOOL a OW-09 položky zostávajú v zozname, nie potichu opravené.
-OW-01/02 ešte nie sú finálne uzavreté iba na základe lokálnych testov.
-M13/M14/M33 povinne pripomenúť pri tomto testovacom cykle.
+Používateľ hlási čistý Rabbit a ostatné vykonané manuálne testy OK; PR #168 je
+zlúčené. Používateľ následne schválil OW-10 aj mapovanie/opravu OW-12 a výslovne
+potvrdil **spoločný commit a push po úspešných kontrolách**. Opravy a regresné
+testy sú lokálne hotové na novej vetve z aktuálneho main. Nasadenie alebo nový
+PR nie sú automaticky povolené. Živé uzavretie oboch opráv čaká na nasadenie.
+OW-11 je oddelene evidované; jeho prípadné pripojenie potrebuje dohodu o rozsahu.
+APP/ENV/TECH/TOOL a OW-09 zostávajú v zozname. Staršie živé Playwright overenia
+OW-01/02, migrácia 0123 a odložené M13/M14/M33 nemajú v tomto kole nový samostatný
+výsledok. Pri neskoršom testovaní
+ich potvrdiť konkrétne. Nové živé testy OW-10/12 majú samostatné výsledky uvedené
+vyššie. Ďalej spoločný review a cielený nasadený retest OW-10/12; následne OW-03.
+TEST-03/04 ostávajú evidované ako nestabilita, nie potvrdené nové chyby aplikácie.
 
 ## Denník zmien
 
@@ -140,3 +160,39 @@ M13/M14/M33 povinne pripomenúť pri tomto testovacom cykle.
   99,58 %, TypeScript a lint PASS; JSDoc audit 55/55. Správanie sa nemenilo,
   backend/migrácie ani používateľova rozpracovaná práca sa neupravujú.
   Čaká nový Rabbit výsledok a pôvodný plánovaný živý/manuálny retest OW-01/02.
+- 13. 10. 2026, mapovanie nového desktopového nálezu: používateľ uvádza čistý
+  Rabbit a ostatné vykonané manuálne testy OK, ale /search → Sledovania je no-op.
+  Zmapované OW-10 a ďalšie OW-11, doplnené TEST-02 a hlásenia veľkých súborov.
+  Príčina potvrdená kódom z aktuálneho main aj spustením pôvodných callbackov.
+  108 existujúcich testov PASS; diagnostický 95 % gate SearchLayout FAIL.
+  Mení sa iba mapovací dokument a register. Implementácia výslovne čaká na
+  nasledujúcu správu používateľa; žiadny commit, push ani produkčný zásah.
+- 13. 10. 2026, implementácia OW-10 po schválení používateľom: jedna nová
+  navigačná podmienka v SearchLayout, dva nové testovacie súbory. Ostatný
+  emitovaný runtime kód zhodný s HEAD. Predopravovo 8 nových testov FAIL,
+  následne 150 cielených testov PASS a opakovane 37 layout testov PASS / 100 %
+  všetkých scoped coverage metrik. TypeScript a lint PASS. Prvý plný frontend
+  mal jeden timeout (TEST-03); izolované opakovanie 5 PASS a finálny celý beh
+  400 sád / 5 490 PASS. Produkčný Linux/WebKit potvrdil pôvodný OW-10 pri
+  priamej /search aj reťazci Zobraziť všetko; úspech lokálnej opravy čaká na
+  nasadenie. Mobilné light/dark pokusy odhalili samostatný OW-12, zachovaný
+  ako FAIL a odporúčaný na najbližšie mapovanie. Windows launcher limit
+  zaznamenaný ako TOOL-02, použitý existujúci Docker fallback. Primárny main
+  aj jeho HEAD bez zmeny, žiadny commit/push/nasadenie ani zmeny backendu,
+  migrácií, oprávnení, prekladov alebo avatarov. Používateľ dostane súhrn
+  priamo v chate; manuálny retest sa obmedzí na dotknutý navigačný tok.
+- 13. 10. 2026, OW-12: zmapované všetky dva skutočné event callery a návratové
+  vstupy, potom explicitný výsledkový pôvod + výsledkový Back bez Settings
+  callbacku. Staré Settings/direct markery zachované; nový výsledkový vstup
+  ruší preukázanú zastaranú Settings obnovu. Opakovaný scoped gate 111 PASS,
+  štyri celé produkčné súbory 100 % všetkých metrík. Celý frontend z aktuálneho
+  main + oboch opráv: 409 sád / 5 604 PASS. TypeScript, lint a produkčný build
+  PASS. Skutočný Linux/WebKit kontrolný Settings/direct tok v oboch témach:
+  2 PASS, bez zápisov; TEST-04 eviduje jednorazový pomalý Profil krok pred
+  opakovaním. Playwright zber 54 scenárov nie je živý PASS oboch opráv; čaká
+  spoločné nasadenie a výsledkový retest. Named production JSDoc audit 33/33,
+  emitovaný JS pred/po komentároch zhodný. Všetky upravené TS/TSX pod 500,
+  primárny main a jeho HEAD/súbory bez zmeny. Používateľ explicitne povolil
+  spoločný commit/push po kontrolách do novej vetvy offer-watch-navigation-fixes;
+  nie automatické nasadenie alebo vytvorenie PR. OW-11/09 a staršie odložené
+  overenia vrátane M13/M14/M33 ostávajú otvorené.
