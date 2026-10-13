@@ -418,7 +418,21 @@ describe('recenzie otvorila appka (značka pôvodu)', () => {
     expect(calls).toEqual([entry('history.back')]);
   });
 
-  it('bez značky (priamy vstup, F5) ostáva návratová adresa, a to cez replace', () => {
+  it('značka zo staršieho načítania stránky (po F5) stále urobí krok späť: reload históriu nemení', () => {
+    // Po F5 appka nepozná modulový stav, ale `history` aj `history.state` ostali – predošlý záznam je stále profil.
+    window.history.replaceState(
+      { __svaplyOfferReviewsOrigin: { version: 1, pageLoadId: 'pred-F5' } },
+      '',
+      REVIEWS_PATH,
+    );
+    const mounted = mountHook({ searchParams: withReturnTo('/dashboard/users/jana') });
+
+    fire(mounted, 'handleOfferReviewsBack');
+
+    expect(calls).toEqual([entry('history.back')]);
+  });
+
+  it('bez značky (priamy vstup, nová karta) ostáva návratová adresa, a to cez replace', () => {
     window.history.replaceState(null, '', REVIEWS_PATH);
     adoptOfferReviewsOrigin();
     const mounted = mountHook({ searchParams: withReturnTo('/dashboard/users/jana') });

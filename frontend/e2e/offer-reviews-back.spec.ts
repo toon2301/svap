@@ -137,9 +137,9 @@ test.describe('cudzí profil po F5', () => {
     test.skip(!PEER_SLUG, 'E2E_PEER_SLUG nie je nastavené – test potrebuje druhý testovací účet s ponukou (pozri .env.e2e.example).');
   });
 
-  // Po F5 appka nevie, odkiaľ sa recenzie otvorili, a šípka ide na záložnú adresu profilu. Tá má byť OBYČAJNÝ
-  // profil: predtým niesla `offer=…&side=back`, takže sa karta zvýraznila, otočila (na mobile otvorila spodný
-  // panel) a stránka na ňu preskočila.
+  // Po F5 má šípka vrátiť OBYČAJNÝ profil: predtým išla na záložnú adresu s `offer=…&side=back`, takže sa karta
+  // zvýraznila, otočila (na mobile otvorila spodný panel) a stránka na ňu preskočila. Teraz je to krok späť na
+  // pôvodný záznam profilu (záložná adresa sa používa len bez značky pôvodu a je tiež obyčajný profil).
   test('after a reload the arrow returns to the plain profile without a highlighted or flipped card', async ({ page }, testInfo) => {
     const tap = testInfo.project.name === 'webkit-mobile';
     const peerPath = `/dashboard/users/${PEER_SLUG}`;
@@ -174,5 +174,36 @@ test.describe('cudzí profil po F5', () => {
     );
     await expect(page.locator('.highlight-offer-card'), 'Niektorá karta je zvýraznená').toHaveCount(0);
     expect(await mainScrollTop(page), 'Profil sa prescrolloval na kartu, z ktorej sa otvorili recenzie').toBe(0);
+
+    // F5 históriu nemení, takže šípka je krok späť na pôvodný záznam profilu – nie jeho kópia. Vstup bol priamy,
+    // preto ďalšie Späť profil opustí (nesmie ostať na profile).
+    await page.goBack();
+    await expect
+      .poll(() => pathOf(page), { message: 'Back po F5 + šípke ostal na profile (v histórii ostala kópia profilu)' })
+      .not.toBe(peerPath);
+  });
+});
+
+test.describe('vlastný profil po F5', () => {
+  // Po F5 appka zabudne modulový stav, no história aj značka v `history.state` ostanú. Šípka má preto urobiť
+  // skutočný krok späť na existujúci záznam profilu. Predtým išla záložným `replace`, ktorý k starému záznamu
+  // pridal kópiu profilu bez pôvodu, a ďalšie Späť pristálo na tej kópii namiesto na Nástenke.
+  test('after a reload the arrow is still a real step back and the next Back leaves the profile', async ({ page }, testInfo) => {
+    const tap = testInfo.project.name === 'webkit-mobile';
+    const entry = await openReviewsFromOwnProfile(page, tap);
+
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+
+    const arrow = tap
+      ? topBarBack(page)
+      : page.getByRole('button', { name: BACK_BUTTON_NAME }).filter({ visible: true }).first();
+    await expect(arrow, 'Na stránke recenzií po F5 chýba šípka Späť').toBeVisible();
+    if (tap) await arrow.tap();
+    else await arrow.click();
+    await expectBackOnProfile(page, entry, 'Šípka po F5');
+
+    await page.goBack();
+    await expectBackOnHome(page, 'Back v prehliadači po šípke po F5');
   });
 });
