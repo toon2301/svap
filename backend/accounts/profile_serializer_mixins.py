@@ -37,6 +37,7 @@ from .models import (
 )
 from .name_normalization import (
     build_individual_display_name,
+    carry_display_name_on_type_switch,
     clean_name_value,
     normalize_profile_name_fields,
 )
@@ -286,7 +287,12 @@ class ProfileValidationMixin:
         return value
 
     def validate(self, attrs):
-        """Globálna validácia pre závislé polia (meno + limit počtu webov)."""
+        """Globálna validácia pre závislé polia (meno + limit počtu webov).
+
+        Požiadavka, ktorá mení iba `user_type` (bez mena), prenesie zobrazené meno
+        cez `carry_display_name_on_type_switch`; ak nesie aj mená, ide o úpravu
+        používateľa a mená sa normalizujú podľa nového typu.
+        """
         validated = super().validate(attrs)
         instance = getattr(self, "instance", None)
         current_user_type = getattr(instance, "user_type", UserType.INDIVIDUAL)
@@ -309,18 +315,37 @@ class ProfileValidationMixin:
             if "company_name" in validated
             else (getattr(instance, "company_name", "") if instance else "")
         )
-        if (
-            next_user_type == UserType.COMPANY
-            and current_user_type != UserType.COMPANY
-            and "company_name" not in validated
-        ):
-            current_company = ""
-        normalized_names = normalize_profile_name_fields(
-            user_type=next_user_type,
-            first_name=current_first,
-            last_name=current_last,
-            company_name=current_company,
+        is_type_switch_only = (
+            instance is not None
+            and "user_type" in validated
+            and next_user_type != current_user_type
+            and not any(
+                field in validated
+                for field in ("first_name", "last_name", "company_name")
+            )
         )
+        if is_type_switch_only:
+            # Samotná zmena typu účtu nesmie meniť zobrazené meno (a tým ani odkaz
+            # na profil): meno sa prenesie a nič sa nemaže ani neodvodzuje z iných polí.
+            normalized_names = carry_display_name_on_type_switch(
+                to_type=next_user_type,
+                first_name=current_first,
+                last_name=current_last,
+                company_name=current_company,
+            )
+        else:
+            if (
+                next_user_type == UserType.COMPANY
+                and current_user_type != UserType.COMPANY
+                and "company_name" not in validated
+            ):
+                current_company = ""
+            normalized_names = normalize_profile_name_fields(
+                user_type=next_user_type,
+                first_name=current_first,
+                last_name=current_last,
+                company_name=current_company,
+            )
         if next_user_type == UserType.COMPANY and not clean_name_value(
             normalized_names["company_name"]
         ):
