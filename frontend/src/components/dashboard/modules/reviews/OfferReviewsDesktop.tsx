@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PlusIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Offer } from '../profile/profileOffersTypes';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
@@ -29,6 +29,8 @@ type OfferDetailLike = Offer & {
 };
 
 export type OfferReviewsDesktopProps = {
+  /** Šípka späť vľavo od nadpisu; bez handlera sa nevykreslí. */
+  onBack?: () => void;
   offer: OfferDetailLike | null;
   loading: boolean;
   reviews: Review[];
@@ -68,6 +70,7 @@ export type OfferReviewsDesktopProps = {
 };
 
 export function OfferReviewsDesktop({
+  onBack,
   offer,
   loading,
   reviews,
@@ -118,9 +121,22 @@ export function OfferReviewsDesktop({
 
   return (
     <div className="w-full h-full pt-6 pr-6 pb-6 pl-12 sm:pl-16 xl:pl-24">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-white text-left mb-8">
-        {headingText}
-      </h1>
+      <div className="mb-8 flex items-center gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label={t('common.back', 'Späť')}
+            title={t('common.back', 'Späť')}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white/85 text-gray-700 shadow-sm transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-200 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/30 dark:hover:text-purple-300"
+          >
+            <ArrowLeftIcon className="h-4 w-4" aria-hidden />
+          </button>
+        )}
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white text-left">
+          {headingText}
+        </h1>
+      </div>
 
       {/* Fotka, údaje a rating summary */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8 items-start sm:grid-cols-[400px_minmax(0,1fr)] 2xl:grid-cols-[400px_minmax(0,1fr)_1px_minmax(300px,350px)]">

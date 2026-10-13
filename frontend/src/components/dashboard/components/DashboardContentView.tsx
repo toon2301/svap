@@ -9,6 +9,7 @@ import {
   type FeedPostOverlayCloseOptions,
   type FeedPostOverlayTarget,
 } from '../contexts/FeedPostOverlayContext';
+import { OfferReviewsBackProvider } from '../contexts/OfferReviewsBackContext';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import type { UseDashboardStateResult } from '../hooks/useDashboardState';
 import type { DashboardNavigationProps } from '../hooks/useDashboardNavigation';
@@ -342,7 +343,7 @@ export default function DashboardContentView({
             currentUser={user}
             mobileAccountSettingsView={mobileAccountSettingsView}
           >
-            {moduleContent}
+            <OfferReviewsBackProvider onBack={handleOfferReviewsBack}>{moduleContent}</OfferReviewsBackProvider>
           </DashboardLayout>
           <OnboardingScrollLock />
           <MobileOnboardingOverlay />

@@ -1,5 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import {
+  adoptOfferReviewsOrigin,
+  resetOfferReviewsOrigin,
+  returnToOfferReviewsOrigin,
+} from '../../reviews/offerReviewsOrigin';
 import type { Offer } from '../profileOffersTypes';
 import { OfferCardFront, type OfferCardFrontProps } from './OfferCardFront';
 
@@ -44,7 +49,30 @@ function props(overrides: Partial<OfferCardFrontProps> = {}): OfferCardFrontProp
 }
 
 describe('OfferCardFront optional actions', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetOfferReviewsOrigin();
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+  });
+
+  it('opens the reviews so that the reviews page can step back to the profile', () => {
+    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+    try {
+      render(<OfferCardFront {...props({ reviewsHref: '/dashboard/offers/7/reviews?returnTo=x' })} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pridať recenziu' }));
+
+      expect(push).toHaveBeenCalledTimes(1);
+      expect(push).toHaveBeenCalledWith('/dashboard/offers/7/reviews?returnTo=x');
+      // Stránka recenzií sa zobrazila: prevezme pôvod a šípka urobí krok späť.
+      window.history.replaceState(null, '', '/dashboard/offers/7/reviews?returnTo=x');
+      adoptOfferReviewsOrigin();
+      expect(returnToOfferReviewsOrigin()).toBe(true);
+      expect(backSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      backSpy.mockRestore();
+    }
+  });
 
   it('does not render enabled actions that have no handler or destination', () => {
     const { container } = render(<OfferCardFront {...props()} />);

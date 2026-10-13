@@ -15,8 +15,19 @@ import {
 } from '../components/dashboardTargetUrl';
 import type { DashboardHighlightingProps } from './useDashboardHighlighting';
 
+export type NotificationNavigateOptions = {
+  /**
+   * Cieľ nahradí aktuálny záznam histórie namiesto pridania nového.
+   *
+   * Pre návrat z miesta, ktoré nemá v histórii zostať (záložná adresa v
+   * recenziách): `push` by pridal záznam a Späť by viedlo naspäť tam, odkiaľ sa
+   * odišlo.
+   */
+  replace?: boolean;
+};
+
 type NotificationNavigationInput = {
-  router: { push: (href: string) => void };
+  router: { push: (href: string) => void; replace: (href: string) => void };
   isMobile: boolean;
   highlighting: Pick<DashboardHighlightingProps, 'setHighlightedSkillId'>;
   handleFeedOverlayTargetChange: (target: FeedPostOverlayTarget) => void;
@@ -50,7 +61,7 @@ export function useNotificationNavigation({
   setRequestsRouteIntent,
 }: NotificationNavigationInput) {
   const handleNotificationNavigate = useCallback(
-    (targetUrl: string) => {
+    (targetUrl: string, options?: NotificationNavigateOptions) => {
       if (targetUrl !== '/dashboard' && !targetUrl.startsWith('/dashboard/')) {
         return;
       }
@@ -124,7 +135,11 @@ export function useNotificationNavigation({
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
-      router.push(targetUrl);
+      if (options?.replace) {
+        router.replace(targetUrl);
+      } else {
+        router.push(targetUrl);
+      }
     },
     [
       router,

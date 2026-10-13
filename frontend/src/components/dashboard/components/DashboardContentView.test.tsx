@@ -44,6 +44,9 @@ jest.mock('../contexts/RequestsNotificationsContext', () => ({
 jest.mock('../contexts/FeedPostOverlayContext', () => ({
   FeedPostOverlayProvider: (props: Record<string, unknown>) => mockStub('FeedPostOverlayProvider', props),
 }));
+jest.mock('../contexts/OfferReviewsBackContext', () => ({
+  OfferReviewsBackProvider: (props: Record<string, unknown>) => mockStub('OfferReviewsBackProvider', props),
+}));
 jest.mock('../onboarding/DesktopOnboardingContext', () => ({
   DesktopOnboardingProvider: (props: Record<string, unknown>) => mockStub('DesktopOnboardingProvider', props),
 }));
@@ -263,7 +266,8 @@ describe('štruktúra stromu', () => {
       '          [notificationsOverlay]',
       '            NotificationsFeed',
       '          [desktopRightRail]',
-      '          module-content',
+      '          OfferReviewsBackProvider',
+      '            module-content',
       '        OnboardingScrollLock',
       '        MobileOnboardingOverlay',
       '        DesktopOnboardingOverlay',
@@ -290,7 +294,8 @@ describe('štruktúra stromu', () => {
       '            NotificationsFeed',
       '          [desktopRightRail]',
       '            MessagesDesktopRail',
-      '          module-content',
+      '          OfferReviewsBackProvider',
+      '            module-content',
       '        OnboardingScrollLock',
       '        MobileOnboardingOverlay',
       '        DesktopOnboardingOverlay',
@@ -309,6 +314,7 @@ describe('štruktúra stromu', () => {
       'DesktopOnboardingProvider',
       'MobileOnboardingProvider',
       'DashboardLayout',
+      'OfferReviewsBackProvider',
       'SearchModule',
       'NotificationsFeed',
       'MessagesDesktopRail',
@@ -702,11 +708,22 @@ describe('DashboardLayout: hlavička mobilných Správ', () => {
 });
 
 describe('DashboardLayout: obsah a prekrytia', () => {
-  it('obsah modulu sa vykreslí ako potomok rozloženia', () => {
-    const { getByTestId } = renderView();
+  it('obsah modulu sa vykreslí ako potomok rozloženia, v obale so šípkou späť pre recenzie', () => {
+    const { props, getByTestId } = renderView();
 
-    expect(propsOf('DashboardLayout').children).toBe(MODULE_CONTENT);
-    expect(getByTestId('module-content').parentElement?.getAttribute('data-mock')).toBe('DashboardLayout');
+    // Obal nesie handler, ktorý desktopová stránka recenzií použije na vlastnú šípku späť.
+    expect(propsOf('OfferReviewsBackProvider').children).toBe(MODULE_CONTENT);
+    expect(propsOf('OfferReviewsBackProvider').onBack).toBe(props.handleOfferReviewsBack);
+    const provider = getByTestId('module-content').parentElement;
+    expect(provider?.getAttribute('data-mock')).toBe('OfferReviewsBackProvider');
+    expect(provider?.parentElement?.getAttribute('data-mock')).toBe('DashboardLayout');
+  });
+
+  it('šípka späť pre recenzie je tá istá obsluha ako v hornej lište pre modul recenzií', () => {
+    const { props } = renderView({ activeModule: 'offer-reviews' });
+
+    expect(propsOf('OfferReviewsBackProvider').onBack).toBe(propsOf('DashboardLayout').onMobileBack);
+    expect(propsOf('OfferReviewsBackProvider').onBack).toBe(props.handleOfferReviewsBack);
   });
 
   it('panel hľadania: SearchModule v obale s kotvou sprievodcu a so šiestimi props', () => {
