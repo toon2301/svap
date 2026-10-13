@@ -101,9 +101,11 @@ def carry_display_name_on_type_switch(
       Priezvisko sa u firmy ukladá prázdne (existujúce pravidlo), jeho text ostáva
       v názve firmy.
     - Na osobu: zobrazeným menom je názov firmy. Ak sa zhoduje s menom a priezviskom,
-      ostanú; ak začína menom, priezvisko sa dopočíta zvyškom (obnoví sa rozdelenie
-      po ceste osoba -> firma -> osoba); inak sa celý názov uloží do mena.
-      Meno sa neskracuje ani nekontroluje – ide o údaj, ktorý používateľ už zadal.
+      ostanú; ak začína menom a zloženie mena so zvyškom dá presne ten istý text,
+      priezvisko sa dopočíta zvyškom (obnoví sa rozdelenie po ceste osoba -> firma ->
+      osoba); inak sa celý názov uloží do mena, aby sa zobrazený text nezmenil
+      ani o medzeru. Meno sa neskracuje ani nekontroluje – ide o údaj, ktorý
+      používateľ už zadal.
     """
     first = clean_name_value(first_name)
     last = clean_name_value(last_name)
@@ -120,9 +122,9 @@ def carry_display_name_on_type_switch(
     if not company or company == personal_name:
         return {"first_name": first, "last_name": last, "company_name": ""}
     if first and company.startswith(f"{first} "):
-        return {
-            "first_name": first,
-            "last_name": company[len(first) + 1 :].strip(),
-            "company_name": "",
-        }
+        rest = company[len(first) + 1 :]
+        # Rozdelí sa len vtedy, keď zloženie mena a priezviska dá presne ten istý text
+        # (napr. nie pri dvoch medzerách za menom) – zobrazené meno sa nesmie zmeniť.
+        if build_individual_display_name(first, rest) == company:
+            return {"first_name": first, "last_name": rest, "company_name": ""}
     return {"first_name": company, "last_name": "", "company_name": ""}

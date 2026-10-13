@@ -325,6 +325,26 @@ def test_long_company_name_is_carried_to_individual_as_is(api_client):
 
 
 @pytest.mark.django_db
+def test_company_name_with_two_spaces_keeps_the_exact_shown_text(api_client):
+    """Názov firmy s dvoma medzerami za menom sa nerozdelí, takže zobrazený text ostane presne rovnaký."""
+    user = _create_user(
+        "dve-medzery",
+        first_name="Anton",
+        last_name="",
+        company_name="Anton  Chudjačik",
+        user_type=UserType.COMPANY,
+    )
+    shown_before = user.display_name
+    assert shown_before == "Anton  Chudjačik"
+
+    response = _switch_type(api_client, user, "individual")
+
+    assert response.status_code == status.HTTP_200_OK
+    user.refresh_from_db()
+    assert user.display_name == shown_before
+
+
+@pytest.mark.django_db
 def test_company_name_with_punctuation_is_carried_to_individual_as_is(api_client):
     """Názov firmy so znakmi mimo povolených pre osobné meno (čiarka, bodky) sa prenesie bez zmeny."""
     user = _create_user(
@@ -482,13 +502,21 @@ def test_same_type_patch_does_not_touch_the_names(api_client):
             "Antonín Studio",
             {"first_name": "Antonín Studio", "last_name": "", "company_name": ""},
         ),
-        # viac medzier za menom: priezvisko sa dopočíta bez nich
+        # dve medzery za menom: názov sa nerozdelí, aby sa zobrazený text nezmenil
         (
             "individual",
             "Anton",
             "",
             "Anton  Chudjačik",
-            {"first_name": "Anton", "last_name": "Chudjačik", "company_name": ""},
+            {"first_name": "Anton  Chudjačik", "last_name": "", "company_name": ""},
+        ),
+        # medzery vnútri priezviska ostanú: zložením mena a priezviska vznikne rovnaký text
+        (
+            "individual",
+            "Anton",
+            "",
+            "Anton Jana  Chudjačik",
+            {"first_name": "Anton", "last_name": "Jana  Chudjačik", "company_name": ""},
         ),
         # osoba -> firma: zobrazené meno sa stane názvom, priezvisko sa u firmy ukladá prázdne
         (
