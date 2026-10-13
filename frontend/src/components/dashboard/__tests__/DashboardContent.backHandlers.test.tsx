@@ -425,6 +425,24 @@ describe('recenzie ponuky (offer-reviews)', () => {
       expect(activeModule()).toBe('offer-reviews');
     });
 
+    it('po F5 (značka zo staršieho načítania stránky) šípka stále urobí krok späť, nie záložnú adresu', async () => {
+      const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+      await renderDashboard(true, REVIEWS_ENTRY(RETURN_TO));
+      // F5 zmenil modulový stav, `history.state` ostal: značka nesie identitu starého načítania.
+      window.history.replaceState(
+        { __svaplyOfferReviewsOrigin: { version: 1, pageLoadId: 'pred-F5' } },
+        '',
+        `/dashboard/offers/3/reviews?${RETURN_TO}`,
+      );
+
+      pressBack();
+
+      expect(backSpy).toHaveBeenCalledTimes(1);
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+      expect(mockRouter.push).not.toHaveBeenCalled();
+      expect(activeModule()).toBe('offer-reviews');
+    });
+
     it('desktopová šípka na stránke recenzií dostane z dashboardu ten istý handler ako horná lišta', async () => {
       await renderDashboard(false, REVIEWS_ENTRY(RETURN_TO));
 

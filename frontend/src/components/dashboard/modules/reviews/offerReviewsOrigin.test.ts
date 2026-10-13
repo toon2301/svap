@@ -141,31 +141,6 @@ describe('stránka otvorená inak ako z appky', () => {
     }
   });
 
-  it('has no origin after F5', () => {
-    const router = historyRouter();
-    router.push(PROFILE);
-    openOfferReviews(router, REVIEWS);
-    adoptOfferReviewsOrigin();
-
-    // Reload: `history.state` prežije, modulový stav nie – nové načítanie stránky
-    // pôvod nepozná, lebo nevie, z čoho sa recenzie otvorili.
-    let freshReturn: typeof returnToOfferReviewsOrigin = () => true;
-    jest.isolateModules(() => {
-      freshReturn = jest.requireActual('./offerReviewsOrigin').returnToOfferReviewsOrigin;
-    });
-    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
-    try {
-      expect(freshReturn()).toBe(false);
-      expect(backSpy).not.toHaveBeenCalled();
-      // Kontrola: to isté načítanie stránky ten istý marker uzná – nové
-      // načítanie teda odmietlo pôvod, nie poškodený záznam.
-      expect(returnToOfferReviewsOrigin()).toBe(true);
-      expect(backSpy).toHaveBeenCalledTimes(1);
-    } finally {
-      backSpy.mockRestore();
-    }
-  });
-
   it('does not let a forgotten open claim a later direct link', async () => {
     const router = historyRouter();
     router.push(PROFILE);
@@ -205,6 +180,66 @@ describe('stránka otvorená inak ako z appky', () => {
     adoptOfferReviewsOrigin();
 
     expect(await arrow()).toBe(false);
+  });
+});
+
+describe('po F5 (obnovenie stránky)', () => {
+  /** Kľúč v `history.state`, do ktorého sa značka píše. */
+  const ORIGIN_KEY = '__svaplyOfferReviewsOrigin';
+
+  it('keeps the origin: a reload does not change the history, so the previous record is still the profile', async () => {
+    const router = historyRouter();
+    router.push(SEARCH);
+    router.push(PROFILE);
+    openOfferReviews(router, REVIEWS);
+    adoptOfferReviewsOrigin();
+
+    // Reload: `history` aj `history.state` prežijú, modulový stav nie – po F5 beží čerstvá kópia modulu.
+    let freshReturn: typeof returnToOfferReviewsOrigin = () => false;
+    jest.isolateModules(() => {
+      freshReturn = jest.requireActual('./offerReviewsOrigin').returnToOfferReviewsOrigin;
+    });
+    let steppedBack = false;
+    await waitForPopState(() => {
+      steppedBack = freshReturn();
+    });
+
+    expect(steppedBack).toBe(true);
+    // Presne na existujúci záznam profilu – nie jeho kópia navyše (tá by zachytila ďalšie Späť).
+    expect(url()).toBe(PROFILE);
+    await goBack();
+    expect(url()).toBe(SEARCH);
+  });
+
+  it('accepts a marker written by an older build that tied it to the page load', () => {
+    window.history.replaceState({ [ORIGIN_KEY]: { version: 1, pageLoadId: 'pred-F5' } }, '', REVIEWS);
+    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+
+    try {
+      expect(returnToOfferReviewsOrigin()).toBe(true);
+      expect(backSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      backSpy.mockRestore();
+    }
+  });
+
+  it.each([
+    ['iná verzia', { version: 2 }],
+    ['verzia ako text', { version: '1' }],
+    ['prázdny objekt', {}],
+    ['text', 'yes'],
+    ['číslo', 1],
+    ['null', null],
+  ] as Array<[string, unknown]>)('refuses a damaged marker (%s)', (_title, marker) => {
+    window.history.replaceState({ [ORIGIN_KEY]: marker }, '', REVIEWS);
+    const backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+
+    try {
+      expect(returnToOfferReviewsOrigin()).toBe(false);
+      expect(backSpy).not.toHaveBeenCalled();
+    } finally {
+      backSpy.mockRestore();
+    }
   });
 });
 

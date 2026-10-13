@@ -15,20 +15,19 @@
  * vytvára až Next router pri commite novej stránky: otvorenie si cestu
  * zapamätá a zobrazená stránka recenzií ju prevezme.
  *
- * Bez pôvodu (odkaz, F5, nová karta) ostáva záložná adresa `returnTo`.
+ * Bez pôvodu (odkaz, nová karta) ostáva záložná adresa `returnTo`.
+ *
+ * Značka sa NEVIAŽE na načítanie stránky (na rozdiel od detailu portfólia). Hovorí
+ * len to, že záznam recenzií vznikol krokom z profilu, teda predošlý záznam JE ten
+ * profil – a F5 históriu ani `history.state` nemení. Značka viazaná na načítanie
+ * po F5 zlyhala: šípka išla záložným `replace`, ktorý k starému záznamu profilu
+ * pridal jeho kópiu bez pôvodu, a ďalšie Späť pristálo na tej kópii namiesto na
+ * mieste, odkiaľ sa do profilu prišlo.
  */
 
 const ORIGIN_HISTORY_KEY = '__svaplyOfferReviewsOrigin';
 
-/**
- * Identita tohto načítania stránky.
- *
- * `history.state` prežije F5, pôvod však nie: po reloade appka stav, z ktorého
- * sa recenzie otvorili, nepozná. Marker z iného načítania preto neplatí.
- */
-const PAGE_LOAD_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-
-type OfferReviewsOriginMarker = { version: 1; pageLoadId: string };
+type OfferReviewsOriginMarker = { version: 1 };
 
 /** Cesta recenzií, ktoré appka práve otvára a ešte nemajú svoj záznam. */
 let pendingPath: string | null = null;
@@ -79,10 +78,7 @@ export function adoptOfferReviewsOrigin(): void {
     window.history.replaceState(
       {
         ...historyStateRecord(window.history.state),
-        [ORIGIN_HISTORY_KEY]: {
-          version: 1,
-          pageLoadId: PAGE_LOAD_ID,
-        } satisfies OfferReviewsOriginMarker,
+        [ORIGIN_HISTORY_KEY]: { version: 1 } satisfies OfferReviewsOriginMarker,
       },
       '',
       window.location.href,
@@ -102,7 +98,7 @@ export function returnToOfferReviewsOrigin(): boolean {
   const marker = historyStateRecord(window.history.state)[ORIGIN_HISTORY_KEY] as
     | Partial<OfferReviewsOriginMarker>
     | undefined;
-  if (marker?.version !== 1 || marker.pageLoadId !== PAGE_LOAD_ID) return false;
+  if (marker?.version !== 1) return false;
   window.history.back();
   return true;
 }
