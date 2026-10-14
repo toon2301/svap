@@ -12,6 +12,7 @@ import { requestOfferWatchMobile } from '../mobile/offerWatchMobileNavigation';
 
 const MOBILE_MEDIA_QUERY = '(max-width: 1023px)';
 
+/** Select mobile management by viewport, falling back to width if matchMedia is absent. */
 function isMobileViewport(): boolean {
   if (typeof window.matchMedia === 'function') {
     return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
@@ -28,7 +29,7 @@ type OfferWatchResultsNavigationParams = {
 /**
  * Otvorí správu sledovaní cez natívny tok aktuálneho rozloženia.
  *
- * Mobil použije existujúce celostránkové okno. Desktop označí pôvodný
+ * Mobil použije existujúce celostránkové okno s pôvodom výsledkov. Desktop označí pôvodný
  * history záznam, aby sa zo sekcie Nastavení vrátil na presnú URL výsledkov.
  */
 export function useOfferWatchResultsNavigation({
@@ -40,7 +41,7 @@ export function useOfferWatchResultsNavigation({
     if (typeof window === 'undefined') return;
 
     if (isMobileViewport()) {
-      requestOfferWatchMobile();
+      requestOfferWatchMobile('results');
       return;
     }
 

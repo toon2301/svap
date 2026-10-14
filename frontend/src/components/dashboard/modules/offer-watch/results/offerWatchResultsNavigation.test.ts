@@ -10,9 +10,10 @@ import { useOfferWatchResultsNavigation } from './offerWatchResultsNavigation';
 const mockRequestOfferWatchMobile = jest.fn();
 
 jest.mock('../mobile/offerWatchMobileNavigation', () => ({
-  requestOfferWatchMobile: () => mockRequestOfferWatchMobile(),
+  requestOfferWatchMobile: (...args: unknown[]) => mockRequestOfferWatchMobile(...args),
 }));
 
+/** Set only viewport matching so navigation can be checked without rendering the whole dashboard. */
 function setMobileViewport(matches: boolean): void {
   (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
     matches,
@@ -87,8 +88,39 @@ describe('useOfferWatchResultsNavigation', () => {
     act(() => result.current());
 
     expect(mockRequestOfferWatchMobile).toHaveBeenCalledTimes(1);
+    expect(mockRequestOfferWatchMobile).toHaveBeenCalledWith('results');
     expect(openDesktopSettings).not.toHaveBeenCalled();
     expect(setActiveRightItem).not.toHaveBeenCalled();
     expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(initialUrl);
+  });
+
+  it('does not alter history when no supported desktop return target exists', () => {
+    const initialUrl = window.location.href;
+    const openDesktopSettings = jest.fn();
+    const setActiveRightItem = jest.fn();
+    const { result } = renderHook(() => useOfferWatchResultsNavigation({
+      activeModule: 'unknown-module', openDesktopSettings, setActiveRightItem,
+    }));
+    act(() => result.current());
+    expect(openDesktopSettings).not.toHaveBeenCalled();
+    expect(setActiveRightItem).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(initialUrl);
+  });
+
+  it('uses innerWidth for mobile navigation when matchMedia is unavailable', () => {
+    const originalMedia = window.matchMedia;
+    const originalWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth')!;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    window.matchMedia = undefined as unknown as typeof window.matchMedia;
+    try {
+      const { result } = renderHook(() => useOfferWatchResultsNavigation({
+        activeModule: 'watches', openDesktopSettings: jest.fn(), setActiveRightItem: jest.fn(),
+      }));
+      act(() => result.current());
+      expect(mockRequestOfferWatchMobile).toHaveBeenCalledWith('results');
+    } finally {
+      window.matchMedia = originalMedia;
+      Object.defineProperty(window, 'innerWidth', originalWidth);
+    }
   });
 });

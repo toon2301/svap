@@ -10,6 +10,7 @@ export const OFFER_WATCH_SETTINGS_PATH =
   dashboardSectionPath('settings', 'offer-watches') ?? '/dashboard/settings/watches';
 /** Adresa Nastavení – návratový bod pod obrazovkou sledovaných ponúk. */
 export const OFFER_WATCH_RETURN_PATH = dashboardSectionPath('settings') ?? '/dashboard/settings';
+const RESULTS_PATH = dashboardSectionPath('watches') ?? '/dashboard/watches';
 
 const HISTORY_KEY = '__svaplyOfferWatchMobile';
 const SETTINGS_RETURN_KEY = '__svaplyOfferWatchSettingsReturn';
@@ -23,7 +24,7 @@ export type OfferWatchMobileView =
 
 export type OfferWatchMobileHistory = {
   version: 2;
-  origin: 'settings' | 'direct';
+  origin: 'settings' | 'direct' | 'results';
   view: OfferWatchMobileView;
 };
 
@@ -33,18 +34,21 @@ type OfferWatchSettingsReturnHistory = {
 
 type HistoryRecord = Record<string, unknown>;
 
+/** Read structured history objects without treating primitives or arrays as state records. */
 function asHistoryRecord(value: unknown): HistoryRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as HistoryRecord
     : {};
 }
 
+/** Allow only the three existing full-screen selectors in a saved view. */
 function readValidPicker(value: unknown): OfferWatchMobilePicker | null {
   return value === 'category' || value === 'country' || value === 'district'
     ? value
     : null;
 }
 
+/** Validate each view's required fields and strip unrelated saved properties. */
 function readValidView(value: unknown): OfferWatchMobileView | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const candidate = value as Record<string, unknown>;
@@ -67,15 +71,30 @@ function readValidView(value: unknown): OfferWatchMobileView | null {
   return picker ? { kind: 'edit', watchId, picker } : { kind: 'edit', watchId };
 }
 
+/** Recognize the canonical management route without confusing it with general Settings. */
 export function isOfferWatchSettingsPath(pathname: string): boolean {
   return pathname.replace(/\/+$/, '') === OFFER_WATCH_SETTINGS_PATH;
 }
 
-export function requestOfferWatchMobile(): void {
+/** Open the manager from Settings by default, or explicitly from the results screen. */
+export function requestOfferWatchMobile(origin: 'settings' | 'results' = 'settings'): void {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT));
+  window.dispatchEvent(origin === 'results'
+    ? new CustomEvent(OFFER_WATCH_MOBILE_REQUEST_EVENT, { detail: { origin } })
+    : new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT));
 }
 
+/** Accept the results origin only for an explicit request made on the canonical results route. */
+export function readOfferWatchMobileRequestOrigin(event: Event): 'settings' | 'results' {
+  return typeof window !== 'undefined'
+    && event instanceof CustomEvent
+    && event.detail?.origin === 'results'
+    && window.location.pathname.replace(/\/+$/, '') === RESULTS_PATH
+    ? 'results'
+    : 'settings';
+}
+
+/** Restore only supported history versions, origins and valid list/form/picker views. */
 export function readOfferWatchMobileHistory(state: unknown): OfferWatchMobileHistory | null {
   const value = asHistoryRecord(state)[HISTORY_KEY];
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -83,7 +102,7 @@ export function readOfferWatchMobileHistory(state: unknown): OfferWatchMobileHis
   const view = readValidView(candidate.view);
   if (
     candidate.version !== 2
-    || (candidate.origin !== 'settings' && candidate.origin !== 'direct')
+    || (candidate.origin !== 'settings' && candidate.origin !== 'direct' && candidate.origin !== 'results')
     || !view
   ) {
     return null;
@@ -95,6 +114,7 @@ export function readOfferWatchMobileHistory(state: unknown): OfferWatchMobileHis
   };
 }
 
+/** Add the mobile view marker without discarding Next.js or other history fields. */
 export function withOfferWatchMobileHistory(
   state: unknown,
   marker: OfferWatchMobileHistory,
@@ -102,18 +122,21 @@ export function withOfferWatchMobileHistory(
   return { ...asHistoryRecord(state), [HISTORY_KEY]: marker };
 }
 
+/** Remove only the mobile view marker when handing management to desktop. */
 export function withoutOfferWatchMobileHistory(state: unknown): HistoryRecord {
   const next = { ...asHistoryRecord(state) };
   delete next[HISTORY_KEY];
   return next;
 }
 
+/** Detect the supported marker for a Settings overlay that must reopen after Back. */
 export function hasOfferWatchSettingsReturnHistory(state: unknown): boolean {
   const value = asHistoryRecord(state)[SETTINGS_RETURN_KEY];
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   return (value as Partial<OfferWatchSettingsReturnHistory>).version === 1;
 }
 
+/** Mark Settings restoration independently of the nested mobile management view. */
 export function withOfferWatchSettingsReturnHistory(state: unknown): HistoryRecord {
   return {
     ...asHistoryRecord(state),
@@ -121,6 +144,7 @@ export function withOfferWatchSettingsReturnHistory(state: unknown): HistoryReco
   };
 }
 
+/** Clear Settings restoration metadata while retaining unrelated browser state. */
 export function withoutOfferWatchSettingsReturnHistory(state: unknown): HistoryRecord {
   const next = { ...asHistoryRecord(state) };
   delete next[SETTINGS_RETURN_KEY];
