@@ -81,6 +81,7 @@ export default function OfferWatchMatchGrid({
                 requestLabel={undefined}
                 isRequestDisabled={false}
                 compactTop={true}
+                showLikes={false}
               />
             </div>
           </article>
