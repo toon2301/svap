@@ -42,8 +42,11 @@ export type OfferCardFrontProps = {
   compactTop?: boolean;
   onOpenImageGallery?: () => void;
   showFlipHint?: boolean;
+  /** Keep Like visible by default; results-only callers can remove its interactive control. */
+  showLikes?: boolean;
 };
 
+/** Render the offer's front content and only the actions enabled by its caller. */
 export function OfferCardFront({
   offer,
   accountType,
@@ -74,6 +77,7 @@ export function OfferCardFront({
   compactTop = false,
   onOpenImageGallery,
   showFlipHint = false,
+  showLikes = true,
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
   const router = useRouter();
@@ -125,7 +129,7 @@ export function OfferCardFront({
         ) : null}
 
         <div className="absolute top-2 right-2 flex flex-col gap-0.5">
-          <button
+          {showLikes && <button
             type="button"
             aria-label={likeLabel}
             aria-pressed={isLiked}
@@ -145,7 +149,7 @@ export function OfferCardFront({
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
-          </button>
+          </button>}
           <button
             type="button"
             aria-label={t('profile.shareOfferTitle', 'Zdieľať ponuku')}
