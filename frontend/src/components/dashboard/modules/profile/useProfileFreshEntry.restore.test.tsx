@@ -7,8 +7,8 @@
  * z minulosti sa nesmie uplatniť.
  */
 
-import { StrictMode, type ReactNode } from 'react';
-import { act, renderHook } from '@testing-library/react';
+import { StrictMode, useLayoutEffect, type ReactNode } from 'react';
+import { act, render, renderHook } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 jest.mock('next/navigation', () => ({
@@ -344,5 +344,81 @@ describe('useProfileFreshEntry – obnova a zmena profilu', () => {
     frames(16);
 
     expect(fresh.writes).toEqual([2262]);
+  });
+});
+
+/**
+ * Pasívne efekty bežia až po vykreslení, takže medzi commitom, ktorý profil vymení (alebo modul
+ * odmountuje), a nimi môže prebehnúť snímka (rAF). Po preklike pritom ostáva chvíľu vykreslený starý
+ * zoznam, ktorý je dosť vysoký – obnova by do neho zapísala pozíciu predošlého profilu. Zastaviť ju
+ * treba už v commite (layout efekt). Layout efekt komponentu nižšie beží v commite PO layout cleanupoch
+ * hooku a PRED jeho pasívnymi efektmi, teda presne tam, kde by prebehla taká snímka.
+ */
+describe('useProfileFreshEntry – zastavenie obnovy v commite, pred snímkou', () => {
+  let frameInCommit: (() => void) | null = null;
+  const runFrameInCommit = () => frameInCommit?.();
+
+  function Probe({ id }: { id: number }) {
+    useProfileFreshEntry(id);
+    useLayoutEffect(runFrameInCommit, [id]);
+    return null;
+  }
+
+  function Host({ show }: { show: boolean }) {
+    useLayoutEffect(runFrameInCommit, [show]);
+    return show ? <Probe id={21} /> : null;
+  }
+
+  /** Obnova čaká na zoznam; obsah je pri nasledujúcom commite už dosť vysoký. */
+  function waitingRestoreWithTallContent() {
+    leaveToReviewsAt(2262);
+    const fresh = mountMain({ scrollHeight: 664 });
+    return {
+      fresh,
+      arm: () => {
+        frames(100);
+        fresh.setHeight(7000);
+        frameInCommit = () => jest.advanceTimersByTime(16);
+      },
+    };
+  }
+
+  afterEach(() => {
+    frameInCommit = null;
+  });
+
+  it('control: a frame inside a commit that keeps the same profile does restore', () => {
+    const { fresh, arm } = waitingRestoreWithTallContent();
+    const view = render(<Probe id={21} />);
+    arm();
+
+    view.rerender(<Probe id={21} />);
+    frames(16);
+
+    expect(fresh.writes).toEqual([2262]);
+  });
+
+  it('a frame inside the commit that switches the profile cannot write the old position into the new one', () => {
+    const { fresh, arm } = waitingRestoreWithTallContent();
+    const view = render(<Probe id={21} />);
+    arm();
+
+    view.rerender(<Probe id={42} />);
+    frames(2000);
+
+    expect(fresh.writes).toEqual([]);
+    expect(readRememberedProfileScroll()).toBe(2262);
+  });
+
+  it('a frame inside the commit that unmounts the module cannot write the position into the page that replaced it', () => {
+    const { fresh, arm } = waitingRestoreWithTallContent();
+    const view = render(<Host show />);
+    arm();
+
+    view.rerender(<Host show={false} />);
+    frames(2000);
+
+    expect(fresh.writes).toEqual([]);
+    expect(readRememberedProfileScroll()).toBe(2262);
   });
 });

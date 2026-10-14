@@ -8,7 +8,7 @@
  * neodmountuje a bez tohto by ostal scroll aj záložka po predošlom profile.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   discardProfileFreshEntryFor,
   onProfileFreshEntryMarked,
@@ -19,6 +19,9 @@ import { scrollDebugTag } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugs
 
 /** Scrollovateľná plocha dashboardu – tá istá, akú používa feed aj profil. */
 const DASHBOARD_MAIN_SELECTOR = '[data-dashboard-main]';
+
+/** Na serveri `useLayoutEffect` nebeží – rovnaký vzor ako `useSettingsScrollReset`. */
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * Vracia `true`, keď ide o nový vstup do TOHTO profilu – volajúci má vtedy
@@ -45,11 +48,15 @@ export function useProfileFreshEntry(
   // Zastavenie rozbehnutej obnovy pozície. Obnova patrí profilu, pre ktorý sa začala.
   const stopRestoreRef = useRef<(() => void) | null>(null);
 
+  // Obnova sa zastaví pri zmene profilu aj pri odmountovaní modulu. Modul ostáva zobrazený aj pri
+  // preklikoch (`goToUserProfile` s ID z cache, krok histórie medzi profilmi) a mení sa len profil:
+  // pozícia predošlého profilu by sa inak zapísala do nového, hneď ako jeho obsah dorastie. Musí to byť
+  // už v commite (layout cleanup), nie v pasívnom efekte: ten prebehne až po vykreslení a snímka (rAF)
+  // by v medzere zapísala starú pozíciu do obsahu, ktorý je dosť vysoký – po preklike ostáva chvíľu
+  // vykreslený starý zoznam – alebo do stránky, ktorá modul nahradila.
+  useIsomorphicLayoutEffect(() => () => stopRestoreRef.current?.(), [profileId, profileSlug]);
+
   useEffect(() => {
-    // Modul ostáva zobrazený aj pri preklikoch na iný profil (`goToUserProfile` s ID z cache,
-    // krok histórie medzi profilmi) a mení sa len profil: pozícia predošlého profilu by sa inak
-    // zapísala do nového, hneď ako jeho obsah dorastie.
-    stopRestoreRef.current?.();
     const isFresh = takeProfileFreshEntry({ id: profileId, slug: profileSlug });
     openedAsFreshEntryRef.current = isFresh;
     if (!isFresh) {
@@ -69,12 +76,10 @@ export function useProfileFreshEntry(
   // Návrat z recenzií: profil stojí nanovo a od vrchu, pozícia sa vráti po dorastení
   // obsahu. Len pri zobrazení modulu (nie pri zmene profilu) a nikdy pri novom vstupe –
   // ten pozíciu zabudol už efekt vyššie (vďaka tomu druhý beh vývojového dvojitého mountu,
-  // ktorý príznak už nevidí, nemá čo obnoviť). Beží po efekte vyššie.
+  // ktorý príznak už nevidí, nemá čo obnoviť). Beží po efekte vyššie; zastavuje ju layout cleanup.
   useEffect(() => {
     if (openedAsFreshEntryRef.current) return;
-    const stop = startProfileScrollRestore();
-    stopRestoreRef.current = stop;
-    return stop;
+    stopRestoreRef.current = startProfileScrollRestore();
   }, []);
 
   // Nový vstup sa oznamuje PRED zmenou profilu a adresy (`goToUserProfile`): rozbehnutá obnova
