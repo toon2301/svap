@@ -137,6 +137,25 @@ describe('useProfileFreshEntry – obnova pozície po návrate z recenzií', () 
     expect(jest.getTimerCount()).toBe(0);
   });
 
+  it('a fresh entry never restores, even when the browser refuses to rewrite the history state', () => {
+    leaveToReviewsAt(2262);
+    const fresh = mountMain({ scrollTop: 900, scrollHeight: 7000 });
+    markProfileFreshEntry({ id: 21 });
+    // Napr. obmedzenie Safari na počet `replaceState` za čas: pozícia v zázname by ostala.
+    const replaceSpy = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    try {
+      renderHook(() => useProfileFreshEntry(21, 'peter'));
+      frames(2000);
+
+      expect(fresh.writes).toEqual([0]);
+    } finally {
+      replaceSpy.mockRestore();
+    }
+  });
+
   it('restores exactly once in development double-mounting (StrictMode)', () => {
     leaveToReviewsAt(2262);
     const fresh = mountMain({ scrollHeight: 664 });
@@ -241,5 +260,89 @@ describe('useProfileFreshEntry – obnova pozície po návrate z recenzií', () 
 
     expect(next.writes).toEqual([]);
     expect(readRememberedProfileScroll()).toBe(1800);
+  });
+});
+
+/**
+ * Rozbehnutá obnova patrí profilu, pre ktorý sa začala. Modul ostáva zobrazený aj pri preklikoch
+ * (`goToUserProfile` s ID z cache, krok histórie medzi dvoma profilmi), zmení sa len profil – pozícia
+ * starého profilu sa nesmie zapísať do nového.
+ */
+describe('useProfileFreshEntry – obnova a zmena profilu', () => {
+  function waitForTheListAt(id: number) {
+    leaveToReviewsAt(2262);
+    const fresh = mountMain({ scrollHeight: 664 });
+    const hook = renderHook(({ profile }: { profile: number }) => useProfileFreshEntry(profile), {
+      initialProps: { profile: id },
+    });
+    frames(100);
+    return { fresh, ...hook };
+  }
+
+  it('is stopped when the module stays mounted and another profile is shown', () => {
+    const { fresh, rerender } = waitForTheListAt(21);
+
+    rerender({ profile: 42 });
+    fresh.setHeight(7000);
+    frames(2000);
+
+    expect(fresh.writes).toEqual([]);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('keeps the position for a later visit when the profile changes without a new entry', () => {
+    const { fresh, rerender } = waitForTheListAt(21);
+
+    rerender({ profile: 42 });
+    fresh.setHeight(7000);
+    frames(2000);
+
+    expect(readRememberedProfileScroll()).toBe(2262);
+  });
+
+  it('is stopped and forgotten when the other profile is a new entry (it opens at the top)', () => {
+    const { fresh, rerender } = waitForTheListAt(21);
+
+    act(() => markProfileFreshEntry({ id: 42 }));
+    rerender({ profile: 42 });
+    fresh.setHeight(7000);
+    frames(2000);
+
+    expect(fresh.writes).toEqual([0]);
+    expect(readRememberedProfileScroll()).toBeNull();
+  });
+
+  it('is stopped as soon as a new entry is announced, before the address and the profile change', () => {
+    const { fresh } = waitForTheListAt(21);
+
+    // `goToUserProfile` oznámi nový vstup ako PRVÉ, až potom mení profil a adresu.
+    act(() => markProfileFreshEntry({ id: 42 }));
+    fresh.setHeight(7000);
+    frames(2000);
+
+    expect(fresh.writes).toEqual([]);
+    expect(readRememberedProfileScroll()).toBeNull();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('is stopped by an entry to the profile that is already shown too (the position is moot)', () => {
+    const { fresh } = waitForTheListAt(21);
+
+    act(() => markProfileFreshEntry({ id: 21 }));
+    fresh.setHeight(7000);
+    frames(2000);
+
+    expect(fresh.writes).toEqual([]);
+    expect(readRememberedProfileScroll()).toBeNull();
+  });
+
+  it('still restores when the same profile only re-renders', () => {
+    const { fresh, rerender } = waitForTheListAt(21);
+
+    rerender({ profile: 21 });
+    fresh.setHeight(7000);
+    frames(16);
+
+    expect(fresh.writes).toEqual([2262]);
   });
 });

@@ -15,6 +15,7 @@ import {
   adoptOfferReviewsOrigin,
   markOfferReviewsPending,
   openOfferReviews,
+  opensReviewsInThisTab,
   resetOfferReviewsOrigin,
   returnToOfferReviewsOrigin,
 } from './offerReviewsOrigin';
@@ -369,5 +370,26 @@ describe('pozícia profilu pre návrat z recenzií', () => {
     openOfferReviews({ push }, REVIEWS);
 
     expect(push).toHaveBeenCalledWith(REVIEWS);
+  });
+});
+
+describe('otvorenie recenzií v TEJTO karte', () => {
+  // Odkaz s klávesom Ctrl / Cmd / Shift / Alt nechá Next prehliadaču (nová karta, okno) – táto karta
+  // profil neopúšťa, takže si z toho kliku nesmie nič zapamätať.
+  const plain = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false };
+
+  it('is true for a plain primary click (also the Enter key on the link)', () => {
+    expect(opensReviewsInThisTab(plain)).toBe(true);
+  });
+
+  it.each(['metaKey', 'ctrlKey', 'shiftKey', 'altKey'] as const)(
+    'is false when %s is held, because the browser opens another tab or window',
+    (modifier) => {
+      expect(opensReviewsInThisTab({ ...plain, [modifier]: true })).toBe(false);
+    },
+  );
+
+  it('is false for a non-primary button (middle click)', () => {
+    expect(opensReviewsInThisTab({ ...plain, button: 1 })).toBe(false);
   });
 });

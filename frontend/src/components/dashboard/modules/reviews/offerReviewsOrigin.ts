@@ -31,6 +31,15 @@ const ORIGIN_HISTORY_KEY = '__svaplyOfferReviewsOrigin';
 
 type OfferReviewsOriginMarker = { version: 1 };
 
+/** Čo o kliku na odkaz treba vedieť, aby sa dalo povedať, kam sa otvorí. */
+export type ClickActivation = {
+  button: number;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+};
+
 /** Cesta recenzií, ktoré appka práve otvára a ešte nemajú svoj záznam. */
 let pendingPath: string | null = null;
 
@@ -61,6 +70,19 @@ function pathOf(href: string): string {
 export function markOfferReviewsPending(href: string): void {
   rememberProfileScroll();
   pendingPath = pathOf(href);
+}
+
+/**
+ * Otvorí klik na odkaz recenzií stránku v TEJTO karte?
+ *
+ * Ctrl / Cmd / Shift / Alt pri kliku a nehlavné tlačidlo myši nechajú navigáciu
+ * prehliadaču (nová karta, okno) – Next ju vtedy nerobí (`isModifiedEvent`
+ * v `next/link`) a táto karta profil neopúšťa. Nič sa z takého kliku nezapamätá,
+ * inak by v tejto karte ostala zapísaná pozícia a čakajúce otvorenie, ktoré
+ * nikam nevedie.
+ */
+export function opensReviewsInThisTab(event: ClickActivation): boolean {
+  return event.button === 0 && !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
 }
 
 /** Otvor recenzie z karty ponuky – s pôvodom pre krok späť. */

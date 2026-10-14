@@ -42,8 +42,14 @@ export function useProfileFreshEntry(
 
   // Bol posledný otvorený profil nový vstup? Číta ho obnova pozície nižšie.
   const openedAsFreshEntryRef = useRef(false);
+  // Zastavenie rozbehnutej obnovy pozície. Obnova patrí profilu, pre ktorý sa začala.
+  const stopRestoreRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    // Modul ostáva zobrazený aj pri preklikoch na iný profil (`goToUserProfile` s ID z cache,
+    // krok histórie medzi profilmi) a mení sa len profil: pozícia predošlého profilu by sa inak
+    // zapísala do nového, hneď ako jeho obsah dorastie.
+    stopRestoreRef.current?.();
     const isFresh = takeProfileFreshEntry({ id: profileId, slug: profileSlug });
     openedAsFreshEntryRef.current = isFresh;
     if (!isFresh) {
@@ -51,6 +57,9 @@ export function useProfileFreshEntry(
       return;
     }
     setIsFreshEntry(true);
+    // Nový vstup sa otvára od vrchu a stará pozícia sa zabudne – aj pri zmene profilu, kedy sa
+    // obnova pri zobrazení modulu už nespúšťa.
+    clearRememberedProfileScroll();
     if (typeof document === 'undefined') return;
     const main = document.querySelector<HTMLElement>(DASHBOARD_MAIN_SELECTOR);
     scrollDebugTag('fresh-entry reset'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
@@ -59,20 +68,26 @@ export function useProfileFreshEntry(
 
   // Návrat z recenzií: profil stojí nanovo a od vrchu, pozícia sa vráti po dorastení
   // obsahu. Len pri zobrazení modulu (nie pri zmene profilu) a nikdy pri novom vstupe –
-  // ten sa otvára od vrchu a stará pozícia sa zabudne (vďaka tomu druhý beh vývojového
-  // dvojitého mountu, ktorý príznak už nevidí, nemá čo obnoviť). Beží po efekte vyššie.
+  // ten pozíciu zabudol už efekt vyššie (vďaka tomu druhý beh vývojového dvojitého mountu,
+  // ktorý príznak už nevidí, nemá čo obnoviť). Beží po efekte vyššie.
   useEffect(() => {
-    if (openedAsFreshEntryRef.current) {
-      clearRememberedProfileScroll();
-      return;
-    }
-    return startProfileScrollRestore();
+    if (openedAsFreshEntryRef.current) return;
+    const stop = startProfileScrollRestore();
+    stopRestoreRef.current = stop;
+    return stop;
   }, []);
 
+  // Nový vstup sa oznamuje PRED zmenou profilu a adresy (`goToUserProfile`): rozbehnutá obnova
+  // sa končí hneď a pozícia sa zabudne, nech ju nezapíše nič, čo príde medzi oznámením a prekreslením.
   // Preklik na profil, ktorý už je na obrazovke: žiadny nový vstup, a príznak
   // nesmie ostať čakať na neskorší krok späť/dopredu.
   useEffect(
-    () => onProfileFreshEntryMarked(() => discardProfileFreshEntryFor(profileRef.current)),
+    () =>
+      onProfileFreshEntryMarked(() => {
+        stopRestoreRef.current?.();
+        clearRememberedProfileScroll();
+        discardProfileFreshEntryFor(profileRef.current);
+      }),
     [],
   );
 
