@@ -1,8 +1,16 @@
 import fs from 'fs';
 import path from 'path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { gotoDashboardHome, historyLength, mainScrollTop, pathOf, searchOf, topBarBack } from './support/dashboard';
+import {
+  MAIN,
+  gotoDashboardHome,
+  historyLength,
+  mainScrollTop,
+  pathOf,
+  searchOf,
+  topBarBack,
+} from './support/dashboard';
 import { FEED_HOME_PATHS } from './support/feed';
 
 // Recenzie ponuky otvorené z karty vlastnej ponuky a návrat. Iba čítanie – recenzia sa nepridáva ani nemení.
@@ -12,8 +20,12 @@ import { FEED_HOME_PATHS } from './support/feed';
 // otvorila ZNOVA (nový záznam), takže Späť z profilu viedlo naspäť do recenzií a dvojica sa dala
 // preklikávať donekonečna. Mobil: šípka v hornej lište. Desktop: okrúhla šípka vľavo od nadpisu.
 //
+// Po návrate sa profil otvorí na tom istom mieste, odkiaľ sa recenzie otvorili (nie od vrchu). Zoznam ponúk
+// dorastá až po načítaní, preto sa pozícia vracia, kým obsah nenarastie – test overí, že sa vrátila a že drží.
+//
 // Testovací účet musí mať na vlastnom profile aspoň jednu ponuku (nie „hľadám“) – tá má tlačidlo
-// „Pridať recenziu“, ktoré recenzie otvára.
+// „Pridať recenziu“, ktoré recenzie otvára. Testy pozície potrebujú profil, ktorý sa dá odscrollovať
+// (aspoň ~30 px); inak sa preskočia.
 //
 // Posledný test (cudzí profil po F5) beží len s E2E_PEER_SLUG – slug TVOJHO druhého testovacieho účtu, ktorý
 // má aspoň jednu ponuku (nie „hľadám“); pozri .env.e2e.example. Otvorenie jeho profilu zapíše 1 návštevu
@@ -33,10 +45,38 @@ const backLabels = fs
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const BACK_BUTTON_NAME = new RegExp(`^(${backLabels.map(escapeRegExp).join('|')})$`);
 
-type Entry = { profilePath: string; historyAtReviews: number };
+const SCROLL_TOLERANCE = 2;
+
+type Entry = { profilePath: string; historyAtReviews: number; scrollBefore: number };
+
+/** Odscrolluje plochu profilu o najviac 400 px tak, aby tlačidlo recenzií ostalo vidieť; vráti, kde sa zastavila. */
+async function scrollProfileDown(page: Page, button: Locator): Promise<number> {
+  const box = await button.boundingBox();
+  const room = box ? Math.floor(box.y - 120) : 0;
+  return page.locator(MAIN).evaluate((main, wanted) => {
+    const scrollable = Math.max(0, main.scrollHeight - main.clientHeight);
+    main.scrollTop = Math.max(0, Math.min(400, scrollable, wanted));
+    return Math.round(main.scrollTop);
+  }, room);
+}
+
+/** Po návrate sa scroll vráti na miesto (zoznam dorastá) a potom drží – žiadny neskorší skok. */
+async function expectScrollRestored(page: Page, expected: number, label: string): Promise<void> {
+  await expect
+    .poll(() => mainScrollTop(page), {
+      message: `${label}: profil sa nevrátil na miesto, odkiaľ sa otvorili recenzie`,
+      timeout: 10_000,
+    })
+    .toBeGreaterThanOrEqual(expected - SCROLL_TOLERANCE);
+  await page.waitForTimeout(1500);
+  const actual = await mainScrollTop(page);
+  expect(Math.abs(actual - expected), `${label}: scroll po návrate nedrží (pred ${expected}, po ${actual})`).toBeLessThanOrEqual(
+    SCROLL_TOLERANCE,
+  );
+}
 
 /** Nástenka → vlastný profil → recenzie prvej ponuky s tlačidlom „Pridať recenziu“. */
-async function openReviewsFromOwnProfile(page: Page, tap: boolean): Promise<Entry> {
+async function openReviewsFromOwnProfile(page: Page, tap: boolean, scrollDown = false): Promise<Entry> {
   await gotoDashboardHome(page);
   const profileEntry = page
     .locator('[data-sidebar-nav-item="profile"], [data-onboarding="profile-icon"], button[aria-label="Profil"]')
@@ -52,12 +92,14 @@ async function openReviewsFromOwnProfile(page: Page, tap: boolean): Promise<Entr
     reviewButton,
     'Príprava: testovací účet nemá na vlastnom profile ponuku s tlačidlom „Pridať recenziu“ – vytvor aspoň jednu.',
   ).toBeVisible();
+  const scrollBefore = scrollDown ? await scrollProfileDown(page, reviewButton) : await mainScrollTop(page);
+  if (scrollDown) await page.waitForTimeout(300);
   if (tap) await reviewButton.tap();
   else await reviewButton.click();
 
   await expect.poll(() => pathOf(page), { message: 'Tlačidlo recenzií neotvorilo stránku recenzií' }).toMatch(REVIEWS_PATH);
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
-  return { profilePath, historyAtReviews: await historyLength(page) };
+  return { profilePath, historyAtReviews: await historyLength(page), scrollBefore };
 }
 
 async function expectBackOnProfile(page: Page, entry: Entry, label: string): Promise<void> {
@@ -151,6 +193,9 @@ test.describe('cudzí profil po F5', () => {
       reviewButton,
       'Príprava: druhý testovací účet nemá ponuku s tlačidlom „Pridať recenziu“ – vytvor aspoň jednu.',
     ).toBeVisible();
+    // Tlačidlo sa najprv privedie do výhľadu – scroll pred klikom je potom to, čo sa má po návrate vrátiť.
+    await reviewButton.scrollIntoViewIfNeeded();
+    const scrollBefore = await mainScrollTop(page);
     if (tap) await reviewButton.tap();
     else await reviewButton.click();
     await expect.poll(() => pathOf(page), { message: 'Tlačidlo recenzií neotvorilo stránku recenzií' }).toMatch(REVIEWS_PATH);
@@ -173,7 +218,7 @@ test.describe('cudzí profil po F5', () => {
       /side=back|offer=|highlight=/,
     );
     await expect(page.locator('.highlight-offer-card'), 'Niektorá karta je zvýraznená').toHaveCount(0);
-    expect(await mainScrollTop(page), 'Profil sa prescrolloval na kartu, z ktorej sa otvorili recenzie').toBe(0);
+    await expectScrollRestored(page, scrollBefore, 'Šípka po F5 (cudzí profil)');
 
     // F5 históriu nemení, takže šípka je krok späť na pôvodný záznam profilu – nie jeho kópia. Vstup bol priamy,
     // preto ďalšie Späť profil opustí (nesmie ostať na profile).
@@ -205,5 +250,64 @@ test.describe('vlastný profil po F5', () => {
 
     await page.goBack();
     await expectBackOnHome(page, 'Back v prehliadači po šípke po F5');
+  });
+});
+
+test.describe('pozícia profilu po návrate z recenzií', () => {
+  // Skok na vrch profilu po návrate je hlavná vec, ktorá používateľa obťažuje: po prelistovaní ponúk a otvorení recenzií
+  // sa mal vrátiť tam, kde bol. Šípka aj Späť v prehliadači preto vracajú rovnakú pozíciu.
+  test('the top-bar arrow brings the profile back to where the reviews were opened from', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'webkit-mobile', 'Šípka v hornej lište – len webkit-mobile.');
+    const entry = await openReviewsFromOwnProfile(page, true, true);
+    test.skip(entry.scrollBefore < 30, 'Profil testovacieho účtu je príliš krátky na scroll – pridaj ponuky.');
+
+    await topBarBack(page).tap();
+
+    await expectBackOnProfile(page, entry, 'Šípka v hornej lište');
+    await expectScrollRestored(page, entry.scrollBefore, 'Šípka v hornej lište');
+  });
+
+  test('browser Back brings the profile back to where the reviews were opened from', async ({ page }, testInfo) => {
+    const tap = testInfo.project.name === 'webkit-mobile';
+    const entry = await openReviewsFromOwnProfile(page, tap, true);
+    test.skip(entry.scrollBefore < 30, 'Profil testovacieho účtu je príliš krátky na scroll – pridaj ponuky.');
+
+    await page.goBack();
+
+    await expectBackOnProfile(page, entry, 'Back v prehliadači');
+    await expectScrollRestored(page, entry.scrollBefore, 'Back v prehliadači');
+  });
+
+  test('the arrow next to the heading brings the profile back to where the reviews were opened from', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'webkit-mobile', 'Šípka vľavo od nadpisu – len desktopové projekty.');
+    const entry = await openReviewsFromOwnProfile(page, false, true);
+    test.skip(entry.scrollBefore < 30, 'Profil testovacieho účtu je príliš krátky na scroll – pridaj ponuky.');
+
+    const arrow = page.getByRole('button', { name: BACK_BUTTON_NAME }).filter({ visible: true }).first();
+    await expect(arrow, 'Na stránke recenzií chýba šípka Späť vedľa nadpisu').toBeVisible();
+    await arrow.click();
+
+    await expectBackOnProfile(page, entry, 'Šípka vľavo od nadpisu');
+    await expectScrollRestored(page, entry.scrollBefore, 'Šípka vľavo od nadpisu');
+  });
+
+  // Po F5 router po kroku späť prepíše `history.state` bez vlastných kľúčov, pozícia teda musí prísť z udalosti kroku histórie.
+  test('after a reload the arrow still brings the profile back to the same place', async ({ page }, testInfo) => {
+    const tap = testInfo.project.name === 'webkit-mobile';
+    const entry = await openReviewsFromOwnProfile(page, tap, true);
+    test.skip(entry.scrollBefore < 30, 'Profil testovacieho účtu je príliš krátky na scroll – pridaj ponuky.');
+
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+
+    const arrow = tap
+      ? topBarBack(page)
+      : page.getByRole('button', { name: BACK_BUTTON_NAME }).filter({ visible: true }).first();
+    await expect(arrow, 'Na stránke recenzií po F5 chýba šípka Späť').toBeVisible();
+    if (tap) await arrow.tap();
+    else await arrow.click();
+
+    await expectBackOnProfile(page, entry, 'Šípka po F5');
+    await expectScrollRestored(page, entry.scrollBefore, 'Šípka po F5');
   });
 });

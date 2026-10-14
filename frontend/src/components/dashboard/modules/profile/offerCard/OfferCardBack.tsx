@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { markOfferReviewsPending } from '../../reviews/offerReviewsOrigin';
+import { markOfferReviewsPending, opensReviewsInThisTab } from '../../reviews/offerReviewsOrigin';
 import type { Offer } from '../profileOffersTypes';
 import { FlipButton } from './FlipButton';
 
@@ -124,7 +124,8 @@ export function OfferCardBack({
                   href={reviewsHref}
                   onClick={(e) => {
                     e.stopPropagation();
-                    markOfferReviewsPending(reviewsHref);
+                    // Ctrl/Cmd/Shift/Alt-klik otvorí recenzie inde – táto karta profil neopúšťa.
+                    if (opensReviewsInThisTab(e)) markOfferReviewsPending(reviewsHref);
                   }}
                   className="mt-0 xl:mt-0.5 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
                 >

@@ -5,6 +5,7 @@ import {
   resetOfferReviewsOrigin,
   returnToOfferReviewsOrigin,
 } from '../../reviews/offerReviewsOrigin';
+import { readRememberedProfileScroll } from '../profileScrollMemory';
 import type { Offer } from '../profileOffersTypes';
 import { OfferCardBack, type OfferCardBackProps } from './OfferCardBack';
 
@@ -75,5 +76,68 @@ describe('OfferCardBack – odkaz na všetky recenzie', () => {
     render(<OfferCardBack {...props()} />);
 
     expect(screen.queryByRole('link', { name: /Všetky recenzie/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('OfferCardBack – odkaz na recenzie a pozícia profilu', () => {
+  function mountMain(scrollTop: number): HTMLElement {
+    const main = document.createElement('main');
+    main.setAttribute('data-dashboard-main', '');
+    main.scrollTop = scrollTop;
+    document.body.appendChild(main);
+    return main;
+  }
+
+  beforeEach(() => {
+    resetOfferReviewsOrigin();
+    window.history.replaceState(null, '', '/dashboard/users/peter');
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('[data-dashboard-main]').forEach((node) => node.remove());
+  });
+
+  it('remembers where the profile was scrolled to when the link opens in this tab', () => {
+    mountMain(1500);
+    render(<OfferCardBack {...props({ reviewsHref: REVIEWS_HREF })} />);
+
+    fireEvent.click(screen.getByRole('link', { name: /Všetky recenzie/ }));
+
+    expect(readRememberedProfileScroll()).toBe(1500);
+  });
+
+  it.each([
+    ['Ctrl', { ctrlKey: true }],
+    ['Cmd', { metaKey: true }],
+    ['Shift', { shiftKey: true }],
+    ['Alt', { altKey: true }],
+  ] as Array<[string, { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }]>)(
+    'leaves this tab alone when %s is held (the browser opens the reviews elsewhere)',
+    (_name, modifier) => {
+      mountMain(1500);
+      render(<OfferCardBack {...props({ reviewsHref: REVIEWS_HREF })} />);
+
+      fireEvent.click(screen.getByRole('link', { name: /Všetky recenzie/ }), modifier);
+
+      // Profil v tejto karte zostal: žiadna zapamätaná pozícia, ktorá by ho neskôr vrátila inam…
+      expect(readRememberedProfileScroll()).toBeNull();
+      // …a ani čakajúce otvorenie, ktoré by si neskôr privlastnila iná stránka recenzií.
+      window.history.replaceState(null, '', REVIEWS_HREF);
+      adoptOfferReviewsOrigin();
+      expect(returnToOfferReviewsOrigin()).toBe(false);
+    },
+  );
+
+  it('does not flip the card back for a modified click either', () => {
+    const onToggleFlip = jest.fn();
+    render(
+      <div onClick={onToggleFlip}>
+        <OfferCardBack {...props({ reviewsHref: REVIEWS_HREF })} />
+      </div>,
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: /Všetky recenzie/ }), { ctrlKey: true });
+
+    expect(onToggleFlip).not.toHaveBeenCalled();
   });
 });
