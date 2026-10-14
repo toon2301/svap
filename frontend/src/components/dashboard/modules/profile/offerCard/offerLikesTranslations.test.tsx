@@ -47,12 +47,12 @@ const fixture: Offer = {
 type HarnessProps = {
   surface: Surface;
   offer?: Offer;
-  showLikes?: boolean;
+  showLikeAction?: boolean;
   onToggleLike?: (offerId: number) => void;
 };
 
 /** Exercise actual card consumers and preserve their state when the real locale changes. */
-function Harness({ surface, offer = fixture, showLikes, onToggleLike }: HarnessProps) {
+function Harness({ surface, offer = fixture, showLikeAction, onToggleLike }: HarnessProps) {
   const { t, setLocale } = useLanguage();
   const [flipped, setFlipped] = useState(false);
   return <>
@@ -65,7 +65,7 @@ function Harness({ surface, offer = fixture, showLikes, onToggleLike }: HarnessP
       {surface === 'desktop' ? <ProfileOfferCard
         offer={offer} accountType="personal" t={t}
         isFlipped={flipped} onToggleFlip={() => setFlipped((value) => !value)}
-        showLikes={showLikes} onToggleLike={onToggleLike}
+        showLikeAction={showLikeAction} onToggleLike={onToggleLike}
       /> : surface === 'mobile' ? <ProfileOfferCardMobile
         offer={offer} accountType="personal" isTapped={false}
         onCardClick={() => {}} onToggleLike={onToggleLike}
@@ -166,16 +166,21 @@ describe('locale switching without replacing cards', () => {
   });
 });
 
-describe.each(['pl', 'cs'] as const)('%s Offer Watch Like opt-out is unchanged', (locale) => {
-  it.each([false, true])('keeps both Like faces absent for seeking=%s', (isSeeking) => {
-    renderCard(locale, { surface: 'desktop', showLikes: false, offer: { ...fixture, is_seeking: isSeeking } });
+describe.each(['pl', 'cs'] as const)('%s Offer Watch front-only Like opt-out', (locale) => {
+  it.each([false, true])('keeps the front action absent and the translated back summary for seeking=%s', (isSeeking) => {
+    renderCard(locale, { surface: 'desktop', showLikeAction: false, offer: { ...fixture, is_seeking: isSeeking } });
     for (const [, label] of labels) {
       expect(card().queryByRole('button', { name: label, exact: true })).not.toBeInTheDocument();
-      expect(card().queryByText(label, { exact: true })).not.toBeInTheDocument();
+      expect(activeDesktopSide().queryByText(label, { exact: true })).not.toBeInTheDocument();
     }
     fireEvent.click(activeDesktopSide().getByRole('button', { name: 'Otočiť' }));
     expect(activeDesktopSide().getByText('Fixture detail')).toBeInTheDocument();
-    expect(card().queryByText('137', { exact: true })).not.toBeInTheDocument();
+    const expectedLabel = labels.find(([value]) => value === locale)![1];
+    const summary = activeDesktopSide().getByText(expectedLabel, { exact: true }).parentElement!;
+    expect(summary).toHaveTextContent('137');
+    expect(summary.closest('button, a, [role="button"]')).toBeNull();
+    fireEvent.click(summary);
+    expect(activeDesktopSide().getByText('Fixture detail')).toBeInTheDocument();
     expect(setOfferLikeState).not.toHaveBeenCalled();
   });
 });

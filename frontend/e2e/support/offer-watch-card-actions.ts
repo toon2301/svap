@@ -35,11 +35,16 @@ export async function watchWithCardsOrSkip(page: Page, isSeeking?: boolean): Pro
   throw new Error('Unreachable after a missing-fixture skip.');
 }
 
-/** Like must be absent from the DOM, not merely hidden on the inactive card face. */
-export async function expectNoWatchLike(card: Locator): Promise<void> {
+/** Remove only the front Like action; retain one non-interactive, numeric back summary. */
+export async function expectWatchLikeSummary(card: Locator): Promise<void> {
   await expect(card.getByRole('button', { name: LIKE_LABEL, exact: true, includeHidden: true })).toHaveCount(0);
-  await expect(card.getByText(LIKE_LABEL, { exact: true })).toHaveCount(0);
   await expect(card.locator(`[title="${LIKE_LABEL}"]`)).toHaveCount(0);
+  const label = card.getByText(LIKE_LABEL, { exact: true });
+  await expect(label).toHaveCount(1);
+  const summary = label.locator('..');
+  await expect(summary.locator('svg path[d^="M20.84 4.61"]')).toHaveCount(1);
+  await expect(summary.locator('span').last()).toHaveText(/^\d[\d\s\u00a0\u202f]*$/);
+  await expect(summary.locator('button, a, [role="button"], [tabindex]')).toHaveCount(0);
   await expect(card.locator('[data-default-cta], [data-message-cta]')).toHaveCount(0);
 }
 
@@ -49,19 +54,23 @@ export async function flipWatchCardBothWays(card: Locator): Promise<void> {
   await expect(flips).toHaveCount(2);
   await expect(flips.nth(0)).toBeVisible();
   await expect(flips.nth(1)).toBeHidden();
-  await expectNoWatchLike(card);
+  await expectWatchLikeSummary(card);
   await flips.nth(0).click();
   await expect(flips.nth(0)).toBeHidden();
   await expect(flips.nth(1)).toBeVisible();
-  await expectNoWatchLike(card);
+  await expectWatchLikeSummary(card);
+  const summaryLabel = card.getByText(LIKE_LABEL, { exact: true });
+  await expect(summaryLabel).toBeVisible();
+  await summaryLabel.click();
+  await expect(flips.nth(1)).toBeVisible();
   await flips.nth(1).click();
   await expect(flips.nth(0)).toBeVisible();
   await expect(flips.nth(1)).toBeHidden();
-  await expectNoWatchLike(card);
+  await expectWatchLikeSummary(card);
 }
 
 /** Inspect existing own cards only; missing reusable content is a skip, never a false PASS. */
-export async function ownProfileWithCardsOrSkip(page: Page, isMobile: boolean): Promise<void> {
+export async function ownProfileWithCardsOrSkip(page: Page, isMobile: boolean, profileLabel = 'Profil'): Promise<void> {
   await page.goto('/dashboard');
   await expect(page.getByTestId('feed-list')).toBeVisible();
   const response = await page.evaluate(async () => {
@@ -74,7 +83,7 @@ export async function ownProfileWithCardsOrSkip(page: Page, isMobile: boolean): 
   }
   test.skip(response.count === 0, 'The test account has no own reusable cards. This is NOT a profile-Like PASS.');
   if (isMobile) {
-    await page.getByRole('button', { name: 'Profil', exact: true }).filter({ visible: true }).tap();
+    await page.getByRole('button', { name: profileLabel, exact: true }).filter({ visible: true }).tap();
   } else {
     await page.locator('[data-sidebar="left"] [data-sidebar-nav-item="profile"]').click();
   }

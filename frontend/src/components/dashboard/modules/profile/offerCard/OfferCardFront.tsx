@@ -42,8 +42,8 @@ export type OfferCardFrontProps = {
   compactTop?: boolean;
   onOpenImageGallery?: () => void;
   showFlipHint?: boolean;
-  /** Keep Like visible by default; results-only callers can remove its interactive control. */
-  showLikes?: boolean;
+  /** Keep the Like action by default; opted-out callers retain the back-side count. */
+  showLikeAction?: boolean;
 };
 
 /** Render the offer's front content and only the actions enabled by its caller. */
@@ -77,7 +77,7 @@ export function OfferCardFront({
   compactTop = false,
   onOpenImageGallery,
   showFlipHint = false,
-  showLikes = true,
+  showLikeAction = true,
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
   const router = useRouter();
@@ -129,7 +129,7 @@ export function OfferCardFront({
         ) : null}
 
         <div className="absolute top-2 right-2 flex flex-col gap-0.5">
-          {showLikes && <button
+          {showLikeAction && <button
             type="button"
             aria-label={likeLabel}
             aria-pressed={isLiked}

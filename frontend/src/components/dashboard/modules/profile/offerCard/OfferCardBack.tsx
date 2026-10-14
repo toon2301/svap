@@ -15,8 +15,6 @@ export type OfferCardBackProps = {
   isFlipped: boolean;
   reviewsHref?: string | null;
   compactTop?: boolean;
-  /** Keep the Like summary by default; hide the entire row for opted-out contexts. */
-  showLikes?: boolean;
 };
 
 /** Render offer details without introducing front-side request or messaging actions. */
@@ -29,7 +27,6 @@ export function OfferCardBack({
   isFlipped,
   reviewsHref,
   compactTop = false,
-  showLikes = true,
 }: OfferCardBackProps) {
   const likesCount = Math.max(0, Number(offer.likes_count ?? 0));
   const formattedLikesCount = new Intl.NumberFormat('sk-SK').format(likesCount);
@@ -194,7 +191,7 @@ export function OfferCardBack({
             </>
           )}
 
-          {showLikes && <div className={`flex items-center gap-1.5 ${offer.is_seeking ? 'mt-8 xl:mt-10' : 'mt-1 xl:mt-1'}`}>
+          <div className={`flex items-center gap-1.5 ${offer.is_seeking ? 'mt-8 xl:mt-10' : 'mt-1 xl:mt-1'}`}>
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('skills.likes', 'Páči sa mi to')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -209,7 +206,7 @@ export function OfferCardBack({
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formattedLikesCount}</span>
-          </div>}
+          </div>
 
           {offer.tags && offer.tags.length > 0 && (
             <div className={`flex flex-wrap gap-1 ${offer.is_seeking ? 'mt-3 xl:mt-4' : 'mt-1 xl:mt-1.5'}`}>
