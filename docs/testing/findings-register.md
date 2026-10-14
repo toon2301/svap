@@ -1,6 +1,6 @@
 # Svaply – spoločná evidencia nálezov a otvorených overení
 
-Aktualizované: 13. 10. 2026.
+Aktualizované: 14. 10. 2026.
 
 Tento súbor je pracovný zdroj pravdy pre túto spoluprácu. Nespoliehame sa len na
 pamäť chatu. Pri každom novom náleze treba používateľovi oznámiť, či odporúčame
@@ -43,9 +43,10 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 | ID | Položka | Odporúčanie | Stav a ďalšie overenie |
 | --- | --- | --- | --- |
 | OW-09 | Poškodený kurzor a neexistujúce sledovanie sa na frontende nerozlišujú | Zoznam; samostatné mapovanie pred prípadnou opravou, nie tichá zmena API pri OW-02 | Backendový test a lokálna diagnostika potvrdili 404 pre poškodený kurzor; normalizer mapuje každé 404 na not_found a panel obnovuje zoznam sledovaní. Nejde o novú fyzickú produkčnú reprodukciu ani potvrdený bezpečnostný problém. Bežné serverové kurzory nemajú potvrdené poškodzovanie; Obnoviť umožňuje návrat na prvú stránku. |
-| OW-10 | Desktop /search → hlavné Sledovania nič neurobí | Lokálne implementované; spoločný commit/push s OW-12 schválený po kontrolách | Jedna nová podmienka v SearchLayout posiela watches cez existujúci router.push na /dashboard/watches. Pred opravou 8 nových testov FAIL; po oprave 150 cielených testov PASS, celý SearchLayout má opakovane 100 % všetkých coverage metrík. Reálny Linux/WebKit na Railway potvrdil pôvodný no-op pri priamej /search aj celom reťazci Zobraziť všetko. Živý úspech opravenej verzie čaká na spoločné nasadenie/retest; starý PR #168 je zlúčený. |
+| OW-10 | Desktop /search → hlavné Sledovania nič neurobí | Implementované a pushnuté v PR #172; review a nasadený retest čakajú | Jedna nová podmienka v SearchLayout posiela watches cez existujúci router.push na /dashboard/watches. Pred opravou 8 nových testov FAIL; po oprave 150 cielených testov PASS, celý SearchLayout má opakovane 100 % všetkých coverage metrík. Reálny Linux/WebKit na Railway potvrdil pôvodný no-op pri priamej /search aj celom reťazci Zobraziť všetko. PR #172 prvý CI beh zlyhal v troch testoch browser-globalov, nie v SearchLayout; presný nález je TEST-05. Živý úspech opravenej verzie čaká na nasadenie/retest. |
 | OW-11 | V SearchLayout chýba aj obsluha Správ, Upozornení a Štatistík | Zoznam; dohodnúť rozsah pred rozšírením OW-10 | Diagnostika pôvodných callbackov potvrdila rovnaký no-op iba v rozložení /search. Nie je to nový fyzický test týchto troch položiek. Upozornenia majú desktopový panelový kontrakt, preto bez ďalšieho mapovania a dohody nepridať presmerovanie na celé okno. Zatiaľ neopravovať. |
 | OW-12 | Mobilný návrat zo správcu otvoreného z oznámenia výsledkov končí v Nastaveniach | Zmapované a lokálne opravené; spoločný review/nasadený retest s OW-10 čaká | Explicitný results pôvod len pre canonical výsledkovú route; origin sa drží pri vnorených krokoch/reloade/Forward. Odchod neotvára Settings ani ich marker, nový výsledkový vstup ruší zastaranú odloženú Settings obnovu. Legacy settings/direct vstupy a desktopová vetva zachované. Predopravovo 7 FAIL/4 PASS; súvisiaci pending-timeout tiež RED pred opravou. Spolu OW-10/12 111 PASS a 100 % všetkých scoped metrík. Skutočný nasadený kontrolný WebKit Settings/direct tok v light/dark 2 PASS; nový výsledkový návrat ešte nie je nasadený ani označený živým PASS. |
+| OW-13 | Review PR #172: results pôvod sa stratí pri mobil → desktop handoff | Opravené v review kole; priamo súvisí s návratom OW-12 | Potvrdené s reálnymi dashboard hookmi: obyčajný callback pridá duplicitný manager záznam a profile fallback; pred opravou 10 vykonaných nových testov FAIL. Results vstup teraz nesie presný desktop returnTarget a depth, nested kroky používajú existujúce helpery. Resize záznam iba nahradí a zosúladí existujúcimi route listenery; legacy callback zostáva pre settings/direct. Návrat desktop → mobil a mobilný Forward obnovujú results/list z validovaného markeru, bez nového záznamu. Dodatočný nested responsive roundtrip mal dva preukázané FAIL: zoznamová app šípka teraz použije existujúcu uloženú hĺbku a neotvorí starý formulár; bežné mobilné a browser kroky nezmenené. Nová integrácia 16 PASS; spoločná regresia 141 PASS a všetky scoped metriky 100 %. Živé overenie opravenej verzie čaká na nasadenie, nie na lokálny server. |
 
 Testovacia medzera priamo patriaca do OW-02:
 
@@ -55,6 +56,7 @@ Testovacia medzera priamo patriaca do OW-02:
 | TEST-02 | SearchLayout testy nenapájajú reálne kliknutie na obsluhu stránky /search | Lokálne doplnené pri OW-10; živý retest po nasadení čaká | Nová sada používa reálny Sidebar aj jeho handler, 32 nových testov. Spolu s viewport sadou opakovane 37 PASS a 100 % statements/branches/functions/lines celého SearchLayout; gate 95 % nezmenený. Nový Playwright má 36 project-scenárov (22 relevantných podľa typu zariadenia), iba existujúci obsah, obe témy, povinné WebKit desktop/mobile aj Chromium. Zber nie je PASS; nasadené desktopové pokusy reprodukujú OW-10 a mobilné OW-12. |
 | TEST-03 | Jednorazový 5-sekundový timeout existujúceho testu vypínania push upozornení | Zoznam testovacej stability; sledovať bez tichej zmeny timeoutov alebo logiky | Prvý plný FE beh: 399 sád PASS, jedna FAIL; 5 489 testov PASS, jeden timeout v NotificationsModule.test.tsx / persists disabling push before unregistering the current browser subscription. Bežal súbežne s ďalšími kontrolami; príčina časovania tým nie je dokázaná. Samostatne následne 5/5 PASS a druhý celý beh bez súbežných náročných kontrol: 400 sád / 5 490 testov PASS. Súbor aj produkčná notifikačná logika sú bez zmien, test nemá väzbu na SearchLayout. Prvé zlyhanie sa nezahadzuje ani neoznačuje za definitívne vyriešené. |
 | TEST-04 | Jednorazový WebKit action timeout pri stabilizácii tlačidla Profil | Zoznam testovacej stability; nie potvrdená chyba navigácie OW-12 | Nasadený kontrolný test počas súbežného buildu: light zlyhal pred vstupom do Settings, dark prešiel. Opakovanie bez buildu s dotykom podľa existujúcej mobilnej navigácie: oba PASS, bez retry/force/zvýšenia timeoutu. Profil ani jeho logika sa nemenili, príčina pomalého kroku nie je definitívne vysvetlená. Skutočný produktový problém tým nie je vyhlásený ani ticho opravený. |
+| TEST-05 | PR #172 CI: testy poškodili jsdom prepisovaním globalThis.window | Opravené v review kole; potvrdená príčina červeného CI | Skutočný log run 38467261951: 3 FAIL / 5 601 PASS, 406 úspešných sád. Host a results hook zlyhali pri React cleanup na HTMLIFrameElement; navigation guard pri nasledujúcom beforeEach na window.history. Všetky tri mutácie odstránené. SSR sa testuje v samostatnom Node prostredí so skutočným serverovým rendererom; len matchMedia blok spoločného setupu je bezpečne ošetrený. Viewport guard je samostatný malý helper, nie falošný jsdom window. Spoločná regresia 11 sád / 141 PASS a 100 % scoped coverage, 95 % gate neznížený; celé FE 412 sád / 5 636 PASS. Finálne nové GitHub CI sa musí overiť po pushi; lokálny výsledok ho nenahrádza. |
 
 ## Nálezy mimo aktuálneho kroku
 
@@ -68,7 +70,7 @@ Testovacia medzera priamo patriaca do OW-02:
 | TECH-04 | `app/search/page.tsx`: 646 riadkov | Zoznam; podľa svaply.mdc nemeniť | Rieši samotné výsledky, nie rodičovskú obsluhu menu. Pre OW-10 netreba meniť ani deliť tento súbor. |
 | TECH-05 | `hooks/useDashboardNavigation.tsx`: 510 riadkov | Zoznam; podľa svaply.mdc nemeniť | Používa sa v dashboarde, nie ako handler samostatného /search layoutu. Pre OW-10 zostáva bez zásahu. |
 | TOOL-01 | `next lint` vyžaduje interaktívnu konfiguráciu | Zoznam testovacieho tooling-u | Bez zmeny repo konfigurácie prešiel spoločný cielený ESLint cez existujúce API a `next/core-web-vitals`: 18 súborov, 0 chýb/varovaní. Prípadnú neinteraktívnu konfiguráciu riešiť samostatne, bez oslabenia pravidiel. |
-| TOOL-02 | Windows blokuje podpísanie crypto-57.dll pre Playwright WebKit | Existujúci projektový Linux/Docker fallback funguje; nevypínať ochrany | Native launch skončil ešte pred stránkou; Code Integrity udalosti 3077/3033 potvrdili blokovanú DLL. Už nainštalovaný Playwright v1.63.0-noble kontajner následne skutočne spustil desktop aj mobile proti Railway. Žiadne sťahovanie nového obrazu ani zmeny bezpečnostnej politiky. Nie je to chyba aplikácie alebo dôvod označiť živé testy PASS. |
+| TOOL-02 | Windows WebKit a aktuálne nepripravený Docker fallback | Prostredie evidovať; nevypínať ochrany a neoznačiť testy PASS | 13. 10. native launch skončil pred stránkou; Code Integrity udalosti 3077/3033 potvrdili blokovanú crypto-57.dll. Už nainštalovaný Playwright v1.63.0-noble kontajner vtedy skutočne spustil desktop aj mobile proti Railway. Pri review kole 14. 10. Docker API nie je pripravené; ani pokus spustiť existujúci Desktop neumožnil E2E. Native kontrolný launch teraz skončil timeoutom 10 s pred otvorením stránky; aktuálny timeout nie je vydávaný za nový dôkaz tej istej DLL chyby. Žiadne sťahovanie obrazu ani zmeny bezpečnostnej politiky. Nových 24 zberaných Playwright scenárov nie je živý PASS. |
 
 ## Nálezy Rabbit review PR #168
 
@@ -196,3 +198,27 @@ TEST-03/04 ostávajú evidované ako nestabilita, nie potvrdené nové chyby apl
   spoločný commit/push po kontrolách do novej vetvy offer-watch-navigation-fixes;
   nie automatické nasadenie alebo vytvorenie PR. OW-11/09 a staršie odložené
   overenia vrátane M13/M14/M33 ostávajú otvorené.
+- 14. 10. 2026, PR #172 review/CI: presný GitHub log potvrdil tri testové
+  browser-global chyby (TEST-05); osobitný reálny integračný RED potvrdil
+  responsive handoff (OW-13). Oba nálezy riešené teraz v priamom rozsahu.
+  SSR testy presunuté do skutočného Node prostredia, viewport helper oddelený;
+  prepísanie window odstránené zo všetkých troch dotknutých sád. Results
+  management drží desktop returnTarget/depth, resize nepoužíva ordinary
+  klik a nepridáva history záznam; reverse resize/Forward obnovia mobilný
+  zoznam. Dva následne preukázané nested-roundtrip FAIL tiež opravené:
+  zoznamová app šípka použije existujúcu hĺbku, ostatné kroky nezmenené.
+  Finálna scoped regresia 11 sád / 141 PASS, šesť celých produkčných súborov
+  100 % statements/branches/functions/lines; 95 % prah ostáva. Celé FE
+  412 sád / 5 636 PASS, TypeScript, 12-file lint a produkčný build PASS.
+  Playwright doplnený o 24 device/theme scenárov na skutočný Railway;
+  pokus o živé overenie blokuje TOOL-02 ešte pred stránkou. Zber, blokované
+  prostredie ani lokálny Jest nie sú prezentované ako živý E2E PASS.
+  Prvé results markery vznikli iba v nezlúčenom PR #172, nie na overenom
+  main; neukladali presný source/depth. Ak niekto manuálne používal práve
+  túto predopravovú vetvu, musí po aktualizácii správcu nanovo otvoriť z
+  výsledkov. Neexistujúca historická URL sa nevymýšľa.
+  Všetky dotknuté TS/TSX pod 500; veľké koordinátory a hlavný checkout
+  nezmenené, backend/migrácie/avatary bez zásahu. Používateľ výslovne povolil
+  commit/push opráv do existujúceho PR #172, nie merge/nasadenie. Ďalej
+  overiť nové GitHub CI/review a po nasadení dotknuté návratové scenáre;
+  po uzavretí OW-10/12/13 pokračovať OW-03. Ostatné otvorené položky sa nemažú.

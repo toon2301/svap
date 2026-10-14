@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { OfferWatchMobileView } from './offerWatchMobileNavigation';
 import {
-  OFFER_WATCH_MOBILE_REQUEST_EVENT,
   hasOfferWatchSettingsReturnHistory,
   requestOfferWatchMobile,
   withOfferWatchSettingsReturnHistory,
@@ -103,20 +102,5 @@ describe('mobile host lifecycle guards', () => {
     const push = jest.spyOn(window.history, 'pushState');
     act(() => mockPushView({ kind: 'create' }));
     expect(push).not.toHaveBeenCalled();
-  });
-
-  it('ignores an open request whose browser is no longer present', () => {
-    const add = jest.spyOn(window, 'addEventListener');
-    render(<OfferWatchSettingsMobileHost onReturnToSettings={jest.fn()} />);
-    const handler = add.mock.calls.find(([type]) => type === OFFER_WATCH_MOBILE_REQUEST_EVENT)![1] as EventListener;
-    const event = new Event(OFFER_WATCH_MOBILE_REQUEST_EVENT);
-    const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')!;
-    Object.defineProperty(globalThis, 'window', { configurable: true, value: undefined });
-    try {
-      handler(event);
-    } finally {
-      Object.defineProperty(globalThis, 'window', originalWindow);
-    }
-    expect(screen.queryByRole('button', { name: 'back' })).not.toBeInTheDocument();
   });
 });

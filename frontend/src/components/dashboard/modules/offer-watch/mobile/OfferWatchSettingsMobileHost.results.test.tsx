@@ -220,7 +220,7 @@ describe('OW-12: mobile manager opened from results', () => {
     expect(readOfferWatchMobileHistory(window.history.state)?.origin).toBe('results');
   });
 
-  it('preserves the existing desktop handover after crossing 1024 px', () => {
+  it('hands results-origin management to desktop route sync without invoking an ordinary section click', () => {
     render(<ResultsHarness />);
     openManager();
     mobileViewport = false;
@@ -228,7 +228,7 @@ describe('OW-12: mobile manager opened from results', () => {
     expect(screen.queryByTestId('results-manager')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe(OFFER_WATCH_SETTINGS_PATH);
     expect(readOfferWatchMobileHistory(window.history.state)).toBeNull();
-    expect(mockOpenDesktop).toHaveBeenCalledTimes(1);
+    expect(mockOpenDesktop).not.toHaveBeenCalled();
     expect(mockReturnToSettings).not.toHaveBeenCalled();
   });
 

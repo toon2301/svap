@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
+import {
+  getDesktopSettingsStepsToOrigin,
+  withDesktopSettingsHistory,
+  withDesktopSettingsOriginHistory,
+  withDesktopSettingsStep,
+} from '../../../hooks/desktopSettingsNavigation';
 import OfferWatchSettingsMobile from './OfferWatchSettingsMobile';
+import { isOfferWatchMobileViewport as isMobileViewport } from './offerWatchMobileViewport';
+import { readRestorableOfferWatchMobileHistory } from './offerWatchMobileHistoryRestore';
 import {
   OFFER_WATCH_MOBILE_REQUEST_EVENT,
   OFFER_WATCH_RETURN_PATH,
@@ -32,14 +41,6 @@ type OfferWatchSettingsMobileHostProps = {
 };
 
 const MOBILE_MEDIA_QUERY = '(max-width: 1023px)';
-
-/** Detect the mobile layout, including the older-browser and non-browser fallbacks. */
-function isMobileViewport(): boolean {
-  if (typeof window === 'undefined') return false;
-  return typeof window.matchMedia === 'function'
-    ? window.matchMedia(MOBILE_MEDIA_QUERY).matches
-    : window.innerWidth < 1024;
-}
 
 /** Keep a view's entry origin in the versioned browser history marker. */
 function markerFor(
@@ -152,16 +153,23 @@ export default function OfferWatchSettingsMobileHost({
       settingsReturnRequestedRef.current = false;
     }
     const nextMarker = markerFor(origin, { kind: 'list' });
-    const returnState = origin === 'results'
+    const sourceState = origin === 'results'
       ? withoutOfferWatchSettingsReturnHistory(window.history.state)
       : withOfferWatchSettingsReturnHistory(window.history.state);
+    const returnTarget = { moduleId: 'watches', url: currentBrowserUrl('/dashboard/watches') };
+    const returnState = origin === 'results'
+      ? withDesktopSettingsOriginHistory(sourceState, returnTarget)
+      : sourceState;
+    const managementState = origin === 'results'
+      ? withDesktopSettingsHistory(returnState, returnTarget, 0)
+      : returnState;
 
     // Nastavenia sú iba React overlay, nie samostatný history záznam. Označenie
     // pôvodného záznamu umožní ich obnoviť aj po remounte celej route.
     window.history.replaceState(returnState, '');
     window.history.pushState(
       withOfferWatchMobileHistory(
-        withoutOfferWatchSettingsReturnHistory(returnState),
+        withoutOfferWatchSettingsReturnHistory(managementState),
         nextMarker,
       ),
       '',
@@ -180,7 +188,8 @@ export default function OfferWatchSettingsMobileHost({
     /** Restore saved mobile views on mount/resize, keeping direct-link and desktop fallbacks. */
     const restoreRoute = () => {
       if (!isMobileViewport()) {
-        const hadOverlay = markerRef.current !== null;
+        const previousMarker = markerRef.current;
+        const hadOverlay = previousMarker !== null;
         markerRef.current = null;
         setMarker(null);
         if (hadOverlay && isOfferWatchSettingsPath(window.location.pathname)) {
@@ -189,7 +198,12 @@ export default function OfferWatchSettingsMobileHost({
             '',
             OFFER_WATCH_SETTINGS_PATH,
           );
-          openDesktopRef.current?.();
+          if (previousMarker.origin === 'results') {
+            // Reuse this entry and the parent's route sync, not a click that pushes another entry.
+            window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+          } else {
+            openDesktopRef.current?.();
+          }
         }
         return;
       }
@@ -201,8 +215,11 @@ export default function OfferWatchSettingsMobileHost({
         return;
       }
 
-      const savedMarker = readOfferWatchMobileHistory(window.history.state);
+      const savedMarker = readRestorableOfferWatchMobileHistory(window.history.state);
       if (savedMarker) {
+        if (!readOfferWatchMobileHistory(window.history.state)) {
+          window.history.replaceState(withOfferWatchMobileHistory(window.history.state, savedMarker), '');
+        }
         markerRef.current = savedMarker;
         setMarker(savedMarker);
         return;
@@ -240,8 +257,11 @@ export default function OfferWatchSettingsMobileHost({
       const previousMarker = markerRef.current;
       const nextMarker = isMobileViewport()
         && isOfferWatchSettingsPath(window.location.pathname)
-        ? readOfferWatchMobileHistory(window.history.state)
+        ? readRestorableOfferWatchMobileHistory(window.history.state)
         : null;
+      if (nextMarker && !readOfferWatchMobileHistory(window.history.state)) {
+        window.history.replaceState(withOfferWatchMobileHistory(window.history.state, nextMarker), '');
+      }
       markerRef.current = nextMarker;
       setMarker(nextMarker);
       navigationPendingRef.current = false;
@@ -266,8 +286,11 @@ export default function OfferWatchSettingsMobileHost({
     const current = markerRef.current;
     if (!current) return;
     const nextMarker = markerFor(current.origin, view);
+    const historyState = current.origin === 'results'
+      ? withDesktopSettingsStep(window.history.state)
+      : window.history.state;
     window.history.pushState(
-      withOfferWatchMobileHistory(window.history.state, nextMarker),
+      withOfferWatchMobileHistory(historyState, nextMarker),
       '',
       OFFER_WATCH_SETTINGS_PATH,
     );
@@ -275,11 +298,16 @@ export default function OfferWatchSettingsMobileHost({
     setMarker(nextMarker);
   }, []);
 
-  /** Traverse one history entry and ignore additional taps until popstate completes. */
+  /** Leave a restored results list's desktop session, or traverse one normal mobile step. */
   const navigateBack = useCallback(() => {
-    if (!markerRef.current || navigationPendingRef.current) return;
+    const current = markerRef.current;
+    if (!current || navigationPendingRef.current) return;
     navigationPendingRef.current = true;
-    window.history.back();
+    const steps = current.origin === 'results' && current.view.kind === 'list'
+      ? getDesktopSettingsStepsToOrigin(window.history.state)
+      : 1;
+    if (steps > 1) window.history.go(-steps);
+    else window.history.back();
   }, []);
 
   if (!marker || typeof document === 'undefined') return null;

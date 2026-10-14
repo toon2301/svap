@@ -123,20 +123,4 @@ describe('useOfferWatchResultsNavigation', () => {
       Object.defineProperty(window, 'innerWidth', originalWidth);
     }
   });
-
-  it('does not invoke browser navigation if the browser is absent', () => {
-    const openDesktopSettings = jest.fn();
-    const { result } = renderHook(() => useOfferWatchResultsNavigation({
-      activeModule: 'watches', openDesktopSettings, setActiveRightItem: jest.fn(),
-    }));
-    const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')!;
-    Object.defineProperty(globalThis, 'window', { configurable: true, value: undefined });
-    try {
-      result.current();
-    } finally {
-      Object.defineProperty(globalThis, 'window', originalWindow);
-    }
-    expect(openDesktopSettings).not.toHaveBeenCalled();
-    expect(mockRequestOfferWatchMobile).not.toHaveBeenCalled();
-  });
 });

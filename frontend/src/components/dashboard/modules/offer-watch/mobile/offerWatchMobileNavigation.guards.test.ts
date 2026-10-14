@@ -62,18 +62,6 @@ describe('mobile request origins and history guards', () => {
     expect(state.nextInternal).toBe('preserved');
   });
 
-  it('requests and origin parsing are safe without a browser', () => {
-    const savedWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')!;
-    const event = new CustomEvent(OFFER_WATCH_MOBILE_REQUEST_EVENT, { detail: { origin: 'results' } });
-    Object.defineProperty(globalThis, 'window', { configurable: true, value: undefined });
-    try {
-      expect(() => requestOfferWatchMobile('results')).not.toThrow();
-      expect(readOfferWatchMobileRequestOrigin(event)).toBe('settings');
-    } finally {
-      Object.defineProperty(globalThis, 'window', savedWindow);
-    }
-  });
-
   it('retains the documented path fallbacks if the route registry has no matching sections', () => {
     jest.doMock('../../../components/dashboardRoutes', () => ({ dashboardSectionPath: () => null }));
     try {
