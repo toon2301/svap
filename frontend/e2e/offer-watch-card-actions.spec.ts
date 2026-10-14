@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   LIKE_LABEL,
-  expectNoWatchLike,
+  expectWatchLikeSummary,
   flipWatchCardBothWays,
   ownProfileWithCardsOrSkip,
   watchWithCardsOrSkip,
@@ -39,7 +39,7 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     for (const isSeeking of [false, true]) {
-      test(`desktop: ${isSeeking ? 'demand' : 'offer'} results have no Like on either face and still flip`, async ({ page, isMobile }) => {
+      test(`desktop: ${isSeeking ? 'demand' : 'offer'} results hide the Like action but retain a read-only count and still flip`, async ({ page, isMobile }) => {
         test.skip(isMobile, 'Mobile has guidance, not a full results grid.');
         test.setTimeout(90_000);
         const watch = await watchWithCardsOrSkip(page, isSeeking);
@@ -48,7 +48,7 @@ for (const theme of ['light', 'dark'] as const) {
         const panel = page.locator(RESULTS_PANEL);
         const cards = panel.getByRole('article');
         for (let index = 0; index < first.ids.length; index += 1) {
-          await expectNoWatchLike(cards.nth(index));
+          await expectWatchLikeSummary(cards.nth(index));
         }
         await flipWatchCardBothWays(cards.first());
         await expect(cards).toHaveCount(first.ids.length);
@@ -63,7 +63,7 @@ for (const theme of ['light', 'dark'] as const) {
       const first = await openResults(page, watch.id);
       expect(first.ids.length, 'Reusable result cards disappeared during fixture preparation.').toBeGreaterThan(0);
       const card = page.locator(RESULTS_PANEL).getByRole('article').first();
-      await expectNoWatchLike(card);
+      await expectWatchLikeSummary(card);
       const source = page.url();
       // The author header is the first button in the article, not the Like/flip/review action.
       await card.getByRole('button').first().click();
@@ -74,7 +74,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.goBack();
       await expect(page).toHaveURL(source);
       await expect(page.locator(RESULTS_PANEL).getByRole('article').first()).toBeVisible();
-      await expectNoWatchLike(page.locator(RESULTS_PANEL).getByRole('article').first());
+      await expectWatchLikeSummary(page.locator(RESULTS_PANEL).getByRole('article').first());
     });
 
     test('desktop: the shared search-result card retains its Like control', async ({ page, isMobile }) => {

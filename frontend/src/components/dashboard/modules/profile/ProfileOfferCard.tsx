@@ -35,8 +35,8 @@ interface ProfileOfferCardProps {
   compactTop?: boolean;
   enableImageGallery?: boolean;
   showFlipHint?: boolean;
-  /** Hide both the Like action and its back-side summary only when a caller opts out. */
-  showLikes?: boolean;
+  /** Hide only the front-side Like action; the back-side count remains read-only. */
+  showLikeAction?: boolean;
 }
 
 /** Render the shared offer card while preserving each caller's optional actions. */
@@ -64,7 +64,7 @@ export default function ProfileOfferCard({
   compactTop = false,
   enableImageGallery = false,
   showFlipHint = false,
-  showLikes = true,
+  showLikeAction = true,
 }: ProfileOfferCardProps) {
   const [localLikeState, setLocalLikeState] = useState(() => ({
     isLiked: offer.is_liked_by_me === true,
@@ -238,7 +238,7 @@ export default function ProfileOfferCard({
         isMessageDisabled={isMessageDisabled}
         compactTop={compactTop}
         showFlipHint={showFlipHint}
-        showLikes={showLikes}
+        showLikeAction={showLikeAction}
         onOpenImageGallery={
           canOpenImageGallery ? () => setIsImageGalleryOpen(true) : undefined
         }
@@ -253,7 +253,6 @@ export default function ProfileOfferCard({
         isFlipped={isFlipped}
         reviewsHref={reviewsHref}
         compactTop={compactTop}
-        showLikes={showLikes}
       />
 
       <OfferImageGalleryLightbox

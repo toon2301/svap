@@ -23,31 +23,37 @@ function props(overrides: Partial<OfferCardBackProps> = {}): OfferCardBackProps 
   };
 }
 
-describe('OfferCardBack scoped Like visibility', () => {
+describe('OfferCardBack always-visible read-only Like summary', () => {
   beforeEach(() => {
     resetOfferReviewsOrigin();
     window.history.replaceState(null, '', '/dashboard/watches');
   });
 
-  it.each([false, true])('removes the entire Like row for seeking=%s without adding a CTA', (isSeeking) => {
-    const cardProps = props({ showLikes: false });
+  it.each([false, true])('retains the entire read-only Like row for seeking=%s without adding a CTA', (isSeeking) => {
+    const cardProps = props();
     cardProps.offer = { ...cardProps.offer, is_seeking: isSeeking };
     const { container } = render(<OfferCardBack {...cardProps} />);
 
-    expect(screen.queryByText('Páči sa mi to')).not.toBeInTheDocument();
-    expect(screen.queryByText('17')).not.toBeInTheDocument();
-    expect(container.querySelector('path[d^="M20.84 4.61"]')).not.toBeInTheDocument();
+    const summary = screen.getByText('Páči sa mi to').parentElement!;
+    expect(screen.getByText('17')).toBeInTheDocument();
+    expect(container.querySelector('path[d^="M20.84 4.61"]')?.parentElement).toHaveAttribute('fill', 'currentColor');
+    expect(summary.closest('button, a, [role="button"]')).toBeNull();
+    expect(summary.querySelector('button, a, [role="button"], [aria-pressed]')).toBeNull();
+    fireEvent.click(summary);
+    expect(cardProps.onToggleFlip).not.toHaveBeenCalled();
     expect(screen.getByText('Pôvodný podrobný opis')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Správa|Mám záujem|Pomôcť/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Otočiť' }));
     expect(cardProps.onToggleFlip).toHaveBeenCalledTimes(1);
   });
 
-  it.each([undefined, true])('retains the complete Like row when showLikes is %s', (showLikes) => {
-    const { container } = render(<OfferCardBack {...props({ showLikes })} />);
+  it.each([false, true])('retains the complete read-only row when already liked=%s', (liked) => {
+    const cardProps = props();
+    cardProps.offer.is_liked_by_me = liked;
+    const { container } = render(<OfferCardBack {...cardProps} />);
     expect(screen.getByText('Páči sa mi to')).toBeInTheDocument();
     expect(screen.getByText('17')).toBeInTheDocument();
-    expect(container.querySelector('path[d^="M20.84 4.61"]')?.parentElement).toHaveAttribute('fill', 'currentColor');
+    expect(container.querySelector('path[d^="M20.84 4.61"]')?.parentElement).toHaveAttribute('fill', liked ? 'currentColor' : 'none');
     expect(screen.queryByRole('button', { name: 'Páči sa mi to' })).not.toBeInTheDocument();
   });
 
@@ -60,14 +66,16 @@ describe('OfferCardBack scoped Like visibility', () => {
     expect(container.querySelector('path[d^="M20.84 4.61"]')?.parentElement).toHaveAttribute('fill', 'none');
   });
 
-  it('hides and restores the summary without resetting the offer data', () => {
+  it('refreshes the existing summary from authoritative offer data', () => {
     const cardProps = props();
     const { rerender } = render(<OfferCardBack {...cardProps} />);
     expect(screen.getByText('17')).toBeInTheDocument();
-    rerender(<OfferCardBack {...cardProps} showLikes={false} />);
+    rerender(<OfferCardBack {...cardProps} offer={{ ...cardProps.offer, likes_count: 1234, is_liked_by_me: false }} />);
+    expect(screen.getByText((_text, element) => element?.tagName === 'SPAN' && element.textContent === new Intl.NumberFormat('sk-SK').format(1234))).toBeInTheDocument();
     expect(screen.queryByText('17')).not.toBeInTheDocument();
-    rerender(<OfferCardBack {...cardProps} showLikes={true} />);
-    expect(screen.getByText('17')).toBeInTheDocument();
+    expect(screen.getByText('Páči sa mi to').parentElement?.querySelector('svg')).toHaveAttribute('fill', 'none');
+    rerender(<OfferCardBack {...cardProps} offer={{ ...cardProps.offer, likes_count: 0 }} />);
+    expect(screen.getByText('0', { exact: true })).toBeInTheDocument();
   });
 
   it('retains the default Like row for demand cards outside Sledovania', () => {
@@ -78,10 +86,10 @@ describe('OfferCardBack scoped Like visibility', () => {
     expect(screen.getByText('17')).toBeInTheDocument();
   });
 
-  it('retains rating stars, reviews, opening hours, tags and a genuine flip without Like', () => {
+  it('retains rating stars, reviews, opening hours, tags and a genuine flip alongside read-only Likes', () => {
     const onOpenHoursClick = jest.fn();
     const onParentClick = jest.fn();
-    const cardProps = props({ showLikes: false, accountType: 'business', onOpenHoursClick, reviewsHref: '/dashboard/offers/7/reviews', compactTop: true });
+    const cardProps = props({ accountType: 'business', onOpenHoursClick, reviewsHref: '/dashboard/offers/7/reviews', compactTop: true });
     cardProps.offer = { ...cardProps.offer, reviews_count: 8, average_rating: 4.5, tags: ['maliar', 'interiér'] };
     const { container } = render(<div onClick={onParentClick}><OfferCardBack {...cardProps} /></div>);
 
@@ -106,7 +114,7 @@ describe('OfferCardBack scoped Like visibility', () => {
   });
 
   it.each([undefined, null, 0, 1.5, 3])('retains rating fallback and partial stars for rating=%s', (rating) => {
-    const cardProps = props({ showLikes: false });
+    const cardProps = props();
     cardProps.offer = { ...cardProps.offer, reviews_count: 2, average_rating: rating };
     const { container } = render(<OfferCardBack {...cardProps} />);
     expect(screen.getByText(`${(rating || 0).toFixed(1)} (2)`)).toBeInTheDocument();
@@ -116,7 +124,7 @@ describe('OfferCardBack scoped Like visibility', () => {
   });
 
   it.each([undefined, 0])('retains the unrated empty state for count=%s', (reviewsCount) => {
-    const cardProps = props({ showLikes: false });
+    const cardProps = props();
     cardProps.offer.reviews_count = reviewsCount;
     render(<OfferCardBack {...cardProps} />);
     expect(screen.getByText('Zatiaľ bez hodnotenia')).toBeInTheDocument();
@@ -128,8 +136,8 @@ describe('OfferCardBack scoped Like visibility', () => {
     ['low', 'Nízka', 'one_time', 'Jednorazovo'],
     ['medium', 'Stredná', 'long_term', 'Dlhodobo'],
     ['high', 'Vysoká', 'project', 'Zákazka'],
-  ] as const)('retains %s urgency and %s demand details without Like', (urgency, urgencyLabel, duration, durationLabel) => {
-    const cardProps = props({ showLikes: false, accountType: 'business', reviewsHref: '/dashboard/offers/7/reviews' });
+  ] as const)('retains %s urgency and %s demand details alongside read-only Likes', (urgency, urgencyLabel, duration, durationLabel) => {
+    const cardProps = props({ accountType: 'business', reviewsHref: '/dashboard/offers/7/reviews' });
     cardProps.offer = { ...cardProps.offer, is_seeking: true, urgency, duration_type: duration, tags: ['pomoc'] };
     render(<OfferCardBack {...cardProps} />);
     expect(screen.getByText(urgencyLabel)).toBeInTheDocument();
@@ -141,7 +149,7 @@ describe('OfferCardBack scoped Like visibility', () => {
   });
 
   it.each([undefined, '', '   '])('does not add empty demand details for value=%s', (value) => {
-    const cardProps = props({ showLikes: false });
+    const cardProps = props();
     cardProps.offer = { ...cardProps.offer, is_seeking: true, urgency: value as Offer['urgency'], duration_type: value as Offer['duration_type'], tags: [] };
     render(<OfferCardBack {...cardProps} />);
     expect(screen.queryByText('Urgentnosť:', { exact: true })).not.toBeInTheDocument();
@@ -150,7 +158,7 @@ describe('OfferCardBack scoped Like visibility', () => {
   });
 
   it.each([undefined, '', '   '])('retains the empty-description state for value=%s', (description) => {
-    const cardProps = props({ showLikes: false });
+    const cardProps = props();
     cardProps.offer.detailed_description = description;
     render(<OfferCardBack {...cardProps} />);
     expect(screen.getByText('Bez popisu')).toBeInTheDocument();
@@ -158,7 +166,7 @@ describe('OfferCardBack scoped Like visibility', () => {
   });
 
   it('preserves hidden back state, card dimensions, and ordinary top corners', () => {
-    const { container } = render(<OfferCardBack {...props({ showLikes: false, isFlipped: false })} />);
+    const { container } = render(<OfferCardBack {...props({ isFlipped: false })} />);
     expect(container.firstElementChild).toHaveClass('hidden');
     expect(container.querySelector('.h-52')).toBeInTheDocument();
     expect(container.querySelector('.rounded-t-2xl')).toBeInTheDocument();

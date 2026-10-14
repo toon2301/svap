@@ -69,6 +69,7 @@ interface MobileTopBarProps {
   viewedUserNotFound?: boolean;
 }
 
+/** Render mobile navigation chrome with the title and actions appropriate to the current screen. */
 export default function MobileTopBar({
   onMenuClick,
   isEditMode = false,
@@ -135,8 +136,10 @@ export default function MobileTopBar({
     requestOpenConversationActions();
   }, []);
 
+  const isLanguageScreen = activeModule === 'language' || activeRightItem === 'language';
   const canShowQuickProfile =
     Boolean(onProfileClick) &&
+    !isLanguageScreen &&
     activeModule !== 'profile' &&
     activeModule !== 'user-profile' &&
     activeModule !== 'favorites' &&
@@ -277,7 +280,7 @@ export default function MobileTopBar({
           {isEditMode && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('profile.editProfile', 'Upraviť profil')}</h1>
           )}
-          {activeRightItem === 'language' && (
+          {isLanguageScreen && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('language.title', 'Jazyk')}</h1>
           )}
           {activeRightItem === 'account-type' && (

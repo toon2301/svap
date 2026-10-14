@@ -31,8 +31,8 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 | --- | --- | --- | --- |
 | OW-01 | Potvrdený nesúlad: nulové cenové hranice | Evidovať výsledky a dokončiť chýbajúce explicitné overenia | Implementované a lokálne overené: BE 185 PASS, spoločné FE OW-01/02 275 PASS, celé FE 5 458 PASS. Používateľ 13. 10. uvádza čistý Rabbit a ostatné vykonané manuálne testy OK; PR #168 je zlúčené. Rozpis zariadení/ID, produkčná 0123 a živý Playwright v tejto novej správe nie sú samostatne potvrdené. Nový navigačný nález je OW-10, nie zlyhanie nulových cien. Pri migračnom konflikte nič automaticky nezlučovať ani nemazať. |
 | OW-02 | Potvrdené UX: chyba ďalšej stránky a retry nad kartami | Evidovať úspešný manuálny výsledok; nemiešať s OW-10 | Implementované 13. 10., panel/notice/hook coverage 100 %, hook/API bez zmien. Používateľ uvádza Rabbit bez nálezov a ostatné vykonané manuálne testy OK; PR #168 zlúčené. Živý Playwright nemožno označiť PASS bez výsledku konkrétneho behu. Výsledok manuálneho kola sa nezahadzuje kvôli novému chýbajúcemu prechodu z /search. |
-| OW-03 | Produktová úprava: odstrániť Like iba vo výsledkoch Sledovaní | Lokálne implementované; review/nasadený retest ešte čakajú | Zmapovaný celý tok Grid → ProfileOfferCard → Front/Back aj ostatní calleri. showLikes má predvolene true, iba OfferWatchMatchGrid posiela false: predné tlačidlo aj celý zadný riadok s textom/srdcom/počtom chýbajú v DOM. Like API, iné kontexty, mobilná karta, rozmery, otočenie a ostatné akcie nezmenené; na zadnú stranu sa nepridáva Správa ani Žiadosť. Pred opravou 4 regresné FAIL, potom opakovane 171 cielených PASS; whole-file coverage 98,08 % statements / 97,83 % branches / 100 % functions+lines, každý dotknutý produkčný súbor má všetky metriky nad 95 %. Celé FE 420 sád / 5 887 PASS, TypeScript, lint a build PASS. Skutočný WebKit na Railway: kontrolné vyhľadávanie a mobilné guidance/profil spolu light/dark 6 PASS, 8 SKIP (7 zámerných device skip a 1 chýbajúci offer fixture); nový demand scenár light/dark 2 pre-deploy RED na stále prítomnom Like. Oprava ešte nie je nasadená, tieto RED ani zber 36 scenárov nie sú nový E2E PASS. |
-| OW-04 | Potvrdený nesprávny preklad skills.likes v poľštine aj češtine | Opravené; spoločný commit/push schválený, review/nasadený retest čakajú | Jeden runtime kľúč používa desktop Front/Back, mobilnú kartu a mobilný detail vrátane aria-label/title. Iba PL leaf → Lubię to a identicky chybný CS leaf → Líbí se mi to; SK/EN/DE/HU nezmenené. Pred opravou real-provider regresia 15 FAIL / 28 PASS, po oprave 43 PASS, všetkých 6 jazykov × ponuka/dopyt × desktop/mobile/detail aj prepínanie bez remountu a OW-03 opt-out. Spoločné cielené OW-03/04 214 PASS / všetky merané súbory nad 95 %, celý frontend 421 sád / 5 930 PASS, TypeScript, 13-file lint a build PASS. Jazykový key parity 0 missing/extra; used-key check stále 3 staré APP-01, nie nový PASS. WebKit desktop/mobile na Railway PL/light 2 pre-deploy RED; diagnostický snapshot potvrdzuje starý slovenský label. Zber 12 nových E2E scenárov nie je nasadený PASS. Nie je to APP-01 ani širší APP-02. |
+| OW-03 | Upresnená produktová úprava: skryť iba prednú Like akciu v Sledovaniach, zadný počet ponechať | Lokálne opravené; používateľ povolil spoločný commit/push s OW-15 po kontrolách | Pôvodný PR #174 je zlúčený. Používateľ po manuálnom kole upresnil, že ponuka aj dopyt majú mať neklikateľný zadný súhrn text/srdce/počet. Zmapované všetky callery a serializer/mapovanie počtu. Nový showLikeAction default true ovláda iba Front; iba Grid posiela false. Back už nemá vypínač a vždy zobrazuje obyčajný div/span/svg bez button/role/tabIndex/handlerov. Like API, backendové dáta, ostatné callery, mobilná karta, rozmery/otočenie a reviews guard nezmenené; žiadne nové zadné CTA. Pred opravou 3 wrapper RED, potom spoločných 264 scoped PASS / 98,08 % statements / 97,81 % branches / 100 % functions+lines, všetky merané súbory nad 95 %. Celý FE prvého kola 422 sád / 5 980 PASS, TypeScript, 15-file lint a build PASS. Spoločné nové kontroly s OW-15 sú v denníku. Živý WebKit demand na starej nasadenej verzii pre-deploy RED na chýbajúcom zadnom súhrne; nový nasadený PASS ešte nie je tvrdený. Historický pôvodný širší kontrakt a výsledky sú zachované. |
+| OW-04 | Potvrdený nesprávny preklad skills.likes v poľštine aj češtine | Manuálne prešiel podľa používateľa; pôvodný PR #174 zlúčený | PL Lubię to / CS Líbí se mi to; ostatné slovníky nezmenené. Používateľ uviedol body 6/7 manuálne PASS. Pôvodné RED/PASS a metriky ostávajú v denníku. V tomto kole sa skills.likes nemení, jeho real-provider testy sa prispôsobili front-only kontraktu OW-03. Nový nález Hodnotenia/Všetky recenzie je časť APP-02, nie nové zlyhanie prekladu Like. |
 | OW-05 | Otvorené produktové/UX overenie: vstup do výsledkov v iOS PWA | Spojiť s plánovanými mobilnými výsledkami | M10 prešiel v Safari, v PWA nebol dostupný bežný navigačný vstup. Aktuálne existuje mobilné oznámenie so správcom, nie mobilný výsledkový zoznam. Neprezentovať to ako hotové mobilné výsledky. Pri mobilnej fáze overiť vstup, URL, Späť a dostupný obsah. |
 | OW-06 | Neúplné overenie: produkčné CORS domény | Zmapovať v overovacom kroku pred uzavretím sekcie | Varovanie o fallback doménach samo nepotvrdzuje chybu. Porovnať reálne frontend/API adresy, pôvod požiadaviek a nastavenie; bez dôkazu nič neprepisovať. Ak sa potvrdí bezpečnostný alebo funkčný problém, odporučiť okamžitú opravu. |
 | OW-07 | Neúplné overenie: skutočné vypršanie prihlasovacej relácie | Samostatný povinný test pred uzavretím sekcie | E12 overil odhlásenie v druhej karte a Back, nie samotnú expiráciu. Overiť skutočnú expiráciu a neprístupnosť starých výsledkov na desktope aj mobile. Potvrdený únik alebo obídenie prístupu riešiť hneď. |
@@ -48,6 +48,8 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 | OW-12 | Mobilný návrat zo správcu otvoreného z oznámenia výsledkov končí v Nastaveniach | Manuálne a review uzavreté podľa správy používateľa 14. 10. | PR #172 zlúčený, nový GitHub CI celý success, používateľ uvádza manuálne testy a Rabbit bez nálezov. Pri OW-03 reálny nasadený WebKit-mobile guidance → správca → app Back v light aj dark prešiel bez zápisov. To je konkrétny automatický kontrolný variant; nenahrádza všetky ostatné query/reload/Forward/handoff scenáre. Historické detaily zostávajú v denníku. |
 | OW-13 | Review PR #172: results pôvod sa stratí pri mobil → desktop handoff | Manuálne a review uzavreté podľa správy používateľa 14. 10. | Oprava presného returnTarget/depth aj nested responsive roundtrip je zlúčená, GitHub CI celý success. Používateľ potvrdil úspešné manuálne testy a Rabbit; nerozpisuje jednotlivé resize ID, preto sa nevymýšľajú. Lokálna integrácia 16 PASS a spoločná regresia 141 PASS / 100 % scoped metrík. Kompletný nasadený handoff Playwright ešte nie je doložený. |
 | OW-14 | Existujúce nefunkčné Otváracie hodiny pri firemnej ponuke vo výsledkoch | Zoznam; samostatné rozhodnutie, nie tichá oprava pri OW-03 | Kód pred aj po OW-03: grid neposiela onOpenHoursClick, Card iba preposiela undefined, Back pri business ponuke vždy vykreslí button. Rodičia nemajú handler; funkčný popover patrí profilu. API údaje hodín poskytuje. Je to potvrdený nesúlad zapojenia podľa kódu, nie nový manuálny produkčný test. Rozhodnúť doplniť popover vs. nezobraziť nefunkčný ovládač; nespájať s odstraňovaním Like. |
+| OW-15 | Mobilný Jazyk: profilová ikona navyše a nadpis pod lištou | Lokálne opravené v druhom kole; spoločný commit/push schválený, potom review a dotknutý manuálny retest | Oba skutočné vstupy language aj profile + activeRightItem language pokrýva rovnaká podmienka v MobileTopBar. Profilová ikona je pre Jazyk vypnutá, jediný nadpis je v existujúcej symetrickej hornej grid lište; mobilné h2 sa odstránilo iba z LanguageModule. Šípky, opis, šesť možností, voľba/uloženie jazyka, krajina aj celý desktop ostávajú. Pred opravou 31 nových RED / 10 PASS, finálna rozšírená sada 79 PASS. Spoločných 13 sád / 359 PASS a každý zo siedmich meraných súborov nad 95 % vo všetkých metrikách. Živý Railway WebKit: desktop SK kontrola PASS, oba mobilné vstupy reprodukovali starú chybu (2 pre-deploy RED), 3 opačné device SKIP. Nasadená oprava ešte nie je označená PASS. |
+| OW-16 | Mobilné Zobraziť všetko vo vyhľadávaní používa desktopové karty/flip | Dohodnuté tretie samostatné kolo; neodložiť neurčito ani potichu miešať s OW-03 | Používateľ chce mobilný štýl ako v profile, pásik Ponúkam/Hľadám a detail vysúvaný zdola namiesto flipu. Desktop bez zmeny. Pred implementáciou osobitne zmapovať skutočné callery, akcie/permissions, detail a návratové správanie. V tomto kole sa mobilné výsledky vyhľadávania nemenia. |
 
 Testovacia medzera priamo patriaca do OW-02:
 
@@ -59,13 +61,14 @@ Testovacia medzera priamo patriaca do OW-02:
 | TEST-04 | Jednorazový WebKit action timeout pri stabilizácii tlačidla Profil | Zoznam testovacej stability; nie potvrdená chyba navigácie OW-12 | Nasadený kontrolný test počas súbežného buildu: light zlyhal pred vstupom do Settings, dark prešiel. Opakovanie bez buildu s dotykom podľa existujúcej mobilnej navigácie: oba PASS, bez retry/force/zvýšenia timeoutu. Profil ani jeho logika sa nemenili, príčina pomalého kroku nie je definitívne vysvetlená. Skutočný produktový problém tým nie je vyhlásený ani ticho opravený. |
 | TEST-05 | PR #172 CI: testy poškodili jsdom prepisovaním globalThis.window | Uzavreté: nový celý GitHub CI success | Pôvodný log run 38467261951: 3 FAIL / 5 601 PASS. Všetky tri mutácie window odstránené, SSR používa skutočné Node prostredie. Lokálne 141 scoped PASS / 100 % metrík a celé FE 412 sád / 5 636 PASS. Overený nový run 38518639147 na commite 6c196753: celý CI success vrátane frontendu, buildu a backendu. Používateľ následne potvrdil Rabbit a manuálne testy; PR #172 zlúčený. |
 | TEST-06 | Živý OW-03 offer scenár nemá existujúcu vlastnú ponukovú zhodu | Zoznam testovacích fixture; dokončiť po nasadení bez automatického seedovania | GET-only discovery našlo dostupný demand fixture, ale nie vhodný offer fixture. Offer scenár sa preto preskočil a nie je PASS; lokálna regresia oba typy a 6 jazykov pokrýva. Pre finálny živý offer beh použiť existujúce sledovanie s verejnou ponukou alebo explicitne dohodnutý testovací obsah. Žiadne vytváranie/deletovanie účtov či kariet len na vynútenie zeleného výsledku. |
+| TEST-07 | Kotva desktopovej Playwright karty sa stratí po skrytí prednej strany | Opravené a reálne kontrolne overené; nie produktová chyba | Nový reviews test SK aj CS sa otočil, snapshot ukazoval zadný obsah, ale getByRole na prednej review akcii bez includeHidden sa už nezhodoval. Kotva teraz includeHidden: true, explicitné visibility assertions ostávajú. Rovnaký priamy problém opravený pri Like kotve v staršom OW-04 spec. SK desktop po oprave PASS, PL Like desktop/mobile PASS, SK mobilný dark detail PASS; CS desktop sa dostal k potvrdenému starému nesprávnemu textu. Bez force/retry/zvyšovania timeoutu či produkčnej zmeny. Pôvodné dva selector FAIL sa nezahadzujú. |
 
 ## Nálezy mimo aktuálneho kroku
 
 | ID | Položka | Odporúčanie | Stav a ďalšie overenie |
 | --- | --- | --- | --- |
 | APP-01 | Tri chýbajúce kľúče Nástenky: `feed.captionPlaceholder`, `feed.commentsClose`, `feed.openProfile` | Zoznam; samostatná oprava po dokončení Sledovania | 13. 10. potvrdené kontrolou použitých kľúčov a nezmenenými súbormi main, 14. 10. pri OW-04 znovu rovnaké 3 missing pred aj po oprave. Doplniť vhodné texty vo všetkých šiestich jazykoch a overiť skutočné miesta zobrazenia. Nie je to OW-04. |
-| APP-02 | Ďalšie slovenské texty v poľských/českých kartách | Zoznam; samostatná prekladová oprava, nie rozšírenie OW-04 | Pri mapovaní 14. 10. potvrdené runtime hodnoty aj calleri: PL/CS skills.allReviews, skills.edit, skills.message, skills.ratings a skills.detailedDescriptionEmpty zostali slovenské. PL skills.hiddenCard je tiež slovenské; CS Skrytá je však správne a nemá sa mechanicky prekladať. Tieto kľúče používa Back, mobilný detail/karta a mobilná úprava opisu. OW-04 opravuje iba skills.likes v oboch jazykoch; ostatné texty bez tichej hromadnej zmeny. Pred samostatnou opravou znovu skontrolovať aktuálne hodnoty a všetkých 6 jazykov. |
+| APP-02 | Ďalšie slovenské texty v kartách/recenziách | Časť ratings/allReviews lokálne opravená po schválení, zvyšok ostáva v zozname | Používateľ nový nález oboch textov hlásil pre všetky jazyky. Runtime audit a real-provider RED potvrdili ratings v CS/EN/PL a allReviews v CS/PL; SK/DE/HU a EN allReviews boli správne. Opravených presne 5 leaf hodnôt v 3 JSON: CS Hodnocení/Všechny recenze, EN Ratings, PL Oceny/Wszystkie opinie. Nových 44 testov všetkých 6 jazykov desktop/mobile detail a locale-switch PASS. Bez zmeny odkazov, dát alebo pridania reviews odkazu na mobil/dopyt. Zostávajú predošlé skills.edit/message/detailedDescriptionEmpty v CS/PL a hiddenCard v PL; CS Skrytá je správne. Pri čítaní pre terminológiu boli potvrdené aj slovenské reviews.heading/rating v EN/CS: patria širšiemu samostatnému auditu, nie dvom opravovaným kľúčom. Žiadna tichá hromadná úprava. |
 | ENV-01 | Dva backendové testy kontroly obrázkov blokuje Windows/gRPC | Zoznam problémov prostredia; overiť pred finálnym testovacím uzavretím | Rovnaké zlyhania reprodukované aj na čistom main bez OW-01. `grpc._cython.cygrpc` blokuje Windows Application Control. Overiť v podporovanom prostredí bez vypínania ochrán; meniť kód obrázkov ani avatarov týmto krokom nie je autorizované. Celý backend preto nemožno označiť za úplne zelený. |
 | TECH-01 | `DashboardContent.tsx`: 695 riadkov pri kontrole 13. 10. | Zoznam technického dlhu; nie automatická oprava | Podľa svaply.mdc `.tsx` nad 500 riadkov nahlásiť a nemeniť. Pred prípadnou budúcou prácou znovu overiť aktuálny súbor a vyžiadať potrebnú výnimku, ak pravidlo stále platí. |
 | TECH-02 | `src/lib/api.ts`: 907 riadkov pri kontrole 13. 10. | Zoznam technického dlhu; nie automatická oprava | Rovnaká podmienka pre `.ts` nad 500 riadkov. Zdieľaná API/auth logika potrebuje samostatné mapovanie a regresiu, nie tichý refaktor pri Sledovaní. |
@@ -135,18 +138,23 @@ Používateľ 14. 10. potvrdil manuálne testy a Rabbit po navigačnom review ko
 PR #172 je zlúčený a jeho nový GitHub CI celý prešiel. Tieto výsledky sa
 nezamieňajú za automatický PASS všetkých historických Playwright scenárov.
 
-Aktuálne je schválené mapovanie a implementácia OW-03 aj OW-04. Pracuje sa v samostatnej
-lokálnej vetve offer-watch-card-actions z aktuálneho main 8b04f513, ktorý už
-obsahuje aj používateľove opravy scrollu/recenzií z PR #173. Hlavný checkout
-ani tieto opravy sa nemenia. Obe úpravy sú lokálne implementované. Používateľ
-následne výslovne povolil spoločný commit a push OW-03/04 po kontrolách;
-nevzniká tým povolenie na PR, merge, nasadenie ani opravu ďalších položiek.
+Pôvodný OW-03/04 commit 223846e2 je odoslaný a PR #174 je zlúčený do main
+a7c04647. Pred touto opravou mal pracovný checkout čistý diff a jeho relevantný
+obsah sa zhodoval s novým main; používateľove opravy recenzií/scrollu ostávajú.
+Používateľ uviedol manuálne body 3/4/6/7/8 PASS, pri 1/2 upresnil želaný zadný
+Like súhrn a pri 5 hlásil nesprávne dva preklady. Nové mobilné nálezy sú OW-15/16.
 
-Po kontrolách a dohodnutom nasadení overiť priamo dotknuté karty. Ďalší
-plánovaný bod je OW-05 (mobilný vstup do výsledkov a väzba na mobilnú fázu;
-najprv nové mapovanie a dohoda o rozsahu). OW-14
-patrí do samostatného rozhodnutia o hodinách, nie do tichej opravy Like.
-OW-11/09 a APP/ENV/TECH/TOOL vrátane APP-02 zostávajú evidované. Staršie neúplné živé testy,
+Používateľ následne výslovne povolil druhé kolo OW-15 a spoločný commit/push
+oboch opravovaných bodov po úspešných kontrolách do offer-watch-card-actions.
+Tento najnovší pokyn nahrádza prvokolový zákaz odoslania, ale nepovoľuje nové PR,
+merge ani nasadenie. Predchádzajúci zákaz ostáva zachovaný v historickom denníku.
+
+Ďalší krok je spoločná Rabbit kontrola a po nasadení cielený manuálny/živý
+retest zadných počtov, dvoch prekladov a mobilnej hlavičky Jazyk. Potom samostatne
+zmapovať OW-16 (mobilné karty/detail vo vyhľadávaní). Až po týchto dohodnutých opravách sa
+vrátiť k OW-05 a ďalším fázam Sledovania. OW-14 patrí do samostatného rozhodnutia
+o hodinách, nie do tichej opravy Like. OW-11/09 a APP/ENV/TECH/TOOL vrátane
+zostávajúcej časti APP-02 zostávajú evidované. Staršie neúplné živé testy,
 migrácia 0123 a odložené M13/M14/M33 nemajú týmto kolom nový úplný výsledok;
 pripomenúť ich pri ďalšom relevantnom iOS/formulárovom testovaní. TEST-03/04
 ostávajú históriou nestability, nie potvrdenými novými chybami aplikácie.
@@ -281,3 +289,78 @@ ostávajú históriou nestability, nie potvrdenými novými chybami aplikácie.
   priamo v chate iba pre dotknuté výsledkové karty a preklady. Ďalší plánovaný
   krok po review a reteste OW-03/04 je mapovanie OW-05; ostatné nálezy vrátane
   OW-14, APP-01/02 a odložených M13/M14/M33 ostávajú zachované.
+- 14. 10. 2026, prvé opravné kolo po manuálnom OW-03/04 teste: používateľ
+  upresnil predný-only Like a zadný read-only súhrn, nahlásil dva texty a nové
+  mobilné OW-15/16. Výslovne schválil iba mapovanie/opravu prvého kola a teraz
+  zakázal commit aj push; odoslanie chce až spolu s druhým bodom. Git diff bol
+  pred úpravou čistý; PR #174 je zlúčený a relevantný obsah main a7c04647 sa
+  zhodoval s lokálnym 223846e2. Hlavný checkout zostal čistý na 011b6ce7.
+  Celý tok Grid → Wrapper → Front/Back, ostatní calleri a backendové počty
+  zmapované. showLikes nahradené presným front-only showLikeAction, Back
+  podmienka/prop úplne odstránené. Zachované počty/like-state, všetky ďalšie
+  callery, API a review modified-click guard; zadný riadok sa nedá aktivovať.
+  Tri wrapper RED pred opravou; po úprave 264 testov v 9 sadách PASS. Päť
+  celých meraných súborov má všetky metriky nad 95 %, spolu 98,08 % statements,
+  97,81 % branches, 100 % functions/lines. Celý FE 422 sád / 5 980 PASS,
+  TypeScript, 15-file lint bez varovaní, build a diff-check PASS. Build ponechal
+  existujúce neblokujúce Sentry odporúčanie, žiadne potlačenie alebo tichá oprava.
+  Dva nadpisy overené vo všetkých 6 jazykoch; opravených presne 5 leaf hodnôt
+  v CS/PL/EN, správne SK/DE/HU/EN allReviews zachované. Nové
+  offerReviewTranslations.test.tsx: pred opravou 17 FAIL / 27 PASS, potom
+  44 PASS vrátane mobilného detailu a locale-switch. Parity 0 missing/extra,
+  used-key kontrola stále 3 staré APP-01. Zvyšná APP-02 nebola potichu opravená.
+  Playwright je prispôsobený readonly počtu a nový review spec zbiera 72
+  project-scenárov (36 relevantných pre zariadenie), nie 72 živých PASS.
+  Reálny Railway WebKit desktop/mobile prvý beh: 1 SK mobilný PASS, 5 device
+  SKIP, 4 FAIL: 2 testové kotvy (TEST-07), chýbajúci zadný demand súhrn a
+  nesprávny CS mobilný text na starej verzii. Kotvy includeHidden opravené;
+  druhý beh 4 kontrolné PASS (SK desktop light, SK mobile dark, PL Like
+  desktop/mobile light), 3 device SKIP, 1 očakávaný CS desktop pre-deploy RED
+  priamo na starom nadpise. Žiadne force/retry/zvýšenie timeoutu. Nový
+  offer-card-readonly.ts preflight overí už dokončený own-card hint a inak
+  explicitne skipne bez PATCH; skills/watch/hints write route guard ostáva.
+  Preflight predchádza nechcenému dokončeniu onboarding hintu v testoch,
+  nijako nemení appku ani fixture. Nepridávali sa dáta, backend,
+  migrácie, Language UI, mobilné Search UI ani avatarové súbory sa nemenili.
+  Všetky upravené TS/TSX pod 500; nadlimitné profily/Search bez zásahu.
+  HEAD/staging/push nezmenené, žiadny nový commit. Nasleduje OW-15 a potom
+  samostatne OW-16; až po dohodnutých opravách pokračovať OW-05.
+- 14. 10. 2026, druhé opravné kolo OW-15: najnovší pokyn povoľuje spoločný
+  commit/push s predchádzajúcim kolom po kontrolách. Pred úpravou MobileTopBar
+  aj LanguageModule mali prázdny diff; rozpracované prvé kolo sa zachovalo.
+  Zmapované oba reálne route vstupy, volania a Back tok. Menia sa iba dve malé
+  produkčné komponenty: spoločná podmienka jazykovej obrazovky nastaví titulok
+  a vypne quick-profile, mobilné h2 sa odstráni. Existujúca symetrická grid
+  lišta drží stred bez prázdneho pravého tlačidla; desktopový detail, jazykový
+  state/handler, krajina, zoznam a navigačné callbacky sú nezmenené.
+  Nová real-provider integračná sada pred opravou 31 FAIL / 10 PASS; finálna
+  rozšírená sada 79 PASS. Spoločných 13 sád / 359 PASS, sedem celých meraných
+  súborov nad 95 % statements/branches/functions/lines; spolu 97,37 % / 97,42 % /
+  100 % / 98,68 %. Žiadne oslabenie gate, globálneho window alebo timeoutov.
+  Celá frontendová regresia 423 sád / 6 059 PASS, TypeScript PASS, lint všetkých
+  20 dotknutých/nových TS/TSX 0 chýb/varovaní. Parity všetkých 6 jazykov
+  0 missing/extra; used-key script stále správne FAIL na 3 starých APP-01.
+  Nový mobile-language-header Playwright zbiera 120 project-scenárov
+  (52 relevantných podľa zariadenia), nie 120 živých PASS. Existujúca mobile
+  settings navigačná sada teraz očakáva mobilné h1. Skutočný Railway WebKit
+  baseline: desktop SK/light 1 PASS, oba mobilné vstupy 2 pre-deploy RED
+  (duplicitný nadpis pri standalone, chýbajúci horný nadpis pri profile-route),
+  3 opačné device SKIP. Keďže lokálna oprava ešte nie je nasadená, nejde o
+  nový úspešný živý test opravy. Read-only mobilná saved-locale diagnostika
+  EN na Railway potvrdila správny checkmark (English 1 / Slovak 0), 0 zápisov;
+  podozrenie zo súčasného unit-mount/provider-restore sa tým nevyhlasuje za
+  potvrdenú produkčnú chybu ani sa potichu nemení jazykový state.
+  Nezávislý finálny audit nenašiel nový opraviteľný problém. Dotknuté TS/TSX
+  zostávajú pod 500; veľké koordinátory, Search UI, backend/migrácie a avatary
+  bez zásahu. Hlavný checkout čistý, stále 011b6ce7. Register uchováva všetky
+  ostatné nálezy; OW-16 je ďalšie samostatné mapovanie až po tomto review/reteste.
+  Produkčný build aj záverečný diff-check PASS. Build ponechal existujúce
+  neblokujúce Sentry odporúčanie; registry sync nevytvoril ďalší Git diff.
+  Spoločný balík má 24 súborov (19 upravených, 5 nových), z toho 6 produkčných
+  komponentov, 3 slovníky, 14 testovacích/helper súborov a existujúci register.
+  Nové súbory: MobileLanguageHeader.test.tsx, offerReviewTranslations.test.tsx,
+  mobile-language-header.spec.ts, offer-card-review-translations.spec.ts a
+  support/offer-card-readonly.ts. Migrácie 0. Nasleduje autorizovaný spoločný
+  commit/push do offer-watch-card-actions; nič sa automaticky nemerguje ani
+  nenasadzuje. Finálne uzavretie čaká na review a nasadený manuálny/živý retest,
+  nie na samotný úspešný lokálny build.

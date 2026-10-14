@@ -8,6 +8,7 @@ type LanguageModuleProps = {
   onBack?: () => void;
 };
 
+/** Render the language choices; the mobile top bar owns the title while desktop keeps its own header. */
 export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
   const { locale, setLocale, t } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState(
@@ -102,9 +103,6 @@ export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
       {/* Mobile layout */}
       <div className="block lg:hidden px-4 pt-2 pb-6">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            {t('language.title', 'Jazyk')}
-          </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {t('language.selectLanguage', 'Zvoľte si jazyk, v ktorom sa vám bude aplikácia najlepšie používať.')}
           </p>

@@ -55,20 +55,22 @@ beforeEach(() => {
 });
 
 describe('shared offer card Like opt-out and default behavior', () => {
-  it.each([false, true])('omits both Like faces for seeking=%s without calling its API', (isSeeking) => {
-    const { container } = render(<CardHarness cardOffer={{ ...offer, is_seeking: isSeeking, is_liked_by_me: true, likes_count: 937 }} showLikes={false} />);
+  it.each([false, true])('omits the front Like action but retains the read-only back count for seeking=%s', (isSeeking) => {
+    const { container } = render(<CardHarness cardOffer={{ ...offer, is_seeking: isSeeking, is_liked_by_me: true, likes_count: 937 }} showLikeAction={false} />);
     expect(screen.queryByRole('button', { name: 'Páči sa mi to' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Páči sa mi to', { exact: true })).not.toBeInTheDocument();
+    expect(summary()).toHaveTextContent('937');
     fireEvent.click(within(activeSide(container)).getByRole('button', { name: 'Otočiť' }));
     expect(activeSide(container)).toHaveTextContent('Detailný popis.');
-    expect(screen.queryByText('937', { exact: true })).not.toBeInTheDocument();
+    expect(within(activeSide(container)).getByText('937', { exact: true })).toBeInTheDocument();
+    expect(summary().closest('button')).toBeNull();
+    fireEvent.click(summary());
     expect(container.querySelector('[data-default-cta]')).toBeNull();
     expect(container.querySelector('[data-message-cta]')).toBeNull();
     expect(toggleLike).not.toHaveBeenCalled();
   });
 
-  it.each([undefined, true])('retains working Like when showLikes=%s', async (showLikes) => {
-    render(<CardHarness showLikes={showLikes} />);
+  it.each([undefined, true])('retains working Like when showLikeAction=%s', async (showLikeAction) => {
+    render(<CardHarness showLikeAction={showLikeAction} />);
     const like = screen.getByRole('button', { name: 'Páči sa mi to' });
     expect(like).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(like);
@@ -145,9 +147,9 @@ describe('shared offer card Like opt-out and default behavior', () => {
     view.rerender(<CardHarness cardOffer={{ ...offer, id: 8, is_liked_by_me: true, likes_count: 9 }} />);
     expect(screen.getByRole('button', { name: 'Páči sa mi to' })).toHaveAttribute('aria-pressed', 'true');
     expect(summary()).toHaveTextContent('9');
-    view.rerender(<CardHarness cardOffer={{ ...offer, id: 8 }} showLikes={false} />);
+    view.rerender(<CardHarness cardOffer={{ ...offer, id: 8 }} showLikeAction={false} />);
     expect(screen.queryByRole('button', { name: 'Páči sa mi to' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Páči sa mi to', { exact: true })).not.toBeInTheDocument();
+    expect(summary()).toHaveTextContent('3');
     expect(toggleLike).not.toHaveBeenCalled();
   });
 });
@@ -158,37 +160,37 @@ describe('shared card content and existing non-Like actions remain intact', () =
     [{ ...offer, description: '', category: '', subcategory: 'Custom label' }, 'Custom label'],
     [{ ...offer, description: '', category: '', subcategory: '' }, 'Bez popisu'],
   ] as Array<[Offer, string]>)('keeps translated/fallback card labels %#', (cardOffer, headline) => {
-    render(<CardHarness cardOffer={cardOffer} showLikes={false} />);
+    render(<CardHarness cardOffer={cardOffer} showLikeAction={false} />);
     expect(screen.getAllByText(headline).length).toBeGreaterThan(0);
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', headline === 'Bez popisu' ? 'Ponúkam' : headline);
   });
 
   it('preserves location, district fallback, prices and hidden/highlighted owner state', () => {
-    const view = render(<CardHarness cardOffer={{ ...offer, price_from: 0, price_currency: 'Kč', location: 'Praha', district: 'Praha 1', is_hidden: true }} isHighlighted showLikes={false} />);
+    const view = render(<CardHarness cardOffer={{ ...offer, price_from: 0, price_currency: 'Kč', location: 'Praha', district: 'Praha 1', is_hidden: true }} isHighlighted showLikeAction={false} />);
     expect(screen.getByText('0 Kč')).toBeInTheDocument();
     expect(screen.getByText('Praha')).toBeInTheDocument();
     expect(screen.queryByText('Praha 1')).not.toBeInTheDocument();
     expect(screen.getByText('Skrytá')).toBeInTheDocument();
     expect(view.container.firstChild).toHaveClass('highlight-offer-card', 'opacity-60');
-    view.rerender(<CardHarness cardOffer={{ ...offer, price_from: 2, district: 'Bratislava', location: ' ', is_hidden: true }} isOtherUserProfile showLikes={false} compactTop />);
+    view.rerender(<CardHarness cardOffer={{ ...offer, price_from: 2, district: 'Bratislava', location: ' ', is_hidden: true }} isOtherUserProfile showLikeAction={false} compactTop />);
     expect(screen.getByText('2 €')).toBeInTheDocument();
     expect(screen.getByText('Bratislava')).toBeInTheDocument();
     expect(screen.queryByText('Skrytá')).not.toBeInTheDocument();
     expect(view.container.firstChild).toHaveClass('rounded-b-2xl');
-    view.rerender(<CardHarness cardOffer={{ ...offer, price_negotiable: true, price_from: 2, location: '', district: '' }} showLikes={false} />);
+    view.rerender(<CardHarness cardOffer={{ ...offer, price_negotiable: true, price_from: 2, location: '', district: '' }} showLikeAction={false} />);
     expect(screen.getByText('Dohodou')).toBeInTheDocument();
   });
 
   it('preserves image filtering and gallery open/close after opting out of Likes', () => {
-    const view = render(<CardHarness cardOffer={{ ...offer, images: [{ id: 1, image: '/one.jpg' }, { id: 2, image_url: '/two.jpg' }, { id: 3 }] }} enableImageGallery showLikes={false} />);
+    const view = render(<CardHarness cardOffer={{ ...offer, images: [{ id: 1, image: '/one.jpg' }, { id: 2, image_url: '/two.jpg' }, { id: 3 }] }} enableImageGallery showLikeAction={false} />);
     fireEvent.click(screen.getByRole('button', { name: 'Fotky' }));
     expect(screen.getByRole('dialog', { name: 'Práca v interiéri' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'close gallery' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    view.rerender(<CardHarness cardOffer={{ ...offer, images: [{ id: 1, image_url: '/one.jpg' }] }} showLikes={false} />);
+    view.rerender(<CardHarness cardOffer={{ ...offer, images: [{ id: 1, image_url: '/one.jpg' }] }} showLikeAction={false} />);
     expect(screen.queryByRole('button', { name: 'Fotky' })).not.toBeInTheDocument();
     // A malformed legacy image entry must still be ignored by the existing defensive filter.
-    view.rerender(<CardHarness cardOffer={{ ...offer, images: [{ id: 1 }, null as unknown as OfferImage] }} enableImageGallery showLikes={false} />);
+    view.rerender(<CardHarness cardOffer={{ ...offer, images: [{ id: 1 }, null as unknown as OfferImage] }} enableImageGallery showLikeAction={false} />);
     expect(screen.queryByRole('button', { name: 'Fotky' })).not.toBeInTheDocument();
     expect(toggleLike).not.toHaveBeenCalled();
   });

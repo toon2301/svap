@@ -28,7 +28,7 @@ test('entering a settings section and going back returns to the settings list, Z
 
   await rows.getByRole('button', { name: /^Jazyk/ }).tap();
   await expect.poll(() => pathOf(page), { message: 'Jazyk: nesprávna adresa' }).toBe('/dashboard/language');
-  await expect(page.getByRole('heading', { level: 2, name: 'Jazyk' }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Jazyk' })).toBeVisible();
 
   await topBarBack(page).tap();
   await expect.poll(() => pathOf(page), { message: 'Späť z Jazyka: nesprávna adresa' }).toBe('/dashboard/settings');

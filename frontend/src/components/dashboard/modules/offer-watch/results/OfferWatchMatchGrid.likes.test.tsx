@@ -47,7 +47,7 @@ function mockTranslate(key: string, fallback: string): string {
   return typeof value === 'string' ? value : fallback;
 }
 
-/** Keep API-derived Like data in fixtures so hiding empty data cannot satisfy the test. */
+/** Keep API-derived Like data so front opt-out cannot hide the required back summary. */
 function makeMatch(overrides: Partial<Offer> = {}, createdAt = '2026-10-14T11:30:00Z'): OfferWatchMatch {
   return {
     createdAt,
@@ -75,16 +75,25 @@ function makeMatch(overrides: Partial<Offer> = {}, createdAt = '2026-10-14T11:30
   };
 }
 
-/** Check the entire DOM, including CSS-hidden faces: Like must not remain in markup. */
-function expectNoLikes(card: HTMLElement) {
+/** Require no front action and exactly one noninteractive back summary, even while CSS-hidden. */
+function expectReadOnlyLikes(card: HTMLElement, count = 987, liked = true) {
   const queries = within(card);
   const label = mockTranslate('skills.likes', 'Páči sa mi to');
+  const { front, back } = cardFaces(card);
   expect(queries.queryByRole('button', { name: label, hidden: true })).not.toBeInTheDocument();
-  expect(queries.queryByText(label)).not.toBeInTheDocument();
-  expect(queries.queryByText('987')).not.toBeInTheDocument();
-  expect(card.querySelector(`svg path[d^="${HEART_PATH_PREFIX}"]`)).toBeNull();
+  expect(within(front).queryByText(label)).not.toBeInTheDocument();
+  expect(front.querySelector(`svg path[d^="${HEART_PATH_PREFIX}"]`)).toBeNull();
+  expect(queries.getAllByText(label, { exact: true })).toHaveLength(1);
+  const summary = within(back).getByText(label, { exact: true }).parentElement!;
+  const formattedCount = new Intl.NumberFormat('sk-SK').format(Math.max(0, count));
+  expect(within(summary).getByText((_text, element) => element?.tagName === 'SPAN' && element.textContent === formattedCount)).toBeInTheDocument();
+  expect(summary.querySelector('svg')).toHaveAttribute('fill', liked ? 'currentColor' : 'none');
+  expect(summary.closest('button, a, [role="button"]')).toBeNull();
+  expect(summary.querySelector('button, a, [role="button"], [tabindex]')).toBeNull();
+  expect(back.querySelectorAll(`svg path[d^="${HEART_PATH_PREFIX}"]`)).toHaveLength(1);
   expect(card.querySelector('[aria-pressed]')).toBeNull();
   expect(card.querySelector('[data-default-cta], [data-message-cta]')).toBeNull();
+  fireEvent.click(summary);
   expect(mockedLikeApi).not.toHaveBeenCalled();
 }
 
@@ -111,7 +120,7 @@ function activeFlip(card: HTMLElement) {
     .getByRole('button', { name: 'Otočiť' });
 }
 
-describe('Offer Watch result cards: scoped Like removal', () => {
+describe('Offer Watch result cards: front-only Like opt-out and read-only back summary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockLocale = 'sk';
@@ -123,14 +132,14 @@ describe('Offer Watch result cards: scoped Like removal', () => {
     jest.useRealTimers();
   });
 
-  it('removes Like markup from both sides of an offer', () => {
+  it('removes the front action while retaining the back Like count of an offer', () => {
     render(<OfferWatchMatchGrid matches={[makeMatch()]} watchUpdatedAt={WATCH_UPDATED_AT} />);
     const card = screen.getByRole('article');
-    expectNoLikes(card);
+    expectReadOnlyLikes(card);
     expectFace(card, false);
     fireEvent.click(activeFlip(card));
     expectFace(card, true);
-    expectNoLikes(card);
+    expectReadOnlyLikes(card);
   });
 
   const variants = (Object.keys(dictionaries) as Locale[]).flatMap((locale) =>
@@ -142,7 +151,7 @@ describe('Offer Watch result cards: scoped Like removal', () => {
   );
 
   it.each(variants)(
-    'keeps both faces Like-free: $locale seeking=$isSeeking owner=$ownerUserType liked=$liked',
+    'keeps front action absent and back summary intact: $locale seeking=$isSeeking owner=$ownerUserType liked=$liked',
     ({ locale, isSeeking, ownerUserType, liked }) => {
       mockLocale = locale;
       const match = makeMatch({
@@ -154,7 +163,7 @@ describe('Offer Watch result cards: scoped Like removal', () => {
       });
       render(<OfferWatchMatchGrid matches={[match]} watchUpdatedAt={WATCH_UPDATED_AT} />);
       const card = screen.getByRole('article');
-      expectNoLikes(card);
+      expectReadOnlyLikes(card, 987, liked);
       expect(within(card).getByRole('img', { name: match.offer.description })).toBeInTheDocument();
       expect(within(card).getByText('25 €')).toBeInTheDocument();
       expect(within(card).getByText('Bratislava')).toBeInTheDocument();
@@ -164,7 +173,7 @@ describe('Offer Watch result cards: scoped Like removal', () => {
 
       fireEvent.click(activeFlip(card));
       expectFace(card, true);
-      expectNoLikes(card);
+      expectReadOnlyLikes(card, 987, liked);
       expect(within(card).getByText(match.offer.detailed_description!)).toBeInTheDocument();
       expect(within(card).getByText('#interiér')).toBeInTheDocument();
       if (isSeeking) {
@@ -175,7 +184,21 @@ describe('Offer Watch result cards: scoped Like removal', () => {
       }
       fireEvent.click(activeFlip(card));
       expectFace(card, false);
-      expectNoLikes(card);
+      expectReadOnlyLikes(card, 987, liked);
+    },
+  );
+
+  it.each([false, true].flatMap((isSeeking) => [0, -20, 1234].map((likesCount) => ({ isSeeking, likesCount }))))(
+    'preserves normalized read-only count $likesCount for seeking=$isSeeking',
+    ({ isSeeking, likesCount }) => {
+      render(<OfferWatchMatchGrid matches={[makeMatch({ is_seeking: isSeeking, likes_count: likesCount })]} watchUpdatedAt={WATCH_UPDATED_AT} />);
+      const card = screen.getByRole('article');
+      fireEvent.click(activeFlip(card));
+      expectFace(card, true);
+      expectReadOnlyLikes(card, likesCount);
+      fireEvent.keyDown(within(card).getByText(mockTranslate('skills.likes', 'Páči sa mi to')), { key: 'Enter' });
+      expect(mockedLikeApi).not.toHaveBeenCalled();
+      expectFace(card, true);
     },
   );
 
@@ -200,8 +223,9 @@ describe('Offer Watch result cards: scoped Like removal', () => {
     expect(within(cards[0]).getByRole('img', { name: 'Druhý výsledok' })).toBeInTheDocument();
     expectFace(cards[0], true);
     expectFace(cards[1], false);
-    cards.forEach(expectNoLikes);
-    expect(screen.queryByText('999')).not.toBeInTheDocument();
+    expectReadOnlyLikes(cards[0], 999);
+    expectReadOnlyLikes(cards[1]);
+    expect(within(cards[0]).getByText('999')).toBeInTheDocument();
   });
 
   it.each([
@@ -216,14 +240,14 @@ describe('Offer Watch result cards: scoped Like removal', () => {
       expect(mockedOpenProfile).toHaveBeenCalledTimes(1);
       expect(mockedOpenProfile).toHaveBeenCalledWith(expect.any(Object), expected, { highlightSkillId: 61 });
     } else expect(mockedOpenProfile).not.toHaveBeenCalled();
-    expectNoLikes(screen.getByRole('article'));
+    expectReadOnlyLikes(screen.getByRole('article'));
   });
 
   it('retains the translated fallback author when API display name is absent', () => {
     mockLocale = 'en';
     render(<OfferWatchMatchGrid matches={[makeMatch({ user_display_name: ' ', owner_user_type: null })]} watchUpdatedAt={WATCH_UPDATED_AT} />);
     expect(screen.getByRole('button', { name: /User/ })).toBeInTheDocument();
-    expectNoLikes(screen.getByRole('article'));
+    expectReadOnlyLikes(screen.getByRole('article'));
   });
 
   it('expires only fresh badges on the minute tick and clears the timer on unmount', () => {
@@ -234,7 +258,7 @@ describe('Offer Watch result cards: scoped Like removal', () => {
     expect(screen.getAllByText(mockTranslate('offerWatchResults.newBadge', 'Nové'))).toHaveLength(1);
     act(() => jest.advanceTimersByTime(60_000));
     expect(screen.queryByText(mockTranslate('offerWatchResults.newBadge', 'Nové'))).not.toBeInTheDocument();
-    screen.getAllByRole('article').forEach(expectNoLikes);
+    screen.getAllByRole('article').forEach((card) => expectReadOnlyLikes(card));
     unmount();
     expect(clearInterval).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBe(0);
@@ -261,7 +285,7 @@ describe('Offer Watch result cards: scoped Like removal', () => {
         </section>
       </>,
     );
-    expectNoLikes(screen.getByRole('article'));
+    expectReadOnlyLikes(screen.getByRole('article'), 987, false);
     const shared = screen.getByRole('region', { name: 'Existing profile/search card' });
     const likeLabel = mockTranslate('skills.likes', 'Páči sa mi to');
     const like = within(shared).getByRole('button', { name: likeLabel });
@@ -271,7 +295,9 @@ describe('Offer Watch result cards: scoped Like removal', () => {
     expect(mockedLikeApi).toHaveBeenCalledWith(61, true);
     expect(like).toHaveAttribute('aria-pressed', 'true');
     expect(within(shared).getByText('988')).toBeInTheDocument();
-    expect(screen.getByRole('article').querySelector(`svg path[d^="${HEART_PATH_PREFIX}"]`)).toBeNull();
+    const watchSummary = within(screen.getByRole('article')).getByText(likeLabel).parentElement!;
+    expect(watchSummary).toHaveTextContent('987');
+    expect(watchSummary.querySelector('svg')).toHaveAttribute('fill', 'none');
   });
 
   it.each([false, true])('retains Like in the real standalone search caller (seeking=%s)', async (isSeeking) => {

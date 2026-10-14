@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { ownProfileWithCardsOrSkip } from './support/offer-watch-card-actions';
+import { requireCompletedOwnCardHint } from './support/offer-card-readonly';
 
 // Real Railway regression with existing own cards only. Never click Like or save account/content changes.
 // Expected labels are independent of the message dictionaries, so an incorrect translation cannot pass.
@@ -22,7 +23,7 @@ for (const { locale, likeLabel } of [
           localStorage.setItem('appLocale', language);
           localStorage.setItem('svaply_theme', colorTheme);
         }, { language: locale, colorTheme: theme });
-        await page.route((url) => /^\/api\/auth\/(?:offer-watches|skills)(?:\/|$)/.test(url.pathname), async (route) => {
+        await page.route((url) => /^\/api\/auth\/(?:offer-watches|skills|hints\/(?:mobile|desktop)-card-flip)(?:\/|$)/.test(url.pathname), async (route) => {
           const method = route.request().method();
           if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
             await route.continue();
@@ -42,7 +43,7 @@ for (const { locale, likeLabel } of [
         await expect.poll(() => page.locator('html').evaluate((html) => html.classList.contains('dark'))).toBe(theme === 'dark');
 
         const main = page.locator('[data-dashboard-main]');
-        const like = main.getByRole('button', { name: likeLabel, exact: true }).first();
+        const like = main.getByRole('button', { name: likeLabel, exact: true, includeHidden: true }).first();
         await expect(like).toBeVisible();
         await expect(like).toHaveAttribute('aria-label', likeLabel);
         await expect(like).toHaveAttribute('title', likeLabel);
@@ -50,6 +51,7 @@ for (const { locale, likeLabel } of [
         await expect(main.getByRole('button', { name: 'Polubienia', exact: true })).toHaveCount(0);
 
         if (isMobile) return; // Mobile's detail is a separate flow; only its unchanged Like control is in scope.
+        await requireCompletedOwnCardHint(page, false);
 
         // The nearest shared-card group contains both faces; the profile also has an outer group wrapper.
         const card = like.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " group ")][1]');

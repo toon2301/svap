@@ -41,7 +41,7 @@ describe('OfferCardFront scoped Like visibility', () => {
 
   it.each([false, true])('removes Like from the DOM for seeking=%s without losing flip', (isSeeking) => {
     const onToggleLike = jest.fn();
-    const cardProps = props({ showLikes: false, onToggleLike });
+    const cardProps = props({ showLikeAction: false, onToggleLike });
     cardProps.offer = { ...cardProps.offer, is_seeking: isSeeking, is_liked_by_me: true, likes_count: 17 };
     render(<OfferCardFront {...cardProps} />);
 
@@ -53,10 +53,10 @@ describe('OfferCardFront scoped Like visibility', () => {
     expect(onToggleLike).not.toHaveBeenCalled();
   });
 
-  it.each([undefined, true])('keeps the Like control working when showLikes is %s', (showLikes) => {
+  it.each([undefined, true])('keeps the Like control working when showLikeAction is %s', (showLikeAction) => {
     const onToggleLike = jest.fn();
     const onParentClick = jest.fn();
-    render(<div onClick={onParentClick}><OfferCardFront {...props({ showLikes, onToggleLike })} /></div>);
+    render(<div onClick={onParentClick}><OfferCardFront {...props({ showLikeAction, onToggleLike })} /></div>);
 
     const button = screen.getByRole('button', { name: 'Páči sa mi to' });
     expect(button).toHaveAttribute('aria-pressed', 'false');
@@ -94,9 +94,9 @@ describe('OfferCardFront scoped Like visibility', () => {
   it('can restore the same Like when a shared card opts back in', () => {
     const cardProps = props();
     cardProps.offer.is_liked_by_me = true;
-    const { rerender } = render(<OfferCardFront {...cardProps} showLikes={false} />);
+    const { rerender } = render(<OfferCardFront {...cardProps} showLikeAction={false} />);
     expect(screen.queryByRole('button', { name: 'Páči sa mi to' })).not.toBeInTheDocument();
-    rerender(<OfferCardFront {...cardProps} showLikes={true} />);
+    rerender(<OfferCardFront {...cardProps} showLikeAction={true} />);
     expect(screen.getByRole('button', { name: 'Páči sa mi to' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -106,7 +106,7 @@ describe('OfferCardFront scoped Like visibility', () => {
     const onParentClick = jest.fn();
     const onParentKeyDown = jest.fn();
     const cardProps = props({
-      showLikes: false,
+      showLikeAction: false,
       isOtherUserProfile: true,
       reviewsHref: '/dashboard/offers/7/reviews',
       onShareClick,
@@ -142,7 +142,7 @@ describe('OfferCardFront scoped Like visibility', () => {
     const onDeleteOffer = jest.fn();
     const onParentClick = jest.fn();
     const onParentKeyDown = jest.fn();
-    const cardProps = props({ showLikes: false, onEditOffer, onDeleteOffer });
+    const cardProps = props({ showLikeAction: false, onEditOffer, onDeleteOffer });
     render(<div onClick={onParentClick} onKeyDown={onParentKeyDown}><OfferCardFront {...cardProps} /></div>);
 
     for (const name of ['Upraviť kartu', 'Vymazať kartu']) {
@@ -159,7 +159,7 @@ describe('OfferCardFront scoped Like visibility', () => {
     const onRequestClick = jest.fn();
     const onMessageClick = jest.fn();
     const onParentClick = jest.fn();
-    const cardProps = props({ showLikes: false, isOtherUserProfile: true, onRequestClick, onMessageClick });
+    const cardProps = props({ showLikeAction: false, isOtherUserProfile: true, onRequestClick, onMessageClick });
     cardProps.offer.is_seeking = isSeeking;
     render(<div onClick={onParentClick}><OfferCardFront {...cardProps} /></div>);
 
@@ -174,7 +174,7 @@ describe('OfferCardFront scoped Like visibility', () => {
     const onRequestClick = jest.fn();
     const onMessageClick = jest.fn();
     render(<OfferCardFront {...props({
-      showLikes: false,
+      showLikeAction: false,
       isOtherUserProfile: true,
       onRequestClick,
       onMessageClick,
@@ -197,7 +197,7 @@ describe('OfferCardFront scoped Like visibility', () => {
   it.each(['request', 'message'])('does not manufacture the missing action beside %s', (action) => {
     const onRequestClick = action === 'request' ? jest.fn() : undefined;
     const onMessageClick = action === 'message' ? jest.fn() : undefined;
-    const { container } = render(<OfferCardFront {...props({ showLikes: false, isOtherUserProfile: true, onRequestClick, onMessageClick })} />);
+    const { container } = render(<OfferCardFront {...props({ showLikeAction: false, isOtherUserProfile: true, onRequestClick, onMessageClick })} />);
     expect(container.querySelector('[data-default-cta]')).toBe(action === 'request' ? screen.getByText('Mám záujem') : null);
     expect(container.querySelector('[data-message-cta]')).toBe(action === 'message' ? screen.getByText('Správa') : null);
   });
@@ -205,7 +205,7 @@ describe('OfferCardFront scoped Like visibility', () => {
   it('does not invoke request/message handlers for an offer without a numeric id', () => {
     const onRequestClick = jest.fn();
     const onMessageClick = jest.fn();
-    const cardProps = props({ showLikes: false, isOtherUserProfile: true, onRequestClick, onMessageClick });
+    const cardProps = props({ showLikeAction: false, isOtherUserProfile: true, onRequestClick, onMessageClick });
     cardProps.offer.id = undefined as unknown as number;
     render(<OfferCardFront {...cardProps} />);
     fireEvent.click(screen.getByRole('button', { name: 'Mám záujem' }));
@@ -220,16 +220,16 @@ describe('OfferCardFront scoped Like visibility', () => {
     const onDeleteOffer = jest.fn();
     const onRequestClick = jest.fn();
     const onMessageClick = jest.fn();
-    const { rerender } = render(<OfferCardFront {...props({ showLikes: false, isOtherUserProfile: true, onEditOffer, onDeleteOffer })} />);
+    const { rerender } = render(<OfferCardFront {...props({ showLikeAction: false, isOtherUserProfile: true, onEditOffer, onDeleteOffer })} />);
     expect(screen.queryByRole('button', { name: 'Upraviť kartu' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Vymazať kartu' })).not.toBeInTheDocument();
-    rerender(<OfferCardFront {...props({ showLikes: false, onRequestClick, onMessageClick })} />);
+    rerender(<OfferCardFront {...props({ showLikeAction: false, onRequestClick, onMessageClick })} />);
     expect(screen.queryByRole('button', { name: 'Mám záujem' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Správa' })).not.toBeInTheDocument();
   });
 
   it('does not enable a hidden share action without its handler', () => {
-    const { container } = render(<OfferCardFront {...props({ showLikes: false })} />);
+    const { container } = render(<OfferCardFront {...props({ showLikeAction: false })} />);
     const button = container.querySelector<HTMLButtonElement>('button[aria-label="Zdieľať ponuku"]')!;
     expect(button).toHaveClass('hidden');
     fireEvent.click(button);
@@ -237,7 +237,7 @@ describe('OfferCardFront scoped Like visibility', () => {
   });
 
   it.each([undefined, 0, 1])('retains the own-profile review fill for reviews_count=%s', (reviewsCount) => {
-    const cardProps = props({ showLikes: false, reviewsHref: '/dashboard/offers/7/reviews' });
+    const cardProps = props({ showLikeAction: false, reviewsHref: '/dashboard/offers/7/reviews' });
     cardProps.offer.reviews_count = reviewsCount;
     render(<OfferCardFront {...cardProps} />);
     expect(screen.getByRole('button', { name: 'Pridať recenziu' }).querySelector('polygon'))
@@ -245,21 +245,21 @@ describe('OfferCardFront scoped Like visibility', () => {
   });
 
   it.each([undefined, false])('keeps an unreviewed other-user icon for already_reviewed=%s', (alreadyReviewed) => {
-    const cardProps = props({ showLikes: false, isOtherUserProfile: true, reviewsHref: '/dashboard/offers/7/reviews' });
+    const cardProps = props({ showLikeAction: false, isOtherUserProfile: true, reviewsHref: '/dashboard/offers/7/reviews' });
     cardProps.offer.already_reviewed = alreadyReviewed;
     render(<OfferCardFront {...cardProps} />);
     expect(screen.getByRole('button', { name: 'Pridať recenziu' }).querySelector('polygon')).toHaveAttribute('fill', 'none');
   });
 
   it('does not add reviews to demand cards', () => {
-    const cardProps = props({ showLikes: false, reviewsHref: '/dashboard/offers/7/reviews' });
+    const cardProps = props({ showLikeAction: false, reviewsHref: '/dashboard/offers/7/reviews' });
     cardProps.offer.is_seeking = true;
     render(<OfferCardFront {...cardProps} />);
     expect(screen.queryByRole('button', { name: 'Pridať recenziu' })).not.toBeInTheDocument();
   });
 
   it.each(['years', 'months'] as const)('keeps the existing card content and %s experience', (unit) => {
-    const cardProps = props({ showLikes: false, accountType: 'business', displayLocationText: 'Bratislava', priceLabel: '10 €', compactTop: true, showFlipHint: true });
+    const cardProps = props({ showLikeAction: false, accountType: 'business', displayLocationText: 'Bratislava', priceLabel: '10 €', compactTop: true, showFlipHint: true });
     cardProps.offer = { ...cardProps.offer, is_seeking: unit === 'months', experience: { value: 2, unit } };
     const { container } = render(<OfferCardFront {...cardProps} />);
     expect(screen.getByText('PRO')).toBeInTheDocument();
@@ -273,7 +273,7 @@ describe('OfferCardFront scoped Like visibility', () => {
   });
 
   it('preserves noninteractive multiple-image badges and an empty category label', () => {
-    const { container } = render(<OfferCardFront {...props({ showLikes: false, label: '', hasMultipleImages: true, imageCount: 3 })} />);
+    const { container } = render(<OfferCardFront {...props({ showLikeAction: false, label: '', hasMultipleImages: true, imageCount: 3 })} />);
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fotky' })).not.toBeInTheDocument();
     expect(screen.queryByText('Maliarske práce')).not.toBeInTheDocument();
@@ -282,13 +282,13 @@ describe('OfferCardFront scoped Like visibility', () => {
 
   it('does not add a gallery button when the card has no usable images', () => {
     const onOpenImageGallery = jest.fn();
-    render(<OfferCardFront {...props({ showLikes: false, onOpenImageGallery, hasImages: false })} />);
+    render(<OfferCardFront {...props({ showLikeAction: false, onOpenImageGallery, hasImages: false })} />);
     expect(screen.queryByRole('button', { name: 'Fotky' })).not.toBeInTheDocument();
     expect(onOpenImageGallery).not.toHaveBeenCalled();
   });
 
   it('retains the front/back visibility class without changing the card dimensions', () => {
-    const { container } = render(<OfferCardFront {...props({ showLikes: false, isFlipped: true })} />);
+    const { container } = render(<OfferCardFront {...props({ showLikeAction: false, isFlipped: true })} />);
     expect(container.firstElementChild).toHaveClass('hidden');
     expect(container.querySelector('.h-52')).toBeInTheDocument();
   });
