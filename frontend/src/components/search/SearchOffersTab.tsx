@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { BanknotesIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
-import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
+import SearchOfferCard from '@/components/search/SearchOfferCard';
 import { SearchOfferCardAuthorHeader } from '@/components/search/SearchOfferCardAuthorHeader';
 import { FilterChips } from '@/components/search/FilterChips';
 import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
@@ -184,7 +184,7 @@ export function SearchOffersTab({
                         ownerUserType={ext.owner_user_type}
                         onProfileClick={() => identifier && openUserProfileFromSearch(router, identifier)}
                       />
-                      <ProfileOfferCard
+                      <SearchOfferCard
                         offer={offer}
                         accountType={ext.owner_user_type === 'company' ? 'business' : 'personal'}
                         t={t}
