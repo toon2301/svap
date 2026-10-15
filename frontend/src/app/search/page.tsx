@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
+import SearchOfferCard from '@/components/search/SearchOfferCard';
 import { SearchOfferCardAuthorHeader } from '@/components/search/SearchOfferCardAuthorHeader';
 import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
 import SearchSortSelect from '@/components/search/SearchSortSelect';
@@ -593,7 +593,7 @@ function SearchResultsContent() {
                                 ownerUserType={ext.owner_user_type}
                                 onProfileClick={() => openUserProfileFromSearch(router, identifier)}
                               />
-                              <ProfileOfferCard
+                              <SearchOfferCard
                                 offer={offer}
                                 accountType={ext.owner_user_type === 'company' ? 'business' : 'personal'}
                                 t={t}

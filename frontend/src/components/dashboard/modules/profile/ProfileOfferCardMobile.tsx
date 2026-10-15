@@ -33,8 +33,13 @@ interface ProfileOfferCardMobileProps {
   isMessageDisabled?: boolean;
   enableImageGallery?: boolean;
   showFlipHint?: boolean;
+  /** Join a search author header without changing the default standalone profile styling. */
+  compactTop?: boolean;
+  /** Search has no profile review/contact callbacks; keep those actions for profiles by default. */
+  showProfileActions?: boolean;
 }
 
+/** Render the shared mobile offer with optional profile actions and a caller-owned detail flow. */
 export function ProfileOfferCardMobile({
   offer,
   accountType,
@@ -56,6 +61,8 @@ export function ProfileOfferCardMobile({
   isMessageDisabled = false,
   enableImageGallery = false,
   showFlipHint = false,
+  compactTop = false,
+  showProfileActions = true,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -115,11 +122,14 @@ export function ProfileOfferCardMobile({
       key={offer.id}
       role="button"
       tabIndex={0}
-      className={`relative isolate w-full text-left rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform ${
+      className={`relative isolate w-full text-left overflow-hidden bg-white/80 dark:bg-[#0f0f10] active:scale-[0.99] transition-transform ${
+        compactTop ? 'rounded-b-2xl border-0 shadow-none' : 'rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm'
+      } ${
         isHighlighted ? 'highlight-offer-card' : ''
       } ${isHidden ? 'opacity-60' : ''}`}
       onClick={onCardClick}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onCardClick();
@@ -232,7 +242,7 @@ export function ProfileOfferCardMobile({
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
           </button>
-          {!offer.is_seeking && (
+          {showProfileActions && !offer.is_seeking && (
             <button
               aria-label="Pridať recenziu"
               title="Pridať recenziu"
@@ -379,7 +389,7 @@ export function ProfileOfferCardMobile({
           </div>
         )}
         {/* Tlačidlá Záujem a Správa - len na cudzom profile (rovnako ako desktop) */}
-        {isOtherUserProfile && (
+        {showProfileActions && isOtherUserProfile && (
           <div className="flex gap-2 mt-2">
             <button
               type="button"
