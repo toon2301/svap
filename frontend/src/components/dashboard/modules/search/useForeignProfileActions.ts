@@ -33,6 +33,13 @@ export function useForeignProfileActions({
   const [isFavoritePending, setIsFavoritePending] = useState(false);
   const [isProfileLikePending, setIsProfileLikePending] = useState(false);
 
+  // Z profilu na profil sa prechádza bez odmountovania modulu, takže akcia môže skončiť, až keď sa už
+  // zobrazuje iný profil (aj taký, ktorý sa ukázal hneď z medzipamäte). Výsledok akcie – úspech aj návrat
+  // po chybe – preto mení zobrazený profil len vtedy, keď je to ten, pre ktorý akcia beží.
+  const updateShownProfile = (targetId: number, change: (current: User) => User) => {
+    setProfileUser((current) => (current && current.id === targetId ? change(current) : current));
+  };
+
   const handleSendMessage = () => {
     const targetId = profileUser?.id;
     if (!targetId || isOpeningConversation) return;
@@ -70,13 +77,10 @@ export function useForeignProfileActions({
     try {
       await setFavoriteUserState(profileUser.id, nextIsFavorited);
 
-      setProfileUser((current) => {
-        if (!current) return current;
-        return {
-          ...current,
-          is_favorited: nextIsFavorited,
-        };
-      });
+      updateShownProfile(profileUser.id, (current) => ({
+        ...current,
+        is_favorited: nextIsFavorited,
+      }));
       patchUserProfileInCache(profileUser.id, {
         is_favorited: nextIsFavorited,
       });
@@ -99,14 +103,11 @@ export function useForeignProfileActions({
   const applyProfileLikeState = (data: ProfileLikeResponse) => {
     const nextLiked = data.is_profile_liked_by_me === true;
     const nextCount = Math.max(0, Number(data.profile_likes_count ?? 0));
-    setProfileUser((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        is_profile_liked_by_me: nextLiked,
-        profile_likes_count: nextCount,
-      };
-    });
+    updateShownProfile(data.profile_user_id, (current) => ({
+      ...current,
+      is_profile_liked_by_me: nextLiked,
+      profile_likes_count: nextCount,
+    }));
     patchUserProfileInCache(data.profile_user_id, {
       is_profile_liked_by_me: nextLiked,
       profile_likes_count: nextCount,
@@ -123,15 +124,11 @@ export function useForeignProfileActions({
     const optimisticCount = nextLiked ? previousCount + 1 : Math.max(0, previousCount - 1);
 
     setIsProfileLikePending(true);
-    setProfileUser((current) =>
-      current
-        ? {
-            ...current,
-            is_profile_liked_by_me: nextLiked,
-            profile_likes_count: optimisticCount,
-          }
-        : current,
-    );
+    updateShownProfile(profileUser.id, (current) => ({
+      ...current,
+      is_profile_liked_by_me: nextLiked,
+      profile_likes_count: optimisticCount,
+    }));
     patchUserProfileInCache(profileUser.id, {
       is_profile_liked_by_me: nextLiked,
       profile_likes_count: optimisticCount,
@@ -142,15 +139,11 @@ export function useForeignProfileActions({
       applyProfileLikeState(data);
     } catch (error: unknown) {
       const apiError = error as SearchProfileApiError;
-      setProfileUser((current) =>
-        current
-          ? {
-              ...current,
-              is_profile_liked_by_me: previousLiked,
-              profile_likes_count: previousCount,
-            }
-          : current,
-      );
+      updateShownProfile(profileUser.id, (current) => ({
+        ...current,
+        is_profile_liked_by_me: previousLiked,
+        profile_likes_count: previousCount,
+      }));
       patchUserProfileInCache(profileUser.id, {
         is_profile_liked_by_me: previousLiked,
         profile_likes_count: previousCount,
