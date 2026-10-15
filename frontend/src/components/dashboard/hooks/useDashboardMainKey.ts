@@ -3,8 +3,7 @@
 /**
  * Nový element `<main>` pri každej zmene modulu dashboardu.
  *
- * Namerané na iPhone cez dočasný ladiaci pásik (`?debugscroll=1`, priečinok
- * `../debug/`): dashboard má jediný scrollovateľný kontajner `<main
+ * Namerané na iPhone: dashboard má jediný scrollovateľný kontajner `<main
  * data-dashboard-main>`, ktorý pri prepnutí modulu iba vymení obsah. Pri
  * vstupe na vlastný profil z hlboko odscrollovanej Nástenky si iOS pozíciu
  * tohto elementu drží MIMO JavaScriptu – aj po skutočnom zápise (napr.

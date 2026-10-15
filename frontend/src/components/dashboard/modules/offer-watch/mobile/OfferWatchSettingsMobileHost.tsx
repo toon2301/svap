@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence } from 'framer-motion';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
 import {
   getDesktopSettingsStepsToOrigin,
@@ -58,6 +59,8 @@ export default function OfferWatchSettingsMobileHost({
   onOpenDesktop,
 }: OfferWatchSettingsMobileHostProps) {
   const [marker, setMarker] = useState<OfferWatchMobileHistory | null>(null);
+  // Vsúvanie platí len pre otvorenie ťuknutím; obnova po načítaní, kroku vpred alebo zmene okna sa neanimuje.
+  const [slideIn, setSlideIn] = useState(false);
   const markerRef = useRef<OfferWatchMobileHistory | null>(null);
   const returnToSettingsRef = useRef(onReturnToSettings);
   const openDesktopRef = useRef(onOpenDesktop);
@@ -86,6 +89,10 @@ export default function OfferWatchSettingsMobileHost({
 
   useEffect(() => {
     openChangeRef.current?.(isOpen);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) setSlideIn(false);
   }, [isOpen]);
 
   useEffect(() => () => {
@@ -176,6 +183,7 @@ export default function OfferWatchSettingsMobileHost({
       OFFER_WATCH_SETTINGS_PATH,
     );
     markerRef.current = nextMarker;
+    setSlideIn(true);
     setMarker(nextMarker);
   }, []);
 
@@ -310,13 +318,20 @@ export default function OfferWatchSettingsMobileHost({
     else window.history.back();
   }, []);
 
-  if (!marker || typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') return null;
+  // Portál je pripojený aj bez značky: `AnimatePresence` v ňom dokončí výstup obrazovky po kroku späť.
   return createPortal(
-    <OfferWatchSettingsMobile
-      view={marker.view}
-      onBack={navigateBack}
-      onPushView={pushView}
-    />,
+    <AnimatePresence>
+      {marker && (
+        <OfferWatchSettingsMobile
+          key='offer-watch-mobile'
+          view={marker.view}
+          slideIn={slideIn}
+          onBack={navigateBack}
+          onPushView={pushView}
+        />
+      )}
+    </AnimatePresence>,
     document.body,
   );
 }

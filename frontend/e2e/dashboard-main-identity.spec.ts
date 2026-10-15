@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 // `<main data-dashboard-main>` dostáva nový DOM element pri KAŽDEJ zmene
 // modulu (`useDashboardMainKey`) – nielen okolo profilu a Nástenky, ktoré rieši
-// `profile-entry-scroll.spec.ts`. Namerané na iPhone (?debugscroll=1): iOS si
+// `profile-entry-scroll.spec.ts`. Namerané na iPhone: iOS si
 // pozíciu scrollovacieho elementu drží mimo JavaScriptu, takže opakovane
 // použitý `<main>` si vedel „pamätať" starú pozíciu aj po zápise z appky;
 // čerstvý element takú pamäť nemá.

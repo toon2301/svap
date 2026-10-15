@@ -22,7 +22,6 @@
  */
 
 import { getUserIdBySlug } from './profileUserCache';
-import { scrollDebugFreshEntry } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
 
 /** Koho sa vstup týka: čokoľvek, čím sa profil dá spoznať. */
 export type ProfileEntryTarget = {
@@ -86,7 +85,6 @@ export function markProfileFreshEntry(target: ProfileEntryTarget): void {
 export function takeProfileFreshEntry(profile: ProfileEntryTarget): boolean {
   const target = pendingTarget;
   pendingTarget = null;
-  scrollDebugFreshEntry(target, profile, isSameProfile); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
   return target !== null && isSameProfile(target, profile);
 }
 
