@@ -41,7 +41,8 @@ async function stopRecordingFrames(page: Page): Promise<Frame[]> {
   });
 }
 
-test('the Sledovanie row slides in from the right and slides out again on Back, instead of cutting', async ({ page }) => {
+/** Cez vlastný profil a ponuku Menu otvorí zoznam Nastavení a počká, kým sa panel usadí. */
+async function openSettingsList(page: Page) {
   const settingsHeading = page.getByRole('heading', { level: 2, name: 'Nastavenia' }).first();
   const rows = page.locator('[data-mobile-settings-scroll]');
 
@@ -56,6 +57,11 @@ test('the Sledovanie row slides in from the right and slides out again on Back, 
   await expect
     .poll(() => rows.evaluate((el) => Math.round((el.closest('.fixed') ?? el).getBoundingClientRect().left)))
     .toBe(0);
+  return { settingsHeading, rows };
+}
+
+test('the Sledovanie row slides in from the right and slides out again on Back, instead of cutting', async ({ page }) => {
+  const { settingsHeading, rows } = await openSettingsList(page);
 
   await startRecordingFrames(page);
   await rows.getByRole('button', { name: /^Sledovanie/ }).tap();
@@ -78,4 +84,39 @@ test('the Sledovanie row slides in from the right and slides out again on Back, 
     sliding.filter((frame) => frame.pointerEvents !== 'none'),
     'Späť: vysúvajúca sa obrazovka zachytáva ťuknutia, ktoré patria Nastaveniam pod ňou',
   ).toEqual([]);
+});
+
+test('a quick tap on "Viac" while the Sledovanie screen slides out leaves the page scroll lock balanced', async ({ page }) => {
+  const { rows } = await openSettingsList(page);
+  const bodyOverflow = () => page.evaluate(() => document.body.style.overflow);
+  const baseline = await bodyOverflow();
+
+  await rows.getByRole('button', { name: /^Sledovanie/ }).tap();
+  const screen = page.locator(SCREEN);
+  await expect(screen, 'Sledovanie: obrazovka sa neotvorila').toBeVisible();
+  await expect.poll(() => screen.evaluate((el) => Math.round(el.getBoundingClientRect().left))).toBe(0);
+  await expect.poll(bodyOverflow, { message: 'Sledovanie: obrazovka nezamkla scroll stránky' }).toBe('hidden');
+
+  await screen.locator('button[aria-label="Späť"]').first().tap();
+  // Hneď ako sa obrazovka začne vysúvať (už nereaguje na ťuknutia), ťukni na „Viac“ v pätičke Nastavení.
+  await page.waitForFunction((selector) => {
+    const element = document.querySelector<HTMLElement>(selector);
+    return element === null || getComputedStyle(element).pointerEvents === 'none';
+  }, SCREEN);
+  await page.locator('[data-mobile-settings-footer] button').first().tap();
+  const menu = page.getByRole('dialog', { name: 'Viac' });
+  await expect(menu, 'Viac: menu sa neotvorilo').toBeVisible();
+  if ((await screen.count()) === 0) {
+    test.info().annotations.push({
+      type: 'note',
+      description: 'Menu sa otvorilo až po výstupe obrazovky, prekrytie zámkov sa nezachytilo.',
+    });
+  }
+  await expect(screen, 'Sledovanie: obrazovka po Späť nezmizla').toHaveCount(0);
+
+  // Pri otvorenom menu ostáva stránka zamknutá aj po konci výstupu a po jeho zatvorení sa vráti pôvodný stav.
+  await expect.poll(bodyOverflow, { message: 'Viac: koniec výstupu odomkol stránku pod otvoreným menu' }).toBe('hidden');
+  await menu.getByRole('button', { name: 'Zatvoriť' }).tap();
+  await expect(menu).toHaveCount(0);
+  await expect.poll(bodyOverflow, { message: 'Viac: po zatvorení menu ostal scroll stránky zamknutý' }).toBe(baseline);
 });

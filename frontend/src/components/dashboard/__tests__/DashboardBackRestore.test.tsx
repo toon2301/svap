@@ -26,6 +26,7 @@ jest.mock('framer-motion', () => ({
     div: ({ children, ...props }: React.ComponentProps<'div'>) => <div {...props}>{children}</div>,
   },
   AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  useIsPresent: () => true,
 }));
 
 jest.mock('../ModuleRouter', () => ({

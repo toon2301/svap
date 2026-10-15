@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useIsPresent } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useVisualViewportBounds } from '../../../hooks/useVisualViewportBounds';
@@ -63,15 +63,21 @@ export default function OfferWatchSettingsMobile({
     }
     : undefined;
 
-  useModalFocusTrap(!deleteDialogOpen, rootRef);
+  // Vysúvajúca sa obrazovka ostáva ~0,6 s pripojená, no ťuknutia už idú na Nastavenia pod ňou. Zámok scrollu,
+  // uväznený fokus a dialóg mazania (portál mimo obrazovky) preto končia, keď sa vysúvanie začne: inak by
+  // dialóg ostal ťukateľný a zámok by prepísal zámok menu, ktoré sa medzitým otvorilo (napr. „Viac“).
+  const isPresent = useIsPresent();
+
+  useModalFocusTrap(isPresent && !deleteDialogOpen, rootRef);
 
   useEffect(() => {
+    if (!isPresent) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, []);
+  }, [isPresent]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -235,7 +241,7 @@ export default function OfferWatchSettingsMobile({
       </motion.div>
 
       <OfferWatchDeleteDialog
-        watch={deletingWatch}
+        watch={isPresent ? deletingWatch : null}
         isSubmitting={Boolean(isDeleteSubmitting)}
         onClose={() => setDeletingWatch(null)}
         onConfirm={() => { void handleDelete(); }}
