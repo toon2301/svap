@@ -70,6 +70,12 @@ export default function OfferWatchSettingsMobile({
 
   useModalFocusTrap(isPresent && !deleteDialogOpen, rootRef);
 
+  // `pointer-events: none` zastaví len ťuknutia; `inert` vyradí vysúvajúcu sa obrazovku aj z Tab a zo čítačky obrazovky.
+  // Atribút sa nastavuje priamo: typy Reactu 18 ho nepoznajú a React 19 by prázdny reťazec vyhodnotil ako „nie“.
+  useEffect(() => {
+    rootRef.current?.toggleAttribute('inert', !isPresent);
+  }, [isPresent]);
+
   useEffect(() => {
     if (!isPresent) return;
     const previousOverflow = document.body.style.overflow;
@@ -80,6 +86,7 @@ export default function OfferWatchSettingsMobile({
   }, [isPresent]);
 
   useEffect(() => {
+    if (!isPresent) return;
     const handleEscape = (event: KeyboardEvent) => {
       if (
         event.key !== 'Escape'
@@ -94,7 +101,7 @@ export default function OfferWatchSettingsMobile({
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [deleteDialogOpen, mutation, onBack]);
+  }, [deleteDialogOpen, isPresent, mutation, onBack]);
 
   useEffect(() => {
     if (view.kind !== 'create') createWasAvailableRef.current = null;

@@ -195,6 +195,49 @@ describe('OfferWatchSettingsMobile – vysúvanie je neaktívne', () => {
     expect(deleteDialog()).toBeInTheDocument();
   });
 
+  it('marks the screen inert while it slides out, so Tab and assistive technology skip it', () => {
+    const screenControls = mountScreenWithWatches([sampleWatch(1)]);
+    const root = screen.getByTestId('offer-watch-mobile-screen');
+    expect(root).not.toHaveAttribute('inert');
+
+    mockIsPresent = false;
+    screenControls.rerender();
+
+    // `pointer-events: none` zastaví len ťuknutia; `inert` vyradí z Tab aj zo čítačky obrazovky.
+    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveAttribute('inert');
+  });
+
+  it('handles Escape while it is present but not while it slides out', () => {
+    const screenControls = mountScreenWithWatches([sampleWatch(1)]);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screenControls.onBack).toHaveBeenCalledTimes(1);
+
+    mockIsPresent = false;
+    screenControls.rerender();
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    // Vysúvajúca sa obrazovka už nesmie zachytávať klávesy (a preventDefault by pripravil iné obsluhy o Escape).
+    expect(screenControls.onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('becomes active again when a quick return to it cancels the slide-out', () => {
+    const screenControls = mountScreenWithWatches([sampleWatch(1)]);
+    mockIsPresent = false;
+    screenControls.rerender();
+    expect(screen.getByTestId('offer-watch-mobile-screen')).toHaveAttribute('inert');
+    expect(document.body.style.overflow).toBe('');
+
+    // „Sledovanie“ sa otvorí znova, kým sa ešte vysúva: framer-motion obrazovku vráti ako prítomnú.
+    mockIsPresent = true;
+    screenControls.rerender();
+
+    expect(screen.getByTestId('offer-watch-mobile-screen')).not.toHaveAttribute('inert');
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screenControls.onBack).toHaveBeenCalledTimes(1);
+  });
+
   it('gives the focus back to the Settings when the screen starts to slide out, not when it is removed', () => {
     const settingsRow = document.createElement('button');
     document.body.appendChild(settingsRow);

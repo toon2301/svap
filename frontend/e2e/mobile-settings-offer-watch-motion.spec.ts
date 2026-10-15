@@ -7,6 +7,8 @@ import { gotoDashboardHome, pathOf } from './support/dashboard';
 // naraz, takže prechod blikal. Iba čítanie – otvorí sa len zoznam sledovaní, nič sa nevytvára ani nemení.
 
 const SCREEN = '[data-testid="offer-watch-mobile-screen"]';
+/** Spodné menu „Viac“ v pätičke Nastavení (portál mimo obrazovky „Sledovanie“). */
+const VIAC_MENU = '[role="dialog"][aria-labelledby="mobile-utility-menu-title"]';
 
 test.beforeEach(async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'webkit-mobile', 'Mobilné Nastavenia – len webkit-mobile.');
@@ -39,6 +41,32 @@ async function stopRecordingFrames(page: Page): Promise<Frame[]> {
     target.__recording = false;
     return target.__frames;
   });
+}
+
+/**
+ * V stránke zapíše, či obrazovka „Sledovanie“ ešte existovala v okamihu, keď sa do nej pridalo menu „Viac“.
+ * Menu si zámok scrollu zapamätá hneď po pridaní (v tej istej úlohe), takže toto je presný okamih súbehu.
+ */
+async function watchViacMenuOpening(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ screenSelector, menuSelector }) => {
+      const target = window as unknown as { __viacOpening: { screenPresent: boolean } | null };
+      target.__viacOpening = null;
+      const observer = new MutationObserver(() => {
+        if (target.__viacOpening || !document.querySelector(menuSelector)) return;
+        target.__viacOpening = { screenPresent: document.querySelector(screenSelector) !== null };
+        observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    },
+    { screenSelector: SCREEN, menuSelector: VIAC_MENU },
+  );
+}
+
+async function readViacMenuOpening(page: Page): Promise<{ screenPresent: boolean } | null> {
+  return page.evaluate(
+    () => (window as unknown as { __viacOpening: { screenPresent: boolean } | null }).__viacOpening,
+  );
 }
 
 /** Cez vlastný profil a ponuku Menu otvorí zoznam Nastavení a počká, kým sa panel usadí. */
@@ -97,21 +125,26 @@ test('a quick tap on "Viac" while the Sledovanie screen slides out leaves the pa
   await expect.poll(() => screen.evaluate((el) => Math.round(el.getBoundingClientRect().left))).toBe(0);
   await expect.poll(bodyOverflow, { message: 'Sledovanie: obrazovka nezamkla scroll stránky' }).toBe('hidden');
 
+  // Výstup trvá ~0,5 s, preto sa poloha „Viac“ zmeria vopred a po Späť sa ťuká surovým dotykom: bez hľadania
+  // prvku a kontrol Playwrightu, ktoré by ťuknutie oddialili za koniec výstupu.
+  const viacBox = await page.locator('[data-mobile-settings-footer] button').first().boundingBox();
+  if (!viacBox) throw new Error('Viac: tlačidlo v pätičke Nastavení nemá polohu');
+  await watchViacMenuOpening(page);
+
   await screen.locator('button[aria-label="Späť"]').first().tap();
   // Hneď ako sa obrazovka začne vysúvať (už nereaguje na ťuknutia), ťukni na „Viac“ v pätičke Nastavení.
   await page.waitForFunction((selector) => {
     const element = document.querySelector<HTMLElement>(selector);
     return element === null || getComputedStyle(element).pointerEvents === 'none';
   }, SCREEN);
-  await page.locator('[data-mobile-settings-footer] button').first().tap();
-  const menu = page.getByRole('dialog', { name: 'Viac' });
+  await page.touchscreen.tap(viacBox.x + viacBox.width / 2, viacBox.y + viacBox.height / 2);
+  const menu = page.locator(VIAC_MENU);
   await expect(menu, 'Viac: menu sa neotvorilo').toBeVisible();
-  if ((await screen.count()) === 0) {
-    test.info().annotations.push({
-      type: 'note',
-      description: 'Menu sa otvorilo až po výstupe obrazovky, prekrytie zámkov sa nezachytilo.',
-    });
-  }
+  // Test platí len vtedy, keď sa menu otvorilo POČAS výstupu; po jeho konci by prešiel aj pokazený kód.
+  expect(
+    (await readViacMenuOpening(page))?.screenPresent,
+    'Viac: menu sa otvorilo až po konci výstupu obrazovky, súbeh zámkov scrollu sa neskúšal (spusti znova)',
+  ).toBe(true);
   await expect(screen, 'Sledovanie: obrazovka po Späť nezmizla').toHaveCount(0);
 
   // Pri otvorenom menu ostáva stránka zamknutá aj po konci výstupu a po jeho zatvorení sa vráti pôvodný stav.
