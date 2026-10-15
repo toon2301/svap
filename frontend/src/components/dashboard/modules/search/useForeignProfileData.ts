@@ -28,6 +28,18 @@ export function useForeignProfileData(userId: number, currentUserId: number) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Profil, načítavanie aj chyba patria jednému profilu. Z profilu na profil sa dá prejsť bez
+  // odmountovania modulu, a tak sa pri zmene ID zahodia už pri vykresľovaní (React vykreslí
+  // znova skôr, než sa čokoľvek potvrdí). Inak by sa pod novou adresou ukazoval profil a zoznam
+  // ponúk toho predošlého, kým nepríde odpoveď, a pri chybe by v ňom zostal navždy.
+  const [stateUserId, setStateUserId] = useState(userId);
+  if (stateUserId !== userId) {
+    setStateUserId(userId);
+    setProfileUser(null);
+    setIsLoading(true);
+    setError(null);
+  }
+
   const removeTargetFromClientState = useCallback(() => {
     invalidateUserProfileCache(userId);
     invalidateOffersCache(userId);
