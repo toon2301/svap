@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useVisualViewportBounds } from '../../../hooks/useVisualViewportBounds';
@@ -14,16 +15,22 @@ import OfferWatchMobileListScreen from './OfferWatchMobileListScreen';
 import { OFFER_WATCH_MOBILE_TITLE_ID } from './OfferWatchMobileShell';
 import type { OfferWatchMobileView } from './offerWatchMobileNavigation';
 
+/** Rovnaká pružina ako vysúvanie panelu Nastavení (`Sidebar`), aby sa obrazovky hýbali rovnako. */
+const SLIDE_SPRING = { type: 'spring', damping: 25, stiffness: 200 } as const;
+
 type OfferWatchSettingsMobileProps = {
   view: OfferWatchMobileView;
   onBack: () => void;
   onPushView: (view: OfferWatchMobileView) => void;
+  /** Otvorené ťuknutím na riadok Nastavení: obrazovka sa vsúva sprava. Pri obnove začína na svojom mieste. */
+  slideIn?: boolean;
 };
 
 export default function OfferWatchSettingsMobile({
   view,
   onBack,
   onPushView,
+  slideIn = false,
 }: OfferWatchSettingsMobileProps) {
   const { t } = useLanguage();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -165,10 +172,15 @@ export default function OfferWatchSettingsMobile({
 
   return (
     <>
-      <div
+      <motion.div
         ref={rootRef}
         className='fixed inset-x-0 top-0 z-[9000] h-dvh overflow-hidden bg-white text-gray-900 dark:bg-black dark:text-white lg:hidden'
         style={mobileViewportStyle}
+        initial={{ x: slideIn ? '100%' : 0 }}
+        animate={{ x: 0 }}
+        // Vysúvajúca sa obrazovka ostáva chvíľu pripojená, no ťuknutia musia prejsť na Nastavenia pod ňou.
+        exit={{ x: '100%', pointerEvents: 'none' }}
+        transition={SLIDE_SPRING}
         role='dialog'
         aria-modal='true'
         aria-label={t('offerWatch.title', 'Sledovanie')}
@@ -220,7 +232,7 @@ export default function OfferWatchSettingsMobile({
             })}
           />
         ) : null}
-      </div>
+      </motion.div>
 
       <OfferWatchDeleteDialog
         watch={deletingWatch}
