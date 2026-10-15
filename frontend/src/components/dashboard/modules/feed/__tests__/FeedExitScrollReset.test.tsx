@@ -2,7 +2,7 @@
  * Odchod z Nástenky vráti `<main>` na vrch, KÝM je feed ešte v DOM – a dashboard
  * dá KAŽDÉMU modulu, aj cieľovému, vlastný nový element `<main>`.
  *
- * Namerané na iPhone (?debugscroll=1): reset profilu (`useProfileFreshEntry`)
+ * Namerané na iPhone: reset profilu (`useProfileFreshEntry`)
  * prichádzal až po výmene modulu, keď krátky nový obsah pozíciu už orezal –
  * zapisoval 0 do 0 a stará pozícia Nástenky sa po narastení profilu vrátila
  * (iOS si ju drží mimo JavaScriptu). Oprava má dve časti:
@@ -17,9 +17,8 @@
  * jsdom nemá layout ani iOS, takže samotný skok nezopakuje. Overuje sa PORADIE
  * a IDENTITA: prvý zápis 0 po odchode prichádza z hlbokej pozície, kým je
  * Nástenka pripojená, a až po snímke na Späť; cieľový modul dostane preukázateľne
- * INÝ element `<main>`. Zapisovač háči `scrollTop` na úrovni `Element.prototype`
- * (rovnaký vzor ako produkčný ladiaci pásik v `debug/scrollDebugHooks.ts`), takže
- * zachytí zápisy do KTORÉHOKOĽVEK `<main>` v poradí, v akom prišli – aj cez
+ * INÝ element `<main>`. Zapisovač háči `scrollTop` na úrovni `Element.prototype`,
+ * takže zachytí zápisy do KTORÉHOKOĽVEK `<main>` v poradí, v akom prišli – aj cez
  * výmenu elementu. Pri každom zápise uloží hodnotu, predošlú hodnotu, či je
  * zdrojový modul pripojený a či už existuje snímka.
  *

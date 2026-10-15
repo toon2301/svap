@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
 // zvýraznenú ponuku má štartovať z vrchu, nie zospodu.
 //
 // Na skutočnom iPhone sa stará pozícia Nástenky po narastení profilu vracala
-// (namerané cez ?debugscroll=1). Oprava: dashboard dáva `<main>` nový DOM
+// (namerané na zariadení). Oprava: dashboard dáva `<main>` nový DOM
 // element pri KAŽDEJ zmene modulu (`useDashboardMainKey`), takže iOS nemá
 // čo vrátiť – 10/10 čistých vstupov s ňou oproti 4/5 zlyhaniam bez nej, na tej
 // istej karte v tej istej relácii. Emulácia WebKitu skok NEREPRODUKUJE – test
