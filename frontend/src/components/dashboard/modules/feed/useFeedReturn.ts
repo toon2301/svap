@@ -13,7 +13,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { FeedPost } from '@/lib/feedApi';
 import { onFeedReturnCapture, saveFeedReturn } from './feedReturnState';
-import { scrollDebugTag } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
 
 /**
  * Scrollovateľná plocha dashboardu.
@@ -84,7 +83,6 @@ export function useFeedReturn({
     enteredRef.current = true;
     if (restoredScrollTop != null && restoredScrollTop > 0) return;
     const main = dashboardMain();
-    scrollDebugTag('feed enter top'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
     if (main) main.scrollTop = 0;
   }, [restoredScrollTop]);
 
@@ -96,7 +94,7 @@ export function useFeedReturn({
   // Reset cieľa (profil `useProfileFreshEntry`) prichádza až po výmene, keď
   // krátky nový obsah pozíciu už orezal, a zapisuje 0 do 0. Na iPhone sa po
   // takom zápise stará pozícia Nástenky s narastením profilu vrátila (namerané
-  // cez ?debugscroll=1) a scroll na zvýraznenú ponuku štartoval zospodu.
+  // na iPhone) a scroll na zvýraznenú ponuku štartoval zospodu.
   //
   // Snímka na Späť vzniká ešte pred zmenou modulu (`requestFeedReturnCapture`
   // v navigácii), teda pred týmto zápisom. Výmena aj reset sú v jednom commite,
@@ -107,7 +105,6 @@ export function useFeedReturn({
   useIsomorphicLayoutEffect(
     () => () => {
       const main = dashboardMain();
-      scrollDebugTag('feed exit top'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
       if (main) main.scrollTop = 0;
     },
     [],
@@ -126,7 +123,6 @@ export function useFeedReturn({
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
         const main = dashboardMain();
-        scrollDebugTag('feed restore'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
         if (main) main.scrollTop = restoredScrollTop;
       });
     });

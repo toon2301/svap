@@ -6,8 +6,8 @@
  * a obrazovka bola zhora odrezaná. Pod `lg` preto výška sleduje viditeľnú plochu (`dvh`),
  * od `lg` ostáva `100vh`; kde `dvh` neexistuje, platí `h-screen`.
  *
- * Skutočnú výšku lišiet jsdom nepozná, preto test tvrdí triedy; overenie na iPhone
- * je cez `?debugscroll=1` (okno `wy` musí ostať 0).
+ * Skutočnú výšku lišiet jsdom nepozná, preto test tvrdí triedy; na iPhone sa overuje
+ * ručne (okno sa nesmie posunúť: `window.scrollY` musí ostať 0).
  *
  * Poistka: pri výmene `<main>` sa okno vráti na začiatok, aj keby sa dokument posunul.
  */

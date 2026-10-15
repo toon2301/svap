@@ -3,7 +3,7 @@
  * priamo cez `DashboardLayout` (nie len cez `useDashboardMainKey` v izolácii),
  * naprieč celým katalógom modulov, nielen okolo profilu a Nástenky.
  *
- * Kandidát B (namerané na iPhone cez ?debugscroll=1, 10/10 čistých vstupov
+ * Kandidát B (namerané na iPhone, 10/10 čistých vstupov
  * oproti 4/5 zlyhaniam bez neho) rieši triedu chýb „iOS si pamätá scroll
  * elementu, ktorý sa len prekreslil" – pre KAŽDÝ prechod, nielen ten pôvodne
  * nahlásený. `FeedExitScrollReset.test.tsx` dokazuje SPRÁVNE SPRÁVANIE scrollu
@@ -57,9 +57,6 @@ jest.mock('../modules/offer-watch/mobile/OfferWatchSettingsMobileHost', () => ({
   __esModule: true,
   default: () => null,
 }));
-// Ladiaci pásik (?debugscroll=1) je bez príznaku no-op, ale nech sa nepletie
-// do počítania mountov <main>.
-jest.mock('../debug/ScrollDebugPanel', () => ({ __esModule: true, default: () => null }));
 
 const noop = () => {};
 

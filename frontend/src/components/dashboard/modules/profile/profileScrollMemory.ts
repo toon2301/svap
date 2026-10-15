@@ -20,8 +20,6 @@
  * (iná stránka, vývojový remount) sa záznam ponecháva.
  */
 
-import { scrollDebugTag } from '../../debug/scrollDebugHooks'; // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
-
 const SCROLL_HISTORY_KEY = '__svaplyProfileScroll';
 
 /** Scrollovateľná plocha dashboardu – tá istá, akú používa feed aj profil. */
@@ -167,7 +165,6 @@ export function startProfileScrollRestore(): () => void {
     // Element sa pri načítaní môže vymeniť – každú snímku sa hľadá znova.
     const main = dashboardMain();
     if (main && main.scrollHeight - main.clientHeight >= target) {
-      scrollDebugTag('profile restore'); // [DEBUG ?debugscroll=1 – DOČASNÉ, ODSTRÁNIŤ]
       main.scrollTop = target;
       stop();
       clearRememberedProfileScroll();
