@@ -313,13 +313,14 @@ export default function DashboardLayout({
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
       )}
 
-      {/* Mobile Sidebar (overlay) */}
+      {/* Mobile Sidebar (overlay). Kým je otvorená obrazovka sledovaných ponúk, panel je zasunutý: zoznam sa
+          po ťuknutí na riadok odsunie doľava a pri Späť sa vráti zľava, rovnako ako pri ostatných riadkoch. */}
       <Sidebar
         activeItem={activeModule}
         onItemClick={onModuleChange}
         onLogout={onLogout}
         isMobile
-        isOpen={isMobileMenuOpen}
+        isOpen={isMobileMenuOpen && !isOfferWatchMobileOpen}
         onClose={onMobileMenuClose}
         onLanguageClick={onSidebarLanguageClick}
         onAccountTypeClick={onSidebarAccountTypeClick}

@@ -22,8 +22,14 @@ type OfferWatchSettingsMobileProps = {
   view: OfferWatchMobileView;
   onBack: () => void;
   onPushView: (view: OfferWatchMobileView) => void;
-  /** Otvorené ťuknutím na riadok Nastavení: obrazovka sa vsúva sprava. Pri obnove začína na svojom mieste. */
+  /** Otvorené ťuknutím na výsledkoch (nie z Nastavení): obrazovka sa vsúva sprava. Pri obnove začína na svojom mieste. */
   slideIn?: boolean;
+  /**
+   * `under-settings`: otvorené riadkom v Nastaveniach. Obrazovka sa nehýbe, sedí POD panelom Nastavení (a jeho
+   * stmievačom) a panel sa odsunie doľava, rovnako ako pri riadku „Jazyk“. Pri Späť sa panel vráti zľava a
+   * obrazovka zmizne naraz. `over-app` (predvolené): okno nad celou appkou, vsúva sa a vysúva zboku.
+   */
+  placement?: 'over-app' | 'under-settings';
 };
 
 export default function OfferWatchSettingsMobile({
@@ -31,7 +37,9 @@ export default function OfferWatchSettingsMobile({
   onBack,
   onPushView,
   slideIn = false,
+  placement = 'over-app',
 }: OfferWatchSettingsMobileProps) {
+  const isUnderSettings = placement === 'under-settings';
   const { t } = useLanguage();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const unavailableViewRef = useRef<string | null>(null);
@@ -187,12 +195,14 @@ export default function OfferWatchSettingsMobile({
     <>
       <motion.div
         ref={rootRef}
-        className='fixed inset-x-0 top-0 z-[9000] h-dvh overflow-hidden bg-white text-gray-900 dark:bg-black dark:text-white lg:hidden'
+        // Pod panelom Nastavení (`z-50`) a jeho stmievačom (`z-40`), nad hornou lištou (`z-30`); inak nad celou appkou.
+        className={`fixed inset-x-0 top-0 ${isUnderSettings ? 'z-[35]' : 'z-[9000]'} h-dvh overflow-hidden bg-white text-gray-900 dark:bg-black dark:text-white lg:hidden`}
         style={mobileViewportStyle}
-        initial={{ x: slideIn ? '100%' : 0 }}
+        initial={{ x: slideIn && !isUnderSettings ? '100%' : 0 }}
         animate={{ x: 0 }}
         // Vysúvajúca sa obrazovka ostáva chvíľu pripojená, no ťuknutia musia prejsť na Nastavenia pod ňou.
-        exit={{ x: '100%', pointerEvents: 'none' }}
+        // Obrazovka pod panelom Nastavení sa nevysúva: pri Späť zmizne naraz a panel sa vráti zľava.
+        exit={isUnderSettings ? undefined : { x: '100%', pointerEvents: 'none' }}
         transition={SLIDE_SPRING}
         role='dialog'
         aria-modal='true'
