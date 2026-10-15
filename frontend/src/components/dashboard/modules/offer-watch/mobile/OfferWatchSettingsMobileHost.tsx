@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
@@ -43,6 +43,8 @@ type OfferWatchSettingsMobileHostProps = {
 
 const MOBILE_MEDIA_QUERY = '(max-width: 1023px)';
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 /** Keep a view's entry origin in the versioned browser history marker. */
 function markerFor(
   origin: OfferWatchMobileHistory['origin'],
@@ -59,7 +61,8 @@ export default function OfferWatchSettingsMobileHost({
   onOpenDesktop,
 }: OfferWatchSettingsMobileHostProps) {
   const [marker, setMarker] = useState<OfferWatchMobileHistory | null>(null);
-  // Vsúvanie platí len pre otvorenie ťuknutím; obnova po načítaní, kroku vpred alebo zmene okna sa neanimuje.
+  // Vsúvanie zboku platí len pre otvorenie ťuknutím na výsledkoch; z Nastavení sa obrazovka nehýbe (panel
+  // Nastavení sa odsunie nad ňou) a obnova po načítaní, kroku vpred alebo zmene okna sa neanimuje.
   const [slideIn, setSlideIn] = useState(false);
   const markerRef = useRef<OfferWatchMobileHistory | null>(null);
   const returnToSettingsRef = useRef(onReturnToSettings);
@@ -87,7 +90,9 @@ export default function OfferWatchSettingsMobileHost({
 
   const isOpen = marker !== null;
 
-  useEffect(() => {
+  // Layout efekt, nie pasívny: rodič podľa toho zatvára a otvára panel Nastavení. Pri Späť by pasívny efekt nechal
+  // jedno vykreslenie, v ktorom už nie je obrazovka a panel sa ešte neotvoril (zablikala by stránka pod nimi).
+  useIsomorphicLayoutEffect(() => {
     openChangeRef.current?.(isOpen);
   }, [isOpen]);
 
@@ -183,7 +188,7 @@ export default function OfferWatchSettingsMobileHost({
       OFFER_WATCH_SETTINGS_PATH,
     );
     markerRef.current = nextMarker;
-    setSlideIn(true);
+    setSlideIn(origin === 'results');
     setMarker(nextMarker);
   }, []);
 
@@ -327,6 +332,7 @@ export default function OfferWatchSettingsMobileHost({
           key='offer-watch-mobile'
           view={marker.view}
           slideIn={slideIn}
+          placement={marker.origin === 'settings' ? 'under-settings' : 'over-app'}
           onBack={navigateBack}
           onPushView={pushView}
         />

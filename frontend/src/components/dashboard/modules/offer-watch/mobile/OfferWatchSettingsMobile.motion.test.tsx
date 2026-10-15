@@ -45,7 +45,7 @@ jest.mock('../../../hooks/useVisualViewportBounds', () => ({
   useVisualViewportBounds: () => null,
 }));
 
-function renderScreen(slideIn?: boolean) {
+function renderScreen(slideIn?: boolean, placement?: 'over-app' | 'under-settings') {
   jest.mocked(useOfferWatches).mockReturnValue({
     watches: [],
     isLoading: false,
@@ -63,6 +63,7 @@ function renderScreen(slideIn?: boolean) {
       onBack={jest.fn()}
       onPushView={jest.fn()}
       slideIn={slideIn}
+      placement={placement}
     />,
   );
   return screen.getByTestId('offer-watch-mobile-screen');
@@ -301,5 +302,45 @@ describe('OfferWatchSettingsMobile – pohyb', () => {
 
     expect(root).toHaveAttribute('role', 'dialog');
     expect(root).toHaveAttribute('aria-modal', 'true');
+  });
+});
+
+describe('OfferWatchSettingsMobile – pod panelom Nastavení', () => {
+  it('sits under the Settings panel and its backdrop, so the panel can slide away over it', () => {
+    const root = renderScreen(false, 'under-settings');
+
+    // Panel Nastavení má `z-50` a jeho stmievač `z-40`; obrazovka je nad hornou lištou (`z-30`), no pod nimi.
+    expect(root.className).toContain('z-[35]');
+    expect(root.className).not.toContain('z-[9000]');
+  });
+
+  it('does not move: it is already in place when the panel slides away and has no exit slide', () => {
+    const root = renderScreen(false, 'under-settings');
+
+    expect(root).toHaveAttribute('data-motion-initial', json({ x: 0 }));
+    expect(root).toHaveAttribute('data-motion-animate', json({ x: 0 }));
+    expect(root).not.toHaveAttribute('data-motion-exit');
+  });
+
+  it('never slides in from the side, even when a slide is requested', () => {
+    const root = renderScreen(true, 'under-settings');
+
+    expect(root).toHaveAttribute('data-motion-initial', json({ x: 0 }));
+    expect(root).not.toHaveAttribute('data-motion-exit');
+  });
+
+  it('stays a window over the whole app when it was not opened from the Settings', () => {
+    const root = renderScreen(true, 'over-app');
+
+    expect(root.className).toContain('z-[9000]');
+    expect(root.className).not.toContain('z-[35]');
+    expect(root).toHaveAttribute('data-motion-initial', json({ x: '100%' }));
+    expect(root).toHaveAttribute('data-motion-exit', json({ x: '100%', pointerEvents: 'none' }));
+  });
+
+  it('is a window over the whole app by default', () => {
+    const root = renderScreen(false);
+
+    expect(root.className).toContain('z-[9000]');
   });
 });

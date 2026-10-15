@@ -10,9 +10,15 @@ jest.mock('../hooks/useMobileViewportHeight', () => ({
   useMobileViewportHeight: () => null,
 }));
 
+/** Vlastnosti, s akými sa vykreslil každý Sidebar (mobilný aj desktopový), v poradí vykreslení. */
+const mockSidebarCalls: Array<{ isMobile?: boolean; isOpen?: boolean }> = [];
+
 jest.mock('../Sidebar', () => ({
   __esModule: true,
-  default: () => null,
+  default: (props: { isMobile?: boolean; isOpen?: boolean }) => {
+    mockSidebarCalls.push(props);
+    return null;
+  },
 }));
 
 jest.mock('../RightSidebar', () => ({
@@ -47,13 +53,13 @@ jest.mock('../modules/offer-watch/mobile/OfferWatchSettingsMobileHost', () => ({
 
 const noop = () => {};
 
-function renderLayout() {
+function renderLayout(isMobileMenuOpen = false) {
   return render(
     <DashboardLayout
       activeModule='home'
       activeRightItem=''
       isRightSidebarOpen={false}
-      isMobileMenuOpen={false}
+      isMobileMenuOpen={isMobileMenuOpen}
       onModuleChange={noop}
       onLogout={noop}
       onRightSidebarClose={noop}
@@ -71,7 +77,41 @@ function renderLayout() {
   );
 }
 
+/** Či je mobilný panel Nastavení práve otvorený (posledné vykreslenie mobilného Sidebaru). */
+function mobileSettingsPanelIsOpen(): boolean | undefined {
+  const calls = mockSidebarCalls.filter((props) => props.isMobile);
+  return calls[calls.length - 1]?.isOpen;
+}
+
 describe('DashboardLayout mobile Offer Watch overlay', () => {
+  beforeEach(() => {
+    mockSidebarCalls.length = 0;
+  });
+
+  it('slides the Settings panel away while the overlay is open and brings it back after close, like the other rows', () => {
+    renderLayout(true);
+    expect(mobileSettingsPanelIsOpen()).toBe(true);
+
+    // Rovnako ako pri riadku „Jazyk“: panel Nastavení sa zasunie doľava a pod ním ostane obrazovka riadka.
+    fireEvent.click(screen.getByRole('button', { name: 'open watches' }));
+    expect(mobileSettingsPanelIsOpen()).toBe(false);
+
+    // Späť: panel sa vráti zľava.
+    fireEvent.click(screen.getByRole('button', { name: 'close watches' }));
+    expect(mobileSettingsPanelIsOpen()).toBe(true);
+  });
+
+  it('does not open the Settings panel for an overlay that was not entered from it', () => {
+    renderLayout(false);
+    expect(mobileSettingsPanelIsOpen()).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'open watches' }));
+    expect(mobileSettingsPanelIsOpen()).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'close watches' }));
+    expect(mobileSettingsPanelIsOpen()).toBe(false);
+  });
+
   it('hides the bottom navigation while the overlay is open and restores it after close', () => {
     renderLayout();
 
