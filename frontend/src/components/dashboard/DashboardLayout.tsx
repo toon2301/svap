@@ -14,6 +14,7 @@ import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelCon
 import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
 import OfferWatchSettingsMobileHost from './modules/offer-watch/mobile/OfferWatchSettingsMobileHost';
 import { onFeedHomeNavigation } from './modules/feed/feedHomeNavigation';
+import { useFeedHomeItemClick } from './modules/feed/useFeedHomeItemClick';
 import { useDashboardMainKey } from './hooks/useDashboardMainKey';
 import { useDashboardWindowScrollReset } from './hooks/useDashboardWindowScrollReset';
 import { VIEWPORT_HEIGHT_CLASSES } from './viewportHeightClasses';
@@ -164,6 +165,10 @@ export default function DashboardLayout({
     [onModuleChange],
   );
 
+  // Klik na položku navigácie. Opätovný Domov na Nástenke ju pošle na vrch;
+  // žiadosť o prepnutie po zdieľaní (vyššie) ide mimo, lebo tá scrollovať nesmie.
+  const handleNavItemClick = useFeedHomeItemClick(activeModule, onModuleChange);
+
   // Zatvor vedľajší panel pri kliknutí mimo neho alebo pri stlačení Esc
   useEffect(() => {
     if (!isAuxiliaryPanelOpen) return;
@@ -310,14 +315,14 @@ export default function DashboardLayout({
         activeModule !== 'portfolio-detail' &&
         !(activeModule === 'messages' && isMobileMessageConversationOpen) &&
         !isMobileOfferDetailOpen && (
-        <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
+        <MobileTopNav activeItem={activeModule} onItemClick={handleNavItemClick} />
       )}
 
       {/* Mobile Sidebar (overlay). Kým je otvorená obrazovka sledovaných ponúk, panel je zasunutý: zoznam sa
           po ťuknutí na riadok odsunie doľava a pri Späť sa vráti zľava, rovnako ako pri ostatných riadkoch. */}
       <Sidebar
         activeItem={activeModule}
-        onItemClick={onModuleChange}
+        onItemClick={handleNavItemClick}
         onLogout={onLogout}
         isMobile
         isOpen={isMobileMenuOpen && !isOfferWatchMobileOpen}
@@ -342,7 +347,7 @@ export default function DashboardLayout({
         <div className="hidden lg:block h-screen overflow-hidden" data-sidebar="left">
           <Sidebar
             activeItem={activeSidebarItem}
-            onItemClick={onModuleChange}
+            onItemClick={handleNavItemClick}
             onLogout={onLogout}
             onSearchClick={onSidebarSearchClick}
             onNotificationsClick={onSidebarNotificationsClick}

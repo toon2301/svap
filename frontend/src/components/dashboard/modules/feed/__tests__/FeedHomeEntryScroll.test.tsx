@@ -341,20 +341,20 @@ describe('návrat na Nástenku ostáva návratom', () => {
   });
 });
 
-describe('priamy klik na Nástenku z profilu otvoreného z hlavičky príspevku', () => {
+describe('Domov po profile otvorenom z Nástenky', () => {
   /**
-   * Tá istá cesta ako test na Späť vyššie – snímka existuje – ale namiesto
-   * kroku späť príde výslovná voľba sekcie. Snímka patrí len návratu, takže
-   * sa nesmie použiť: Nástenka sa načíta nanovo a od vrchu.
+   * Preklik na profil z hlavičky príspevku zachytí snímku Nástenky (príspevky
+   * 1 a 2, pozícia 1500). Domov ju smie vrátiť: prvý klik obnoví zapamätané
+   * miesto bez volania servera, druhý klik ide na vrch.
    */
-  async function openAuthorProfileFromPostHeader() {
+  async function openProfileFromPostHeader(target: { id: number; slug: string }) {
     await mountDashboard();
     dashboardMain().scrollTop = 1500;
 
-    act(() => openUserProfile({ id: 21, slug: 'peter' }));
+    act(() => openUserProfile(target));
     await waitFor(() => expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument());
-    // Predpoklad scenára: snímka pre Späť naozaj vznikla. Bez nej by test
-    // prešiel aj so starou chybou.
+    // Predpoklad scenára: snímka naozaj vznikla. Bez nej by test prešiel
+    // aj so starou chybou.
     expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).not.toBeNull();
 
     // Používateľ doscrolluje profil na spodok.
@@ -365,24 +365,106 @@ describe('priamy klik na Nástenku z profilu otvoreného z hlavičky príspevku'
     mockedList.mockResolvedValue({ results: [post(5), post(6)], next: null });
   }
 
-  async function expectFreshFeed() {
-    expect(await screen.findByText('Príspevok 5')).toBeInTheDocument();
+  function storedEntry(): string | undefined {
+    const raw = window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY);
+    return raw ? JSON.parse(raw).entry : undefined;
+  }
+
+  async function expectRestoredFeed() {
+    expect(await screen.findByText('Príspevok 1')).toBeInTheDocument();
     await settle();
-    expect(screen.queryByText('Príspevok 1')).not.toBeInTheDocument();
-    expect(mockedList).toHaveBeenCalledTimes(1);
-    expect(dashboardMain().scrollTop).toBe(0);
+    await waitFor(() => expect(dashboardMain().scrollTop).toBe(1500));
+    expect(screen.queryByText('Príspevok 5')).not.toBeInTheDocument();
+    expect(mockedList).not.toHaveBeenCalled();
+    // Obnova je jednorazová.
     expect(window.sessionStorage.getItem(FEED_RETURN_STORAGE_KEY)).toBeNull();
   }
 
-  // Len desktop: na mobile je profil z hlavičky príspevku vždy `user-profile`,
-  // kde spodná navigácia chýba a hamburger otvára akcie profilu, nie menu.
-  // Von sa tam dá len šípkou alebo krokom späť – teda práve návratom.
-  it('loads the feed fresh at the top (sidebar Nástenka)', async () => {
-    await openAuthorProfileFromPostHeader();
+  function mobileHomeButton(): HTMLElement {
+    return document.querySelectorAll<HTMLElement>('[data-mobile-bottom-nav] button')[0];
+  }
+
+  it('desktop, foreign profile: the first Domov restores the remembered position', async () => {
+    await openProfileFromPostHeader({ id: 21, slug: 'peter' });
+    expect(storedEntry()).toBe('other-profile');
 
     act(() => sidebarItem('home').click());
 
-    await expectFreshFeed();
+    await expectRestoredFeed();
+  });
+
+  it('desktop, own profile: the first Domov restores the remembered position', async () => {
+    await openProfileFromPostHeader({ id: VIEWER_ID, slug: 'test-user' });
+    expect(storedEntry()).toBe('own-profile');
+
+    act(() => sidebarItem('home').click());
+
+    await expectRestoredFeed();
+  });
+
+  it('desktop: the second Domov (already on the feed) goes to the top and adds no history entry', async () => {
+    await openProfileFromPostHeader({ id: 21, slug: 'peter' });
+    act(() => sidebarItem('home').click());
+    await expectRestoredFeed();
+
+    dashboardMain().scrollTop = 900;
+    const historyLength = window.history.length;
+    act(() => sidebarItem('home').click());
+    await settle();
+
+    expect(dashboardMain().scrollTop).toBe(0);
+    expect(window.history.length).toBe(historyLength);
+    // Druhý klik nič nenačítava zo servera – ide len o scroll.
+    expect(mockedList).not.toHaveBeenCalled();
+  });
+
+  it('desktop: a quick double click on Domov is not undone by the pending restore', async () => {
+    await openProfileFromPostHeader({ id: 21, slug: 'peter' });
+
+    act(() => sidebarItem('home').click());
+    await screen.findByText('Príspevok 1');
+    // Bez čakania: obnova ešte nedobehla (zapisuje sa o dva snímky neskôr).
+    act(() => sidebarItem('home').click());
+    await settle();
+
+    expect(dashboardMain().scrollTop).toBe(0);
+  });
+
+  it('mobile, own profile (bottom bar): the first Domov restores the remembered position', async () => {
+    mockIsMobile = true;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    await openProfileFromPostHeader({ id: VIEWER_ID, slug: 'test-user' });
+    expect(storedEntry()).toBe('own-profile');
+    // Vlastný profil má spodnú lištu s Domov (cudzí nie).
+    await waitFor(() => expect(mobileHomeButton()).toBeTruthy());
+
+    act(() => mobileHomeButton().click());
+
+    await expectRestoredFeed();
+  });
+
+  it('mobile: the second Domov in the bottom bar goes to the top', async () => {
+    mockIsMobile = true;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    await openProfileFromPostHeader({ id: VIEWER_ID, slug: 'test-user' });
+    await waitFor(() => expect(mobileHomeButton()).toBeTruthy());
+    act(() => mobileHomeButton().click());
+    await expectRestoredFeed();
+
+    dashboardMain().scrollTop = 900;
+    act(() => mobileHomeButton().click());
+    await settle();
+
+    expect(dashboardMain().scrollTop).toBe(0);
+  });
+
+  it('mobile, foreign profile: the snapshot is remembered for Back only (no bottom bar, no Domov)', async () => {
+    mockIsMobile = true;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    await openProfileFromPostHeader({ id: 21, slug: 'peter' });
+
+    expect(storedEntry()).toBe('other-profile');
+    expect(document.querySelector('[data-mobile-bottom-nav]')).toBeNull();
   });
 });
 

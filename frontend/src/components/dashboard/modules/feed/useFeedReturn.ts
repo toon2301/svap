@@ -12,6 +12,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { FeedPost } from '@/lib/feedApi';
+import { onFeedScrollTop } from './feedHomeReturn';
 import { onFeedReturnCapture, saveFeedReturn } from './feedReturnState';
 
 /**
@@ -50,12 +51,13 @@ export function useFeedReturn({
 
   useEffect(
     () =>
-      onFeedReturnCapture(() => {
+      onFeedReturnCapture((entry) => {
         const { posts, nextUrl } = getPostsRef.current();
         saveFeedReturn({
           posts,
           nextUrl,
           scrollTop: dashboardMain()?.scrollTop ?? 0,
+          entry,
         });
       }),
     [],
@@ -127,9 +129,17 @@ export function useFeedReturn({
       });
     });
 
-    return () => {
+    const cancelPendingRestore = () => {
       cancelAnimationFrame(outer);
       if (inner) cancelAnimationFrame(inner);
+    };
+    // Rýchly druhý klik na Domov: používateľ chce na vrch, obnova ho nesmie
+    // vrátiť späť na uloženú pozíciu.
+    const stopListening = onFeedScrollTop(cancelPendingRestore);
+
+    return () => {
+      stopListening();
+      cancelPendingRestore();
     };
   }, [restoredPostsRendered, restoredScrollTop]);
 }

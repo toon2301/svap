@@ -16,6 +16,7 @@ import { withMobileSettingsOrigin } from './mobileSettingsOrigin';
 import { useDesktopSettingsOriginRestore } from './useDesktopSettingsOriginRestore';
 import { useSkillsRouteSynchronization } from './useSkillsRouteSynchronization';
 import { currentBrowserUrl } from '@/utils/currentBrowserUrl';
+import { settleFeedReturnOnModuleChange } from '../modules/feed/feedHomeReturn';
 import { clearFeedReturn } from '../modules/feed/feedReturnState';
 import { markProfileFreshEntry } from '../modules/profile/profileFreshEntry';
 import { withProfileOriginEntry } from '../modules/profile/profileOriginHistory';
@@ -116,17 +117,15 @@ export function useDashboardNavigation({
 
   // Hlavná navigačná logika pre zmenu modulov
   const handleMainModuleChange = useCallback((moduleId: string) => {
-    // Každá voľba sekcie v navigácii – aj voľba samotnej Nástenky – zahodí
-    // návratovú snímku. Snímka patrí VÝHRADNE návratu (Späť, appková šípka)
-    // z profilu, ponuky/dopytu alebo portfólia otvoreného z Nástenky, a ten
-    // ide cez históriu (`syncModuleFromPath`), nie sem. Bez tohto by snímka
-    // prežila odbočku do Štatistík či Správ a priamy klik na „Nástenka" by
-    // obnovil starý zoznam aj starú pozíciu namiesto čistého vstupu.
+    // Návratová snímka Nástenky: Späť (história) ju obnovuje sám, tu sa
+    // rozhoduje o voľbe sekcie. Domov ju obnoví, ak ju smie použiť (vstup z
+    // vlastného či cudzieho profilu), opätovný Domov a vlastný profil z menu
+    // ju zahodia, ostatné sekcie ju nechajú – viď `settleFeedReturnOnModuleChange`.
     //
     // Prepnutie na `profile` bez platného identifikátora sa NEUSKUTOČNÍ
     // (vetvy nižšie sa vrátia bez zmeny), takže by sa snímka zahodila za nič.
     const changesModule = moduleId !== 'profile' || profileIdentifier(user) != null;
-    if (changesModule) clearFeedReturn();
+    if (changesModule) settleFeedReturnOnModuleChange(moduleId, activeModule);
 
     // „Profil" v navigácii je nový vstup do vlastného profilu – od vrchu, na
     // Ponukách. Len keď sa prepnutie naozaj uskutoční (vetvy nižšie sa bez
@@ -244,8 +243,11 @@ export function useDashboardNavigation({
       } else if (moduleId === 'settings' || isSettingsSectionModule(moduleId)) {
         historyState = withMobileSettingsOrigin(null);
       }
-      // Najprv zmeň URL v browseri (to funguje vždy)
-      window.history.pushState(historyState, '', url);
+      // Najprv zmeň URL v browseri (to funguje vždy). Opätovný Domov na
+      // Nástenke, ktorá už stojí na svojej adrese, nepridáva ďalší záznam.
+      const isRepeatedHome =
+        moduleId === 'home' && activeModule === 'home' && currentBrowserUrl(url) === url;
+      if (!isRepeatedHome) window.history.pushState(historyState, '', url);
     }
 
     handleModuleChange(moduleId);
@@ -280,6 +282,8 @@ export function useDashboardNavigation({
     skillId: number,
     slug?: string | null,
   ) => {
+    // Profil z vyhľadávania je nový reťazec, nie vstup z Nástenky.
+    clearFeedReturn();
     setViewedUserId(userId);
     setViewedUserSlug(slug ?? null);
     setViewedUserSummary(null);
