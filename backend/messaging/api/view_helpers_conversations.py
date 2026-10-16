@@ -126,9 +126,28 @@ def _serialize_pinned_message(*, request, conversation: Conversation):
 
 
 def _serialize_conversation_for_user(*, request, conversation_id: int):
+    """
+    Serializuje konverzáciu v tvare položky zoznamu pre prihláseného používateľa.
+
+    Najprv hľadá medzi konverzáciami, ktoré používateľ vidí v zozname (skupiny, prijaté
+    a ním založené). Prichádzajúca neprijatá žiadosť o správu tam zámerne nie je, preto
+    ju v zálohe hľadá aj medzi prichádzajúcimi žiadosťami toho istého používateľa –
+    príjemca ju inak otvorí (správy číta), ale hlavička by nepoznala druhú stranu.
+    Cudzia konverzácia ani skrytá konverzácia sa tým nikomu nezverejní: obe cesty
+    používajú rovnaké obmedzenia na účastníka a skrytie. Bez zhody vráti `None`.
+    """
     conversation = (
         _conversation_accessible_queryset_for_user(request.user).filter(id=conversation_id).first()
     )
+    if conversation is None:
+        conversation = (
+            _conversation_accessible_queryset_for_user(
+                request.user,
+                only_incoming_requests=True,
+            )
+            .filter(id=conversation_id)
+            .first()
+        )
     if conversation is None:
         return None
     return ConversationListItemSerializer(conversation, context={"request": request}).data

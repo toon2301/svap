@@ -108,6 +108,60 @@ describe('DraftConversationDetail', () => {
     });
   });
 
+  it('shows the other side in a header that opens their profile (desktop)', async () => {
+    (openConversation as jest.Mock).mockResolvedValue({
+      ...draftResponse,
+      other_user: { id: 42, display_name: 'Test User', slug: 'test-user', avatar_url: null },
+    });
+    const opened: unknown[] = [];
+    const listener = (event: Event) =>
+      opened.push((event as CustomEvent<{ identifier?: unknown }>).detail?.identifier);
+    window.addEventListener('goToUserProfile', listener);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+    const trigger = await screen.findByTestId('draft-conversation-header-trigger');
+    fireEvent.click(trigger);
+    window.removeEventListener('goToUserProfile', listener);
+
+    expect(within(trigger).getByText('Test User')).toBeInTheDocument();
+    expect(opened).toEqual(['test-user']);
+  });
+
+  it('opens the profile by id when the other side has no slug (desktop)', async () => {
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+    const opened: unknown[] = [];
+    const listener = (event: Event) =>
+      opened.push((event as CustomEvent<{ identifier?: unknown }>).detail?.identifier);
+    window.addEventListener('goToUserProfile', listener);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+    fireEvent.click(await screen.findByTestId('draft-conversation-header-trigger'));
+    window.removeEventListener('goToUserProfile', listener);
+
+    expect(opened).toEqual(['42']);
+  });
+
+  it('does not let a deleted account be opened from the header (desktop)', async () => {
+    (openConversation as jest.Mock).mockResolvedValue({
+      ...draftResponse,
+      other_user: { id: 42, display_name: 'Zmazaný', is_deleted: true },
+    });
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    expect(await screen.findByTestId('draft-conversation-header-trigger')).toBeDisabled();
+  });
+
+  it('has no header on mobile (the top bar of the dashboard shows the other side there)', async () => {
+    useIsMobile.mockReturnValue(true);
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+    await screen.findByRole('textbox');
+
+    expect(screen.queryByTestId('draft-conversation-header')).not.toBeInTheDocument();
+  });
+
   it('suppresses passive refreshes after a forbidden send error', async () => {
     (openConversation as jest.Mock).mockResolvedValue(draftResponse);
     (sendDirectMessage as jest.Mock).mockRejectedValueOnce({

@@ -4,8 +4,10 @@
  * Hook drží stav `mobileMessagePeer` / `mobileMessageGroup` a dopĺňa ho efektom:
  * mimo modulu Správy ho vynuluje, pri cieľovom používateľovi (`?targetUserId`)
  * otvorí konverzáciu s ním, inak podľa ID konverzácie hľadá v zozname konverzácií
- * a potom v žiadostiach o správu. Odpoveď, ktorá príde po zmene vstupov alebo po
- * odchode zo Správ, sa zahodí.
+ * potom v žiadostiach o správu a nakoniec v samotnej konverzácii (zoznamy majú len
+ * prvú stránku). Odpoveď, ktorá príde po zmene vstupov alebo po odchode zo Správ,
+ * sa zahodí. Partner patrí ku konkrétnej konverzácii a po jej zmene sa nezobrazuje
+ * ďalej (výnimka: rozpísaná konverzácia s X, ktorá sa nahradí adresou `?conversationId=`).
  */
 
 import { act, renderHook, type RenderHookResult } from '@testing-library/react';
@@ -15,10 +17,12 @@ import { useMobileMessagePeer } from '../useMobileMessagePeer';
 const mockOpenConversation = jest.fn();
 const mockListConversations = jest.fn();
 const mockListMessageRequests = jest.fn();
+const mockListMessages = jest.fn();
 jest.mock('../../modules/messages/messagingApi', () => ({
   openConversation: (...args: unknown[]) => mockOpenConversation(...args),
   listConversations: (...args: unknown[]) => mockListConversations(...args),
   listMessageRequests: (...args: unknown[]) => mockListMessageRequests(...args),
+  listMessages: (...args: unknown[]) => mockListMessages(...args),
 }));
 
 type HookInput = Parameters<typeof useMobileMessagePeer>[0];
@@ -63,6 +67,16 @@ const group = (over: Partial<ConversationListItem> = {}): ConversationListItem =
     avatar_members: [anna(), boris()],
     ...over,
   });
+
+/** Odpoveď `listMessages`: nás zaujíma len pole `conversation`. */
+const messagesPage = (conversationOrNull: ConversationListItem | null) => ({
+  results: [],
+  nextPage: null,
+  previousPage: null,
+  peerLastReadAt: null,
+  pinnedMessage: null,
+  conversation: conversationOrNull,
+});
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -112,6 +126,8 @@ beforeEach(() => {
   mockOpenConversation.mockReset().mockReturnValue(new Promise(() => {}));
   mockListConversations.mockReset().mockReturnValue(new Promise(() => {}));
   mockListMessageRequests.mockReset().mockReturnValue(new Promise(() => {}));
+  // Detail konverzácie bez konverzácie v odpovedi = poslednú možnosť nikto nepozná.
+  mockListMessages.mockReset().mockResolvedValue(messagesPage(null));
   translate.mockClear();
 });
 
@@ -884,5 +900,228 @@ describe('rovnaké vstupy', () => {
 
     expect(mockListConversations).toHaveBeenCalledTimes(1);
     expect(peerOf(mounted)).toEqual(anna());
+  });
+});
+
+describe('konverzácia mimo prvej stránky zoznamov (detail konverzácie)', () => {
+  it('keď nie je ani v zozname, ani v žiadostiach, partnera dá detail konverzácie', async () => {
+    mockListConversations.mockResolvedValue([conversation({ id: 6, other_user: boris() })]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockResolvedValue(messagesPage(conversation({ id: 7, other_user: anna() })));
+
+    const mounted = await mountHook({ selectedConversationId: 7 });
+
+    expect(mockListMessages).toHaveBeenCalledTimes(1);
+    expect(mockListMessages).toHaveBeenCalledWith(7, 1);
+    expect(peerOf(mounted)).toEqual(anna());
+    expect(groupOf(mounted)).toBeNull();
+  });
+
+  it('skupinu mimo prvej stránky pozná detail konverzácie tiež', async () => {
+    mockListConversations.mockResolvedValue([]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockResolvedValue(messagesPage(group({ id: 9 })));
+
+    const mounted = await mountHook({ selectedConversationId: 9 });
+
+    expect(peerOf(mounted)).toBeNull();
+    expect(groupOf(mounted)).toEqual({ name: 'Kolegovia', avatarMembers: [anna(), boris()] });
+  });
+
+  it('detail sa nevolá, keď konverzáciu nájde zoznam', async () => {
+    mockListConversations.mockResolvedValue([conversation({ id: 7, other_user: anna() })]);
+
+    await mountHook({ selectedConversationId: 7 });
+
+    expect(mockListMessages).not.toHaveBeenCalled();
+  });
+
+  it('detail sa nevolá, keď konverzáciu nájde žiadosť o správu', async () => {
+    mockListConversations.mockResolvedValue([]);
+    mockListMessageRequests.mockResolvedValue([conversation({ id: 7, other_user: anna() })]);
+
+    await mountHook({ selectedConversationId: 7 });
+
+    expect(mockListMessages).not.toHaveBeenCalled();
+  });
+
+  it('detail bez konverzácie v odpovedi nechá partnera aj skupinu prázdne', async () => {
+    mockListConversations.mockResolvedValue([]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockResolvedValue(messagesPage(null));
+
+    const mounted = await mountHook({ selectedConversationId: 7 });
+
+    expect(peerOf(mounted)).toBeNull();
+    expect(groupOf(mounted)).toBeNull();
+  });
+
+  it('zlyhanie detailu (napr. 404) nechá partnera prázdneho a nikoho iného neukáže', async () => {
+    mockListConversations.mockResolvedValue([]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockRejectedValue(new Error('404'));
+
+    const mounted = await mountHook({ selectedConversationId: 7 });
+
+    expect(peerOf(mounted)).toBeNull();
+    expect(groupOf(mounted)).toBeNull();
+  });
+
+  it('neskorá odpoveď detailu po zmene konverzácie sa zahodí', async () => {
+    const detail = deferred<ReturnType<typeof messagesPage>>();
+    mockListConversations
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([conversation({ id: 8, other_user: boris() })]);
+    mockListMessageRequests.mockResolvedValueOnce([]);
+    mockListMessages.mockReturnValueOnce(detail.promise);
+    const mounted = await mountHook({ selectedConversationId: 7 });
+
+    await update(mounted, { selectedConversationId: 8 });
+    expect(peerOf(mounted)).toEqual(boris());
+    await settle(() => detail.resolve(messagesPage(conversation({ id: 7, other_user: anna() }))));
+
+    expect(peerOf(mounted)).toEqual(boris());
+  });
+
+  it('neskorá odpoveď detailu po odchode zo Správ partnera nevráti', async () => {
+    const detail = deferred<ReturnType<typeof messagesPage>>();
+    mockListConversations.mockResolvedValue([]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockReturnValue(detail.promise);
+    const mounted = await mountHook({ selectedConversationId: 7 });
+
+    await update(mounted, { activeModule: 'home', selectedConversationId: 7 });
+    await settle(() => detail.resolve(messagesPage(conversation({ id: 7, other_user: anna() }))));
+
+    expect(peerOf(mounted)).toBeNull();
+  });
+});
+
+describe('partner patrí ku konkrétnej konverzácii', () => {
+  it('po zmene konverzácie sa predošlý partner neukazuje, kým nepríde nový', async () => {
+    const listing = deferred<ConversationListItem[]>();
+    mockListConversations
+      .mockResolvedValueOnce([conversation({ id: 6, other_user: anna() })])
+      .mockReturnValueOnce(listing.promise);
+    const mounted = await mountHook({ selectedConversationId: 6 });
+    expect(peerOf(mounted)).toEqual(anna());
+
+    await update(mounted, { selectedConversationId: 7 });
+
+    // Nesprávny človek sa nesmie ukázať ani na chvíľu.
+    expect(peerOf(mounted)).toBeNull();
+    await settle(() => listing.resolve([conversation({ id: 7, other_user: boris() })]));
+    expect(peerOf(mounted)).toEqual(boris());
+  });
+
+  it('po zmene konverzácie sa predošlá skupina neukazuje, kým nepríde nová', async () => {
+    const listing = deferred<ConversationListItem[]>();
+    mockListConversations.mockResolvedValueOnce([group()]).mockReturnValueOnce(listing.promise);
+    const mounted = await mountHook({ selectedConversationId: 9 });
+    expect(groupOf(mounted)).not.toBeNull();
+
+    await update(mounted, { selectedConversationId: 7 });
+
+    expect(groupOf(mounted)).toBeNull();
+  });
+
+  it('po zmene cieľového používateľa sa predošlý partner neukazuje, kým nepríde nový', async () => {
+    const opening = deferred<ConversationListItem>();
+    mockOpenConversation
+      .mockResolvedValueOnce(conversation({ other_user: anna() }))
+      .mockReturnValueOnce(opening.promise);
+    const mounted = await mountHook({ targetUserIdFromMessagesQuery: 42 });
+    expect(peerOf(mounted)).toEqual(anna());
+
+    await update(mounted, { targetUserIdFromMessagesQuery: 43 });
+
+    expect(peerOf(mounted)).toBeNull();
+    await settle(() => opening.resolve(conversation({ other_user: boris() })));
+    expect(peerOf(mounted)).toEqual(boris());
+  });
+
+  it('prechod z cieľového používateľa na ID konverzácie nechá jeho partnera, kým sa nepotvrdí', async () => {
+    const listing = deferred<ConversationListItem[]>();
+    mockOpenConversation.mockResolvedValue(conversation({ other_user: anna() }));
+    mockListConversations.mockReturnValue(listing.promise);
+    const mounted = await mountHook({ targetUserIdFromMessagesQuery: 42 });
+    expect(peerOf(mounted)).toEqual(anna());
+
+    // Rozpísaná konverzácia s Annou sa po odoslaní správy nahradí adresou s ID.
+    await update(mounted, { selectedConversationId: 7, targetUserIdFromMessagesQuery: null });
+    expect(peerOf(mounted)).toEqual(anna());
+
+    await settle(() => listing.resolve([conversation({ id: 7, other_user: anna() })]));
+    expect(peerOf(mounted)).toEqual(anna());
+  });
+
+  it('prechod na ID konverzácie nahradí nechaného partnera tým, čo potvrdí zoznam', async () => {
+    mockOpenConversation.mockResolvedValue(conversation({ other_user: anna() }));
+    mockListConversations.mockResolvedValue([conversation({ id: 7, other_user: boris() })]);
+    const mounted = await mountHook({ targetUserIdFromMessagesQuery: 42 });
+
+    await update(mounted, { selectedConversationId: 7, targetUserIdFromMessagesQuery: null });
+
+    expect(peerOf(mounted)).toEqual(boris());
+  });
+
+  it('prechod na ID konverzácie, ktorú nikto nepotvrdí, nenechá partnera zobrazeného', async () => {
+    mockOpenConversation.mockResolvedValue(conversation({ other_user: anna() }));
+    mockListConversations.mockResolvedValue([]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockResolvedValue(messagesPage(null));
+    const mounted = await mountHook({ targetUserIdFromMessagesQuery: 42 });
+
+    await update(mounted, { selectedConversationId: 7, targetUserIdFromMessagesQuery: null });
+
+    expect(peerOf(mounted)).toBeNull();
+  });
+
+  it('partner s iným ID než cieľ sa pri prechode na ID konverzácie nenecháva', async () => {
+    const listing = deferred<ConversationListItem[]>();
+    // Server vrátil pre cieľ 42 iného človeka (ID 43): tomu sa nedôveruje.
+    mockOpenConversation.mockResolvedValue(conversation({ other_user: boris() }));
+    mockListConversations.mockReturnValue(listing.promise);
+    const mounted = await mountHook({ targetUserIdFromMessagesQuery: 42 });
+    expect(peerOf(mounted)).toEqual(boris());
+
+    await update(mounted, { selectedConversationId: 7, targetUserIdFromMessagesQuery: null });
+
+    expect(peerOf(mounted)).toBeNull();
+  });
+
+  it('prechod z ID konverzácie na cieľového používateľa nenechá starého partnera', async () => {
+    const opening = deferred<ConversationListItem>();
+    mockListConversations.mockResolvedValue([conversation({ id: 7, other_user: anna() })]);
+    mockOpenConversation.mockReturnValue(opening.promise);
+    const mounted = await mountHook({ selectedConversationId: 7 });
+    expect(peerOf(mounted)).toEqual(anna());
+
+    await update(mounted, { targetUserIdFromMessagesQuery: 43 });
+
+    expect(peerOf(mounted)).toBeNull();
+  });
+
+  it('zmena prekladu bez zmeny konverzácie partnera nezruší', async () => {
+    mockListConversations.mockResolvedValue([conversation({ id: 7, other_user: anna() })]);
+    const mounted = await mountHook({ selectedConversationId: 7 });
+    expect(peerOf(mounted)).toEqual(anna());
+
+    mockListConversations.mockReturnValue(new Promise(() => {}));
+    await update(mounted, { selectedConversationId: 7, t: jest.fn((key: string) => key) });
+
+    expect(peerOf(mounted)).toEqual(anna());
+  });
+
+  it('návrat do Správ po odchode začne bez starého partnera', async () => {
+    mockListConversations
+      .mockResolvedValueOnce([conversation({ id: 7, other_user: anna() })])
+      .mockReturnValueOnce(new Promise(() => {}));
+    const mounted = await mountHook({ selectedConversationId: 7 });
+    await update(mounted, { activeModule: 'home', selectedConversationId: 7 });
+
+    await update(mounted, { activeModule: 'messages', selectedConversationId: 7 });
+
+    expect(peerOf(mounted)).toBeNull();
   });
 });
