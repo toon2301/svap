@@ -10,6 +10,7 @@ import { useSearchState } from './search/hooks/useSearchState';
 import { useSearchApi } from './search/hooks/useSearchApi';
 import { useRecentSearches } from './search/hooks/useRecentSearches';
 import { useSuggestions } from './search/hooks/useSuggestions';
+import { SearchDiagnosticsPanel } from './search/diagnostics/SearchDiagnosticsPanel';
 
 export { invalidateSearchCacheForUser } from './search/hooks/useSearchApi';
 
@@ -21,10 +22,10 @@ export default function SearchModule({
   isActive = true,
   onClose,
 }: SearchModuleProps) {
-  const { t } = useLanguage();
+  const { t, country } = useLanguage();
 
   const searchState = useSearchState();
-  const searchApi = useSearchApi({ searchState, user });
+  const searchApi = useSearchApi({ searchState, user, isActive });
   const recentSearches = useRecentSearches({ user, searchState });
   const suggestions = useSuggestions({ user, searchState, onSkillClick, enabled: isActive });
   const { handleSearch } = searchApi;
@@ -164,6 +165,8 @@ export default function SearchModule({
           />
 
           <div className={isOverlay ? 'flex-1 overflow-y-auto min-h-0 px-4 sm:px-5 elegant-scrollbar' : 'px-4 sm:px-5'}>
+            <SearchDiagnosticsPanel diagnostics={searchApi.diagnostics} country={country}
+              showSkills={searchState.showSkills} showUsers={searchState.showUsers} />
             <SearchResults
               user={user}
               searchState={searchState}

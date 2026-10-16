@@ -6,6 +6,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
 import { type SearchResults, type SearchSkill, type SearchUserResult } from '../types';
 import { type SearchStateProps } from './useSearchState';
+import { diagnosticCountry, diagnosticHttpStatus } from '../diagnostics/searchDiagnostics';
+import { useSearchDiagnostics, type SearchDiagnostics } from '../diagnostics/useSearchDiagnostics';
 
 // Globalna cache vysledkov vyhladavania v pamati - prezije unmount/mount SearchModule.
 const globalSearchResultsCache = new Map<string, SearchResults>();
@@ -16,11 +18,13 @@ export interface SearchApiProps {
   hasResults: boolean;
   hasPanelResults: boolean;
   invalidateCache: () => void;
+  diagnostics: SearchDiagnostics;
 }
 
 interface UseSearchApiParams {
   searchState: SearchStateProps;
   user?: { id: number } | null;
+  isActive?: boolean;
 }
 
 interface SearchApiErrorPayload {
@@ -31,10 +35,12 @@ interface SearchApiErrorPayload {
  * Custom hook pre API volania a cache management.
  * V production verzii nepise citlive hladane vyrazy ani plne response do logov.
  */
-export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchApiProps {
+export function useSearchApi({ searchState, user, isActive = true }: UseSearchApiParams): SearchApiProps {
   const { t, country } = useLanguage();
   const searchCacheRef = useRef<Map<string, SearchResults>>(globalSearchResultsCache);
   const latestRequestIdRef = useRef(0);
+  const diagnostics = useSearchDiagnostics(user?.id, isActive);
+  const { begin: beginDiagnostics } = diagnostics;
 
   const {
     searchQuery,
@@ -106,6 +112,14 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
       }
 
       const q = searchQuery.trim();
+      const reportDiagnostics = beginDiagnostics({
+        country: diagnosticCountry(country),
+        queryLength: q.length,
+        offerType,
+        onlyMyLocation,
+        priceMinSet: Boolean(priceMin.trim()),
+        priceMaxSet: Boolean(priceMax.trim()),
+      });
 
       if (searchAbortControllerRef.current) {
         searchAbortControllerRef.current.abort();
@@ -116,6 +130,7 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
       latestRequestIdRef.current = requestId;
 
       if (!q) {
+        reportDiagnostics({ source: 'none', state: 'empty' });
         setResults({ skills: [], users: [] });
         setError(null);
         setHasSearched(false);
@@ -135,6 +150,8 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
 
       const cached = searchCacheRef.current.get(cacheKey);
       if (cached) {
+        reportDiagnostics({ source: 'cache', state: 'complete',
+          offersCount: cached.skills.length, usersCount: cached.users.length });
         setResults(cached);
         setIsSearching(false);
         setError(null);
@@ -150,6 +167,8 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
       setIsSearching(true);
       setError(null);
       setIsFromRecentSearch(false);
+
+      reportDiagnostics({ source: 'network', state: 'pending' });
 
       try {
         const params: Record<string, string> = {
@@ -179,6 +198,11 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
         const users = Array.isArray(data.users) ? (data.users as SearchUserResult[]) : [];
         const newResults: SearchResults = { skills, users };
 
+        reportDiagnostics({ source: 'network', state: 'complete',
+          httpStatus: diagnosticHttpStatus(response.status),
+          offersCount: skills.length, usersCount: users.length,
+          validCollections: Array.isArray(data.skills) && Array.isArray(data.users) });
+
         setResults(newResults);
         searchCacheRef.current.set(cacheKey, newResults);
         saveResultsToHistory(skills, users);
@@ -190,12 +214,16 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
         };
 
         if (apiError.name === 'CanceledError' || apiError.code === 'ERR_CANCELED') {
+          reportDiagnostics({ source: 'network', state: 'cancelled' });
           return;
         }
 
         if (requestId !== latestRequestIdRef.current) {
           return;
         }
+
+        reportDiagnostics({ source: 'network', state: 'error',
+          httpStatus: diagnosticHttpStatus(apiError.response?.status) });
 
         const responseError =
           typeof apiError.response?.data?.error === 'string'
@@ -240,6 +268,7 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
       searchAbortControllerRef,
       t,
       saveResultsToHistory,
+      beginDiagnostics,
     ],
   );
 
@@ -249,6 +278,7 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
     hasResults,
     hasPanelResults,
     invalidateCache,
+    diagnostics,
   };
 }
 

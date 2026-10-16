@@ -1,6 +1,6 @@
 # Svaply – spoločná evidencia nálezov a otvorených overení
 
-Aktualizované: 15. 10. 2026.
+Aktualizované: 16. 10. 2026.
 
 Tento súbor je pracovný zdroj pravdy pre túto spoluprácu. Nespoliehame sa len na
 pamäť chatu. Pri každom novom náleze treba používateľovi oznámiť, či odporúčame
@@ -51,6 +51,8 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 | OW-15 | Mobilný Jazyk: profilová ikona navyše a nadpis pod lištou | Manuálne a review uzavreté podľa používateľa 15. 10. | Oprava v d327b596 / zlúčenom PR #175. Používateľ potvrdil úspešné manuálne testy a čistú kontrolu; nerozpisuje všetky route/device scenáre samostatne. Oba jazykové vstupy majú spoločnú podmienku v MobileTopBar, jeden centrovaný mobilný titulok a žiadny quick-profile; desktop a jazykové handlery ostali zachované. Real-provider sada 79 PASS, spoločných 359 cielených a 6 059 plných FE PASS. Pôvodný živý baseline a coverage sú zachované v denníku; nový automatický nasadený E2E výsledok sa nevymýšľa. |
 | OW-16 | Mobilné Zobraziť všetko vo vyhľadávaní používa desktopové karty/flip | Lokálne implementované a automaticky overené; autorizovaný commit/push, potom review a nasadený retest | Obe vetvy používajú nový search-only responzívny adaptér. Desktop deleguje nezmenené props na pôvodnú kartu; mobil používa profilovú kartu, pásik/prvý tap a spodný detail/druhý tap, existujúce hodiny a fungujúci Like. Nepodporované review/contact CTA nepridáva. Profilová karta má nové voliteľné props s pôvodnými defaultmi a ochranu pred keydown z potomkov. Výnimka stránky využitá iba na 2 skutočné prepojovacie riadky (import + self-closing JSX názov); žiadne dátové/URL/filter zmeny. Mobilný stav sa resetuje pri zmene ID/dotazu/stránky alebo prechode na desktop. Inicializačný Like race zachytený a opravený pred odoslaním. Finálne 300 scoped PASS / 99,12 % statements / 95,65 % branches / 100 % functions+lines, vrátane celej legacy stránky s individuálnou výnimkou TEST-08; ostatných 5 súborov má každú metriku nad 95 %. Celý FE 430 sád / 6 221 PASS. Živý WebKit na starej verzii: 4 kontrolné PASS, 2 očakávané mobilné pre-deploy RED, 6 device SKIP. Nie je tvrdený nasadený PASS novej mobilnej vetvy. |
 | OW-17 | Desktopové vyhľadávanie: otvorený panel pohltí prvý klik na otočenie | Zoznam; odporúčaná samostatná oprava po OW-16, nie tichá zmena desktopu | Potvrdené na nezmenenom Railway pred nasadením OW-16. SearchLayout zatvára bočný panel pri document.mousedown, grid posunie kartu pred click. Zachytený mousedown na flip pri aria-hidden=false, žiadny click, panel sa stal aria-hidden=true a predná strana ostala; samostatný pokus po Escape s nulovou šírkou panelu otočil kartu prvým klikom. Ďalší pokus potvrdil posun x922→666 a funkčný druhý klik. Žiadne obsahové/Like zápisy. Nový desktopový E2E má výslovne zatvorený panel ako podmienku izolovanej kontroly karty; tým sa OW-17 neskrýva ani nepovažuje za opravené. SearchLayout ostáva bez zmeny. |
+| OW-18 | Rovnaká ponuka sa nájde v Safari, nie v PWA/PC v úvodnom paneli | Teraz iba schválená lokálna opt-in diagnostika; pravidlá vyhľadávania zatiaľ neopravovať | PC dôkaz od používateľa: nová požiadavka HTTP 200, q=MoNiTo, country=CZ, ponuka účtu B má SK; localStorage IP cache obsahuje CZ/status ok a ručný kľúč na fotke nie je. Tým je potvrdené krajinné vyradenie na PC, nie vplyv jazyka. PWA má aj pri novom zápise MoNiToRoVaNiE prázdny výsledok; skutočný country/odpoveď PWA ešte nezachytené, preto sa nevyhlasuje rovnaká príčina. Kód má zároveň neexpirujúcu cache aj prázdnych výsledkov bez oddelenia účtov; riadený hook pokus ju reprodukoval, nie však historickú udalosť PWA. Nové nasadenie/reset dokumentu pôvodnú Map zahodí. Diagnostika nesmie meniť cache, krajinu, permissions, query ani počet API volaní. Bez povolenia žiadny commit/push. |
+| OW-19 | Zobraziť všetko → profil → Back stratí scroll výsledkov | Zmapované, odporúčaná oddelená oprava po diagnostike OW-18 | Railway meranie: 8 návratov (all/offers; WebKit desktop/browser Back, WebKit mobile/browser aj app Back, Chromium desktop/browser Back), všetky správna URL, nový main a scrollTop 0 namiesto pôvodných 1 330–4 487 px. SearchLayout má vlastný scroll main, profilová navigácia uloží pôvod URL, nie scroll. Existujúci window reset nie je priamou príčinou. Oprava musí čakať na skutočné výsledky, nie spotrebovať návrat už na skeletone; izolácia query/tab/page/účtu a cudzie history state ostávajú. Zatiaľ bez implementácie. |
 
 Testovacia medzera priamo patriaca do OW-02:
 
@@ -84,6 +86,7 @@ Testovacia medzera priamo patriaca do OW-02:
 | TECH-05 | `hooks/useDashboardNavigation.tsx`: 510 riadkov | Zoznam; podľa svaply.mdc nemeniť | Používa sa v dashboarde, nie ako handler samostatného /search layoutu. Pre OW-10 zostáva bez zásahu. |
 | TECH-06 | `profile/ProfileOffersSection.tsx`: 1 108 riadkov | Zoznam; podľa svaply.mdc nemeniť | Overené na aktuálnom main 8b04f513 pri OW-03; vlastní profilové dáta a popover hodín. Zmena Like visibility sa prepája v malej zdieľanej karte bez zásahu do tohto súboru. |
 | TECH-07 | `profile/ProfileOffersMobileSection.tsx`: 944 riadkov | Zoznam; podľa svaply.mdc nemeniť | Overené pri OW-03; používa samostatnú mobilnú kartu, ktorá ostáva bez zmien. Žiadny veľký refaktor pri výsledkoch Sledovaní. |
+| TECH-08 | `modules/search/SearchUserProfileModule.tsx`: 528 riadkov | Zoznam; podľa svaply.mdc nemeniť | Nájdené pri mapovaní OW-18/19; pre lokálnu diagnostiku netreba upravovať. Súbor ostáva bez zásahu. |
 | TOOL-01 | `next lint` vyžaduje interaktívnu konfiguráciu | Zoznam testovacieho tooling-u | Bez zmeny repo konfigurácie prešiel spoločný cielený ESLint cez existujúce API a `next/core-web-vitals`: 18 súborov, 0 chýb/varovaní. Prípadnú neinteraktívnu konfiguráciu riešiť samostatne, bez oslabenia pravidiel. |
 | TOOL-02 | Windows WebKit a dostupnosť Docker fallbacku | Native obmedzenie evidovať; Docker pri OW-03 už funguje | 13. 10. native launch skončil pred stránkou; Code Integrity udalosti 3077/3033 potvrdili blokovanú crypto-57.dll. Pri review kole 14. 10. Docker API nebolo pripravené; ani pokus spustiť existujúci Desktop neumožnil E2E. Native kontrolný launch vtedy skončil timeoutom 10 s pred stránkou; timeout nie je nový dôkaz tej istej DLL chyby. Pri následnom OW-03 mapovaní Docker API odpovedá a existujúci Playwright v1.63.0-noble kontajner skutočne vykonal WebKit desktop/mobile proti Railway: 6 kontrolných PASS a 2 očakávané pre-deploy RED. Žiadne sťahovanie obrazu, vypínanie ochrán ani zmeny bezpečnostnej politiky. Predošlý zber 24 navigačných scenárov stále nie je ich živý PASS. |
 
@@ -441,3 +444,73 @@ ostávajú históriou nestability, nie potvrdenými novými chybami aplikácie.
   autorizovaný commit/push, nie PR/merge/nasadenie. Po review a cielenom reteste
   odporúčané samostatne rozhodnúť OW-17 pred návratom k OW-05; žiadne ďalšie
   otvorené nálezy ani odložené M13/M14/M33 sa tým neuzatvárajú.
+- 16. 10. 2026, OW-18/19: používateľ ohlásil rozdiel úvodného vyhľadávania
+  Safari/PWA/PC pri rovnakom účte a filtroch a chýbajúcu pamäť scrollu návratu
+  zo zobrazenia profilu. Mapovanie bolo read-only. Existujúce cielené sady
+  92 PASS; nezachytávali stale cache ani skutočné scrollTop pred/po. Riadený
+  pokus s reálnym transpilovaným hookom potvrdil neexpirujúci prázdny cache
+  hit aj po novom mount; novú ponuku ukázal až explicitný invalidate. Nejde
+  o dôkaz historickej udalosti PWA. Čerstvý Railway WebKit desktop/mobile
+  vrátil kartu s týmto názvom pri Mo aj plnom názve a country SK; priamy
+  request s CZ mal nulu, bez krajiny/SK kartu obsahoval. Žiadne obsahové zápisy.
+  Následný údaj používateľa PC q=MoNiTo/country=CZ/HTTP200 + ponuka SK a
+  IP cache CZ/status ok potvrdili konkrétne vyradenie krajinou na PC. Jazyk
+  systému nie je zdrojom krajiny. Nový zmiešaný zápis PWA stále nič nenašiel;
+  country/HTTP/body PWA sa zatiaľ nepodarilo zachytiť. Windows nemá v tomto
+  pracovnom prostredí priamy Safari inspector; žiadne proxy/certifikáty či
+  bezpečnostné nastavenia sa nemenili. Scroll potvrdený v 8 živých variantoch
+  a oddelene evidovaný OW-19; zostáva neopravovaný.
+- 16. 10. 2026, schválená iba dočasná lokálna opt-in diagnostika OW-18:
+  nový malý helper/hook/panel, krátke zapojenie v SearchModule/useSearchApi;
+  bez zmeny vyhľadávacích pravidiel, cache kľúča/expirácie, API parametrov,
+  permissions, request ordering alebo debounce. Tlačidlo je dostupné priamo
+  v PWA bez URL triku; zapnutie/vypnutie neposiela request. Záznam obsahuje
+  len krajiny, dĺžku dotazu, filter flags, zdroj, stav a počty; nie text dotazu,
+  ID, používateľské dáta, cookies/tokeny, IP alebo surový payload. Uložené
+  preferencie sú výslovne len aktuálny snapshot, nie tvrdenie o pôvode krajiny.
+  Close/reopen/active/account/unmount generácia zneplatní starých reportérov;
+  zapnutie počas requestu spätne nevyrába diagnostiku. Dáta zostávajú iba v
+  React pamäti; nič sa neukladá ani automaticky neposiela. Nasadenie/reset
+  dokumentu odstráni starú Map, preto nemožno spätne dokazovať pôvodný stav.
+  Nových 7 Jest sád / 151 PASS; presne päť produkčných súborov má každú
+  metriku nad 95 % (spolu 98,87 statements / 98,77 branches / 100 functions /
+  98,81 lines). API aj všetky tri diagnostické súbory majú 100 %; iba pôvodné
+  tri clear-ref riadky SearchModule nepokryté. Preklady 39 keys vo všetkých
+  šiestich jazykoch, parity 0 missing/extra. Used-key kontrola hlási iba
+  tri nezmenené APP-01. ESLint 13 súborov: 0 errors/warnings. TypeScript PASS.
+  Nový Playwright má 9 zozbieraných scenárov, nie 9 PASS. Skutočný prednasadený
+  light beh WebKit desktop/mobile + Chromium: 3 očakávané RED, chýba nové
+  tlačidlo; žiadny retry, obsahové zápisy, screenshot/trace/video ani raw dáta.
+  Lokálny stav nie je nasadený PASS. Commit/push/merge/deploy nie sú povolené.
+  Následná celá FE regresia 437 sád / 6 372 PASS (880,905 s); opakovaný finálny
+  scoped beh 7 sád / 151 PASS potvrdil rovnaké percentá bez zmeny hraníc.
+  Automatické porovnanie pôvodného/nového cache key a API parametrov je
+  identické. Všetkých päť produkčných TS/TSX má menej než 500 riadkov.
+  Produkčný build najprv skončil EPERM pri mkdir v generovanom .next/server/app;
+  priečinky neboli junction a opakovanie rovnakého buildu s povoleným zápisom
+  prešlo vrátane kompilácie, typov a 38 statických stránok. Žiadne ručné mazanie,
+  bezpečnostné zmeny či potláčanie kontrol. Existujúce Sentry odporúčanie global
+  error handleru ostalo neblokujúce a nepotlačené; registry sync nezmenil zdroje.
+  Hlavný checkout je naďalej čistý 011b6ce7; pracovný HEAD zostáva 0d547de0.
+
+Rozsah lokálnej diagnostiky OW-18 (20 súborov, migrácie 0):
+
+- Upravené produkčné: `frontend/src/components/dashboard/modules/SearchModule.tsx`,
+  `frontend/src/components/dashboard/modules/search/hooks/useSearchApi.tsx`.
+- Nové produkčné v `frontend/src/components/dashboard/modules/search/diagnostics/`:
+  `searchDiagnostics.ts`, `useSearchDiagnostics.ts`, `SearchDiagnosticsPanel.tsx`.
+- Nové Jest v tom istom diagnostickom priečinku: `searchDiagnostics.test.ts`,
+  `useSearchDiagnostics.test.tsx`, `useSearchDiagnostics.ssr.test.tsx`,
+  `SearchDiagnosticsPanel.test.tsx`; v `search/hooks/`: `useSearchApi.behavior.test.tsx`,
+  `useSearchApi.diagnostics.test.tsx`; v `search/`: `SearchModule.diagnostics.test.tsx`.
+- Nový Playwright: `frontend/e2e/search-diagnostics.spec.ts`.
+- Upravené preklady: `frontend/messages/sk.json`, `cs.json`, `en.json`, `de.json`,
+  `pl.json`, `hu.json` (všetky v rovnakom priečinku).
+- Aktualizovaná iba existujúca evidencia: `docs/testing/findings-register.md`.
+
+16. 10. 2026, následné výslovné schválenie používateľa: tento pripravený
+20-súborový balík diagnostiky možno commitnúť a pushnúť do existujúcej vetvy
+`offer-watch-card-actions`. Predchádzajúci zákaz commit/push vyššie opisuje
+stav pred týmto súhlasom. Rabbit kontrolu odošle používateľ; vytvorenie PR,
+merge ani nasadenie nie sú súčasťou tohto kroku. OW-18 ani OW-19 sa tým
+neoznačujú za opravené.
