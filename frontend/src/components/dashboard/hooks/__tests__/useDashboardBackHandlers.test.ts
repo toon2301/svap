@@ -14,6 +14,11 @@ import {
   markOfferReviewsPending,
   resetOfferReviewsOrigin,
 } from '../../modules/reviews/offerReviewsOrigin';
+import {
+  adoptMessagesProfileOrigin,
+  openMessagesFromProfile,
+  resetMessagesProfileOrigin,
+} from '../../modules/messages/messagesProfileOrigin';
 import { useDashboardBackHandlers } from '../useDashboardBackHandlers';
 
 /** Všetko, čo hook zavolá alebo zapíše, sa ukladá sem v poradí volaní. */
@@ -108,6 +113,7 @@ beforeEach(() => {
   calls = [];
   base = makeBase();
   resetOfferReviewsOrigin();
+  resetMessagesProfileOrigin();
   window.history.replaceState(null, '', '/dashboard');
   jest.spyOn(window.history, 'pushState').mockImplementation((...args: unknown[]) => {
     record('history.pushState', ...args);
@@ -490,6 +496,65 @@ describe('mobilná konverzácia v Správach (handleMobileMessagesBack)', () => {
     fire(mounted, 'handleMobileMessagesBack');
 
     expect(calls[0]).toBe(entry('nový setActiveModule', 'messages'));
+  });
+});
+
+describe('konverzáciu otvorila appka z profilu (značka pôvodu)', () => {
+  const DRAFT_URL = '/dashboard/messages?targetUserId=42';
+
+  /** „Poslať správu" na profile: otvorenie si cieľ zapamätá, zobrazené Správy ho prevezmú. */
+  const openedFromProfile = () => {
+    openMessagesFromProfile({ push: jest.fn() }, DRAFT_URL);
+    window.history.replaceState({ __NA: true }, '', DRAFT_URL);
+    adoptMessagesProfileOrigin();
+  };
+
+  it('šípka urobí jeden krok späť v histórii a nič iné nezavolá (ani zoznam konverzácií)', () => {
+    openedFromProfile();
+    const mounted = mountHook();
+
+    fire(mounted, 'handleMobileMessagesBack');
+
+    expect(calls).toEqual([entry('history.back')]);
+  });
+
+  it('značka zostane platná po zmene adresy konverzácie (prvá správa v drafte)', () => {
+    openedFromProfile();
+    window.history.replaceState(
+      { __svaplyMessagesProfileOrigin: { version: 1 } },
+      '',
+      '/dashboard/messages?conversationId=9',
+    );
+    const mounted = mountHook();
+
+    fire(mounted, 'handleMobileMessagesBack');
+
+    expect(calls).toEqual([entry('history.back')]);
+  });
+
+  it('druhé ťuknutie, kým krok späť neprebehol, nič nerobí', () => {
+    openedFromProfile();
+    const mounted = mountHook();
+
+    fire(mounted, 'handleMobileMessagesBack');
+    fire(mounted, 'handleMobileMessagesBack');
+
+    expect(calls).toEqual([entry('history.back')]);
+  });
+
+  it('bez značky (zoznam, notifikácia, žiadosť, odkaz) ide šípka na zoznam konverzácií ako doteraz', () => {
+    window.history.replaceState({ __NA: true }, '', '/dashboard/messages?conversationId=9');
+    const mounted = mountHook();
+
+    fire(mounted, 'handleMobileMessagesBack');
+
+    expect(calls).toEqual([
+      entry('setActiveModule', 'messages'),
+      entry('setIsRightSidebarOpen', false),
+      entry('setActiveRightItem', ''),
+      entry('setIsMobileMenuOpen', false),
+      entry('history.pushState', null, '', '/dashboard/messages'),
+    ]);
   });
 });
 

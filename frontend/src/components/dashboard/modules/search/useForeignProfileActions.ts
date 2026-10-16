@@ -15,6 +15,7 @@ import { setFavoriteUserState } from '../favoritesApi';
 import { patchUserProfileInCache } from '../profile/profileUserCache';
 import { setProfileLikeState, type ProfileLikeResponse } from '../profile/profileLikesApi';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
+import { openMessagesFromProfile } from '../messages/messagesProfileOrigin';
 import { buildMessagesUrl } from '../messages/messagesRouting';
 import type { SearchProfileApiError } from './foreignProfileHelpers';
 
@@ -46,7 +47,7 @@ export function useForeignProfileActions({
     void (async () => {
       setIsOpeningConversation(true);
       try {
-        router.push(buildMessagesUrl(null, { targetUserId: targetId }));
+        openMessagesFromProfile(router, buildMessagesUrl(null, { targetUserId: targetId }));
       } catch (error) {
         toast.error(
           getMessagingErrorMessage(error, {

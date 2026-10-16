@@ -1,6 +1,10 @@
 ﻿import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MessagesModule from '../MessagesModule';
+import {
+  openMessagesFromProfile,
+  resetMessagesProfileOrigin,
+} from '../messages/messagesProfileOrigin';
 
 jest.mock('@/hooks', () => ({
   __esModule: true,
@@ -36,6 +40,7 @@ const { useIsMobileState } = jest.requireMock('@/hooks') as {
 describe('MessagesModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetMessagesProfileOrigin();
 
     useIsMobileState.mockReturnValue({
       isMobile: false,
@@ -131,6 +136,24 @@ describe('MessagesModule', () => {
     expect(screen.getByTestId('conversations-list-skeleton')).toBeInTheDocument();
     expect(screen.queryByText('ConversationsList:none')).not.toBeInTheDocument();
   });
+
+  it('marks the conversation entry when the app opened it from a profile', () => {
+    openMessagesFromProfile({ push: jest.fn() }, '/dashboard/messages?targetUserId=5');
+    window.history.replaceState({ __NA: true }, '', '/dashboard/messages?targetUserId=5');
+
+    render(<MessagesModule currentUserId={1} targetUserId={5} />);
+
+    expect(window.history.state).toEqual({
+      __NA: true,
+      __svaplyMessagesProfileOrigin: { version: 1 },
+    });
+  });
+
+  it('marks nothing when the conversation was not opened from a profile', () => {
+    window.history.replaceState({ __NA: true }, '', '/dashboard/messages?conversationId=7');
+
+    render(<MessagesModule currentUserId={1} conversationId={7} />);
+
+    expect(window.history.state).toEqual({ __NA: true });
+  });
 });
-
-

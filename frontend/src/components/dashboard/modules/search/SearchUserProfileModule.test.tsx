@@ -9,6 +9,11 @@ import { setFavoriteUserState } from '../favoritesApi';
 import { api } from '@/lib/api';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 import {
+  adoptMessagesProfileOrigin,
+  carryMessagesProfileOrigin,
+  resetMessagesProfileOrigin,
+} from '../messages/messagesProfileOrigin';
+import {
   invalidateUserProfileCache,
   setUserProfileToCache,
 } from '../profile/profileUserCache';
@@ -160,6 +165,7 @@ jest.mock('../shared/OfferImageGalleryLightbox', () => ({
 describe('SearchUserProfileModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetMessagesProfileOrigin();
     // Zalozka zije v adrese (`?tab=`) a jsdom si ju drzi medzi testami.
     window.history.replaceState(null, '', '/dashboard/users/42');
     invalidateUserProfileCache(42);
@@ -208,6 +214,29 @@ describe('SearchUserProfileModule', () => {
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith('/dashboard/messages?targetUserId=42');
     });
+  });
+
+  it('remembers the profile as the origin of the conversation (the arrow there goes back to it)', async () => {
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'open message' }));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledTimes(1));
+
+    // Zobrazené Správy prevezmú pôvod do záznamu konverzácie.
+    window.history.replaceState({ __NA: true }, '', '/dashboard/messages?targetUserId=42');
+    adoptMessagesProfileOrigin();
+
+    expect(carryMessagesProfileOrigin()).not.toBeNull();
+  });
+
+  it('does not open the conversation twice on a quick second tap', async () => {
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+    const button = await screen.findByRole('button', { name: 'open message' });
+
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledTimes(1));
   });
 
   it('toggles the favorite state in the profile UI after a successful request', async () => {

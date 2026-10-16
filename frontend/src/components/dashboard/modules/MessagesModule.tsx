@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobileState } from '@/hooks';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
@@ -9,6 +9,7 @@ import { ConversationsList } from './messages/ConversationsList';
 import { ConversationsListSkeleton } from './messages/ConversationsListSkeleton';
 import { ConversationDetail } from './messages/ConversationDetail';
 import { DraftConversationDetail } from './messages/DraftConversationDetail';
+import { adoptMessagesProfileOrigin } from './messages/messagesProfileOrigin';
 
 function MessagesDesktopPlaceholder({ title }: { title: string }) {
   return (
@@ -49,6 +50,12 @@ export default function MessagesModule({
   const hasActiveConversation = Boolean(conversationId || targetUserId);
   const shouldFillMobileHeight = hasActiveConversation;
   const messagesTitle = t('messages.title', 'Messages');
+
+  // Konverzáciu otvorila appka z profilu? Označ jej záznam histórie, nech šípka
+  // späť urobí skutočný krok späť (viď `messagesProfileOrigin`).
+  useEffect(() => {
+    adoptMessagesProfileOrigin();
+  }, []);
 
   if (!hasActiveConversation && !isViewportResolved) {
     return <MessagesViewportPendingState title={messagesTitle} />;
