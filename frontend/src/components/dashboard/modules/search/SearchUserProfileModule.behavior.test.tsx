@@ -20,6 +20,7 @@ import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { setProfileLikeState } from '../profile/profileLikesApi';
 import { invalidateOffersCache } from '../profile/profileOffersCache';
 import { markProfileFreshEntry, resetProfileFreshEntry } from '../profile/profileFreshEntry';
+import { resetMessagesProfileOrigin } from '../messages/messagesProfileOrigin';
 import {
   getUserProfileFromCache,
   invalidateUserProfileCache,
@@ -269,6 +270,8 @@ beforeEach(() => {
   mockViewProps.desktop = null;
   window.history.replaceState(null, '', '/dashboard/users/42');
   resetProfileFreshEntry();
+  // Ochrana pred dvojklikom na „Poslať správu“ je časová a modulová – testy sa nesmú ovplyvňovať.
+  resetMessagesProfileOrigin();
   [42, 43].forEach((id) => invalidateUserProfileCache(id));
   pushMock.mockReset();
   replaceMock.mockReset();

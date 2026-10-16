@@ -54,11 +54,13 @@ jest.mock('../DashboardModals', () => ({ __esModule: true, default: () => null }
 const mockOpenConversation = jest.fn();
 const mockListConversations = jest.fn();
 const mockListMessageRequests = jest.fn();
+const mockListMessages = jest.fn();
 jest.mock('../modules/messages/messagingApi', () => ({
   ...jest.requireActual('../modules/messages/messagingApi'),
   openConversation: (...args: unknown[]) => mockOpenConversation(...args),
   listConversations: (...args: unknown[]) => mockListConversations(...args),
   listMessageRequests: (...args: unknown[]) => mockListMessageRequests(...args),
+  listMessages: (...args: unknown[]) => mockListMessages(...args),
 }));
 
 const mockRouter = {
@@ -236,6 +238,8 @@ beforeEach(() => {
   mockOpenConversation.mockReset().mockReturnValue(new Promise(() => {}));
   mockListConversations.mockReset().mockReturnValue(new Promise(() => {}));
   mockListMessageRequests.mockReset().mockReturnValue(new Promise(() => {}));
+  // Detail konverzácie bez konverzácie v odpovedi = posledná možnosť nikoho nenájde.
+  mockListMessages.mockReset().mockResolvedValue({ results: [], conversation: null });
   __resetAuthBootstrapSnapshotForTests();
   localStorage.clear();
   sessionStorage.clear();
@@ -419,6 +423,19 @@ describe('partner z ID konverzácie', () => {
     await renderMessages('conversationId=7');
     await waitFor(() => expect(peerName()).toBe('Anna Nováková'));
     expect(mockListMessageRequests).toHaveBeenCalledTimes(1);
+  });
+
+  it('starší chat mimo prvej stránky zoznamov nájde cez detail konverzácie', async () => {
+    mockListConversations.mockResolvedValue([conversation({ id: 3, other_user: boris() })]);
+    mockListMessageRequests.mockResolvedValue([]);
+    mockListMessages.mockResolvedValue({
+      results: [],
+      conversation: conversation({ id: 7, other_user: anna() }),
+    });
+    await renderMessages('conversationId=7');
+    await waitFor(() => expect(peerName()).toBe('Anna Nováková'));
+    expect(peerIdentifier()).toBe('anna');
+    expect(mockListMessages).toHaveBeenCalledWith(7, 1);
   });
 
   it('konverzáciu, ktorú nenájde nikde, ukáže bez partnera', async () => {

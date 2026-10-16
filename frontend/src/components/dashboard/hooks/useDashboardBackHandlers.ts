@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef } from 'react';
+import { returnToMessagesProfileOrigin } from '../modules/messages/messagesProfileOrigin';
 import { navigateMessagesUrl } from '../modules/messages/messagesRouting';
 import { returnToOfferReviewsOrigin } from '../modules/reviews/offerReviewsOrigin';
 import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
@@ -66,6 +67,10 @@ export function useDashboardBackHandlers({
   }, [handleMobileBack]);
 
   const handleMobileMessagesBack = useCallback(() => {
+    // Konverzáciu otvorila appka z profilu: skutočný krok späť na ten profil.
+    // Ostatné vstupy (zoznam, notifikácie, žiadosti…) idú na zoznam konverzácií.
+    if (returnToMessagesProfileOrigin()) return;
+
     setActiveModule('messages');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');

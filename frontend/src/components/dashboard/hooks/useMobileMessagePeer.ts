@@ -1,7 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { listConversations, listMessageRequests, openConversation } from '../modules/messages/messagingApi';
+import { useEffect, useRef, useState } from 'react';
+import {
+  listConversations,
+  listMessageRequests,
+  listMessages,
+  openConversation,
+} from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 
 type MobileMessagePeerInput = {
@@ -14,8 +19,16 @@ type MobileMessagePeerInput = {
 /**
  * Kto je na druhej strane otvorenej konverzácie (partner alebo skupina) pre hornú
  * lištu mobilných Správ. Mimo modulu Správy sa stav vynuluje; pri `?targetUserId`
- * sa konverzácia otvorí, inak sa podľa ID konverzácie hľadá v zozname konverzácií
- * a potom v žiadostiach o správu. Odpoveď, ktorá príde po zmene vstupov, sa zahodí.
+ * sa konverzácia otvorí, inak sa podľa ID konverzácie hľadá v zozname konverzácií,
+ * potom v žiadostiach o správu a nakoniec v samotnej konverzácii (zoznamy majú len
+ * prvú stránku, starší chat v nich nemusí byť). Odpoveď, ktorá príde po zmene
+ * vstupov, sa zahodí.
+ *
+ * Partner patrí ku konkrétnej konverzácii: keď sa konverzácia (alebo cieľ) zmení,
+ * predošlý partner sa zahodí skôr, než príde nový – inak by sa na chvíľu ukázal
+ * cudzí človek. Jediná výnimka je rozpísaná konverzácia s používateľom X, ktorá sa
+ * po odoslaní správy (alebo ak už existuje) nahradí adresou `?conversationId=`: ide
+ * o tú istú konverzáciu, takže partner X ostane zobrazený, kým sa nepotvrdí.
  */
 export function useMobileMessagePeer({
   activeModule,
@@ -28,11 +41,14 @@ export function useMobileMessagePeer({
     name: string;
     avatarMembers: MessagingUserBrief[];
   } | null>(null);
+  /** Konverzácia, ku ktorej patrí zobrazený partner (`target:ID` alebo `conversation:ID`). */
+  const peerKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     if (activeModule !== 'messages') {
+      peerKeyRef.current = null;
       setMobileMessagePeer(null);
       setMobileMessageGroup(null);
       return () => {
@@ -44,6 +60,30 @@ export function useMobileMessagePeer({
       targetUserIdFromMessagesQuery != null && Number.isFinite(targetUserIdFromMessagesQuery)
         ? targetUserIdFromMessagesQuery
         : null;
+    const requestedConversationId =
+      selectedConversationId != null && Number.isFinite(selectedConversationId)
+        ? selectedConversationId
+        : null;
+
+    // Iná konverzácia = iný partner: predošlého nenechať zobrazeného počas načítania.
+    const nextKey =
+      targetUserId != null
+        ? `target:${targetUserId}`
+        : requestedConversationId != null
+          ? `conversation:${requestedConversationId}`
+          : null;
+    const previousKey = peerKeyRef.current;
+    if (nextKey !== previousKey) {
+      peerKeyRef.current = nextKey;
+      const draftPeerId =
+        previousKey?.startsWith('target:') && nextKey?.startsWith('conversation:')
+          ? Number(previousKey.slice('target:'.length))
+          : null;
+      setMobileMessagePeer((current) =>
+        draftPeerId !== null && current?.id === draftPeerId ? current : null,
+      );
+      setMobileMessageGroup(null);
+    }
 
     if (targetUserId != null) {
       void (async () => {
@@ -65,10 +105,7 @@ export function useMobileMessagePeer({
       };
     }
 
-    const conversationId =
-      selectedConversationId != null && Number.isFinite(selectedConversationId)
-        ? selectedConversationId
-        : null;
+    const conversationId = requestedConversationId;
 
     if (conversationId == null) {
       setMobileMessagePeer(null);
@@ -87,6 +124,13 @@ export function useMobileMessagePeer({
           const requests = await listMessageRequests();
           if (cancelled) return;
           match = requests.find((item) => item.id === conversationId) ?? null;
+        }
+        if (!match) {
+          // Zoznamy majú len prvú stránku. Konverzáciu, ktorú v nich niet, pozná
+          // aj samotný detail: vráti ju spolu so správami (prvú položku stačí).
+          const page = await listMessages(conversationId, 1);
+          if (cancelled) return;
+          match = page.conversation;
         }
         if (match?.is_group) {
           setMobileMessagePeer(null);

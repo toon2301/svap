@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks';
 import { getMessagingErrorCode, getMessagingErrorMessage, getMessagingErrorStatus, openConversation, sendDirectMessage } from './messagingApi';
 import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
+import { DraftConversationHeader } from './DraftConversationHeader';
 import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import type { ConversationDraft, MessagingUserBrief } from './types';
 import { requestConversationsRefresh, suppressPassiveMessagingRefresh } from './messagesEvents';
@@ -334,24 +335,14 @@ export function DraftConversationDetail({
   return (
     <div className={`${containerClassName} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}>
       {!isMobile ? (
-        <div data-testid="draft-conversation-header" className="mb-3">
-          <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
-            <div className="flex items-center justify-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                {targetUser?.avatar_url ? (
-                  <img src={targetUser.avatar_url} alt={targetUserName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
-                    {(targetUserName || 'U').slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[24rem]">
-                {targetUserName}
-              </div>
-            </div>
-          </div>
-        </div>
+        <DraftConversationHeader
+          avatarUrl={targetUser?.avatar_url ?? null}
+          targetUserName={targetUserName}
+          targetUserId={targetUser?.id ?? null}
+          targetUserSlug={targetUserSlug}
+          isTargetDeleted={targetUser?.is_deleted === true}
+          openPeerProfileLabel={t('messages.openPeerProfile', 'Otvoriť profil používateľa')}
+        />
       ) : null}
 
       <div

@@ -1,3 +1,5 @@
+import { carryMessagesProfileOrigin } from './messagesProfileOrigin';
+
 export function parseConversationId(value: string | null | undefined): number | null {
   if (!value) return null;
   const parsed = Number(value);
@@ -42,8 +44,11 @@ export function navigateMessagesUrl(
   const url = buildMessagesUrl(conversationId, options);
 
   if (typeof window !== 'undefined') {
-    const method = options?.mode === 'replace' ? 'replaceState' : 'pushState';
-    window.history[method](null, '', url);
+    const isReplace = options?.mode === 'replace';
+    // Nahradenie záznamu konverzácie (prvá správa, existujúca konverzácia) nesmie
+    // zahodiť pôvod z profilu. Zoznam (bez konverzácie) a nový záznam ho nenesú.
+    const state = isReplace && url !== buildMessagesUrl() ? carryMessagesProfileOrigin() : null;
+    window.history[isReplace ? 'replaceState' : 'pushState'](state, '', url);
   }
 
   return url;

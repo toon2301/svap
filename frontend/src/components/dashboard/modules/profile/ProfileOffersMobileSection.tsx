@@ -32,6 +32,7 @@ import {
   updateSkillRequest,
 } from '../requests/requestsApi';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
+import { openMessagesFromProfile } from '../messages/messagesProfileOrigin';
 import { buildMessagesUrl } from '../messages/messagesRouting';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
 import {
@@ -226,7 +227,7 @@ export default function ProfileOffersMobileSection({
       if (!ownerUserId) return;
       try {
         setBusyMessageOfferId(offerId);
-        router.push(buildMessagesUrl(null, { targetUserId: ownerUserId }));
+        openMessagesFromProfile(router, buildMessagesUrl(null, { targetUserId: ownerUserId }));
       } catch (error) {
         toast.error(
           getMessagingErrorMessage(error, {
