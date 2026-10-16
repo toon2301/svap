@@ -44,11 +44,29 @@ export const FEED_RETURN_CAPTURE_EVENT = 'feed-return-capture';
 /**
  * Koľko je snímka použiteľná.
  *
- * Snímka je NÁVRAT, nie archív. Bez stropu by sa obnovila aj po dlhej odbočke
- * inam (profil → správy → Nástenka) a používateľ by dostal feed spred desiatok
- * minút bez akéhokoľvek náznaku, že je starý.
+ * Snímka je NÁVRAT, nie archív. Bez stropu by sa obnovila aj po veľmi dlhej
+ * odbočke a používateľ by dostal feed spred hodín bez náznaku, že je starý.
+ * Strop je 30 minút: snímku si vie vziať aj tlačidlo Domov po odbočke cez
+ * iné obrazovky (profil → správy → Domov), nielen Späť hneď po odchode.
  */
-export const FEED_RETURN_TTL_MS = 5 * 60 * 1000;
+export const FEED_RETURN_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * Kam z Nástenky používateľ odišiel – podľa toho sa rozhoduje, či ho smie
+ * tlačidlo Domov vrátiť na zapamätané miesto (Späť v prehliadači ide vždy).
+ *
+ *  - `own-profile`: vlastný profil (hlavička vlastného príspevku, vlastná
+ *    prezdieľaná ponuka). Domov ho obnoví na desktope aj na mobile.
+ *  - `other-profile`: cudzí profil. Domov ho obnoví len na desktope; na mobile
+ *    má cudzí profil šípku Späť v appke a spodná lišta tam nie je.
+ *  - `other`: iný cieľ (detail portfólia, permalink príspevku) a každé volanie,
+ *    ktoré pôvod neuviedlo. Domov ho neobnoví.
+ */
+export type FeedReturnEntry = 'own-profile' | 'other-profile' | 'other';
+
+function isFeedReturnEntry(value: unknown): value is FeedReturnEntry {
+  return value === 'own-profile' || value === 'other-profile' || value === 'other';
+}
 
 export type FeedReturnSnapshot = {
   /** Príspevky vrátane donačítaných stránok, v poradí, v akom boli. */
@@ -57,6 +75,8 @@ export type FeedReturnSnapshot = {
   nextUrl: string | null;
   /** Pozícia v scrollovateľnom `<main>`. */
   scrollTop: number;
+  /** Kam používateľ odišiel; chýbajúce = `other`. */
+  entry?: FeedReturnEntry;
 };
 
 /**
@@ -102,6 +122,8 @@ type StoredSnapshot = FeedReturnSnapshot & {
    */
   ownerId: number;
   savedAt: number;
+  /** Vždy vyplnené: záznam bez platného pôvodu sa číta ako `other`. */
+  entry: FeedReturnEntry;
 };
 
 /**
@@ -141,6 +163,9 @@ function readStored(): StoredSnapshot | null {
       posts: parsed.posts as FeedPost[],
       nextUrl: typeof parsed.nextUrl === 'string' ? parsed.nextUrl : null,
       scrollTop: typeof parsed.scrollTop === 'number' ? parsed.scrollTop : 0,
+      // Bez platného pôvodu (záznam spred jeho zavedenia) sa Domov nesmie
+      // spoliehať na nič, čo nevie – `other` ho nechá ísť na vrch, Späť funguje.
+      entry: isFeedReturnEntry(parsed.entry) ? parsed.entry : 'other',
     };
   } catch {
     // Poškodený záznam je to isté ako žiadny.
@@ -170,25 +195,43 @@ function snapshotId(snapshot: FeedReturnSnapshot | null): string | null {
 }
 
 /**
+ * Pôvod odchodu na profil používateľa s daným `id`.
+ *
+ * Vlastný profil sa pozná porovnaním s prihláseným účtom (`getCurrentAccountId`).
+ * Keď sa to nedá povedať (chýba `id`, účet ešte nie je známy), je to cudzí
+ * profil: `other-profile` je bezpečnejšia odpoveď, lebo na mobile Domov
+ * takú snímku nepoužije.
+ */
+export function profileReturnEntry(userId: number | null | undefined): FeedReturnEntry {
+  const accountId = getCurrentAccountId();
+  return accountId !== null && userId === accountId ? 'own-profile' : 'other-profile';
+}
+
+/**
  * Odchádza sa z Nástenky – nech si uloží stav.
  *
  * Volá navigácia (preklik na profil, ponuku, portfólio) TESNE pred zmenou
- * modulu, kým je Nástenka ešte v DOM a vie sa odmerať.
+ * modulu, kým je Nástenka ešte v DOM a vie sa odmerať. `entry` hovorí, kam sa
+ * odchádza (viď `FeedReturnEntry`); kto ho neuvedie, dostane `other`.
  */
-export function requestFeedReturnCapture(): void {
+export function requestFeedReturnCapture(entry: FeedReturnEntry = 'other'): void {
   if (typeof window === 'undefined') return;
   try {
-    window.dispatchEvent(new Event(FEED_RETURN_CAPTURE_EVENT));
+    window.dispatchEvent(new CustomEvent(FEED_RETURN_CAPTURE_EVENT, { detail: { entry } }));
   } catch {
     // Návrat na presné miesto je pohodlie – bez neho sa feed načíta odznova.
   }
 }
 
-/** Nástenka počúva na žiadosť o snímku. */
-export function onFeedReturnCapture(handler: () => void): () => void {
+/** Nástenka počúva na žiadosť o snímku; dostane z nej pôvod odchodu. */
+export function onFeedReturnCapture(handler: (entry: FeedReturnEntry) => void): () => void {
   if (typeof window === 'undefined') return () => {};
-  window.addEventListener(FEED_RETURN_CAPTURE_EVENT, handler);
-  return () => window.removeEventListener(FEED_RETURN_CAPTURE_EVENT, handler);
+  const listener = (event: Event) => {
+    const entry = (event as CustomEvent<{ entry?: unknown } | null>).detail?.entry;
+    handler(isFeedReturnEntry(entry) ? entry : 'other');
+  };
+  window.addEventListener(FEED_RETURN_CAPTURE_EVENT, listener);
+  return () => window.removeEventListener(FEED_RETURN_CAPTURE_EVENT, listener);
 }
 
 /**
@@ -222,6 +265,7 @@ export function saveFeedReturn(snapshot: FeedReturnSnapshot): void {
     posts: snapshot.posts,
     nextUrl: snapshot.nextUrl,
     scrollTop: snapshot.scrollTop,
+    entry: snapshot.entry ?? 'other',
   };
 
   let serialized: string;

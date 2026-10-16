@@ -1,10 +1,15 @@
 /**
- * Rozsah návratovej snímky Nástenky.
+ * Rozsah návratovej snímky Nástenky pri voľbe sekcie v navigácii.
  *
- * Snímka patrí VÝHRADNE návratu z profilu, ponuky/dopytu alebo portfólia
- * otvoreného z Nástenky. Odchod do inej sekcie ju musí zahodiť – inak by sa
- * obnovila pri ďalšom otvorení Nástenky, hoci sa používateľ medzitým túlal
- * úplne inde.
+ * Snímku vytvára odchod z Nástenky na profil (alebo ponuku/portfólio). Späť
+ * v prehliadači ju obnovuje sám (história, nie voľba sekcie). Tu sa overuje, čo
+ * s ňou robí navigácia:
+ *
+ *  - Domov ju zachová, ak ju smie použiť (desktop: vlastný aj cudzí profil,
+ *    mobil: len vlastný), inak ju zahodí a Nástenka ide od vrchu,
+ *  - opätovný Domov na Nástenke ju zahodí a nepridá záznam do histórie,
+ *  - profil z menu a z vyhľadávania sú nový reťazec – snímku zahodia,
+ *  - ostatné sekcie (správy, štatistiky…) snímku nechajú prežiť.
  */
 
 import { renderHook } from '@testing-library/react';
@@ -26,9 +31,10 @@ import { useDashboardNavigation } from '../useDashboardNavigation';
 import { preloadProfileAvatar } from '../../modules/profile/preloadAvatar';
 import { setCurrentAccountId } from '@/lib/currentAccount';
 import {
+  peekFeedReturn,
   resetFeedReturnState,
   saveFeedReturn,
-  takeFeedReturn,
+  type FeedReturnEntry,
 } from '../../modules/feed/feedReturnState';
 
 const post = {
@@ -37,10 +43,14 @@ const post = {
   caption: 'Príspevok',
 } as never;
 
+/** Prepnutie modulu, ktoré navigácia práve vyžiadala (posledné vykreslenie). */
+let handleModuleChange: jest.Mock;
+
 function renderNavigation(
   activeModule = 'home',
   user: unknown = { id: 1, slug: 'me' },
 ) {
+  handleModuleChange = jest.fn();
   const dashboardState = {
     activeModule,
     setActiveModule: jest.fn(),
@@ -50,7 +60,7 @@ function renderNavigation(
     setIsNotificationsPanelOpen: jest.fn(),
     openDesktopSettings: jest.fn(),
     closeDesktopSettings: jest.fn(),
-    handleModuleChange: jest.fn(),
+    handleModuleChange,
   } as never;
 
   return renderHook(() =>
@@ -67,25 +77,30 @@ function renderNavigation(
   );
 }
 
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+}
+
 beforeEach(() => {
   resetFeedReturnState();
   // Snímka sa ukladá len prihlásenému účtu.
   setCurrentAccountId(42);
   window.history.replaceState(null, '', '/dashboard');
-  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+  setViewportWidth(1280);
 });
 
 afterEach(() => {
+  jest.restoreAllMocks();
   resetFeedReturnState();
   setCurrentAccountId(null);
 });
 
 /** Stav Nástenky, aký po sebe zanechá preklik na profil. */
-function captureSnapshot() {
-  saveFeedReturn({ posts: [post], nextUrl: null, scrollTop: 500 });
+function captureSnapshot(entry?: FeedReturnEntry, scrollTop = 500) {
+  saveFeedReturn({ posts: [post], nextUrl: null, scrollTop, entry });
 }
 
-describe('odchod do inej sekcie', () => {
+describe('sekcie, ktoré snímku nechajú prežiť', () => {
   it.each([
     ['statistics'],
     ['requests'],
@@ -94,30 +109,29 @@ describe('odchod do inej sekcie', () => {
     ['settings'],
     ['search'],
     ['favorites'],
-    ['profile'],
-  ])('drops the snapshot when moving to %s', (moduleId) => {
-    captureSnapshot();
+  ])('keeps the snapshot when moving to %s', (moduleId) => {
+    captureSnapshot('other-profile');
     const { result } = renderNavigation();
 
     act(() => result.current.handleMainModuleChange(moduleId));
 
-    // Snímka je preč – ďalšie otvorenie Nástenky sa načíta normálne.
-    expect(takeFeedReturn()).toBeNull();
-  });
-
-  it('drops it on the mobile profile tap too', () => {
-    captureSnapshot();
-    const { result } = renderNavigation();
-
-    act(() => result.current.handleMobileProfileClick());
-
-    expect(takeFeedReturn()).toBeNull();
+    // Snímka platí, kým sa na Nástenku nevrátim cez Domov alebo Späť.
+    expect(peekFeedReturn()?.scrollTop).toBe(500);
   });
 });
 
-describe('neúspešný pokus o prepnutie', () => {
+describe('vlastný profil z menu a z ikony na mobile', () => {
+  it('drops the snapshot when the Profil item really switches the module', () => {
+    captureSnapshot('other-profile');
+    const { result } = renderNavigation();
+
+    act(() => result.current.handleMainModuleChange('profile'));
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
   it('keeps the snapshot when the profile switch is a no-op', () => {
-    captureSnapshot();
+    captureSnapshot('other-profile');
     // Profilové dáta ešte nie sú načítané – `profileIdentifier` vráti `null`
     // a vetva pre `profile` sa vráti bez toho, aby čokoľvek prepla. Snímku
     // teda niet dôvodu zahadzovať.
@@ -125,31 +139,148 @@ describe('neúspešný pokus o prepnutie', () => {
 
     act(() => result.current.handleMainModuleChange('profile'));
 
-    expect(takeFeedReturn()?.scrollTop).toBe(500);
+    expect(peekFeedReturn()?.scrollTop).toBe(500);
   });
 
-  it('still drops it when the profile switch really happens', () => {
-    captureSnapshot();
+  it('drops it on the mobile profile tap too', () => {
+    captureSnapshot('own-profile');
     const { result } = renderNavigation();
 
-    act(() => result.current.handleMainModuleChange('profile'));
+    act(() => result.current.handleMobileProfileClick());
 
-    expect(takeFeedReturn()).toBeNull();
+    expect(peekFeedReturn()).toBeNull();
   });
 });
 
-describe('priamy klik na Nástenku', () => {
-  it('drops the snapshot even when the target IS the feed', () => {
-    captureSnapshot();
-    const { result } = renderNavigation('user-profile');
+describe('Domov z inej obrazovky', () => {
+  it.each([
+    ['own-profile', 1280],
+    ['other-profile', 1280],
+    ['own-profile', 390],
+  ] as const)('keeps a %s snapshot for restoring at width %i', (entry, width) => {
+    setViewportWidth(width);
+    captureSnapshot(entry);
+    const { result } = renderNavigation('profile');
 
-    // Klik na „Nástenka" v navigácii po prezretí profilu NIE JE návrat – ten
-    // ide cez históriu (Späť, appková šípka), nie cez voľbu sekcie. Predtým
-    // tu snímka prežila a Nástenka sa otvorila so starým zoznamom aj starou
-    // pozíciou namiesto čistého vstupu.
     act(() => result.current.handleMainModuleChange('home'));
 
-    expect(takeFeedReturn()).toBeNull();
+    // Nástenka (`FeedList`) ju pri mounte obnoví – tu ostáva nedotknutá.
+    expect(peekFeedReturn()?.scrollTop).toBe(500);
+  });
+
+  it('drops a foreign-profile snapshot on mobile (the app back arrow handles it there)', () => {
+    setViewportWidth(390);
+    captureSnapshot('other-profile');
+    const { result } = renderNavigation('messages');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it.each([
+    ['other', 1280],
+    ['other', 390],
+  ] as const)('drops a %s snapshot at width %i', (entry, width) => {
+    setViewportWidth(width);
+    captureSnapshot(entry);
+    const { result } = renderNavigation('portfolio-detail');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('drops a snapshot without a known entry', () => {
+    captureSnapshot(undefined);
+    const { result } = renderNavigation('user-profile');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('drops a snapshot taken at the very top (nothing to return to)', () => {
+    captureSnapshot('other-profile', 0);
+    const { result } = renderNavigation('user-profile');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('survives a detour through another section on the way back to Domov', () => {
+    captureSnapshot('other-profile');
+    const { result, rerender } = renderNavigation('user-profile');
+
+    act(() => result.current.handleMainModuleChange('messages'));
+    rerender();
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(peekFeedReturn()?.scrollTop).toBe(500);
+  });
+
+  it('pushes the Domov address into the history as before', () => {
+    captureSnapshot('other-profile');
+    window.history.replaceState(null, '', '/dashboard/users/jana');
+    const pushState = jest.spyOn(window.history, 'pushState');
+    const { result } = renderNavigation('user-profile');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+    expect(pushState.mock.calls[0][2]).toBe('/dashboard');
+  });
+});
+
+describe('opätovný Domov na Nástenke', () => {
+  it('drops a leftover snapshot', () => {
+    captureSnapshot('other-profile');
+    const { result } = renderNavigation('home');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('does not add another history entry for the same address', () => {
+    const pushState = jest.spyOn(window.history, 'pushState');
+    const { result } = renderNavigation('home');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(pushState).not.toHaveBeenCalled();
+  });
+
+  it('still goes through the regular module switch', () => {
+    const { result } = renderNavigation('home');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(handleModuleChange).toHaveBeenCalledWith('home');
+  });
+
+  it('pushes the address when the feed is active but the URL is not the feed address', () => {
+    // Napr. okno príspevku nad Nástenkou: modul je `home`, adresa príspevku.
+    window.history.replaceState(null, '', '/dashboard/feed/7');
+    const pushState = jest.spyOn(window.history, 'pushState');
+    const { result } = renderNavigation('home');
+
+    act(() => result.current.handleMainModuleChange('home'));
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+    expect(pushState.mock.calls[0][2]).toBe('/dashboard');
+  });
+});
+
+describe('neúspešný pokus o prepnutie', () => {
+  it('keeps the snapshot when the profile switch is a no-op', () => {
+    captureSnapshot('own-profile');
+    const { result } = renderNavigation('home', null);
+
+    act(() => result.current.handleMainModuleChange('profile'));
+
+    expect(peekFeedReturn()?.scrollTop).toBe(500);
   });
 });
 
@@ -168,5 +299,27 @@ describe('otvorenie cudzieho profilu', () => {
     expect(preloadProfileAvatar).toHaveBeenCalledWith(
       'https://media.example.com/avatars/jana.webp',
     );
+  });
+
+  it('drops the snapshot: a profile from search is a new chain, not a feed entry', () => {
+    captureSnapshot('other-profile');
+    const { result } = renderNavigation();
+
+    act(() => {
+      result.current.handleViewUserProfileFromSearch(2, 'jana');
+    });
+
+    expect(peekFeedReturn()).toBeNull();
+  });
+
+  it('drops the snapshot when a profile is opened from a search result offer', () => {
+    captureSnapshot('other-profile');
+    const { result } = renderNavigation();
+
+    act(() => {
+      result.current.handleViewUserSkillFromSearch(2, 9, 'jana');
+    });
+
+    expect(peekFeedReturn()).toBeNull();
   });
 });

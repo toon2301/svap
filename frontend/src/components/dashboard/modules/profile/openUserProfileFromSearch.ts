@@ -15,6 +15,7 @@
  */
 
 import { dashboardProfilePath } from '../../components/dashboardRoutes';
+import { clearFeedReturn } from '../feed/feedReturnState';
 import { cancelProfileOriginPending, markProfileOriginPending } from './profileOriginHistory';
 
 type ProfileRouter = { push: (url: string) => void };
@@ -51,6 +52,10 @@ export function openUserProfileFromSearch(
 
   const path = dashboardProfilePath(identifier);
   if (!path) return;
+
+  // Profil z vyhľadávania je nový reťazec, nie vstup z Nástenky – staré
+  // zapamätané miesto Nástenky by Domov inak obnovil z cudzej cesty.
+  clearFeedReturn();
 
   const pendingRequestId = markProfileOriginPending(path);
 

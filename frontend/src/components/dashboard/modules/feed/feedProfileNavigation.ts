@@ -11,7 +11,7 @@
  */
 
 import type { FeedUserSummary } from '@/lib/feedApi';
-import { requestFeedReturnCapture } from './feedReturnState';
+import { profileReturnEntry, requestFeedReturnCapture } from './feedReturnState';
 import { preloadProfileAvatar } from '../profile/preloadAvatar';
 
 /** Koho vieme otvoriť: čokoľvek so slugom alebo id (autor, komentujúci…). */
@@ -47,8 +47,9 @@ export function openUserProfile(
   preloadProfileAvatar(user?.avatar_url);
   options.beforeNavigate?.();
   // Nástenka sa odchodom odmountuje – nech si stihne uložiť stav, kým je
-  // ešte v DOM. Keď na obrazovke nie je, žiadosť sa ticho stratí.
-  requestFeedReturnCapture();
+  // ešte v DOM. Keď na obrazovke nie je, žiadosť sa ticho stratí. Pôvod
+  // (vlastný/cudzí profil) rozhoduje, či ju neskôr smie použiť Domov.
+  requestFeedReturnCapture(profileReturnEntry(user?.id));
   // Nový vstup (od vrchu, na Ponukách) si označí handler `goToUserProfile`
   // v dashboarde – rovnako pre všetkých, čo tento event posielajú.
   window.dispatchEvent(

@@ -13,7 +13,7 @@ import { dashboardFeedPostPath } from '../../components/dashboardRoutes';
 
 import type { FeedPost } from '@/lib/feedApi';
 import { openPortfolioDetail } from '../profile/portfolioRouting';
-import { requestFeedReturnCapture } from './feedReturnState';
+import { profileReturnEntry, requestFeedReturnCapture } from './feedReturnState';
 
 type Router = { push: (href: string) => void };
 
@@ -50,8 +50,14 @@ export function buildSharedSourceHandler(
   return () => {
     beforeNavigate?.();
     // Rovnako ako pri preklik na profil: uloženie stavu Nástenky ešte pred
-    // odchodom, nech sa dá vrátiť presne tam, kde používateľ skončil.
-    requestFeedReturnCapture();
+    // odchodom, nech sa dá vrátiť presne tam, kde používateľ skončil. Len
+    // ponuka vedie na profil (jej vlastník); portfólio a príspevok majú inú
+    // stránku, tam Domov miesto nevracia.
+    requestFeedReturnCapture(
+      sharedType === 'portfolio_item' || sharedType === 'feed_post'
+        ? 'other'
+        : profileReturnEntry(post.shared_content?.owner?.id),
+    );
     if (sharedType === 'portfolio_item') {
       // S pôvodom: krok späť z detailu vráti na Nástenku.
       openPortfolioDetail(router, ownerIdentifier, sourceId);
