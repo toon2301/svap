@@ -156,4 +156,38 @@ describe('MessagesModule', () => {
 
     expect(window.history.state).toEqual({ __NA: true });
   });
+
+  describe('miesto pod zoznamom konverzácií na mobile (spodná lišta)', () => {
+    const bottomPadding = 'pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]';
+
+    beforeEach(() => {
+      useIsMobileState.mockReturnValue({ isMobile: true, isResolved: true });
+    });
+
+    it('zoznam konverzácií nechá pod sebou miesto pre plávajúcu spodnú lištu', () => {
+      const { container } = render(<MessagesModule currentUserId={1} />);
+
+      expect(screen.getByText('ConversationsList:none')).toBeInTheDocument();
+      expect(container.firstChild).toHaveClass(bottomPadding);
+    });
+
+    it('otvorená konverzácia ho nemá (spodná lišta v nej mizne)', () => {
+      const { container } = render(<MessagesModule currentUserId={1} conversationId={7} />);
+
+      expect(container.firstChild).not.toHaveClass(bottomPadding);
+    });
+
+    it('rozpísaná konverzácia ho nemá', () => {
+      const { container } = render(<MessagesModule currentUserId={1} targetUserId={5} />);
+
+      expect(container.firstChild).not.toHaveClass(bottomPadding);
+    });
+
+    it('desktop ho nemá', () => {
+      useIsMobileState.mockReturnValue({ isMobile: false, isResolved: true });
+      const { container } = render(<MessagesModule currentUserId={1} />);
+
+      expect(container.innerHTML).not.toContain('safe-area-inset-bottom');
+    });
+  });
 });

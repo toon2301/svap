@@ -63,11 +63,14 @@ export default function MessagesModule({
 
   if (isMobile) {
     return (
+      // Zoznam konverzácií pretečie `<main>` (obaly majú `h-full min-h-0`), takže jeho `pb-28` sa za
+      // posledný riadok nepripočíta. Miesto pod zoznamom musí mať on sám, inak posledná konverzácia
+      // ostane pod plávajúcou spodnou lištou (rovnaké odsadenie ako pri Sledovaní).
       <div
         className={
           shouldFillMobileHeight
             ? 'flex h-full min-h-0 w-full flex-col'
-            : 'w-full'
+            : 'w-full pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]'
         }
       >
         {conversationId ? (
