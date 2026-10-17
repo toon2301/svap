@@ -79,7 +79,7 @@ describe('useSearchApi opt-in diagnostics with the real language/country context
     });
     await search(hook, '  Private query  ');
     expect(hook.result.current.search.diagnostics.snapshot).toEqual({
-      country: 'CZ', queryLength: 13, offerType: 'offer', onlyMyLocation: true,
+      country: 'SK', queryLength: 13, offerType: 'offer', onlyMyLocation: true,
       priceMinSet: true, priceMaxSet: true, source: 'network', state: 'complete',
       httpStatus: 200, offersCount: 1, usersCount: 1, validCollections: true,
       manualCountrySnapshot: 'CZ', ipCountrySnapshot: 'SK', ipCacheFresh: true,
@@ -122,9 +122,9 @@ describe('useSearchApi opt-in diagnostics with the real language/country context
   });
 
   it('records an empty attempt without fetching or claiming an HTTP response', async () => {
+    localStorage.setItem('appGeoDetectionCacheV2', JSON.stringify({ country: null, detectedAt: Date.now(), status: 'failed' }));
     const hook = harness();
     act(() => {
-      hook.result.current.language.setCountry(null);
       hook.result.current.search.diagnostics.setEnabled(true);
     });
     await search(hook, '   ');

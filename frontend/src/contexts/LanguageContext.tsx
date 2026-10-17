@@ -45,6 +45,7 @@ type LanguageContextValue = {
   setLocale: (locale: SupportedLocale) => void;
   t: (key: string, fallback?: string) => string;
   country: CountryCode;
+  searchCountry: CountryCode;
   setCountry: (country: CountryCode) => void;
 };
 
@@ -89,7 +90,9 @@ function getByPath(messages: Record<string, unknown>, key: string): unknown {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<SupportedLocale>('sk');
   const [country, setCountryState] = useState<CountryCode>(null);
+  const [searchCountry, setSearchCountryState] = useState<CountryCode>(null);
   const manualCountryRef = useRef<OfferCountryCode | ''>('');
+  const explicitLocaleRef = useRef(false);
 
   useEffect(() => {
     let hasSavedLocale = false;
@@ -101,15 +104,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
-    const applyDetectedCountry = (nextCountry: CountryCode) => {
-      if (nextCountry) {
-        setCountryState(nextCountry);
-      }
-      if (!hasSavedLocale) {
-        setLocaleState(localeFromCountry(nextCountry) ?? localeFromBrowser());
-      }
-    };
-
     const savedManualCountry = readLastManualOfferCountry();
     if (savedManualCountry) {
       manualCountryRef.current = savedManualCountry;
@@ -117,16 +111,31 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       if (!hasSavedLocale) {
         setLocaleState(localeFromBrowser());
       }
-      return;
     }
+
+    const applyDetectedCountry = (nextCountry: CountryCode) => {
+      // Search uses IP geography only; form preferences retain their manual priority.
+      setSearchCountryState(nextCountry);
+      const currentManualCountry =
+        manualCountryRef.current || readLastManualOfferCountry();
+      if (currentManualCountry) {
+        manualCountryRef.current = currentManualCountry;
+        setCountryState(currentManualCountry);
+      } else if (nextCountry) {
+        setCountryState(nextCountry);
+      }
+      if (!hasSavedLocale && !explicitLocaleRef.current) {
+        setLocaleState(
+          savedManualCountry
+            ? localeFromBrowser()
+            : localeFromCountry(nextCountry) ?? localeFromBrowser(),
+        );
+      }
+    };
 
     const cachedGeo = readGeoDetectionCache();
     if (cachedGeo && isGeoDetectionCacheFresh(cachedGeo)) {
-      if (cachedGeo.country) {
-        applyDetectedCountry(cachedGeo.country);
-      } else if (!hasSavedLocale) {
-        setLocaleState(localeFromBrowser());
-      }
+      applyDetectedCountry(cachedGeo.status === 'ok' ? cachedGeo.country : null);
       return;
     }
 
@@ -139,26 +148,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (cancelled) return;
 
-        const rawCode = String(data?.country_code || '').toUpperCase();
-        const detectedCountry = isSupportedCountryCode(rawCode) ? rawCode : null;
+        const detectedCountry = normalizeOfferCountryCode(data?.country_code) || null;
 
         writeGeoDetectionCache({
           country: detectedCountry,
           detectedAt: Date.now(),
           status: detectedCountry ? 'ok' : 'failed',
         });
-        const currentManualCountry =
-          manualCountryRef.current || readLastManualOfferCountry();
-        if (currentManualCountry) {
-          manualCountryRef.current = currentManualCountry;
-          setCountryState(currentManualCountry);
-          if (!hasSavedLocale) {
-            setLocaleState(
-              localeFromCountry(detectedCountry) ?? localeFromBrowser(),
-            );
-          }
-          return;
-        }
         applyDetectedCountry(detectedCountry);
       } catch {
         if (!cancelled) {
@@ -167,9 +163,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
             detectedAt: Date.now(),
             status: 'failed',
           });
-        }
-        if (!hasSavedLocale) {
-          setLocaleState(localeFromBrowser());
+          applyDetectedCountry(null);
         }
       }
     };
@@ -182,6 +176,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setLocale = useCallback((next: SupportedLocale) => {
+    explicitLocaleRef.current = true;
     setLocaleState(next);
     try {
       window.localStorage.setItem('appLocale', next);
@@ -213,8 +208,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<LanguageContextValue>(
-    () => ({ locale, setLocale, t, country, setCountry }),
-    [locale, setLocale, t, country, setCountry]
+    () => ({ locale, setLocale, t, country, searchCountry, setCountry }),
+    [locale, setLocale, t, country, searchCountry, setCountry]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

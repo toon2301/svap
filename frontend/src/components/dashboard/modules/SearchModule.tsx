@@ -22,7 +22,7 @@ export default function SearchModule({
   isActive = true,
   onClose,
 }: SearchModuleProps) {
-  const { t, country } = useLanguage();
+  const { t, searchCountry } = useLanguage();
 
   const searchState = useSearchState();
   const searchApi = useSearchApi({ searchState, user, isActive });
@@ -165,7 +165,7 @@ export default function SearchModule({
           />
 
           <div className={isOverlay ? 'flex-1 overflow-y-auto min-h-0 px-4 sm:px-5 elegant-scrollbar' : 'px-4 sm:px-5'}>
-            <SearchDiagnosticsPanel diagnostics={searchApi.diagnostics} country={country}
+            <SearchDiagnosticsPanel diagnostics={searchApi.diagnostics} country={searchCountry}
               showSkills={searchState.showSkills} showUsers={searchState.showUsers} />
             <SearchResults
               user={user}
