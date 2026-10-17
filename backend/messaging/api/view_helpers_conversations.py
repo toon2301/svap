@@ -33,6 +33,12 @@ from .view_helpers_unread import _conversation_unread_count_expression_for_user
 
 
 def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation:
+    """
+    Konverzácia, v ktorej je používateľ aktívnym alebo pozvaným účastníkom, inak 404.
+
+    Skrytá konverzácia (bez novej správy po skrytí) a zmazaná žiadosť o správu sa nevrátia;
+    skupina sa vráti aj so stavom žiadosti `deleted`.
+    """
     participant_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk"),
         user_id=user.id,
@@ -64,6 +70,7 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
 
 
 def _peer_last_read_at_for_conversation(*, conversation_id: int, user_id: int):
+    """Kedy druhá strana naposledy prečítala konverzáciu (`last_read_at` iného účastníka)."""
     return (
         ConversationParticipant.objects.filter(conversation_id=conversation_id)
         .exclude(user_id=user_id)
@@ -73,6 +80,7 @@ def _peer_last_read_at_for_conversation(*, conversation_id: int, user_id: int):
 
 
 def _participant_hidden_at_for_conversation(*, conversation_id: int, user_id: int):
+    """Čas, kedy používateľ konverzáciu skryl; `None`, ak nie je skrytá alebo ju nemá."""
     return (
         ConversationParticipant.objects.filter(
             conversation_id=conversation_id,
@@ -88,6 +96,7 @@ def _participant_hidden_at_for_conversation(*, conversation_id: int, user_id: in
 
 
 def _participant_status_for_conversation(*, conversation_id: int, user_id: int):
+    """Stav účasti používateľa v konverzácii (aktívny/pozvaný); `None`, ak ju nemá."""
     return (
         ConversationParticipant.objects.filter(
             conversation_id=conversation_id,
@@ -103,6 +112,7 @@ def _participant_status_for_conversation(*, conversation_id: int, user_id: int):
 
 
 def _pinned_message_for_conversation(*, conversation: Conversation) -> Message | None:
+    """Pripnutá správa konverzácie; `None`, ak nie je žiadna pripnutá alebo je zmazaná."""
     pinned_message_id = getattr(conversation, "pinned_message_id", None)
     if pinned_message_id is None:
         return None
@@ -119,6 +129,7 @@ def _pinned_message_for_conversation(*, conversation: Conversation) -> Message |
 
 
 def _serialize_pinned_message(*, request, conversation: Conversation):
+    """Pripnutá správa konverzácie serializovaná pre API, alebo `None`."""
     pinned_message = _pinned_message_for_conversation(conversation=conversation)
     if pinned_message is None:
         return None
@@ -154,6 +165,11 @@ def _serialize_conversation_for_user(*, request, conversation_id: int):
 
 
 def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
+    """
+    Má používateľ aspoň jednu ponuku, ktorú si môže druhá strana vyžiadať?
+
+    Ponuka nesmie byť skrytá ani typu „hľadám“ a účet musí byť aktívny a verejný.
+    """
     if not user_id:
         return False
 
@@ -167,6 +183,12 @@ def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
 
 
 def _can_open_direct_target(*, actor, target) -> bool:
+    """
+    Môže `actor` otvoriť priamu konverzáciu s `target`?
+
+    Seba vždy; pri blokovaní v ktoromkoľvek smere nie; staff a superuser účty nie;
+    verejný účet áno; neverejný len ak už s `actor` začatú konverzáciu má.
+    """
     if getattr(actor, "id", None) == getattr(target, "id", None):
         return True
     if user_block_exists_between(
@@ -338,6 +360,10 @@ def _conversation_annotated_queryset_for_user(user):
                     "user__slug",
                     "user__user_type",
                     "user__avatar",
+                    # `serialize_user_brief` číta aj tieto polia; bez nich by ich Django
+                    # dotiahol samostatným dotazom pre každého člena každej skupiny (N+1).
+                    "user__is_active",
+                    "user__is_verified",
                 )
                 .order_by("role", "status", "joined_at", "id"),
                 to_attr="_prefetched_participants",
@@ -348,6 +374,12 @@ def _conversation_annotated_queryset_for_user(user):
 
 
 def _conversation_accessible_queryset_for_user(user, *, only_incoming_requests: bool = False):
+    """
+    Konverzácie, ku ktorým má používateľ prístup (skrytá bez novej správy sa nevráti).
+
+    Predvolene skupiny, prijaté konverzácie a žiadosti, ktoré používateľ sám poslal;
+    s `only_incoming_requests` len čakajúce žiadosti adresované jemu.
+    """
     qs = _conversation_annotated_queryset_for_user(user).filter(
         Q(participant_hidden_at__isnull=True)
         | Q(last_message_at__gte=F("participant_hidden_at"))
@@ -376,4 +408,5 @@ def _conversation_list_queryset_for_user(user, *, only_incoming_requests: bool =
 
 
 def _message_request_list_queryset_for_user(user):
+    """Čakajúce žiadosti o správu adresované používateľovi (zoznam záložky Žiadosti)."""
     return _conversation_list_queryset_for_user(user, only_incoming_requests=True)

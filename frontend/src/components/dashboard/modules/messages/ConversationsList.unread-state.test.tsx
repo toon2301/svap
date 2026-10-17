@@ -3,11 +3,17 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
+import {
+  publishMessageUnreadCount,
+  syncMessageUnreadCountFromConversations,
+} from '@/components/dashboard/contexts/messageUnreadStore';
 import { ConversationsList } from './ConversationsList';
+import { listConversationsPage } from './conversationsPagingApi';
+import { legacyListAsPages } from './conversationsPagingTestUtils';
 import {
   createGroupConversation,
   getMessageRequestsUnseenSummary,
+  getUnreadMessagesSummary,
   hideConversation,
   listConversations,
   listGroupMemberCandidates,
@@ -24,6 +30,7 @@ jest.mock('./messagingApi', () => ({
   deleteMessageRequest: jest.fn(),
   getMessageRequestsUnseenSummary: jest.fn(),
   getMessagingErrorMessage: jest.fn((_error, options) => options?.fallback || 'Messaging error'),
+  getUnreadMessagesSummary: jest.fn(),
   hideConversation: jest.fn(),
   listConversations: jest.fn(),
   listGroupMemberCandidates: jest.fn(),
@@ -32,8 +39,14 @@ jest.mock('./messagingApi', () => ({
   updateConversationPinnedState: jest.fn(),
 }));
 
+jest.mock('./conversationsPagingApi', () => ({
+  ...jest.requireActual('./conversationsPagingApi'),
+  listConversationsPage: jest.fn(),
+}));
+
 jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
   __esModule: true,
+  getMessageUnreadCountStore: jest.fn(() => ({ lastSuccessfulRefreshAt: 0 })),
   publishMessageUnreadCount: jest.fn(),
   syncMessageUnreadCountFromConversations: jest.fn(),
 }));
@@ -63,6 +76,7 @@ describe('ConversationsList unread state', () => {
     setVisibilityState('visible');
     (ensureFreshSessionForBackgroundWork as jest.Mock).mockResolvedValue('ready');
     (getMessageRequestsUnseenSummary as jest.Mock).mockResolvedValue({ count: 0 });
+    (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 0 });
     (hideConversation as jest.Mock).mockResolvedValue({
       conversation_id: 9,
       hidden_at: '2026-03-27T10:05:00Z',
@@ -83,6 +97,12 @@ describe('ConversationsList unread state', () => {
     (listGroupMemberCandidates as jest.Mock).mockResolvedValue([]);
     (listMessageRequests as jest.Mock).mockResolvedValue([]);
     (markMessageRequestsSeen as jest.Mock).mockResolvedValue({ count: 0 });
+    (listConversationsPage as jest.Mock).mockImplementation(
+      legacyListAsPages(
+        (params) => (listConversations as jest.Mock)(params),
+        (params) => (listMessageRequests as jest.Mock)(params),
+      ),
+    );
   });
 
   it('keeps unread state visible until the detail marks the conversation as read', async () => {
@@ -108,7 +128,7 @@ describe('ConversationsList unread state', () => {
     expect(screen.getByLabelText('2 unread messages')).toBeInTheDocument();
   });
 
-  it('includes received message requests in the messages badge sync so PENDING requests are not undercounted', async () => {
+  it('takes the badge total from the server summary so PENDING requests are not undercounted', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
@@ -118,32 +138,17 @@ describe('ConversationsList unread state', () => {
         unread_count: 0,
       },
     ]);
-    // A received PENDING request is NOT in the main list (it lives in the
-    // Žiadosti tab) but its unread message must still count toward the badge.
-    (listMessageRequests as jest.Mock).mockResolvedValue([
-      {
-        id: 15,
-        other_user: { id: 3, display_name: 'Requester' },
-        last_message_at: '2026-03-27T11:00:00Z',
-        has_unread: true,
-        unread_count: 1,
-      },
-    ]);
+    // Prijatá PENDING žiadosť nie je v hlavnom zozname (patrí do záložky Žiadosti), no jej
+    // neprečítaná správa sa do odznaku počíta. Súhrn zo servera ju obsahuje, preto sa odznak
+    // berie z neho – nie zo súčtu načítaných položiek, ktorý by ju (a ďalšie stránky) vynechal.
+    (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 1 });
 
     render(<ConversationsList currentUserId={1} variant="rail" />);
 
     await waitFor(() => {
-      expect(syncMessageUnreadCountFromConversations).toHaveBeenCalled();
+      expect(publishMessageUnreadCount).toHaveBeenCalledWith(1);
     });
-
-    const calls = (syncMessageUnreadCountFromConversations as jest.Mock).mock.calls;
-    const lastSyncedItems = calls[calls.length - 1][0] as Array<{
-      id: number;
-      unread_count?: number;
-    }>;
-    // The received request (id 15, unread 1) must be part of the badge sum, so
-    // it matches the summary endpoint and the acknowledge baseline stays intact.
-    expect(lastSyncedItems.some((item) => item.id === 15 && item.unread_count === 1)).toBe(true);
-    expect(lastSyncedItems.some((item) => item.id === 9)).toBe(true);
+    expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
+    expect(listMessageRequests).not.toHaveBeenCalled();
   });
 });

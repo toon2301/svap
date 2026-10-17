@@ -28,6 +28,7 @@ import { useDashboardBackHandlers } from '../hooks/useDashboardBackHandlers';
 import { usePortfolioNavigation } from '../hooks/usePortfolioNavigation';
 import { usePathModuleEffects } from '../hooks/usePathModuleEffects';
 import { usePopstateModuleSync } from '../hooks/usePopstateModuleSync';
+import { useRouterMessagesModuleSync } from '../hooks/useRouterMessagesModuleSync';
 import { useProfileWindowEvents } from '../hooks/useProfileWindowEvents';
 import { useDashboardMountRoute } from './dashboardMountRoute';
 import { resolveInitialOwnProfileTab } from './ownProfileTab';
@@ -478,6 +479,21 @@ export default function DashboardContent({
   // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
   usePopstateModuleSync({
     isMobile,
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+  });
+
+  // `router.push` do Správ z miesta, ktoré je tiež stránkou Správ, modul neprepne (rovnaká Next
+  // stránka, bez remountu) – zosúladíme ho s adresou, ako pri kroku späť.
+  useRouterMessagesModuleSync({
+    pathname,
+    searchString: searchParams?.toString() ?? '',
+    activeModule,
     setActiveModule,
     setIsRightSidebarOpen,
     setActiveRightItem,
