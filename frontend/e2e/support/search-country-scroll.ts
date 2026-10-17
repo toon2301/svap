@@ -54,7 +54,11 @@ export function resultAuthors(page: Page): Locator {
 }
 
 /** Use existing broad-query cards; a missing/deleted fixture is a failure, never a skipped PASS. */
-export async function openScrollableResults(page: Page, tab: 'all' | 'offers'): Promise<string> {
+export async function openScrollableResults(
+  page: Page,
+  tab: 'all' | 'offers',
+  pathname: '/search' | '/search/' = '/search',
+): Promise<string> {
   const query = process.env.E2E_SEARCH_NAV_QUERY?.trim() || 'te';
   if (query.length < 2) throw new Error('The reusable search query must contain at least two characters.');
   const path = tab === 'all' ? '/api/auth/search/global/' : '/api/auth/search/';
@@ -63,7 +67,7 @@ export async function openScrollableResults(page: Page, tab: 'all' | 'offers'): 
     return response.request().method() === 'GET' && url.pathname === path && url.searchParams.get('q') === query;
   });
   const params = new URLSearchParams({ q: query, tab, ...(tab === 'offers' ? { sort: 'newest', page: '1' } : { users_page: '1' }) });
-  await page.goto(`/search?${params.toString()}`);
+  await page.goto(`${pathname}?${params.toString()}`);
   const response = await responsePromise;
   if (response.status() !== 200) throw new Error(`Real result search failed: HTTP ${response.status()}.`);
   const data: unknown = await response.json();
@@ -100,4 +104,24 @@ export async function expectRestoredSearch(page: Page, url: string, top: number)
     const restored = await page.locator('[data-dashboard-main]').evaluate((element) => element.scrollTop);
     return Math.abs(restored - top);
   }, { message: 'Returning from the author profile must restore the nested result scroll position' }).toBeLessThanOrEqual(2);
+}
+
+/** Read only the opaque return token; personal identities and stored queries never enter reports. */
+export async function savedSearchScrollId(page: Page, url: string, top: number): Promise<string | null> {
+  return page.evaluate(({ sourceUrl, sourceTop }) => {
+    const stored: unknown = JSON.parse(sessionStorage.getItem('svaplySearchScrollV1') || '[]');
+    if (!Array.isArray(stored)) return null;
+    const snapshot = stored.find((item) => item?.url === sourceUrl && item?.top === sourceTop);
+    return typeof snapshot?.id === 'string' ? snapshot.id : null;
+  }, { sourceUrl: `${new URL(url).pathname}${new URL(url).search}${new URL(url).hash}`, sourceTop: top });
+}
+
+/** Report only the saved numeric position, not the token, viewer, query, or snapshot payload. */
+export async function savedSearchScrollTop(page: Page, id: string): Promise<number | null> {
+  return page.evaluate((token) => {
+    const stored: unknown = JSON.parse(sessionStorage.getItem('svaplySearchScrollV1') || '[]');
+    if (!Array.isArray(stored)) return null;
+    const snapshot = stored.find((item) => item?.id === token);
+    return typeof snapshot?.top === 'number' ? snapshot.top : null;
+  }, id);
 }

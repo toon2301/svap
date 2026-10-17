@@ -27,7 +27,7 @@ function record(value: unknown): Record<string, unknown> {
 
 /** Keep every URL filter, tab and page isolated, without putting results into storage. */
 function currentSearchUrl(): string | null {
-  return window.location.pathname === '/search'
+  return window.location.pathname === '/search' || window.location.pathname === '/search/'
     ? `${window.location.pathname}${window.location.search}${window.location.hash}` : null;
 }
 
@@ -41,7 +41,7 @@ function validSnapshot(value: unknown): value is SearchScrollSnapshot {
   const item = record(value);
   return typeof item.id === 'string' && item.id.length > 0 && item.id.length < 100
     && typeof item.viewerId === 'number' && Number.isInteger(item.viewerId) && item.viewerId > 0
-    && typeof item.url === 'string' && /^\/search(?:[?#]|$)/.test(item.url) && item.url.length <= 4096
+    && typeof item.url === 'string' && /^\/search\/?(?:[?#]|$)/.test(item.url) && item.url.length <= 4096
     && typeof item.top === 'number' && Number.isFinite(item.top) && item.top >= 0
     && typeof item.savedAt === 'number' && item.savedAt <= Date.now()
     && Date.now() - item.savedAt < SEARCH_SCROLL_TTL_MS;
@@ -121,6 +121,20 @@ export function readSearchScroll(viewerId: number | null | undefined): SearchScr
     } catch { /* This attempt can still restore; a later fresh entry must not borrow it. */ }
   }
   return snapshot;
+}
+
+/** Refresh only this viewer's current history entry, never an older or newly captured return. */
+export function refreshSearchScroll(id: string, top: number): void {
+  if (typeof window === 'undefined') return;
+  const url = currentSearchUrl();
+  const viewerId = getCurrentAccountId();
+  const roundedTop = Math.max(0, Math.round(top));
+  if (!url || !viewerId || !Number.isFinite(roundedTop) || entryId(window.history.state) !== id) return;
+  const entries = snapshots();
+  const index = entries.findIndex((item) => item.id === id && item.url === url && item.viewerId === viewerId);
+  if (index < 0 || entries[index].top === roundedTop) return;
+  save(entries.map((item, itemIndex) => itemIndex === index
+    ? { ...item, top: roundedTop, savedAt: Date.now() } : item));
 }
 
 /** Abandon only this attempt; an older cleanup must never remove a newer capture. */

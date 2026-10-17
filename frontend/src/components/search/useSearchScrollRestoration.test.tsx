@@ -1,5 +1,5 @@
 import { act, fireEvent, render } from '@testing-library/react';
-import { useRef } from 'react';
+import { StrictMode, useRef } from 'react';
 import { setCurrentAccountId } from '@/lib/currentAccount';
 import { readSearchScroll, rememberSearchScroll } from './searchScrollMemory';
 import { SEARCH_SCROLL_RESTORE_TIMEOUT_MS, useSearchScrollRestoration } from './useSearchScrollRestoration';
@@ -48,6 +48,7 @@ it('restores the nested main only, leaving window scroll and foreign history sta
   dimensions(main);
   frames();
   expect(main.scrollTop).toBe(1200);
+  expect(readSearchScroll(105)?.top).toBe(1200);
   expect(windowScroll).not.toHaveBeenCalled();
   expect(window.history.state).toEqual(state);
   expect(jest.getTimerCount()).toBe(0);
@@ -101,6 +102,7 @@ it.each([600, 850])('clamps once when the settled list shrank or failed (height=
   dimensions(main, height);
   frames(SEARCH_SCROLL_RESTORE_TIMEOUT_MS + 80);
   expect(main.scrollTop).toBe(height - 600);
+  expect(readSearchScroll(105)?.top).toBe(height - 600);
   expect(jest.getTimerCount()).toBe(0);
 });
 
@@ -188,6 +190,132 @@ it('preserves a pending attempt across unmount and allows repeated history retur
   expect(next.scrollTop).toBe(1200);
 });
 
+it('refreshes a restored profile-return scroll before later sidebar navigation and Back', () => {
+  prepare();
+  const sourceState = window.history.state;
+  const sourceUrl = window.location.href;
+  const first = render(<Harness />);
+  const main = first.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  expect(main.scrollTop).toBe(1200);
+
+  main.scrollTop = 310;
+  fireEvent.scroll(main);
+  window.history.pushState({ __NA: true }, '', '/dashboard/favorites');
+  first.unmount();
+  window.history.replaceState(sourceState, '', sourceUrl);
+  window.dispatchEvent(new PopStateEvent('popstate', { state: sourceState }));
+  const returned = render(<Harness />);
+  const next = returned.container.querySelector('main')!;
+  dimensions(next);
+  frames();
+  expect(next.scrollTop).toBe(310);
+});
+
+it('removes post-restore scroll tracking on unmount and on a viewer change', () => {
+  prepare();
+  const view = render(<Harness />);
+  const main = view.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  main.scrollTop = 420;
+  fireEvent.scroll(main);
+  expect(readSearchScroll(105)?.top).toBe(420);
+  const remove = jest.spyOn(main, 'removeEventListener');
+  view.rerender(<Harness viewer={106} />);
+  expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function));
+  main.scrollTop = 880;
+  fireEvent.scroll(main);
+  expect(readSearchScroll(105)?.top).toBe(420);
+  view.unmount();
+  main.scrollTop = 900;
+  fireEvent.scroll(main);
+  expect(readSearchScroll(105)?.top).toBe(420);
+});
+
+it('stops post-restore tracking on popstate before the old main can emit a late scroll', () => {
+  prepare();
+  const sourceState = window.history.state;
+  const sourceUrl = window.location.href;
+  const view = render(<Harness />);
+  const main = view.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  window.history.pushState({ __NA: true }, '', '/dashboard/favorites');
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+  window.history.replaceState(sourceState, '', sourceUrl);
+  main.scrollTop = 420;
+  fireEvent.scroll(main);
+  expect(readSearchScroll(105)?.top).toBe(1200);
+});
+
+it('stops tracking when a replacement changes URL and never updates another query', () => {
+  prepare();
+  const sourceState = window.history.state;
+  const sourceUrl = window.location.href;
+  const view = render(<Harness />);
+  const main = view.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  const remove = jest.spyOn(main, 'removeEventListener');
+  window.history.replaceState(sourceState, '', '/search?q=other');
+  main.scrollTop = 420;
+  fireEvent.scroll(main);
+  expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function));
+  window.history.replaceState(sourceState, '', sourceUrl);
+  expect(readSearchScroll(105)?.top).toBe(1200);
+});
+
+it('does not let an old tracker update a newly captured history snapshot', () => {
+  prepare();
+  const view = render(<Harness />);
+  const main = view.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  main.scrollTop = 740;
+  rememberSearchScroll();
+  main.scrollTop = 850;
+  fireEvent.scroll(main);
+  expect(readSearchScroll(105)?.top).toBe(740);
+});
+
+it('a new profile entry captures the latest scroll and restores it normally', () => {
+  prepare();
+  const first = render(<Harness />);
+  const main = first.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  main.scrollTop = 740;
+  rememberSearchScroll();
+  const sourceState = window.history.state;
+  const sourceUrl = window.location.href;
+  expect(readSearchScroll(105)?.top).toBe(740);
+  window.history.pushState({ __NA: true }, '', '/dashboard/users/owner');
+  first.unmount();
+  window.history.replaceState(sourceState, '', sourceUrl);
+  window.dispatchEvent(new PopStateEvent('popstate', { state: sourceState }));
+  const returned = render(<Harness />);
+  const next = returned.container.querySelector('main')!;
+  dimensions(next);
+  frames();
+  expect(next.scrollTop).toBe(740);
+  expect(readSearchScroll(105)?.top).toBe(740);
+});
+
+it('restores once and tracks the current scroll under StrictMode effect replay', () => {
+  prepare();
+  const view = render(<StrictMode><Harness /></StrictMode>);
+  const main = view.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  expect(main.scrollTop).toBe(1200);
+  main.scrollTop = 360;
+  fireEvent.scroll(main);
+  expect(readSearchScroll(105)?.top).toBe(360);
+  expect(jest.getTimerCount()).toBe(0);
+});
+
 it('stops on a subsequent popstate and never moves the destination page', () => {
   prepare();
   const view = render(<Harness loading />);
@@ -199,6 +327,26 @@ it('stops on a subsequent popstate and never moves the destination page', () => 
   frames();
   expect(main.scrollTop).toBe(0);
   expect(jest.getTimerCount()).toBe(0);
+});
+
+it('does not consume a pending return interrupted by navigation before results arrive', () => {
+  prepare();
+  const sourceState = window.history.state;
+  const sourceUrl = window.location.href;
+  const first = render(<Harness loading />);
+  window.history.pushState({ __NA: true }, '', '/dashboard/favorites');
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
+  first.unmount();
+
+  window.history.replaceState(sourceState, '', sourceUrl);
+  window.dispatchEvent(new PopStateEvent('popstate', { state: sourceState }));
+  expect(readSearchScroll(105)?.top).toBe(1200);
+  const returned = render(<Harness />);
+  const main = returned.container.querySelector('main')!;
+  dimensions(main);
+  frames();
+  expect(main.scrollTop).toBe(1200);
+  expect(readSearchScroll(105)?.top).toBe(1200);
 });
 
 it('stops if a router replacement changes full URL without popstate', () => {

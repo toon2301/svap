@@ -586,3 +586,89 @@ neoznačujú za opravené.
   spoločný commit/push do offer-watch-card-actions, potom používateľova Rabbit
   kontrola a po schválenom nasadení živý/manuálny retest oboch opráv.
   Žiadny PR, merge ani nasadenie sa týmto krokom automaticky nevykonávajú.
+
+## 17. 10. 2026 – overenie review PR #183
+
+- Používateľ schválil overenie aktuálnych nálezov, opravu platných problémov
+  a následný commit/push do rovnakej vetvy. Začiatok bol čistý na b18db607;
+  otvorený PR #183 má rovnaký HEAD a jeho pôvodný CI run 39045080372 je success.
+  Rabbit nevytvoril funkčný komentár; dva konkrétne P2 nálezy pochádzajú z
+  Codex review. Oba sú overené ako platné, nie mechanicky prijaté podľa textu.
+- OW-19 / trailing slash: next.config.js má skipTrailingSlashRedirect=true,
+  ale currentSearchUrl aj validSnapshot odmietali `/search/`. Najprv nové
+  regresie 5 FAIL / 40 PASS, potom úzka dvojriadková oprava: povolené sú presne
+  `/search` a `/search/`. Celé query/hash sa nemenia a obe adresy sa nezlučujú.
+  Neplatné podcesty sa naďalej odmietajú. Nový záznam, načítanie zo sessionStorage,
+  popstate handoff a presná izolácia URL/účtu majú regresie; samotná memory/SSR
+  sada následne 46 PASS. Integračný SearchLayout test prechádza oboma cestami
+  pre všetky tri výsledkové záložky cez reálny profilový navigačný helper.
+- OW-19 / aktualizácia obnovy: finish predtým ponechal úspešne použitý snapshot,
+  takže neskorší posun, odchod sidebarom a browser Back obnovili starých 1 200 px.
+  Nová regresia to najprv potvrdila RED. Pôvodne vyskúšané spotrebovanie po
+  úspechu by však zrušilo existujúcu garanciu opakovaného Forward/Back bez
+  nového kliknutia na profil. Pri finálnom produktovom audite bolo preto
+  nahradené druhou možnosťou z review: aktualizovať existujúci snapshot podľa
+  skutočných scroll udalostí po úspešnej obnove. Pending requesty a ich cleanup
+  sa nemenia. Aktualizácia overuje presnú URL, aktuálny účet, history ID a
+  existujúci platný snapshot, nezaloží nový a nemôže prepísať novší capture.
+  Cudzie history state ostávajú zachované. Nový profilový vstup naďalej
+  zachytáva novú aktuálnu pozíciu; StrictMode a clamp majú regresie.
+- Priebežná regresia pred finálnym refresh riešením: 35 sád / 523 testov PASS.
+  Presne dva vtedy merané
+  celé produkčné súbory: 99,34 % statements, 98,79 % branches, 100 % functions
+  a lines; každý má každú metriku nad 95 %. Bez zmeny coverage gate alebo ignore.
+  TypeScript PASS a lint všetkých 7 dotknutých TS/TSX: 0 chýb / 0 varovaní.
+- Rabbitovo všeobecné upozornenie Docstring Coverage 38,89 % analyzuje JS/TS
+  funkcie naprieč PR, nejde o Python kontrolu. Povinné dokumentačné pravidlá
+  svaply.mdc s prahom 80 % sú v sekcii Python; v tomto PR ani opravnom kole sa
+  Python nemení. Nepridávali sa formálne komentáre do nesúvisiacich komponentov
+  a testov iba na zvýšenie tohto automatického skóre. Nie je to opravený funkčný
+  nález ani dôvod meniť aplikáciu alebo oslabovať kontrolu.
+- Doplnené sú iba dva nové Playwright scenáre × tri projekty: `/search/`
+  profilový roundtrip a úspešná obnova → reálny posun → obyčajný odchod → Back
+  bez prepisu zastaranou pozíciou. Desktop použije Sidebar; mobilný full-search nemá
+  sidebar, preto použije viditeľnú existujúcu šípku na `/dashboard/search`.
+  Pôvodných 21 scenárov zostalo zachovaných. Nasadený výsledok opravy sa
+  nepovažuje za PASS na základe zberu ani behu starej produkcie.
+  Skutočný živý beh nových šiestich variantov na starej produkcii: 6 RED,
+  0 SKIP, 0 retry, bez aplikačných zápisov. `/search/` sa zachovalo, ale scroll
+  sa resetoval (odchýlka desktop 1 334 px, mobil 4 508 px). Následné scenáre
+  skončili na chýbajúcom prvotnom snapshote starej verzie; následný posun a
+  odchod/Back sa v tomto behu nevykonali. Nie je tým preukázaná review chyba
+  stale snapshotu na starej produkcii ani úspech jej opravy; ten dokladajú
+  zatiaľ lokálne RED/PASS testy. Finálny druhý scenár namiesto spotrebovania
+  overuje aktualizovanú pozíciu; živý beh sa zastavil na rovnakej skoršej
+  podmienke starej verzie. Po nasadení zopakovať všetkých 27 scenárov.
+- Dve priebežné nezávislé read-only kontroly produkčných opráv a integračných
+  regresií nenašli ďalší preukázaný problém. Žiadna časť povinného overenia sa
+  tým nenahrádza ani nevydáva za automatickú záruku bezchybnosti.
+- Rozsah tohto opravného kola: 9 upravených existujúcich súborov, žiadne nové
+  súbory: 2 malé produkčné moduly, 4 Jest súbory, 2 Playwright súbory a táto
+  evidencia. Backend, migrácie, preklady, krajinná logika/filtrová cache a
+  nadlimitné TS/TSX bez zmien. Hlavný checkout zostáva nedotknutý.
+  Prvý celý FE beh bol zámerne zastavený pred dokončením pri zmene riešenia;
+  nie je považovaný za PASS. Nový celý beh finálnej verzie prešiel:
+  464 sád / 6 894 testov PASS, bez zvyšovania timeoutov alebo retry.
+- Finálne refresh riešenie: spoločná cielená regresia 35 sád / 534 testov PASS;
+  oba celé teraz upravené produkčné súbory majú každú metriku nad 95 %.
+  Spolu 99,44 % statements, 98,97 % branches, 100 % functions a lines;
+  obnovovací hook má 100 % všetkých metrík. TypeScript PASS, finálny lint
+  všetkých 8 dotknutých TS/TSX: 0 chýb / 0 varovaní. Opakovaná nezávislá
+  read-only kontrola finálneho refreshu nenašla ďalší preukázaný problém.
+- Produkčný build finálnej verzie PASS vrátane kompilácie, typov a 38 statických
+  stránok; registry sync nevytvoril ďalšie zmeny. Existujúce neblokujúce Sentry
+  odporúčanie globálneho error handlera zostalo nepotlačené. Diff check PASS,
+  všetky dotknuté TS/TSX zostávajú pod 500 riadkov; hlavný checkout čistý na
+  e7359f1b. Nasleduje schválený commit/push do PR #183, potom nové review a po
+  schválenom nasadení cielený manuálny/Playwright retest. Žiadny merge/deploy.
+
+Zmenené existujúce súbory tohto review kola:
+
+- Produkčné v `frontend/src/components/search/`: `searchScrollMemory.ts`,
+  `useSearchScrollRestoration.ts`.
+- Jest v rovnakom priečinku: `SearchLayout.scroll.test.tsx`,
+  `searchScrollMemory.ssr.test.ts`, `searchScrollMemory.test.ts`,
+  `useSearchScrollRestoration.test.tsx`.
+- Playwright: `frontend/e2e/search-country-scroll.spec.ts`,
+  `frontend/e2e/support/search-country-scroll.ts`.
+- Evidencia: `docs/testing/findings-register.md`. Nové súbory 0, migrácie 0.

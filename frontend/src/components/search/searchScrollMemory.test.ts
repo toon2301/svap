@@ -1,6 +1,6 @@
 import { setCurrentAccountId } from '@/lib/currentAccount';
 import {
-  forgetSearchScroll, readSearchScroll, rememberSearchScroll,
+  forgetSearchScroll, readSearchScroll, refreshSearchScroll, rememberSearchScroll,
   SEARCH_SCROLL_HISTORY_KEY, SEARCH_SCROLL_STORAGE_KEY, SEARCH_SCROLL_TTL_MS,
 } from './searchScrollMemory';
 
@@ -66,6 +66,77 @@ it('survives module reload using sessionStorage, not results or module-only snap
   });
   expect(reloadRead!(105)?.top).toBe(1278);
 });
+
+it.each(['/search/', '/search/?q=ma&tab=offers&page=2#results'])(
+  'captures and reads the exact supported trailing-slash URL %s', (url) => {
+    window.history.replaceState({ __NA: true, tree: ['keep'] }, '', url);
+    expect(rememberSearchScroll()).toEqual(expect.any(String));
+    expect(readSearchScroll(105)).toMatchObject({ url, viewerId: 105, top: 1278 });
+    expect(window.history.state).toMatchObject({ __NA: true, tree: ['keep'] });
+  },
+);
+
+it('validates a trailing-slash snapshot reloaded from sessionStorage after a fresh document', () => {
+  const url = '/search/?q=ma&tab=offers&page=2#results';
+  const snapshot = { id: 'slash-reload', viewerId: 105, url, top: 845, savedAt: Date.now() };
+  sessionStorage.setItem(SEARCH_SCROLL_STORAGE_KEY, JSON.stringify([snapshot]));
+  window.history.replaceState({ [SEARCH_SCROLL_HISTORY_KEY]: { version: 1, id: snapshot.id } }, '', url);
+  let reloadRead!: typeof readSearchScroll;
+  jest.isolateModules(() => { reloadRead = require('./searchScrollMemory').readSearchScroll; });
+  expect(reloadRead(105)).toEqual(snapshot);
+  expect(reloadRead(106)).toBeNull();
+});
+
+it('adopts a carried popstate marker for the exact trailing-slash URL after Next replaces state', () => {
+  const url = '/search/?q=ma&tab=offers&page=2#results';
+  window.history.replaceState({ __NA: true }, '', url);
+  expect(rememberSearchScroll()).toEqual(expect.any(String));
+  const state = window.history.state;
+  window.dispatchEvent(new PopStateEvent('popstate', { state }));
+  window.history.replaceState({ __NA: true, tree: ['retained'] }, '', url);
+  expect(readSearchScroll(105)).toMatchObject({ url, top: 1278 });
+  expect(window.history.state).toMatchObject({
+    __NA: true, tree: ['retained'], [SEARCH_SCROLL_HISTORY_KEY]: state[SEARCH_SCROLL_HISTORY_KEY],
+  });
+  window.history.pushState({ __NA: true }, '', url);
+  expect(readSearchScroll(105)).toBeNull();
+});
+
+it('does not normalize slash variants, query parameters or hashes into the same snapshot', () => {
+  const url = '/search/?q=ma&tab=offers&page=2#results';
+  window.history.replaceState({ __NA: true }, '', url);
+  expect(rememberSearchScroll()).toEqual(expect.any(String));
+  const state = window.history.state;
+  for (const otherUrl of [
+    '/search?q=ma&tab=offers&page=2#results',
+    '/search/?q=other&tab=offers&page=2#results',
+    '/search/?q=ma&tab=users&page=2#results',
+    '/search/?q=ma&tab=offers&page=3#results',
+    '/search/?q=ma&tab=offers&page=2#other',
+  ]) {
+    window.history.replaceState(state, '', otherUrl);
+    expect(readSearchScroll(105)).toBeNull();
+  }
+  window.history.replaceState(state, '', url);
+  expect(readSearchScroll(105)?.top).toBe(1278);
+});
+
+it.each(['/search//', '/search/other', '/searching', '/search-offers'])(
+  'does not capture, hand off or reload snapshots for an unsupported path %s', (url) => {
+    const snapshot = { id: `invalid-${url}`, viewerId: 105, url, top: 845, savedAt: Date.now() };
+    sessionStorage.setItem(SEARCH_SCROLL_STORAGE_KEY, JSON.stringify([snapshot]));
+    const state = { __NA: true, [SEARCH_SCROLL_HISTORY_KEY]: { version: 1, id: snapshot.id } };
+    window.history.replaceState(state, '', url);
+    const replace = jest.spyOn(window.history, 'replaceState');
+    expect(rememberSearchScroll()).toBeUndefined();
+    expect(replace).not.toHaveBeenCalled();
+    window.dispatchEvent(new PopStateEvent('popstate', { state }));
+    expect(readSearchScroll(105)).toBeNull();
+    let reloadRead!: typeof readSearchScroll;
+    jest.isolateModules(() => { reloadRead = require('./searchScrollMemory').readSearchScroll; });
+    expect(reloadRead(105)).toBeNull();
+  },
+);
 
 it('uses the carried popstate entry if the router overwrites history state', () => {
   rememberSearchScroll();
@@ -239,4 +310,83 @@ it('does not revive older abandoned entries after repeated captures during a quo
   rememberSearchScroll();
   expect(readSearchScroll(105)?.top).toBe(999);
   expect(JSON.parse(sessionStorage.getItem(SEARCH_SCROLL_STORAGE_KEY)!)[0].top).toBe(999);
+});
+
+it('refreshes only the current snapshot and persists its latest rounded scroll without touching history', () => {
+  const id = rememberSearchScroll()!;
+  const state = window.history.state;
+  const replace = jest.spyOn(window.history, 'replaceState');
+  refreshSearchScroll(id, 310.4);
+  expect(readSearchScroll(105)?.top).toBe(310);
+  expect(JSON.parse(sessionStorage.getItem(SEARCH_SCROLL_STORAGE_KEY)!)[0].top).toBe(310);
+  expect(window.history.state).toEqual(state);
+  expect(replace).not.toHaveBeenCalled();
+  let reloadRead!: typeof readSearchScroll;
+  jest.isolateModules(() => { reloadRead = require('./searchScrollMemory').readSearchScroll; });
+  expect(reloadRead(105)?.top).toBe(310);
+});
+
+it('clamps negative refreshes to zero and avoids rewriting an unchanged rounded position', () => {
+  const id = rememberSearchScroll()!;
+  refreshSearchScroll(id, -20);
+  expect(readSearchScroll(105)?.top).toBe(0);
+  const write = jest.spyOn(Storage.prototype, 'setItem');
+  refreshSearchScroll(id, 0.2);
+  expect(write).not.toHaveBeenCalled();
+});
+
+it.each([NaN, Infinity])('ignores an invalid refresh offset %s', (top) => {
+  const id = rememberSearchScroll()!;
+  refreshSearchScroll(id, top);
+  expect(readSearchScroll(105)?.top).toBe(1278);
+});
+
+it('does not refresh for an unknown or different account, another URL or another history entry', () => {
+  const id = rememberSearchScroll()!;
+  const state = window.history.state;
+  const url = window.location.href;
+  setCurrentAccountId(null);
+  refreshSearchScroll(id, 100);
+  setCurrentAccountId(106);
+  refreshSearchScroll(id, 200);
+  setCurrentAccountId(105);
+  window.history.replaceState(state, '', '/search?q=other');
+  refreshSearchScroll(id, 300);
+  window.history.replaceState(null, '', url);
+  refreshSearchScroll(id, 400);
+  window.history.replaceState(state, '', '/dashboard');
+  refreshSearchScroll(id, 500);
+  window.history.replaceState(state, '', url);
+  expect(readSearchScroll(105)?.top).toBe(1278);
+});
+
+it('never revives a forgotten or expired snapshot and cannot overwrite a newer capture', () => {
+  const id = rememberSearchScroll()!;
+  const originalState = window.history.state;
+  main.scrollTop = 900;
+  const newer = rememberSearchScroll()!;
+  const newerState = window.history.state;
+  refreshSearchScroll(id, 100);
+  expect(readSearchScroll(105)?.top).toBe(900);
+  refreshSearchScroll(newer, 710);
+  expect(readSearchScroll(105)?.top).toBe(710);
+  window.history.replaceState(originalState, '', window.location.href);
+  expect(readSearchScroll(105)?.top).toBe(1278);
+  window.history.replaceState(newerState, '', window.location.href);
+  forgetSearchScroll(newer);
+  refreshSearchScroll(newer, 200);
+  expect(readSearchScroll(105)).toBeNull();
+  const latest = rememberSearchScroll()!;
+  const now = Date.now();
+  jest.spyOn(Date, 'now').mockReturnValue(now + SEARCH_SCROLL_TTL_MS + 1);
+  refreshSearchScroll(latest, 300);
+  expect(readSearchScroll(105)).toBeNull();
+});
+
+it('refreshes the same-document fallback even when later storage writes fail', () => {
+  const id = rememberSearchScroll()!;
+  jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  refreshSearchScroll(id, 310);
+  expect(readSearchScroll(105)?.top).toBe(310);
+  expect(JSON.parse(sessionStorage.getItem(SEARCH_SCROLL_STORAGE_KEY)!)[0].top).toBe(1278);
 });

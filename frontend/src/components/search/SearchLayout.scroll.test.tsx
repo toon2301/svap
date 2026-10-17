@@ -28,8 +28,9 @@ beforeEach(() => {
 });
 afterEach(() => { setCurrentAccountId(null); jest.useRealTimers(); });
 
-it.each(['all', 'offers', 'users'])('captures before real profile navigation and restores %s only after real results', async (tab) => {
-  window.history.replaceState(window.history.state, '', `/search?q=mo&tab=${tab}&page=2`);
+const resultCases = ['/search', '/search/'].flatMap((path) => ['all', 'offers', 'users'].map((tab) => [path, tab]));
+it.each(resultCases)('captures %s before real profile navigation and restores %s only after real results', async (path, tab) => {
+  window.history.replaceState(window.history.state, '', `${path}?q=mo&tab=${tab}&page=2`);
   const view = render(<SearchLayout><div>Results</div></SearchLayout>);
   const outgoing = view.container.querySelector<HTMLElement>('[data-dashboard-main]')!;
   outgoing.scrollTop = 1362;

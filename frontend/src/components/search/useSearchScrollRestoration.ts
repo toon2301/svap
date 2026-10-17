@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type RefObject } from 'react';
-import { forgetSearchScroll, readSearchScroll } from './searchScrollMemory';
+import { forgetSearchScroll, readSearchScroll, refreshSearchScroll } from './searchScrollMemory';
 
 export const SEARCH_SCROLL_RESTORE_TIMEOUT_MS = 6000;
 const USER_INPUT_EVENTS = ['touchstart', 'wheel', 'keydown', 'mousedown'] as const;
@@ -40,9 +40,21 @@ export function useSearchScrollRestoration(
     const ready = () => !main.querySelector('[data-search-loading="true"]');
     const stillCurrent = () => mainRef.current === main
       && `${window.location.pathname}${window.location.search}${window.location.hash}` === url;
+    const stopTracking = () => {
+      main.removeEventListener('scroll', trackScroll);
+      window.removeEventListener('popstate', stopTracking);
+    };
+    const trackScroll = () => {
+      if (!stillCurrent()) { stopTracking(); return; }
+      refreshSearchScroll(snapshot.id, main.scrollTop);
+    };
     const finish = (top: number) => {
       main.scrollTop = top;
       stop();
+      // Repeated history returns retain this entry, but never its pre-scroll or pre-clamp position.
+      refreshSearchScroll(snapshot.id, main.scrollTop);
+      main.addEventListener('scroll', trackScroll, { passive: true });
+      window.addEventListener('popstate', stopTracking);
     };
     const timeout = setTimeout(() => {
       // This bounds layout growth, not a slow request's lifetime.
@@ -82,6 +94,6 @@ export function useSearchScrollRestoration(
     window.addEventListener('resize', schedule);
     main.addEventListener('load', schedule, true);
     schedule();
-    return stop;
+    return () => { stop(); stopTracking(); };
   }, [mainRef, viewerId]);
 }
