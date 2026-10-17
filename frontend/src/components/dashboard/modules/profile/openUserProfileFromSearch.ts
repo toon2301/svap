@@ -17,6 +17,7 @@
 import { dashboardProfilePath } from '../../components/dashboardRoutes';
 import { clearFeedReturn } from '../feed/feedReturnState';
 import { cancelProfileOriginPending, markProfileOriginPending } from './profileOriginHistory';
+import { forgetSearchScroll, rememberSearchScroll } from '@/components/search/searchScrollMemory';
 
 type ProfileRouter = { push: (url: string) => void };
 
@@ -53,6 +54,8 @@ export function openUserProfileFromSearch(
   const path = dashboardProfilePath(identifier);
   if (!path) return;
 
+  const searchScrollId = rememberSearchScroll();
+
   // Profil z vyhľadávania je nový reťazec, nie vstup z Nástenky – staré
   // zapamätané miesto Nástenky by Domov inak obnovil z cudzej cesty.
   clearFeedReturn();
@@ -70,6 +73,7 @@ export function openUserProfileFromSearch(
     // Navigácia sa nespustila, čakajúci pôvod nemá kto prevziať. Zruší sa len
     // tá naša žiadosť (novšiu nesmie zmazať) a chyba ide ďalej ako doteraz.
     cancelProfileOriginPending(pendingRequestId);
+    if (searchScrollId) forgetSearchScroll(searchScrollId);
     throw error;
   }
 }

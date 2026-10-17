@@ -12,6 +12,7 @@ import {
 } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
 import { useDashboardWindowScrollReset } from '@/components/dashboard/hooks/useDashboardWindowScrollReset';
 import { VIEWPORT_HEIGHT_CLASSES } from '@/components/dashboard/viewportHeightClasses';
+import { useSearchScrollRestoration } from './useSearchScrollRestoration';
 
 interface SearchLayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,8 @@ export function SearchLayout({ children }: SearchLayoutProps) {
   const router = useRouter();
   const { logout: authLogout, user } = useAuth();
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(true);
+  const mainRef = useRef<HTMLElement>(null);
+  useSearchScrollRestoration(mainRef, user?.id);
   useDashboardWindowScrollReset('search');
 
   /** Use Next navigation for full-page destinations outside the independent search layout. */
@@ -164,7 +167,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
           </div>
 
           {/* Main Content - rovnaká šírka ako profil; klik mimo ľavého panelu zatvára search (cez useEffect) */}
-          <main data-dashboard-main className={`relative ${VIEWPORT_HEIGHT_CLASSES} overflow-y-auto elegant-scrollbar`}>
+          <main ref={mainRef} data-dashboard-main data-search-scroll-root className={`relative ${VIEWPORT_HEIGHT_CLASSES} overflow-y-auto elegant-scrollbar`}>
             <div className="py-4 lg:py-8 px-4 sm:px-6 lg:px-8">
               <div className="w-full mx-auto max-w-7xl">
                 {children}

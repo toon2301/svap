@@ -53,6 +53,9 @@ async function openPanel(page: Page, isMobile: boolean, theme: 'light' | 'dark')
     localStorage.setItem('appLocale', 'sk');
     localStorage.setItem('svaply_theme', colorTheme);
     localStorage.setItem('appLastManualOfferCountryV1', 'SK');
+    localStorage.setItem('appGeoDetectionCacheV2', JSON.stringify({
+      country: 'SK', detectedAt: Date.now(), status: 'ok',
+    }));
   }, theme);
   if (isMobile) await page.setViewportSize({ width: 320, height: 700 });
   await gotoDashboardHome(page);

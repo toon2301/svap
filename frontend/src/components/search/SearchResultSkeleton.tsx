@@ -1,6 +1,6 @@
 export function SearchResultSkeleton() {
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-black">
+    <div data-search-loading="true" className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-black">
       {/* Image placeholder */}
       <div
         className="aspect-[3/2] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-t-2xl"

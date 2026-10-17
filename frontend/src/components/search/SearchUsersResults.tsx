@@ -99,7 +99,7 @@ export function SearchUsersResults({
   const items = useMemo(() => (Array.isArray(users) ? users : []), [users]);
 
   return (
-    <section className="w-full">
+    <section data-search-loading={loading || undefined} className="w-full">
       <div className="flex items-end justify-between gap-3 mb-3">
         <div>
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{title}</h2>
