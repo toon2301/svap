@@ -55,9 +55,11 @@ export function useRouterMessagesModuleSync({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (dashboardModuleFromPath(pathname ?? '') !== 'messages') return;
-    // Adresa v prehliadači musí tiež ukazovať Správy: router mení svoj stav skôr, než zapíše
-    // adresu, a pri `pushState` (profil) ju zase zmení pred routerom. Ani jedno nie je vstup
-    // do Správ.
+    // Adresa v prehliadači musí tiež ukazovať Správy. Pri `router.push` to platí vždy: Next zapíše
+    // adresu (`useInsertionEffect`) v tom istom commite, v ktorom zmení `usePathname` a
+    // `useSearchParams`, a to ešte pred efektmi, takže sa tu nečaká na žiadne dobehnutie adresy.
+    // Ochrana je pre opačný rozchod: `pushState` z Dashboardu (napr. profil) zmení adresu skôr,
+    // než ju router dobehne, a router vtedy ešte nesie starú cestu Správ. To nie je vstup do Správ.
     if (dashboardModuleFromPath(window.location.pathname || '') !== 'messages') return;
     if (activeModuleRef.current === 'messages') return;
 

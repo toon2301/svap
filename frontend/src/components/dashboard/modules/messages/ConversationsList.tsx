@@ -168,7 +168,11 @@ export function ConversationsList({
       setList((current) => sortConversations(appendUniqueConversations(current, incoming)));
     },
   });
-  const { fetchWindow: fetchConversationsWindow, hasMore: hasMoreConversations } = paging;
+  const {
+    fetchWindow: fetchConversationsWindow,
+    hasMore: hasMoreConversations,
+    isFullyLoaded,
+  } = paging;
 
   const refresh = useCallback(
     async ({
@@ -254,19 +258,25 @@ export function ConversationsList({
 
   const removeConversationLocally = useCallback(
     (conversationId: number, totalUnreadCount?: number) => {
+      // Súčet z položiek je celkový počet len vtedy, keď je zoznam správ načítaný celý, nefiltrovaný
+      // a práve zobrazený. Inak (napr. na záložke Žiadosti alebo pri hľadaní) by čiastočný zoznam
+      // počet podcenil, preto sa vtedy počet vezme zo súhrnu servera.
+      const canSumLocally =
+        activeTab === 'messages' && !isSearchActive && isFullyLoaded('messages', '');
       setItems((current) => {
         const next = current.filter((item) => item.id !== conversationId);
         if (typeof totalUnreadCount === 'number') {
           publishMessageUnreadCount(totalUnreadCount);
-        } else if (!isSearchActive && !hasMoreConversations) {
-          // Súčet z položiek je celkový počet len vtedy, keď je zoznam načítaný celý; inak počet
-          // upraví nasledujúca obnova (súhrn zo servera).
+        } else if (canSumLocally) {
           syncMessageUnreadCountFromConversations(next);
         }
         return next;
       });
+      if (typeof totalUnreadCount !== 'number' && !canSumLocally) {
+        void refreshMessageUnreadCountFromServer(Date.now());
+      }
     },
-    [hasMoreConversations, isSearchActive],
+    [activeTab, isFullyLoaded, isSearchActive],
   );
 
   const openConversation = useCallback((conversationId: number) => {

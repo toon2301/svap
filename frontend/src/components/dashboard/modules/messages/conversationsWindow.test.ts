@@ -212,6 +212,94 @@ describe('fetchConversationsWindow', () => {
     expect(result.items).toHaveLength(40);
   });
 
+  describe('when the list shifts between the requests of a big window', () => {
+    /** Prvá odpoveď príde zo starého poradia, ďalšie z poradia po posune o `shift` položiek. */
+    function shiftingServer(total: number, shift: number) {
+      let calls = 0;
+      pageMock.mockImplementation(async ({ page, pageSize }: { page: number; pageSize: number }) => {
+        calls += 1;
+        const offset = (page - 1) * pageSize - (calls > 1 ? shift : 0);
+        const start = Math.max(offset, 0) + 1;
+        const end = Math.min(offset + pageSize, total);
+        return { items: start <= end ? range(start, end) : [], hasMore: (page - 1) * pageSize + pageSize < total };
+      });
+    }
+
+    it('drops the repeated item and keeps every conversation once', async () => {
+      shiftingServer(500, 1);
+
+      const result = await fetchConversationsWindow({ tab: 'messages', search: '', pageCount: 6 });
+
+      const ids = result.items.map((item) => item.id);
+      expect(pageMock).toHaveBeenCalledTimes(2);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids).toEqual(range(1, 120).map((item) => item.id));
+      expect(result.hasMore).toBe(true);
+    });
+
+    it('reports the end by unique items, not by the repeated ones', async () => {
+      pageMock
+        .mockResolvedValueOnce({ items: range(1, 100), hasMore: true })
+        .mockResolvedValueOnce({ items: range(100, 120), hasMore: false });
+
+      const result = await fetchConversationsWindow({ tab: 'messages', search: '', pageCount: 6 });
+
+      expect(result.items).toHaveLength(120);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('still reports more when the unique items overshoot the window', async () => {
+      pageMock
+        .mockResolvedValueOnce({ items: range(1, 100), hasMore: true })
+        .mockResolvedValueOnce({ items: range(100, 199), hasMore: false });
+
+      const result = await fetchConversationsWindow({ tab: 'messages', search: '', pageCount: 6 });
+
+      expect(result.items.map((item) => item.id)).toEqual(range(1, 120).map((item) => item.id));
+      expect(result.hasMore).toBe(true);
+    });
+
+    it('handles repeats at both boundaries of a three-request window', async () => {
+      pageMock
+        .mockResolvedValueOnce({ items: range(1, 100), hasMore: true })
+        .mockResolvedValueOnce({ items: range(99, 198), hasMore: true })
+        .mockResolvedValueOnce({ items: range(197, 260), hasMore: false });
+
+      const result = await fetchConversationsWindow({ tab: 'messages', search: '', pageCount: 11 });
+
+      const ids = result.items.map((item) => item.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids).toEqual(range(1, 220).map((item) => item.id));
+      expect(result.hasMore).toBe(true);
+    });
+
+    it('keeps the first occurrence of a repeated conversation', async () => {
+      pageMock
+        .mockResolvedValueOnce({
+          items: [...range(1, 99), { ...conversation(100), last_message_preview: 'starší stav' }],
+          hasMore: true,
+        })
+        .mockResolvedValueOnce({
+          items: [{ ...conversation(100), last_message_preview: 'novší stav' }, ...range(101, 119)],
+          hasMore: false,
+        });
+
+      const result = await fetchConversationsWindow({ tab: 'messages', search: '', pageCount: 6 });
+
+      expect(result.items.filter((item) => item.id === 100)).toHaveLength(1);
+      expect(result.items.find((item) => item.id === 100)?.last_message_preview).toBe('starší stav');
+    });
+
+    it('does not change the result when nothing shifted', async () => {
+      fakeServer(500);
+
+      const result = await fetchConversationsWindow({ tab: 'messages', search: '', pageCount: 6 });
+
+      expect(pageMock).toHaveBeenCalledTimes(2);
+      expect(result.items.map((item) => item.id)).toEqual(range(1, 120).map((item) => item.id));
+    });
+  });
+
   it('stops asking as soon as the server says there is no next page', async () => {
     fakeServer(30);
 

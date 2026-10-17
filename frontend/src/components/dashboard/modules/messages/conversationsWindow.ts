@@ -62,6 +62,11 @@ export type ConversationsWindow = {
  * Výsledok sa orezá presne na `pageCount` dávok, aby ďalšia dávka (`pageCount + 1`) nadväzovala
  * bez medzery a bez prekryvu. Za oknom je ešte niečo, keď server priniesol viac než okno alebo
  * keď posledná odpoveď hlásila ďalšiu stránku.
+ *
+ * Okno nad 100 položiek sa skladá z viacerých požiadaviek. Ak sa medzi nimi zoznam na serveri
+ * posunie (príde správa, pripnutie), položka z konca jednej stránky sa môže zopakovať na začiatku
+ * ďalšej. Duplicity sa preto zahadzujú podľa ID (ostáva prvý výskyt) ešte pred orezaním a
+ * porovnaním s veľkosťou okna, takže sa nezdvojí riadok ani sa kvôli nemu nestratí iná konverzácia.
  */
 export async function fetchConversationsWindow({
   tab,
@@ -73,11 +78,11 @@ export async function fetchConversationsWindow({
   pageCount: number;
 }): Promise<ConversationsWindow> {
   const size = windowSize(pageCount);
-  const collected: ConversationListItem[] = [];
+  let collected: ConversationListItem[] = [];
   let lastHasMore = false;
   for (const request of conversationsWindowRequests(pageCount)) {
     const page = await listConversationsPage({ tab, search, ...request });
-    collected.push(...page.items);
+    collected = appendUniqueConversations(collected, page.items);
     lastHasMore = page.hasMore;
     if (!page.hasMore) break;
   }

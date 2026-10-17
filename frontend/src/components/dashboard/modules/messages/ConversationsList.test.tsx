@@ -873,6 +873,7 @@ describe('ConversationsList', () => {
       expect(listConversations).toHaveBeenLastCalledWith({ search: 'Anna' });
     });
 
+    const summaryCalls = (getUnreadMessagesSummary as jest.Mock).mock.calls.length;
     fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
     fireEvent.click(await screen.findByTestId('conversation-delete-action'));
 
@@ -885,6 +886,8 @@ describe('ConversationsList', () => {
     });
 
     expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
+    // Server vrátil celkový počet, súhrn sa preto nedoťahuje znova.
+    expect(getUnreadMessagesSummary).toHaveBeenCalledTimes(summaryCalls);
   });
 
   it('renders group conversations with their group title', async () => {

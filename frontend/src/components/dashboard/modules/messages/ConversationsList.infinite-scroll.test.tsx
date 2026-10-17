@@ -8,7 +8,10 @@ import { listConversationsPage, type ConversationsTab } from './conversationsPag
 import type { ConversationListItem } from './types';
 import { getUnreadMessagesSummary, updateConversationPinnedState } from './messagingApi';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
-import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
+import {
+  publishMessageUnreadCount,
+  syncMessageUnreadCountFromConversations,
+} from '@/components/dashboard/contexts/messageUnreadStore';
 import {
   dispatchConversationUnavailable,
   requestConversationsRefresh,
@@ -523,5 +526,223 @@ describe('ConversationsList infinite scroll', () => {
     expect(screen.queryByText('Osoba 3')).not.toBeInTheDocument();
     // Súčet z výsledkov hľadania je len ich časť, nie celkový počet neprečítaných.
     expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
+  });
+
+  describe('state that belongs to one tab', () => {
+    const requestsOf = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        conversation(500 + index, {
+          other_user: { id: 9000 + index, display_name: `Žiadateľ ${500 + index}` },
+          message_request_role: 'recipient',
+          request_status: 'pending',
+        }),
+      );
+
+    /** Zoznam sa nedá sčítať lokálne, preto sa počet vezme zo servera (a nie z čiastočných položiek). */
+    async function expectBadgeFromServer(unreadBefore: number, serverCount: number) {
+      await waitFor(() => expect(getUnreadMessagesSummary).toHaveBeenCalledTimes(unreadBefore + 1));
+      await waitFor(() => expect(publishMessageUnreadCount).toHaveBeenLastCalledWith(serverCount));
+      expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
+    }
+
+    async function openRequestsTab() {
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Žiadosti/ }));
+      });
+    }
+
+    async function openMessagesTab() {
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Správy/ }));
+      });
+    }
+
+    it('does not recompute the badge from a partly loaded messages list while requests are shown', async () => {
+      fakeServer({ messages: range(1, 45), requests: requestsOf(5) });
+      render(<ConversationsList currentUserId={1} />);
+      await screen.findByText('Osoba 1');
+      await openRequestsTab();
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(5));
+      await flush();
+      const summaryCalls = (getUnreadMessagesSummary as jest.Mock).mock.calls.length;
+      (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 50 });
+
+      act(() => {
+        dispatchConversationUnavailable(3);
+      });
+
+      await expectBadgeFromServer(summaryCalls, 50);
+    });
+
+    it('does not recompute the badge from a complete messages list while requests are shown', async () => {
+      fakeServer({ messages: range(1, 7), requests: requestsOf(5) });
+      render(<ConversationsList currentUserId={1} />);
+      await screen.findByText('Osoba 1');
+      await flush();
+      await openRequestsTab();
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(5));
+      await flush();
+      const summaryCalls = (getUnreadMessagesSummary as jest.Mock).mock.calls.length;
+      (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 12 });
+
+      act(() => {
+        dispatchConversationUnavailable(3);
+      });
+
+      await expectBadgeFromServer(summaryCalls, 12);
+    });
+
+    it('does not recompute the badge on the requests tab after the search was cleared there', async () => {
+      fakeServer({ messages: range(1, 45), requests: requestsOf(5) });
+      render(<ConversationsList currentUserId={1} />);
+      await screen.findByText('Osoba 1');
+      const search = screen.getByLabelText('Hľadať podľa mena...');
+
+      fireEvent.change(search, { target: { value: 'Osoba 3' } });
+      await waitFor(() =>
+        expect(pageMock).toHaveBeenCalledWith({ tab: 'messages', search: 'Osoba 3', page: 1, pageSize: 20 }),
+      );
+      await waitFor(() => expect(screen.queryByText('Osoba 1')).not.toBeInTheDocument());
+      await openRequestsTab();
+      await waitFor(() =>
+        expect(pageMock).toHaveBeenCalledWith({ tab: 'requests', search: 'Osoba 3', page: 1, pageSize: 20 }),
+      );
+      fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), { target: { value: '' } });
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(5));
+      await flush();
+      const summaryCalls = (getUnreadMessagesSummary as jest.Mock).mock.calls.length;
+      (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 49 });
+
+      act(() => {
+        dispatchConversationUnavailable(3);
+      });
+
+      await expectBadgeFromServer(summaryCalls, 49);
+    });
+
+    it('does not recompute the badge from filtered messages when the search is cleared on the messages tab', async () => {
+      fakeServer({ messages: range(1, 45) });
+      render(<ConversationsList currentUserId={1} />);
+      await screen.findByText('Osoba 1');
+      fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), { target: { value: 'Osoba 3' } });
+      await waitFor(() => expect(screen.queryByText('Osoba 1')).not.toBeInTheDocument());
+      await flush();
+      expect(screen.getByText('Osoba 3')).toBeInTheDocument();
+      pageMock.mockClear();
+      const slow = deferred<Page>();
+      pageMock.mockImplementationOnce(() => slow.promise);
+
+      fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), { target: { value: '' } });
+      await waitFor(() =>
+        expect(pageMock).toHaveBeenCalledWith({ tab: 'messages', search: '', page: 1, pageSize: 20 }),
+      );
+      const summaryCalls = (getUnreadMessagesSummary as jest.Mock).mock.calls.length;
+      (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 45 });
+
+      // Zoznam ešte drží výsledky hľadania: ich súčet nie je celkový počet neprečítaných.
+      act(() => {
+        dispatchConversationUnavailable(3);
+      });
+
+      await expectBadgeFromServer(summaryCalls, 45);
+      await act(async () => {
+        slow.resolve({ items: range(1, 20), hasMore: true });
+      });
+    });
+
+    it('does not recompute the badge while the results of a new search are still loading', async () => {
+      fakeServer({ messages: range(1, 7) });
+      render(<ConversationsList currentUserId={1} variant="rail" />);
+      await screen.findByText('Osoba 1');
+      await flush();
+      const slow = deferred<Page>();
+      pageMock.mockImplementationOnce(() => slow.promise);
+
+      fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), { target: { value: 'Osoba 3' } });
+      await waitFor(() =>
+        expect(pageMock).toHaveBeenCalledWith({ tab: 'messages', search: 'Osoba 3', page: 1, pageSize: 20 }),
+      );
+
+      const summaryCalls = (getUnreadMessagesSummary as jest.Mock).mock.calls.length;
+      (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 7 });
+
+      act(() => {
+        dispatchConversationUnavailable(3);
+      });
+
+      await expectBadgeFromServer(summaryCalls, 7);
+      await act(async () => {
+        slow.resolve({ items: [], hasMore: false });
+      });
+    });
+
+    it('does not recompute the badge before the first list has arrived', async () => {
+      const slow = deferred<Page>();
+      pageMock.mockImplementation(() => slow.promise);
+      render(<ConversationsList currentUserId={1} variant="rail" />);
+      await flush();
+
+      act(() => {
+        dispatchConversationUnavailable(3);
+      });
+
+      expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
+      await waitFor(() => expect(getUnreadMessagesSummary).toHaveBeenCalled());
+      await act(async () => {
+        slow.resolve({ items: range(1, 5), hasMore: false });
+      });
+    });
+
+    it('does not carry the retry pause of the messages tab over to the requests tab', async () => {
+      fakeServer({ messages: range(1, 45), requests: requestsOf(25) });
+      render(<ConversationsList currentUserId={1} />);
+      await screen.findByText('Osoba 1');
+      jest.useFakeTimers();
+      pageMock.mockRejectedValueOnce(new Error('network'));
+
+      await fireSentinel(observer);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(observer.count()).toBe(0);
+
+      await openRequestsTab();
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(20));
+      await waitFor(() => expect(observer.count()).toBe(1));
+      await fireSentinel(observer);
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(25));
+      expect(pageMock).toHaveBeenLastCalledWith({ tab: 'requests', search: '', page: 2, pageSize: 20 });
+
+      await openMessagesTab();
+      await waitFor(() => expect(renderedIds()).toHaveLength(20));
+      expect(observer.count()).toBe(0);
+      await act(async () => {
+        jest.advanceTimersByTime(5_000);
+      });
+      await waitFor(() => expect(observer.count()).toBe(1));
+    });
+
+    it('shows no skeleton rows and does not block the requests tab while a messages batch loads', async () => {
+      fakeServer({ messages: range(1, 45), requests: requestsOf(25) });
+      render(<ConversationsList currentUserId={1} />);
+      await screen.findByText('Osoba 1');
+      const slow = deferred<Page>();
+      pageMock.mockImplementationOnce(() => slow.promise);
+      await fireSentinel(observer);
+      await waitFor(() => expect(screen.getAllByTestId('conversations-load-more-row')).toHaveLength(2));
+
+      await openRequestsTab();
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(20));
+      expect(screen.queryAllByTestId('conversations-load-more-row')).toHaveLength(0);
+      await waitFor(() => expect(observer.count()).toBe(1));
+      await fireSentinel(observer);
+      await waitFor(() => expect(screen.getAllByText(/^Žiadateľ \d+$/)).toHaveLength(25));
+
+      await act(async () => {
+        slow.resolve({ items: range(21, 40), hasMore: true });
+      });
+      await openMessagesTab();
+      await waitFor(() => expect(renderedIds()).toHaveLength(40));
+    });
   });
 });

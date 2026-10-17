@@ -166,21 +166,27 @@ describe('kedy sa nič nemá stať', () => {
     expect(calls).toEqual([]);
   });
 
-  it('router už ukazuje Správy, ale adresa v prehliadači ešte nie', () => {
+  it('router ukazuje Správy, ale adresa v prehliadači nie (ochrana pred rozchodom adresy)', () => {
     const mounted = mount();
 
-    // Router mení svoj stav skôr, než zapíše adresu.
+    // Pri `router.push` Next zapíše adresu skôr, než efekt beží, takže sa to reálne nestane;
+    // keby adresa v prehliadači Správy neukazovala, hook modul neprepne.
     rerenderWith(mounted, { pathname: MESSAGES });
 
     expect(calls).toEqual([]);
   });
 
-  it('adresa v prehliadači ukazuje Správy, ale router ešte nie (po pushState)', () => {
+  it('adresa v prehliadači už ukazuje profil, ale router ešte hlási Správy (po pushState)', () => {
     const mounted = mount({ pathname: MESSAGES, activeModule: 'messages' });
 
-    // Po `goToUserProfile`: modul je už profil, router ešte hlási Správy.
+    // Po `goToUserProfile`: modul je už profil a adresu zmenil `pushState`, router ešte hlási Správy.
+    // Zmena query pri tej istej ceste Správ spustí efekt; adresa v prehliadači ho zastaví.
     setBrowserUrl(PROFILE);
-    rerenderWith(mounted, { pathname: MESSAGES, activeModule: 'user-profile' });
+    rerenderWith(mounted, {
+      pathname: MESSAGES,
+      searchString: 'targetUserId=139',
+      activeModule: 'user-profile',
+    });
 
     expect(calls).toEqual([]);
   });

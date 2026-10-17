@@ -25,6 +25,15 @@ type LoadedWindow = {
   hasMore: boolean;
 };
 
+/** Pauza po neúspešnom donačítaní jednej záložky; platí len pre hľadanie, pri ktorom vznikla. */
+type RetryPause = {
+  search: string;
+  /** Koľko donačítaní po sebe zlyhalo (určuje dĺžku pauzy). */
+  failures: number;
+  blocked: boolean;
+  timer: ReturnType<typeof setTimeout> | null;
+};
+
 type UseConversationsPagingInput = {
   tab: ConversationsTab;
   /** Potvrdené hľadanie (už normalizované). */
@@ -34,6 +43,9 @@ type UseConversationsPagingInput = {
 };
 
 type LoadedWindows = Partial<Record<ConversationsTab, LoadedWindow>>;
+type RetryPauses = Partial<Record<ConversationsTab, RetryPause>>;
+/** Pre každú záložku hľadanie, pre ktoré práve letí dávka. */
+type LoadingBatches = Partial<Record<ConversationsTab, string>>;
 
 /** Koľko dávok je načítaných pre danú záložku a hľadanie (pri inom hľadaní sa začína od prvej). */
 function pageCountFor(windows: LoadedWindows, tab: ConversationsTab, search: string): number {
@@ -56,23 +68,27 @@ export type FetchedConversationsWindow = {
  *  - `loadMore` dotiahne ďalšiu dávku. Súbeh s obnovou je ošetrený: dávka, ktorá by nenadväzovala
  *    (zmenilo sa hľadanie alebo okno), sa zahodí, a obnova, pri ktorej sa medzitým donačítala
  *    ďalšia dávka, sa zopakuje s väčším oknom.
+ *
+ * Jedna inštancia obsluhuje obe záložky, preto všetko, čo patrí len jednej z nich (okno, rozbehnutá
+ * dávka, pauza po chybe s vlastným časovačom a počítadlom), sa vedie zvlášť pre každú záložku.
+ * Vrátené `hasMore`, `loadingMore` a `retryBlocked` platia pre aktívnu záložku a hľadanie.
  */
 export function useConversationsPaging({ tab, search, onAppend }: UseConversationsPagingInput) {
   const windowsRef = useRef<LoadedWindows>({});
-  const loadingMoreRef = useRef(false);
+  const loadingRef = useRef<LoadingBatches>({});
+  const retryRef = useRef<RetryPauses>({});
   const onAppendRef = useRef(onAppend);
   onAppendRef.current = onAppend;
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const failuresRef = useRef(0);
+  // Stav žije v refoch (rovnako ako okná) a `bump` vynúti prekreslenie, ktoré ho prečíta.
   const [, setRevision] = useState(0);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [retryBlocked, setRetryBlocked] = useState(false);
 
   const bump = useCallback(() => setRevision((value) => value + 1), []);
 
   useEffect(
     () => () => {
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      Object.values(retryRef.current).forEach((pause) => {
+        if (pause?.timer) clearTimeout(pause.timer);
+      });
     },
     [],
   );
@@ -106,13 +122,13 @@ export function useConversationsPaging({ tab, search, onAppend }: UseConversatio
   );
 
   const loadMore = useCallback(async () => {
-    if (loadingMoreRef.current) return;
+    if (loadingRef.current[tab] === search) return;
     const loaded = windowsRef.current[tab];
     if (!loaded || loaded.search !== search || !loaded.hasMore) return;
 
     const startPageCount = loaded.pageCount;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
+    loadingRef.current[tab] = search;
+    bump();
     try {
       const page = await listConversationsPage({
         tab,
@@ -128,30 +144,51 @@ export function useConversationsPaging({ tab, search, onAppend }: UseConversatio
         pageCount: startPageCount + 1,
         hasMore: page.hasMore,
       };
-      failuresRef.current = 0;
+      const previousPause = retryRef.current[tab];
+      if (previousPause?.timer) clearTimeout(previousPause.timer);
+      delete retryRef.current[tab];
       onAppendRef.current(tab, page.items);
     } catch {
       // Tichý ďalší pokus s odstupom: bez nového textu a bez zahltenia servera pri trvalej chybe.
-      failuresRef.current += 1;
-      const delay = Math.min(
-        LOAD_MORE_RETRY_BASE_MS * 2 ** (failuresRef.current - 1),
-        LOAD_MORE_RETRY_MAX_MS,
+      // Pauza, jej počítadlo aj časovač patria len záložke, na ktorej dávka zlyhala. Oneskorené
+      // zlyhanie dávky pre staré hľadanie nesmie prepísať pauzu aktuálneho hľadania.
+      if (windowsRef.current[tab]?.search !== search) return;
+      const previousPause = retryRef.current[tab];
+      if (previousPause?.timer) clearTimeout(previousPause.timer);
+      const failures = (previousPause?.search === search ? previousPause.failures : 0) + 1;
+      const pause: RetryPause = { search, failures, blocked: true, timer: null };
+      pause.timer = setTimeout(
+        () => {
+          pause.timer = null;
+          pause.blocked = false;
+          bump();
+        },
+        Math.min(LOAD_MORE_RETRY_BASE_MS * 2 ** (failures - 1), LOAD_MORE_RETRY_MAX_MS),
       );
-      setRetryBlocked(true);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => {
-        retryTimerRef.current = null;
-        setRetryBlocked(false);
-      }, delay);
+      retryRef.current[tab] = pause;
     } finally {
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
+      // Zmaže sa len vlastná dávka: neskoršia odpoveď pre staré hľadanie nesmie zhasnúť novšiu.
+      if (loadingRef.current[tab] === search) delete loadingRef.current[tab];
       bump();
     }
   }, [bump, search, tab]);
 
+  /**
+   * Je zoznam danej záložky pre dané hľadanie načítaný celý?
+   *
+   * Pravda len vtedy, keď okno pre túto záložku a hľadanie naozaj existuje a nemá za sebou nič ďalšie.
+   * Chýbajúce okno ani okno pre iné hľadanie sa za „celé“ nepovažujú.
+   */
+  const isFullyLoaded = useCallback((forTab: ConversationsTab, forSearch: string) => {
+    const loaded = windowsRef.current[forTab];
+    return Boolean(loaded && loaded.search === forSearch && !loaded.hasMore);
+  }, []);
+
   const known = windowsRef.current[tab];
   const hasMore = Boolean(known && known.search === search && known.hasMore);
+  const pause = retryRef.current[tab];
+  const retryBlocked = Boolean(pause && pause.search === search && pause.blocked);
+  const loadingMore = loadingRef.current[tab] === search;
 
-  return { hasMore, loadingMore, retryBlocked, fetchWindow, loadMore };
+  return { hasMore, isFullyLoaded, loadingMore, retryBlocked, fetchWindow, loadMore };
 }

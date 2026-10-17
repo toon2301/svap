@@ -21,6 +21,7 @@ const ENDPOINTS: Record<ConversationsTab, string> = {
   requests: '/auth/messaging/conversations/requests/',
 };
 
+/** Hľadaný text bez okrajových medzier a s jednou medzerou medzi slovami (ako to čaká server). */
 function normalizeSearch(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
@@ -28,10 +29,12 @@ function normalizeSearch(value: string): string {
 /** Rozbehnuté požiadavky podľa parametrov, aby rovnaká požiadavka z viacerých zoznamov letela raz. */
 const pageRequestsInFlight = new Map<string, Promise<ConversationsPage>>();
 
+/** Kľúč požiadavky: dve požiadavky sú identické, len ak sa zhodujú vo všetkých parametroch. */
 function pageRequestKey(tab: ConversationsTab, search: string, page: number, pageSize: number) {
   return `${tab}|${page}|${pageSize}|${search.length}:${search}`;
 }
 
+/** Jedna požiadavka na server bez zdieľania; `search` je už normalizované. */
 async function fetchConversationsPage(
   tab: ConversationsTab,
   search: string,
