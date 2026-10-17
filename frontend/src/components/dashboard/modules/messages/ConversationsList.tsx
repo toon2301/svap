@@ -17,8 +17,6 @@ import {
   getMessageRequestsUnseenSummary,
   getMessagingErrorMessage,
   hideConversation,
-  listConversations,
-  listMessageRequests,
   markMessageRequestsSeen,
   updateConversationPinnedState,
 } from './messagingApi';
@@ -33,12 +31,16 @@ import {
   requestConversationsRefresh,
 } from './messagesEvents';
 import { navigateMessagesUrl } from './messagesRouting';
+import { ConversationsListLoadMore } from './ConversationsListLoadMore';
 import { ConversationsListRow } from './ConversationsListRow';
 import { ConversationsListSearchInput } from './ConversationsListSearchInput';
 import { MessageConversationTabs, type MessagesTab } from './MessageConversationTabs';
 import { MessageRequestRow } from './MessageRequestRow';
 import { ReportUserModal } from '../profile/ReportUserModal';
 import { CreateGroupConversationModal } from './CreateGroupConversationModal';
+import { refreshMessageUnreadCountFromServer } from './conversationsUnreadSummary';
+import { appendUniqueConversations } from './conversationsWindow';
+import { useConversationsPaging } from './useConversationsPaging';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
 const CONVERSATIONS_REFRESH_DEBOUNCE_MS = 350;
@@ -157,6 +159,17 @@ export function ConversationsList({
     }
   }, []);
 
+  // Zoznam sa stránkuje: ďalšie dávky sa dotiahnu pri scrolle na koniec, obnova načíta celé okno.
+  const paging = useConversationsPaging({
+    tab: activeTab,
+    search: activeSearchQuery,
+    onAppend: (appendedTab, incoming) => {
+      const setList = appendedTab === 'requests' ? setRequestItems : setItems;
+      setList((current) => sortConversations(appendUniqueConversations(current, incoming)));
+    },
+  });
+  const { fetchWindow: fetchConversationsWindow, hasMore: hasMoreConversations } = paging;
+
   const refresh = useCallback(
     async ({
       showLoader = false,
@@ -186,37 +199,19 @@ export function ConversationsList({
         // (mark-read, WS) — inak by tento (deduplikovaný) request prepísal badge
         // späť na starú hodnotu.
         const snapshotAt = Date.now();
-        const data =
-          tab === 'requests'
-            ? await listMessageRequests({ search })
-            : await listConversations({ search });
-        const safeItems = sortConversations(Array.isArray(data) ? data : []);
+        const fetched = await fetchConversationsWindow(tab, search);
+        const safeItems = sortConversations(fetched.items);
         if (latestRequestIdRef.current === requestId) {
+          fetched.commit();
           if (tab === 'requests') {
             setRequestItems(safeItems);
           } else {
             setItems(safeItems);
           }
           if (!search && tab === 'messages') {
-            // Message requests you received live in the "Žiadosti" tab, not this
-            // main list, but their unread messages DO count in the total-unread
-            // summary. Include them here so the badge value matches the summary
-            // endpoint — otherwise it is undercounted, the acknowledge baseline
-            // is clamped too low, and the badge reappears after reload for a
-            // PENDING request that was already opened. Best-effort: fall back to
-            // the main list only if the request fetch fails.
-            let badgeItems = safeItems;
-            try {
-              const receivedRequests = await listMessageRequests({});
-              if (Array.isArray(receivedRequests) && receivedRequests.length > 0) {
-                badgeItems = [...safeItems, ...receivedRequests];
-              }
-            } catch {
-              // keep the main-list-only badge value
-            }
-            if (latestRequestIdRef.current === requestId) {
-              syncMessageUnreadCountFromConversations(badgeItems, { snapshotAt });
-            }
+            // Celkový počet neprečítaných (vrátane žiadostí) berieme zo servera: zoznam je stránkovaný,
+            // takže súčet načítaných položiek by ho podcenil.
+            await refreshMessageUnreadCountFromServer(snapshotAt);
           }
         }
         return safeItems;
@@ -250,7 +245,7 @@ export function ConversationsList({
         }
       }
     },
-    [activeSearchQuery, activeTab],
+    [activeSearchQuery, activeTab, fetchConversationsWindow],
   );
 
   const closeConversationActions = useCallback(() => {
@@ -261,17 +256,17 @@ export function ConversationsList({
     (conversationId: number, totalUnreadCount?: number) => {
       setItems((current) => {
         const next = current.filter((item) => item.id !== conversationId);
-        if (isSearchActive) {
-          if (typeof totalUnreadCount === 'number') {
-            publishMessageUnreadCount(totalUnreadCount);
-          }
-        } else {
+        if (typeof totalUnreadCount === 'number') {
+          publishMessageUnreadCount(totalUnreadCount);
+        } else if (!isSearchActive && !hasMoreConversations) {
+          // Súčet z položiek je celkový počet len vtedy, keď je zoznam načítaný celý; inak počet
+          // upraví nasledujúca obnova (súhrn zo servera).
           syncMessageUnreadCountFromConversations(next);
         }
         return next;
       });
     },
-    [isSearchActive],
+    [hasMoreConversations, isSearchActive],
   );
 
   const openConversation = useCallback((conversationId: number) => {
@@ -282,6 +277,8 @@ export function ConversationsList({
     (conversationId: number) => {
       removeConversationLocally(conversationId);
       setRequestItems((current) => current.filter((item) => item.id !== conversationId));
+      // Okno stránkovania sa posunulo: obnova ho zosúladí so serverom.
+      requestConversationsRefresh();
       setConversationActionsTarget((current) =>
         current?.conversationId === conversationId ? null : current,
       );
@@ -419,6 +416,8 @@ export function ConversationsList({
       try {
         const result = await updateConversationPinnedState(conversationId, nextPinned);
         updateConversationPinLocally(conversationId, result.is_pinned);
+        // Pripnutie mení poradie na serveri, takže sa posunie aj okno stránkovania.
+        requestConversationsRefresh();
       } catch (error) {
         toast.error(
           getMessagingErrorMessage(error, {
@@ -788,6 +787,15 @@ export function ConversationsList({
           );
         })
       )}
+
+      {activeItems.length > 0 ? (
+        <ConversationsListLoadMore
+          enabled={hasMoreConversations && !paging.loadingMore && !paging.retryBlocked}
+          loading={paging.loadingMore}
+          isCompact={isCompact}
+          onLoadMore={() => void paging.loadMore()}
+        />
+      ) : null}
 
       <ConversationActionsMenu
         open={conversationActionsTarget !== null}

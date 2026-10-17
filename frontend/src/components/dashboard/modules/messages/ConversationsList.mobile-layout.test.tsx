@@ -10,7 +10,9 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
-import { listConversations } from './messagingApi';
+import { listConversations, listMessageRequests } from './messagingApi';
+import { listConversationsPage } from './conversationsPagingApi';
+import { legacyListAsPages } from './conversationsPagingTestUtils';
 
 let mockIsMobile = true;
 
@@ -28,6 +30,11 @@ jest.mock('./messagingApi', () => ({
   listGroupMemberCandidates: jest.fn(),
   getMessagingErrorMessage: jest.fn((_error, options) => options?.fallback || 'Messaging error'),
   updateConversationPinnedState: jest.fn(),
+}));
+
+jest.mock('./conversationsPagingApi', () => ({
+  ...jest.requireActual('./conversationsPagingApi'),
+  listConversationsPage: jest.fn(),
 }));
 
 jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
@@ -72,6 +79,12 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockIsMobile = true;
   (listConversations as jest.Mock).mockResolvedValue([conversation(1), conversation(2)]);
+  (listConversationsPage as jest.Mock).mockImplementation(
+    legacyListAsPages(
+      (params) => (listConversations as jest.Mock)(params),
+      (params) => (listMessageRequests as jest.Mock)(params),
+    ),
+  );
 });
 
 describe('mobilný zoznam konverzácií', () => {

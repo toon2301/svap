@@ -4,9 +4,12 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
+import { listConversationsPage } from './conversationsPagingApi';
+import { legacyListAsPages } from './conversationsPagingTestUtils';
 import {
   createGroupConversation,
   hideConversation,
+  getUnreadMessagesSummary,
   listGroupMemberCandidates,
   listConversations,
   updateConversationPinnedState,
@@ -25,9 +28,15 @@ import {
 
 const pushMock = jest.fn();
 
+jest.mock('./conversationsPagingApi', () => ({
+  ...jest.requireActual('./conversationsPagingApi'),
+  listConversationsPage: jest.fn(),
+}));
+
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   listConversations: jest.fn(),
+  getUnreadMessagesSummary: jest.fn(),
   hideConversation: jest.fn(),
   createGroupConversation: jest.fn(),
   listGroupMemberCandidates: jest.fn(),
@@ -39,6 +48,7 @@ jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
   __esModule: true,
   publishMessageUnreadCount: jest.fn(),
   syncMessageUnreadCountFromConversations: jest.fn(),
+  getMessageUnreadCountStore: jest.fn(() => ({ lastSuccessfulRefreshAt: 0 })),
 }));
 
 jest.mock('@/lib/api', () => ({
@@ -71,6 +81,10 @@ describe('ConversationsList', () => {
     jest.clearAllMocks();
     clearPassiveMessagingRefreshSuppression();
     setVisibilityState('visible');
+    (listConversationsPage as jest.Mock).mockImplementation(
+      legacyListAsPages((params) => (listConversations as jest.Mock)(params)),
+    );
+    (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 0 });
     (ensureFreshSessionForBackgroundWork as jest.Mock).mockResolvedValue('ready');
     (hideConversation as jest.Mock).mockResolvedValue({
       conversation_id: 9,
@@ -112,7 +126,7 @@ describe('ConversationsList', () => {
     jest.useRealTimers();
   });
 
-  it('syncs the global message unread count from the fetched conversations list', async () => {
+  it('publishes the total unread count from the server summary after the list is loaded', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
@@ -124,6 +138,7 @@ describe('ConversationsList', () => {
         unread_count: 2,
       },
     ]);
+    (getUnreadMessagesSummary as jest.Mock).mockResolvedValue({ count: 7 });
 
     render(<ConversationsList currentUserId={1} variant="rail" />);
 
@@ -131,15 +146,9 @@ describe('ConversationsList', () => {
       expect(screen.getByText('Nova sprava')).toBeInTheDocument();
     });
 
-    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledWith(
-      [
-        expect.objectContaining({
-          id: 9,
-          unread_count: 2,
-        }),
-      ],
-      { snapshotAt: expect.any(Number) },
-    );
+    // Zoznam je stránkovaný: celkový počet je zo servera, nie súčet načítaných položiek.
+    await waitFor(() => expect(publishMessageUnreadCount).toHaveBeenCalledWith(7));
+    expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
   });
 
   it('renders skeleton placeholders while the conversations list is loading', async () => {
@@ -762,7 +771,7 @@ describe('ConversationsList', () => {
     render(<ConversationsList currentUserId={1} variant="rail" />);
 
     expect(await screen.findByText('Prva sprava')).toBeInTheDocument();
-    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
+    expect(getUnreadMessagesSummary).toHaveBeenCalledTimes(1);
 
     fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), {
       target: { value: '  Anna   Novak ' },
@@ -777,7 +786,8 @@ describe('ConversationsList', () => {
       expect(screen.getByText('Filtrovana sprava')).toBeInTheDocument();
     });
 
-    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
+    // Hľadanie je filter: celkový počet neprečítaných sa pri ňom nemení.
+    expect(getUnreadMessagesSummary).toHaveBeenCalledTimes(1);
   });
 
   it('shows a search-specific empty state when no conversation matches the query', async () => {
@@ -874,7 +884,7 @@ describe('ConversationsList', () => {
       expect(publishMessageUnreadCount).toHaveBeenCalledWith(4);
     });
 
-    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
+    expect(syncMessageUnreadCountFromConversations).not.toHaveBeenCalled();
   });
 
   it('renders group conversations with their group title', async () => {
