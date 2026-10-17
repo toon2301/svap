@@ -723,7 +723,7 @@ export function ConversationsList({
           clearLabel={t('search.clearSearch', 'Vyčistiť vyhľadávanie')}
           className={
             isMobile && !isCompact
-              ? 'sticky top-0 z-20 mx-3 pt-1 pb-2 bg-white/95 backdrop-blur dark:bg-black/95'
+              ? 'mx-3 pt-1 pb-2'
               : ''
           }
           inputRef={searchInputRef}
