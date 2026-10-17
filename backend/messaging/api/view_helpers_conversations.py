@@ -338,6 +338,10 @@ def _conversation_annotated_queryset_for_user(user):
                     "user__slug",
                     "user__user_type",
                     "user__avatar",
+                    # `serialize_user_brief` číta aj tieto polia; bez nich by ich Django
+                    # dotiahol samostatným dotazom pre každého člena každej skupiny (N+1).
+                    "user__is_active",
+                    "user__is_verified",
                 )
                 .order_by("role", "status", "joined_at", "id"),
                 to_attr="_prefetched_participants",
