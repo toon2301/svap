@@ -9,6 +9,7 @@ const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }));
 
 const account = { id: 41 } as User;
+/** Return the supplied label so these behavior tests do not depend on locale dictionaries. */
 const translator = (_key: string, fallback: string) => fallback;
 const skill: SearchSkill = {
   id: 78, category: 'Technológie', subcategory: 'Monitorovanie', description: '',

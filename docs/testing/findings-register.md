@@ -830,3 +830,42 @@ a `useSearchScrollRestoration.frames.test.tsx`. Evidencia:
   zostávajú bez zmien. Migrácie 0. Nasleduje autorizovaný commit/push,
   používateľova Rabbit kontrola a po nasadení manuálny/živý retest; žiadny
   automatický PR, merge ani deploy.
+
+## 18. 10. 2026 – review PR #184: dokumentácia a predpoklady E2E
+
+Používateľ schválil preverenie nálezov, opravu platných bodov a následný
+commit/push na tú istú vetvu `search-panel-return-fixes`. Lokálny aj vzdialený
+východiskový commit bol 183a09f8, audit checkout bol čistý. PR #184 je otvorený;
+jeho pôvodný CI run 39131324996 skončil success. To nie je výsledok CI nového
+review commitu.
+
+| ID | Overený bod | Oprava a hranice overenia |
+| --- | --- | --- |
+| TEST-10 | Codex review: tri vykreslené výsledky nezaručujú dosiahnuteľný hlboký scroll | Platné. `openReturnFixture` overuje server, prihlásený obsah a aspoň jeden výsledok; samostatný View All scenár žiadny hlboký scroll nepotrebuje. `openLastAuthor` pred scrollovaním alebo kliknutím vyžaduje skutočné `scrollHeight - clientHeight > 250`. Zachované je aj následné overenie dosiahnutého `top > 250`, snapshotu a časovania návratu. Nízky počet/výška fixture vedie k vysvetlenej chybe s odporúčaním vhodného existujúceho dotazu, nie k skipu, seedovaniu alebo falošnému PASS. |
+| DOC-03 | Rabbit Docstring Coverage 77,78 % pri požadovaných 80 % | Platné dokumentačné upozornenie, nie nájdená funkčná chyba. Zmysluplný JSDoc dostalo sedem nových alebo priamo dotknutých pomenovaných funkcií: SearchModule, handleViewAllClick, testový translator a helpery sample/searchPanel/searchPanelInput/resultSelector. Vlastný AST audit pôvodných 10 TS/TSX má podľa explicitnej definície 33/40 pomenovaných funkcií s JSDoc; všetkých sedem identifikovaných priamo dotknutých funkcií je dokumentovaných. Toto nie je interné percento Rabbitu a nepredpovedá jeho ďalší výsledok. |
+
+- Bez zmeny logiky aplikácie: in-memory transpile všetkých troch produkčných
+  TSX oproti 183a09f8 po odstránení komentárov dáva identický JavaScript.
+  Cache, obnovovací hook, URL, filtre, backend, preklady a migrácie sa nemenia.
+- Opakovaná cielená regresia: 34 sád / 538 testov PASS. Všetky tri celé
+  produkčné komponenty zostávajú nad 95 % každej metriky; spolu 98,34 %
+  statements, 97,46 % branches, 100 % functions, 98,59 % lines. TypeScript PASS;
+  lint piatich TS/TSX 0 chýb, 1 pôvodné no-img-element upozornenie.
+  Pôvodný celý FE a build sa týmto zápisom nevydávajú za nové celé behy.
+- Nový `e2e/search-panel-fixture.spec.ts`: skutočne vykonaných 6/6 PASS na
+  Railway, WebKit desktop/mobile aj Chromium, bez retry alebo skipov. Ponuky
+  aj používatelia: reálne výsledky v dostatočne vysokom viewporte nestačia na
+  hlboký scroll a helper ich odmietne pred profilovou navigáciou aj zápisom
+  snapshotu; po obnovení normálneho viewportu rovnaké výsledky umožnia hlboký
+  vstup a skutočnú profilovú navigáciu. Žiadne náhrady API alebo obsahové zápisy.
+- Týchto šesť PASS overuje testovací helper, nie nasadenie OW-21/22/24.
+  Tento izolovaný harness výslovne zatvára starý panel cez Escape; pôvodný
+  produktový návratový spec tento krok stále nemá a očakáva zatvorený panel
+  ešte pred volaním geometrického helpera. Pôvodné živé RED zostávajú otvorené
+  až do nasadenia opravy a jej retestu. TEST-09 sa týmto nezahadzuje.
+- Rozsah review opravy: štyri upravené TS/TSX (tri iba dokumentačne), jeden
+  nový Playwright spec a táto existujúca evidencia. Všetky dotknuté TS/TSX
+  sú pod 500 riadkov; veľké súbory ani hlavný checkout sa nemenili.
+  Nasleduje autorizovaný commit/push do PR #184, ďalšia kontrola a po nasadení
+  už dodané cielené manuálne testy. Nové manuálne testy samotných komentárov
+  alebo harnessu nie sú potrebné. Potom podfáza B (OW-23), následne C (OW-20).

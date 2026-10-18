@@ -62,6 +62,7 @@ export function SearchResults({
   const shouldShowViewAllButton =
     hasSearched && !error && !isSearching && Boolean(searchQuery.trim()) && hasResults;
 
+  /** Preserve the current query and filters, dismiss the optional overlay, then open full results. */
   const handleViewAllClick = () => {
     const q = searchQuery.trim();
     if (!q) return;

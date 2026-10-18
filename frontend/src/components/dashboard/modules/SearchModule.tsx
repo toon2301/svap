@@ -14,6 +14,7 @@ import { SearchDiagnosticsPanel } from './search/diagnostics/SearchDiagnosticsPa
 
 export { invalidateSearchCacheForUser } from './search/hooks/useSearchApi';
 
+/** Coordinate search state, filters and results while delegating overlay dismissal to the owning layout. */
 export default function SearchModule({
   user,
   onUserClick,

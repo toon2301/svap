@@ -24,6 +24,7 @@ function installReturnProbe({ id, url, top, count, selector }: ReturnProbe): voi
   const timing: ReturnTiming = { readyAt: null, restoredAt: null, panelOpened: false };
   target.__searchReturnTimings[id] = timing;
   const started = performance.now();
+  /** Record the first ready/restored frame and any unintended panel opening without retaining results. */
   const sample = () => {
     const main = document.querySelector<HTMLElement>('[data-search-scroll-root]');
     if (window.location.href === url && main?.previousElementSibling?.getAttribute('aria-hidden') === 'false') {
@@ -39,15 +40,18 @@ function installReturnProbe({ id, url, top, count, selector }: ReturnProbe): voi
   requestAnimationFrame(sample);
 }
 
+/** Locate the desktop panel adjacent to the independent results scroller, including when hidden. */
 export function searchPanel(page: Page): Locator {
   return page.locator('[data-search-scroll-root]')
     .locator('xpath=preceding-sibling::div[@aria-hidden][1]');
 }
 
+/** Select only the currently visible search input across dashboard and standalone layouts. */
 export function searchPanelInput(page: Page): Locator {
   return page.locator('[data-onboarding="search-input"] input').filter({ visible: true });
 }
 
+/** Use the real profile-opening control for each result type rather than an unrelated card action. */
 function resultSelector(tab: ResultsTab): string {
   return tab === 'users' ? 'section div[role="button"][tabindex="0"]' : 'button.rounded-t-2xl';
 }
@@ -68,14 +72,17 @@ export async function openReturnFixture(page: Page, tab: ResultsTab): Promise<vo
   const main = page.locator('[data-search-scroll-root]');
   await expect(main.locator('[data-search-loading="true"]')).toHaveCount(0);
   await expect.poll(() => main.locator(resultSelector(tab)).count(), {
-    message: 'Existing reusable results must support a genuine profile-return scenario',
-  }).toBeGreaterThanOrEqual(3);
+    message: 'The reusable search query must return a rendered result',
+  }).toBeGreaterThan(0);
 }
 
 /** Capture the geometry the actual author click must retain, without manufacturing history metadata. */
 export async function openLastAuthor(page: Page, tab: ResultsTab, isMobile: boolean): Promise<ResultPosition> {
   const main = page.locator('[data-search-scroll-root]');
   const authors = main.locator(resultSelector(tab));
+  await expect.poll(() => main.evaluate((element) => element.scrollHeight - element.clientHeight), {
+    message: 'Reusable search results must allow more than 250px of scrolling; choose a broader E2E_SEARCH_NAV_QUERY.',
+  }).toBeGreaterThan(250);
   const author = authors.last();
   await author.scrollIntoViewIfNeeded();
   const geometry = await main.evaluate((element) => ({
