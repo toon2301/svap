@@ -53,6 +53,7 @@ describe('useSearchApi existing request and result contracts', () => {
     localStorage.clear();
     localStorage.setItem('appLocale', 'sk');
     localStorage.setItem('appLastManualOfferCountryV1', 'CZ');
+    localStorage.setItem('appGeoDetectionCacheV2', JSON.stringify({ country: 'SK', detectedAt: Date.now(), status: 'ok' }));
     mockGet.mockResolvedValue({ data: empty, status: 200 });
   });
 
@@ -71,7 +72,7 @@ describe('useSearchApi existing request and result contracts', () => {
     expect(mockGet).toHaveBeenCalledWith('/dashboard/search/', {
       params: {
         q: 'Monitoring', location: '', offer_type: 'seeking', only_my_location: '1',
-        price_min: '10,50', price_max: '25', country: 'CZ',
+        price_min: '10,50', price_max: '25', country: 'SK',
       },
       signal: expect.any(AbortSignal),
     });
@@ -81,8 +82,8 @@ describe('useSearchApi existing request and result contracts', () => {
   });
 
   it('omits the country parameter when the context has no country', async () => {
+    localStorage.setItem('appGeoDetectionCacheV2', JSON.stringify({ country: null, detectedAt: Date.now(), status: 'failed' }));
     const hook = harness();
-    act(() => hook.result.current.language.setCountry(null));
     await search(hook);
     expect(mockGet.mock.calls[0][1].params).not.toHaveProperty('country');
   });
@@ -153,9 +154,11 @@ describe('useSearchApi existing request and result contracts', () => {
   });
 
   it('separates country, type, location and price variations in the existing cache', async () => {
-    const hook = harness();
+    let hook = harness();
     await search(hook);
-    act(() => hook.result.current.language.setCountry('SK'));
+    hook.unmount();
+    localStorage.setItem('appGeoDetectionCacheV2', JSON.stringify({ country: 'CZ', detectedAt: Date.now(), status: 'ok' }));
+    hook = harness({ id: 12 }, false);
     await search(hook);
     act(() => hook.result.current.state.setOfferType('offer'));
     await search(hook);

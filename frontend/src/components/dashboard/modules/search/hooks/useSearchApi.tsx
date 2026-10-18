@@ -36,7 +36,7 @@ interface SearchApiErrorPayload {
  * V production verzii nepise citlive hladane vyrazy ani plne response do logov.
  */
 export function useSearchApi({ searchState, user, isActive = true }: UseSearchApiParams): SearchApiProps {
-  const { t, country } = useLanguage();
+  const { t, searchCountry: country } = useLanguage();
   const searchCacheRef = useRef<Map<string, SearchResults>>(globalSearchResultsCache);
   const latestRequestIdRef = useRef(0);
   const diagnostics = useSearchDiagnostics(user?.id, isActive);

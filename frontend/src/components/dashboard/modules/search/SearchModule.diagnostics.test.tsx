@@ -83,7 +83,7 @@ describe('SearchModule diagnostics actual UI/API pipeline', () => {
     expect(within(region).getByText(copy.privacy)).toBeInTheDocument();
     expect(within(region).getByText(copy.snapshotNote)).toBeInTheDocument();
     expect(within(region).getByRole('status')).toHaveTextContent(copy.waiting);
-    expect(value(region, copy.currentCountry)).toBe('CZ');
+    expect(value(region, copy.currentCountry)).toBe('SK');
     expect(value(region, copy.showSkills)).toBe(copy.yes);
     expect(value(region, copy.showUsers)).toBe(copy.yes);
     expect(region.textContent).not.toContain('searchDiagnostics.');
@@ -93,7 +93,7 @@ describe('SearchModule diagnostics actual UI/API pipeline', () => {
     expect(searchCalls()).toHaveLength(0);
   });
 
-  it('captures actual hidden country and distinguishes network results from the empty cache', async () => {
+  it('uses IP country independently of the manual form country in requests and diagnostics', async () => {
     mount({ isOverlay: true });
     const region = enable();
     const input = screen.getByRole('textbox');
@@ -101,9 +101,9 @@ describe('SearchModule diagnostics actual UI/API pipeline', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     await flush();
     expect(searchCalls()).toHaveLength(1);
-    expect(searchCalls()[0][1].params.country).toBe('CZ');
-    expect(value(region, 'Krajina filtra')).toBe('CZ');
-    expect(value(region, 'Odoslaná krajina')).toBe('CZ');
+    expect(searchCalls()[0][1].params.country).toBe('SK');
+    expect(value(region, 'Krajina filtra')).toBe('SK');
+    expect(value(region, 'Odoslaná krajina')).toBe('SK');
     expect(value(region, 'Zdroj výsledku')).toBe('Sieť');
     expect(value(region, 'HTTP stav')).toBe('200');
     expect(value(region, 'Počet vrátených kariet')).toBe('0');
