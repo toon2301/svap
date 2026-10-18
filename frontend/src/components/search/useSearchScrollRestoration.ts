@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type RefObject } from 'react';
-import { forgetSearchScroll, readSearchScroll, refreshSearchScroll } from './searchScrollMemory';
+import { forgetSearchScroll, prepareSearchScrollRefresh, readSearchScroll, refreshSearchScroll } from './searchScrollMemory';
 
 export const SEARCH_SCROLL_RESTORE_TIMEOUT_MS = 6000;
 const USER_INPUT_EVENTS = ['touchstart', 'wheel', 'keydown', 'mousedown'] as const;
@@ -20,6 +20,9 @@ export function useSearchScrollRestoration(
     let frame = 0;
     let initialFrames = 0;
     let deadlinePassed = false;
+    let trackingFrame: number | null = null;
+    let pendingCommit: (() => void) | null = null;
+    let trackingStopped = false;
     const url = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
     const stop = () => {
@@ -40,13 +43,34 @@ export function useSearchScrollRestoration(
     const ready = () => !main.querySelector('[data-search-loading="true"]');
     const stillCurrent = () => mainRef.current === main
       && `${window.location.pathname}${window.location.search}${window.location.hash}` === url;
+    const flushTracking = () => {
+      if (trackingFrame !== null) window.cancelAnimationFrame(trackingFrame);
+      trackingFrame = null;
+      const commit = pendingCommit;
+      pendingCommit = null;
+      // Commit the last verified source position, even if navigation already detached its main.
+      commit?.();
+    };
     const stopTracking = () => {
+      if (trackingStopped) return;
+      trackingStopped = true;
+      flushTracking();
       main.removeEventListener('scroll', trackScroll);
       window.removeEventListener('popstate', stopTracking);
+      window.removeEventListener('pagehide', flushTracking);
     };
     const trackScroll = () => {
+      if (trackingStopped) return;
       if (!stillCurrent()) { stopTracking(); return; }
-      refreshSearchScroll(snapshot.id, main.scrollTop);
+      pendingCommit = prepareSearchScrollRefresh(snapshot.id, main.scrollTop);
+      if (trackingFrame !== null) return;
+      const scheduledFrame: number = window.requestAnimationFrame(() => {
+        if (trackingFrame !== scheduledFrame) return;
+        trackingFrame = null;
+        if (!stillCurrent()) { stopTracking(); return; }
+        flushTracking();
+      });
+      trackingFrame = scheduledFrame;
     };
     const finish = (top: number) => {
       main.scrollTop = top;
@@ -55,6 +79,7 @@ export function useSearchScrollRestoration(
       refreshSearchScroll(snapshot.id, main.scrollTop);
       main.addEventListener('scroll', trackScroll, { passive: true });
       window.addEventListener('popstate', stopTracking);
+      window.addEventListener('pagehide', flushTracking);
     };
     const timeout = setTimeout(() => {
       // This bounds layout growth, not a slow request's lifetime.

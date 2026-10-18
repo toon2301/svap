@@ -123,18 +123,29 @@ export function readSearchScroll(viewerId: number | null | undefined): SearchScr
   return snapshot;
 }
 
-/** Refresh only this viewer's current history entry, never an older or newly captured return. */
-export function refreshSearchScroll(id: string, top: number): void {
-  if (typeof window === 'undefined') return;
+/** Authorize a source position now, so a later frame or unmount can persist it without reading destination state. */
+export function prepareSearchScrollRefresh(id: string, top: number): (() => void) | null {
+  if (typeof window === 'undefined') return null;
   const url = currentSearchUrl();
   const viewerId = getCurrentAccountId();
   const roundedTop = Math.max(0, Math.round(top));
-  if (!url || !viewerId || !Number.isFinite(roundedTop) || entryId(window.history.state) !== id) return;
-  const entries = snapshots();
-  const index = entries.findIndex((item) => item.id === id && item.url === url && item.viewerId === viewerId);
-  if (index < 0 || entries[index].top === roundedTop) return;
-  save(entries.map((item, itemIndex) => itemIndex === index
-    ? { ...item, top: roundedTop, savedAt: Date.now() } : item));
+  if (!url || !viewerId || !Number.isFinite(roundedTop) || entryId(window.history.state) !== id) return null;
+  let committed = false;
+  return () => {
+    if (committed) return;
+    committed = true;
+    if (getCurrentAccountId() !== viewerId) return;
+    const entries = snapshots();
+    const index = entries.findIndex((item) => item.id === id && item.url === url && item.viewerId === viewerId);
+    if (index < 0 || entries[index].top === roundedTop) return;
+    save(entries.map((item, itemIndex) => itemIndex === index
+      ? { ...item, top: roundedTop, savedAt: Date.now() } : item));
+  };
+}
+
+/** Refresh only this viewer's current history entry, never an older or newly captured return. */
+export function refreshSearchScroll(id: string, top: number): void {
+  prepareSearchScrollRefresh(id, top)?.();
 }
 
 /** Abandon only this attempt; an older cleanup must never remove a newer capture. */

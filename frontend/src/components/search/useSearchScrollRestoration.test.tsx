@@ -221,6 +221,7 @@ it('removes post-restore scroll tracking on unmount and on a viewer change', () 
   frames();
   main.scrollTop = 420;
   fireEvent.scroll(main);
+  frames();
   expect(readSearchScroll(105)?.top).toBe(420);
   const remove = jest.spyOn(main, 'removeEventListener');
   view.rerender(<Harness viewer={106} />);
@@ -312,6 +313,7 @@ it('restores once and tracks the current scroll under StrictMode effect replay',
   expect(main.scrollTop).toBe(1200);
   main.scrollTop = 360;
   fireEvent.scroll(main);
+  frames();
   expect(readSearchScroll(105)?.top).toBe(360);
   expect(jest.getTimerCount()).toBe(0);
 });

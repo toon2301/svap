@@ -1,6 +1,6 @@
 # Svaply – spoločná evidencia nálezov a otvorených overení
 
-Aktualizované: 17. 10. 2026.
+Aktualizované: 18. 10. 2026.
 
 Tento súbor je pracovný zdroj pravdy pre túto spoluprácu. Nespoliehame sa len na
 pamäť chatu. Pri každom novom náleze treba používateľovi oznámiť, či odporúčame
@@ -672,3 +672,74 @@ Zmenené existujúce súbory tohto review kola:
 - Playwright: `frontend/e2e/search-country-scroll.spec.ts`,
   `frontend/e2e/support/search-country-scroll.ts`.
 - Evidencia: `docs/testing/findings-register.md`. Nové súbory 0, migrácie 0.
+
+## 17.–18. 10. 2026 – následný Rabbit nitpick PR #183: zápisy počas scrollovania
+
+- Používateľ povolil overenie, opravu platného nálezu a nový commit/push do
+  rovnakej vetvy. Začiatok čistý na 66c15acc; PR #183 má rovnaký HEAD a jeho
+  CI run 39048195882 je success. Nový komentár Rabbit review 5558814371
+  označuje synchrónny zápis pri každom scroll evente ako výkonnostný nitpick.
+  Opakované čítanie/parsovanie/zápis je potvrdené kódom a testom; reálny jank
+  ani konkrétne zrýchlenie na fyzickom zariadení namerané neboli.
+- Nová frame regresia najprv 6 FAIL / 3 PASS na pôvodnej implementácii:
+  tri scroll udalosti spustili tri čítania/zápisy ešte pred vykresľovacím frame.
+  Finálne sledovanie drží iba posledný pripravený zápis a najviac jeden RAF.
+  Burst 320/410/510 robí pred RAF nula čítaní/zápisov, v RAF presne jedno
+  čítanie a jeden zápis hodnoty 510; ďalší frame opäť najviac jeden.
+- Naivné odloženie pôvodného refreshSearchScroll by porušilo existujúci test
+  scroll 310 → okamžitý push → unmount bez ďalšieho frame: v cleanup už môže
+  byť iná URL/history ID a odpojený mainRef. Tento test NEBOL oslabený pridaním
+  čakania. prepareSearchScrollRefresh preto pri udalosti iba lacno overí
+  aktuálnu zdrojovú URL, účet, history ID a pozíciu; nečíta úložisko.
+  Jednorazová closure si drží iba overené primitívne zdrojové hodnoty.
+  Pri RAF alebo poslednom cleanup flush overí aktuálny účet a existujúci
+  platný snapshot s presne tým istým ID/URL/viewer; neobnoví expirovaný či
+  zmazaný záznam, nevytvorí nový, nemení cieľovú históriu ani novší capture.
+  Cleanup zapíše pripravených 310, nie už odpojený/cieľový main s hodnotou 0.
+  Pôvodný synchrónny refresh wrapper používa prípravu a okamžitý commit, takže
+  jeho existujúce current-entry ochrany aj načasovanie zostávajú zachované.
+- stopTracking zruší čakajúci frame, vykoná posledný oprávnený zápis a vyčistí
+  poslucháče. Zrušený RAF alebo už odobratý scroll callback nesmie nič znovu
+  naplánovať. Regresie pokrývajú ID frame 0, popstate, zmenu URL bez popstate,
+  okamžitý unmount/navigáciu, zmenu účtu, nový capture, loading, StrictMode,
+  quota fallback a opakované Back/Forward. Dve existujúce kontroly, ktoré
+  čítali výsledok okamžite po scroll udalosti bez odchodu, teraz čakajú na RAF;
+  kritický okamžitý navigačný test naďalej žiadny frame pred push nečaká.
+  Pri pagehide sa čakajúci zápis tiež flushne, ale tracker sa nezastaví:
+  po bfcache-style pageshow môže normálne pokračovať. Callback porovná vlastné
+  RAF ID s aktuálnym, takže starý zrušený callback nezruší ani predčasne
+  neuloží nový čakajúci frame. Obe správania majú osobitné regresie. Priebežný
+  celý beh bol pred doplnením tejto priamej RAF poistky zastavený bez testového
+  zlyhania; neoznačuje sa za PASS. Finálna verzia má nový samostatný celý beh.
+- Spoločná finálna cielená regresia: 37 sád / 557 testov PASS. Merané sú presne
+  oba celé upravené produkčné súbory: 99,53 % statements, 99,05 % branches,
+  100 % functions a lines. Každý súbor má každú metriku nad 95 %, hook 100 %
+  všetkých metrík. Bez ignore, zvýšenia timeoutov alebo oslabenia coverage gate.
+  TypeScript PASS; ESLint všetkých 6 dotknutých TS/TSX 0 chýb / 0 varovaní.
+- Playwright súbory sa nemenia. Reálne vykonané presne tri existujúce refresh
+  varianty na Railway (WebKit desktop/mobile, Chromium): 3 RED, 0 SKIP,
+  0 retry, bez artefaktov či aplikačných zápisov. Všetky sa zastavili už na
+  chýbajúcom prvotnom snapshote starej produkcie; RAF/refresh/návrat sa tým
+  nedostali do runtime overenia. Nie je to PASS tejto opravy ani nový dôkaz
+  chyby RAF. Po schválenom nasadení zostáva povinný živý a cielený manuálny retest.
+- Rozsah: 7 súborov; 2 upravené malé produkčné moduly, 2 upravené existujúce
+  Jest súbory, 2 nové Jest súbory a táto existujúca evidencia. Backend,
+  migrácie, preklady, krajinná logika/cache, Playwright konfigurácia a
+  nadlimitné TS/TSX bez zmien. Finálny celý frontend prešiel: 466 sád /
+  6 917 testov PASS, bez zmeny timeoutov alebo retry. Produkčný build PASS
+  vrátane kompilácie, typov a 38 statických stránok. Prvý pokus zastavilo
+  EPERM pri mkdir v generovanom .next; po overení, že rodičovské priečinky
+  nie sú reparse/junction, prešiel rovnaký build s povoleným zápisom. Žiadne
+  ručné mazanie, ACL ani bezpečnostné nastavenia sa nemenili. Existujúce
+  neblokujúce Sentry odporúčanie globálneho error handlera zostalo zachované.
+  Registry sync nepridal Git diff. Všetky dotknuté TS/TSX sú pod 500 riadkov,
+  diff check PASS a hlavný checkout zostáva čistý na e7359f1b. Vzdialená
+  pracovná vetva bola pred commitom stále 66c15acc. Nasleduje schválený
+  commit/push do PR #183, potom nové review a po schválenom nasadení retest.
+  Nič sa týmto krokom automaticky nezlučuje ani nenasadzuje.
+
+Súbory v `frontend/src/components/search/`: upravené `searchScrollMemory.ts`,
+`useSearchScrollRestoration.ts`, `searchScrollMemory.ssr.test.ts`,
+`useSearchScrollRestoration.test.tsx`; nové `searchScrollMemory.refresh.test.ts`
+a `useSearchScrollRestoration.frames.test.tsx`. Evidencia:
+`docs/testing/findings-register.md`. Migrácie 0.
