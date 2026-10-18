@@ -64,15 +64,16 @@ pri „Zobraziť ďalšie“ používateľ výslovne odvolal; nie je súčasťou
 | ID | Položka | Rozsah a aktuálny stav |
 | --- | --- | --- |
 | OW-20 | Úvodné vyhľadávanie považuje výsledky z pamäte za konečné bez overenia na serveri | Potvrdené riadeným vykonaním existujúceho hooku: rovnaký dotaz po zmene odpovede nevolá API. Map nemá expiráciu ani viewer ID. Samostatná podfáza C: rýchle predbežné zobrazenie a bezpečné serverové overovanie, bez zmeny pamäte návratového scrollu alebo full-search filtrov. Zatiaľ neimplementované. |
-| OW-21 | Desktopový browser Back z profilu automaticky otvorí ľavý vyhľadávací panel | Podfáza A lokálne implementovaná: SearchLayout začína zatvorený, ručný toggle ostáva. Zatvorený panel používa aj visibility:hidden cez invisible, takže jeho DOM a rozpracovaný stav ostávajú zachované bez skrytých Tab cieľov. Regresie všetkých troch záložiek a 538 spoločných cielených testov PASS; produkčný retest novej vetvy čaká na nasadenie. |
-| OW-22 | Desktopový návrat Všetko/Ponuky ukáže vrch a až neskôr obnoví scroll | Produkčné Chromium/WebKit meranie potvrdilo 6,0–6,3 s: otvorený panel zúži a skráti karty, dostupná výška nedosiahne uloženú pozíciu, hook čaká na height deadline. API už odpovedalo za približne 0,14–0,20 s. Ručné zatvorenie panela obnovilo správne miesto za 88/91 ms bez ďalšieho API. Podfáza A opravuje príčinu spolu s OW-21; existujúci obnovovací hook, loading/slow request/user interruption aj timeout ostávajú bez zmeny. Lokálna regresia promptného obnovenia PASS; živý PASS opravy až po nasadení. |
-| OW-23 | Obe „Zobraziť viac ľudí/ponúk“ majú cieľovú záložku otvoriť od vrchu | Platí pre desktop aj mobil; explicitná zmena produktového správania. Tlačidlá iba menia URL so scroll:false, existujúci reset nesleduje tab a posúva window namiesto vnoreného main. Samostatná podfáza B, zatiaľ neimplementované. Presné prepojenie nového malého hooku do 646-riadkovej page.tsx potrebuje novú úzku výnimku; stará OW-16 výnimka ju nenahrádza. Žiadny plošný reset pri Back/Forward. |
-| OW-24 | Desktopové „Zobraziť všetko“ má zavrieť ľavý vyhľadávací panel | Podfáza A lokálne implementovaná: default closed v cieľovom rozložení plus existujúce onClose odovzdané cez SearchModule priamo do SearchResults a zavolané pred push, aj pri query-only navigácii v už otvorenom /search. Syntetický mousedown odstránený. Reálna komponentová integrácia overuje klik/Enter/Space, poradie close/push, presné query/filtre a mobil bez onClose. Produkčný PASS čaká na nasadenie. |
+| OW-21 | Desktopový browser Back z profilu automaticky otvorí ľavý vyhľadávací panel | Používateľ 18. 10. potvrdil kontrolu aj manuálne testy úspešné; PR #184 je zlúčený do main 95b7a058. SearchLayout začína zatvorený, ručný toggle ostáva. Zatvorený panel má visibility:hidden bez skrytých Tab cieľov a zachováva stav. Pôvodných 538 cielených PASS a história živých behov zostávajú nižšie; používateľovo potvrdenie sa nezamieňa za nový automatický PASS. |
+| OW-22 | Desktopový návrat Všetko/Ponuky ukáže vrch a až neskôr obnoví scroll | Používateľ potvrdil review aj manuálne testy úspešné; PR #184 zlúčený. Pôvodné meranie 6,0–6,3 s oproti API 0,14–0,20 s a riadenému zatvoreniu 88/91 ms preukázalo geometriu otvoreného panela. Oprava je spoločná s OW-21; obnovovací hook, slow request, user interruption aj timeout ostali nezmenené. Samostatné automatické výsledky a prípadné problémy harnessu uvádza aktuálny denník, nie toto manuálne potvrdenie. |
+| OW-23 | Obe „Zobraziť viac ľudí/ponúk“ majú cieľovú záložku otvoriť od vrchu | Podfáza B lokálne implementovaná pre desktop aj mobil. Používateľ výslovne povolil iba import, zavolanie samostatného hooku a dva handlery v pôvodne 646-riadkovej page.tsx. Nový jednorazový zámer resetuje vnorený main pred vykreslením presnej cieľovej query, nie pri obyčajnej zmene záložky, dát alebo Back/Forward. Existujúce URL payloady a ostatné filtre sa nemenia. Nová logika má 100 % všetkých metrík; celá legacy stránka 93,51 % vetiev s nezmenenou výnimkou TEST-08. Podrobné kontroly a zatiaľ nenasadený stav uvádza denník podfázy B. |
+| OW-24 | Desktopové „Zobraziť všetko“ má zavrieť ľavý vyhľadávací panel | Používateľ potvrdil review aj manuálne testy úspešné; PR #184 zlúčený. Cieľový layout je default closed a existujúce onClose ide zo SearchModule priamo do SearchResults pred push, aj pri query-only navigácii; syntetický mousedown je odstránený. Klik/Enter/Space, poradie close/push, presné filtre a mobil bez onClose sú komponentovo overené. Podfáza B toto správanie nemení. |
 
-Najbližší schválený rozsah je iba podfáza A (OW-21/22/24), potom po kontrolách
-commit/push na novú vetvu a cielené manuálne testy. Podfázy B/C zostávajú otvorené;
-OW-17 pri ručne otvorenom paneli tým nie je automaticky opravené. Žiadny merge,
-nasadenie ani otvorenie PR nie sú týmto implementačným pokynom autorizované.
+Podfáza A (OW-21/22/24) je po používateľovom úspešnom review a manuálnom kole
+uzavretá v tomto rozsahu. Aktuálne je schválená podfáza B (OW-23), uvedená úzka
+výnimka aj následný commit/push na novú vetvu `search-show-more-top`.
+Podfáza C (OW-20) zostáva otvorená; OW-17 pri ručne otvorenom paneli nie je
+automaticky opravené. Žiadny merge, deploy ani otvorenie PR tým nie sú schválené.
 
 Testovacia medzera priamo patriaca do OW-02:
 
@@ -869,3 +870,81 @@ review commitu.
   Nasleduje autorizovaný commit/push do PR #184, ďalšia kontrola a po nasadení
   už dodané cielené manuálne testy. Nové manuálne testy samotných komentárov
   alebo harnessu nie sú potrebné. Potom podfáza B (OW-23), následne C (OW-20).
+
+## 18. 10. 2026 – podfáza B: OW-23, explicitné Zobraziť viac od vrchu
+
+- Používateľ potvrdil predchádzajúce review aj manuálne kolo úspešné.
+  PR #184 je zlúčený; nová vetva `search-show-more-top` vychádza z main
+  95b7a058. Audit checkout bol čistý a hlavný používateľov checkout zostal
+  nedotknutý na e7359f1b. Nová výslovná výnimka dovoľuje v page.tsx iba
+  import, jedno zapojenie samostatného hooku a dva handlery. Samostatne je
+  schválený následný commit/push na túto novú vetvu, nie PR, merge alebo deploy.
+- Produkčný diff má iba tieto štyri prepojenia a nový 67-riadkový
+  `useSearchPreviewTabNavigation.ts`. Hook si drží jednorazový zámer pre presnú
+  cieľovú query; vnorený main posunie na nulu v layout efekte až pri jej
+  potvrdení, nie pred dokončením navigácie alebo pri neskoršej API odpovedi.
+  Bežné horné záložky, mount, Back/Forward a dátové rerendery reset nepridávajú.
+  Cudzie URL, popstate a unmount zámer zrušia; rýchle známe staršie ciele
+  neprepíšu najnovší zámer. Chyba routera aj chýbajúci main sú ošetrené.
+- URL kontrakt zostáva presný: Ľudia mení iba tab a odstráni users_page;
+  Ponuky mení iba tab a page=1. Žiadne tiché zjednotenie ostatných parametrov,
+  zmena filtrov, histórie alebo API. Cache, backend, preklady, migračné súbory,
+  veľký api.ts a existujúci obnovovací hook či pamäť scrollu sa nemenia.
+- RED pred prepojením stránky: 10 skutočných FAIL (1430 namiesto 0),
+  2 negatívne PASS. Po prepojení nová reálna page integrácia 12/12 PASS,
+  hook 19/19 PASS a súbeh oboch skutočných hookov/pamäte 4/4 PASS.
+  Overené je aj click-only ovládanie bez mousedown, zachovanie pôvodných
+  snapshotov a ďalší profilový návrat do novej cieľovej záložky.
+- Širšia regresia: 39 sád / 618 testov PASS. Celý frontend: 471 sád /
+  6 996 testov PASS (681,183 s). TypeScript PASS; cielený lint všetkých
+  siedmich TS/TSX bez chýb aj upozornení. Nové pomenované helpery majú JSDoc.
+- Samostatný nový hook má 100 % statements/branches/functions/lines,
+  95 % gate PASS na 23 unit/restore testoch. Celé dva dotknuté produkčné
+  súbory boli zmerané bez vynechania stránky: 100 % statements/functions/lines,
+  ale spoločný 95 % branch gate správne FAIL na 217/231 = 93,93 %.
+  Stránka má 202/216 = 93,51 % vetiev (predtým 200/214 = 93,45 %).
+  Všetkých 14 chýbajúcich vetiev je presne historický TEST-08: šesť Number
+  nullish fallbackov, sedem fallbackov pri null ID karty a jeden nestringový
+  display-name, ktoré reálny mapper neprodukuje. Obe nové vetvy sú pokryté.
+  Žiadny mock Number/mappera, ignore coverage, filler modul ani zníženie prahu.
+  Úzka výnimka pre stránku sa nerozširuje na nesúvisiace legacy upratovanie.
+- Nový Playwright má 6 scenárov (obe tlačidlá × WebKit desktop/mobile a
+  Chromium), skutočné Railway odpovede a existujúci obsah. Kontroluje nenulový
+  zdrojový scroll, prvý cieľový frame, skutočné výsledky aj scrollovateľnú
+  kapacitu, URL a history length, následne profilový návrat a Forward/Back.
+  Žiadne seedovanie, náhrady API, skip, force alebo automatický retry.
+- Prvý spoločný živý beh 21 scenárov: 6 kontrolných PASS, 4 očakávané
+  desktopové OW-23 RED, 9 chýb staršieho browser helpera a 2 nepodporované
+  mobilné wheel akcie. Druhý beh po opravách harnessu: 14 kontrolných PASS,
+  6 očakávaných OW-23 RED na starej produkcii (prvý cieľový scroll PC 103/64,
+  mobil 120/32 namiesto 0) a 1 kontrolný timing FAIL 1791 ms pri limite 1500 ms.
+  Žiadny z týchto behov sa nevydáva za zelené nasadené OW-23 overenie.
+- Samostatný 15-scenárový návratový beh bez Jestu/buildu: 14 PASS vrátane
+  pôvodne pomalšieho WebKit-desktop návratu do Ponúk; 1 mobilný users scenár
+  neotvoril profil po jednom tapnutí. Bez akejkoľvek ďalšej zmeny testu sa
+  tento konkrétny mobilný scenár samostatne vykonal 1/1 PASS (15,3 s), vrátane
+  browser aj app návratu. Prvé zlyhania sa zachovávajú ako TEST-12/13, nie
+  ako dokázané nové chyby appky alebo úspešne opravené príčiny.
+- Produkčný build PASS vrátane kompilácie, typov a 38 statických stránok.
+  Prvý sandbox pokus zablokovalo EPERM mkdir v generovanom dashboard/users/
+  [userId]/posts. Po overení všetkých rodičov ako bežných priečinkov prešiel
+  rovnaký príkaz s povoleným zápisom; bez ručného mazania, zmien ACL alebo
+  oslabovania bezpečnosti. Registry sync nemá ďalší zdrojový diff a pôvodné
+  neblokujúce Sentry odporúčanie zostáva. Nasadený PASS nového OW-23 sa netvrdí.
+
+| ID | Nový bod | Rozhodnutie |
+| --- | --- | --- |
+| TEST-11 | Starší measureReturn používal v browser evaluate neprenesenú premennú position; nový mobilný setup použil nepodporované mouse.wheel | Opravené hneď, pretože priamo blokujú overenie OW-23. Jediná zmena staršieho helpera odovzdáva position.top ako explicitný argument. Mobil posúva iba skutočný nezmenený scroller a používa tap; desktop ponecháva wheel. Prvé zlyhania sú zachované vyššie, nie premenované na chyby appky. |
+| TEST-12 | Jeden WebKit-desktop návrat do Ponúk prekročil budget 1500 ms: 1791 ms počas súbežného celého Jest behu | Zoznam testovacieho časovania. Ten istý variant následne bez Jestu/buildu PASS, bez úpravy limitu alebo automatického retry. Príčina prvého prekročenia nie je dokázaná; neoznačiť za novú produkčnú chybu ani za potvrdený dôsledok CPU záťaže. Pôvodný FAIL zostáva zachovaný. |
+| TEST-13 | Jeden WebKit-mobile users scenár po prvom tapnutí zostal na /search namiesto otvorenia profilu | Zoznam neobjasnenej jednorazovej odchýlky: v predchádzajúcom spoločnom behu PASS a po tomto zlyhaní samostatne 1/1 PASS bez akejkoľvek zmeny testu, force, druhého tapu či zvýšenia limitov. Nejde o potvrdenú príčinu ani deklarovanú opravu navigácie appky; nový OW-23 v testovanej produkcii ešte nebol. Pri cielenom manuálnom profile-return kroku preveriť prvý tap a pri opakovaní dôsledne diagnostikovať. |
+
+Súbory: upravené `src/app/search/page.tsx` (teraz 648 riadkov, iba povolené
+prepojenia) a `e2e/support/search-panel-return.ts`; nové
+`src/components/search/useSearchPreviewTabNavigation.ts`,
+`src/components/search/useSearchPreviewTabNavigation.test.tsx`,
+`src/components/search/useSearchPreviewTabNavigation.restore.test.tsx`,
+`src/app/search/page.previewNavigation.test.tsx`,
+`e2e/search-preview-tab-top.spec.ts` (všetko pod `frontend/`) a táto existujúca
+evidencia. Ostatné dotknuté TS/TSX sú pod 500 riadkov. Migrácie 0.
+Po review a nasadení nasledujú cielené manuálne/živé testy oboch tlačidiel
+a návratov. Ďalšia implementačná podfáza je C (OW-20), najprv čerstvé mapovanie.

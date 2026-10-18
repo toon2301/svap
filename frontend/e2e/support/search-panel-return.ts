@@ -135,6 +135,6 @@ export async function measureReturn(page: Page, position: ResultPosition, naviga
   await expect(searchPanel(page)).toHaveAttribute('aria-hidden', 'true');
   await expect.poll(() => page.locator('[data-search-scroll-root]').evaluate((element) => element.clientWidth))
     .toBe(position.width);
-  await expect.poll(() => page.locator('[data-search-scroll-root]').evaluate((element) => Math.abs(element.scrollTop - position.top)))
+  await expect.poll(() => page.locator('[data-search-scroll-root]').evaluate((element, top) => Math.abs(element.scrollTop - top), position.top))
     .toBeLessThanOrEqual(2);
 }
