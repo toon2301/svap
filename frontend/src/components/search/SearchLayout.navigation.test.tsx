@@ -72,6 +72,11 @@ function navButton(id: string): HTMLButtonElement {
   return document.querySelector<HTMLButtonElement>(`[data-sidebar-nav-item="${id}"]`)!;
 }
 
+/** Open the inactive panel only through the real, visible navigation trigger. */
+function openSearchPanel() {
+  fireEvent.click(navButton('search'));
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { id: 105, slug: 'test-user' };
@@ -90,7 +95,8 @@ describe('SearchLayout → Sledovania: real Sidebar integration', () => {
   it.each(['open', 'closed', 'reopened'])('navigates once with the search panel %s', async (state) => {
     const user = userEvent.setup();
     const { panel } = renderLayout();
-    if (state !== 'open') await user.click(screen.getByRole('button', { name: 'Zatvoriť panel' }));
+    if (state !== 'closed') openSearchPanel();
+    if (state === 'reopened') await user.click(screen.getByRole('button', { name: 'Zatvoriť panel' }));
     if (state === 'reopened') await user.click(navButton('search'));
     expect(panel).toHaveAttribute('aria-hidden', String(state === 'closed'));
 
@@ -179,35 +185,74 @@ describe('SearchLayout: preserve existing navigation', () => {
 
   it('opens a search result user by slug', () => {
     renderLayout();
+    openSearchPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Otvoriť používateľa' }));
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/result-user');
   });
 
   it('opens a search result user without a slug by ID', () => {
     renderLayout();
+    openSearchPanel();
     act(() => mockSearchProps.onUserClick?.(21));
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/21');
   });
 
   it('opens the selected card with its existing highlight parameter', () => {
     renderLayout();
+    openSearchPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Otvoriť kartu' }));
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/result-user?highlight=63');
   });
 });
 
 describe('SearchLayout: preserve search overlay lifecycle', () => {
+  it('does not register active panel handlers or consume Escape before manual opening', () => {
+    const add = jest.spyOn(document, 'addEventListener');
+    const { panel } = renderLayout();
+    expect(add.mock.calls.filter(([type]) => type === 'mousedown' || type === 'keydown')).toHaveLength(0);
+    expect(fireEvent.keyDown(document.body, { key: 'Escape' })).toBe(true);
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
+    expect(panel).toHaveClass('invisible');
+    expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'false');
+  });
+
+  it.each(['all', 'offers', 'users'])('keeps the panel inactive on initial %s results and a history return', (tab) => {
+    const sourceUrl = `/search?q=te&tab=${tab}`;
+    window.history.replaceState({ __NA: true }, '', sourceUrl);
+    const first = renderLayout();
+    expect(first.panel).toHaveAttribute('aria-hidden', 'true');
+    expect(first.panel).toHaveClass('invisible');
+    expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'false');
+
+    openSearchPanel();
+    expect(first.panel).toHaveAttribute('aria-hidden', 'false');
+    expect(first.panel).not.toHaveClass('invisible');
+    first.unmount();
+    window.history.replaceState(null, '', '/dashboard/users/21');
+    window.history.replaceState({ __NA: true }, '', sourceUrl);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { __NA: true } }));
+
+    const returned = renderLayout();
+    expect(returned.panel).toHaveAttribute('aria-hidden', 'true');
+    expect(returned.panel).toHaveClass('invisible');
+    expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'false');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('search toggles the panel without routing or changing browser history', async () => {
     const user = userEvent.setup();
     const { panel } = renderLayout();
     const location = window.location.href;
     const historyLength = window.history.length;
+    expect(panel).toHaveClass('invisible');
     await user.click(navButton('search').querySelector('span')!);
-    expect(panel).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'false');
-    await user.click(navButton('search'));
     expect(panel).toHaveAttribute('aria-hidden', 'false');
+    expect(panel).not.toHaveClass('invisible');
     expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'true');
+    await user.click(navButton('search'));
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
+    expect(panel).toHaveClass('invisible');
+    expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'false');
     expect(window.location.href).toBe(location);
     expect(window.history.length).toBe(historyLength);
     expect(mockPush).not.toHaveBeenCalled();
@@ -215,12 +260,14 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
 
   it('mousedown inside the search panel leaves it open', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     fireEvent.mouseDown(screen.getByRole('textbox', { name: 'Vyhľadávací dopyt' }));
     expect(panel).toHaveAttribute('aria-hidden', 'false');
   });
 
   it('mousedown on the main results closes the panel without navigation', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Výsledky stránky' }));
     expect(panel).toHaveAttribute('aria-hidden', 'true');
     expect(mockPush).not.toHaveBeenCalled();
@@ -228,6 +275,7 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
 
   it('mousedown in sidebar outside search closes the panel', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     fireEvent.mouseDown(navButton('watches'));
     expect(panel).toHaveAttribute('aria-hidden', 'true');
     expect(mockPush).not.toHaveBeenCalled();
@@ -235,6 +283,7 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
 
   it('an open filter modal protects the panel from outside mousedown', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     document.body.classList.add('filter-modal-open');
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Výsledky stránky' }));
     expect(panel).toHaveAttribute('aria-hidden', 'false');
@@ -242,6 +291,7 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
 
   it('Escape closes the panel and is consumed; unrelated keys leave it open', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     expect(fireEvent.keyDown(document.body, { key: 'ArrowDown' })).toBe(true);
     expect(panel).toHaveAttribute('aria-hidden', 'false');
     expect(fireEvent.keyDown(document.body, { key: 'Escape' })).toBe(false);
@@ -251,6 +301,7 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
 
   it('Escape inside a dialog does not close the parent panel', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     const dialog = document.createElement('div');
     dialog.setAttribute('role', 'dialog');
     document.body.appendChild(dialog);
@@ -264,6 +315,7 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
 
   it('Escape outside a dialog is ignored while a filter modal is open', () => {
     const { panel } = renderLayout();
+    openSearchPanel();
     document.body.classList.add('filter-modal-open');
     expect(fireEvent.keyDown(document.body, { key: 'Escape' })).toBe(true);
     expect(panel).toHaveAttribute('aria-hidden', 'false');
@@ -273,6 +325,7 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
     const add = jest.spyOn(document, 'addEventListener');
     const remove = jest.spyOn(document, 'removeEventListener');
     const { unmount } = renderLayout();
+    openSearchPanel();
     const listeners = add.mock.calls.filter(([type]) => type === 'mousedown' || type === 'keydown');
     expect(listeners).toHaveLength(2);
     unmount();
@@ -282,5 +335,20 @@ describe('SearchLayout: preserve search overlay lifecycle', () => {
     fireEvent.mouseDown(document.body);
     fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('manual closing cleans up handlers and Escape no longer intercepts page input', () => {
+    const add = jest.spyOn(document, 'addEventListener');
+    const remove = jest.spyOn(document, 'removeEventListener');
+    const { panel } = renderLayout();
+    openSearchPanel();
+    const listeners = add.mock.calls.filter(([type]) => type === 'mousedown' || type === 'keydown');
+    expect(listeners).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Zatvoriť panel' }));
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
+    expect(panel).toHaveClass('invisible');
+    expect(screen.getByTestId('search-child')).toHaveAttribute('data-active', 'false');
+    for (const [type, handler] of listeners) expect(remove).toHaveBeenCalledWith(type, handler);
+    expect(fireEvent.keyDown(document.body, { key: 'Escape' })).toBe(true);
   });
 });

@@ -22,7 +22,7 @@ interface SearchLayoutProps {
 export function SearchLayout({ children }: SearchLayoutProps) {
   const router = useRouter();
   const { logout: authLogout, user } = useAuth();
-  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(true);
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   useSearchScrollRestoration(mainRef, user?.id);
   useDashboardWindowScrollReset('search');
@@ -150,7 +150,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
             ref={searchPanelRef}
             className={[
               'hidden lg:flex h-screen flex-col overflow-hidden bg-[var(--background)] transition-opacity duration-200',
-              isSearchPanelOpen ? 'opacity-100 pointer-events-auto border-r border-gray-200 dark:border-gray-800' : 'opacity-0 pointer-events-none border-r-0',
+              isSearchPanelOpen ? 'opacity-100 pointer-events-auto border-r border-gray-200 dark:border-gray-800' : 'invisible opacity-0 pointer-events-none border-r-0',
             ].join(' ')}
             aria-hidden={!isSearchPanelOpen}
           >

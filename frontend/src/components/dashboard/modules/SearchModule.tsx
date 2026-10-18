@@ -175,6 +175,7 @@ export default function SearchModule({
               suggestions={suggestions}
               onUserClick={onUserClick}
               onSkillClick={onSkillClick}
+              onClose={onClose}
               t={t}
             />
           </div>

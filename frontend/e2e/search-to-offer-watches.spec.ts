@@ -91,7 +91,6 @@ for (const theme of ['light', 'dark'] as const) {
       await expectSearchPage(page);
       const source = page.url();
       const length = await historyLength(page);
-      await nav(page, 'search').click();
       const input = page.locator('[data-onboarding="search-input"] input').filter({ visible: true });
       await expect(input).toHaveCount(0);
       await nav(page, 'search').click();

@@ -54,6 +54,26 @@ predstavujú chyby; druh a aktuálny stupeň overenia sú uvedené samostatne.
 | OW-18 | Rovnaká ponuka sa nájde v Safari, nie v PWA/PC v úvodnom paneli | Oddelenie IP krajiny lokálne implementované a automaticky overené; po pushi review a nasadený retest | Fyzická PWA diagnostika následne zachytila Sieť / HTTP 200 / country=CZ / platné zoznamy / 0 kariet, uložená ručná krajina CZ a expirovaný IP záznam SK. To potvrdzuje konkrétne vyradenie slovenských kariet krajinou aj v tomto PWA pokuse, nie historický pôvod ručnej voľby. Pôvodný PC dôkaz mal IP cache CZ a bez viditeľnej ručnej voľby; nejde o dokázaný rovnaký pôvod. Nové searchCountry je oddelené od country/setCountry formulárov, IP sa obnoví aj pri ručnej predvoľbe; backend a pamäť výsledkov sa nemenia. Ak aktuálna IP naozaj vracia CZ, český výsledok je naďalej očakávaný: ručný výber krajiny vo filtroch a prenos do /search ostávajú samostatný neschválený nadväzujúci rozsah. Neexpirujúca cache prázdnych výsledkov bez viewer-ID zostáva otvorená; nie je týmto krokom opravená. Spoločných 507 cielených a 6 867 plných FE testov, TypeScript, lint a build PASS; každá metrika všetkých 9 produkčných súborov nad 95 %. Nové živé country regresie sú na starej produkcii očakávane RED, nie nasadený PASS opravy. |
 | OW-19 | Zobraziť všetko → profil → Back stratí scroll výsledkov | Obnova vnoreného main lokálne implementovaná a automaticky overená; po pushi review a nasadený retest | Nový zachytávací krok pred profilovou navigáciou a samostatná obnova v SearchLayout zachovávajú presný záznam histórie, celé URL a účet. Pamäť obsahuje iba obmedzené metadáta (max. 10 záznamov, TTL 30 min), nie výsledky; sessionStorage umožní návrat aj po obnovení dokumentu v rámci dostupnosti úložiska. Načítavacie markery zabránia obnove na skeletonoch. Priebežne zistené pomalé načítanie po limite, starý popstate marker v novom rovnakom URL aj oživovanie opustených záznamov pri nezapisovateľnom úložisku majú opravy a regresie. Spoločných 507 cielených a 6 867 plných FE testov, TypeScript, lint a build PASS. Staré živé meranie 8 návratov a nový prednasadený beh zostávajú RED dôkazy, nie PASS opravy. Existujúci window reset, profilový pôvod a nové feed/message návraty sa nemenia. |
 
+### Následné nálezy z manuálneho kola 18. 10. 2026
+
+Používateľ potvrdil poslednú Rabbit kontrolu PR #183 bez nálezov a ohlásil
+nasledujúcich päť bodov. Sú to samostatné následné opravy, nie dôkaz, že celé
+manuálne kolo alebo všetky návraty už prešli. Pôvodné hlásenie o presune na vrch
+pri „Zobraziť ďalšie“ používateľ výslovne odvolal; nie je súčasťou opráv.
+
+| ID | Položka | Rozsah a aktuálny stav |
+| --- | --- | --- |
+| OW-20 | Úvodné vyhľadávanie považuje výsledky z pamäte za konečné bez overenia na serveri | Potvrdené riadeným vykonaním existujúceho hooku: rovnaký dotaz po zmene odpovede nevolá API. Map nemá expiráciu ani viewer ID. Samostatná podfáza C: rýchle predbežné zobrazenie a bezpečné serverové overovanie, bez zmeny pamäte návratového scrollu alebo full-search filtrov. Zatiaľ neimplementované. |
+| OW-21 | Desktopový browser Back z profilu automaticky otvorí ľavý vyhľadávací panel | Podfáza A lokálne implementovaná: SearchLayout začína zatvorený, ručný toggle ostáva. Zatvorený panel používa aj visibility:hidden cez invisible, takže jeho DOM a rozpracovaný stav ostávajú zachované bez skrytých Tab cieľov. Regresie všetkých troch záložiek a 538 spoločných cielených testov PASS; produkčný retest novej vetvy čaká na nasadenie. |
+| OW-22 | Desktopový návrat Všetko/Ponuky ukáže vrch a až neskôr obnoví scroll | Produkčné Chromium/WebKit meranie potvrdilo 6,0–6,3 s: otvorený panel zúži a skráti karty, dostupná výška nedosiahne uloženú pozíciu, hook čaká na height deadline. API už odpovedalo za približne 0,14–0,20 s. Ručné zatvorenie panela obnovilo správne miesto za 88/91 ms bez ďalšieho API. Podfáza A opravuje príčinu spolu s OW-21; existujúci obnovovací hook, loading/slow request/user interruption aj timeout ostávajú bez zmeny. Lokálna regresia promptného obnovenia PASS; živý PASS opravy až po nasadení. |
+| OW-23 | Obe „Zobraziť viac ľudí/ponúk“ majú cieľovú záložku otvoriť od vrchu | Platí pre desktop aj mobil; explicitná zmena produktového správania. Tlačidlá iba menia URL so scroll:false, existujúci reset nesleduje tab a posúva window namiesto vnoreného main. Samostatná podfáza B, zatiaľ neimplementované. Presné prepojenie nového malého hooku do 646-riadkovej page.tsx potrebuje novú úzku výnimku; stará OW-16 výnimka ju nenahrádza. Žiadny plošný reset pri Back/Forward. |
+| OW-24 | Desktopové „Zobraziť všetko“ má zavrieť ľavý vyhľadávací panel | Podfáza A lokálne implementovaná: default closed v cieľovom rozložení plus existujúce onClose odovzdané cez SearchModule priamo do SearchResults a zavolané pred push, aj pri query-only navigácii v už otvorenom /search. Syntetický mousedown odstránený. Reálna komponentová integrácia overuje klik/Enter/Space, poradie close/push, presné query/filtre a mobil bez onClose. Produkčný PASS čaká na nasadenie. |
+
+Najbližší schválený rozsah je iba podfáza A (OW-21/22/24), potom po kontrolách
+commit/push na novú vetvu a cielené manuálne testy. Podfázy B/C zostávajú otvorené;
+OW-17 pri ručne otvorenom paneli tým nie je automaticky opravené. Žiadny merge,
+nasadenie ani otvorenie PR nie sú týmto implementačným pokynom autorizované.
+
 Testovacia medzera priamo patriaca do OW-02:
 
 | ID | Položka | Odporúčanie | Stav a podmienka uzavretia |
@@ -71,6 +91,7 @@ Testovacia medzera priamo patriaca do OW-02:
 | ID | Položka | Odporúčanie | Stav a podmienka uzavretia |
 | --- | --- | --- | --- |
 | TEST-08 | Historické nedosiahnuteľné vetvy veľkej stránky `/search` | Evidovať transparentne; prípadné upratanie len v samostatnom povolenom kole | Celá skutočná stránka má po 45 integračných scenároch 100 % statements/functions/lines, 93,45 % branches (200/214). Zvyšných 14 vetiev: 6 fallbackov Number(...) ?? ..., 7 null-ID fallbackov, 1 nestringové display-name; Number nikdy nevracia null/undefined a reálny mapper vždy vracia numerické ID a stringové meno. Mock mappera/Number, ignore coverage ani rozšírenie výnimky neboli použité. Samostatný page-only 95 % gate preto správne FAIL. Finálny scope meria všetkých 6 skutočne dotknutých produkčných súborov, vrátane tejto celej stránky; výsledok sa uvádza s touto individuálnou výnimkou, nie ako každý súbor nad 95 %. Konfigurácia hraníc sa nemení. |
+| TEST-09 | Jednorazový mobilný WebKit timeout pred otvorením úvodného vyhľadávania | Zoznam testovacej stability; nie potvrdená príčina ani produktová oprava | Prvý spoločný živý beh OW-21/22/24 skončil v tomto variante ešte pred kontrolou panela. Test teraz po jedinom tapnutí výslovne overí URL a viditeľnosť inputu pred sledovaním odpovede; čakanie na odpoveď a vyplnenie majú spoločné Promise.all bez opustenej promise. Samostatný následný beh prešiel vstupom, reálnym HTTP 200 a prechodom na /search, potom skončil na očakávanom starom aria-hidden=false. Bez retry, force, ďalšieho kliknutia či zvýšenia timeoutov. Pôvodný timeout sa nezahadzuje; jeho príčina nie je dokázaná a stabilitu treba overiť aj po nasadení. |
 
 ## Nálezy mimo aktuálneho kroku
 
@@ -91,6 +112,12 @@ Testovacia medzera priamo patriaca do OW-02:
 | TECH-10 | `skills/skillDescriptionModal/hooks/useSkillsDescriptionScreenState.ts`: 638 riadkov | Zoznam; podľa svaply.mdc nemeniť | Overené pri mapovaní predvyplnenia mobilných formulárov; pôvodný kontrakt aj veľký súbor ostávajú bez zásahu. |
 | TOOL-01 | `next lint` vyžaduje interaktívnu konfiguráciu | Zoznam testovacieho tooling-u | Bez zmeny repo konfigurácie prešiel spoločný cielený ESLint cez existujúce API a `next/core-web-vitals`: 18 súborov, 0 chýb/varovaní. Prípadnú neinteraktívnu konfiguráciu riešiť samostatne, bez oslabenia pravidiel. |
 | TOOL-02 | Windows WebKit a dostupnosť Docker fallbacku | Native obmedzenie evidovať; Docker pri OW-03 už funguje | 13. 10. native launch skončil pred stránkou; Code Integrity udalosti 3077/3033 potvrdili blokovanú crypto-57.dll. Pri review kole 14. 10. Docker API nebolo pripravené; ani pokus spustiť existujúci Desktop neumožnil E2E. Native kontrolný launch vtedy skončil timeoutom 10 s pred stránkou; timeout nie je nový dôkaz tej istej DLL chyby. Pri následnom OW-03 mapovaní Docker API odpovedá a existujúci Playwright v1.63.0-noble kontajner skutočne vykonal WebKit desktop/mobile proti Railway: 6 kontrolných PASS a 2 očakávané pre-deploy RED. Žiadne sťahovanie obrazu, vypínanie ochrán ani zmeny bezpečnostnej politiky. Predošlý zber 24 navigačných scenárov stále nie je ich živý PASS. |
+
+### Ďalší nesúvisiaci jazykový nález
+
+| ID | Položka | Odporúčanie | Stav |
+| --- | --- | --- | --- |
+| APP-03 | Niektoré názvy záložiek a navigačných tlačidiel vyhľadávania sú priamo slovenské literály | Zoznam; samostatný prekladový krok, nie tichá úprava pri OW-21/22/24 | Potvrdené v app/search/page.tsx: Všetko/Ľudia/Ponuky a obe Zobraziť viac; SearchResults používa literál Zobraziť všetko. Aktuálna oprava nemení žiadny používateľský text ani prekladové JSON. Pri riešení doplniť všetkých šesť jazykov a reálne miesta zobrazenia. |
 
 ## Nálezy Rabbit review PR #168
 
@@ -743,3 +770,63 @@ Súbory v `frontend/src/components/search/`: upravené `searchScrollMemory.ts`,
 `useSearchScrollRestoration.test.tsx`; nové `searchScrollMemory.refresh.test.ts`
 a `useSearchScrollRestoration.frames.test.tsx`. Evidencia:
 `docs/testing/findings-register.md`. Migrácie 0.
+
+## 18. 10. 2026 – podfáza A: zatváranie vyhľadávacej lišty a návratový scroll
+
+- Používateľ po mapovaní schválil prvú podfázu (body 2/3/5, OW-21/22/24),
+  následný commit/push na novú vetvu a cielené manuálne testy v chate.
+  Nová vetva `search-panel-return-fixes` vychádza z aktuálneho main 74fca266.
+  Pred začatím bol audit checkout čistý; GitHub porovnanie predchádzajúcej
+  opravy 7de1bb07 s main malo nulový obsahový diff. Hlavný používateľov
+  checkout zostáva nedotknutý na e7359f1b.
+- Produkčná zmena má iba tri malé existujúce súbory: default closed a
+  visibility:hidden pre zatvorený panel v SearchLayout, odovzdanie existujúceho
+  onClose v SearchModule a jeho priame zavolanie pred navigáciou v SearchResults.
+  Krehké simulované mousedown je odstránené. Žiadne zmeny API, backendu,
+  používateľských textov, prekladových JSON, filtrov, histórie, obnovovacieho
+  hooku ani jeho šesťsekundovej ochrany. OW-20/23 a OW-17 ostávajú otvorené.
+- RED pred produkčnou opravou: layout regresie 17 FAIL / 28 PASS; reálna
+  SearchModule → SearchResults integrácia 7 FAIL / 4 PASS. Po oprave nové
+  kontrakty prechádzajú. Pôvodné testy otvoreného panela boli upravené tak,
+  aby ho otvorili ručným kliknutím; obsluha Escape/modal/outside/cleanup,
+  navigácia a návraty neboli vynechané ani oslabené.
+- Cielená finálna regresia: 34 sád / 538 testov PASS. Merané sú presne všetky
+  tri celé dotknuté produkčné súbory: spolu 98,34 % statements, 97,46 % branches,
+  100 % functions, 98,59 % lines. Každý súbor má každú metriku nad 95 %;
+  SearchLayout má 100 % všetkých metrík. Prvý meraný beh síce vykonal 515
+  úspešných testov, ale správne zlyhal na coverage gate historicky nepokrytého
+  SearchResults. Doplnené sú legitímne regresie kariet, histórie a odporúčaní,
+  nie filler produkčné moduly, umelé neplatné typy či ignore. Hranice coverage
+  a timeouty sa nemenili.
+- Celý finálny frontend: 468 sád / 6 961 testov PASS. TypeScript PASS.
+  Lint všetkých 10 dotknutých TS/TSX: 0 chýb a 1 pôvodné upozornenie
+  no-img-element v SearchResults. Rovnaké upozornenie bolo overené na obsahu
+  HEAD pred zmenou; nesúvisiace obrázkové správanie sa nemení.
+- Produkčný build PASS vrátane kompilácie, typov a 38 statických stránok.
+  Prvý pokus zablokovalo EPERM pri vytváraní generovaného .next/server/app/dashboard.
+  Po overení neodkazových rodičov prešiel rovnaký build s povoleným zápisom;
+  žiadne ručné mazanie, ACL ani bezpečnostné nastavenia sa nemenili. Registry
+  sync nevytvoril ďalší zdrojový diff. Pôvodné neblokujúce Sentry odporúčanie
+  globálneho error handlera zostalo zachované.
+- Nový Playwright obsahuje presne 15 variantov v troch projektoch (WebKit
+  desktop/mobile a Chromium), bez skipov. Skutočná pripravenosť výsledkov,
+  šírka main, uložený scroll a krátky interval od vykreslenia reálnych dát
+  po obnovu sa sledujú samostatne od sieťovej latencie. Meranie prežije
+  SPA, nový dokument aj bfcache a kontroluje aj prechodné otvorenie panela.
+  Zber testov nie je ich produkčný PASS. Živý spoločný beh proti nezmenenej
+  Railway produkcii vykonal 24 scenárov bez retry a skipov: 9 existujúcich
+  diagnostických kontrol PASS, 14 nových regresií skončilo na očakávanom
+  pôvodnom otvorenom paneli, 1 mobilný variant skončil skôr pri vstupe do
+  vyhľadávania. Celkový príkaz preto správne FAIL, nie zelené E2E opravy.
+  Po spresnení vstupných assertions (TEST-09) samostatný mobilný WebKit beh
+  prešiel vstupom, HTTP 200 aj prechodom na /search a skončil až na rovnakom
+  pôvodnom aria-hidden=false. Prvý timeout sa nepovažuje za dokázanú race
+  ani zahodený výsledok. Kontroly nového časovania a klávesnice sa v živom
+  behu za túto predpodmienku nedostali; ich nasadený výsledok zostáva otvorený.
+- Rozsah je 11 súborov: 3 produkčné, 4 Jest (2 upravené a 2 nové),
+  3 Playwright (1 upravený a 2 nové) a táto existujúca evidencia.
+  Všetky dotknuté TS/TSX majú menej ako 500 riadkov. Nadlimitné page.tsx
+  (646), api.ts (907), DashboardContent.tsx (711) a useDashboardState.ts (921)
+  zostávajú bez zmien. Migrácie 0. Nasleduje autorizovaný commit/push,
+  používateľova Rabbit kontrola a po nasadení manuálny/živý retest; žiadny
+  automatický PR, merge ani deploy.

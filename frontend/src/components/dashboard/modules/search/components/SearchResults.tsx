@@ -20,6 +20,7 @@ interface SearchResultsProps {
   suggestions: SuggestionsProps;
   onUserClick?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
   onSkillClick?: (userId: number, skillId: number, slug?: string | null) => void;
+  onClose?: () => void;
   t: (key: string, fallback: string) => string;
 }
 
@@ -34,6 +35,7 @@ export function SearchResults({
   suggestions,
   onUserClick,
   onSkillClick,
+  onClose,
   t,
 }: SearchResultsProps) {
   const router = useRouter();
@@ -74,16 +76,8 @@ export function SearchResults({
     if (priceMin.trim()) params.set('price_min', priceMin.trim());
     if (priceMax.trim()) params.set('price_max', priceMax.trim());
 
+    onClose?.();
     router.push(`/search?${params.toString()}`);
-
-    // Po presmerovaní zavri search panel bez zásahu do dashboard logiky:
-    // spusti existujúcu "klik na ľavý sidebar zavrie search" logiku.
-    try {
-      const leftSidebar = document.querySelector('[data-sidebar="left"]');
-      leftSidebar?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    } catch {
-      // ignore
-    }
   };
 
   // Render skill card
