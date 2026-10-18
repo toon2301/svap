@@ -14,6 +14,7 @@ import { mapSearchResultToOffer } from '@/components/search/mapSearchResultToOff
 import { SearchUsersResults, type GlobalSearchUser } from '@/components/search/SearchUsersResults';
 import { SearchOffersTab } from '@/components/search/SearchOffersTab';
 import { openUserProfileFromSearch } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
+import { useSearchPreviewTabNavigation } from '@/components/search/useSearchPreviewTabNavigation';
 
 type SearchOffer = Offer & { user_id?: number };
 
@@ -109,6 +110,7 @@ function SearchResultsContent() {
     },
     [router, searchParams],
   );
+  const showMore = useSearchPreviewTabNavigation(searchParams?.toString() ?? '', replaceSearchParams);
 
   // URL is source of truth: sync state from query params (back/forward, shared links, manual edits).
   useEffect(() => {
@@ -496,7 +498,7 @@ function SearchResultsContent() {
               {tab === 'all' && globalUsersCount > 5 && (
                 <button
                   type="button"
-                  onClick={() => replaceSearchParams({ tab: 'users', users_page: null })}
+                  onClick={() => showMore('users')}
                   className="mt-2 w-full text-center text-sm font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
                 >
                   Zobraziť viac ľudí
@@ -615,7 +617,7 @@ function SearchResultsContent() {
                       {globalOffersCount > 9 && (
                         <button
                           type="button"
-                          onClick={() => replaceSearchParams({ tab: 'offers', page: '1' })}
+                          onClick={() => showMore('offers')}
                           className="mt-2 w-full text-center text-sm font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
                         >
                           Zobraziť viac ponúk
