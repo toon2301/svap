@@ -132,6 +132,53 @@ it('reopens with immediate verification and never flashes a snapshot evicted whi
   expect(screen.getByText('Pre zadané vyhľadávanie sa nenašli žiadne výsledky.')).toBeInTheDocument();
 });
 
+it.each(['updated', 'empty'])('immediately revalidates an explicitly submitted one-character query on reopen and accepts %s results', async (replacement) => {
+  const view = mount();
+  await search('t');
+  expect(calls()).toHaveLength(1);
+  expect(screen.getByRole('button', { name: /Kontrola pamäte/ })).toBeInTheDocument();
+  view.rerender(<LanguageProvider><SearchModule user={account} isOverlay isActive={false} /></LanguageProvider>);
+
+  const pending = deferred();
+  mockGet.mockImplementation((endpoint) => endpoint === '/dashboard/search/'
+    ? pending.promise : Promise.resolve({ data: empty, status: 200 }));
+  view.rerender(<LanguageProvider><SearchModule user={account} isOverlay /></LanguageProvider>);
+
+  expect(screen.getByRole('textbox')).toHaveValue('t');
+  expect(calls()).toHaveLength(2);
+  expect(screen.getByRole('status')).toHaveTextContent('Načítavam výsledky...');
+  const updated = { ...populated, skills: [{ ...populated.skills[0], subcategory: 'Aktualizovaná karta' }] };
+  await act(async () => { pending.resolve({ data: replacement === 'empty' ? empty : updated, status: 200 }); });
+
+  expect(screen.queryByRole('button', { name: /Kontrola pamäte/ })).not.toBeInTheDocument();
+  if (replacement === 'empty') {
+    expect(screen.getByText('Pre zadané vyhľadávanie sa nenašli žiadne výsledky.')).toBeInTheDocument();
+  } else {
+    expect(screen.getByRole('button', { name: /Aktualizovaná karta/ })).toBeInTheDocument();
+  }
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  await flush(800);
+  expect(calls()).toHaveLength(2);
+});
+
+it('does not automatically request a one-character query typed without explicit submission', async () => {
+  mount();
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 't' } });
+  await flush(800);
+  expect(calls()).toHaveLength(0);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+it.each(['', '   '])('does not request an empty or whitespace-only query %j when reopened', async (query) => {
+  const view = mount();
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: query } });
+  view.rerender(<LanguageProvider><SearchModule user={account} isOverlay isActive={false} /></LanguageProvider>);
+  view.rerender(<LanguageProvider><SearchModule user={account} isOverlay /></LanguageProvider>);
+  await flush(800);
+  expect(calls()).toHaveLength(0);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
 it('clearing before the debounce fires cancels both the timer and any stale results', async () => {
   mount();
   const input = screen.getByRole('textbox');

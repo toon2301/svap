@@ -117,16 +117,16 @@ export default function SearchModule({
     if (!isActive) return;
 
     const q = searchQuery.trim();
+    if (reopened && q) {
+      void handleSearch();
+      return;
+    }
+
     if (!q || q.length < 2) {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = null;
       }
-      return;
-    }
-
-    if (reopened) {
-      void handleSearch();
       return;
     }
 

@@ -63,7 +63,7 @@ pri „Zobraziť ďalšie“ používateľ výslovne odvolal; nie je súčasťou
 
 | ID | Položka | Rozsah a aktuálny stav |
 | --- | --- | --- |
-| OW-20 | Úvodné vyhľadávanie považuje výsledky z pamäte za konečné bez overenia na serveri | Lokálne implementovaná a automaticky overená podfáza C; bez commitu, pushu a nasadenia. Náhľad je oddelený podľa účtu a dátových filtrov, TTL 5 min / LRU 50; rovnaké dokončené hľadanie vždy overí server aj pri prázdnej cache. Samostatný request guard bráni starým odpovediam zapisovať UI/cache/históriu po zmene kontextu, vyčistení, deaktivácii či unmount. Súbežný rovnaký pokus sa zdieľa iba v tej istej generácii cache; Enter/Apply/submit ruší čakajúci debounce. Platný náhľad ostáva počas overovania viditeľný so stavom načítavania; chyba ani pending empty sa nevydávajú za potvrdený výsledok. Pamäť scrollu, full-search filtre a backendové matchovanie sa nemenia. Cielených 417 testov PASS; všetkých šesť celých dotknutých produkčných modulov má každú metriku nad 95 %. Finálny celý frontend: 476 sád / 7 121 PASS, TypeScript a produkčný build PASS. Prvý celý beh mal jeden nesúvisiaci testový FAIL evidovaný ako TEST-14. Živý retest opravy až po nasadení; aktuálny Railway stále reprodukuje pôvodnú chybu. |
+| OW-20 | Úvodné vyhľadávanie považuje výsledky z pamäte za konečné bez overenia na serveri | Implementovaná a automaticky overená podfáza C v PR #186 na vetve search-cache-revalidation; review dopĺňa úzku opravu obnovenia jednoznakového dotazu. Náhľad je oddelený podľa účtu a dátových filtrov, TTL 5 min / LRU 50; rovnaké dokončené hľadanie vždy overí server aj pri prázdnej cache. Samostatný request guard bráni starým odpovediam zapisovať UI/cache/históriu po zmene kontextu, vyčistení, deaktivácii či unmount. Súbežný rovnaký pokus sa zdieľa iba v tej istej generácii cache; Enter/Apply/submit ruší čakajúci debounce. Platný náhľad ostáva počas overovania viditeľný so stavom načítavania; chyba ani pending empty sa nevydávajú za potvrdený výsledok. Pamäť scrollu, full-search filtre a backendové matchovanie sa nemenia. Cielených 422 testov PASS; všetkých šesť celých dotknutých produkčných modulov má každú metriku nad 95 %. Finálny celý frontend po review oprave: 476 sád / 7 126 PASS, TypeScript, lint upravených súborov a produkčný build PASS. Pôvodný nesúvisiaci testový FAIL zostáva TEST-14; upozornenie po úspešnom ukončení nového celého behu je TEST-15. Živý retest opravy až po nasadení; aktuálny Railway stále reprodukuje pôvodnú chybu. |
 | OW-21 | Desktopový browser Back z profilu automaticky otvorí ľavý vyhľadávací panel | Používateľ 18. 10. potvrdil kontrolu aj manuálne testy úspešné; PR #184 je zlúčený do main 95b7a058. SearchLayout začína zatvorený, ručný toggle ostáva. Zatvorený panel má visibility:hidden bez skrytých Tab cieľov a zachováva stav. Pôvodných 538 cielených PASS a história živých behov zostávajú nižšie; používateľovo potvrdenie sa nezamieňa za nový automatický PASS. |
 | OW-22 | Desktopový návrat Všetko/Ponuky ukáže vrch a až neskôr obnoví scroll | Používateľ potvrdil review aj manuálne testy úspešné; PR #184 zlúčený. Pôvodné meranie 6,0–6,3 s oproti API 0,14–0,20 s a riadenému zatvoreniu 88/91 ms preukázalo geometriu otvoreného panela. Oprava je spoločná s OW-21; obnovovací hook, slow request, user interruption aj timeout ostali nezmenené. Samostatné automatické výsledky a prípadné problémy harnessu uvádza aktuálny denník, nie toto manuálne potvrdenie. |
 | OW-23 | Obe „Zobraziť viac ľudí/ponúk“ majú cieľovú záložku otvoriť od vrchu | Podfáza B lokálne implementovaná pre desktop aj mobil. Používateľ výslovne povolil iba import, zavolanie samostatného hooku a dva handlery v pôvodne 646-riadkovej page.tsx. Nový jednorazový zámer resetuje vnorený main pred vykreslením presnej cieľovej query, nie pri obyčajnej zmene záložky, dát alebo Back/Forward. Existujúce URL payloady a ostatné filtre sa nemenia. Nová logika má 100 % všetkých metrík; celá legacy stránka 93,51 % vetiev s nezmenenou výnimkou TEST-08. Podrobné kontroly a zatiaľ nenasadený stav uvádza denník podfázy B. |
@@ -116,6 +116,7 @@ Testovacia medzera priamo patriaca do OW-02:
 | TECH-08 | `modules/search/SearchUserProfileModule.tsx`: pôvodne 528 riadkov | Po používateľovom rozdelení už nie je nad limitom | Remapovanie aktuálneho main e7359f1b potvrdilo 235 riadkov; nové useForeignProfileData/useForeignProfileActions majú 150/171. Toto nie je naša úprava OW-18/19. Pôvodný nález zostáva zachovaný ako história, neplatí už tvrdenie o aktuálnych 528 riadkoch. |
 | TECH-09 | `skills/SkillDescriptionModal.tsx`: 502 riadkov | Zoznam; podľa svaply.mdc nemeniť | Overené pri mapovaní odchodu/Zrušiť vo formulári. Krajinu oddeľujeme v malom kontexte a vyhľadávacom hooku, nie úpravou tohto modalu. |
 | TECH-10 | `skills/skillDescriptionModal/hooks/useSkillsDescriptionScreenState.ts`: 638 riadkov | Zoznam; podľa svaply.mdc nemeniť | Overené pri mapovaní predvyplnenia mobilných formulárov; pôvodný kontrakt aj veľký súbor ostávajú bez zásahu. |
+| TECH-11 | `components/dashboard/components/DashboardContentView.test.tsx`: 895 riadkov | Zoznam; podľa pravidla pre TS/TSX nad 500 riadkov nemeniť | Nájdené pri read-only overení zapojenia vyhľadávacieho overlayu v review PR #186. Súbor má nulový diff a oprava ho nepotrebuje; žiadne rozdeľovanie testov v tomto kole. |
 | TOOL-01 | `next lint` vyžaduje interaktívnu konfiguráciu | Zoznam testovacieho tooling-u | Bez zmeny repo konfigurácie prešiel spoločný cielený ESLint cez existujúce API a `next/core-web-vitals`: 18 súborov, 0 chýb/varovaní. Prípadnú neinteraktívnu konfiguráciu riešiť samostatne, bez oslabenia pravidiel. |
 | TOOL-02 | Windows WebKit a dostupnosť Docker fallbacku | Native obmedzenie evidovať; Docker pri OW-03 už funguje | 13. 10. native launch skončil pred stránkou; Code Integrity udalosti 3077/3033 potvrdili blokovanú crypto-57.dll. Pri review kole 14. 10. Docker API nebolo pripravené; ani pokus spustiť existujúci Desktop neumožnil E2E. Native kontrolný launch vtedy skončil timeoutom 10 s pred stránkou; timeout nie je nový dôkaz tej istej DLL chyby. Pri následnom OW-03 mapovaní Docker API odpovedá a existujúci Playwright v1.63.0-noble kontajner skutočne vykonal WebKit desktop/mobile proti Railway: 6 kontrolných PASS a 2 očakávané pre-deploy RED. Žiadne sťahovanie obrazu, vypínanie ochrán ani zmeny bezpečnostnej politiky. Predošlý zber 24 navigačných scenárov stále nie je ich živý PASS. |
 
@@ -1045,3 +1046,68 @@ a návratov. Ďalšia implementačná podfáza je C (OW-20), najprv čerstvé ma
   nepoužije, Všetko ignoruje kartový typ/cenu, krajina je už známy OW-18
   nadväzujúci rozsah. Cancel filtrov priebežné zmeny nevracia. Tieto body
   sú iba zaznamenané, nie potichu opravené v OW-20.
+
+## 19. 10. 2026 – review PR #186: obnovenie jednoznakového hľadania
+
+- Používateľ schválil preveriť aktuálne nálezy, bezpečne opraviť platné a
+  commitnúť/pushnúť na existujúcu vetvu `search-cache-revalidation`.
+  Žiadny merge, deploy, nový PR ani manuálne uzatváranie review vlákien.
+- Overený head `f5656aec`: CodeRabbit nemá actionable komentár, GitHub CI je
+  success. Jeden platný inline nález je od `chatgpt-codex-connector`, nie od
+  Rabbitu: https://github.com/toon2301/svap/pull/186#discussion_r4312962228.
+- Jednoznakový dotaz je existujúca podporovaná akcia cez Enter/form submit;
+  panelový backend nemá minimálnu dĺžku dva. Dvojznakový limit patrí bežnému
+  automatickému písaniu. Po reopen layout efekt zmazal starý stav, ale
+  debounce guard ukončil efekt pred obnovením, takže zostal prázdny panel.
+- Minimal fix v `SearchModule.tsx` iba presúva okamžité overenie neprázdneho
+  dotazu pri reopen pred dvojznakový debounce guard. Reopen je explicitná
+  používateľská akcia a overí aj ponechaný jeden znak; samotné písanie jedného
+  znaku bez odoslania počas otvoreného panela automatický request nespustí.
+  Prázdny/whitespace reopen request nevytvára. Backend, API, cache, filtre,
+  URL, scroll, používateľské texty a preklady ostávajú nezmenené.
+- Päť nových skutočných modulových regresií v existujúcom
+  `SearchModule.revalidation.test.tsx`: aktualizovaná/prázdna nová odpoveď po
+  jednoznakovom Enter → close → reopen, obyčajné jednoznakové písanie,
+  prázdny a whitespace reopen. Pred opravou 12 PASS / 2 vecné FAIL na
+  chýbajúcom druhom requeste, po oprave 14/14 PASS.
+- Cielené celé vyhľadávanie: 22 sád / 422 testov PASS. Coverage celých šiestich
+  funkčných súborov 98,90 % statements / 97,54 % branches / 100 % functions /
+  99,26 % lines; každá metrika každého súboru nad 95 %. Žiadne zníženie gate.
+- TypeScript, produkčný build a lint troch upravených TS/TSX súborov PASS;
+  lint má 0 chýb aj 0 varovaní. `git diff --check` PASS. Kontroly nemenia
+  konfiguráciu, timeouty ani pravidlá projektu.
+- Finálny celý frontend: 476/476 sád a 7 126/7 126 testov PASS, exit 0.
+  Po súhrne sa objavilo upozornenie na oneskorené ukončenie asynchrónnej
+  činnosti. Doplnkové `--detectOpenHandles` nad celou upravenou modulovou
+  sadou: 14/14 PASS, exit 0 a žiadny nahlásený handle. Príčina upozornenia
+  celého behu nie je dokázaná; eviduje sa ako TEST-15 nižšie, nie ako
+  zlyhanie alebo automaticky opravená chyba aplikácie.
+- Rozšírený existujúci `e2e/search-cache-revalidation.spec.ts` o desktopový
+  retained-query reopen bez ďalšieho Enteru. Dva reálne Railway varianty
+  WebKit-desktop aj Chromium sú očakávané pre-deploy RED na chýbajúcom druhom
+  GET; počiatočný skutočný jednoznakový request v oboch vrátil HTTP 200.
+  Mobilný variant je explicitný device SKIP, nie PASS: samostatná mobilná
+  obrazovka nemá tento retained desktop overlay tok. Predošlé tri mobilné
+  cache scenáre ostávajú súčasťou specu a stále čakajú na nasadený retest.
+- Prvý živý pokus nového scenára neprešiel vlastným nesprávnym predpokladom
+  testu o neviditeľnosti vnoreného inputu po zavretí. Dashboard overlay ostáva
+  v DOM a skrýva obsah orezaním nulovej šírky a opacity. Test bol opravený
+  podľa overeného layout kontraktu: aria-hidden true aj skutočná šírka 0,
+  potom aria-hidden false po reopen. Žiadny produkčný layout zásah, force,
+  zvýšenie timeoutu ani oslabenie kontroly zatvorenia. Pôvodné dva testové
+  FAIL sa zachovávajú tu; až druhý beh dosiahol vecnú chýbajúcu revalidáciu.
+- Obsahové zápisy v živom teste: 0; odpovede sú skutočné, bez náhradných dát.
+  Nový kód nie je nasadený a nový automatický E2E PASS opravy sa netvrdí.
+- Upravené iba `SearchModule.tsx`, `SearchModule.revalidation.test.tsx`,
+  `e2e/search-cache-revalidation.spec.ts` a táto evidencia. Nové súbory,
+  migrácie a závislosti: 0. TS/TSX zostávajú pod 500 riadkov.
+- Následný krok: review nového commitu, po schválenom nasadení existujúce
+  OW-20 manuálne testy plus PC Enter s jedným znakom → zavrieť → otvoriť,
+  bez ďalšieho Enteru očakávať serverové overenie a ukončené načítavanie.
+  Súvisiace zobrazenie výsledkov/CTA a prenos filtrov zostávajú ďalšie podfázy.
+
+### Doplnkový nález testovacej stability z review kola
+
+| ID | Položka | Odporúčanie | Dôkaz a stav |
+| --- | --- | --- | --- |
+| TEST-15 | Upozornenie Jest na oneskorené ukončenie po úspešnom celom FE behu | Zoznam stability; sledovať a prípadne samostatne diagnostikovať, bez zásahu do nesúvisiacich testov či aplikácie pri OW-20 | Celý beh 476 sád / 7 126 PASS, exit 0, potom upozornenie Jest did not exit one second after the test run has completed. Následne celá priamo upravená modulová sada s detectOpenHandles 14/14 PASS, exit 0, bez nahláseného handle. To neidentifikuje príčinu celého behu ani nedokazuje jeho definitívne vyriešenie. Bez forceExit, preskočených testov, zvýšenia limitov alebo oslabenia konfigurácie. |

@@ -2,6 +2,7 @@ import { expect, test, type APIResponse, type Locator, type Page, type Request, 
 import {
   DIAGNOSTICS_LABEL, SEARCH_PATH, diagnosticValue, initializeSearchContext, isPanelSearch, openInitialSearch,
 } from './support/search-country-scroll';
+import { sideNav } from './support/dashboard';
 
 // Railway only. Block service workers so every API request reaches the read-only guard and genuine-response barrier.
 // This tests the application result cache, not offline/service-worker behavior or a physical installed PWA.
@@ -173,6 +174,42 @@ test.describe('OW-20 real search cache revalidation', () => {
       const browser = window as HistoryWindow;
       if (browser.__ow20OriginalSetItem) Storage.prototype.setItem = browser.__ow20OriginalSetItem;
     });
+  });
+
+  test('a retained one-character query is revalidated immediately when the desktop panel reopens', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'This retained overlay flow is desktop-only; mobile navigates to a separate search screen.');
+    const input = await openInitialSearch(page, isMobile);
+    const query = 'm';
+    const held = await holdSecondResponse(page, query);
+    try {
+      await prime(page, input, query);
+      const panel = page.locator('[data-search-open] > div[aria-hidden]');
+      await expect(panel).toHaveAttribute('aria-hidden', 'false');
+      await page.getByRole('button', { name: 'Zatvoriť vyhľadávací panel', exact: true })
+        .filter({ visible: true }).click();
+      // This overlay stays mounted and clips its children in a zero-width column when closed.
+      await expect(panel).toHaveAttribute('aria-hidden', 'true');
+      await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBe(0);
+      await sideNav(page, 'Vyhľadávanie').click();
+      await expect(panel).toHaveAttribute('aria-hidden', 'false');
+      await expect(input).toHaveValue(query);
+      await expect.poll(() => held.state.phase, {
+        message: 'Reopening a manually submitted one-character query must issue a second genuine GET without Enter',
+      }).toBe('held');
+      expect(held.state.requests).toBe(2);
+      expect(held.state.sameParameters).toBe(true);
+      const aside = input.locator('xpath=ancestor::aside[1]');
+      await expect(aside.getByRole('status')).toBeVisible();
+      await expect(aside.locator('[aria-busy="true"]')).toHaveCount(1);
+      const [response] = await Promise.all([
+        page.waitForResponse((candidate) => isPanelSearch(candidate.request(), query)),
+        Promise.resolve().then(held.release),
+      ]);
+      const second = await responseCounts(response);
+      expect(second).toEqual(held.state.counts);
+      await expectCompleted(page, second);
+      await expect(aside.getByRole('status')).toHaveCount(0);
+    } finally { await held.cleanup(); }
   });
 
   test('an identical repeat sends real HTTP while retaining the existing preview and exposing revalidation', async ({ page, isMobile }) => {
