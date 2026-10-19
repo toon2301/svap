@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, type FormEvent } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import type { AxiosError } from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
@@ -8,22 +8,25 @@ import { type SearchResults, type SearchSkill, type SearchUserResult } from '../
 import { type SearchStateProps } from './useSearchState';
 import { diagnosticCountry, diagnosticHttpStatus } from '../diagnostics/searchDiagnostics';
 import { useSearchDiagnostics, type SearchDiagnostics } from '../diagnostics/useSearchDiagnostics';
-
-// Globalna cache vysledkov vyhladavania v pamati - prezije unmount/mount SearchModule.
-const globalSearchResultsCache = new Map<string, SearchResults>();
+import {
+  buildSearchCacheKey, clearSearchResultsCache, getCachedSearchResults, getSearchCacheRevision,
+  invalidateSearchResultsForUser, setCachedSearchResults,
+} from './searchResultsCache';
+import { useSearchRequestGuard } from './useSearchRequestGuard';
 
 export interface SearchApiProps {
   handleSearch: (event?: FormEvent) => Promise<void>;
   filteredSkills: SearchSkill[];
   hasResults: boolean;
   hasPanelResults: boolean;
+  isRevalidating?: boolean;
   invalidateCache: () => void;
   diagnostics: SearchDiagnostics;
 }
 
 interface UseSearchApiParams {
   searchState: SearchStateProps;
-  user?: { id: number } | null;
+  user?: { id: number; location?: string | null; district?: string | null } | null;
   isActive?: boolean;
 }
 
@@ -31,264 +34,190 @@ interface SearchApiErrorPayload {
   error?: string;
 }
 
-/**
- * Custom hook pre API volania a cache management.
- * V production verzii nepise citlive hladane vyrazy ani plne response do logov.
- */
+/** Show only this viewer's provisional results, then authorize every update against the server and current context. */
 export function useSearchApi({ searchState, user, isActive = true }: UseSearchApiParams): SearchApiProps {
   const { t, searchCountry: country } = useLanguage();
-  const searchCacheRef = useRef<Map<string, SearchResults>>(globalSearchResultsCache);
-  const latestRequestIdRef = useRef(0);
   const diagnostics = useSearchDiagnostics(user?.id, isActive);
   const { begin: beginDiagnostics } = diagnostics;
-
+  const [isRevalidating, setIsRevalidating] = useState(false);
+  const pendingRevision = useRef<number | null>(null);
   const {
-    searchQuery,
-    results,
-    setResults,
-    setIsSearching,
-    setError,
-    setHasSearched,
-    setIsFromRecentSearch,
-    offerType,
-    onlyMyLocation,
-    priceMin,
-    priceMax,
-    showSkills,
-    showUsers,
-    searchAbortControllerRef,
+    searchQuery, results, setResults, setIsSearching, setError, setHasSearched,
+    setIsFromRecentSearch, offerType, onlyMyLocation, priceMin, priceMax,
+    showSkills, showUsers, searchAbortControllerRef,
   } = searchState;
+  const cacheKey = buildSearchCacheKey({
+    viewerId: user?.id ?? 0, query: searchQuery, offerType, onlyMyLocation, priceMin, priceMax,
+    country: country || '',
+    viewerLocation: onlyMyLocation ? user?.location || '' : '',
+    viewerDistrict: onlyMyLocation ? user?.district || '' : '',
+  });
+  const contextKey = cacheKey ?? JSON.stringify({ viewer: null, query: searchQuery });
+  const requestGuard = useSearchRequestGuard({
+    contextKey, isActive: isActive && cacheKey !== null, controllerRef: searchAbortControllerRef,
+  });
+  const previousContext = useRef(contextKey);
+  const previousViewer = useRef(user?.id);
+  const previousActive = useRef(isActive);
+
+  // Clear another query/account before paint, not when the next debounced request finally starts.
+  // Recent-history selection has its own flow and does not change this context key.
+  useLayoutEffect(() => {
+    const reopened = isActive && !previousActive.current;
+    previousActive.current = isActive;
+    if (previousViewer.current !== user?.id) {
+      invalidateSearchResultsForUser(previousViewer.current ?? 0);
+      previousViewer.current = user?.id;
+    }
+    if (previousContext.current !== contextKey || (reopened && searchQuery.trim())) {
+      previousContext.current = contextKey;
+      setResults(null);
+      setError(null);
+      setHasSearched(false);
+      setIsFromRecentSearch(false);
+      setIsSearching(false);
+      setIsRevalidating(false);
+    }
+    if (!isActive) {
+      setIsSearching(false);
+      setIsRevalidating(false);
+    }
+  }, [contextKey, isActive, searchQuery, user?.id, setResults, setError, setHasSearched,
+    setIsFromRecentSearch, setIsSearching]);
 
   const filteredSkills = results?.skills || [];
   const hasResults = !!results && (filteredSkills.length > 0 || results.users.length > 0);
-  const hasPanelResults =
-    !!results &&
+  const hasPanelResults = !!results &&
     ((showSkills && filteredSkills.length > 0) || (showUsers && results.users.length > 0));
+  const invalidateCache = useCallback(() => clearSearchResultsCache(), []);
 
-  const invalidateCache = useCallback(() => {
-    searchCacheRef.current.clear();
-  }, []);
-
-  const saveResultsToHistory = useCallback(
-    (skills: SearchSkill[], users: SearchUserResult[]) => {
-      if (
-        typeof window === 'undefined' ||
-        (skills.length === 0 && users.length === 0) ||
-        !user?.id
-      ) {
-        return;
-      }
-
-      try {
-        const storageKey = `searchRecentResults_${user.id}`;
-        const stored = localStorage.getItem(storageKey);
-        let searches: SearchResults[] = stored ? JSON.parse(stored) : [];
-
-        const newResult: SearchResults = { skills, users };
-        const seen = new Set<string>();
-        searches = [newResult, ...searches].filter((result) => {
-          const skillIds = result.skills.map((skill) => skill.id).sort().join(',');
-          const userIds = result.users.map((resultUser) => resultUser.id).sort().join(',');
-          const key = `${skillIds}|${userIds}`;
-          if (seen.has(key)) {
-            return false;
-          }
-          seen.add(key);
-          return true;
-        });
-
-        localStorage.setItem(storageKey, JSON.stringify(searches.slice(0, 20)));
-      } catch {
-        // Best effort only - search musi fungovat aj bez localStorage.
-      }
-    },
-    [user?.id],
-  );
-
-  const handleSearch = useCallback(
-    async (event?: FormEvent) => {
-      if (event) {
-        event.preventDefault();
-      }
-
-      const q = searchQuery.trim();
-      const reportDiagnostics = beginDiagnostics({
-        country: diagnosticCountry(country),
-        queryLength: q.length,
-        offerType,
-        onlyMyLocation,
-        priceMinSet: Boolean(priceMin.trim()),
-        priceMaxSet: Boolean(priceMax.trim()),
+  const saveResultsToHistory = useCallback((skills: SearchSkill[], users: SearchUserResult[]) => {
+    if (typeof window === 'undefined' || (skills.length === 0 && users.length === 0) || !user?.id) return;
+    try {
+      const storageKey = `searchRecentResults_${user.id}`;
+      const stored = localStorage.getItem(storageKey);
+      const searches: SearchResults[] = stored ? JSON.parse(stored) : [];
+      const seen = new Set<string>();
+      const next = [{ skills, users }, ...searches].filter((result) => {
+        const key = `${result.skills.map((skill) => skill.id).sort().join(',')}|${
+          result.users.map((person) => person.id).sort().join(',')}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
+      localStorage.setItem(storageKey, JSON.stringify(next.slice(0, 20)));
+    } catch {
+      // History is best effort; unavailable storage cannot break a successful search.
+    }
+  }, [user?.id]);
 
-      if (searchAbortControllerRef.current) {
-        searchAbortControllerRef.current.abort();
-        searchAbortControllerRef.current = null;
-      }
+  const handleSearch = useCallback(async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!isActive || cacheKey === null) return;
+    const pending = requestGuard.getPending(contextKey);
+    if (pending && pendingRevision.current === getSearchCacheRevision()) return pending;
+    const previousController = searchAbortControllerRef.current;
+    const request = requestGuard.begin(contextKey);
+    if (!requestGuard.isCurrent(request)) return;
+    previousController?.abort();
 
-      const requestId = latestRequestIdRef.current + 1;
-      latestRequestIdRef.current = requestId;
-
-      if (!q) {
-        reportDiagnostics({ source: 'none', state: 'empty' });
-        setResults({ skills: [], users: [] });
-        setError(null);
-        setHasSearched(false);
-        setIsFromRecentSearch(false);
-        setIsSearching(false);
-        return;
-      }
-
-      const cacheKey = JSON.stringify({
-        q,
-        offerType,
-        onlyMyLocation,
-        priceMin: priceMin || '',
-        priceMax: priceMax || '',
-        country: country || '',
-      });
-
-      const cached = searchCacheRef.current.get(cacheKey);
-      if (cached) {
-        reportDiagnostics({ source: 'cache', state: 'complete',
-          offersCount: cached.skills.length, usersCount: cached.users.length });
-        setResults(cached);
-        setIsSearching(false);
-        setError(null);
-        setHasSearched(true);
-        setIsFromRecentSearch(false);
-        return;
-      }
-
-      const controller = new AbortController();
-      searchAbortControllerRef.current = controller;
-      let didComplete = false;
-
-      setIsSearching(true);
+    const q = searchQuery.trim();
+    const reportDiagnostics = beginDiagnostics({
+      country: diagnosticCountry(country), queryLength: q.length, offerType, onlyMyLocation,
+      priceMinSet: Boolean(priceMin.trim()), priceMaxSet: Boolean(priceMax.trim()),
+    });
+    if (!q) {
+      reportDiagnostics({ source: 'none', state: 'empty' });
+      setResults({ skills: [], users: [] });
       setError(null);
+      setHasSearched(false);
       setIsFromRecentSearch(false);
+      setIsSearching(false);
+      setIsRevalidating(false);
+      requestGuard.finish(request);
+      return;
+    }
 
-      reportDiagnostics({ source: 'network', state: 'pending' });
+    const revision = getSearchCacheRevision();
+    pendingRevision.current = revision;
+    const cached = getCachedSearchResults(cacheKey);
+    setResults(cached);
+    setHasSearched(true);
+    setIsRevalidating(!!cached && (cached.skills.length > 0 || cached.users.length > 0));
+    setIsSearching(true);
+    setError(null);
+    setIsFromRecentSearch(false);
+    reportDiagnostics({ source: 'network', state: 'pending' });
 
+    const work = (async () => {
+      let didComplete = false;
+      const mayCommit = () => requestGuard.isCurrent(request) && revision === getSearchCacheRevision();
       try {
         const params: Record<string, string> = {
-          q,
-          location: '',
-          offer_type: offerType === 'all' ? '' : offerType,
+          q, location: '', offer_type: offerType === 'all' ? '' : offerType,
           only_my_location: onlyMyLocation ? '1' : '',
-          price_min: priceMin || '',
-          price_max: priceMax || '',
+          price_min: priceMin || '', price_max: priceMax || '',
         };
-
-        if (country && country.trim() !== '') {
-          params.country = country;
-        }
-
+        if (country && country.trim() !== '') params.country = country;
         const response = await api.get(endpoints.dashboard.search, {
-          params,
-          signal: controller.signal,
+          params, signal: request.controller.signal,
         });
-
-        if (requestId !== latestRequestIdRef.current) {
-          return;
-        }
-
+        if (!mayCommit()) return;
         const data = response.data || {};
         const skills = Array.isArray(data.skills) ? (data.skills as SearchSkill[]) : [];
         const users = Array.isArray(data.users) ? (data.users as SearchUserResult[]) : [];
-        const newResults: SearchResults = { skills, users };
-
+        const next: SearchResults = { skills, users };
+        if (!setCachedSearchResults(cacheKey, next, revision)) return;
         reportDiagnostics({ source: 'network', state: 'complete',
-          httpStatus: diagnosticHttpStatus(response.status),
-          offersCount: skills.length, usersCount: users.length,
-          validCollections: Array.isArray(data.skills) && Array.isArray(data.users) });
-
-        setResults(newResults);
-        searchCacheRef.current.set(cacheKey, newResults);
+          httpStatus: diagnosticHttpStatus(response.status), offersCount: skills.length,
+          usersCount: users.length, validCollections: Array.isArray(data.skills) && Array.isArray(data.users) });
+        setResults(next);
         saveResultsToHistory(skills, users);
         didComplete = true;
       } catch (error: unknown) {
-        const apiError = error as AxiosError<SearchApiErrorPayload> & {
-          code?: string;
-          name?: string;
-        };
-
+        if (!mayCommit()) return;
+        const apiError = error as AxiosError<SearchApiErrorPayload> & { code?: string; name?: string };
         if (apiError.name === 'CanceledError' || apiError.code === 'ERR_CANCELED') {
           reportDiagnostics({ source: 'network', state: 'cancelled' });
+          setResults(null);
+          setHasSearched(false);
           return;
         }
-
-        if (requestId !== latestRequestIdRef.current) {
-          return;
+        // An unsuccessful refresh must not leave an old snapshot looking verified or authorized.
+        setResults(null);
+        if (apiError.response?.status === 401 || apiError.response?.status === 403) {
+          invalidateSearchResultsForUser(user?.id ?? 0);
         }
-
         reportDiagnostics({ source: 'network', state: 'error',
           httpStatus: diagnosticHttpStatus(apiError.response?.status) });
-
-        const responseError =
-          typeof apiError.response?.data?.error === 'string'
-            ? apiError.response.data.error
-            : null;
-
-        if (apiError.response?.status === 429) {
-          setError(
-            t('search.tooManyRequests', 'Prilis vela poziadaviek, skuste o chvilu.'),
-          );
-        } else {
-          setError(
-            responseError || t('search.error', 'Chyba pri vyhladavani. Skuste to znova.'),
-          );
-        }
+        const responseError = typeof apiError.response?.data?.error === 'string' ? apiError.response.data.error : null;
+        setError(apiError.response?.status === 429
+          ? t('search.tooManyRequests', 'Prilis vela poziadaviek, skuste o chvilu.')
+          : responseError || t('search.error', 'Chyba pri vyhladavani. Skuste to znova.'));
         didComplete = true;
       } finally {
-        if (requestId !== latestRequestIdRef.current) {
-          return;
-        }
-        setIsSearching(false);
-        if (didComplete) {
-          setHasSearched(true);
-        }
-        if (searchAbortControllerRef.current === controller) {
-          searchAbortControllerRef.current = null;
+        if (requestGuard.isCurrent(request)) {
+          if (!didComplete && revision !== getSearchCacheRevision()) {
+            reportDiagnostics({ source: 'network', state: 'cancelled' });
+            setResults(null);
+            setHasSearched(false);
+          }
+          setIsSearching(false);
+          setIsRevalidating(false);
+          if (didComplete) setHasSearched(true);
+          requestGuard.finish(request);
         }
       }
-    },
-    [
-      searchQuery,
-      offerType,
-      onlyMyLocation,
-      priceMin,
-      priceMax,
-      country,
-      setResults,
-      setError,
-      setHasSearched,
-      setIsFromRecentSearch,
-      setIsSearching,
-      searchAbortControllerRef,
-      t,
-      saveResultsToHistory,
-      beginDiagnostics,
-    ],
-  );
+    })();
+    requestGuard.attachPromise(request, work);
+    return work;
+  }, [isActive, cacheKey, contextKey, requestGuard, searchAbortControllerRef, searchQuery,
+    beginDiagnostics, country, offerType, onlyMyLocation, priceMin, priceMax, setResults,
+    setHasSearched, setIsSearching, setError, setIsFromRecentSearch, saveResultsToHistory, t, user?.id]);
 
-  return {
-    handleSearch,
-    filteredSkills,
-    hasResults,
-    hasPanelResults,
-    invalidateCache,
-    diagnostics,
-  };
+  return { handleSearch, filteredSkills, hasResults, hasPanelResults,
+    isRevalidating: isRevalidating && hasPanelResults, invalidateCache, diagnostics };
 }
 
-export const invalidateSearchCacheForUser = (userId: number): void => {
-  if (!Number.isInteger(userId) || userId <= 0) return;
-
-  globalSearchResultsCache.forEach((results, cacheKey) => {
-    globalSearchResultsCache.set(cacheKey, {
-      users: results.users.filter((user) => user.id !== userId),
-      skills: results.skills.filter((skill) => skill.user_id !== userId),
-    });
-  });
-};
+/** Preserve the public invalidation API used by profile visibility and blocking flows. */
+export const invalidateSearchCacheForUser = invalidateSearchResultsForUser;

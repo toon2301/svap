@@ -55,7 +55,7 @@ export function SearchResults({
     clearSearch,
   } = searchState;
 
-  const { filteredSkills, hasPanelResults, hasResults } = searchApi;
+  const { filteredSkills, hasPanelResults, hasResults, isRevalidating = false } = searchApi;
   const { recentSearches: recentResults, handleRecentResultClick } = recentSearches;
   const { suggestedSkills, handleSuggestionClick } = suggestions;
 
@@ -343,8 +343,15 @@ export function SearchResults({
 
       {/* Search results – vždy zobraziť sekciu keď už bolo vyhľadávanie, aby sa nezobrazovala prázdna oblasť */}
       {hasSearched && !error && (
-        <div className="mt-4 space-y-1">
+        <div className="mt-4 space-y-1" aria-busy={isSearching}>
           {isFromRecentSearch && renderBackButton()}
+
+          {isSearching && isRevalidating && (
+            <div role="status" aria-live="polite" data-search-revalidating="true"
+              className="text-xs text-gray-500 dark:text-gray-400 py-2 px-1">
+              {t('search.loadingResults', 'Načítavam výsledky...')}
+            </div>
+          )}
 
           {shouldShowViewAllButton && (
             <button
@@ -356,7 +363,7 @@ export function SearchResults({
             </button>
           )}
 
-          {!results || isSearching ? (
+          {!results || (isSearching && !isRevalidating) ? (
             <div className="text-xs text-gray-500 dark:text-gray-400 py-4 px-1" role="status" aria-live="polite">
               {t('search.loadingResults', 'Načítavam výsledky...')}
             </div>

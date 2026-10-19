@@ -109,15 +109,22 @@ describe('useSearchApi opt-in diagnostics with the real language/country context
     expect(hook.result.current.search.diagnostics.snapshot?.httpStatus).toBe(201);
   });
 
-  it('identifies an existing empty cache result without claiming any HTTP response', async () => {
+  it('revalidates an empty cache result without inventing HTTP evidence before the response', async () => {
     const hook = harness();
     mockGet.mockResolvedValueOnce({ data: { skills: [], users: [] }, status: 200 });
     await search(hook);
     act(() => hook.result.current.search.diagnostics.setEnabled(true));
-    await search(hook);
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    const refresh = pending();
+    mockGet.mockReturnValueOnce(refresh.promise);
+    let work!: Promise<void>;
+    act(() => { work = hook.result.current.search.handleSearch(); });
+    expect(mockGet).toHaveBeenCalledTimes(2);
     expect(hook.result.current.search.diagnostics.snapshot).toMatchObject({
-      source: 'cache', state: 'complete', offersCount: 0, usersCount: 0, httpStatus: null, validCollections: null,
+      source: 'network', state: 'pending', offersCount: null, usersCount: null, httpStatus: null, validCollections: null,
+    });
+    await act(async () => { refresh.resolve({ data: { skills: [], users: [] }, status: 200 }); await work; });
+    expect(hook.result.current.search.diagnostics.snapshot).toMatchObject({
+      source: 'network', state: 'complete', offersCount: 0, usersCount: 0, httpStatus: 200, validCollections: true,
     });
   });
 

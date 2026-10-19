@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useRef, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { type SearchModuleProps } from './search/types';
 import { FilterModal } from './search/FilterModal';
@@ -30,6 +30,7 @@ export default function SearchModule({
   const recentSearches = useRecentSearches({ user, searchState });
   const suggestions = useSuggestions({ user, searchState, onSkillClick, enabled: isActive });
   const { handleSearch } = searchApi;
+  const wasActiveRef = useRef(isActive);
   const {
     hasSearched,
     isFilterOpen,
@@ -111,9 +112,16 @@ export default function SearchModule({
   ]);
 
   useEffect(() => {
+    const reopened = isActive && !wasActiveRef.current;
+    wasActiveRef.current = isActive;
     if (!isActive) return;
 
     const q = searchQuery.trim();
+    if (reopened && q) {
+      void handleSearch();
+      return;
+    }
+
     if (!q || q.length < 2) {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
@@ -138,15 +146,18 @@ export default function SearchModule({
     };
   }, [isActive, searchQuery, searchDebounceRef, handleSearch]);
 
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Enter') return;
-
-    event.preventDefault();
+  const submitSearch = (event?: FormEvent) => {
+    event?.preventDefault();
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = null;
     }
-    void handleSearch();
+    return handleSearch();
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return;
+    void submitSearch(event);
   };
 
   const rootClassName = isOverlay ? 'w-full h-full' : 'max-w-6xl mx-auto';
@@ -159,7 +170,7 @@ export default function SearchModule({
         <aside className={asideClassName}>
           <SearchInput
             searchState={searchState}
-            onSearch={handleSearch}
+            onSearch={submitSearch}
             onKeyDown={handleKeyDown}
             onClose={onClose}
             t={t}
@@ -203,7 +214,7 @@ export default function SearchModule({
         onReset={searchState.resetFilters}
         onApply={() => {
           setIsFilterOpen(false);
-          void handleSearch();
+          void submitSearch();
         }}
         t={t}
       />

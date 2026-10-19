@@ -112,10 +112,10 @@ describe('SearchModule diagnostics actual UI/API pipeline', () => {
     expect(region.textContent).not.toContain('MoNiTo');
     fireEvent.keyDown(input, { key: 'Enter' });
     await flush();
-    expect(searchCalls()).toHaveLength(1);
-    expect(value(region, 'Zdroj výsledku')).toBe('Pamäť výsledkov');
-    expect(value(region, 'Odoslaná krajina')).toBe('—');
-    expect(value(region, 'HTTP stav')).toBe('—');
+    expect(searchCalls()).toHaveLength(2);
+    expect(value(region, 'Zdroj výsledku')).toBe('Sieť');
+    expect(value(region, 'Odoslaná krajina')).toBe('SK');
+    expect(value(region, 'HTTP stav')).toBe('200');
   });
 
   it('does not restart or postpone the scheduled debounce on any diagnostics toggle', async () => {

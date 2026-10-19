@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { type SearchSkill, type SearchUserResult, type SearchResults } from '../types';
+import { type SearchResults } from '../types';
 
 export interface SearchStateProps {
   // Základné state premenné
@@ -81,11 +81,18 @@ export function useSearchState(): SearchStateProps {
   };
 
   const clearSearch = () => {
+    searchAbortControllerRef.current?.abort();
+    searchAbortControllerRef.current = null;
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
     setSearchQuery('');
     setResults(null);
     setError(null);
     setHasSearched(false);
     setIsFromRecentSearch(false);
+    setIsSearching(false);
     searchInputRef.current?.focus();
   };
 
