@@ -77,7 +77,7 @@ function NotificationActorAvatar({
   }, [cleanAvatarUrl]);
 
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-200">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-purple-100 text-purple-700 lg:h-10 lg:w-10 dark:bg-purple-900/50 dark:text-purple-200">
       {hasAvatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -347,7 +347,7 @@ export default function NotificationItem({
         router.push(targetUrl);
       }}
       disabled={!targetUrl && !isUnavailableOffer}
-      className={`w-full rounded-2xl px-2 py-1.5 text-left transition-colors lg:px-3 lg:py-2.5 ${
+      className={`min-h-[4.5rem] w-full rounded-2xl px-2 py-1.5 text-left transition-colors lg:min-h-0 lg:px-3 lg:py-2.5 ${
         notification.is_read
           ? 'bg-white hover:bg-gray-50 dark:bg-black dark:hover:bg-gray-900'
           : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/35'
