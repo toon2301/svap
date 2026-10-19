@@ -8,10 +8,10 @@ function NotificationSkeletonRow() {
   return (
     <div
       data-testid="notification-skeleton-row"
-      className="flex items-start gap-1.5 rounded-2xl px-2 py-1.5 lg:gap-2.5 lg:px-3 lg:py-2.5"
+      className="flex min-h-[4.5rem] items-center gap-1.5 rounded-2xl px-2 py-1.5 lg:min-h-0 lg:items-start lg:gap-2.5 lg:px-3 lg:py-2.5"
     >
       <div
-        className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700/70"
+        className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-gray-200 lg:h-10 lg:w-10 dark:bg-gray-700/70"
         aria-hidden
       />
       <div className="min-w-0 flex-1 space-y-2">
