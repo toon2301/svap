@@ -142,15 +142,15 @@ describe('useSearchApi existing request and result contracts', () => {
     expect(hook.result.current.search.hasPanelResults).toBe(true);
   });
 
-  it('continues to cache even empty results until explicit invalidation', async () => {
+  it('revalidates even empty cached results on every completed search attempt', async () => {
     const hook = harness();
     await search(hook);
     await search(hook);
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledTimes(2);
     expect(hook.result.current.state.results).toEqual(empty);
     act(() => hook.result.current.search.invalidateCache());
     await search(hook);
-    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect(mockGet).toHaveBeenCalledTimes(3);
   });
 
   it('separates country, type, location and price variations in the existing cache', async () => {
@@ -172,14 +172,15 @@ describe('useSearchApi existing request and result contracts', () => {
     expect(mockGet).toHaveBeenCalledTimes(7);
   });
 
-  it('shares the current cache across unmount and remount', async () => {
+  it('revalidates a previous mount snapshot instead of treating it as a final response', async () => {
     const first = harness();
     mockGet.mockResolvedValueOnce({ data: { skills: [skill], users: [person] } });
     await search(first);
     first.unmount();
+    mockGet.mockResolvedValueOnce({ data: { skills: [skill], users: [person] } });
     const second = harness({ id: 12 }, false);
     await search(second);
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockGet).toHaveBeenCalledTimes(2);
     expect(second.result.current.state.results).toEqual({ skills: [skill], users: [person] });
   });
 
@@ -248,7 +249,7 @@ describe('useSearchApi existing request and result contracts', () => {
     expect(hook.result.current.state.searchAbortControllerRef.current).toBe(replacement);
   });
 
-  it('removes blocked users and owned skills from every existing cache entry only', async () => {
+  it('evicts affected snapshots and accepts only the server response after invalidation', async () => {
     const hook = harness();
     mockGet.mockResolvedValue({ data: {
       skills: [skill, { ...skill, id: 18, user_id: 44 }],
@@ -260,8 +261,11 @@ describe('useSearchApi existing request and result contracts', () => {
     await search(hook, 'First');
     expect(hook.result.current.state.results?.skills).toHaveLength(2);
     invalidateSearchCacheForUser(33);
+    mockGet.mockResolvedValueOnce({ data: {
+      skills: [{ ...skill, id: 18, user_id: 44 }], users: [{ ...person, id: 44 }],
+    } });
     await search(hook, 'Second');
-    expect(mockGet).toHaveBeenCalledTimes(2);
+    expect(mockGet).toHaveBeenCalledTimes(4);
     expect(hook.result.current.state.results).toEqual({
       skills: [{ ...skill, id: 18, user_id: 44 }], users: [{ ...person, id: 44 }],
     });
@@ -296,13 +300,14 @@ describe('useSearchApi existing request and result contracts', () => {
     expect(saved[19].skills[0].id).toBe(118);
   });
 
-  it.each([null, { id: 0 }])('does not persist search history without a signed-in ID: %p', async (user) => {
+  it.each([null, { id: 0 }])('does not fetch or persist account-specific search without a signed-in ID: %p', async (user) => {
     const hook = harness(user);
     mockGet.mockResolvedValueOnce({ data: { skills: [skill], users: [person] } });
     const write = jest.spyOn(Storage.prototype, 'setItem');
     await search(hook);
     expect(write).not.toHaveBeenCalled();
-    expect(hook.result.current.state.results?.skills).toEqual([skill]);
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(hook.result.current.state.results).toBeNull();
   });
 
   it.each(['invalid JSON', 'null', '{}'])('does not break a successful search on malformed history %s', async (stored) => {

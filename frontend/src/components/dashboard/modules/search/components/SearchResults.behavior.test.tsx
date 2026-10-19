@@ -43,6 +43,7 @@ interface Fixture {
   recent?: ResultData[];
   suggested?: SearchSkill[];
   searchState?: Partial<SearchStateProps>;
+  isRevalidating?: boolean;
   onSkillClick?: ComponentProps<typeof SearchResults>['onSkillClick'];
   onUserClick?: ComponentProps<typeof SearchResults>['onUserClick'];
 }
@@ -56,6 +57,7 @@ function renderResults({ skills = [], users = [], recent = [], suggested = [], .
     handleSearch: jest.fn(), filteredSkills: skills, hasResults: skills.length + users.length > 0,
     hasPanelResults: (searchState.showSkills && skills.length > 0) || (searchState.showUsers && users.length > 0),
     invalidateCache: jest.fn(), diagnostics: { enabled: false, snapshot: null, setEnabled: jest.fn() },
+    isRevalidating: options.isRevalidating,
   };
   const view = render(<SearchResults user={account} searchState={searchState} searchApi={searchApi}
     recentSearches={{ recentSearches: recent, handleRecentResultClick }}
@@ -65,6 +67,24 @@ function renderResults({ skills = [], users = [], recent = [], suggested = [], .
 }
 
 beforeEach(() => { jest.clearAllMocks(); });
+
+describe('SearchResults provisional cache during server verification', () => {
+  it('retains a current nonempty preview with a busy status, never as a finished response', () => {
+    renderResults({ skills: [skill], isRevalidating: true, searchState: { isSearching: true } });
+    expect(screen.getByRole('button', { name: /Monitorovanie/ })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveAttribute('data-search-revalidating', 'true');
+    expect(screen.getByRole('status').parentElement).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByRole('button', { name: 'Zobraziť všetko' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Pre zadané vyhľadávanie sa nenašli žiadne výsledky.')).not.toBeInTheDocument();
+  });
+
+  it('does not present an empty cached snapshot as a final empty result while pending', () => {
+    renderResults({ searchState: { isSearching: true } });
+    expect(screen.getByRole('status')).toHaveTextContent('Načítavam výsledky...');
+    expect(screen.getByRole('status')).not.toHaveAttribute('data-search-revalidating');
+    expect(screen.queryByText('Pre zadané vyhľadávanie sa nenašli žiadne výsledky.')).not.toBeInTheDocument();
+  });
+});
 
 describe('SearchResults skill cards retain their existing presentation and navigation', () => {
   it.each<[Partial<SearchSkill>, string, string, string]>([
