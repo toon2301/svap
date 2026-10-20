@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { publishNotificationUnreadCount } from '@/components/dashboard/contexts/notificationUnreadStore';
 
+import { diag } from './notifDiag';
 import { markAllNotificationsRead, markNotificationRead } from './notificationsApi';
 import { appendUniqueNotifications } from './notificationsWindow';
 import type { DashboardNotification } from './types';
@@ -14,6 +15,7 @@ const LOAD_ERROR = 'notifications.loadFeedError';
 
 export function dispatchNotificationsChanged(): void {
   if (typeof window === 'undefined') return;
+  diag('dispatchNotificationsChanged()');
   window.dispatchEvent(new Event(NOTIFICATION_CHANGED_EVENT));
 }
 
@@ -75,13 +77,18 @@ export function useNotificationsFeed() {
 
   useEffect(() => {
     mountedRef.current = true;
+    diag(
+      `feed mount standalone=${String((navigator as { standalone?: boolean }).standalone)} online=${navigator.onLine} vis=${document.visibilityState} w=${window.innerWidth}`,
+    );
     return () => {
       mountedRef.current = false;
+      diag('feed unmount');
     };
   }, []);
 
   const performRefresh = useCallback(
     async (request: RefreshRequest) => {
+      diag(`performRefresh start initial=${request.initial} reportError=${request.reportError}`);
       if (request.initial) {
         setLoading(true);
       } else {
@@ -94,6 +101,9 @@ export function useNotificationsFeed() {
         // Obnova načíta celé už načítané okno, nie len prvú stranu: donačítané upozornenia ostanú
         // a zoznam sa pod prstom neskráti.
         const fetched = await fetchWindow();
+        diag(
+          `window fetched mounted=${mountedRef.current} n=${fetched ? fetched.items.length : 'null'} top=${fetched?.items[0]?.id ?? '-'}`,
+        );
         if (!mountedRef.current) return;
         if (!fetched) {
           // Dávky pribúdali tak rýchlo, že okno nestihlo sedieť. Menšie okno by zoznam skrátilo,
@@ -106,10 +116,12 @@ export function useNotificationsFeed() {
           return;
         }
         fetched.commit();
+        diag(`setItems top=${fetched.items[0]?.id ?? '-'}`);
         setItems(withLocalReads(fetched.items));
         setError(clearLoadError);
         setLoadMoreFailed(false);
-      } catch {
+      } catch (error) {
+        diag(`performRefresh ERROR ${error instanceof Error ? error.message : String(error)}`);
         if (mountedRef.current && request.reportError) setError(LOAD_ERROR);
       } finally {
         if (mountedRef.current) {
@@ -132,6 +144,7 @@ export function useNotificationsFeed() {
   const refresh = useCallback(
     (request: RefreshRequest): Promise<void> => {
       const running = refreshInFlightRef.current;
+      diag(`refresh() inFlight=${Boolean(running)} followUp=${request.followUp} initial=${request.initial}`);
       if (running) {
         if (request.followUp) {
           const queued = queuedRefreshRef.current;
@@ -177,6 +190,7 @@ export function useNotificationsFeed() {
 
   useEffect(() => {
     const handleChanged = () => {
+      diag(`listener fired vis=${document.visibilityState}`);
       void refresh({ initial: false, reportError: false, followUp: true });
     };
 
