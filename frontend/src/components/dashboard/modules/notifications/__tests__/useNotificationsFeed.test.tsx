@@ -163,7 +163,7 @@ describe('useNotificationsFeed (existing behaviour)', () => {
       expect(result.current.items).toHaveLength(30);
     });
 
-    it('reports a load error and keeps the loaded items when the next batch fails', async () => {
+    it('reports that the next batch failed and keeps the loaded items', async () => {
       serveNotifications(listMock, 40);
       const { result } = await mount();
       listMock.mockRejectedValueOnce(new Error('network'));
@@ -172,7 +172,8 @@ describe('useNotificationsFeed (existing behaviour)', () => {
         await result.current.loadMore();
       });
 
-      expect(result.current.error).toBe('notifications.loadFeedError');
+      expect(result.current.loadMoreFailed).toBe(true);
+      expect(result.current.error).toBeNull();
       expect(result.current.items).toHaveLength(15);
       expect(result.current.loadingMore).toBe(false);
       expect(result.current.hasMore).toBe(true);

@@ -47,6 +47,8 @@ export function useNotificationsFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Zlyhanie „Zobraziť ďalšie“ sa ukazuje dole pri tlačidle (tam je používateľ), nie v pruhu hore.
+  const [loadMoreFailed, setLoadMoreFailed] = useState(false);
   const markingReadIdsRef = useRef<Set<number>>(new Set());
   const mountedRef = useRef(true);
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
@@ -106,6 +108,7 @@ export function useNotificationsFeed() {
         fetched.commit();
         setItems(withLocalReads(fetched.items));
         setError(clearLoadError);
+        setLoadMoreFailed(false);
       } catch {
         if (mountedRef.current && request.reportError) setError(LOAD_ERROR);
       } finally {
@@ -158,10 +161,11 @@ export function useNotificationsFeed() {
   );
 
   const loadMore = useCallback(async () => {
+    setLoadMoreFailed(false);
     const outcome = await loadMoreBatch();
     if (!mountedRef.current) return;
     if (outcome === 'failed') {
-      setError(LOAD_ERROR);
+      setLoadMoreFailed(true);
     } else if (outcome === 'loaded') {
       setError(clearLoadError);
     }
@@ -235,6 +239,7 @@ export function useNotificationsFeed() {
     markingRead,
     loadingMore: paging.loadingMore,
     hasMore: paging.hasMore,
+    loadMoreFailed,
     error,
     refresh: () => refresh({ initial: false, reportError: true, followUp: true }),
     loadMore,

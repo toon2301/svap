@@ -534,12 +534,12 @@ describe('useNotificationsFeed refresh', () => {
       expect(result.current.error).toBe('notifications.loadFeedError');
     });
 
-    it('clears the load error after the next batch loads', async () => {
+    it('clears the load error of a failed refresh after the next batch loads', async () => {
       fakeServer(listMock, 100);
       const { result } = await mount();
       listMock.mockRejectedValueOnce(new Error('network'));
       await act(async () => {
-        await result.current.loadMore();
+        await result.current.refresh();
       });
       expect(result.current.error).toBe('notifications.loadFeedError');
 
@@ -549,6 +549,106 @@ describe('useNotificationsFeed refresh', () => {
 
       expect(result.current.error).toBeNull();
       expect(result.current.items).toHaveLength(30);
+    });
+  });
+
+  describe('a failed next batch', () => {
+    it('is reported apart from the load error and keeps other errors', async () => {
+      fakeServer(listMock, 100);
+      markAllMock.mockRejectedValue(new Error('network'));
+      const { result } = await mount();
+      await act(async () => {
+        await result.current.markAllRead();
+      });
+      listMock.mockRejectedValueOnce(new Error('network'));
+
+      await act(async () => {
+        await result.current.loadMore();
+      });
+
+      expect(result.current.loadMoreFailed).toBe(true);
+      expect(result.current.error).toBe('notifications.markAllReadError');
+    });
+
+    it('is cleared as soon as the user tries again', async () => {
+      fakeServer(listMock, 100);
+      const { result } = await mount();
+      listMock.mockRejectedValueOnce(new Error('network'));
+      await act(async () => {
+        await result.current.loadMore();
+      });
+      expect(result.current.loadMoreFailed).toBe(true);
+      const slow = deferred<NotificationsPage>();
+      listMock.mockImplementationOnce(() => slow.promise);
+
+      let retry!: Promise<void>;
+      act(() => {
+        retry = result.current.loadMore();
+      });
+      expect(result.current.loadMoreFailed).toBe(false);
+      expect(result.current.loadingMore).toBe(true);
+      await act(async () => {
+        slow.resolve(serverPage(100, 2, 15));
+        await retry;
+      });
+
+      expect(result.current.loadMoreFailed).toBe(false);
+      expect(result.current.items).toHaveLength(30);
+    });
+
+    it('is reported again when the retry fails too', async () => {
+      fakeServer(listMock, 100);
+      const { result } = await mount();
+      listMock.mockRejectedValue(new Error('network'));
+      await act(async () => {
+        await result.current.loadMore();
+      });
+
+      await act(async () => {
+        await result.current.loadMore();
+      });
+
+      expect(result.current.loadMoreFailed).toBe(true);
+      expect(result.current.items).toHaveLength(15);
+    });
+
+    it('is cleared when the list refreshes successfully', async () => {
+      fakeServer(listMock, 100);
+      const { result } = await mount();
+      listMock.mockRejectedValueOnce(new Error('network'));
+      await act(async () => {
+        await result.current.loadMore();
+      });
+      expect(result.current.loadMoreFailed).toBe(true);
+
+      await refreshFromEvent(result);
+
+      expect(result.current.loadMoreFailed).toBe(false);
+    });
+
+    it('stays reported when a refresh in the background fails', async () => {
+      fakeServer(listMock, 100);
+      const { result } = await mount();
+      listMock.mockRejectedValueOnce(new Error('network'));
+      await act(async () => {
+        await result.current.loadMore();
+      });
+      listMock.mockRejectedValueOnce(new Error('network'));
+
+      await refreshFromEvent(result);
+
+      expect(result.current.loadMoreFailed).toBe(true);
+    });
+
+    it('does not appear when nothing was left to load', async () => {
+      fakeServer(listMock, 10);
+      const { result } = await mount();
+
+      await act(async () => {
+        await result.current.loadMore();
+      });
+
+      expect(result.current.loadMoreFailed).toBe(false);
     });
   });
 
