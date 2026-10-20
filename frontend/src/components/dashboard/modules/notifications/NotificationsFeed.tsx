@@ -10,6 +10,11 @@ import NotificationItem from './NotificationItem';
 import { NotificationsFeedSkeleton } from './NotificationsFeedSkeleton';
 import { useNotificationsFeed } from './useNotificationsFeed';
 
+// Panel je scrollovací kontajner a musí byť `relative`: skryté (sr-only, absolútne) texty upozornení
+// sa tak orezávajú panelu. Bez toho ich ako nadradený blok berie `body`, natiahne ho a po scrolle
+// sa posunie celá aplikácia (ľavá navigácia odrezaná, pod obsahom prázdna plocha).
+const PANEL_SECTION_CLASS = 'relative h-full w-full overflow-y-auto px-5 py-8 elegant-scrollbar';
+
 const ERROR_BOX_CLASS =
   'rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300';
 
@@ -51,7 +56,7 @@ export default function NotificationsFeed({
     <section
       className={
         isPanel
-          ? 'h-full w-full overflow-y-auto px-5 py-8 elegant-scrollbar'
+          ? PANEL_SECTION_CLASS
           : 'mx-auto w-full max-w-3xl'
       }
     >
