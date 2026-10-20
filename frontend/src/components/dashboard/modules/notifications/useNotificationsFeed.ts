@@ -8,6 +8,7 @@ import { markAllNotificationsRead, markNotificationRead } from './notificationsA
 import { appendUniqueNotifications } from './notificationsWindow';
 import type { DashboardNotification } from './types';
 import { useNotificationsPaging } from './useNotificationsPaging';
+import { useNotificationsResync } from './useNotificationsResync';
 
 const NOTIFICATION_CHANGED_EVENT = 'notifications:changed';
 const LOAD_ERROR = 'notifications.loadFeedError';
@@ -185,6 +186,12 @@ export function useNotificationsFeed() {
       window.removeEventListener(NOTIFICATION_CHANGED_EVENT, handleChanged);
     };
   }, [refresh]);
+
+  // Realtime nič nezopakuje: po medzere (iPhone v pozadí, spadnuté spojenie) zoznam dotiahneme sami.
+  const resync = useCallback(() => {
+    void refresh({ initial: false, reportError: false, followUp: true });
+  }, [refresh]);
+  useNotificationsResync(resync);
 
   const markAllRead = useCallback(async () => {
     setMarkingRead(true);
