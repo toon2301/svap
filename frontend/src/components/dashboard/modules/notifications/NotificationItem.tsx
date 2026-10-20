@@ -381,7 +381,7 @@ export default function NotificationItem({
               <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-purple-600" aria-hidden />
             </div>
           )}
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="break-words text-sm text-gray-600 dark:text-gray-300">
             {highlightedBody}
           </p>
           <div className="mt-0.5 text-xs text-gray-500 lg:mt-1.5 dark:text-gray-400">

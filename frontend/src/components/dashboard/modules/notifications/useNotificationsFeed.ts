@@ -4,94 +4,183 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { publishNotificationUnreadCount } from '@/components/dashboard/contexts/notificationUnreadStore';
 
-import {
-  listNotificationsPage,
-  markAllNotificationsRead,
-  markNotificationRead,
-} from './notificationsApi';
+import { markAllNotificationsRead, markNotificationRead } from './notificationsApi';
+import { appendUniqueNotifications } from './notificationsWindow';
 import type { DashboardNotification } from './types';
+import { useNotificationsPaging } from './useNotificationsPaging';
 
 const NOTIFICATION_CHANGED_EVENT = 'notifications:changed';
-const NOTIFICATION_FEED_PAGE_SIZE = 15;
+const LOAD_ERROR = 'notifications.loadFeedError';
 
 export function dispatchNotificationsChanged(): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(NOTIFICATION_CHANGED_EVENT));
 }
 
+/** Zmaže len chybu načítania; iné chyby (napr. „označiť všetko“) ostávajú. */
+function clearLoadError(current: string | null): string | null {
+  return current === LOAD_ERROR ? null : current;
+}
+
+/** Upozornenie, ktoré sa už nikdy nevráti medzi neprečítané. */
+function markedRead(item: DashboardNotification): DashboardNotification {
+  if (item.is_read) return item;
+  return { ...item, is_read: true, read_at: item.read_at || new Date().toISOString() };
+}
+
+/** Jedna obnova zoznamu: prvé načítanie, obnova z udalosti, alebo ručné „Skúsiť znova“. */
+type RefreshRequest = {
+  /** Prvé načítanie ukazuje skeleton; obnova nechá zoznam na obrazovke. */
+  initial: boolean;
+  /** Zlyhanie sa ukáže používateľovi; obnova na pozadí zlyhá ticho. */
+  reportError: boolean;
+  /**
+   * Dáta sa mohli zmeniť po začiatku už rozbehnutej obnovy: dobehne ešte jedna. Pri prvom načítaní
+   * (aj pri dvojitom spustení efektu) sa nové údaje neobjavili, preto sa nepripája.
+   */
+  followUp: boolean;
+};
+
 export function useNotificationsFeed() {
   const [items, setItems] = useState<DashboardNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const markingReadIdsRef = useRef<Set<number>>(new Set());
-  const pageRef = useRef(1);
-  const loadingMoreRef = useRef(false);
+  const mountedRef = useRef(true);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const queuedRefreshRef = useRef<RefreshRequest | null>(null);
+  // Upozornenia prečítané počas tejto relácie. Odpoveď servera, ktorá odišla pred prečítaním, ich
+  // inak vráti medzi neprečítané; prečítané ostáva prečítané, preto ich dopĺňame do každej odpovede.
+  const locallyReadIdsRef = useRef<Set<number>>(new Set());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  const load = useCallback(async (showInitialLoader = false) => {
-    if (showInitialLoader) {
-      setLoading(true);
-    } else {
-      setRefreshing(true);
-    }
-    setError(null);
+  const withLocalReads = useCallback(
+    (list: DashboardNotification[]) =>
+      locallyReadIdsRef.current.size === 0
+        ? list
+        : list.map((item) => (locallyReadIdsRef.current.has(item.id) ? markedRead(item) : item)),
+    [],
+  );
 
-    try {
-      // Refresh vždy resetuje na prvú stranu (najnovšie hore).
-      const page = await listNotificationsPage(1, NOTIFICATION_FEED_PAGE_SIZE);
-      pageRef.current = page.page;
-      setItems(page.results);
-      setHasMore(page.page < page.totalPages);
-    } catch {
-      setError('notifications.loadFeedError');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  const loadMore = useCallback(async () => {
-    if (loadingMoreRef.current || !hasMore) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    setError(null);
-
-    try {
-      const nextPage = pageRef.current + 1;
-      const page = await listNotificationsPage(nextPage, NOTIFICATION_FEED_PAGE_SIZE);
-      pageRef.current = page.page;
-      setItems((current) => {
-        // Dedup podľa id (realtime medzičasom mohol vložiť nový riadok).
-        const seen = new Set(current.map((item) => item.id));
-        const appended = page.results.filter((item) => !seen.has(item.id));
-        return [...current, ...appended];
-      });
-      setHasMore(page.page < page.totalPages);
-    } catch {
-      setError('notifications.loadFeedError');
-    } finally {
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
-    }
-  }, [hasMore]);
+  const paging = useNotificationsPaging({
+    onAppend: (incoming) =>
+      setItems((current) => appendUniqueNotifications(current, withLocalReads(incoming))),
+  });
+  const { fetchWindow, loadMore: loadMoreBatch } = paging;
 
   useEffect(() => {
-    void load(true);
-  }, [load]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const performRefresh = useCallback(
+    async (request: RefreshRequest) => {
+      if (request.initial) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+      // Ručné „Skúsiť znova“ je vedomá akcia používateľa, takže zmaže akúkoľvek zobrazenú chybu.
+      if (request.reportError) setError(null);
+
+      try {
+        // Obnova načíta celé už načítané okno, nie len prvú stranu: donačítané upozornenia ostanú
+        // a zoznam sa pod prstom neskráti.
+        const fetched = await fetchWindow();
+        if (!mountedRef.current) return;
+        if (!fetched) {
+          // Dávky pribúdali tak rýchlo, že okno nestihlo sedieť. Menšie okno by zoznam skrátilo,
+          // takže sa nezapíše nič a obnova sa zopakuje s aktuálnym rozsahom.
+          queuedRefreshRef.current ??= {
+            initial: false,
+            reportError: request.reportError,
+            followUp: true,
+          };
+          return;
+        }
+        fetched.commit();
+        setItems(withLocalReads(fetched.items));
+        setError(clearLoadError);
+      } catch {
+        if (mountedRef.current && request.reportError) setError(LOAD_ERROR);
+      } finally {
+        if (mountedRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    },
+    [fetchWindow, withLocalReads],
+  );
+
+  /**
+   * Spustí obnovu tak, aby naraz bežala jediná a odpovede nepredbehli jedna druhú.
+   *
+   * Udalosti zo servera chodia v dávkach (nové upozornenie, ozvena vlastného prečítania). Ak obnova
+   * už beží, ďalšia sa nespúšťa súbežne, ale najviac jedna dobehne po nej, takže odpoveď staršej
+   * obnovy nemôže prepísať odpoveď novšej. (Odpoveď na donačítanie ďalšej dávky rieši stránkovanie
+   * a prečítania doplňuje `withLocalReads`.)
+   */
+  const refresh = useCallback(
+    (request: RefreshRequest): Promise<void> => {
+      const running = refreshInFlightRef.current;
+      if (running) {
+        if (request.followUp) {
+          const queued = queuedRefreshRef.current;
+          queuedRefreshRef.current = {
+            initial: false,
+            reportError: request.reportError || Boolean(queued?.reportError),
+            followUp: true,
+          };
+        }
+        return running;
+      }
+
+      const promise = (async () => {
+        let next: RefreshRequest | null = request;
+        while (next) {
+          queuedRefreshRef.current = null;
+          await performRefresh(next);
+          next = mountedRef.current ? queuedRefreshRef.current : null;
+        }
+      })().finally(() => {
+        refreshInFlightRef.current = null;
+      });
+      refreshInFlightRef.current = promise;
+      return promise;
+    },
+    [performRefresh],
+  );
+
+  const loadMore = useCallback(async () => {
+    const outcome = await loadMoreBatch();
+    if (!mountedRef.current) return;
+    if (outcome === 'failed') {
+      setError(LOAD_ERROR);
+    } else if (outcome === 'loaded') {
+      setError(clearLoadError);
+    }
+  }, [loadMoreBatch]);
+
+  useEffect(() => {
+    void refresh({ initial: true, reportError: true, followUp: false });
+  }, [refresh]);
 
   useEffect(() => {
     const handleChanged = () => {
-      void load(false);
+      void refresh({ initial: false, reportError: false, followUp: true });
     };
 
     window.addEventListener(NOTIFICATION_CHANGED_EVENT, handleChanged);
     return () => {
       window.removeEventListener(NOTIFICATION_CHANGED_EVENT, handleChanged);
     };
-  }, [load]);
+  }, [refresh]);
 
   const markAllRead = useCallback(async () => {
     setMarkingRead(true);
@@ -99,13 +188,8 @@ export function useNotificationsFeed() {
     try {
       await markAllNotificationsRead();
       publishNotificationUnreadCount(0, { source: 'mutation' });
-      setItems((current) =>
-        current.map((item) => ({
-          ...item,
-          is_read: true,
-          read_at: item.read_at || new Date().toISOString(),
-        })),
-      );
+      for (const item of itemsRef.current) locallyReadIdsRef.current.add(item.id);
+      setItems((current) => current.map(markedRead));
     } catch {
       setError('notifications.markAllReadError');
     } finally {
@@ -125,6 +209,7 @@ export function useNotificationsFeed() {
         publishNotificationUnreadCount(result.unread_count, { source: 'mutation' });
       }
 
+      locallyReadIdsRef.current.add(notification.id);
       setItems((current) =>
         current.map((item) =>
           item.id === notification.id
@@ -148,10 +233,10 @@ export function useNotificationsFeed() {
     loading,
     refreshing,
     markingRead,
-    loadingMore,
-    hasMore,
+    loadingMore: paging.loadingMore,
+    hasMore: paging.hasMore,
     error,
-    refresh: () => load(false),
+    refresh: () => refresh({ initial: false, reportError: true, followUp: true }),
     loadMore,
     markAllRead,
     markItemRead,
