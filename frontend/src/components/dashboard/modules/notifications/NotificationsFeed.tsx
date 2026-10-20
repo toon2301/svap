@@ -1,6 +1,7 @@
 'use client';
 
 import { BellIcon } from '@heroicons/react/24/outline';
+import { useEffect, useRef } from 'react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
@@ -8,6 +9,9 @@ import { useIsMobile } from '@/hooks';
 import NotificationItem from './NotificationItem';
 import { NotificationsFeedSkeleton } from './NotificationsFeedSkeleton';
 import { useNotificationsFeed } from './useNotificationsFeed';
+
+const ERROR_BOX_CLASS =
+  'rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300';
 
 interface NotificationsFeedProps {
   variant?: 'page' | 'panel';
@@ -27,6 +31,7 @@ export default function NotificationsFeed({
     markingRead,
     loadingMore,
     hasMore,
+    loadMoreFailed,
     error,
     refresh,
     loadMore,
@@ -35,6 +40,12 @@ export default function NotificationsFeed({
   } = useNotificationsFeed();
   const hasUnread = items.some((item) => !item.is_read);
   const isPanel = variant === 'panel';
+  const loadMoreErrorRef = useRef<HTMLDivElement | null>(null);
+
+  // Chyba sa objaví na konci dlhého zoznamu, kde môže presahovať okraj: dostaneme ju celú do záberu.
+  useEffect(() => {
+    if (loadMoreFailed) loadMoreErrorRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [loadMoreFailed]);
 
   return (
     <section
@@ -92,7 +103,7 @@ export default function NotificationsFeed({
 
       <div className={isPanel ? '' : 'px-4 lg:px-0'}>
         {error ? (
-          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300">
+          <div className={`mb-4 ${ERROR_BOX_CLASS}`}>
             {t(error, 'Upozornenia sa nepodarilo načítať.')}
             <button
               type="button"
@@ -137,8 +148,24 @@ export default function NotificationsFeed({
                 onMarkRead={markItemRead}
               />
             ))}
-            {hasMore ? (
-              <div className="mt-4 flex justify-center">
+            {hasMore && loadMoreFailed ? (
+              <div
+                key="load-more-error"
+                ref={loadMoreErrorRef}
+                role="alert"
+                className={`mt-4 scroll-mb-24 ${ERROR_BOX_CLASS}`}
+              >
+                {t('notifications.loadFeedError', 'Upozornenia sa nepodarilo načítať.')}
+                <button
+                  type="button"
+                  onClick={() => void loadMore()}
+                  className="ml-2 font-semibold underline"
+                >
+                  {t('notifications.retry', 'Skúsiť znova')}
+                </button>
+              </div>
+            ) : hasMore ? (
+              <div key="load-more" className="mt-4 flex justify-center">
                 <button
                   type="button"
                   onClick={() => void loadMore()}
