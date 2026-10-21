@@ -242,4 +242,43 @@ describe('useNotificationsResync', () => {
     // Tikanie po 30 s a po 60 s, aj keď sa callback menil každých 10 s.
     expect(onResync).toHaveBeenCalledTimes(2);
   });
+
+  describe('with the poll switched off (a very long list)', () => {
+    it('skips the 30 s poll but still resyncs on foreground, focus and online', () => {
+      const onResync = jest.fn();
+      renderHook(() => useNotificationsResync(onResync, false));
+
+      act(() => {
+        jest.advanceTimersByTime(NOTIFICATIONS_RESYNC_POLL_MS * 3);
+      });
+      expect(onResync).not.toHaveBeenCalled();
+
+      comeBack();
+      settle();
+      expect(onResync).toHaveBeenCalledTimes(1);
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      settle();
+      expect(onResync).toHaveBeenCalledTimes(2);
+    });
+
+    it('starts polling again when the switch turns back on, without restarting the interval', () => {
+      const onResync = jest.fn();
+      const { rerender } = renderHook(({ on }) => useNotificationsResync(onResync, on), {
+        initialProps: { on: false },
+      });
+      act(() => {
+        jest.advanceTimersByTime(NOTIFICATIONS_RESYNC_POLL_MS);
+      });
+      expect(onResync).not.toHaveBeenCalled();
+
+      rerender({ on: true });
+      act(() => {
+        jest.advanceTimersByTime(NOTIFICATIONS_RESYNC_POLL_MS);
+      });
+      settle();
+      expect(onResync).toHaveBeenCalledTimes(1);
+    });
+  });
 });

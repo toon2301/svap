@@ -12,7 +12,11 @@ import {
   serverPage,
 } from '../notificationsFeedTestUtils';
 import { useNotificationsFeed } from '../useNotificationsFeed';
-import { NOTIFICATIONS_RESYNC_DEBOUNCE_MS } from '../useNotificationsResync';
+import {
+  NOTIFICATIONS_RESYNC_DEBOUNCE_MS,
+  NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS,
+  NOTIFICATIONS_RESYNC_POLL_MS,
+} from '../useNotificationsResync';
 
 jest.mock('../notificationsApi', () => ({
   __esModule: true,
@@ -49,6 +53,25 @@ async function mountWithThreeBatches() {
   }
   expect(view.result.current.items).toHaveLength(45);
   return view;
+}
+
+async function mountWithBatches(batches: number) {
+  fakeServer(listMock, 200);
+  const view = renderHook(() => useNotificationsFeed());
+  await waitFor(() => expect(view.result.current.loading).toBe(false));
+  for (let index = 1; index < batches; index += 1) {
+    await act(async () => {
+      await view.result.current.loadMore();
+    });
+  }
+  expect(view.result.current.items).toHaveLength(batches * 15);
+  return view;
+}
+
+async function waitForPoll() {
+  await act(async () => {
+    jest.advanceTimersByTime(NOTIFICATIONS_RESYNC_POLL_MS + NOTIFICATIONS_RESYNC_DEBOUNCE_MS);
+  });
 }
 
 async function returnToForeground() {
@@ -148,5 +171,36 @@ describe('useNotificationsFeed resync after a gap in realtime', () => {
 
     expect(result.current.error).toBeNull();
     expect(ids(result.current.items)).toEqual(before);
+  });
+
+  describe('the 30 s safety-net poll on a long list', () => {
+    const limitBatches = NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS / 15;
+
+    it('allows the poll up to 90 loaded notifications (6 batches)', () => {
+      expect(NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS).toBe(90);
+    });
+
+    it('still polls at the limit of loaded notifications', async () => {
+      await mountWithBatches(limitBatches);
+      listMock.mockClear();
+
+      await waitForPoll();
+
+      expect(listMock).toHaveBeenCalled();
+    });
+
+    it('skips the poll above the limit, but a return to the foreground still resyncs', async () => {
+      const { result } = await mountWithBatches(limitBatches + 1);
+      listMock.mockClear();
+      serverWithNewTopItem(200);
+
+      await waitForPoll();
+      await waitForPoll();
+      expect(listMock).not.toHaveBeenCalled();
+
+      await returnToForeground();
+      await waitFor(() => expect(result.current.items[0].id).toBe(500));
+      expect(listMock).toHaveBeenCalled();
+    });
   });
 });

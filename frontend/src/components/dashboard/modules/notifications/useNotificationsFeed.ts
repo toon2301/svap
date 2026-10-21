@@ -9,7 +9,10 @@ import { appendUniqueNotifications } from './notificationsWindow';
 import type { DashboardNotification } from './types';
 import { useNotificationsLoadMoreRetry } from './useNotificationsLoadMoreRetry';
 import { useNotificationsPaging } from './useNotificationsPaging';
-import { useNotificationsResync } from './useNotificationsResync';
+import {
+  NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS,
+  useNotificationsResync,
+} from './useNotificationsResync';
 
 const NOTIFICATION_CHANGED_EVENT = 'notifications:changed';
 const LOAD_ERROR = 'notifications.loadFeedError';
@@ -198,7 +201,7 @@ export function useNotificationsFeed() {
   const resync = useCallback(() => {
     void refresh({ initial: false, reportError: false, followUp: true });
   }, [refresh]);
-  useNotificationsResync(resync);
+  useNotificationsResync(resync, items.length <= NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS);
 
   const markAllRead = useCallback(async () => {
     setMarkingRead(true);
