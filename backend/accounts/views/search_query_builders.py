@@ -50,6 +50,7 @@ for group in SMART_KEYWORD_GROUPS:
 
 
 def _build_only_my_location_filters(location_snapshot):
+    """Build the existing profile/card location alternatives for legacy search."""
     user_loc_q = Q()
     skill_loc_q = Q()
 
@@ -68,6 +69,7 @@ def _build_only_my_location_filters(location_snapshot):
 
 
 def _build_projection_only_my_location_filters(location_snapshot):
+    """Apply the same location alternatives to flattened projection fields."""
     skill_loc_q = Q()
 
     if location_snapshot[0]:
@@ -83,6 +85,7 @@ def _build_projection_only_my_location_filters(location_snapshot):
 
 
 def _build_skill_search_query(skill_terms, *, projection=False):
+    """Match sanitized terms across card text and existing location/tag fields."""
     skill_query = Q()
     for term in skill_terms:
         pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
@@ -90,6 +93,8 @@ def _build_skill_search_query(skill_terms, *, projection=False):
             skill_query |= (
                 Q(category__iregex=pattern)
                 | Q(subcategory__iregex=pattern)
+                | Q(description__iregex=pattern)
+                | Q(detailed_description__iregex=pattern)
                 | Q(tags_text__icontains=term)
                 | Q(skill_location__iregex=pattern)
                 | Q(skill_district__iregex=pattern)
@@ -100,6 +105,8 @@ def _build_skill_search_query(skill_terms, *, projection=False):
             skill_query |= (
                 Q(category__iregex=pattern)
                 | Q(subcategory__iregex=pattern)
+                | Q(description__iregex=pattern)
+                | Q(detailed_description__iregex=pattern)
                 | Q(tags__icontains=term)
                 | Q(location__iregex=pattern)
                 | Q(district__iregex=pattern)
@@ -119,6 +126,7 @@ def _apply_skill_geography_filters(qs, *, country_filter, district_filter):
 
 
 def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
+    """Constrain card type and optional price bounds without changing ranking."""
     if offer_type == "offer":
         qs = qs.filter(is_seeking=False)
     elif offer_type == "seeking":
@@ -163,6 +171,7 @@ def _build_projection_skills_page_qs(
     projection_skill_loc_q,
     only_my_location,
 ):
+    """Return visible projection candidates with unchanged filters and ordering."""
     skills_qs = DashboardSkillSearchProjection.objects.filter(
         **searchable_projection_filters()
     )
@@ -219,6 +228,7 @@ def _build_legacy_skills_page_qs(
     skill_loc_q,
     only_my_location,
 ):
+    """Mirror projection matching/filtering against source cards as a fallback."""
     skills_qs = OfferedSkill.objects.select_related("user").filter(
         searchable_user_q("user__")
     )

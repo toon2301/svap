@@ -68,6 +68,33 @@ function renderResults({ skills = [], users = [], recent = [], suggested = [], .
 
 beforeEach(() => { jest.clearAllMocks(); });
 
+describe('SearchResults view-all agrees with the visible result groups', () => {
+  const cases = [false, true].flatMap((hasSkills) => [false, true].flatMap((hasUsers) =>
+    [false, true].flatMap((showSkills) => [false, true].map((showUsers) => ({
+      hasSkills, hasUsers, showSkills, showUsers,
+    })))));
+
+  it.each(cases)('matches the list and empty state for %j', ({ hasSkills, hasUsers, showSkills, showUsers }) => {
+    renderResults({ skills: hasSkills ? [skill] : [], users: hasUsers ? [otherUser] : [],
+      searchState: { showSkills, showUsers } });
+    const hasVisibleResults = (hasSkills && showSkills) || (hasUsers && showUsers);
+    const viewAll = screen.queryByRole('button', { name: 'Zobraziť všetko' });
+    const noResults = screen.queryByText('Pre zadané vyhľadávanie sa nenašli žiadne výsledky.');
+    expect(Boolean(viewAll)).toBe(hasVisibleResults);
+    expect(Boolean(noResults)).toBe(!hasVisibleResults);
+    expect(Boolean(screen.queryByRole('button', { name: /Monitorovanie/ }))).toBe(hasSkills && showSkills);
+    expect(Boolean(screen.queryByRole('button', { name: /Anna Nová/ }))).toBe(hasUsers && showUsers);
+  });
+
+  it.each([
+    { searchQuery: '' }, { searchQuery: '   ' }, { hasSearched: false },
+    { error: 'Vyhľadávanie zlyhalo' }, { isSearching: true },
+  ])('never offers full results outside a completed nonempty query: %j', (searchState) => {
+    renderResults({ skills: [skill], searchState });
+    expect(screen.queryByRole('button', { name: 'Zobraziť všetko' })).not.toBeInTheDocument();
+  });
+});
+
 describe('SearchResults provisional cache during server verification', () => {
   it('retains a current nonempty preview with a busy status, never as a finished response', () => {
     renderResults({ skills: [skill], isRevalidating: true, searchState: { isSearching: true } });

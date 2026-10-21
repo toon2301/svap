@@ -55,12 +55,12 @@ export function SearchResults({
     clearSearch,
   } = searchState;
 
-  const { filteredSkills, hasPanelResults, hasResults, isRevalidating = false } = searchApi;
+  const { filteredSkills, hasPanelResults, isRevalidating = false } = searchApi;
   const { recentSearches: recentResults, handleRecentResultClick } = recentSearches;
   const { suggestedSkills, handleSuggestionClick } = suggestions;
 
   const shouldShowViewAllButton =
-    hasSearched && !error && !isSearching && Boolean(searchQuery.trim()) && hasResults;
+    hasSearched && !error && !isSearching && Boolean(searchQuery.trim()) && hasPanelResults;
 
   /** Preserve the current query and filters, dismiss the optional overlay, then open full results. */
   const handleViewAllClick = () => {

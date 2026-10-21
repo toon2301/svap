@@ -1,6 +1,6 @@
 # Svaply – spoločná evidencia nálezov a otvorených overení
 
-Aktualizované: 19. 10. 2026.
+Aktualizované: 21. 10. 2026.
 
 Tento súbor je pracovný zdroj pravdy pre túto spoluprácu. Nespoliehame sa len na
 pamäť chatu. Pri každom novom náleze treba používateľovi oznámiť, či odporúčame
@@ -105,6 +105,8 @@ Testovacia medzera priamo patriaca do OW-02:
 | --- | --- | --- | --- |
 | APP-01 | Tri chýbajúce kľúče Nástenky: `feed.captionPlaceholder`, `feed.commentsClose`, `feed.openProfile` | Zoznam; samostatná oprava po dokončení Sledovania | 13. 10. potvrdené kontrolou použitých kľúčov a nezmenenými súbormi main, 14. 10. pri OW-04 znovu rovnaké 3 missing pred aj po oprave. Doplniť vhodné texty vo všetkých šiestich jazykoch a overiť skutočné miesta zobrazenia. Nie je to OW-04. |
 | APP-02 | Ďalšie slovenské texty v kartách/recenziách | Časť ratings/allReviews lokálne opravená po schválení, zvyšok ostáva v zozname | Používateľ nový nález oboch textov hlásil pre všetky jazyky. Runtime audit a real-provider RED potvrdili ratings v CS/EN/PL a allReviews v CS/PL; SK/DE/HU a EN allReviews boli správne. Opravených presne 5 leaf hodnôt v 3 JSON: CS Hodnocení/Všechny recenze, EN Ratings, PL Oceny/Wszystkie opinie. Nových 44 testov všetkých 6 jazykov desktop/mobile detail a locale-switch PASS. Bez zmeny odkazov, dát alebo pridania reviews odkazu na mobil/dopyt. Zostávajú predošlé skills.edit/message/detailedDescriptionEmpty v CS/PL a hiddenCard v PL; CS Skrytá je správne. Pri čítaní pre terminológiu boli potvrdené aj slovenské reviews.heading/rating v EN/CS: patria širšiemu samostatnému auditu, nie dvom opravovaným kľúčom. Žiadna tichá hromadná úprava. |
+| APP-04 | Navrhované: zohľadnenie krajiny a okresu | Odložený produktový návrh; prebrať až po dokončení opráv vyhľadávania | Používateľ 21. 10. výslovne odložil diskusiu. Najprv zmapovať aktuálne odporúčania a dohodnúť zdroj krajiny aj správanie okresu (prísny filter alebo iba uprednostnenie). Konkrétne pravidlá zatiaľ nie sú schválené; nejde o potvrdenú chybu ani povolenie na implementáciu. Nepridávať do aktuálnej opravy vyhľadávania. |
+| APP-05 | Asynchrónne overenie položky histórie môže prepísať novší dotaz | Zoznam; samostatná úzka oprava po dohode, nie tichá zmena pri opisovom matchingu | Zdrojový audit `useRecentSearches.tsx` potvrdil chýbajúcu kontrolu kontextu pred zápisom výsledku overenia histórie. Možný sled: pomalý historický klik, nový dotaz a jeho odpoveď, potom dokončenie starej histórie. Nejde o fyzickú reprodukciu pôvodnej fotografie ani o dokázanú chybu nového OW-20 request guardu. Produkčný hook v tomto kole bez zmien. |
 | ENV-01 | Dva backendové testy kontroly obrázkov blokuje Windows/gRPC | Zoznam problémov prostredia; overiť pred finálnym testovacím uzavretím | Rovnaké zlyhania reprodukované aj na čistom main bez OW-01. `grpc._cython.cygrpc` blokuje Windows Application Control. Overiť v podporovanom prostredí bez vypínania ochrán; meniť kód obrázkov ani avatarov týmto krokom nie je autorizované. Celý backend preto nemožno označiť za úplne zelený. |
 | TECH-01 | `DashboardContent.tsx`: 695 riadkov pri kontrole 13. 10.; 711 pri remapovaní 17. 10. | Zoznam technického dlhu; nie automatická oprava | Podľa svaply.mdc `.tsx` nad 500 riadkov nahlásiť a nemeniť. Aktuálne zmeny používateľa sú zachované a súbor sa pri OW-18/19 nemení. Pred prípadnou budúcou prácou vyžiadať potrebnú výnimku, ak pravidlo stále platí. |
 | TECH-02 | `src/lib/api.ts`: 907 riadkov pri kontrole 13. 10. | Zoznam technického dlhu; nie automatická oprava | Rovnaká podmienka pre `.ts` nad 500 riadkov. Zdieľaná API/auth logika potrebuje samostatné mapovanie a regresiu, nie tichý refaktor pri Sledovaní. |
@@ -1111,3 +1113,79 @@ a návratov. Ďalšia implementačná podfáza je C (OW-20), najprv čerstvé ma
 | ID | Položka | Odporúčanie | Dôkaz a stav |
 | --- | --- | --- | --- |
 | TEST-15 | Upozornenie Jest na oneskorené ukončenie po úspešnom celom FE behu | Zoznam stability; sledovať a prípadne samostatne diagnostikovať, bez zásahu do nesúvisiacich testov či aplikácie pri OW-20 | Celý beh 476 sád / 7 126 PASS, exit 0, potom upozornenie Jest did not exit one second after the test run has completed. Následne celá priamo upravená modulová sada s detectOpenHandles 14/14 PASS, exit 0, bez nahláseného handle. To neidentifikuje príčinu celého behu ani nedokazuje jeho definitívne vyriešenie. Bez forceExit, preskočených testov, zvýšenia limitov alebo oslabenia konfigurácie. |
+| TEST-16 | Výnimky registračného e-mailového vlákna pri kompletných SQLite testoch | Zoznam testovacej izolácie; neopravovať registračný tok v kroku vyhľadávania | Prvý celý Linux beh 21. 10.: 1 894 PASS / 10 SKIP, exit 0, súčasne `PytestUnhandledThreadExceptionWarning` z `_send_email_async` s uzamknutou testovacou tabuľkou alebo prístupom k DB mimo povolenej fixture. Finálny beh po poslednom teste 1 895 PASS / 10 SKIP, exit 0, warnings pretrvali. Registračné súbory majú nulový diff. Toto nie je dôkaz produkčného zlyhania e-mailu ani vyhlásenie, že všetky upozornenia sú odstránené; presnú stabilitu a izoláciu treba riešiť oddelene. |
+| TEST-17 | Starší diagnostický E2E test očakáva po opakovaní iba pamäť bez HTTP | Zoznam; aktualizovať samostatne podľa dokončeného kontraktu OW-20 | `e2e/search-diagnostics.spec.ts:106–141` stále očakáva po druhom Enter nulový request a zdroj Pamäť výsledkov. OW-20 zámerne vyžaduje nové overenie na serveri. Nový `search-cache-revalidation.spec.ts` už má správny kontrakt. Starý súbor sa pri tejto oprave nemení; jeho nesprávne očakávanie sa nesmie označiť za regresiu aplikácie. |
+| TEST-18 | Niektoré dlhšie živé E2E pokusy skončili pred produktovým overením | Zoznam neobjasneného prostredia/prenosu; zachovať výsledky a po nasadení cielene zopakovať | Finálny 12-scenárový čítací beh 21. 10. mal 5 očakávaných RED na starej aplikácii, 1 WebKit-mobile transportný neúspech pred kontrolou obsahu a 6 chýb ešte pri čakaní na feed-list. Príčina týchto 7 neúspechov nie je dokázaná; nie sú PASS ani automaticky rovnaká chyba vyhľadávania. Helper doplnil iba bezpečné HTTP/fromServiceWorker/completed údaje, bez URL, textu či osobných dát. Žiadne opakovanie v rámci testu, zvýšenie timeoutu alebo oslabenie bariéry. |
+
+## 21. 10. 2026 – nadväzujúca podfáza 2: opisy a viditeľné výsledky úvodnej lišty
+
+- Používateľ potvrdil úspešné manuálne testy a Rabbit predchádzajúcej opravy OW-20;
+  PR #186 je zlúčený. Toto potvrdenie nie je nový automatický živý beh.
+- Aktuálny čistý `main` `8c9ec309` bol pred implementáciou znovu zmapovaný.
+  Pracovná vetva: `search-panel-description-results`. Schválené sú dve chyby:
+  chýbajúci krátky/podrobný opis v dashboard matchingu a rozdielny predikát
+  tlačidla Zobraziť všetko oproti skutočne viditeľným výsledkom.
+- Backend kopíruje oba texty do existujúcej projekcie a obe query vetvy ich
+  prehľadávajú. Pôvodné OR/synonymá, ranking, ceny, kanonická krajina/okres,
+  vlastné/skryté karty, verejnosť účtu a obojstranné blokovanie sa nemenia.
+  Finálny payload sa stále hydratuje z reálnych kariet s kontrolou viditeľnosti.
+- CTA používa rovnaký `hasPanelResults` ako zoznam a prázdny stav; raw výsledky
+  ani účet/krajina/filter cache z OW-20 sa nemenia. Nové používateľské texty: 0.
+- `0124_dashboard_search_projection_descriptions`: krátka atomická zmena schémy.
+  `0125_dashboard_search_description_indexes`: historický backfill po 500,
+  správny DB alias, krátke transakcie a row locks, živý SQL zdroj namiesto
+  starého Python snapshotu; dva concurrent GIN indexy s retry invalidného indexu.
+  Backfill je ohraničený pôvodnou hornou PK hranicou a opakovateľný.
+- **Povinná podmienka nasadenia, nie splnený produkčný krok:** počas migrácií
+  až do spustenia novej verzie backendu a workerov nesmú zapisovať staré procesy
+  tvorbu/úpravy kariet. Starý ORM nové nenulové stĺpce nepozná a starý sync by
+  neaktualizoval opisy. Bez kontrolovaného prechodu treba samostatne navrhnúť
+  kompatibilnú viacstupňovú migráciu vrátane catch-up chýbajúcich projekcií.
+  Používateľ dostal otázku na tento postup; nepredpokladáme jeho vykonanie.
+  Nulový výpadok pri zapisujúcom starom deployi sa touto vetvou nesľubuje.
+- Finálne nové BE testy: 45; rozšírená cielená regresia 172 PASS.
+  Pokrytie celých 5 zmenených modulov vrátane oboch migrácií 99,71 %;
+  builder/model/migrácie 100 %, projection 98 % spolu a 95 % vetiev.
+  Žiadne nové coverage exclusions ani znížené prahy. Interrogate: 100 %,
+  požadovaných aspoň 80 %. Nové testy/migrácie prešli Black formátovaním.
+- Skutočný dočasný PostgreSQL 16: 44 nových testov PASS pred posledným
+  samostatným fixture kontraktom; migrácia zo stavu 0123 s 1 201 historickými
+  syntetickými kartami doplnila oba opisy bez jedinej nezhody, oba indexy platné.
+  Selektívny testovací opisový dotaz reálne použil Bitmap Index Scan.
+  Rollback 0125 a opätovné aplikovanie prešli. Nie je to benchmark produkčnej záťaže.
+- Kompletný finálny Linux backend: 1 895 PASS / 10 SKIP, exit 0; varovania
+  registračných vlákien sa nezamlčujú (TEST-16). Databázy len v pamäti alebo
+  jednorazovom PostgreSQL, vypnuté načítanie súkromného .env; produkčná DB bez zásahu.
+- FE cielená regresia: 76 PASS; celý SearchResults má 98,71 % statements,
+  97,47 % branches, 100 % functions/lines. Celý frontend: 487 sád / 7 309 PASS.
+  TypeScript PASS. Cielený lint: 0 chýb, 1 pôvodné nezmenené img varovanie.
+  Prvý build zablokovalo DNS načítania existujúceho fontu Inter; následný
+  rovnaký build s povolenou sieťou PASS, bez mockovania fontu alebo zmien aplikácie.
+- Nový produkčný read-only E2E kontroluje reálne GET oproti UI, oba typy kariet,
+  checkboxy a CTA/empty. Opisová fixture je existujúca karta s doslovným koncovým
+  interpunkčným tokenom, bez smart-keyword alternatívy a bez verejného user matchu.
+  Žiadne profile GET, tvorba kariet, zmeny preferencií, response mock, trace,
+  screenshot či export identít. Chýbajúca fixture je FAIL, nie SKIP.
+  Railway stále obsahuje pôvodné chyby: priebežný prvý beh 12 RED; ďalší
+  finálny beh 5 produktových RED a 7 neobjasnených skorších neúspechov (TEST-18).
+  Následný krátky beh s čerstvým prihlásením a finálnou sprísnenou fixture
+  potvrdil opisový RED vo všetkých 3 projektoch (WebKit desktop/mobile, Chromium),
+  bez chýb vstupu či prenosu. Tým sa nezahadzujú predchádzajúce neobjasnené pokusy.
+  Žiadny z týchto výsledkov nie je nasadený PASS opravy.
+- Zmenené produkčné súbory: `backend/accounts/models/skills.py`,
+  `backend/accounts/search_projection.py`, `backend/accounts/views/search_query_builders.py`,
+  `frontend/src/components/dashboard/modules/search/components/SearchResults.tsx`.
+  Nové migrácie: `backend/accounts/migrations/0124_dashboard_search_projection_descriptions.py`,
+  `backend/accounts/migrations/0125_dashboard_search_description_indexes.py`.
+  Nové BE testy: `test_dashboard_search_description_matching.py`,
+  `test_search_query_builders.py`, `test_search_projection_descriptions.py`,
+  `test_search_description_migrations.py` v `backend/accounts/test/`.
+  Upravené FE testy: `SearchResults.behavior.test.tsx`, `SearchModule.viewAll.test.tsx`.
+  Nové E2E: `frontend/e2e/search-panel-matching.spec.ts`,
+  `frontend/e2e/support/search-panel-matching.ts`. Upravený aj tento register.
+- Nadlimitné `page.tsx` 648, `api.ts` 907 a `useDashboardState.ts` 921 ostali
+  nedotknuté. Navrhované sú odložený APP-04. História APP-05 a starý diagnostický
+  test TEST-17 sa v tomto kole neopravujú potichu.
+- Ďalej: commit/push po kontrolách, Rabbit review, dohodnuté bezpečné nasadenie
+  a cielený manuálny/živý retest. Potom samostatná podfáza 3: prenos a spracovanie
+  všetkých filtrov v plnom vyhľadávaní; súčasná oprava túto zhodu ešte nesľubuje.
