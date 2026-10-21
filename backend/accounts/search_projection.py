@@ -1,3 +1,5 @@
+"""Keep the dashboard's flattened search rows synchronized with source cards."""
+
 from __future__ import annotations
 
 from typing import Iterable
@@ -10,17 +12,21 @@ User = get_user_model()
 
 
 def _tags_to_search_text(tags: object) -> str:
+    """Flatten a supported tag list while ignoring malformed non-list values."""
     if not isinstance(tags, list):
         return ""
     return " ".join(str(tag).strip() for tag in tags if str(tag).strip())
 
 
 def build_dashboard_skill_search_projection_defaults(skill: OfferedSkill) -> dict:
+    """Copy current searchable text, geography and visibility into one row."""
     user = skill.user
     return {
         "user_id": skill.user_id,
         "category": skill.category,
         "subcategory": skill.subcategory,
+        "description": skill.description or "",
+        "detailed_description": skill.detailed_description or "",
         "tags_text": _tags_to_search_text(skill.tags),
         "country_code": skill.country_code or "",
         "district_code": skill.district_code or "",
@@ -41,6 +47,7 @@ def build_dashboard_skill_search_projection_defaults(skill: OfferedSkill) -> dic
 
 
 def sync_dashboard_skill_search_projection(*, skill: OfferedSkill | None = None, skill_id: int | None = None) -> None:
+    """Upsert the current source card, or remove its orphaned projection."""
     if skill is None:
         if not skill_id:
             return
@@ -61,6 +68,7 @@ def sync_dashboard_skill_search_projection(*, skill: OfferedSkill | None = None,
 
 
 def sync_dashboard_skill_search_projections_for_user(*, user: User | None = None, user_id: int | None = None) -> None:
+    """Refresh all of an owner's cards after relevant profile fields change."""
     if user is None:
         if not user_id:
             return
@@ -74,6 +82,7 @@ def sync_dashboard_skill_search_projections_for_user(*, user: User | None = None
 
 
 def bulk_build_dashboard_skill_search_projection_objects(skills: Iterable[OfferedSkill]):
+    """Build unsaved projection rows for an existing bulk-rebuild workflow."""
     objects = []
     for skill in skills:
         objects.append(

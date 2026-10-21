@@ -86,6 +86,8 @@ class OfferedSkill(models.Model):
     updated_at = models.DateTimeField(_("Aktualizované"), auto_now=True)
 
     class Meta:
+        """Keep card uniqueness, default ordering and public-query indexes."""
+
         verbose_name = _("Ponúkaná zručnosť")
         verbose_name_plural = _("Ponúkané zručnosti")
         ordering = ["-created_at"]
@@ -122,6 +124,7 @@ class OfferedSkill(models.Model):
         ]
 
     def __str__(self):
+        """Identify a card by its owner and canonical category path."""
         return f"{self.user.display_name} - {self.category} → {self.subcategory}"
 
 
@@ -154,6 +157,12 @@ class DashboardSkillSearchProjection(models.Model):
     )
     category = models.CharField(_("KategÃ³ria"), max_length=100)
     subcategory = models.CharField(_("PodkategÃ³ria"), max_length=100)
+    description = models.TextField(
+        _("Popis"), max_length=150, blank=True, default=""
+    )
+    detailed_description = models.TextField(
+        _("Podrobný popis"), max_length=1000, blank=True, default=""
+    )
     tags_text = models.TextField(_("Tagy pre vyhÄ¾adÃ¡vanie"), blank=True, default="")
     skill_location = models.CharField(_("Miesto zruÄnosti"), max_length=35, blank=True)
     skill_district = models.CharField(_("Okres zruÄnosti"), max_length=100, blank=True)
@@ -173,6 +182,8 @@ class DashboardSkillSearchProjection(models.Model):
     updated_at = models.DateTimeField(_("AktualizovanÃ©"), auto_now=True)
 
     class Meta:
+        """Define the projection label and scalar-filter indexes."""
+
         verbose_name = _("Dashboard search projekcia zruÄnosti")
         verbose_name_plural = _("Dashboard search projekcie zruÄnostÃ­")
         indexes = [
@@ -198,6 +209,7 @@ class DashboardSkillSearchProjection(models.Model):
         ]
 
     def __str__(self):
+        """Identify the source card without loading the related owner."""
         return f"Search projection pre skill_id={self.skill_id}"
 
 
@@ -205,6 +217,8 @@ class OfferedSkillImage(models.Model):
     """Obrázok priradený k ponúkanej zručnosti (ponuke)."""
 
     class Status(models.TextChoices):
+        """Represent asynchronous moderation states of an offer image."""
+
         PENDING = "pending", _("Čaká na spracovanie")
         APPROVED = "approved", _("Schválené")
         REJECTED = "rejected", _("Zamietnuté")
@@ -240,6 +254,8 @@ class OfferedSkillImage(models.Model):
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
 
     class Meta:
+        """Order card images and index their moderation lookup."""
+
         verbose_name = _("Obrázok ponuky")
         verbose_name_plural = _("Obrázky ponúk")
         ordering = ["order", "id"]
@@ -248,4 +264,5 @@ class OfferedSkillImage(models.Model):
         ]
 
     def __str__(self):
+        """Identify an image together with the card it belongs to."""
         return f"Obrázok #{self.id} pre {self.skill}"

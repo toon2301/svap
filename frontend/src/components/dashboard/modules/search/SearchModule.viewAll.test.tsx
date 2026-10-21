@@ -186,6 +186,29 @@ describe('real SearchModule → SearchResults: view-all panel lifecycle', () => 
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it.each<[string, typeof result.skills, typeof result.users, string[]]>([
+    ['hidden users', [], result.users, ['Zobraziť používateľov']],
+    ['hidden offers', result.skills, [], ['Zobraziť ponuky zručností']],
+    ['both groups hidden', result.skills, result.users, ['Zobraziť používateľov', 'Zobraziť ponuky zručností']],
+  ])('does not advertise view-all for %s returned by the actual API hook', async (_name, skills, users, disabledGroups) => {
+    const onClose = jest.fn();
+    mockGet.mockImplementation(async (path: string) => ({
+      data: path === '/search/' ? { skills, users } : { skills: [], users: [] }, status: 200,
+    }));
+    render(<SearchModule user={account} isOverlay onClose={onClose} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    for (const label of disabledGroups) fireEvent.click(screen.getByRole('checkbox', { name: label }));
+    fireEvent.click(screen.getByRole('button', { name: 'Použiť filtre' }));
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: `hidden-results-${++queryNumber}` } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await screen.findByText('Pre zadané vyhľadávanie sa nenašli žiadne výsledky.');
+    expect(mockGet).toHaveBeenCalledWith('/search/', expect.any(Object));
+    expect(screen.queryByRole('button', { name: 'Zobraziť všetko' })).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('hides view-all while a new query replaces existing results, without closing the panel', async () => {
     const onClose = jest.fn();
     render(<SearchModule user={account} isOverlay onClose={onClose} />);
