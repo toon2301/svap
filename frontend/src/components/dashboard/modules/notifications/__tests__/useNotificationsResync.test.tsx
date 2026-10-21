@@ -1,5 +1,5 @@
-import { StrictMode } from 'react';
-import { act, renderHook } from '@testing-library/react';
+import { StrictMode, Suspense, startTransition, useState } from 'react';
+import { act, render, renderHook } from '@testing-library/react';
 
 import { MESSAGING_REALTIME_RECONNECTED_EVENT } from '@/components/dashboard/modules/messages/messagesEvents';
 
@@ -261,6 +261,39 @@ describe('useNotificationsResync', () => {
       });
       settle();
       expect(onResync).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores the switch value of a render that React discards (suspended transition)', () => {
+      const onResync = jest.fn();
+      let switchOff: () => void = () => undefined;
+      function Probe({ pollEnabled }: { pollEnabled: boolean }) {
+        useNotificationsResync(onResync, pollEnabled);
+        return null;
+      }
+      function Blocker({ block }: { block: boolean }) {
+        if (block) throw new Promise<void>(() => undefined); // nikdy sa nevyrieši: prechod sa nepotvrdí
+        return null;
+      }
+      function Harness() {
+        const [off, setOff] = useState(false);
+        switchOff = () => startTransition(() => setOff(true));
+        return (
+          <Suspense fallback={null}>
+            <Probe pollEnabled={!off} />
+            <Blocker block={off} />
+          </Suspense>
+        );
+      }
+      render(<Harness />);
+
+      // Probe sa pre vypnutý poll vyrenderuje, ale prechod sa nikdy nepotvrdí (Blocker visí).
+      act(() => switchOff());
+      act(() => {
+        jest.advanceTimersByTime(NOTIFICATIONS_RESYNC_POLL_MS);
+      });
+      settle();
+
+      expect(onResync).toHaveBeenCalledTimes(1);
     });
 
     it('starts polling again when the switch turns back on, without restarting the interval', () => {

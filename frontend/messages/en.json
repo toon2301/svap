@@ -1467,6 +1467,7 @@
     "likesForComments": "Likes for comments",
     "likesForCommentsDesc": "Turn notifications for likes on comments on or off.",
     "loadFeedError": "Notifications could not be loaded.",
+    "loadMore": "Show more",
     "loadingFeed": "Loading notifications...",
     "loadingMore": "Loading…",
     "loadingPreferences": "Loading notification settings...",

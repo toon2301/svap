@@ -27,8 +27,12 @@ export function useNotificationsResync(onResync: () => void, pollEnabled = true)
   onResyncRef.current = onResync;
   // Pri veľmi dlhom zozname sa pravidelný poll preskakuje (obnova okna by stála veľa požiadaviek);
   // návrat do popredia, obnova siete, reconnect a udalosti zo servera zoznam obnovujú ďalej.
+  // Ref sa prepíše až po potvrdenom renderi (efekt), nie počas renderu: zahodený render by v ňom inak
+  // nechal rozhodnutie, ktoré sa nikdy nezobrazilo.
   const pollEnabledRef = useRef(pollEnabled);
-  pollEnabledRef.current = pollEnabled;
+  useEffect(() => {
+    pollEnabledRef.current = pollEnabled;
+  }, [pollEnabled]);
 
   useEffect(() => {
     let timer: number | null = null;

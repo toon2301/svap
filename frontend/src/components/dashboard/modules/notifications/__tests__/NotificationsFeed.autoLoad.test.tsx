@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { StrictMode } from 'react';
 
@@ -168,6 +168,29 @@ describe.each(['page', 'panel'] as const)('NotificationsFeed automatic loading (
       jest.advanceTimersByTime(1);
     });
     expect(observer.count()).toBe(1);
+  });
+
+  it('without IntersectionObserver a manual button loads the next batches and a failure offers a retry', async () => {
+    (global as unknown as { IntersectionObserver?: unknown }).IntersectionObserver = undefined;
+    fakeServer(listMock, 100);
+    render(<NotificationsFeed variant={variant} />);
+    await screen.findByText('Upozornenie 1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Zobraziť ďalšie' }));
+    await waitFor(() => expect(rows()).toHaveLength(30));
+    expect(listMock).toHaveBeenLastCalledWith(2, 15);
+
+    listMock.mockRejectedValueOnce(new Error('network'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Zobraziť ďalšie' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Upozornenia sa nepodarilo načítať.',
+    );
+    expect(rows()).toHaveLength(30);
+    expect(screen.queryByRole('button', { name: 'Zobraziť ďalšie' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skúsiť znova' }));
+    await waitFor(() => expect(rows()).toHaveLength(45));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('a successful refresh in the background ends the pause at once', async () => {
