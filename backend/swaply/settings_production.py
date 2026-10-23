@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from datetime import timedelta
 from .settings import *
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -35,6 +35,7 @@ if not os.getenv("MFA_ENCRYPTION_KEY"):
     raise ValueError("MFA_ENCRYPTION_KEY must be set in production")
 
 def _env_bool_prod(name: str, default: bool) -> bool:
+    """Read a production boolean setting and reject unrecognized values."""
     v = os.getenv(name)
     if v is None:
         return default
@@ -86,6 +87,7 @@ _PROD_ALLOWED_HOSTS = {
 
 
 def _collect_env_allowed_hosts() -> list[str]:
+    """Collect unique hostnames from configured runtime domains and origins."""
     extra_hosts: list[str] = []
     host_env_names = (
         "RAILWAY_PUBLIC_DOMAIN",
@@ -158,8 +160,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": (parsed.path[1:] or ""),
-        "USER": parsed.username or "",
-        "PASSWORD": parsed.password or "",
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
         "HOST": parsed.hostname or "",
         "PORT": str(parsed.port or ""),
     }
@@ -286,6 +288,7 @@ if not os.getenv("CORS_ALLOWED_ORIGINS", "").strip():
 
 # Email settings (production) - Resend HTTP API via django-anymail
 def _require_env(name: str) -> str:
+    """Return a nonempty production setting or raise a configuration error."""
     v = os.getenv(name)
     if v is None or not str(v).strip():
         raise ValueError(f"{name} must be set in production")

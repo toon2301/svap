@@ -1,9 +1,11 @@
 from pathlib import Path
+from urllib.parse import unquote
 
 from .env import os, urlparse, BASE_DIR, env_bool
 
 
 def _sqlite_database_name_from_url(parsed):
+    """Resolve SQLite URL paths while preserving memory and Windows paths."""
     raw_path = parsed.path or ""
     if not raw_path:
         return BASE_DIR / "db.sqlite3"
@@ -20,6 +22,7 @@ def _sqlite_database_name_from_url(parsed):
 
 
 def _ensure_sqlite_parent_dir(name):
+    """Create a file-backed SQLite parent directory when it is available."""
     if name == ":memory:":
         return
     try:
@@ -41,8 +44,8 @@ if db_url:
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
                 "NAME": parsed.path[1:] or "",
-                "USER": parsed.username or "",
-                "PASSWORD": parsed.password or "",
+                "USER": unquote(parsed.username or ""),
+                "PASSWORD": unquote(parsed.password or ""),
                 "HOST": parsed.hostname or "",
                 "PORT": str(parsed.port or ""),
             }
