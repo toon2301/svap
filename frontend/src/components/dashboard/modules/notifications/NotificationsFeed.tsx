@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 
+import NotifDiagOverlay from './NotifDiagOverlay';
 import NotificationItem from './NotificationItem';
 import { NotificationsFeedSkeleton } from './NotificationsFeedSkeleton';
 import { useNotificationsFeed } from './useNotificationsFeed';
@@ -60,6 +61,7 @@ export default function NotificationsFeed({
           : 'mx-auto w-full max-w-3xl'
       }
     >
+      <NotifDiagOverlay />
       {isMobile && !isPanel ? (
         <div className="mx-3 mt-4 mb-1">
           <button

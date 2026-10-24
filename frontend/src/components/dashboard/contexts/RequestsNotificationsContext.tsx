@@ -14,6 +14,7 @@ import {
   requestConversationsRefresh,
 } from '@/components/dashboard/modules/messages/messagesEvents';
 import type { MessageItem } from '@/components/dashboard/modules/messages/types';
+import { diag } from '@/components/dashboard/modules/notifications/notifDiag';
 import { dispatchNotificationsChanged } from '@/components/dashboard/modules/notifications/useNotificationsFeed';
 import type { DashboardNotification } from '@/components/dashboard/modules/notifications/types';
 import {
@@ -289,6 +290,7 @@ async function connectWs(store: WsStore): Promise<void> {
     // Pri prvom spojení si UI naťahuje vlastné iniciálne dáta, takže netreba
     // extra refresh; pri reconnecte ho naopak chceme spustiť.
     const isReconnect = store.hasOpenedBefore;
+    diag(`ws open reconnect=${isReconnect}`);
     store.hasOpenedBefore = true;
     store.retryCount = 0;
     notifyWsStatus(store, true);
@@ -305,6 +307,7 @@ async function connectWs(store: WsStore): Promise<void> {
   ws.onmessage = (event) => {
     try {
       const payload = JSON.parse(String(event.data || '{}')) as WsNotificationPayload;
+      diag(`ws msg ${String(payload.type)} unread=${String(payload.unread_count ?? '-')} listeners=${store.listeners.size}`);
       store.listeners.forEach((listener) => {
         try {
           listener(payload);
@@ -318,6 +321,7 @@ async function connectWs(store: WsStore): Promise<void> {
   };
 
   ws.onclose = async (event) => {
+    diag(`ws close code=${event?.code}`);
     if (store.ws === ws) {
       store.ws = null;
     }

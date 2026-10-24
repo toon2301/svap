@@ -1,5 +1,7 @@
 import { api, endpoints } from '@/lib/api';
 
+import { diag, lastListResourceInfo } from './notifDiag';
+
 import type { DashboardNotification } from './types';
 
 interface MarkNotificationReadResult {
@@ -41,14 +43,27 @@ export async function listNotificationsPage(
   page = 1,
   pageSize = 15,
 ): Promise<NotificationsPage> {
-  const response = await api.get<NotificationsPageApiPayload>(endpoints.notifications.list, {
-    params: {
-      type: 'all',
-      page,
-      page_size: pageSize,
-    },
-  });
+  diag(`GET list start p=${page} s=${pageSize}`);
+  let response;
+  try {
+    response = await api.get<NotificationsPageApiPayload>(endpoints.notifications.list, {
+      params: {
+        type: 'all',
+        page,
+        page_size: pageSize,
+      },
+    });
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    diag(`GET list ERR status=${status ?? '-'} ${error instanceof Error ? error.message : ''}`);
+    throw error;
+  }
   const data = response.data ?? {};
+  const headers = response.headers as unknown as Record<string, string | undefined>;
+  diag(
+    `GET list p=${page} s=${pageSize} -> ${response.status} n=${Array.isArray(data.results) ? data.results.length : '?'} top=${data.results?.[0]?.id ?? '-'} total=${data.total ?? '-'} date=${headers?.date ?? '-'} age=${headers?.age ?? '-'} cc=${headers?.['cache-control'] ?? '-'} etag=${headers?.etag ? 'y' : 'n'} lm=${headers?.['last-modified'] ? 'y' : 'n'}`,
+  );
+  setTimeout(() => diag(lastListResourceInfo()), 150);
   return {
     results: Array.isArray(data.results) ? data.results : [],
     total: typeof data.total === 'number' ? data.total : 0,
