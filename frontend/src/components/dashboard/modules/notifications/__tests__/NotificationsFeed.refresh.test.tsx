@@ -1,13 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+import { installFiringIntersectionObserver } from '../../feed/feedObserverTestUtils';
 import NotificationsFeed from '../NotificationsFeed';
-import {
-  listNotificationsPage,
-  markAllNotificationsRead,
-  type NotificationsPage,
-} from '../notificationsApi';
-import { deferred, fakeServer } from '../notificationsFeedTestUtils';
+import { listNotificationsPage, markAllNotificationsRead } from '../notificationsApi';
+import { fakeServer } from '../notificationsFeedTestUtils';
 import { dispatchNotificationsChanged } from '../useNotificationsFeed';
 
 jest.mock('../notificationsApi', () => ({
@@ -42,30 +39,40 @@ const markAllMock = markAllNotificationsRead as jest.Mock;
 
 const rows = () => screen.queryAllByText(/^Upozornenie \d+$/);
 const LOAD_MORE = 'Zobraziť ďalšie';
+const SENTINEL = 'notifications-load-more-sentinel';
 const MARK_ALL_READ = 'Označiť ako prečítané';
 const RETRY = 'Skúsiť znova';
 
-async function loadMoreTimes(times: number) {
+async function loadMoreTimes(
+  observer: ReturnType<typeof installFiringIntersectionObserver>,
+  times: number,
+) {
   for (let index = 0; index < times; index += 1) {
     const before = rows().length;
+    await waitFor(() => expect(observer.count()).toBe(1));
     await act(async () => {
-      fireEvent.click(screen.getByText(LOAD_MORE));
+      observer.fire(SENTINEL);
     });
     await waitFor(() => expect(rows().length).toBeGreaterThan(before));
   }
 }
 
 describe('NotificationsFeed refresh', () => {
+  let observer: ReturnType<typeof installFiringIntersectionObserver>;
+
   beforeEach(() => {
     listMock.mockReset();
     markAllMock.mockReset();
+    observer = installFiringIntersectionObserver();
   });
+
+  afterEach(() => observer.restore());
 
   it('keeps every loaded notification when the list refreshes (no jump back to the first 15)', async () => {
     fakeServer(listMock, 100);
     render(<NotificationsFeed />);
     await screen.findByText('Upozornenie 1');
-    await loadMoreTimes(2);
+    await loadMoreTimes(observer, 2);
     expect(rows()).toHaveLength(45);
     listMock.mockClear();
 
@@ -78,7 +85,8 @@ describe('NotificationsFeed refresh', () => {
       expect(document.querySelector('[aria-busy]')).toHaveAttribute('aria-busy', 'false'),
     );
     expect(rows()).toHaveLength(45);
-    expect(screen.getByText(LOAD_MORE)).toBeInTheDocument();
+    expect(observer.count()).toBe(1);
+    expect(screen.queryByText(LOAD_MORE)).not.toBeInTheDocument();
   });
 
   it('reuses the existing rows on refresh instead of replacing them', async () => {
@@ -122,7 +130,7 @@ describe('NotificationsFeed refresh', () => {
     render(<NotificationsFeed />);
 
     const retry = await screen.findByText('Skúsiť znova');
-    // Chyba prvého načítania ostáva v pruhu hore; spodný box je len pre „Zobraziť ďalšie“.
+    // Chyba prvého načítania ostáva v pruhu hore.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await act(async () => {
       fireEvent.click(retry);
@@ -130,158 +138,6 @@ describe('NotificationsFeed refresh', () => {
 
     await waitFor(() => expect(screen.queryByText('Skúsiť znova')).not.toBeInTheDocument());
     expect(rows()).toHaveLength(15);
-  });
-
-  describe('when the next batch fails to load', () => {
-    const scrollIntoView = jest.fn();
-
-    beforeEach(() => {
-      scrollIntoView.mockReset();
-      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
-    });
-
-    afterEach(() => {
-      Reflect.deleteProperty(window.HTMLElement.prototype, 'scrollIntoView');
-    });
-
-    async function failNextBatch(variant: 'page' | 'panel' = 'page') {
-      fakeServer(listMock, 100);
-      render(<NotificationsFeed variant={variant} />);
-      await screen.findByText('Upozornenie 1');
-      listMock.mockRejectedValueOnce(new Error('network'));
-      await act(async () => {
-        fireEvent.click(screen.getByText(LOAD_MORE));
-      });
-      return screen.findByRole('alert');
-    }
-
-    it.each(['page', 'panel'] as const)(
-      'shows the error under the list, where the button was, not above the list (%s)',
-      async (variant) => {
-        const alert = await failNextBatch(variant);
-
-        const lastRow = screen.getByText('Upozornenie 15').closest('button') as HTMLElement;
-        expect(
-          lastRow.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING,
-        ).toBeTruthy();
-        expect(alert).toHaveTextContent('Skúsiť znova');
-        expect(screen.getAllByText(RETRY)).toHaveLength(1);
-        expect(screen.queryByText(LOAD_MORE)).not.toBeInTheDocument();
-        expect(rows()).toHaveLength(15);
-      },
-    );
-
-    it('mounts a fresh element for the error so the alert is announced', async () => {
-      fakeServer(listMock, 100);
-      render(<NotificationsFeed />);
-      await screen.findByText('Upozornenie 1');
-      const buttonSlot = screen.getByText(LOAD_MORE).parentElement;
-      listMock.mockRejectedValueOnce(new Error('network'));
-
-      await act(async () => {
-        fireEvent.click(screen.getByText(LOAD_MORE));
-      });
-
-      expect(await screen.findByRole('alert')).not.toBe(buttonSlot);
-    });
-
-    it('brings the error fully into view when it appears at the end of a long list', async () => {
-      const alert = await failNextBatch();
-
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
-      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
-      expect(scrollIntoView.mock.contexts[0]).toBe(alert);
-    });
-
-    it('scrolls to the error once, not again while it stays on screen', async () => {
-      await failNextBatch();
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
-      // Obnova na pozadí, ktorá zlyhá, nezmaže chybu ani nesmie znova posunúť zoznam.
-      listMock.mockRejectedValueOnce(new Error('network'));
-
-      await act(async () => {
-        dispatchNotificationsChanged();
-      });
-      await waitFor(() =>
-        expect(document.querySelector('[aria-busy]')).toHaveAttribute('aria-busy', 'false'),
-      );
-
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    });
-
-    it('scrolls to the error again when a retry fails too', async () => {
-      await failNextBatch();
-      listMock.mockRejectedValueOnce(new Error('network'));
-
-      await act(async () => {
-        fireEvent.click(screen.getByText(RETRY));
-      });
-
-      expect(await screen.findByRole('alert')).toBeInTheDocument();
-      expect(scrollIntoView).toHaveBeenCalledTimes(2);
-    });
-
-    it('does not scroll anywhere when the next batch loads fine', async () => {
-      fakeServer(listMock, 100);
-      render(<NotificationsFeed />);
-      await screen.findByText('Upozornenie 1');
-
-      await act(async () => {
-        fireEvent.click(screen.getByText(LOAD_MORE));
-      });
-      await waitFor(() => expect(rows()).toHaveLength(30));
-
-      expect(scrollIntoView).not.toHaveBeenCalled();
-    });
-
-    it('loads the batch again from the retry in the box and then hides it', async () => {
-      await failNextBatch();
-
-      await act(async () => {
-        fireEvent.click(screen.getByText(RETRY));
-      });
-
-      await waitFor(() => expect(rows()).toHaveLength(30));
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-      expect(screen.getByText(LOAD_MORE)).toBeInTheDocument();
-    });
-
-    it('shows no error box when the list ended meanwhile and nothing is left to load', async () => {
-      fakeServer(listMock, 100);
-      render(<NotificationsFeed />);
-      await screen.findByText('Upozornenie 1');
-      const slow = deferred<NotificationsPage>();
-      listMock.mockImplementationOnce(() => slow.promise);
-      await act(async () => {
-        fireEvent.click(screen.getByText(LOAD_MORE));
-      });
-      // Kým dávka letí, zoznam sa skrátil na 10 upozornení a obnova ho zapíše.
-      fakeServer(listMock, 10);
-      await act(async () => {
-        dispatchNotificationsChanged();
-      });
-      await waitFor(() => expect(rows()).toHaveLength(10));
-
-      await act(async () => {
-        slow.reject(new Error('network'));
-      });
-
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-      expect(screen.queryByText(LOAD_MORE)).not.toBeInTheDocument();
-      expect(rows()).toHaveLength(10);
-    });
-
-    it('shows the button again after a successful refresh in the background', async () => {
-      await failNextBatch();
-
-      await act(async () => {
-        dispatchNotificationsChanged();
-      });
-
-      await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
-      expect(screen.getByText(LOAD_MORE)).toBeInTheDocument();
-    });
   });
 
   it('hides the mark-all error box when the user retries and the list loads again', async () => {

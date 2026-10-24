@@ -10,6 +10,7 @@ import {
   pathOf,
   recordMainInstance,
 } from './support/dashboard';
+import { waitForQuietList } from './support/notifications';
 
 // Mobil: po návrate do popredia sa otvorený zoznam upozornení potichu obnoví. Realtime nič nezopakuje
 // (iPhone mu v pozadí spojenie preruší), takže nové upozornenie by sa inak neobjavilo, kým sa sekcia
@@ -51,6 +52,9 @@ test.describe('mobil', () => {
     await page.locator(MAIN).evaluate((element) => {
       element.scrollTop = Math.min(300, element.scrollHeight - element.clientHeight);
     });
+    // Odscrollovanie môže spustiť donačítanie ďalšej dávky: počkaj, kým sa zoznam upokojí, a až potom meraj
+    // (inak by sa druhá požiadavka `page=1` mohla pripísať dávke a nie návratu do popredia).
+    await waitForQuietList(page, page.locator(`${MAIN} section button`).filter({ has: page.locator('.sr-only') }));
     await firstItem.evaluate((element) => element.setAttribute('data-resync-probe', '1'));
     const main = await mainInstance(page);
     const scrollBefore = await mainScrollTop(page);

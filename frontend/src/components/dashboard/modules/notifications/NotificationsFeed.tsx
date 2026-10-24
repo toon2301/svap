@@ -1,22 +1,20 @@
 'use client';
 
 import { BellIcon } from '@heroicons/react/24/outline';
-import { useEffect, useRef } from 'react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 
 import NotificationItem from './NotificationItem';
 import { NotificationsFeedSkeleton } from './NotificationsFeedSkeleton';
+import { NotificationsLoadMore } from './NotificationsLoadMore';
+import { ERROR_BOX_CLASS } from './notificationsStyles';
 import { useNotificationsFeed } from './useNotificationsFeed';
 
 // Panel je scrollovací kontajner a musí byť `relative`: skryté (sr-only, absolútne) texty upozornení
 // sa tak orezávajú panelu. Bez toho ich ako nadradený blok berie `body`, natiahne ho a po scrolle
 // sa posunie celá aplikácia (ľavá navigácia odrezaná, pod obsahom prázdna plocha).
 const PANEL_SECTION_CLASS = 'relative h-full w-full overflow-y-auto px-5 py-8 elegant-scrollbar';
-
-const ERROR_BOX_CLASS =
-  'rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300';
 
 interface NotificationsFeedProps {
   variant?: 'page' | 'panel';
@@ -45,12 +43,6 @@ export default function NotificationsFeed({
   } = useNotificationsFeed();
   const hasUnread = items.some((item) => !item.is_read);
   const isPanel = variant === 'panel';
-  const loadMoreErrorRef = useRef<HTMLDivElement | null>(null);
-
-  // Chyba sa objaví na konci dlhého zoznamu, kde môže presahovať okraj: dostaneme ju celú do záberu.
-  useEffect(() => {
-    if (loadMoreFailed) loadMoreErrorRef.current?.scrollIntoView?.({ block: 'nearest' });
-  }, [loadMoreFailed]);
 
   return (
     <section
@@ -143,7 +135,7 @@ export default function NotificationsFeed({
         ) : (
           <div
             className="space-y-0"
-            aria-busy={refreshing || markingRead}
+            aria-busy={refreshing || markingRead || loadingMore}
           >
             {items.map((notification) => (
               <NotificationItem
@@ -153,35 +145,13 @@ export default function NotificationsFeed({
                 onMarkRead={markItemRead}
               />
             ))}
-            {hasMore && loadMoreFailed ? (
-              <div
-                key="load-more-error"
-                ref={loadMoreErrorRef}
-                role="alert"
-                className={`mt-4 scroll-mb-24 ${ERROR_BOX_CLASS}`}
-              >
-                {t('notifications.loadFeedError', 'Upozornenia sa nepodarilo načítať.')}
-                <button
-                  type="button"
-                  onClick={() => void loadMore()}
-                  className="ml-2 font-semibold underline"
-                >
-                  {t('notifications.retry', 'Skúsiť znova')}
-                </button>
-              </div>
-            ) : hasMore ? (
-              <div key="load-more" className="mt-4 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => void loadMore()}
-                  disabled={loadingMore}
-                  className="inline-flex items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-purple-200"
-                >
-                  {loadingMore
-                    ? t('notifications.loadingMore', 'Načítavam…')
-                    : t('notifications.loadMore', 'Zobraziť ďalšie')}
-                </button>
-              </div>
+            {hasMore ? (
+              <NotificationsLoadMore
+                enabled={!loadingMore && !loadMoreFailed && !refreshing}
+                loading={loadingMore}
+                failed={loadMoreFailed}
+                onLoadMore={() => void loadMore()}
+              />
             ) : null}
           </div>
         )}

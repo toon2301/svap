@@ -7,6 +7,9 @@ import { MESSAGING_REALTIME_RECONNECTED_EVENT } from '@/components/dashboard/mod
 /** Dávku signálov „som späť“ (iOS pošle visibilitychange aj focus naraz) zlúčime do jednej obnovy. */
 export const NOTIFICATIONS_RESYNC_DEBOUNCE_MS = 300;
 
+/** Pravidelný poll sa vypne nad toľko načítaných upozornení (6 dávok = 2 požiadavky na obnovu okna). */
+export const NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS = 90;
+
 /** Poistka, kým je sekcia viditeľná: zachytí upozornenie aj keď realtime spojenie mlčí. */
 export const NOTIFICATIONS_RESYNC_POLL_MS = 30_000;
 
@@ -16,12 +19,20 @@ export const NOTIFICATIONS_RESYNC_POLL_MS = 30_000;
  * Server nič nezopakuje: upozornenie vytvorené, kým je spojenie spadnuté alebo uspané (iPhone v
  * pozadí), sa nikdy nedoručí. Zoznam preto obnovíme pri návrate do popredia (visibilitychange,
  * focus), pri obnove siete, po reconnecte realtime spojenia a pomalým intervalom, kým je sekcia
- * viditeľná. Nedotýka sa počítadla zvončeka: len volá `onResync`.
+ * viditeľná (a `pollEnabled` nie je vypnutý). Nedotýka sa počítadla zvončeka: len volá `onResync`.
  */
-export function useNotificationsResync(onResync: () => void): void {
+export function useNotificationsResync(onResync: () => void, pollEnabled = true): void {
   // Najnovší callback v refe: zmena jeho identity nesmie zrušiť čakajúci signál ani reštartovať poll.
   const onResyncRef = useRef(onResync);
   onResyncRef.current = onResync;
+  // Pri veľmi dlhom zozname sa pravidelný poll preskakuje (obnova okna by stála veľa požiadaviek);
+  // návrat do popredia, obnova siete, reconnect a udalosti zo servera zoznam obnovujú ďalej.
+  // Ref sa prepíše až po potvrdenom renderi (efekt), nie počas renderu: zahodený render by v ňom inak
+  // nechal rozhodnutie, ktoré sa nikdy nezobrazilo.
+  const pollEnabledRef = useRef(pollEnabled);
+  useEffect(() => {
+    pollEnabledRef.current = pollEnabled;
+  }, [pollEnabled]);
 
   useEffect(() => {
     let timer: number | null = null;
@@ -35,7 +46,9 @@ export function useNotificationsResync(onResync: () => void): void {
       }, NOTIFICATIONS_RESYNC_DEBOUNCE_MS);
     };
 
-    const poll = window.setInterval(schedule, NOTIFICATIONS_RESYNC_POLL_MS);
+    const poll = window.setInterval(() => {
+      if (pollEnabledRef.current) schedule();
+    }, NOTIFICATIONS_RESYNC_POLL_MS);
     window.addEventListener('focus', schedule);
     window.addEventListener('online', schedule);
     window.addEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, schedule);
