@@ -59,8 +59,12 @@ async function expectFavoritesList(page: Page, favorite: Favorite): Promise<void
   await expect(cardName(page, favorite)).toBeVisible();
 }
 
+// Meno karty sa porovnáva presne (nie ako podreťazec): „Jana“ nesmie trafiť kartu „Jana Nováková“.
 const cardName = (page: Page, favorite: Favorite): Locator =>
-  page.locator(`${MAIN} button:has(> h2)`).filter({ hasText: favorite.displayName }).first();
+  page
+    .locator(`${MAIN} button:has(> h2)`)
+    .filter({ has: page.getByRole('heading', { name: favorite.displayName, exact: true }) })
+    .first();
 
 const cardHeader = (page: Page, favorite: Favorite): Locator =>
   page.locator(`${MAIN} button[aria-label="${favorite.displayName}"]`).first();
@@ -68,7 +72,7 @@ const cardHeader = (page: Page, favorite: Favorite): Locator =>
 /** Profil je skutočne na obrazovke: adresa, zmizol zoznam Obľúbených a objavili sa prvky profilu. */
 async function expectProfileOpen(page: Page, favorite: Favorite, label: string): Promise<void> {
   await expect
-    .poll(() => pathOf(page), { message: `${label}: adresa nie je profil` })
+    .poll(() => decodeURIComponent(pathOf(page)), { message: `${label}: adresa nie je profil` })
     .toBe(`/dashboard/users/${favorite.slug}`);
   // Samotná adresa nestačí: pri chybe sa zmenila a obrazovka ostala na zozname.
   await expect(
