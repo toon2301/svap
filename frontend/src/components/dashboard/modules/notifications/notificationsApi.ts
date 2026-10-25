@@ -36,7 +36,7 @@ export async function listNotifications(limit = 15): Promise<DashboardNotificati
   return Array.isArray(response.data) ? response.data : [];
 }
 
-// Stránkovaná verzia (opt-in cez ?page) – umožňuje "Zobraziť ďalšie".
+// Stránkovaná verzia (opt-in cez ?page) – umožňuje automatické donačítavanie pri scrolle.
 export async function listNotificationsPage(
   page = 1,
   pageSize = 15,

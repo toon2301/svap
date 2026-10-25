@@ -18,7 +18,7 @@ import { FEED_HOME_PATHS } from './support/feed';
 // Upozornenie môže ostať aj po zmazaní príspevku (adresu skladá backend z uloženého ID bez kontroly) –
 // aplikácia takýto cieľ správne odmietne, preto sa pred klikom cez API overí, že príspevok existuje.
 
-/** Prvá stránka zoznamu upozornení má v aplikácii 15 položiek (`useNotificationsFeed`). */
+/** Prvá stránka zoznamu upozornení má v aplikácii 15 položiek (`useNotificationsFeed`); ďalšie sa donačítajú pri scrolle. */
 const NOTIFICATIONS_PAGE_SIZE = 15;
 
 const FEED_NOTIFICATIONS = [
@@ -78,7 +78,9 @@ async function liveReadNotificationOrSkip(page: Page, type: string, title: strin
     .poll(
       async () => {
         targets = await readNotificationTargets(page, type);
-        return (await candidates.count()) === targets.length;
+        // Zoznam donačítava ďalšie dávky sám, takže v DOM môže byť viac než prvá strana z API; poradie je
+        // rovnaké ako v API, preto `candidates.nth(live)` ostáva správne aj vtedy.
+        return (await candidates.count()) >= targets.length;
       },
       { message: `Upozornenia „${title}": zoznam na stránke nesedí s API`, timeout: 15_000 },
     )

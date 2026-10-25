@@ -7,8 +7,12 @@ import { publishNotificationUnreadCount } from '@/components/dashboard/contexts/
 import { markAllNotificationsRead, markNotificationRead } from './notificationsApi';
 import { appendUniqueNotifications } from './notificationsWindow';
 import type { DashboardNotification } from './types';
+import { useNotificationsLoadMoreRetry } from './useNotificationsLoadMoreRetry';
 import { useNotificationsPaging } from './useNotificationsPaging';
-import { useNotificationsResync } from './useNotificationsResync';
+import {
+  NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS,
+  useNotificationsResync,
+} from './useNotificationsResync';
 
 const NOTIFICATION_CHANGED_EVENT = 'notifications:changed';
 const LOAD_ERROR = 'notifications.loadFeedError';
@@ -48,8 +52,13 @@ export function useNotificationsFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Zlyhanie „Zobraziť ďalšie“ sa ukazuje dole pri tlačidle (tam je používateľ), nie v pruhu hore.
-  const [loadMoreFailed, setLoadMoreFailed] = useState(false);
+  // Zlyhanie automatického donačítania je tiché: sentinel sa na chvíľu vypne (5 s -> 60 s) a skúsi znova.
+  const {
+    paused: loadMoreFailed,
+    fail: failLoadMore,
+    release: releaseLoadMore,
+    reset: resetLoadMore,
+  } = useNotificationsLoadMoreRetry();
   const markingReadIdsRef = useRef<Set<number>>(new Set());
   const mountedRef = useRef(true);
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
@@ -109,7 +118,7 @@ export function useNotificationsFeed() {
         fetched.commit();
         setItems(withLocalReads(fetched.items));
         setError(clearLoadError);
-        setLoadMoreFailed(false);
+        releaseLoadMore();
       } catch {
         if (mountedRef.current && request.reportError) setError(LOAD_ERROR);
       } finally {
@@ -119,7 +128,7 @@ export function useNotificationsFeed() {
         }
       }
     },
-    [fetchWindow, withLocalReads],
+    [fetchWindow, withLocalReads, releaseLoadMore],
   );
 
   /**
@@ -162,15 +171,16 @@ export function useNotificationsFeed() {
   );
 
   const loadMore = useCallback(async () => {
-    setLoadMoreFailed(false);
+    releaseLoadMore();
     const outcome = await loadMoreBatch();
     if (!mountedRef.current) return;
     if (outcome === 'failed') {
-      setLoadMoreFailed(true);
+      failLoadMore();
     } else if (outcome === 'loaded') {
+      resetLoadMore();
       setError(clearLoadError);
     }
-  }, [loadMoreBatch]);
+  }, [loadMoreBatch, releaseLoadMore, failLoadMore, resetLoadMore]);
 
   useEffect(() => {
     void refresh({ initial: true, reportError: true, followUp: false });
@@ -191,7 +201,7 @@ export function useNotificationsFeed() {
   const resync = useCallback(() => {
     void refresh({ initial: false, reportError: false, followUp: true });
   }, [refresh]);
-  useNotificationsResync(resync);
+  useNotificationsResync(resync, items.length <= NOTIFICATIONS_RESYNC_POLL_MAX_ITEMS);
 
   const markAllRead = useCallback(async () => {
     setMarkingRead(true);
