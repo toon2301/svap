@@ -76,8 +76,15 @@ export function ProfileDesktopHeader({
   const profileLikesCount = Math.max(0, Number(displayUser.profile_likes_count ?? 0));
   const isProfileLiked = displayUser.is_profile_liked_by_me === true;
 
-  const actionButtonClass =
-    'flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-2xl border border-purple-200 bg-purple-100 px-4 py-2 text-center text-sm text-purple-800 transition-colors hover:bg-purple-200 disabled:cursor-not-allowed disabled:opacity-60';
+  const actionButtonLayoutClass =
+    'flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-2xl border px-4 py-2 text-center text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60';
+  const actionButtonOffClass = 'border-purple-200 bg-purple-100 text-purple-800 hover:bg-purple-200';
+  // Zapnutý stav (obľúbený / páči sa mi) je vo svetlom aj tmavom režime rovnaký fialový s bielym textom.
+  const actionButtonOnClass = 'border-purple-300 bg-purple-600 text-white hover:bg-purple-700';
+  const actionButtonClass = `${actionButtonLayoutClass} ${actionButtonOffClass}`;
+  const favoriteButtonClass = `${actionButtonLayoutClass} ${
+    isFavorited ? actionButtonOnClass : actionButtonOffClass
+  }`;
   const menuButtonClass =
     'flex h-10 w-11 shrink-0 items-center justify-center rounded-2xl border border-purple-200 bg-purple-100 text-purple-800 transition-colors hover:bg-purple-200';
 
@@ -282,7 +289,7 @@ export function ProfileDesktopHeader({
               aria-pressed={isFavorited}
               aria-busy={isFavoritePending}
               disabled={isFavoritePending}
-              className={actionButtonClass}
+              className={favoriteButtonClass}
             >
               {favoriteActionLabel}
             </button>
@@ -299,7 +306,7 @@ export function ProfileDesktopHeader({
               className={[
                 '!h-10 !w-full !min-w-0 !rounded-2xl !border !px-4 !py-2 !text-sm !shadow-none',
                 isProfileLiked
-                  ? '!border-purple-300 !bg-purple-600 !text-white hover:!bg-purple-700 dark:!border-purple-200 dark:!bg-purple-100 dark:!text-purple-800 dark:hover:!bg-purple-200'
+                  ? '!border-purple-300 !bg-purple-600 !text-white hover:!bg-purple-700'
                   : '!border-purple-200 !bg-purple-100 !text-purple-800 hover:!bg-purple-200 dark:!border-purple-200 dark:!bg-purple-100 dark:!text-purple-800 dark:hover:!bg-purple-200',
               ].join(' ')}
             />

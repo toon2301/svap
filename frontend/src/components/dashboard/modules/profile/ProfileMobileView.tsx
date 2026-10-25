@@ -22,6 +22,7 @@ import {
   InformationCircleIcon,
   ClipboardIcon,
   UserPlusIcon,
+  UserMinusIcon,
 } from '@heroicons/react/24/outline';
 import { ProfileLikeButton } from './ProfileLikeButton';
 import toast from 'react-hot-toast';
@@ -452,7 +453,11 @@ export default function ProfileMobileView({
                       : 'border-purple-200 bg-purple-100 text-purple-800 hover:bg-purple-200 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-200 dark:hover:bg-purple-950/50',
                   ].join(' ')}
                 >
-                  <UserPlusIcon className="h-5 w-5" aria-hidden="true" />
+                  {isFavorited ? (
+                    <UserMinusIcon className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <UserPlusIcon className="h-5 w-5" aria-hidden="true" />
+                  )}
                 </button>
                 <ProfileLikeButton
                   icon="thumb"

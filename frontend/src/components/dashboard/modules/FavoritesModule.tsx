@@ -12,7 +12,7 @@ import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
 import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
 import BlurredContainImage from './shared/BlurredContainImage';
-import { openUserProfileFromSearch } from './profile/openUserProfileFromSearch';
+import { clearFeedReturn } from './feed/feedReturnState';
 
 type ApiErrorLike = {
   response?: {
@@ -49,12 +49,22 @@ function initialsFromName(name: string): string {
 export default function FavoritesModule() {
   const router = useRouter();
 
-  /** Otvorenie profilu z Obľúbených – so značením pôvodu pre appkovú šípku. */
+  /**
+   * Otvorenie profilu z Obľúbených – stavovým vstupom v Dashboarde (`goToUserProfile`), rovnako
+   * ako Žiadosti a Správy. Holý `router.push` modul neprepne, keď Next stránka, na ktorej
+   * Dashboard stojí, je už stránkou toho istého profilu (nález 162): zmenila by sa len adresa.
+   */
   const openFavoriteProfile = useCallback(
     (favoriteUser: Pick<DashboardFavoriteUser, 'id' | 'slug'>) => {
-      openUserProfileFromSearch(router, favoriteProfileIdentifier(favoriteUser));
+      // Profil z Obľúbených je nový reťazec, nie vstup z Nástenky (nález 159).
+      clearFeedReturn();
+      window.dispatchEvent(
+        new CustomEvent('goToUserProfile', {
+          detail: { identifier: favoriteProfileIdentifier(favoriteUser) },
+        }),
+      );
     },
-    [router],
+    [],
   );
   const { t } = useLanguage();
   const [favoriteUsers, setFavoriteUsers] = useState<DashboardFavoriteUser[]>([]);
