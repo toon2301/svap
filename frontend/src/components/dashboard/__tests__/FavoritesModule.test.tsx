@@ -52,14 +52,39 @@ describe('FavoritesModule', () => {
     (setFavoriteUserState as jest.Mock).mockResolvedValue(undefined);
   });
 
-  it('renders fetched favorite users and navigates to the profile from the card', async () => {
-    render(<FavoritesModule />);
+  it('renders fetched favorite users and opens the profile from the card header and from the name', async () => {
+    const opened: string[] = [];
+    const listener = (event: Event) => opened.push((event as CustomEvent<{ identifier: string }>).detail.identifier);
+    window.addEventListener('goToUserProfile', listener);
+    try {
+      render(<FavoritesModule />);
 
-    expect(await screen.findByText('Jana Novakova')).toBeInTheDocument();
+      expect(await screen.findByText('Jana Novakova')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText('Jana Novakova'));
+      fireEvent.click(screen.getByLabelText('Jana Novakova'));
+      fireEvent.click(screen.getByRole('heading', { name: 'Jana Novakova' }));
 
-    expect(pushMock).toHaveBeenCalledWith('/dashboard/users/jana-novakova');
+      expect(opened).toEqual(['jana-novakova', 'jana-novakova']);
+      // profil sa otvára stavom Dashboardu, nie routerom
+      expect(pushMock).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('goToUserProfile', listener);
+    }
+  });
+
+  it('uses the numeric id when the favorite has no slug', async () => {
+    (fetchFavoriteUsers as jest.Mock).mockResolvedValue([
+      { id: 9, slug: '  ', display_name: 'Bez Slugu', avatar_url: null },
+    ]);
+    const listener = jest.fn();
+    window.addEventListener('goToUserProfile', listener);
+    try {
+      render(<FavoritesModule />);
+      fireEvent.click(await screen.findByLabelText('Bez Slugu'));
+      expect((listener.mock.calls[0][0] as CustomEvent).detail).toEqual({ identifier: '9' });
+    } finally {
+      window.removeEventListener('goToUserProfile', listener);
+    }
   });
 
   it('opens messages from the primary action button', async () => {
