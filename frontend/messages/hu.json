@@ -1296,6 +1296,7 @@
     "copyEmail": "E-mail másolása",
     "profession": "Foglalkozás",
     "website": "Weboldal",
+    "websitesAndMore": "és még {count}",
     "socials": "Közösségi média",
     "addLocation": "Helyszín hozzáadása",
     "addContact": "Kapcsolat hozzáadása",

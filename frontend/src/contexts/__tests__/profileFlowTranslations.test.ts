@@ -124,3 +124,22 @@ describe('Načítavanie a chybová obrazovka cudzieho profilu (nález 166)', () 
     expect(text('sk', 'common.networkError')).toBe('Chyba siete. Skontrolujte pripojenie a skúste to znova.');
   });
 });
+
+describe('„a ďalší (N)“ pod webom na profile', () => {
+  const KEY = 'profile.websitesAndMore';
+
+  it.each(Object.keys(dictionaries))('%s: text existuje a nesie počet cez {count}', (locale) => {
+    const value = text(locale, KEY);
+    expect(value.trim()).not.toBe('');
+    expect(value).toContain('{count}');
+    expect(value).not.toContain('{{');
+  });
+
+  it('slovenčina ostáva „a ďalší ({count})“', () => {
+    expect(text('sk', KEY)).toBe('a ďalší ({count})');
+  });
+
+  it.each(foreignLocales)('%s: text nie je slovenský', (locale) => {
+    expect(text(locale, KEY)).not.toBe(text('sk', KEY));
+  });
+});

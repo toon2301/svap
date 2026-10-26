@@ -1296,6 +1296,7 @@
     "copyEmail": "Copy email",
     "profession": "Profession",
     "website": "Website",
+    "websitesAndMore": "and {count} more",
     "socials": "Social media",
     "addLocation": "Add location",
     "addContact": "Add contact",

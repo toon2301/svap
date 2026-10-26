@@ -1296,6 +1296,7 @@
     "copyEmail": "E-Mail kopieren",
     "profession": "Beruf",
     "website": "Website",
+    "websitesAndMore": "und {count} weitere",
     "socials": "Soziale Netzwerke",
     "addLocation": "Standort hinzufügen",
     "addContact": "Kontakt hinzufügen",

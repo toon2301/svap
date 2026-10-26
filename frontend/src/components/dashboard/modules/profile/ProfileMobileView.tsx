@@ -368,7 +368,10 @@ export default function ProfileMobileView({
                           {firstWebsite}
                         </span>
                         <span className="text-blue-600 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 ml-1 whitespace-nowrap">
-                          a ďalší ({additionalCount})
+                          {t('profile.websitesAndMore', 'a ďalší ({count})').replace(
+                            '{count}',
+                            () => String(additionalCount),
+                          )}
                         </span>
                       </span>
                     ) : (
