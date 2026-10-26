@@ -1,6 +1,7 @@
 import {
   classifyProfileLoadFailure,
   isNetworkFailure,
+  profileActionErrorMessage,
   profileLoadFailureMessage,
   type ProfileLoadFailure,
 } from './foreignProfileHelpers';
@@ -105,5 +106,37 @@ describe('profileLoadFailureMessage', () => {
 
   it('text od servera sa nepreklada', () => {
     expect(message({ kind: 'server', message: 'Chyba servera' })).toBe('Chyba servera');
+  });
+});
+
+describe('profileActionErrorMessage', () => {
+  const t = (key: string, fallback?: string) => `${key}|${fallback}`;
+  const FALLBACK = 'Nepodarilo sa pridať k obľúbeným.';
+
+  it('text od servera má prednosť (error, potom detail)', () => {
+    expect(profileActionErrorMessage({ response: { status: 400, data: { error: 'Chyba' } } }, FALLBACK, t)).toBe(
+      'Chyba',
+    );
+    expect(profileActionErrorMessage({ response: { status: 400, data: { detail: 'Podrobnosť' } } }, FALLBACK, t)).toBe(
+      'Podrobnosť',
+    );
+  });
+
+  it('výpadok siete: preložená hláška o sieti, nie anglická správa knižnice', () => {
+    expect(profileActionErrorMessage({ code: 'ERR_NETWORK', message: 'Network Error' }, FALLBACK, t)).toBe(
+      'common.networkError|Chyba siete. Skontrolujte pripojenie a skúste to znova.',
+    );
+  });
+
+  it('inak záložný text akcie, správa knižnice sa nikdy nepoužije', () => {
+    expect(
+      profileActionErrorMessage(
+        { message: 'Request failed with status code 502', response: { status: 502 } },
+        FALLBACK,
+        t,
+      ),
+    ).toBe(FALLBACK);
+    expect(profileActionErrorMessage({ message: 'Network Error' }, FALLBACK, t)).toBe(FALLBACK);
+    expect(profileActionErrorMessage(undefined, FALLBACK, t)).toBe(FALLBACK);
   });
 });

@@ -42,17 +42,24 @@ export type ProfileLoadFailure =
   | { kind: 'notFound' | 'rateLimited' | 'network' | 'generic' }
   | { kind: 'server'; message: string };
 
+/**
+ * Text, ktorý poslal server (`error`, inak `detail`). Ukáže sa tak, ako prišiel; technická správa
+ * knižnice (`message`) sa nepoužíva nikdy. Prázdny alebo nereťazcový text sa preskočí (do stránky
+ * by sa nedal vypísať).
+ */
+function serverTextOf(error: SearchProfileApiError | null | undefined): string | null {
+  const serverText = error?.response?.data?.error || error?.response?.data?.detail;
+  return typeof serverText === 'string' && serverText.trim() ? serverText : null;
+}
+
 export function classifyProfileLoadFailure(
   error: SearchProfileApiError | null | undefined,
 ): ProfileLoadFailure {
   const status = error?.response?.status;
   if (status === 404) return { kind: 'notFound' };
   if (status === 429) return { kind: 'rateLimited' };
-  // Text, ktorý poslal server, sa ukáže tak, ako prišiel; technická správa knižnice (`message`) nikdy.
-  const serverText = error?.response?.data?.error || error?.response?.data?.detail;
-  if (typeof serverText === 'string' && serverText.trim()) {
-    return { kind: 'server', message: serverText };
-  }
+  const serverText = serverTextOf(error);
+  if (serverText) return { kind: 'server', message: serverText };
   return { kind: isNetworkFailure(error) ? 'network' : 'generic' };
 }
 
@@ -75,6 +82,22 @@ export function profileLoadFailureMessage(
     default:
       return t('search.userProfileLoadError', 'Nepodarilo sa načítať profil používateľa.');
   }
+}
+
+/**
+ * Hláška pri zlyhaní akcie na profile (obľúbené, „páči sa mi“): text od servera, pri výpadku siete
+ * hláška o sieti, inak záložný text danej akcie.
+ */
+export function profileActionErrorMessage(
+  error: SearchProfileApiError | null | undefined,
+  fallback: string,
+  t: (key: string, fallback?: string) => string,
+): string {
+  const serverText = serverTextOf(error);
+  if (serverText) return serverText;
+  return isNetworkFailure(error)
+    ? t('common.networkError', 'Chyba siete. Skontrolujte pripojenie a skúste to znova.')
+    : fallback;
 }
 
 function withStableAvatarVersion(url: string, version?: string | null): string {

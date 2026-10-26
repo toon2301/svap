@@ -1036,7 +1036,12 @@ describe('SearchUserProfileModule – kanonizácia adresy a chybové texty', () 
 
   it.each([
     ['an answer without a body', { response: { status: 500 } }, null],
-    ['a plain message', { message: 'Network Error' }, 'Network Error'],
+    [
+      'a network failure (nález 166)',
+      { code: 'ERR_NETWORK', message: 'Network Error' },
+      'Chyba siete. Skontrolujte pripojenie a skúste to znova.',
+    ],
+    ['a plain library message (nález 166)', { message: 'Network Error' }, null],
   ])('favorite and like report %s the same way as the load does', async (_label, failure, expectedText) => {
     (setFavoriteUserState as jest.Mock).mockRejectedValue(failure);
     (setProfileLikeState as jest.Mock).mockRejectedValue(failure);
