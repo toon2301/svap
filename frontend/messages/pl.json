@@ -1347,6 +1347,7 @@
     "unlikeProfile": "Usuń polubienie profilu",
     "profileLikes": "Polubienia profilu",
     "thumbsUp": "Kciuk w górę",
+    "completedCooperations": "Zakończone prośby: {count}",
     "profileLikeUpdateFailed": "Nie udało się zaktualizować polubienia profilu.",
     "block": "Zablokuj",
     "blockConfirmTitle": "Zablokować użytkownika?",

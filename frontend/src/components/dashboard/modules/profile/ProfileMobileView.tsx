@@ -208,7 +208,10 @@ export default function ProfileMobileView({
                 </h2>
                 {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Dokončené spolupráce: {displayUser.completed_cooperations_count}
+                    {t('profile.completedCooperations', 'Dokončené spolupráce: {count}').replace(
+                      '{count}',
+                      () => String(displayUser.completed_cooperations_count),
+                    )}
                   </p>
                 )}
                 {/* Email intentionally not shown here (kept in edit views) */}

@@ -1347,6 +1347,7 @@
     "unlikeProfile": "Odebrat like z profilu",
     "profileLikes": "Líbí se mi",
     "thumbsUp": "Palec nahoru",
+    "completedCooperations": "Dokončené žádosti: {count}",
     "profileLikeUpdateFailed": "Nepodařilo se aktualizovat líbí se mi.",
     "block": "Zablokovat",
     "blockConfirmTitle": "Zablokovat uživatele?",

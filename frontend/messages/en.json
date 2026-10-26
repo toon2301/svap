@@ -1351,6 +1351,7 @@
     "unlikeProfile": "Remove profile like",
     "profileLikes": "Profile likes",
     "thumbsUp": "Thumbs up",
+    "completedCooperations": "Completed requests: {count}",
     "profileLikeUpdateFailed": "Could not update the profile like.",
     "block": "Block",
     "blockConfirmTitle": "Block user?",

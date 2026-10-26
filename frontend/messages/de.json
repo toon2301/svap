@@ -1351,6 +1351,7 @@
     "unlikeProfile": "Profil-Like entfernen",
     "profileLikes": "Profil-Likes",
     "thumbsUp": "Daumen hoch",
+    "completedCooperations": "Abgeschlossene Anfragen: {count}",
     "profileLikeUpdateFailed": "Das Profil-Like konnte nicht aktualisiert werden.",
     "block": "Blockieren",
     "blockConfirmTitle": "Nutzer blockieren?",

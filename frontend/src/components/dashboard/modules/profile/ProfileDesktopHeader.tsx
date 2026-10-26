@@ -114,7 +114,10 @@ export function ProfileDesktopHeader({
 
           {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-0">
-              Dokončené spolupráce: {displayUser.completed_cooperations_count}
+              {t('profile.completedCooperations', 'Dokončené spolupráce: {count}').replace(
+                '{count}',
+                () => String(displayUser.completed_cooperations_count),
+              )}
             </p>
           )}
 

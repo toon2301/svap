@@ -1347,6 +1347,7 @@
     "unlikeProfile": "Profilkedvelés eltávolítása",
     "profileLikes": "Profilkedvelések",
     "thumbsUp": "Tetszik",
+    "completedCooperations": "Befejezett kérések: {count}",
     "profileLikeUpdateFailed": "Nem sikerült frissíteni a profil kedvelését.",
     "block": "Letiltás",
     "blockConfirmTitle": "Felhasználó letiltása?",
