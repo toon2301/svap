@@ -96,3 +96,31 @@ describe('Menu cudzieho profilu a okná, ktoré otvára (nález 165)', () => {
     },
   );
 });
+
+describe('Načítavanie a chybová obrazovka cudzieho profilu (nález 166)', () => {
+  expectNotSlovakCopies(
+    [
+      'search.loadingUserProfile',
+      'search.userProfileLoading',
+      'search.userProfileNotFound',
+      'search.userProfileRateLimited',
+      'search.userProfileLoadError',
+      'search.backToDashboard',
+      'search.retry',
+      'common.networkError',
+    ],
+    {},
+  );
+
+  it.each(Object.keys(dictionaries))('%s: common.networkError je neprázdny text bez zástupných znakov', (locale) => {
+    const value = text(locale, 'common.networkError');
+    expect(value.trim()).not.toBe('');
+    expect(value).not.toMatch(/\{|\}/);
+  });
+
+  it('slovenčina: texty chybovej obrazovky ostávajú, aké boli', () => {
+    expect(text('sk', 'search.userProfileNotFound')).toBe('Profil používateľa sa nepodarilo načítať.');
+    expect(text('sk', 'search.userProfileLoadError')).toBe('Nepodarilo sa načítať profil používateľa.');
+    expect(text('sk', 'common.networkError')).toBe('Chyba siete. Skontrolujte pripojenie a skúste to znova.');
+  });
+});

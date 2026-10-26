@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Načítavam...",
+    "networkError": "Chyba siete. Skontrolujte pripojenie a skúste to znova.",
     "error": "Chyba",
     "success": "Úspech",
     "cancel": "Zrušiť",

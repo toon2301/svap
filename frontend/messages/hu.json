@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Betöltés...",
+    "networkError": "Hálózati hiba. Ellenőrizze a kapcsolatot, és próbálja újra.",
     "error": "Hiba",
     "success": "Siker",
     "cancel": "Mégse",

@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Loading...",
+    "networkError": "Network error. Check your connection and try again.",
     "error": "Error",
     "success": "Success",
     "cancel": "Cancel",
