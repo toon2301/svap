@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks";
 import type { SearchUserResult } from "./types";
@@ -16,6 +15,7 @@ import { useProfileFreshEntry } from "../profile/useProfileFreshEntry";
 import { BlockUserConfirmDialog } from '../profile/BlockUserConfirmDialog';
 import { useBlockUserAction } from '../profile/useBlockUserAction';
 import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
+import { requestFeedHomeNavigation } from '../feed/feedHomeNavigation';
 import { adoptProfileOrigin } from '../profile/profileOriginHistory';
 import { getProfileAvatarUrl } from './foreignProfileHelpers';
 import { useForeignProfileActions } from './useForeignProfileActions';
@@ -40,7 +40,6 @@ export function SearchUserProfileModule({
   highlightedSkillId = null,
   initialTab,
 }: SearchUserProfileModuleProps) {
-  const router = useRouter();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   // Rovnaké naviazanie na adresu ako pri vlastnom profile – bez neho záložku
@@ -97,14 +96,24 @@ export function SearchUserProfileModule({
     setIsAvatarLightboxOpen(false);
   }, [removeTargetFromClientState, userId]);
 
+  // Odchod na Nástenku (po zablokovaní, z chybovej obrazovky). Prepína ju Dashboard (ten istý
+  // lievik ako ľavé menu), nie router: keď Next stránka, na ktorej stojí, je už `/dashboard`,
+  // `router.replace` zmení len adresu a profil ostane na obrazovke (viď feedHomeNavigation).
+  // Lievik však adresu PRIDÁVA, takže by sa po kroku späť zjavil nedostupný profil – jeho záznam
+  // sa preto najprv prepíše adresou Nástenky.
+  const goHome = React.useCallback(() => {
+    try {
+      window.history.replaceState(null, '', DASHBOARD_HOME_PATH);
+    } catch {
+      // Prehliadač zápis adresy odmietol – Nástenka sa zobrazí aj tak, len záznam profilu ostane.
+    }
+    requestFeedHomeNavigation();
+  }, []);
+
   const handleBlocked = React.useCallback(() => {
-    // Navigate to the main dashboard (same route as the sidebar logo/home
-    // link), not back to search — the blocked profile is no longer relevant
-    // to return to. This is a real route change (see app/dashboard/page.tsx),
-    // so the old module state does not need to be reset here.
     removeTargetFromClientState();
-    router.replace(DASHBOARD_HOME_PATH);
-  }, [removeTargetFromClientState, router]);
+    goHome();
+  }, [goHome, removeTargetFromClientState]);
 
   const blockAction = useBlockUserAction({
     targetUserId: userId,
@@ -141,7 +150,7 @@ export function SearchUserProfileModule({
             to, so go to the main dashboard instead of the search results. */}
         <button
           type="button"
-          onClick={() => router.replace(DASHBOARD_HOME_PATH)}
+          onClick={goHome}
           className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           <span>{t("search.backToDashboard", "Späť na nástenku")}</span>

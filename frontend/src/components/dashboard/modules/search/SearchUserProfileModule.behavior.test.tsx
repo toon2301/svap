@@ -14,6 +14,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import toast from 'react-hot-toast';
 
 import { SearchUserProfileModule } from './SearchUserProfileModule';
+import { onFeedHomeNavigation } from '../feed/feedHomeNavigation';
 import { setFavoriteUserState } from '../favoritesApi';
 import { api } from '@/lib/api';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
@@ -263,6 +264,11 @@ function deferred<T>() {
 
 const LOADING_TEXT = 'Načítavam profil používateľa...';
 
+// Odchod na Nástenku prepisuje adresu (history.replaceState); ďalší test začína znova od koreňa.
+afterEach(() => {
+  window.history.replaceState(null, '', '/');
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsMobile = false;
@@ -401,13 +407,19 @@ describe('SearchUserProfileModule – načítanie profilu', () => {
   });
 
   it('leads the error screen back to the dashboard home', async () => {
+    // Na Nástenku prepína Dashboard (žiadosť `feed-go-home`), nie router (nález 172).
+    const homeRequests = jest.fn();
+    const stopHomeRequests = onFeedHomeNavigation(homeRequests);
     (api.get as jest.Mock).mockRejectedValue({ response: { status: 500 } });
 
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Späť na nástenku' }));
+    stopHomeRequests();
 
-    expect(replaceMock).toHaveBeenCalledWith('/dashboard');
+    expect(homeRequests).toHaveBeenCalledTimes(1);
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/dashboard');
   });
 
   it('keeps a cached profile on screen when the refresh fails', async () => {
@@ -754,6 +766,8 @@ describe('SearchUserProfileModule – „páči sa mi“ na profile', () => {
 
 describe('SearchUserProfileModule – blokovanie a správa', () => {
   it('forgets the blocked profile on the client before it leaves for the dashboard', async () => {
+    const homeRequests = jest.fn();
+    const stopHomeRequests = onFeedHomeNavigation(homeRequests);
     setUserProfileToCache(42, profile(42) as never);
 
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
@@ -763,7 +777,8 @@ describe('SearchUserProfileModule – blokovanie a správa', () => {
     fireEvent.click(blockButton);
     fireEvent.click(screen.getByRole('button', { name: 'Zablokovať' }));
 
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/dashboard'));
+    await waitFor(() => expect(homeRequests).toHaveBeenCalledTimes(1));
+    stopHomeRequests();
     expect(getUserProfileFromCache(42)).toBeUndefined();
     expect(invalidateOffersCache).toHaveBeenCalledTimes(1);
     expect(invalidateOffersCache).toHaveBeenCalledWith(42);
