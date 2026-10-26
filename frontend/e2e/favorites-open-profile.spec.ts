@@ -9,6 +9,11 @@ import { gotoDashboardHome, MAIN, pathOf, sideNav, topBarBack } from './support/
 // Dôsledok na produkcii: otvorenie cudzieho profilu zapíše 1 návštevu profilu na účet a deň.
 // Potrebuje aspoň jedného obľúbeného používateľa s adresou (slug) a jedinečným menom, inak sa preskočí.
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 type Favorite = { slug: string; displayName: string };
 
 let attemptedWrites: string[] = [];
