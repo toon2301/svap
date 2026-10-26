@@ -97,17 +97,31 @@ NEW_ITEMS = [
               'preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
               '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila).',
          dec=None, src='vetva 140'),
-    dict(n=188, bucket=H, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='náhodne padajúci test (searchScrollMemory)',
-         what='`searchScrollMemory.test.ts:220–227` („rejects expired records and future timestamps“) občas zlyhá bez zmeny kódu: test si prečíta '
-              '`Date.now()` skôr, než `rememberSearchScroll()` zapíše záznam s vlastným `Date.now()`. Ak medzi oboma čítaniami uplynú aspoň 2 ms, '
-              'záznam po posune hodín o `TTL + 1` ešte neplatí za expirovaný a `readSearchScroll` ho vráti.',
-         note='Overené: s oneskorením 0 a 1 ms test prejde, s 2 ms a viac zlyhá. Meranie v jsdom (3000 volaní): oneskorenie aspoň 2 ms nastalo pri '
-              '0,23 % volaní na nevyťaženom stroji a pri približne 1,9 % pri zaťažených jadrách (6 vlákien na 4 jadrách); pri overovaní vetvy 140 '
-              'zlyhal raz zo 4 celých behov Jestu. Chyba je len v teste, aplikácia je v poriadku. Súrodenecké testy (`searchScrollMemory.test.ts:381`, '
-              '`searchScrollMemory.refresh.test.ts:81`) čítajú `now` až po zápise, takže sú v poriadku. Oprava: čítať `now` až po '
-              '`rememberSearchScroll()` alebo hodiny pred zápisom zafixovať cez `jest.spyOn(Date, \'now\')`. Kým nie je opravené, červené CI s týmto '
-              'testom nie je chyba pull requestu a stačí job spustiť znova.',
-         dec=None, src='vetva 140'),
+    dict(n=189, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: jazyk z profilu pri slugu s bodkami',
+         what='`e2e/mobile-language-header.spec.ts`: pomocník `ownProfilePath` (riadok 36) pustí len slug zo znakov `A-Za-z0-9_-` (riadok 42), '
+              'no backend generuje slugy s bodkami (medzery sa menia na bodky, napr. `svaplynko.malicky.mlady`). Pre taký účet vezme pomocník '
+              'číselné ID, aplikácia číselnú adresu prepíše na slug a stratí pod-cestu `/language`. Vo webkit-mobile preto padá 12 scenárov '
+              '`profile-section` a 2 scenáre „app Back and browser Back“ (beh 26. 10.).',
+         note='Reprodukované lokálne v Chromiu s iPhone emuláciou na produkčnom builde: so slugom s bodkami rovnaké chyby ako na Railway '
+              '(s workerom aj bez neho), so slugom bez bodiek „app Back“ prejde. Oprava: povoliť bodku v regulárnom výraze. Pozor: aplikácia '
+              'pridáva k adrese profilu sama `?tab=offers` (`profileTabQuery.ts`), takže `profile-section` môže po oprave padnúť ešte na '
+              'poslednej kontrole adresy (riadok 136); tú treba porovnávať bez query. Overiť behom na Railway.',
+         dec=None, src='vetva 141'),
+    dict(n=190, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: mouse.wheel v mobilnom WebKite',
+         what='`e2e/search-country-scroll.spec.ts`, test „review: a restored profile-return snapshot follows user scrolling…“: volá '
+              '`page.mouse.wheel(0, -700)` (riadok 125) aj v mobilnom projekte, no Playwright v mobilnom WebKite kolieskom nehýbe '
+              '(„Mouse wheel is not supported in mobile WebKit“). V projekte webkit-mobile preto padá vždy, od pridania 17. 10. '
+              '(commit `66c15acc`).',
+         note='Overené v zdroji Playwrightu 1.63 (`RawMouseImpl.wheel`). Rovnaké obmedzenie už raz zachytil TEST-11 v inom špecu. Na výber: '
+              'v mobile použiť iný skutočný vstup (ťah prstom), alebo tento jeden scenár v mobilnom WebKite preskočiť s vysvetlením.',
+         dec=None, src='vetva 141'),
+    dict(n=191, bucket=A, imp=N, eff=ES, pkg='Navigácia – drobnosti',
+         what='Číselná adresa profilu s pod-cestou, napr. `/dashboard/users/<id>/language`, sa po načítaní prepíše na '
+              '`/dashboard/users/<slug>?tab=offers` a pod-cesta sa stratí (`useDashboardUserProfile.tsx`: prepis číselného ID na slug '
+              'zachová len `/edit`).',
+         note='Zmerané 26. 10. v Chromiu na produkčnom builde. Dotýka sa len starých odkazov s číselným ID (route ich podporuje kvôli '
+              'spätnej kompatibilite). Nízka priorita; vyplynulo z nálezu 189.',
+         dec=None, src='vetva 141'),
 ]
 
 NTASKS = [
