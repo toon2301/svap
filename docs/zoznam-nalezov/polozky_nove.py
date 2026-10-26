@@ -97,6 +97,17 @@ NEW_ITEMS = [
               'preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
               '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila).',
          dec=None, src='vetva 140'),
+    dict(n=188, bucket=H, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='náhodne padajúci test (searchScrollMemory)',
+         what='`searchScrollMemory.test.ts:220–227` („rejects expired records and future timestamps“) občas zlyhá bez zmeny kódu: test si prečíta '
+              '`Date.now()` skôr, než `rememberSearchScroll()` zapíše záznam s vlastným `Date.now()`. Ak medzi oboma čítaniami uplynú aspoň 2 ms, '
+              'záznam po posune hodín o `TTL + 1` ešte neplatí za expirovaný a `readSearchScroll` ho vráti.',
+         note='Overené: s oneskorením 0 a 1 ms test prejde, s 2 ms a viac zlyhá. Meranie v jsdom (3000 volaní): oneskorenie aspoň 2 ms nastalo pri '
+              '0,23 % volaní na nevyťaženom stroji a pri približne 1,9 % pri zaťažených jadrách (6 vlákien na 4 jadrách); pri overovaní vetvy 140 '
+              'zlyhal raz zo 4 celých behov Jestu. Chyba je len v teste, aplikácia je v poriadku. Súrodenecké testy (`searchScrollMemory.test.ts:381`, '
+              '`searchScrollMemory.refresh.test.ts:81`) čítajú `now` až po zápise, takže sú v poriadku. Oprava: čítať `now` až po '
+              '`rememberSearchScroll()` alebo hodiny pred zápisom zafixovať cez `jest.spyOn(Date, \'now\')`. Kým nie je opravené, červené CI s týmto '
+              'testom nie je chyba pull requestu a stačí job spustiť znova.',
+         dec=None, src='vetva 140'),
 ]
 
 NTASKS = [

@@ -16,7 +16,8 @@ ZMENY = [
     ('26. 10. 2026',
      'Nález 173 opravený na vetve 140 (čaká na zlúčenie): 13 špecov s `page.route` a `feed-cleanup` blokuje service worker a Jest poistka to stráži '
      'pre nové špecy. Spresnenie: v Playwrighte 1.63 zachytáva `context.route` v Chromiu aj požiadavky workera, takže blok sa vyžaduje len pri '
-     '`page.route` (`google-login-completion` sa nemenilo). Nový nález 187 (`public/sw.js`).'),
+     '`page.route` (`google-login-completion` sa nemenilo). Nové nálezy 187 (`public/sw.js`) a 188 (náhodne padajúci test '
+     '`searchScrollMemory`, zistený pri celom behu Jestu).'),
     ('26. 10. 2026',
      'Prvé vydanie v repozitári. Zlúčený zoznam nálezov 1–186 (pôvodný zoznam 1–172, nové nálezy 173–186, register OW- / TEST-), '
      'úlohy N1–N16 a rozhodnutia R1–R11. Podľa spresnenia používateľa sa hosting na novom serveri rieši až po dokončení aplikácie '
@@ -59,9 +60,10 @@ SERIA_UPOZORNENIA = (
 PORADIE = [
     dict(vlna='0 – najprv',
          co='Rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
-            'odstránenie allauth; `npm audit fix`)',
-         preco='Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
-         polozky=['183', '184']),
+            'odstránenie allauth; `npm audit fix`) a oprava náhodne padajúceho testu 188 (len test)',
+         preco='Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód; a červené CI bez príčiny '
+               'prestane zdržiavať zlúčenia.',
+         polozky=['183', '184', '188']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík '
             '„Spoľahlivosť CI a testov“ (31, TEST-…)',
