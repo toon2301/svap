@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Laden...",
+    "networkError": "Netzwerkfehler. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     "error": "Fehler",
     "success": "Erfolg",
     "cancel": "Abbrechen",
@@ -99,7 +100,7 @@
     "noResults": "Keine Ergebnisse",
     "remove": "Entfernen",
     "saving": "Speichern...",
-    "sending": "Odosielam...",
+    "sending": "Wird gesendet...",
     "submit": "Absenden",
     "verifiedAccount": "Verifiziertes Konto"
   },
@@ -1295,6 +1296,7 @@
     "copyEmail": "E-Mail kopieren",
     "profession": "Beruf",
     "website": "Website",
+    "websitesAndMore": "und {count} weitere",
     "socials": "Soziale Netzwerke",
     "addLocation": "Standort hinzufügen",
     "addContact": "Kontakt hinzufügen",
@@ -1351,6 +1353,7 @@
     "unlikeProfile": "Profil-Like entfernen",
     "profileLikes": "Profil-Likes",
     "thumbsUp": "Daumen hoch",
+    "completedCooperations": "Abgeschlossene Anfragen: {count}",
     "profileLikeUpdateFailed": "Das Profil-Like konnte nicht aktualisiert werden.",
     "block": "Blockieren",
     "blockConfirmTitle": "Nutzer blockieren?",

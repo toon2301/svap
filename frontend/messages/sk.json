@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Načítavam...",
+    "networkError": "Chyba siete. Skontrolujte pripojenie a skúste to znova.",
     "error": "Chyba",
     "success": "Úspech",
     "cancel": "Zrušiť",
@@ -1295,6 +1296,7 @@
     "copyEmail": "Kopírovať email",
     "profession": "Profesia",
     "website": "Web",
+    "websitesAndMore": "a ďalší ({count})",
     "socials": "Sociálne siete",
     "addLocation": "Pridať lokalitu",
     "addContact": "Pridať kontakt",
@@ -1351,6 +1353,7 @@
     "unlikeProfile": "Odobrať like z profilu",
     "profileLikes": "Páči sa mi",
     "thumbsUp": "Palec hore",
+    "completedCooperations": "Dokončené spolupráce: {count}",
     "profileLikeUpdateFailed": "Nepodarilo sa aktualizovať páči sa mi.",
     "block": "Zablokovať",
     "blockConfirmTitle": "Zablokovať používateľa?",

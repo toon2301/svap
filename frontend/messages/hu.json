@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Betöltés...",
+    "networkError": "Hálózati hiba. Ellenőrizze a kapcsolatot, és próbálja újra.",
     "error": "Hiba",
     "success": "Siker",
     "cancel": "Mégse",
@@ -1295,6 +1296,7 @@
     "copyEmail": "E-mail másolása",
     "profession": "Foglalkozás",
     "website": "Weboldal",
+    "websitesAndMore": "és még {count}",
     "socials": "Közösségi média",
     "addLocation": "Helyszín hozzáadása",
     "addContact": "Kapcsolat hozzáadása",
@@ -1347,6 +1349,7 @@
     "unlikeProfile": "Profilkedvelés eltávolítása",
     "profileLikes": "Profilkedvelések",
     "thumbsUp": "Tetszik",
+    "completedCooperations": "Befejezett kérések: {count}",
     "profileLikeUpdateFailed": "Nem sikerült frissíteni a profil kedvelését.",
     "block": "Letiltás",
     "blockConfirmTitle": "Felhasználó letiltása?",

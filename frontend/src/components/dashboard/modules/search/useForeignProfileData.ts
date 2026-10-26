@@ -19,14 +19,19 @@ import {
 import { invalidateOffersCache } from '../profile/profileOffersCache';
 import { invalidateSearchCacheForUser } from './hooks/useSearchApi';
 import { removeUserFromRecentSearches } from './recentSearchStorage';
-import type { SearchProfileApiError } from './foreignProfileHelpers';
+import {
+  classifyProfileLoadFailure,
+  profileLoadFailureMessage,
+  type ProfileLoadFailure,
+  type SearchProfileApiError,
+} from './foreignProfileHelpers';
 
 export function useForeignProfileData(userId: number, currentUserId: number) {
   const router = useRouter();
   const { t } = useLanguage();
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<ProfileLoadFailure | null>(null);
 
   // Profil, načítavanie aj chyba patria jednému profilu. Z profilu na profil sa dá prejsť bez
   // odmountovania modulu, a tak sa pri zmene ID zahodia už pri vykresľovaní (React vykreslí
@@ -37,7 +42,7 @@ export function useForeignProfileData(userId: number, currentUserId: number) {
     setStateUserId(userId);
     setProfileUser(null);
     setIsLoading(true);
-    setError(null);
+    setFailure(null);
   }
 
   const removeTargetFromClientState = useCallback(() => {
@@ -52,7 +57,7 @@ export function useForeignProfileData(userId: number, currentUserId: number) {
 
     const load = async () => {
       setIsLoading(true);
-      setError(null);
+      setFailure(null);
 
       // Invalidovať cache ponúk pre cudzí profil, aby sa načítali čerstvé dáta
       // vrátane filtrovania skrytých kariet.
@@ -111,24 +116,11 @@ export function useForeignProfileData(userId: number, currentUserId: number) {
       } catch (error: unknown) {
         if (cancelled) return;
         const apiError = error as SearchProfileApiError;
-        const status = apiError.response?.status;
-        if (status === 404) {
+        if (apiError?.response?.status === 404) {
           removeTargetFromClientState();
           setProfileUser(null);
         }
-        const msg =
-          status === 404
-            ? t('search.userProfileNotFound', 'Profil používateľa sa nepodarilo načítať.')
-            : status === 429
-            ? t(
-                "search.userProfileRateLimited",
-                "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
-              )
-            : apiError.response?.data?.error ||
-              apiError.response?.data?.detail ||
-              apiError.message ||
-              t("search.userProfileLoadError", "Nepodarilo sa načítať profil používateľa.");
-        setError(msg);
+        setFailure(classifyProfileLoadFailure(apiError));
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -141,10 +133,13 @@ export function useForeignProfileData(userId: number, currentUserId: number) {
     return () => {
       cancelled = true;
     };
-    // Zámerne neuvádzame t v závislostiach, aby sa pri zmene jazyka nespúšťal
-    // nový network request.
+    // Zámerne bez `router` v závislostiach a efekt nepoužíva `t`: zmena jazyka ani routera nesmie
+    // spustiť nový network request (text chyby sa skladá pri vykresľovaní, viď nižšie).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [removeTargetFromClientState, userId]);
+
+  // Text chyby sa skladá až tu, s aktuálnym `t` (viď ProfileLoadFailure).
+  const error = failure ? profileLoadFailureMessage(failure, t) : null;
 
   return { profileUser, setProfileUser, isLoading, error, removeTargetFromClientState };
 }

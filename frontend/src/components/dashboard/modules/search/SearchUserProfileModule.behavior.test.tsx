@@ -394,7 +394,26 @@ describe('SearchUserProfileModule – načítanie profilu', () => {
       { response: { status: 500, data: { detail: 'Podrobnosť' } } },
       'Podrobnosť',
     ],
-    ['plain message', { message: 'Network Error' }, 'Network Error'],
+    [
+      'network failure -> translated text (nález 166)',
+      { code: 'ERR_NETWORK', message: 'Network Error' },
+      'Chyba siete. Skontrolujte pripojenie a skúste to znova.',
+    ],
+    [
+      'timeout -> translated text (nález 166)',
+      { code: 'ECONNABORTED', message: 'timeout of 30000ms exceeded' },
+      'Chyba siete. Skontrolujte pripojenie a skúste to znova.',
+    ],
+    [
+      'library message of a failed answer is not shown (nález 166)',
+      { message: 'Request failed with status code 502', response: { status: 502 } },
+      'Nepodarilo sa načítať profil používateľa.',
+    ],
+    [
+      'plain message without a code -> generic text (nález 166)',
+      { message: 'Network Error' },
+      'Nepodarilo sa načítať profil používateľa.',
+    ],
     ['nothing known -> generic text', {}, 'Nepodarilo sa načítať profil používateľa.'],
   ])('shows the right text for a failed load: %s', async (_label, failure, expected) => {
     (api.get as jest.Mock).mockRejectedValue(failure);
@@ -1017,7 +1036,12 @@ describe('SearchUserProfileModule – kanonizácia adresy a chybové texty', () 
 
   it.each([
     ['an answer without a body', { response: { status: 500 } }, null],
-    ['a plain message', { message: 'Network Error' }, 'Network Error'],
+    [
+      'a network failure (nález 166)',
+      { code: 'ERR_NETWORK', message: 'Network Error' },
+      'Chyba siete. Skontrolujte pripojenie a skúste to znova.',
+    ],
+    ['a plain library message (nález 166)', { message: 'Network Error' }, null],
   ])('favorite and like report %s the same way as the load does', async (_label, failure, expectedText) => {
     (setFavoriteUserState as jest.Mock).mockRejectedValue(failure);
     (setProfileLikeState as jest.Mock).mockRejectedValue(failure);

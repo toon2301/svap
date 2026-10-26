@@ -17,7 +17,7 @@ import { setProfileLikeState, type ProfileLikeResponse } from '../profile/profil
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { openMessagesFromProfile } from '../messages/messagesProfileOrigin';
 import { buildMessagesUrl } from '../messages/messagesRouting';
-import type { SearchProfileApiError } from './foreignProfileHelpers';
+import { profileActionErrorMessage, type SearchProfileApiError } from './foreignProfileHelpers';
 
 type UseForeignProfileActionsInput = {
   profileUser: User | null;
@@ -86,15 +86,15 @@ export function useForeignProfileActions({
         is_favorited: nextIsFavorited,
       });
     } catch (error: unknown) {
-      const apiError = error as SearchProfileApiError;
-      const message =
-        apiError.response?.data?.error ||
-        apiError.response?.data?.detail ||
-        apiError.message ||
-        (nextIsFavorited
-          ? t('search.addToFavoritesError', 'Nepodarilo sa pridať k obľúbeným.')
-          : t('search.removeFromFavoritesError', 'Nepodarilo sa odobrať z obľúbených.'));
-      toast.error(message);
+      toast.error(
+        profileActionErrorMessage(
+          error as SearchProfileApiError,
+          nextIsFavorited
+            ? t('search.addToFavoritesError', 'Nepodarilo sa pridať k obľúbeným.')
+            : t('search.removeFromFavoritesError', 'Nepodarilo sa odobrať z obľúbených.'),
+          t,
+        ),
+      );
     } finally {
       setIsFavoritePending(false);
     }
@@ -149,12 +149,13 @@ export function useForeignProfileActions({
         is_profile_liked_by_me: previousLiked,
         profile_likes_count: previousCount,
       });
-      const message =
-        apiError.response?.data?.error ||
-        apiError.response?.data?.detail ||
-        apiError.message ||
-        t('profile.profileLikeUpdateFailed', 'Nepodarilo sa aktualizovat paci sa mi.');
-      toast.error(message);
+      toast.error(
+        profileActionErrorMessage(
+          apiError,
+          t('profile.profileLikeUpdateFailed', 'Nepodarilo sa aktualizovat paci sa mi.'),
+          t,
+        ),
+      );
     } finally {
       setIsProfileLikePending(false);
     }

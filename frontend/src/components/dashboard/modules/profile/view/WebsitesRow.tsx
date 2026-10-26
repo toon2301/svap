@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { User } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WebsitesRowProps {
   user: User;
@@ -9,6 +10,7 @@ interface WebsitesRowProps {
 }
 
 export default function WebsitesRow({ user, onOpenAll }: WebsitesRowProps) {
+  const { t } = useLanguage();
   const totalWebsites = (user.website ? 1 : 0) + (user.additional_websites ? user.additional_websites.length : 0);
   const additionalCount = totalWebsites - 1;
   if (totalWebsites === 0) return null;
@@ -21,7 +23,9 @@ export default function WebsitesRow({ user, onOpenAll }: WebsitesRowProps) {
       {additionalCount > 0 ? (
         <span className="flex items-center flex-wrap cursor-pointer" onClick={onOpenAll}>
           <span className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[300px]">{firstWebsite as string}</span>
-          <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 ml-1 whitespace-nowrap">a ďalší ({additionalCount})</span>
+          <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 ml-1 whitespace-nowrap">
+            {t('profile.websitesAndMore', 'a ďalší ({count})').replace('{count}', () => String(additionalCount))}
+          </span>
         </span>
       ) : (
         <a href={firstWebsite as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[300px]">

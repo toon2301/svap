@@ -74,6 +74,7 @@
   },
   "common": {
     "loading": "Loading...",
+    "networkError": "Network error. Check your connection and try again.",
     "error": "Error",
     "success": "Success",
     "cancel": "Cancel",
@@ -1295,6 +1296,7 @@
     "copyEmail": "Copy email",
     "profession": "Profession",
     "website": "Website",
+    "websitesAndMore": "and {count} more",
     "socials": "Social media",
     "addLocation": "Add location",
     "addContact": "Add contact",
@@ -1351,6 +1353,7 @@
     "unlikeProfile": "Remove profile like",
     "profileLikes": "Profile likes",
     "thumbsUp": "Thumbs up",
+    "completedCooperations": "Completed requests: {count}",
     "profileLikeUpdateFailed": "Could not update the profile like.",
     "block": "Block",
     "blockConfirmTitle": "Block user?",
