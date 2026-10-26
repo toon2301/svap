@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import toast from 'react-hot-toast';
 
 import { SearchUserProfileModule } from './SearchUserProfileModule';
+import { onFeedHomeNavigation } from '../feed/feedHomeNavigation';
 import { setFavoriteUserState } from '../favoritesApi';
 import { api } from '@/lib/api';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
@@ -162,6 +163,11 @@ jest.mock('../shared/OfferImageGalleryLightbox', () => ({
     ) : null,
 }));
 
+// Odchod na Nástenku prepisuje adresu (history.replaceState); ďalší test začína znova od koreňa.
+afterEach(() => {
+  window.history.replaceState(null, '', '/');
+});
+
 describe('SearchUserProfileModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -285,6 +291,9 @@ describe('SearchUserProfileModule', () => {
   });
 
   it('blocks a foreign profile only after confirmation and redirects to the dashboard home', async () => {
+    // Na Nástenku prepína Dashboard (žiadosť `feed-go-home`), nie router (nález 172).
+    const homeRequests = jest.fn();
+    const stopHomeRequests = onFeedHomeNavigation(homeRequests);
     const onBack = jest.fn();
     render(
       <SearchUserProfileModule userId={42} currentUserId={7} onBack={onBack} />,
@@ -298,9 +307,12 @@ describe('SearchUserProfileModule', () => {
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/auth/users/42/block/');
       expect(toast.success).toHaveBeenCalledWith('Používateľ bol zablokovaný.');
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard');
+      expect(homeRequests).toHaveBeenCalledTimes(1);
     });
-    // Navigates to the dashboard home route directly rather than restoring
+    stopHomeRequests();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/dashboard');
+    // Navigates to the dashboard home directly rather than restoring
     // the previous "back to search" module state.
     expect(onBack).not.toHaveBeenCalled();
   });
@@ -313,6 +325,8 @@ describe('SearchUserProfileModule', () => {
   });
 
   it('keeps the confirmation open and shows a localized toast when rate limited', async () => {
+    const homeRequests = jest.fn();
+    const stopHomeRequests = onFeedHomeNavigation(homeRequests);
     (api.post as jest.Mock).mockRejectedValueOnce({ response: { status: 429 } });
     render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
@@ -325,7 +339,9 @@ describe('SearchUserProfileModule', () => {
       );
       expect(screen.getByTestId('block-user-confirm-dialog')).toBeInTheDocument();
       expect(replaceMock).not.toHaveBeenCalled();
+      expect(homeRequests).not.toHaveBeenCalled();
     });
+    stopHomeRequests();
   });
 });
 

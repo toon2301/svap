@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import OfferWatchMatchGrid from './OfferWatchMatchGrid';
 import ProfileOfferCard from '../../profile/ProfileOfferCard';
 import { setOfferLikeState } from '../../profile/offerLikesApi';
-import { openUserProfileFromSearch } from '../../profile/openUserProfileFromSearch';
 import type { Offer } from '../../profile/profileOffersTypes';
 import type { OfferWatchMatch } from '../types';
 import { SearchOffersTab } from '@/components/search/SearchOffersTab';
@@ -19,7 +18,6 @@ jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: mockTranslate }),
 }));
 jest.mock('../../profile/offerLikesApi', () => ({ setOfferLikeState: jest.fn() }));
-jest.mock('../../profile/openUserProfileFromSearch', () => ({ openUserProfileFromSearch: jest.fn() }));
 jest.mock('../../shared/OfferImageCarousel', () => ({
   __esModule: true,
   default: ({ alt }: { alt: string }) => <div role='img' aria-label={alt} />,
@@ -36,7 +34,6 @@ const NOW = Date.parse('2026-10-14T12:00:00Z');
 const WATCH_UPDATED_AT = '2026-10-14T00:00:00Z';
 const HEART_PATH_PREFIX = 'M20.84 4.61';
 const mockedLikeApi = jest.mocked(setOfferLikeState);
-const mockedOpenProfile = jest.mocked(openUserProfileFromSearch);
 
 /** Resolve real app messages, with the same string-only fallback used by the context. */
 function mockTranslate(key: string, fallback: string): string {
@@ -233,14 +230,18 @@ describe('Offer Watch result cards: front-only Like opt-out and read-only back s
     { owner_slug: ' ', user_id: 21, expected: '21' },
     { owner_slug: null, user_id: 0, expected: '0' },
     { owner_slug: '', user_id: undefined, expected: null },
-  ])('preserves author navigation/highlight ($expected)', ({ expected, ...overrides }) => {
-    render(<OfferWatchMatchGrid matches={[makeMatch(overrides)]} watchUpdatedAt={WATCH_UPDATED_AT} />);
-    fireEvent.click(screen.getByRole('button', { name: /Ada Maliarka/ }));
-    if (expected !== null) {
-      expect(mockedOpenProfile).toHaveBeenCalledTimes(1);
-      expect(mockedOpenProfile).toHaveBeenCalledWith(expect.any(Object), expected, { highlightSkillId: 61 });
-    } else expect(mockedOpenProfile).not.toHaveBeenCalled();
-    expectReadOnlyLikes(screen.getByRole('article'));
+  ])('opens the author profile by dashboard state with the highlight ($expected)', ({ expected, ...overrides }) => {
+    const opened: Array<{ identifier?: string; highlightId?: number }> = [];
+    const listener = (event: Event) => opened.push((event as CustomEvent).detail);
+    window.addEventListener('goToUserProfile', listener);
+    try {
+      render(<OfferWatchMatchGrid matches={[makeMatch(overrides)]} watchUpdatedAt={WATCH_UPDATED_AT} />);
+      fireEvent.click(screen.getByRole('button', { name: /Ada Maliarka/ }));
+      expect(opened).toEqual(expected !== null ? [{ identifier: expected, highlightId: 61 }] : []);
+      expectReadOnlyLikes(screen.getByRole('article'));
+    } finally {
+      window.removeEventListener('goToUserProfile', listener);
+    }
   });
 
   it('retains the translated fallback author when API display name is absent', () => {

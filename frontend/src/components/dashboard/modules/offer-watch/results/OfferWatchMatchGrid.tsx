@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { SearchOfferCardAuthorHeader } from '@/components/search/SearchOfferCardAuthorHeader';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProfileOfferCard from '../../profile/ProfileOfferCard';
-import { openUserProfileFromSearch } from '../../profile/openUserProfileFromSearch';
+import { clearFeedReturn } from '../../feed/feedReturnState';
 import { isOfferWatchMatchNew } from '../offerWatchMatchFreshness';
 import type { OfferWatchMatch } from '../types';
 
@@ -21,7 +20,6 @@ export default function OfferWatchMatchGrid({
   matches,
   watchUpdatedAt,
 }: OfferWatchMatchGridProps) {
-  const router = useRouter();
   const { t } = useLanguage();
   const [flippedCards, setFlippedCards] = useState<Set<number>>(() => new Set());
   const [now, setNow] = useState(() => Date.now());
@@ -63,9 +61,16 @@ export default function OfferWatchMatchGrid({
                 ownerUserType={offer.owner_user_type}
                 onProfileClick={() => {
                   if (!identifier) return;
-                  openUserProfileFromSearch(router, identifier, {
-                    highlightSkillId: offer.id,
-                  });
+                  // Stavový vstup v Dashboarde (`goToUserProfile`), ako Obľúbené, Žiadosti a Správy:
+                  // holý `router.push` modul neprepne, keď Next stránka, na ktorej Dashboard stojí,
+                  // je už stránkou toho istého profilu (nález 171). Profil zo Sledovaní je nový
+                  // reťazec, nie vstup z Nástenky (nález 159).
+                  clearFeedReturn();
+                  window.dispatchEvent(
+                    new CustomEvent('goToUserProfile', {
+                      detail: { identifier, highlightId: offer.id },
+                    }),
+                  );
                 }}
               />
               <ProfileOfferCard
