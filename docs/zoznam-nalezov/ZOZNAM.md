@@ -2,17 +2,17 @@
 
 > Hlavný zoznam nálezov projektu. Súbor je **generovaný** z dát v tomto priečinku (`build.py`) a neupravuje sa ručne: pozri časť 10.
 
-Posledná aktualizácia: **26. 10. 2026**. Stav kódu: `main` `d4207583` (po PR #198); register: 21. 10. 2026 + PR #193. Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách 127–138 (čísla 173–186) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).
+Posledná aktualizácia: **26. 10. 2026**. Stav kódu: `main` `92317ff2` (po PR #199); register: 21. 10. 2026 + PR #193. Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách 127–138 (čísla 173–186) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).
 
-**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. Čísla nálezov sú stabilné, nikdy sa nemenia ani nepoužívajú znova; nový nález dostane číslo 187. Aktuálne je v zozname 186 nálezov.
+**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. Čísla nálezov sú stabilné, nikdy sa nemenia ani nepoužívajú znova; nový nález dostane číslo 189. Aktuálne je v zozname 188 nálezov.
 
 ## V skratke
 
-- Nálezy 1–186: hotové 47, zatvorené 4, informačné 20; otvorené: **HNEĎ 3**, **PRED NASADENÍM 21**, **PO NASADENÍ 91**.
+- Nálezy 1–188: hotové 48 (z toho 1 čaká na zlúčenie), zatvorené 4, informačné 20; otvorené: **HNEĎ 3**, **PRED NASADENÍM 21**, **PO NASADENÍ 92**.
 - Z pôvodných 101 otvorených položiek je dnes otvorených 101 (13 pred nasadením, 88 po nasadení, 0 hneď). Pri vzniku dokumentu (26. 10. 2026) nebola žiadna z nich kritická.
-- **Hneď** (časť 3): 173 – stráže E2E; 183 – zraniteľné knižnice (backend); 184 – zraniteľné knižnice (frontend).
+- **Hneď** (časť 3): 183 – zraniteľné knižnice (backend); 184 – zraniteľné knižnice (frontend); 188 – náhodne padajúci test (searchScrollMemory).
 - **Pred nasadením** (časť 4): 21 nálezov, 20 ID z registra a 16 úloh na prípravu nasadenia. Odporúčané poradie je v časti 2.
-- **Po nasadení** (časť 5): 91 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
+- **Po nasadení** (časť 5): 92 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
 - **Rozhodnutia** (časť 6): čaká 11 z 11; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.
 - **Hosting** nového servera sa rieši až keď bude aplikácia hotová (Railway ostáva na testy); odporúčanie je v prílohe C.
 
@@ -49,19 +49,20 @@ Pravidlá práce: každá oprava ide na novú očíslovanú vetvu z `main`, najp
 
 ## 1. Prehľad v číslach
 
-Očíslované nálezy 1–186:
+Očíslované nálezy 1–188:
 
 | Skupina | Počet | Poznámka |
 | --- | --- | --- |
 | Hotové (zlúčené do `main`) | 47 | tabuľka v časti 7 |
+| Opravené, čaká na zlúčenie | 1 | tabuľka v časti 7 |
 | Zatvorené rozhodnutím | 4 | časť 8 |
 | Informačné bez akcie | 20 | časť 8 |
-| **HNEĎ** | 3 | časť 3 (173, 183, 184) |
+| **HNEĎ** | 3 | časť 3 (183, 184, 188) |
 | **PRED NASADENÍM** | 21 | časť 4 |
-| **PO NASADENÍ** | 91 | časť 5 |
-| **Spolu** | 186 | 172 pôvodných + 14 nových (173–186) |
+| **PO NASADENÍ** | 92 | časť 5 |
+| **Spolu** | 188 | 172 pôvodných + 16 nových (173–188) |
 
-Okrem toho (mimo číslovania 1–186):
+Okrem toho (mimo číslovania 1–188):
 
 | Zdroj | HNEĎ | PRED | PO | Zlúčené, čaká živé overenie (N16) | Zatvorené alebo pokryté nálezom |
 | --- | --- | --- | --- | --- | --- |
@@ -72,7 +73,7 @@ Okrem toho (mimo číslovania 1–186):
 
 | Vlna | Čo | Prečo v tomto poradí |
 | --- | --- | --- |
-| **0 – najprv** | 173 (stráže E2E) a rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, odstránenie allauth; `npm audit fix`) | Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód. |
+| **0 – najprv** | Rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, odstránenie allauth; `npm audit fix`) a oprava náhodne padajúceho testu 188 (len test) | Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód; a červené CI bez príčiny prestane zdržiavať zlúčenia. |
 | **1 – základ, kým sa aplikácia dokončuje** | Veľké skoky verzií z 183 a 184 (Django 5.2 LTS, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…) | Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy. |
 | **2 – viditeľné chyby a overenia (iPhone a mobil)** | Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92), Upozornenia na zmazaný obsah (74), Žiadosti (17), Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03 | To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone. |
 | **3 – texty a súkromie** | 120, 175, 176, 177, APP-03, 186 (a podľa R2 poradie jazykov) | Závisí od toho, ktoré jazyky budú pri štarte (R2). |
@@ -81,13 +82,13 @@ Okrem toho (mimo číslovania 1–186):
 
 ## 3. HNEĎ
 
-3 riadky: 173, 183, 184.
+3 riadky: 183, 184, 188.
 
 ### Spoľahlivosť CI a testov
 
 | Č. | Čo | Poznámka / prečo | Dopad · Zl. |
 | --- | --- | --- | --- |
-| 173 | Staršie E2E stráže zápisov nemusia fungovať: service worker preposiela volania `/api/` cez vlastný fetch, takže `page.route` ich nevidí a stráž ticho zlyhá. | Nové špecy majú `test.use({ serviceWorkers: 'block' })`. Zo 20 špecov s `route(...)` ho 14 nemá (napr. `offer-watch-card-actions`, `search-mobile-cards`, `search-diagnostics`). Časť z nich beží len proti podvrhnutej doméne (napr. `feed-cleanup`) a tam je to v poriadku; treba prejsť jednotlivo, ktoré bežia proti reálnej aplikácii, a doplniť blokovanie. Overiť na produkčnom builde (v dev serveri sa service worker neregistruje, preto to nikto nezistil). Skupina HNEĎ, lebo stráž chráni dáta pred nechceným zápisom a zlyhá ticho: E2E bežia proti Railway (pravidlo v `.cursor/rules/svaply.mdc`) a po štarte by sa omyl mohol dotknúť aj ostrej prevádzky (N4). | stredný · S |
+| 188 | `searchScrollMemory.test.ts:220–227` („rejects expired records and future timestamps“) občas zlyhá bez zmeny kódu: test si prečíta `Date.now()` skôr, než `rememberSearchScroll()` zapíše záznam s vlastným `Date.now()`. Ak medzi oboma čítaniami uplynú aspoň 2 ms, záznam po posune hodín o `TTL + 1` ešte neplatí za expirovaný a `readSearchScroll` ho vráti. | Overené: s oneskorením 0 a 1 ms test prejde, s 2 ms a viac zlyhá. Meranie v jsdom (3000 volaní): oneskorenie aspoň 2 ms nastalo pri 0,23 % volaní na nevyťaženom stroji a pri približne 1,9 % pri zaťažených jadrách (6 vlákien na 4 jadrách); pri overovaní vetvy 140 zlyhal raz zo 4 celých behov Jestu. Chyba je len v teste, aplikácia je v poriadku. Súrodenecké testy (`searchScrollMemory.test.ts:381`, `searchScrollMemory.refresh.test.ts:81`) čítajú `now` až po zápise, takže sú v poriadku. Oprava: čítať `now` až po `rememberSearchScroll()` alebo hodiny pred zápisom zafixovať cez `jest.spyOn(Date, 'now')`. Kým nie je opravené, červené CI s týmto testom nie je chyba pull requestu a stačí job spustiť znova. | stredný · S |
 
 ### Bezpečnosť závislostí
 
@@ -221,7 +222,7 @@ Okrem toho (mimo číslovania 1–186):
 
 ## 5. PO NASADENÍ
 
-101 riadkov v 16 skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.
+102 riadkov v 17 skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.
 
 ### Pravdepodobne už vyriešené
 
@@ -332,6 +333,12 @@ Okrem toho (mimo číslovania 1–186):
 | --- | --- | --- | --- |
 | 181 | Upozornenia: WebKit scroll anchoring v zozname (vedľajší nález zo série Upozornenia). | Overiť na iPhone po ďalšom nasadení. | nízky · S |
 
+### Service worker a PWA
+
+| Č. | Čo | Poznámka / prečo | Dopad · Zl. |
+| --- | --- | --- | --- |
+| 187 | `public/sw.js`: vetvy `respondWith(fetch(request))` pre `/api/*`, dokumenty a `/_next/` len znovu vydajú tú istú požiadavku (bez cache a bez offline náhrady). Sú zbytočné a robia `page.route` v Playwrighte slepým (príčina nálezu 173). | Overené v Chromiu na produkčnom builde: keď worker tieto požiadavky nevybavuje, `page.route` funguje aj s aktívnym workerom. Lokálne meranie nepreukázalo rozdiel v latencii (medián 5,8 ms s workerom, 4,6 ms bez). Zmena `sw.js` je produkčná (PWA, iPhone), preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: 'block'` v špecoch nebolo nutné (poistka `E2eServiceWorker.guard.test.ts` by sa upravila). | nízky · M |
+
 ### Vyhľadávanie a Sledovania
 
 | Č. | Čo | Poznámka / prečo | Dopad · Zl. |
@@ -424,7 +431,7 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 
 ## 7. Hotové
 
-47 položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.
+48 položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.
 
 | PR | Vetva | Položky |
 | --- | --- | --- |
@@ -437,6 +444,7 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 | #196 | 136 | 162, 163, 164 |
 | #197 | 137 | 171, 172 |
 | #198 | 138 | 154, 165, 166 (+ „a ďalší (N)“ a hlášky pri Obľúbených) |
+| PR čaká | 140 | 173 |
 
 Séria Upozornenia (nečíslované nálezy): #187 riadky upozornení na mobile majú 72 px ako riadky konverzácií, #188 dlhé slová sa zalamujú a obnovenie drží načítané dávky, #189 chyba „Zobraziť ďalšie“ sa ukáže pri tlačidle, #190 scroll desktopového panela neodpojí aplikáciu od okna, #192 realtime resync pri návrate / pripojení / online + polling 30 s (nad 90 načítaných vypnutý), #194 nekonečný scroll s kostrami a opakovaním s odstupom. PR #191 (vetva `134-diag`) je len diagnostika a nesmie sa zlúčiť (nález 182).
 
@@ -491,6 +499,7 @@ Všetky hotové položky:
 | 170 | HOTOVÉ (#182): pole vyhľadávania v zozname Správ sa na mobile scrolluje spolu s prepínačom a tlačidlom skupiny. |
 | 171 | HOTOVÉ (#197): klik na autora karty zhody v Sledovaniach otvorí profil aj pri stojacej stránke toho istého profilu (PC). |
 | 172 | HOTOVÉ (#197): po zablokovaní a z chybovej obrazovky profilu sa zobrazí Nástenka, nie zablokovaný profil. |
+| 173 | HOTOVÉ: E2E špecy, ktoré strážia zápisy alebo podvrhujú sieť cez `page.route`, blokujú service worker (`serviceWorkers: 'block'`); nové špecy stráži Jest poistka `E2eServiceWorker.guard.test.ts`. Overené v Chromiu na produkčnom builde (Playwright 1.63): bez bloku strážca zápis 1,5 s po načítaní nezachytí. |
 
 ## 8. Zatvorené a informačné (bez akcie)
 
@@ -582,7 +591,7 @@ Zlúčené PR podľa histórie `main`: #168 (OW-01, OW-02), #172 (OW-10, OW-12, 
 Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 - **Po každom novom nálezi alebo oprave** sa dokument aktualizuje v tej istej vetve, v ktorej sa zmena robí: nález = nový riadok, oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.
-- **Čísla:** nový nález dostane ďalšie voľné číslo (187); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
+- **Čísla:** nový nález dostane ďalšie voľné číslo (189); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
 - **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `register.py`, `stav.py`), spustiť z koreňa repozitára `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.
 - **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `stav.DONE_SINCE` (číslo vetvy, PR keď je známe, `zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali.
 - **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
@@ -594,6 +603,7 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 | Dátum | Zmena |
 | --- | --- |
+| 26. 10. 2026 | Nález 173 opravený na vetve 140 (čaká na zlúčenie): 13 špecov s `page.route` a `feed-cleanup` blokuje service worker a Jest poistka to stráži pre nové špecy. Spresnenie: v Playwrighte 1.63 zachytáva `context.route` v Chromiu aj požiadavky workera, takže blok sa vyžaduje len pri `page.route` (`google-login-completion` sa nemenilo). Nové nálezy 187 (`public/sw.js`) a 188 (náhodne padajúci test `searchScrollMemory`, zistený pri celom behu Jestu). |
 | 26. 10. 2026 | Prvé vydanie v repozitári. Zlúčený zoznam nálezov 1–186 (pôvodný zoznam 1–172, nové nálezy 173–186, register OW- / TEST-), úlohy N1–N16 a rozhodnutia R1–R11. Podľa spresnenia používateľa sa hosting na novom serveri rieši až po dokončení aplikácie (Railway ostáva na testy), preto N1–N3 nie sú v skupine HNEĎ. |
 
 ## Príloha A: kontrola úplnosti
@@ -601,8 +611,8 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 Generátor pri zostavení overil:
 
 - pôvodný zoznam má presne čísla 1–172 raz (47 + 4 + 20 + 101 = 172); všetky pôvodne otvorené sú buď roztriedené, alebo zapísané ako opravené;
-- nové nálezy majú súvislé čísla 173–186;
-- súčet skupín 47 + 0 + 4 + 20 + 3 + 21 + 91 = **186**;
+- nové nálezy majú súvislé čísla 173–188;
+- súčet skupín 47 + 1 + 4 + 20 + 3 + 21 + 92 = **188**;
 - všetkých 68 ID z registra je zaradených práve v jednej skupine (otvorené / čaká živé overenie / zatvorené / pokryté nálezom); žiadne nechýba a žiadne nie je dvakrát;
 - úlohy N1–N16 a rozhodnutia R1–R11 majú súvislé čísla; vlny v časti 2 spomínajú len otvorené položky.
 

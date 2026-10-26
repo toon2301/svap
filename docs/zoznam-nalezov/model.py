@@ -34,7 +34,8 @@ PORADIE_BALIKOV = {
     A: [
         'Pravdepodobne už vyriešené', 'Funkcie – väčšie balíky', 'Navigácia – scroll', 'Navigácia – drobnosti', 'Zvýraznenie ponuky',
         'Údaje a cache', 'Profil a identita', 'Mazanie ponuky', 'Výkon a plynulosť', 'Výkon (memoizácia)', 'Prístupnosť',
-        'iPhone overenia', 'iPhone a WebSocket', 'Vyhľadávanie a Sledovania', 'Upratovanie a architektúra', 'Nástroje a testy',
+        'iPhone overenia', 'iPhone a WebSocket', 'Service worker a PWA', 'Vyhľadávanie a Sledovania', 'Upratovanie a architektúra',
+        'Nástroje a testy',
     ],
 }
 

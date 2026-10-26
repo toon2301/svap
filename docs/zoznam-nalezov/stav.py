@@ -7,12 +7,17 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='26. 10. 2026',
-    kod='`main` `d4207583` (po PR #198)',
+    kod='`main` `92317ff2` (po PR #199)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('26. 10. 2026',
+     'Nález 173 opravený na vetve 140 (čaká na zlúčenie): 13 špecov s `page.route` a `feed-cleanup` blokuje service worker a Jest poistka to stráži '
+     'pre nové špecy. Spresnenie: v Playwrighte 1.63 zachytáva `context.route` v Chromiu aj požiadavky workera, takže blok sa vyžaduje len pri '
+     '`page.route` (`google-login-completion` sa nemenilo). Nové nálezy 187 (`public/sw.js`) a 188 (náhodne padajúci test '
+     '`searchScrollMemory`, zistený pri celom behu Jestu).'),
     ('26. 10. 2026',
      'Prvé vydanie v repozitári. Zlúčený zoznam nálezov 1–186 (pôvodný zoznam 1–172, nové nálezy 173–186, register OW- / TEST-), '
      'úlohy N1–N16 a rozhodnutia R1–R11. Podľa spresnenia používateľa sa hosting na novom serveri rieši až po dokončení aplikácie '
@@ -21,7 +26,12 @@ ZMENY = [
 
 # Nálezy opravené po prvom vydaní. Pri oprave sa položka odstráni z `ORIG_OPEN` / `NEW_ITEMS` a pridá sa sem:
 #   dict(n=173, text='HOTOVÉ: čo sa opravilo', vetva='140', pr='#199' alebo None, zlucene=True alebo False)
-DONE_SINCE = []
+DONE_SINCE = [
+    dict(n=173, vetva='140', pr=None, zlucene=False,
+         text='HOTOVÉ: E2E špecy, ktoré strážia zápisy alebo podvrhujú sieť cez `page.route`, blokujú service worker (`serviceWorkers: \'block\'`); '
+              'nové špecy stráži Jest poistka `E2eServiceWorker.guard.test.ts`. Overené v Chromiu na produkčnom builde (Playwright 1.63): '
+              'bez bloku strážca zápis 1,5 s po načítaní nezachytí.'),
+]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
 DONE_PR_TABLE = [
@@ -49,10 +59,11 @@ SERIA_UPOZORNENIA = (
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
     dict(vlna='0 – najprv',
-         co='173 (stráže E2E) a rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, '
-            'python-dotenv, bleach, odstránenie allauth; `npm audit fix`)',
-         preco='Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
-         polozky=['173', '183', '184']),
+         co='Rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
+            'odstránenie allauth; `npm audit fix`) a oprava náhodne padajúceho testu 188 (len test)',
+         preco='Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód; a červené CI bez príčiny '
+               'prestane zdržiavať zlúčenia.',
+         polozky=['183', '184', '188']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík '
             '„Spoľahlivosť CI a testov“ (31, TEST-…)',

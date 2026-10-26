@@ -11,6 +11,11 @@ import {
 // Real production GET fixtures only; no Like/request/message/profile/hint writes or new test content.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(`Search mobile-card parity – ${theme}`, () => {
     let attemptedWrites: string[];

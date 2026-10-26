@@ -9,6 +9,11 @@ const SEARCH_PATH = '/api/auth/dashboard/search/';
 // Genuine Railway responses only. No content creation, Like, hint, profile, or messaging writes.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 function isSearchRequest(request: Request): boolean {
   return request.method() === 'GET' && new URL(request.url()).pathname === SEARCH_PATH;
 }

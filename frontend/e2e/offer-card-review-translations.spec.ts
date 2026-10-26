@@ -6,6 +6,11 @@ import { requireCompletedOwnCardHint } from './support/offer-card-readonly';
 // Reuse owned cards and completed flip hints; never create content, click Like, or complete a server-side hint.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 const TRANSLATIONS = [
   { locale: 'sk', ratings: 'Hodnotenia', allReviews: 'Všetky recenzie' },
   { locale: 'cs', ratings: 'Hodnocení', allReviews: 'Všechny recenze' },

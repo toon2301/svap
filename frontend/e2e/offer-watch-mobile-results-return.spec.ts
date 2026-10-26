@@ -7,6 +7,12 @@ const WATCH_API = /\/api\/auth\/offer-watches\//;
 
 // Only navigation and unsubmitted forms. Block unexpected writes rather than altering test content.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 let attemptedWrites: string[] = [];
 
 /** Open real mobile results guidance and then the existing management screen. */

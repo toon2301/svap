@@ -6,6 +6,11 @@ import { requireCompletedOwnCardHint } from './support/offer-card-readonly';
 // Expected labels are independent of the message dictionaries, so an incorrect translation cannot pass.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 for (const { locale, likeLabel } of [
   { locale: 'pl', likeLabel: 'Lubię to' },
   { locale: 'cs', likeLabel: 'Líbí se mi to' },

@@ -9,15 +9,6 @@ kľúča `pkg` patrí do balíka „Príprava ostrého nasadenia“. Voliteľný
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
 
 NEW_ITEMS = [
-    dict(n=173, bucket=H, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='stráže E2E',
-         what='Staršie E2E stráže zápisov nemusia fungovať: service worker preposiela volania `/api/` cez vlastný fetch, '
-              'takže `page.route` ich nevidí a stráž ticho zlyhá.',
-         note='Nové špecy majú `test.use({ serviceWorkers: \'block\' })`. Zo 20 špecov s `route(...)` ho 14 nemá (napr. `offer-watch-card-actions`, '
-              '`search-mobile-cards`, `search-diagnostics`). Časť z nich beží len proti podvrhnutej doméne (napr. `feed-cleanup`) a tam je to v poriadku; '
-              'treba prejsť jednotlivo, ktoré bežia proti reálnej aplikácii, a doplniť blokovanie. Overiť na produkčnom builde (v dev serveri sa '
-              'service worker neregistruje, preto to nikto nezistil). Skupina HNEĎ, lebo stráž chráni dáta pred nechceným zápisom a zlyhá ticho: '
-              'E2E bežia proti Railway (pravidlo v `.cursor/rules/svaply.mdc`) a po štarte by sa omyl mohol dotknúť aj ostrej prevádzky (N4).',
-         dec=None, src='vetva 137'),
     dict(n=174, bucket=P, imp=N, eff=ES, pkg='Navigácia a Späť',
          what='`OfferReviewsView.tsx:189`: pri upozornení na recenziu zmazanej ponuky, keď sa profil nedá otvoriť (blokovanie, súkromný '
               'profil, recenzia neexistuje), sa na Nástenku ide cez `router.push` namiesto `replace`. Pasca na tlačidle Späť: každé Späť '
@@ -98,6 +89,25 @@ NEW_ITEMS = [
          note='Pre ostrý štart v EÚ treba buď súhlas a zápis do zásad ochrany údajov, alebo zistiť krajinu na vlastnej '
               'strane (hlavička `CF-IPCountry` pri Cloudflare, GeoIP na backende). Súvisí s OW-18 (krajina vo vyhľadávaní).',
          dec='ROZHODNUTIE R7', src='kontrola 26. 10. 2026'),
+    dict(n=187, bucket=A, imp=N, eff=EM, pkg='Service worker a PWA',
+         what='`public/sw.js`: vetvy `respondWith(fetch(request))` pre `/api/*`, dokumenty a `/_next/` len znovu vydajú tú istú požiadavku '
+              '(bez cache a bez offline náhrady). Sú zbytočné a robia `page.route` v Playwrighte slepým (príčina nálezu 173).',
+         note='Overené v Chromiu na produkčnom builde: keď worker tieto požiadavky nevybavuje, `page.route` funguje aj s aktívnym workerom. '
+              'Lokálne meranie nepreukázalo rozdiel v latencii (medián 5,8 ms s workerom, 4,6 ms bez). Zmena `sw.js` je produkčná (PWA, iPhone), '
+              'preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
+              '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila).',
+         dec=None, src='vetva 140'),
+    dict(n=188, bucket=H, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='náhodne padajúci test (searchScrollMemory)',
+         what='`searchScrollMemory.test.ts:220–227` („rejects expired records and future timestamps“) občas zlyhá bez zmeny kódu: test si prečíta '
+              '`Date.now()` skôr, než `rememberSearchScroll()` zapíše záznam s vlastným `Date.now()`. Ak medzi oboma čítaniami uplynú aspoň 2 ms, '
+              'záznam po posune hodín o `TTL + 1` ešte neplatí za expirovaný a `readSearchScroll` ho vráti.',
+         note='Overené: s oneskorením 0 a 1 ms test prejde, s 2 ms a viac zlyhá. Meranie v jsdom (3000 volaní): oneskorenie aspoň 2 ms nastalo pri '
+              '0,23 % volaní na nevyťaženom stroji a pri približne 1,9 % pri zaťažených jadrách (6 vlákien na 4 jadrách); pri overovaní vetvy 140 '
+              'zlyhal raz zo 4 celých behov Jestu. Chyba je len v teste, aplikácia je v poriadku. Súrodenecké testy (`searchScrollMemory.test.ts:381`, '
+              '`searchScrollMemory.refresh.test.ts:81`) čítajú `now` až po zápise, takže sú v poriadku. Oprava: čítať `now` až po '
+              '`rememberSearchScroll()` alebo hodiny pred zápisom zafixovať cez `jest.spyOn(Date, \'now\')`. Kým nie je opravené, červené CI s týmto '
+              'testom nie je chyba pull requestu a stačí job spustiť znova.',
+         dec=None, src='vetva 140'),
 ]
 
 NTASKS = [

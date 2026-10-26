@@ -6,6 +6,10 @@ import { cleanupFeedPosts, takeCreatedPost, uniqueRunMarker } from './support/fe
 // Prechádza tým istým sledom ako testy zdieľania: vytvorenie → registrácia
 // na upratanie → tvrdenia o odpovedi → upratanie vo finally.
 
+// Worker sa tu nenačíta (stránka je podvrhnutá na fiktívnej doméne), blokuje sa len formálne: každý spec, ktorý
+// používa `route`, blokuje service worker a drží to Jest test E2eServiceWorker.guard.test.ts.
+test.use({ serviceWorkers: 'block' });
+
 const APP = 'https://app.test';
 const MARKER = 'regresia 1';
 

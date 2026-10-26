@@ -12,6 +12,11 @@ import {
 // Actual Railway GET responses only: no replacement search data or persistent content writes.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 /** Traverse the real Tab order from navigation into results, not just the first unrelated sidebar button. */
 async function expectClosedPanelKeyboardIsolation(page: Page): Promise<void> {
   await sideNav(page, 'Vyhľadávanie').focus();
