@@ -36,7 +36,7 @@ test.afterEach(() => {
   expect(guard.attempted, 'Test zablokovania nesmie odoslať žiaden zápis na server').toEqual([]);
 });
 
-test('blocking from a profile opened from Favorites shows the feed, and Back never shows the blocked profile', async ({
+test('blocking from a profile opened from Favorites shows the feed, and Back or Forward right after it never show the blocked profile', async ({
   page,
   isMobile,
 }) => {
@@ -64,8 +64,10 @@ test('blocking from a profile opened from Favorites shows the feed, and Back nev
   await expectFavoritesList(page, favorite);
   await press(favoriteName(page, favorite), isMobile);
 
+  // Menu v hornej lište mobilu je viditeľné skôr, než sa profil načíta (vtedy ťuk nič neotvorí):
+  // počká sa na hotový profil.
   const sendMessage = page.getByRole('button', { name: 'Poslať správu' });
-  await expect(page.locator('button[aria-label="Menu"]:visible').first()).toBeVisible();
+  await expect(sendMessage).toBeVisible();
   await press(page.locator('button[aria-label="Menu"]:visible').first(), isMobile);
   await press(page.getByRole('button', { name: 'Zablokovať' }).first(), isMobile);
   await press(page.getByRole('alertdialog').getByRole('button', { name: 'Zablokovať' }), isMobile);
@@ -75,9 +77,15 @@ test('blocking from a profile opened from Favorites shows the feed, and Back nev
   await expect.poll(() => pathOf(page), { message: 'Adresa nie je Nástenka' }).toBe('/dashboard');
   expect(simulatedBlocks, 'Simulované zablokovanie sa malo vybaviť práve raz').toHaveLength(1);
 
-  // Späť v prehliadači nikdy nevráti profil zablokovaného.
+  // Späť a Dopredu hneď po zablokovaní nikdy nevrátia profil zablokovaného: prepísaný záznam aj
+  // pridaný záznam Nástenky majú adresu /dashboard (kontrola adresy a feedu je deterministická,
+  // samotné „profil nie je vidieť“ by prešlo ešte pred jeho načítaním).
   await page.goBack();
+  await expect.poll(() => pathOf(page), { message: 'Späť: adresa nie je Nástenka' }).toBe('/dashboard');
+  await expect(page.getByTestId('feed-list')).toBeVisible();
   await expect(sendMessage, 'Späť vrátilo profil zablokovaného').toHaveCount(0);
   await page.goForward();
+  await expect.poll(() => pathOf(page), { message: 'Dopredu: adresa nie je Nástenka' }).toBe('/dashboard');
+  await expect(page.getByTestId('feed-list')).toBeVisible();
   await expect(sendMessage, 'Dopredu vrátilo profil zablokovaného').toHaveCount(0);
 });

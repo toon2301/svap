@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { MAIN, pathOf, sideNav } from './support/dashboard';
+import { readWatches } from './support/offer-watch';
 import { RESULTS_PANEL } from './support/offer-watch-results';
 
 // Sledovania → hlavička autora karty zhody (nález 171). Klik musí otvoriť profil, aj keď Dashboard
@@ -81,6 +82,10 @@ test.describe('desktop', () => {
     page,
   }) => {
     test.setTimeout(120_000);
+
+    // 0. Bez uloženého sledovania aplikácia žiadne neotvorí (parameter `watch` sa nenastaví): preskočí sa.
+    await page.goto('/dashboard/settings/watches');
+    test.skip((await readWatches(page)).length === 0, 'Účet nemá uložené sledovanie.');
 
     // 1. Zistí sa, ktoré sledovanie aplikácia otvorí z ľavého menu a kto je autor jeho prvej karty s adresou.
     await page.goto('/dashboard');
