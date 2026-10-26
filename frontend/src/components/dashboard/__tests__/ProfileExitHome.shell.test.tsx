@@ -17,6 +17,9 @@ import type ModuleRouter from '../ModuleRouter';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider, __resetAuthBootstrapSnapshotForTests } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { peekFeedReturn, saveFeedReturn } from '../modules/feed/feedReturnState';
+import type { FeedPost } from '@/lib/feedApi';
+import { setCurrentAccountId } from '@/lib/currentAccount';
 import type { User } from '@/types';
 
 type ModuleRouterProps = ComponentProps<typeof ModuleRouter>;
@@ -211,6 +214,7 @@ beforeEach(() => {
   mockRouter.push.mockReset(); // Next router nič nezmení – Dashboard sa nenamountuje znova
   mockRouter.replace.mockReset();
   __resetAuthBootstrapSnapshotForTests();
+  setCurrentAccountId(null);
   localStorage.clear();
   sessionStorage.clear();
   mockRouterProps = null;
@@ -262,21 +266,46 @@ describe('Profil otvorený udalosťou → odchod na Nástenku, keď router nezme
     await openForeignProfileFromHome();
     const replaceSpy = jest.spyOn(window.history, 'replaceState');
     const pushSpy = jest.spyOn(window.history, 'pushState');
+    try {
+      fireEvent.click(await screen.findByRole('button', { name: 'block profile' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Zablokovať' }));
+      await waitFor(() => expect(routerProps().activeModule).toBe('home'));
+
+      const replaced = replaceSpy.mock.calls.findIndex(([, , url]) => url === '/dashboard');
+      const pushed = pushSpy.mock.calls.findIndex(([, , url]) => url === '/dashboard');
+      expect(replaced).toBeGreaterThanOrEqual(0);
+      expect(replaceSpy.mock.calls[replaced][0]).toBeNull();
+      expect(pushed).toBeGreaterThanOrEqual(0);
+      expect(replaceSpy.mock.invocationCallOrder[replaced]).toBeLessThan(
+        pushSpy.mock.invocationCallOrder[pushed],
+      );
+    } finally {
+      replaceSpy.mockRestore();
+      pushSpy.mockRestore();
+    }
+  });
+
+  it('po zablokovaní sa zapamätaná Nástenka s príspevkami zablokovaného zahodí (neobnoví sa)', async () => {
+    (api.get as jest.Mock).mockResolvedValue({
+      data: { id: 7, slug: 'jana', first_name: 'Jana', last_name: 'N', user_type: 'individual' },
+    });
+    await openForeignProfileFromHome();
+    setCurrentAccountId(1); // snímka patrí prihlásenému účtu (Auth je v tomto teste zamknutý)
+    // Snímka z kliku na autora príspevku na Nástenke (PC): s ňou by Domov obnovil feed aj s príspevkami
+    // práve zablokovaného používateľa.
+    saveFeedReturn({
+      posts: [{ id: 501, author: { id: 7 } } as unknown as FeedPost],
+      nextUrl: null,
+      scrollTop: 600,
+      entry: 'other-profile',
+    });
+    expect(peekFeedReturn()).not.toBeNull();
 
     fireEvent.click(await screen.findByRole('button', { name: 'block profile' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Zablokovať' }));
-    await waitFor(() => expect(routerProps().activeModule).toBe('home'));
 
-    const replaced = replaceSpy.mock.calls.findIndex(([, , url]) => url === '/dashboard');
-    const pushed = pushSpy.mock.calls.findIndex(([, , url]) => url === '/dashboard');
-    expect(replaced).toBeGreaterThanOrEqual(0);
-    expect(replaceSpy.mock.calls[replaced][0]).toBeNull();
-    expect(pushed).toBeGreaterThanOrEqual(0);
-    expect(replaceSpy.mock.invocationCallOrder[replaced]).toBeLessThan(
-      pushSpy.mock.invocationCallOrder[pushed],
-    );
-    replaceSpy.mockRestore();
-    pushSpy.mockRestore();
+    await waitFor(() => expect(routerProps().activeModule).toBe('home'));
+    expect(peekFeedReturn()).toBeNull();
   });
 
   it('profil otvorený so zvýraznením ponuky odíde na čistú adresu /dashboard', async () => {
@@ -301,10 +330,12 @@ describe('Profil otvorený udalosťou → odchod na Nástenku, keď router nezme
         if (url === '/dashboard') throw new DOMException('denied', 'SecurityError');
         original(state, unused, url);
       });
+    try {
+      fireEvent.click(await screen.findByRole('button', { name: 'Späť na nástenku' }));
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Späť na nástenku' }));
-
-    await waitFor(() => expect(routerProps().activeModule).toBe('home'));
-    replaceSpy.mockRestore();
+      await waitFor(() => expect(routerProps().activeModule).toBe('home'));
+    } finally {
+      replaceSpy.mockRestore();
+    }
   });
 });

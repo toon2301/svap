@@ -16,6 +16,7 @@ import { BlockUserConfirmDialog } from '../profile/BlockUserConfirmDialog';
 import { useBlockUserAction } from '../profile/useBlockUserAction';
 import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
 import { requestFeedHomeNavigation } from '../feed/feedHomeNavigation';
+import { clearFeedReturn } from '../feed/feedReturnState';
 import { adoptProfileOrigin } from '../profile/profileOriginHistory';
 import { getProfileAvatarUrl } from './foreignProfileHelpers';
 import { useForeignProfileActions } from './useForeignProfileActions';
@@ -112,6 +113,9 @@ export function SearchUserProfileModule({
 
   const handleBlocked = React.useCallback(() => {
     removeTargetFromClientState();
+    // Zapamätaná Nástenka (na PC ju Domov z cudzieho profilu obnovuje) nesie príspevky práve
+    // zablokovaného používateľa; po zablokovaní sa preto zahodí a Nástenka sa načíta čerstvá.
+    clearFeedReturn();
     goHome();
   }, [goHome, removeTargetFromClientState]);
 
