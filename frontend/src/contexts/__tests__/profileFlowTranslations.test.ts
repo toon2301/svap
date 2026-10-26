@@ -50,3 +50,49 @@ describe('„Dokončené spolupráce“ na profile (nález 165)', () => {
     expect(text(locale, KEY).toLowerCase()).toContain(text(locale, 'requests.title').toLowerCase());
   });
 });
+
+// Texty, ktoré používateľ vidí pri cudzom profile. Cudzí jazyk nesmie mať slovenskú hodnotu.
+// Výnimky sú len texty, ktoré sú v danom jazyku správne rovnaké ako po slovensky (názov aplikácie,
+// „QR kód“), nie zabudnutý preklad.
+function expectNotSlovakCopies(keys: readonly string[], sameAsSlovak: Record<string, readonly string[]>) {
+  const pairs = foreignLocales.flatMap((locale) =>
+    keys
+      .filter((key) => !sameAsSlovak[locale]?.includes(key))
+      .map((key) => [locale, key] as const),
+  );
+  it.each(pairs)('%s: %s nie je slovenský text', (locale, key) => {
+    expect(text(locale, key).trim()).not.toBe('');
+    expect(text(locale, key)).not.toBe(text('sk', key));
+  });
+}
+
+describe('Menu cudzieho profilu a okná, ktoré otvára (nález 165)', () => {
+  expectNotSlovakCopies(
+    [
+      'profile.block',
+      'profile.report',
+      'profile.share',
+      'profile.sendMessage',
+      'profile.reportProfile',
+      'profile.reported',
+      'profile.reportError',
+      'profile.contactEmail',
+      'profile.copyEmail',
+      'profile.emailCopied',
+      'profile.emailCopyFailed',
+      'profile.profileShareEmailSubject',
+      'profile.qrCodeAlt',
+      'profile.shareQrCode',
+      'common.optional',
+      'common.sending',
+      'common.submit',
+      'reviews.reportDescription',
+      'reviews.reportDescriptionPlaceholder',
+      'reviews.reportReason',
+    ],
+    {
+      cs: ['profile.profileShareEmailSubject', 'profile.qrCodeAlt', 'profile.shareQrCode'],
+      pl: ['profile.profileShareEmailSubject'],
+    },
+  );
+});
