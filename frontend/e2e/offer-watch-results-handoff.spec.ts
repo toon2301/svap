@@ -6,6 +6,12 @@ const WATCH_API = /\/api\/auth\/offer-watches\//;
 
 // Real Railway UI only. Never save forms, seed records, or expose account data in attachments.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 let attemptedWrites: string[] = [];
 
 /** Use an existing watch, if available, so the desktop results selection retains the exact source URL. */

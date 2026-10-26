@@ -11,6 +11,12 @@ import { RESULTS_PANEL, openResults } from './support/offer-watch-results';
 // Run against Railway after deployment. Reuse existing watches/cards; never click Like or save content.
 // No personal response bodies, credentials, trace, screenshots, or videos are attached to reports.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 let attemptedWrites: string[] = [];
 
 for (const theme of ['light', 'dark'] as const) {

@@ -11,6 +11,11 @@ import { pathOf } from './support/dashboard';
 // Do not create test accounts, modify cards, or publish profile/hint changes.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 const RAILWAY_ORIGIN = 'https://stunning-inspiration-svap.up.railway.app';
 const MESSAGES = { sk, cs, en, de, pl, hu };
 const EXPECTED_TITLES = {

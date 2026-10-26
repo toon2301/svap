@@ -17,6 +17,11 @@ import {
 // Railway only; genuine GET responses and reusable content, with no personal-data artifacts.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 test.describe('OW-18 independent search country and OW-19 result return position', () => {
   let attemptedWrites: string[];
 

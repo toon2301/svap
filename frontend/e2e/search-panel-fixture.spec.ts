@@ -6,6 +6,11 @@ import { openLastAuthor, openReturnFixture, searchPanel } from './support/search
 // Real Railway GET responses and existing reusable content; no API replacement or content creation.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 const SHORT_FIXTURE_MESSAGE = 'Reusable search results must allow more than 250px of scrolling; choose a broader E2E_SEARCH_NAV_QUERY.';
 
 /** Compare the complete local scroll store without exporting account IDs, source URLs, or snapshots. */

@@ -5,6 +5,11 @@ import { measureReturn, openLastAuthor, searchPanel } from './support/search-pan
 // Real Railway responses and reusable results only. Never record personal-data artifacts or write content.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
+// `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker
+// v tomto špecu blokuje.
+test.use({ serviceWorkers: 'block' });
+
 type PreviewDestination = 'users' | 'offers';
 type PreviewProbe = {
   firstCommittedTop: number | null;
