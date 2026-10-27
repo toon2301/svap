@@ -189,16 +189,6 @@ NEW_ITEMS = [
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
               'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
-    dict(n=200, bucket=P, imp=S_, eff=ES, pkg='Zdieľanie a obrázky', kratko='HEIC padá na validácii, kým sa nezaregistruje pillow-heif',
-         what='HEIC fotka prejde backendom len v procese gunicornu, ktorý už predtým spracoval iný obrázok: podpora HEIC (`register_heif_opener`) sa '
-              'registruje lenivo až vo funkciách spracovania (`strip_image_metadata`, miniatúry, moderácia), no validácia `ImageField` v DRF '
-              '(`SendMessageSerializer`, `UserProfileSerializer`) beží skôr. V čerstvom procese HEIC zlyhá s „Uploadujte prosím obrázok…“ (400). '
-              'Podľa správ WebKitu posiela iPhone pri `accept="image/*"` originál HEIC (zmena z jari 2024).',
-         note='Overené 27. 10. v čerstvom procese so starými aj novými knižnicami (Pillow 10.1.0 s pillow-heif 0.22.0 aj Pillow 13.0.0 s 1.8.1): '
-              'rovnaký výsledok, po `register_heif_opener()` HEIC prejde, takže nejde o regresiu z PR #203. Backend testy to nezachytia, lebo si '
-              'opener registrujú samy (`generate_heic_file`). Oprava: registrácia pri štarte (`AppConfig.ready`) + test v čerstvom procese. '
-              'Kým platí nález 197, v praxi sa neprejaví (fotka z iPhonu na server nedorazí).',
-         dec=None, src='vetva 144'),
     dict(n=201, bucket=P, imp=S_, eff=ES, pkg='Profil a identita', kratko='avatar: výber súboru cez vstup mimo DOM (iOS)',
          what='Zmena avatara cez „Zmeniť fotku“ otvára výber súboru cez `document.createElement(\'input\')`, ktorý sa nikdy nepripojí do DOM '
               '(`ProfileAvatarActionsModal.tsx:41` – používa ho profil aj mobilná úprava profilu, `useProfileEditFormDesktop.ts:216`; rovnaký vzor '
@@ -237,6 +227,15 @@ NEW_ITEMS = [
               'sú falošný poplach. Skript nie je súčasťou CI. Oprava: doplniť tri kľúče do všetkých šiestich jazykov, použiť '
               '`profile.photoRemovedError` a vylúčiť test zo skriptu.',
          dec=None, src='vetva 144'),
+    dict(n=205, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='päť lenivých registrácií HEIC je po nálezu 200 nadbytočných',
+         what='`register_heif_opener()` sa volá lenivo v piatich moduloch spracovania obrázkov: `swaply/image_metadata.py`, '
+              '`swaply/staged_image_moderation.py`, `swaply/tasks/offer_images.py`, `portfolio/image_processing.py` a '
+              '`messaging/services/image_thumbnails.py`. Od opravy 200 sa podpora HEIC registruje raz pri štarte aplikácie '
+              '(`swaply/heif_support.py`), takže tieto volania sú nadbytočné.',
+         note='Neškodné (registrácia je opakovateľná), preto sa v oprave 200 nemenili, aby zmena ostala malá a ľahko vrátiteľná. Upratanie: '
+              'volania zmazať alebo nahradiť jedným `register_heif_support()`; prirodzene to ide spolu s nálezom 193 (`Image.open` bez `formats=`), '
+              'ktorý tie isté miesta tiež rieši.',
+         dec=None, src='vetva 146'),
 ]
 
 NTASKS = [
