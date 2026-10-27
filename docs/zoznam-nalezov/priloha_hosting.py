@@ -26,8 +26,8 @@ def priloha_c(d):
         ['Monitoring', 'Sentry (backend aj frontend)', 'Chýba `global-error` (nález 33).'],
         ['Ďalšie', 'Web Push (VAPID), prihlásenie cez Google (vlastný kód `google_oauth_simple.py`), reCAPTCHA, MFA (pyotp), '
                    'HEIC obrázky (`pillow-heif`)',
-         'Všetky kľúče nové pre novú doménu (N5). `django-allauth` je pripnutý, no vypnutý.'],
-        ['CI', 'GitHub Actions: Jest, build, pytest', 'Nasadenie dnes rieši Railway auto-deploy mimo repozitára.'],
+         'Všetky kľúče nové pre novú doménu (N5). `django-allauth` sa už nepoužíva (odstránený na vetve 143).'],
+        ['CI', 'GitHub Actions: Jest, build, pytest (Python 3.11)', 'Nasadenie dnes rieši Railway auto-deploy mimo repozitára.'],
     ])
     d.w('`docker-compose.prod.yml` v repozitári je **zastaraný** (nemá Redis, Celery, daphne ani rozdelenie HTTP / WS), '
         'nedá sa použiť ako hotový predpis nasadenia. Skutočný predpis je `railway.json`, `backend/Dockerfile` a `backend/start-*.sh`.')

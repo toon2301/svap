@@ -7,14 +7,20 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='27. 10. 2026',
-    kod='`main` `64667e02` (po PR #201)',
+    kod='`main` `1100c9cc` (po PR #202)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('27. 10. 2026',
-     'Vetva 142 (čaká na zlúčenie): časť 184a nálezu 184 – odstránený nepoužívaný `next-intl`, `npm audit fix` a vyššie dolné hranice '
+     'Vetva 143 (čaká na zlúčenie): časť 183a nálezu 183 – rýchle upgrady backendu (Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
+     'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30), odstránený nepoužívaný `django-allauth` '
+     'aj jeho mŕtve nastavenia a CI na Pythone 3.11 (záznamy `pip-audit` 191 → 22; zostáva Django 5.2, Twisted, protobuf, pytest). Rozhodnutie R8 '
+     'je zodpovedané. Vetva 142 je zlúčená (PR #202). Nové nálezy 193 (`Image.open` bez `formats=`), 194 (CI nekontroluje zraniteľné závislosti) '
+     'a 195 (`.coveragerc`).'),
+    ('27. 10. 2026',
+     'Vetva 142 (zlúčená, PR #202): časť 184a nálezu 184 – odstránený nepoužívaný `next-intl`, `npm audit fix` a vyššie dolné hranice '
      '`axios`, `@sentry/nextjs`, `js-cookie` (zraniteľné balíky frontendu 19 → 2; zostáva `next` 14 → 16 a vnorený `postcss`), import '
      '`withSentryConfig` z `@sentry/nextjs/config`. Nález 188 je zlúčený (PR #201). Nový nález 192 (zbytočné súbory v repozitári). '
      'Úvod dokumentu podľa CodeRabbit (PR #201): rozsah čísel nálezov sa dopočítava z dát a už nezostarne.'),
@@ -73,14 +79,14 @@ SERIA_UPOZORNENIA = (
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
     dict(vlna='0 – najprv',
-         co='Rýchle upgrady backendových knižníc z 183 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, '
-            'bleach, odstránenie allauth). Frontendové rýchle opravy z 184 (`npm audit fix`, odstránený `next-intl`) sú hotové na vetve 142; '
-            'z 184 zostáva `next` 14 → 16 (vlna 1)',
-         preco='Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
+         co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
+            'Django 4.2.30, odstránenie allauth) je hotový na vetve 143 a čaká na zlúčenie, frontend (`npm audit fix`, odstránený `next-intl`) je '
+            'zlúčený (vetva 142). Zvyšok 183 a 184 (Django 5.2, protobuf, `next` 14 → 16) je vo vlne 1',
+         preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
-         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík '
-            '„Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190)',
+         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), '
+            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
          polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
@@ -145,7 +151,10 @@ DECISIONS = [
          otazka='V akom poradí robiť upgrady backendu?',
          odporucanie='Najprv rýchle upgrady bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach) a '
                      'odstránenie nepoužívaného allauth, potom samostatný balík Django 5.2 LTS. Každý na vlastnej vetve s celými backendovými testami.',
-         kedy='Pred prácou na 183.'),
+         kedy='Pred prácou na 183.',
+         odpoved='Podľa odporúčania: najprv rýchle upgrady a odstránenie allauth (183a, vetva 143), potom samostatný balík Django 5.2 LTS (183b); '
+                 'každý na vlastnej vetve s celými backendovými testami.',
+         datum='27. 10. 2026'),
     dict(id='R9', tema='Next.js 14 → 15 / 16 (184)',
          otazka='Povýšiť Next pred štartom a kde bude frontend bežať?',
          odporucanie='Samostatný balík pred štartom (pravdepodobne aj React 19, viď 153). Frontend nechať na vlastnom serveri a zraniteľnosť '
