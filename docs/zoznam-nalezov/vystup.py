@@ -104,8 +104,8 @@ def _uvod(d, m):
     d.w('> Hlavný zoznam nálezov projektu. Súbor je **generovaný** z dát v tomto priečinku (`build.py`) a neupravuje sa ručne: pozri časť 10.')
     d.w()
     d.w(f'Posledná aktualizácia: **{stav.STAV["datum"]}**. Stav kódu: {stav.STAV["kod"]}; register: {stav.STAV["register"]}. '
-        'Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách 127–138 '
-        '(čísla 173–186) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom '
+        'Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách od 127 '
+        f'(čísla 173–{m.posledne_cislo}) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom '
         'týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).')
     d.w()
     d.w('**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. '

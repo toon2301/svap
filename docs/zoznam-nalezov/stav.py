@@ -6,13 +6,18 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='26. 10. 2026',
-    kod='`main` `7d3d653f` (po PR #200)',
+    datum='27. 10. 2026',
+    kod='`main` `64667e02` (po PR #201)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('27. 10. 2026',
+     'Vetva 142 (čaká na zlúčenie): časť 184a nálezu 184 – odstránený nepoužívaný `next-intl`, `npm audit fix` a vyššie dolné hranice '
+     '`axios`, `@sentry/nextjs`, `js-cookie` (zraniteľné balíky frontendu 19 → 2; zostáva `next` 14 → 16 a vnorený `postcss`), import '
+     '`withSentryConfig` z `@sentry/nextjs/config`. Nález 188 je zlúčený (PR #201). Nový nález 192 (zbytočné súbory v repozitári). '
+     'Úvod dokumentu podľa CodeRabbit (PR #201): rozsah čísel nálezov sa dopočítava z dát a už nezostarne.'),
     ('26. 10. 2026',
      'Nález 188 opravený na vetve 141 (čaká na zlúčenie): v teste `searchScrollMemory` sú hodiny pevné už pri zápise záznamu '
      '(starý variant padal v 0,4 % pokusov, pod záťažou v 2,6 %, nový v 0 z 12 000). Nález 173 je zlúčený (PR #200). Z celého behu E2E '
@@ -36,7 +41,7 @@ DONE_SINCE = [
          text='HOTOVÉ: E2E špecy, ktoré strážia zápisy alebo podvrhujú sieť cez `page.route`, blokujú service worker (`serviceWorkers: \'block\'`); '
               'nové špecy stráži Jest poistka `E2eServiceWorker.guard.test.ts`. Overené v Chromiu na produkčnom builde (Playwright 1.63): '
               'bez bloku strážca zápis 1,5 s po načítaní nezachytí.'),
-    dict(n=188, vetva='141', pr=None, zlucene=False,
+    dict(n=188, vetva='141', pr='#201', zlucene=True,
          text='HOTOVÉ: test „rejects expired records and future timestamps“ v `searchScrollMemory.test.ts` zafixuje hodiny pred zápisom '
               'záznamu, takže už nepadá náhodne. Starý variant: 16 pádov zo 4 000 bez záťaže a približne 104 zo 4 000 pod záťažou, '
               'nový 0 z 12 000. Mutácie expirácie a odmietania budúcich časov test stále zabijú.'),
@@ -68,8 +73,9 @@ SERIA_UPOZORNENIA = (
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
     dict(vlna='0 – najprv',
-         co='Rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
-            'odstránenie allauth; `npm audit fix`)',
+         co='Rýchle upgrady backendových knižníc z 183 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, '
+            'bleach, odstránenie allauth). Frontendové rýchle opravy z 184 (`npm audit fix`, odstránený `next-intl`) sú hotové na vetve 142; '
+            'z 184 zostáva `next` 14 → 16 (vlna 1)',
          preco='Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',

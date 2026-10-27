@@ -68,13 +68,16 @@ NEW_ITEMS = [
               'Pillow spracúva cudzie obrázky a gunicorn obsluhuje požiadavky z internetu, preto sa neodporúča ísť s týmito verziami ostro. '
               'Spustené 26. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb.',
          dec='ROZHODNUTIE R8', src='kontrola 26. 10. 2026'),
-    dict(n=184, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľné knižnice (frontend)',
-         what='Frontend: `npm audit --omit=dev` hlási 19 balíkov (2 kritické, 10 vysokých): `next` 14.2.35 (DoS pri '
-              'Image Optimizer a pri RSC, pri vlastnom hostingu), `@sentry/nextjs` (obchádzanie middleware cez tunel), '
-              '`axios` (SSRF, obídenie overenia), `follow-redirects`, `js-cookie`, `next-intl` a ďalšie.',
-         note='Oprava `next` znamená skok 14 → 16 (nástroj navrhuje 16.4.3; veľký balík, pravdepodobne aj React 19, súvisí s 153). '
-              'Väčšina ostatných ide bez veľkého rizika cez `npm audit fix`. Robiť skôr ako neskôr (viď 183). '
-              'Súvisí s hostingom (vlastný hosting vs Vercel): R9. Spustené 26. 10. 2026.',
+    dict(n=184, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľný `next` (frontend)',
+         what='Frontend: `npm audit --omit=dev` hlásil 19 balíkov (2 kritické, 10 vysokých). Časť 184a (vetva 142, 27. 10.) je hotová: '
+              'odstránený nepoužívaný `next-intl`, `npm audit fix` opravil `axios`, `@sentry/nextjs`, `js-cookie`, `follow-redirects` a ďalšie '
+              'tranzitívne balíky (19 → 2). Zostáva `next` 14.2.35 (kritický, 24 hlásení) a vnorený `postcss`, ktorý má `next` 14 pripnutý.',
+         note='Zvyšok sa dá opraviť len skokom `next` 14 → 16 (nástroj navrhuje 16.4.3; veľký balík, pravdepodobne aj React 19, súvisí s 153); '
+              'rovnaký skok potrebuje aj `eslint-config-next` (dev). Dopad pre túto aplikáciu (odhad agenta, nie overené zneužitím): nepoužíva '
+              'Server Actions (`\'use server\'` sa nenašlo), `middleware.ts` len nastavuje `Cache-Control`, `images.remotePatterns` pustí len '
+              'localhost, Sentry `tunnelRoute` nie je nastavený. Relevantné zostávajú hlásenia o DoS pri Server Components, o request smuggling '
+              'v `rewrites` (`/api/*` ide cez rewrites na backend) a o Image Optimizeri. Robiť skôr ako neskôr (viď 183). '
+              'Súvisí s hostingom (vlastný hosting vs Vercel): R9. Spustené 26. 10. 2026, časť 184a 27. 10. 2026.',
          dec='ROZHODNUTIE R9', src='kontrola 26. 10. 2026'),
     dict(n=185, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
          what='`SECURITY_AUDIT_REPORT.md` v koreni repozitára je z roku 2024 (názov Swaply) a vedie R1–R7 ako „neriešené“, '
@@ -122,6 +125,12 @@ NEW_ITEMS = [
          note='Zmerané 26. 10. v Chromiu na produkčnom builde. Dotýka sa len starých odkazov s číselným ID (route ich podporuje kvôli '
               'spätnej kompatibilite). Nízka priorita; vyplynulo z nálezu 189.',
          dec=None, src='vetva 141'),
+    dict(n=192, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         what='V repozitári sú sledované dva zbytočné súbory: `frontend/backend/.coverage` (53 KB, databáza pokrytia Pythonu v priečinku '
+              'frontendu) a `frontend/profilecard-test.txt` (15 KB, výstup PowerShellu z behu `jest --testPathPattern=ProfileCard`).',
+         note='Oba pridal merge PR #127 (24. 9.). Koreňový `.gitignore` ignoruje len `backend/.coverage`, nie `frontend/backend/.coverage`. '
+              'Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa.',
+         dec=None, src='vetva 142'),
 ]
 
 NTASKS = [

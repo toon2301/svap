@@ -2,17 +2,17 @@
 
 > Hlavný zoznam nálezov projektu. Súbor je **generovaný** z dát v tomto priečinku (`build.py`) a neupravuje sa ručne: pozri časť 10.
 
-Posledná aktualizácia: **26. 10. 2026**. Stav kódu: `main` `7d3d653f` (po PR #200); register: 21. 10. 2026 + PR #193. Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách 127–138 (čísla 173–186) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).
+Posledná aktualizácia: **27. 10. 2026**. Stav kódu: `main` `64667e02` (po PR #201); register: 21. 10. 2026 + PR #193. Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách od 127 (čísla 173–192) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).
 
-**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. Čísla nálezov sú stabilné, nikdy sa nemenia ani nepoužívajú znova; nový nález dostane číslo 192. Aktuálne je v zozname 191 nálezov.
+**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. Čísla nálezov sú stabilné, nikdy sa nemenia ani nepoužívajú znova; nový nález dostane číslo 193. Aktuálne je v zozname 192 nálezov.
 
 ## V skratke
 
-- Nálezy 1–191: hotové 49 (z toho 1 čaká na zlúčenie), zatvorené 4, informačné 20; otvorené: **HNEĎ 2**, **PRED NASADENÍM 23**, **PO NASADENÍ 93**.
+- Nálezy 1–192: hotové 49, zatvorené 4, informačné 20; otvorené: **HNEĎ 2**, **PRED NASADENÍM 23**, **PO NASADENÍ 94**.
 - Z pôvodných 101 otvorených položiek je dnes otvorených 101 (13 pred nasadením, 88 po nasadení, 0 hneď). Pri vzniku dokumentu (26. 10. 2026) nebola žiadna z nich kritická.
-- **Hneď** (časť 3): 183 – zraniteľné knižnice (backend); 184 – zraniteľné knižnice (frontend).
+- **Hneď** (časť 3): 183 – zraniteľné knižnice (backend); 184 – zraniteľný `next` (frontend).
 - **Pred nasadením** (časť 4): 23 nálezov, 20 ID z registra a 16 úloh na prípravu nasadenia. Odporúčané poradie je v časti 2.
-- **Po nasadení** (časť 5): 93 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
+- **Po nasadení** (časť 5): 94 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
 - **Rozhodnutia** (časť 6): čaká 11 z 11; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.
 - **Hosting** nového servera sa rieši až keď bude aplikácia hotová (Railway ostáva na testy); odporúčanie je v prílohe C.
 
@@ -49,20 +49,19 @@ Pravidlá práce: každá oprava ide na novú očíslovanú vetvu z `main`, najp
 
 ## 1. Prehľad v číslach
 
-Očíslované nálezy 1–191:
+Očíslované nálezy 1–192:
 
 | Skupina | Počet | Poznámka |
 | --- | --- | --- |
-| Hotové (zlúčené do `main`) | 48 | tabuľka v časti 7 |
-| Opravené, čaká na zlúčenie | 1 | tabuľka v časti 7 |
+| Hotové (zlúčené do `main`) | 49 | tabuľka v časti 7 |
 | Zatvorené rozhodnutím | 4 | časť 8 |
 | Informačné bez akcie | 20 | časť 8 |
 | **HNEĎ** | 2 | časť 3 (183, 184) |
 | **PRED NASADENÍM** | 23 | časť 4 |
-| **PO NASADENÍ** | 93 | časť 5 |
-| **Spolu** | 191 | 172 pôvodných + 19 nových (173–191) |
+| **PO NASADENÍ** | 94 | časť 5 |
+| **Spolu** | 192 | 172 pôvodných + 20 nových (173–192) |
 
-Okrem toho (mimo číslovania 1–191):
+Okrem toho (mimo číslovania 1–192):
 
 | Zdroj | HNEĎ | PRED | PO | Zlúčené, čaká živé overenie (N16) | Zatvorené alebo pokryté nálezom |
 | --- | --- | --- | --- | --- | --- |
@@ -73,7 +72,7 @@ Okrem toho (mimo číslovania 1–191):
 
 | Vlna | Čo | Prečo v tomto poradí |
 | --- | --- | --- |
-| **0 – najprv** | Rýchle upgrady knižníc z 183 a 184 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, odstránenie allauth; `npm audit fix`) | Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód. |
+| **0 – najprv** | Rýchle upgrady backendových knižníc z 183 bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, odstránenie allauth). Frontendové rýchle opravy z 184 (`npm audit fix`, odstránený `next-intl`) sú hotové na vetve 142; z 184 zostáva `next` 14 → 16 (vlna 1) | Malé a bezpečné, hotové za pár dní. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód. |
 | **1 – základ, kým sa aplikácia dokončuje** | Veľké skoky verzií z 183 a 184 (Django 5.2 LTS, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190) | Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy. |
 | **2 – viditeľné chyby a overenia (iPhone a mobil)** | Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92), Upozornenia na zmazaný obsah (74), Žiadosti (17), Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03 | To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone. |
 | **3 – texty a súkromie** | 120, 175, 176, 177, APP-03, 186 (a podľa R2 poradie jazykov) | Závisí od toho, ktoré jazyky budú pri štarte (R2). |
@@ -89,7 +88,7 @@ Okrem toho (mimo číslovania 1–191):
 | Č. | Čo | Poznámka / prečo | Dopad · Zl. |
 | --- | --- | --- | --- |
 | 183 | Backend: `pip-audit` hlási 180 záznamov (asi 113 jedinečných hlásení, zvyšok sú aliasy) v 10 z 23 pripnutých balíkov: Django 4.2.7 (85), Pillow 10.1.0 (62), DRF 3.14.0 (7), allauth 0.57.0 (6; nepoužíva sa, viď nižšie), requests 2.31.0 (6), daphne 4.1.2 (4), gunicorn 21.2.0 (4), simplejwt 5.3.0 (2), python-dotenv (2), bleach (2). | Django 4.2 LTS už nemá podporu (skončila 04/2026); cieľ je Django 5.2 LTS. Odporúčaný postup: (1) rýchle upgrady bez veľkého rizika (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach), (2) samostatný balík Django 4.2 → 5.2 (veľký skok, vlastné testy). `django-allauth` je pripnutý v `requirements.txt`, ale v `INSTALLED_APPS` je vypnutý a prihlásenie cez Google rieši vlastný kód (`google_oauth_simple.py`): stačí ho odstrániť (po kontrole, že ho nič neimportuje), nie povyšovať. Robiť skôr ako neskôr: každá nová funkcia veľký skok verzie predražuje. Registrové pravidlo: bezpečnosť má prednosť. Pillow spracúva cudzie obrázky a gunicorn obsluhuje požiadavky z internetu, preto sa neodporúča ísť s týmito verziami ostro. Spustené 26. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb. **Rozhodnutie R8** (časť 6). | vysoký · L |
-| 184 | Frontend: `npm audit --omit=dev` hlási 19 balíkov (2 kritické, 10 vysokých): `next` 14.2.35 (DoS pri Image Optimizer a pri RSC, pri vlastnom hostingu), `@sentry/nextjs` (obchádzanie middleware cez tunel), `axios` (SSRF, obídenie overenia), `follow-redirects`, `js-cookie`, `next-intl` a ďalšie. | Oprava `next` znamená skok 14 → 16 (nástroj navrhuje 16.4.3; veľký balík, pravdepodobne aj React 19, súvisí s 153). Väčšina ostatných ide bez veľkého rizika cez `npm audit fix`. Robiť skôr ako neskôr (viď 183). Súvisí s hostingom (vlastný hosting vs Vercel): R9. Spustené 26. 10. 2026. **Rozhodnutie R9** (časť 6). | vysoký · L |
+| 184 | Frontend: `npm audit --omit=dev` hlásil 19 balíkov (2 kritické, 10 vysokých). Časť 184a (vetva 142, 27. 10.) je hotová: odstránený nepoužívaný `next-intl`, `npm audit fix` opravil `axios`, `@sentry/nextjs`, `js-cookie`, `follow-redirects` a ďalšie tranzitívne balíky (19 → 2). Zostáva `next` 14.2.35 (kritický, 24 hlásení) a vnorený `postcss`, ktorý má `next` 14 pripnutý. | Zvyšok sa dá opraviť len skokom `next` 14 → 16 (nástroj navrhuje 16.4.3; veľký balík, pravdepodobne aj React 19, súvisí s 153); rovnaký skok potrebuje aj `eslint-config-next` (dev). Dopad pre túto aplikáciu (odhad agenta, nie overené zneužitím): nepoužíva Server Actions (`'use server'` sa nenašlo), `middleware.ts` len nastavuje `Cache-Control`, `images.remotePatterns` pustí len localhost, Sentry `tunnelRoute` nie je nastavený. Relevantné zostávajú hlásenia o DoS pri Server Components, o request smuggling v `rewrites` (`/api/*` ide cez rewrites na backend) a o Image Optimizeri. Robiť skôr ako neskôr (viď 183). Súvisí s hostingom (vlastný hosting vs Vercel): R9. Spustené 26. 10. 2026, časť 184a 27. 10. 2026. **Rozhodnutie R9** (časť 6). | vysoký · L |
 
 ## 4. PRED NASADENÍM
 
@@ -218,7 +217,7 @@ Okrem toho (mimo číslovania 1–191):
 
 ## 5. PO NASADENÍ
 
-103 riadkov v 17 skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.
+104 riadkov v 17 skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.
 
 ### Pravdepodobne už vyriešené
 
@@ -381,6 +380,7 @@ Okrem toho (mimo číslovania 1–191):
 | 152 | Audit: `Sidebar.tsx` a `RightSidebar.tsx` (ďalší používatelia `AnimatePresence`) môžu držať globálne efekty počas výstupu. |  | nízky · M |
 | 153 | Poznámka k upgradu: `inert` je nastavené imperatívne; pri Reacte 19 použiť prop. |  | nízky · S |
 | 156 | Pozorovania pre všetky riadky Nastavení (panel sa vytvára nanovo, zástupná obrazovka pri Späť, stmievač blokuje ťuknutia, fokus). |  | nízky · M |
+| 192 | V repozitári sú sledované dva zbytočné súbory: `frontend/backend/.coverage` (53 KB, databáza pokrytia Pythonu v priečinku frontendu) a `frontend/profilecard-test.txt` (15 KB, výstup PowerShellu z behu `jest --testPathPattern=ProfileCard`). | Oba pridal merge PR #127 (24. 9.). Koreňový `.gitignore` ignoruje len `backend/.coverage`, nie `frontend/backend/.coverage`. Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa. | nízky · S |
 | TECH-01…11 | Nadlimitné súbory (>500 riadkov): `DashboardContent` 711, `lib/api.ts` 907, `useDashboardState` 921, `app/search/page.tsx` 648, `useDashboardNavigation` 514, `ProfileOffersSection` 1108, `ProfileOffersMobileSection` 945, `SkillDescriptionModal` 502, `useSkillsDescriptionScreenState` 638, `DashboardContentView.test` 895 (počty riadkov z 26. 10. 2026; TECH-08 už nie je nad limitom). | Technický dlh; podľa `svaply.mdc` len nahlásiť. | nízky · L |
 
 ### Nástroje a testy
@@ -442,7 +442,7 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 | #197 | 137 | 171, 172 |
 | #198 | 138 | 154, 165, 166 (+ „a ďalší (N)“ a hlášky pri Obľúbených) |
 | #200 | 140 | 173 |
-| PR čaká | 141 | 188 |
+| #201 | 141 | 188 |
 
 Séria Upozornenia (nečíslované nálezy): #187 riadky upozornení na mobile majú 72 px ako riadky konverzácií, #188 dlhé slová sa zalamujú a obnovenie drží načítané dávky, #189 chyba „Zobraziť ďalšie“ sa ukáže pri tlačidle, #190 scroll desktopového panela neodpojí aplikáciu od okna, #192 realtime resync pri návrate / pripojení / online + polling 30 s (nad 90 načítaných vypnutý), #194 nekonečný scroll s kostrami a opakovaním s odstupom. PR #191 (vetva `134-diag`) je len diagnostika a nesmie sa zlúčiť (nález 182).
 
@@ -590,7 +590,7 @@ Zlúčené PR podľa histórie `main`: #168 (OW-01, OW-02), #172 (OW-10, OW-12, 
 Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 - **Po každom novom nálezi alebo oprave** sa dokument aktualizuje v tej istej vetve, v ktorej sa zmena robí: nález = nový riadok, oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.
-- **Čísla:** nový nález dostane ďalšie voľné číslo (192); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
+- **Čísla:** nový nález dostane ďalšie voľné číslo (193); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
 - **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `register.py`, `stav.py`), spustiť z koreňa repozitára `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.
 - **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `stav.DONE_SINCE` (číslo vetvy, PR keď je známe, `zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali.
 - **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
@@ -602,6 +602,7 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 | Dátum | Zmena |
 | --- | --- |
+| 27. 10. 2026 | Vetva 142 (čaká na zlúčenie): časť 184a nálezu 184 – odstránený nepoužívaný `next-intl`, `npm audit fix` a vyššie dolné hranice `axios`, `@sentry/nextjs`, `js-cookie` (zraniteľné balíky frontendu 19 → 2; zostáva `next` 14 → 16 a vnorený `postcss`), import `withSentryConfig` z `@sentry/nextjs/config`. Nález 188 je zlúčený (PR #201). Nový nález 192 (zbytočné súbory v repozitári). Úvod dokumentu podľa CodeRabbit (PR #201): rozsah čísel nálezov sa dopočítava z dát a už nezostarne. |
 | 26. 10. 2026 | Nález 188 opravený na vetve 141 (čaká na zlúčenie): v teste `searchScrollMemory` sú hodiny pevné už pri zápise záznamu (starý variant padal v 0,4 % pokusov, pod záťažou v 2,6 %, nový v 0 z 12 000). Nález 173 je zlúčený (PR #200). Z celého behu E2E na vetve 140 (30 pádov) sú nové nálezy 189–191; ostatné pády sú už zapísané (TEST-17, TEST-12) alebo čakajú na overenie (jazykový test pri zmene jazyka vo webkit-mobile). |
 | 26. 10. 2026 | Nález 173 opravený na vetve 140 (čaká na zlúčenie): 13 špecov s `page.route` a `feed-cleanup` blokuje service worker a Jest poistka to stráži pre nové špecy. Spresnenie: v Playwrighte 1.63 zachytáva `context.route` v Chromiu aj požiadavky workera, takže blok sa vyžaduje len pri `page.route` (`google-login-completion` sa nemenilo). Nové nálezy 187 (`public/sw.js`) a 188 (náhodne padajúci test `searchScrollMemory`, zistený pri celom behu Jestu). |
 | 26. 10. 2026 | Prvé vydanie v repozitári. Zlúčený zoznam nálezov 1–186 (pôvodný zoznam 1–172, nové nálezy 173–186, register OW- / TEST-), úlohy N1–N16 a rozhodnutia R1–R11. Podľa spresnenia používateľa sa hosting na novom serveri rieši až po dokončení aplikácie (Railway ostáva na testy), preto N1–N3 nie sú v skupine HNEĎ. |
@@ -611,8 +612,8 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 Generátor pri zostavení overil:
 
 - pôvodný zoznam má presne čísla 1–172 raz (47 + 4 + 20 + 101 = 172); všetky pôvodne otvorené sú buď roztriedené, alebo zapísané ako opravené;
-- nové nálezy majú súvislé čísla 173–191;
-- súčet skupín 48 + 1 + 4 + 20 + 2 + 23 + 93 = **191**;
+- nové nálezy majú súvislé čísla 173–192;
+- súčet skupín 49 + 0 + 4 + 20 + 2 + 23 + 94 = **192**;
 - všetkých 68 ID z registra je zaradených práve v jednej skupine (otvorené / čaká živé overenie / zatvorené / pokryté nálezom); žiadne nechýba a žiadne nie je dvakrát;
 - úlohy N1–N16 a rozhodnutia R1–R11 majú súvislé čísla; vlny v časti 2 spomínajú len otvorené položky.
 
