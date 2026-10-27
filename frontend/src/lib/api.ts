@@ -1,6 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { fetchCsrfToken, getCsrfToken } from '@/utils/csrf';
 import { buildApiUrl, getConfiguredApiUrl } from '@/lib/apiUrl';
+import { installFormDataFileMaterializer } from '@/lib/materializeUploadFiles';
 
 type TraceMeta = Record<string, unknown>;
 type RefreshResult = 'refreshed' | 'invalid_session' | 'transient_failure';
@@ -608,6 +609,10 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// iOS/WebKit posiela `File` z inputu s prázdnym telom; súbory sa preto pred odoslaním kopírujú do pamäte.
+// Registruje sa až po hlavnom request interceptore (testy ho berú ako `handlers[0]`).
+installFormDataFileMaterializer(api);
 
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
