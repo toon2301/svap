@@ -189,16 +189,6 @@ NEW_ITEMS = [
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
               'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
-    dict(n=201, bucket=P, imp=S_, eff=ES, pkg='Profil a identita', kratko='avatar: výber súboru cez vstup mimo DOM (iOS)',
-         what='Zmena avatara cez „Zmeniť fotku“ otvára výber súboru cez `document.createElement(\'input\')`, ktorý sa nikdy nepripojí do DOM '
-              '(`ProfileAvatarActionsModal.tsx:41` – používa ho profil aj mobilná úprava profilu, `useProfileEditFormDesktop.ts:216`; rovnaký vzor '
-              'majú aj nepoužité súbory `ProfileAvatar.tsx` a `profile-edit/shared/AvatarActionsModal.tsx`). WebKit na iOS môže takýto element '
-              'počas otvoreného výberu odpratať a udalosť `change` sa nikdy nespustí (WebKit bug 201289): po výbere fotky sa nestane nič a '
-              'nezobrazí sa ani chyba.',
-         note='Hypotéza z manuálneho testu na iPhone: modal „Zmeniť fotku“ nezobrazí žiadny toast, kým ikona fotoaparátu na avatare bez fotky '
-              '(vstup je v DOM) požiadavku odošle a skončí chybou nahrávania (nález 197). Neoverené na zariadení. Oprava: spoločný pomocník, '
-              'ktorý vstup počas výberu pripojí do DOM a po `change` / `cancel` ho odstráni.',
-         dec=None, src='vetva 144'),
     dict(n=202, bucket=P, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: beh dlhší než 15 minút stratí prihlásenie',
          what='`frontend/e2e/global-setup.ts` sa prihlási raz a všetky testy štartujú z uloženého stavu (`e2e/.auth/user.json`), no access token žije '
               '15 minút a refresh token sa po prvom použití zablokuje (`ROTATE_REFRESH_TOKENS`, `BLACKLIST_AFTER_ROTATION`). Beh dlhší než približne '
@@ -236,6 +226,16 @@ NEW_ITEMS = [
               'volania zmazať alebo nahradiť jedným `register_heif_support()`; prirodzene to ide spolu s nálezom 193 (`Image.open` bez `formats=`), '
               'ktorý tie isté miesta tiež rieši.',
          dec=None, src='vetva 146'),
+    dict(n=206, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy', kratko='ESLint hlási 681 chýb v 104 súboroch',
+         what='`npx eslint src` hlási 681 chýb a 31 varovaní v 124 z 1 255 súborov frontendu (104 súborov s chybou, z toho 51 testov a 53 produkčných). '
+              'Najviac je `no-unused-vars` (359), `no-explicit-any` (213), `no-require-imports` (66) a `no-unused-expressions` (29, najmä modaly '
+              'úpravy profilu `profile-edit/modals/*`). Deväť chýb `react-hooks/rules-of-hooks` je v `messages/ConversationMessageRow.tsx` '
+              '(riadky 173–233: hooky stoja za predčasným `return` pre skupinové pozvánky a systémové správy).',
+         note='Zmerané 27. 10. na vetve 147. Rozširuje nález 178 (ten opisuje jediný súbor) a súvisí s TOOL-01 (CI lint nespúšťa). '
+              '`ConversationMessageRow` dnes nepadá, lebo typ správy sa pri tom istom `id` nemení; ak by sa niekedy zmenil (napr. skupinová '
+              'pozvánka na obyčajnú správu), React hodí „Rendered more hooks than during the previous render“. Odporúčanie: najprv hooky '
+              'pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory).',
+         dec=None, src='vetva 147'),
 ]
 
 NTASKS = [

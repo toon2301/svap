@@ -14,6 +14,9 @@ STAV = dict(
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('27. 10. 2026',
+     'Vetva 147 (čaká na zlúčenie, nadväzuje na vetvu 146): nález 201 – výber fotky avatara cez vstup, ktorý žije v DOM (iOS). Nový nález 206 '
+     '(ESLint hlási 681 chýb v 104 súboroch frontendu, deväť z nich `rules-of-hooks` v `ConversationMessageRow.tsx`).'),
+    ('27. 10. 2026',
      'Vetva 146 (čaká na zlúčenie, nadväzuje na vetvu 145): nález 200 – HEIC z iPhonu prejde validáciou obrázka hneď od prvej požiadavky, '
      'pretože sa `pillow-heif` registruje pri štarte aplikácie. Nový nález 205 (päť lenivých registrácií HEIC je nadbytočných).'),
     ('27. 10. 2026',
@@ -92,6 +95,15 @@ DONE_SINCE = [
               'varovanie. Overené: test v čerstvom procese (pred opravou zlyhal s „Uploadujte prosím obrázok…“, po oprave prejde) a odoslanie HEIC '
               'správy cez HTTP v čerstvom procese (pred opravou 400 „Neplatné údaje“, po oprave 201 aj s miniatúrou). Päť lenivých registrácií v '
               'moduloch spracovania obrázkov sa nemenilo (nález 205).'),
+    dict(n=201, vetva='147', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na overenie na iPhone po nasadení): výber fotky avatara cez „Zmeniť fotku“ (profil aj mobilná úprava profilu) a v '
+              'desktopovom formulári úpravy profilu používal `document.createElement(\'input\')`, ktorý sa nikdy nepripojil do DOM; WebKit na iOS '
+              'takýto element po zatvorení modalu môže odpratať a `change` sa nespustí, takže sa po výbere fotky nestalo nič (ani chyba). '
+              'Nový pomocník `lib/pickImageFile.ts` drží skrytý vstup v `document.body` až do výberu alebo zrušenia a používa ho modal aj '
+              'formulár. Overené Jestom (tri mutácie testy zabijú: odpojený vstup v modale aj vo formulári a pomocník bez pripojenia do DOM). '
+              'Príčinu na iPhone som tu nemohol reprodukovať (chýba WebKit), preto ostáva overenie po nasadení. Po opravách 197 a 198 zlyhaná '
+              'zmena avatara vždy ukáže hlášku; ak by sa po výbere fotky stále nestalo vôbec nič (ani hláška), `change` sa nespúšťa z iného '
+              'dôvodu a treba ďalšie hlásenie z iPhonu.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
