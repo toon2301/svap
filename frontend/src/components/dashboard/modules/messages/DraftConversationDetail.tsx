@@ -283,6 +283,10 @@ export function DraftConversationDetail({
             'messages.acceptMessageRequestToReply',
             'Prijmite žiadosť, aby ste mohli odpovedať.',
           ),
+          emptyUploadFallback: t(
+            'messages.uploadEmpty',
+            'Fotka sa nedostala na server. Skúste ju odoslať znova.',
+          ),
         }),
       );
     } finally {

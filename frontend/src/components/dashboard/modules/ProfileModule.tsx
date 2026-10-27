@@ -105,6 +105,7 @@ type ProfileEditCloseTarget = Pick<User, 'id' | 'slug'>;
 type ProfileApiError = {
   response?: {
     data?: {
+      code?: string;
       details?: Record<string, string[]>;
       validation_errors?: Record<string, string[]>;
       message?: string;
@@ -400,11 +401,14 @@ export default function ProfileModule({
       const data = (error as ProfileApiError)?.response?.data;
       const details = data?.validation_errors ?? data?.details;
       const avatarErrors: string[] | undefined = details?.avatar;
+      // Prázdne telo požiadavky (chyba iOS/WebKit) nemá text od servera – má vlastnú preloženú hlášku.
       const message =
-        avatarErrors?.[0] ||
-        data?.message ||
-        data?.error ||
-        'Nepodarilo sa nahrať fotku. Skús to znova.';
+        data?.code === 'empty_avatar_upload'
+          ? t('profile.photoUploadEmpty', 'Fotka sa nedostala na server. Skúste ju nahrať znova.')
+          : avatarErrors?.[0] ||
+            data?.message ||
+            data?.error ||
+            t('profile.photoUploadError', 'Nepodarilo sa nahrať fotku. Skús to znova.');
       toast.error(message);
     } finally {
       endAction(actionId);

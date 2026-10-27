@@ -126,6 +126,14 @@ export function getMessagingErrorStatus(err: unknown): number | null {
   return typeof status === 'number' ? status : null;
 }
 
+/** Prvá chybová hláška pre pole `image` z `validation_errors`, alebo `null`. */
+function firstImageValidationMessage(validationErrors: { image?: unknown } | undefined): string | null {
+  const image = validationErrors?.image;
+  if (typeof image === 'string' && image.trim()) return image;
+  if (Array.isArray(image) && typeof image[0] === 'string' && image[0].trim()) return image[0];
+  return null;
+}
+
 export function getMessagingErrorMessage(
   err: unknown,
   {
@@ -135,6 +143,7 @@ export function getMessagingErrorMessage(
     recipientUnavailableFallback,
     requestPendingFallback,
     requestAcceptRequiredFallback,
+    emptyUploadFallback,
   }: {
     fallback: string;
     rateLimitFallback?: string;
@@ -142,6 +151,8 @@ export function getMessagingErrorMessage(
     recipientUnavailableFallback?: string;
     requestPendingFallback?: string;
     requestAcceptRequiredFallback?: string;
+    /** Fotka na server nedorazila (prázdne telo požiadavky, chyba iOS/WebKit). */
+    emptyUploadFallback?: string;
   },
 ): string {
   const error = err as {
@@ -152,6 +163,7 @@ export function getMessagingErrorMessage(
         message?: string;
         error?: string;
         detail?: string;
+        validation_errors?: { image?: unknown };
       };
     };
     message?: string;
@@ -168,6 +180,14 @@ export function getMessagingErrorMessage(
   // longer interact — kept deliberately neutral so it does not reveal a block.
   if (code === 'recipient_unavailable') {
     return recipientUnavailableFallback || unavailableFallback || fallback;
+  }
+  if (code === 'empty_message_upload' && emptyUploadFallback) {
+    return emptyUploadFallback;
+  }
+  // Fotku backend odmietol s konkrétnym dôvodom (veľkosť, formát…) – ukáž ho namiesto všeobecného „Neplatné údaje“.
+  const imageReason = status === 400 ? firstImageValidationMessage(error?.response?.data?.validation_errors) : null;
+  if (imageReason) {
+    return imageReason;
   }
   const responseMessage =
     (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||
