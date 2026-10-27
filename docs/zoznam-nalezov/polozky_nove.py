@@ -64,8 +64,9 @@ NEW_ITEMS = [
               'DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
-              'Čisté riešenie je 183b: samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.x (to opraví aj 3 záznamy DRF: dva sú DoS bez '
-              'prihlásenia cez hlavičku `Accept` a `charset` v `Content-Type`, tretí sa týka DRF tokenov, ktoré aplikácia nepoužíva, prihlasuje len JWT). '
+              'Čisté riešenie je 183b (pred ostrým štartom): samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.2 alebo novším (3.18.0 a 3.18.1 '
+              'ešte neopravujú nič; všetky 3 záznamy DRF majú opravu až v 3.18.2). Dva z nich sú DoS bez prihlásenia na verejných endpointoch '
+              '(hlavička `Accept` a netextový `charset` v `Content-Type`), tretí sa týka DRF tokenov, ktoré aplikácia nepoužíva, prihlasuje len JWT. '
               'Pred ním treba nastavenia `STATICFILES_STORAGE` (`static_media.py:6`, `settings_production.py:210`) a `DEFAULT_FILE_STORAGE` '
               '(`settings_production.py:228`, číta ho aj `messaging/storage.py`) presunúť do `STORAGES`, Django 5.1+ ich nepozná. '
               '183c: `google-cloud-vision` 3.4.5 → 3.16.0 kvôli protobuf (treba overiť skutočné volania SafeSearch). '
@@ -75,7 +76,7 @@ NEW_ITEMS = [
               '`backend/Dockerfile` je na 3.11 od začiatku a lokálne prostredie treba mať tiež na 3.11. Presne na 3.11: `psycopg2-binary==2.9.7` '
               'má hotové balíky najviac pre Python 3.11, takže na 3.12 a vyššom by sa musel najprv povýšiť aj on. Python 3.11 má podporu do '
               '10/2027 (Google knižnice na to už upozorňujú), prechod na 3.12+ spolu s povýšením `psycopg2-binary` preto patrí do plánu. Overené na vetve 143: celá backend sada '
-              '(1955 testov), porovnanie skutočných obrazových funkcií so starým Pillow (146 prípadov, rovnaké výsledky aj pixely), migrácie '
+              '(1955 testov, aj v CI na PR #203), porovnanie skutočných obrazových funkcií so starým Pillow (146 prípadov, rovnaké výsledky aj pixely), migrácie '
               '(nové sú len `token_blacklist.0013` a `authtoken.0004`, obe bez zmeny schémy), tokeny platia v oboch smeroch (nasadenie aj rollback). '
               'Spustené 26. 10. 2026, časť 183a 27. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb.',
          dec='ROZHODNUTIE R8', src='kontrola 26. 10. 2026'),
@@ -160,9 +161,12 @@ NEW_ITEMS = [
               '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
               'nepozorovane a odhalila ho až jednorazová kontrola 26. 10.',
          note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt` a '
-              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor na hluk: `npm audit` hlási aj '
-              'tranzitívne balíky, preto začať s prahom `high`. Po upgradoch 183a a 184a je teraz najlacnejší čas to zapnúť (nový alarm bude znamenať '
-              'skutočnú novú zraniteľnosť).',
+              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové 183b, 183c '
+              'a zvyšok 184 (`next` 14 → 16), audit hlási známe zraniteľnosti (backend 22 záznamov: Django, Twisted, DRF, protobuf, pytest; frontend `next`) pri každom '
+              'behu, takže opakované hlásenie samo o sebe neznamená novú zraniteľnosť. Workflow preto musí porovnávať výsledok so zoznamom známych '
+              'výnimiek: ID záznamov vedené v repozitári (pri `pip-audit` priamo cez `--ignore-vuln <ID>`, pri `npm audit` porovnaním s uloženým '
+              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 183b“); upozorniť má len záznam, ktorý v zozname nie je. '
+              'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
          dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          what='`backend/.coveragerc`: zoznam `omit` obsahuje päť neexistujúcich súborov (`swaply/settings_clean.py`, `swaply/migrate_api.py`, '
@@ -171,6 +175,15 @@ NEW_ITEMS = [
          note='CI beží s `--no-cov` (pokrytie sa nevynucuje), takže nič z toho nespôsobuje chybu; číslo pokrytia však o views nič nehovorí. '
               'Zistené pri odstraňovaní allauth (143), kde som z `omit` zmazal len riadky pre zmazané allauth súbory. Patrí k téme „pokrytie sa rieši '
               'samostatne“ z komentára v `deploy.yml`: treba rozhodnúť, aký prah platí a čo sa meria.',
+         dec=None, src='vetva 143'),
+    dict(n=196, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
+         what='`.github/workflows/deploy.yml`: akcie `actions/checkout@v4`, `actions/setup-node@v4` a `actions/setup-python@v4` sú staršie než verzie pre '
+              'Node.js 24 (`setup-python@v4` deklaruje `node16`, ostatné dve `node20`). GitHub ich dnes núti bežať na Node.js 24 a v logu každého behu '
+              'vypíše varovanie „Node.js 20 is deprecated“ (beh CI na PR #203, 27. 10.). CI pritom prechádza a krok `Setup Python` nezlyhal.',
+         note='Overené v `action.yml` jednotlivých tagov: `setup-python@v5` deklaruje `node20` (varovanie by zostalo), až `setup-python@v6` `node24`; '
+              '`checkout@v5` a `setup-node@v5` už `node24`. CodeRabbit (PR #203) navrhol len `setup-python@v5` s tvrdením, že krok môže zlyhať; beh CI '
+              'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
+              'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
 ]
 
