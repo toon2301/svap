@@ -59,6 +59,7 @@ import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
+import { useViewerPost } from './useViewerPost';
 import { useCardInViewport } from './useCardInViewport';
 import { formatRelativeTime } from './feedRelativeTime';
 import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
@@ -288,6 +289,8 @@ export default function FeedPostCard({
     enabled: liveImages === undefined,
   });
   const images = liveImages ?? ownImages;
+  // Prehliadač fotky dostane príspevok so živými fotkami, nie zastaranú verziu z vytvorenia (nález 199).
+  const viewerPost = useViewerPost(currentPost, images);
   const caption = currentPost.caption;
   // `is_edited` chodí LEN autorovi – cudziemu divákovi kľúč v odpovedi vôbec
   // nie je, takže `undefined` znamená „nezobrazuj", nie „neviem".
@@ -957,7 +960,7 @@ export default function FeedPostCard({
           ostatné vrstvy karty. */}
       {photoViewerIndex !== null ? (
         <FeedPhotoViewer
-          post={currentPost}
+          post={viewerPost}
           initialIndex={photoViewerIndex}
           onClose={() => setPhotoViewerIndex(null)}
           onPostUpdated={setCurrentPost}
