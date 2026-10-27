@@ -77,8 +77,6 @@ urlpatterns = [
     path("", api_root, name="root"),
     path("api/csrf-token/", get_csrf_token_view, name="api_csrf_token_alias"),
     path("api/contact/", contact_form_view, name="contact"),
-    # Django allauth URLs - DOČASNE VYPNUTÉ
-    # path('accounts/', include('allauth.urls')),
 ]
 
 # Media files: v developmente vždy; v produkcii aj keď S3 nie je nakonfigurovaný (MEDIA_URL začína /media/)

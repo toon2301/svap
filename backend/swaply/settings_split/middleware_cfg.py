@@ -8,7 +8,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    # 'allauth.account.middleware.AccountMiddleware',  # DOČASNE VYPNUTÉ
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "swaply.middleware.SecurityHeadersMiddleware",

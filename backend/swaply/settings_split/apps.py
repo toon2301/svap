@@ -17,11 +17,6 @@ INSTALLED_APPS = [
     "channels",
     "anymail",
     "django_celery_beat",
-    # Django allauth (len pre Google OAuth) - DOČASNE VYPNUTÉ
-    # 'allauth',
-    # 'allauth.account',
-    # 'allauth.socialaccount',
-    # 'allauth.socialaccount.providers.google',
     # Local apps
     "accounts",
     "messaging",
