@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { User } from '@/types';
+import { pickImageFile } from '@/lib/pickImageFile';
 
 interface UseProfileEditFormDesktopParams {
   /** Source of truth - používa sa pre UserAvatar (read-only). */
@@ -213,16 +214,8 @@ export function useProfileEditFormDesktop({
   }, [contactEmailVisible, onEditableUserUpdate]);
 
   const handlePhotoUploadClick = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = (input.files ?? [])[0];
-      if (file && onPhotoUpload) {
-        onPhotoUpload(file);
-      }
-    };
-    input.click();
+    // Vstup súboru žije v DOM, inak na iOS po výbere fotky nepríde `change` (nález 201).
+    pickImageFile((file) => onPhotoUpload?.(file));
   }, [onPhotoUpload]);
 
   const handleAvatarClick = useCallback(() => {
