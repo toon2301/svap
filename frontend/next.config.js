@@ -1,5 +1,5 @@
 const path = require('path');
-const { withSentryConfig } = require('@sentry/nextjs');
+const { withSentryConfig } = require('@sentry/nextjs/config');
 
 function normalizeOrigin(value) {
   return String(value || '').trim().replace(/\/+$/, '');
