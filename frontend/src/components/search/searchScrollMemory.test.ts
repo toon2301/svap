@@ -218,9 +218,12 @@ it('preserves a newer capture when abandoning an older one', () => {
 });
 
 it('rejects expired records and future timestamps', () => {
+  // The clock is frozen before the capture: with a live clock the record is stamped a few ms after `now`,
+  // so a shift of exactly TTL + 1 would not expire it and the test failed at random under load.
   const now = Date.now();
+  jest.spyOn(Date, 'now').mockReturnValue(now);
   rememberSearchScroll();
-  jest.spyOn(Date, 'now').mockReturnValue(now + SEARCH_SCROLL_TTL_MS + 1);
+  jest.mocked(Date.now).mockReturnValue(now + SEARCH_SCROLL_TTL_MS + 1);
   expect(readSearchScroll(105)).toBeNull();
   jest.mocked(Date.now).mockReturnValue(now - 1000);
   expect(readSearchScroll(105)).toBeNull();
