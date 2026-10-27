@@ -4,7 +4,6 @@ from .security import DEBUG
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    # 'allauth.account.auth_backends.AuthenticationBackend',  # DOČASNE VYPNUTÉ
 ]
 
 # Custom user model

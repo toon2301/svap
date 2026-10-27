@@ -27,7 +27,6 @@ omit =
     swaply/settings_parts/*
     accounts/management/*
     accounts/tests.py
-    accounts/adapters.py
     accounts/serializers.py
     accounts/consumers.py
     accounts/realtime.py
@@ -43,7 +42,6 @@ omit =
     accounts/views/google_oauth_simple.py
     accounts/views/simple_google_oauth.py
     accounts/views/oauth.py
-    accounts/views/allauth_views.py
 
 [report]
 fail_under = 94.8

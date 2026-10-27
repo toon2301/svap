@@ -56,9 +56,6 @@ known-first-party = ["accounts", "portfolio", "swaply"]
 "list_users.py" = ["E402"]
 "list_users_simple.py" = ["E402"]
 
-# Legacy script with shadowed variable (not part of runtime app path).
-"accounts/management/commands/setup_google_oauth.py" = ["F823"]
-
 # Email templates contain intentional indentation inside triple-quoted strings.
 "accounts/views/password_reset.py" = ["W291", "W293"]
 

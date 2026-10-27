@@ -1,18 +1,3 @@
-# Email templates pre allauth
-ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Svaply] "
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
-# Password reset settings
-ACCOUNT_PASSWORD_RESET_TOKEN_GENERATOR = "allauth.account.utils.default_token_generator"
-ACCOUNT_PASSWORD_RESET_TOKEN_EXPIRE_DAYS = 1
-
-# Email templates - použij Django allauth predvolené
-ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/"
-ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/dashboard/"
-
-# Frontend URL pre allauth redirecty
+# Presmerovania po prihlásení a odhlásení (Django predvolené nastavenia)
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
-ACCOUNT_LOGOUT_REDIRECT_URL = "/"

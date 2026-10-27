@@ -60,23 +60,6 @@ ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,192.168.68.103
     return True
 
 
-def install_django_allauth():
-    """Nainštaluje django-allauth"""
-    import subprocess
-    import sys
-
-    print("\n📦 Inštalujem django-allauth...")
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "django-allauth==0.57.0"]
-        )
-        print("✅ django-allauth bol nainštalovaný!")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Chyba pri inštalácii django-allauth: {e}")
-        return False
-
-
 def run_migrations():
     """Spustí Django migrácie"""
     import subprocess
@@ -93,18 +76,14 @@ def run_migrations():
 
 
 def main():
+    """Vytvorí .env s email konfiguráciou, spustí migrácie a vypíše ďalšie kroky."""
     print("🚀 Nastavenie email konfigurácie pre Swaply\n")
 
     # 1. Vytvor .env súbor
     if not create_env_file():
         return
 
-    # 2. Nainštaluj django-allauth
-    if not install_django_allauth():
-        print("❌ Nepodarilo sa nainštalovať django-allauth")
-        return
-
-    # 3. Spusti migrácie
+    # 2. Spusti migrácie
     if not run_migrations():
         print("❌ Nepodarilo sa spustiť migrácie")
         return
@@ -113,7 +92,6 @@ def main():
     print("\n📋 Ďalšie kroky:")
     print("1. Uprav .env súbor s email údajmi")
     print("2. Spusti Django server: python manage.py runserver")
-    print("3. Otestuj reset hesla na: http://localhost:8000/accounts/password/reset/")
 
 
 if __name__ == "__main__":
