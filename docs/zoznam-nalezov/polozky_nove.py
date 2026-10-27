@@ -189,16 +189,6 @@ NEW_ITEMS = [
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
               'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
-    dict(n=199, bucket=P, imp=S_, eff=ES, pkg='Zdieľanie a obrázky', kratko='Nástenka: fotka sa po vytvorení nedá otvoriť na mobile',
-         what='`FeedPostCard` podáva mobilnému prehliadaču fotky (`FeedPhotoViewer`) zastaraný príspevok: fotky, ktoré sa po vytvorení príspevku ešte '
-              'spracúvajú (`pending`), dosleduje polling len na karte (`usePendingFeedImages`), no `currentPost` ostáva so starým zoznamom bez adries. '
-              'Po ťuknutí na hotovú fotku dostane prehliadač prázdny zoznam a `ImageLightbox` sa pri prázdnom zozname sám hneď zatvorí '
-              '(`ImageLightbox.tsx:146`), takže sa na mobile „nič nestane“, kým sa feed nenačíta znova.',
-         note='Zistené manuálnym testom na iPhone po PR #203 (ťuk hneď aj po 10 s nič, po reloade funguje; nezávisí od súboru). Reprodukované Jest '
-              'testom v troch prípadoch: príspevok schválený od začiatku sa otvorí, príspevok vytvorený ako `pending` a dorovnaný pollingom sa '
-              'neotvorí, po nahradení príspevku čerstvou verziou (reload) sa otvorí. Súbory sú nezmenené od PR #127, nejde teda o regresiu z '
-              'PR #202 ani #203. Oprava: prehliadač dostane živé fotky karty (nie cez `currentPost`, aby sa nereštartoval polling).',
-         dec=None, src='vetva 144'),
     dict(n=200, bucket=P, imp=S_, eff=ES, pkg='Zdieľanie a obrázky', kratko='HEIC padá na validácii, kým sa nezaregistruje pillow-heif',
          what='HEIC fotka prejde backendom len v procese gunicornu, ktorý už predtým spracoval iný obrázok: podpora HEIC (`register_heif_opener`) sa '
               'registruje lenivo až vo funkciách spracovania (`strip_image_metadata`, miniatúry, moderácia), no validácia `ImageField` v DRF '

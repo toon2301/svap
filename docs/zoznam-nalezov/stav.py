@@ -14,6 +14,9 @@ STAV = dict(
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('27. 10. 2026',
+     'Vetva 145 (čaká na zlúčenie, nadväzuje na vetvu 144): nález 199 – mobilný prehliadač fotky na Nástenke dostane od karty príspevok '
+     's živými fotkami, takže sa po vytvorení príspevku fotka po ťuknutí otvorí aj bez opätovného načítania feedu.'),
+    ('27. 10. 2026',
      'Vetva 144 (čaká na zlúčenie): manuálne testy na iPhone (iOS 27.0.1) po PR #203 odhalili, že fotka z iPhonu príde cez `/api` na server s '
      'prázdnym telom (chyba WebKitu). Nález 197 (appka kopíruje súbory do pamäte pred odoslaním, backend stráž `swaply/empty_upload.py` a log so '
      'zariadením) a 198 (dôvod odmietnutia fotky a preložené hlášky pri nahrávaní správ a avatara). Nové nálezy 199 (Nástenka: fotka sa po '
@@ -73,6 +76,12 @@ DONE_SINCE = [
               'zlý formát, zlyhaná kontrola obsahu); `getMessagingErrorMessage` teraz ukáže dôvod z `validation_errors.image`. Fotka, ktorá na server '
               'nedorazila, má vlastné preložené hlášky (`messages.uploadEmpty`, `profile.photoUploadEmpty`) vo všetkých šiestich jazykoch a pri '
               'avatare sa namiesto doslovného textu v kóde používa existujúci preklad `profile.photoUploadError`.'),
+    dict(n=199, vetva='145', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na overenie na iPhone po nasadení): mobilný prehliadač fotky na Nástenke dostával od karty zastaraný príspevok bez '
+              'adries fotiek (fotky, ktoré sa po vytvorení príspevku ešte spracúvali, dosleduje polling len v stave karty), takže sa `ImageLightbox` '
+              'hneď po otvorení zavrel a ťuk na hotovú fotku „nič neurobil“, kým sa feed nenačítal znova. Prehliadač teraz dostane príspevok '
+              's živými fotkami karty (`feed/useViewerPost.ts`); polling sa nereštartuje a objekt sa mení len pri zmene príspevku alebo fotiek. '
+              'Overené Jestom (dva regresné testy zlyhajú, keď sa zapojenie vráti) a v Chromiu s rozmermi iPhonu na produkčnom builde.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.

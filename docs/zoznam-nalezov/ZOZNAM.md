@@ -8,10 +8,10 @@ Posledná aktualizácia: **27. 10. 2026**. Stav kódu: `main` `c776998c` (po PR 
 
 ## V skratke
 
-- Nálezy 1–204: hotové 51 (z toho 2 čaká na zlúčenie), zatvorené 4, informačné 20; otvorené: **HNEĎ 2**, **PRED NASADENÍM 31**, **PO NASADENÍ 96**.
+- Nálezy 1–204: hotové 52 (z toho 3 čaká na zlúčenie), zatvorené 4, informačné 20; otvorené: **HNEĎ 2**, **PRED NASADENÍM 30**, **PO NASADENÍ 96**.
 - Z pôvodných 101 otvorených položiek je dnes otvorených 101 (13 pred nasadením, 88 po nasadení, 0 hneď). Pri vzniku dokumentu (26. 10. 2026) nebola žiadna z nich kritická.
 - **Hneď** (časť 3): 183 – zraniteľné knižnice (backend): zostáva Django 5.2; 184 – zraniteľný `next` (frontend).
-- **Pred nasadením** (časť 4): 31 nálezov, 20 ID z registra a 16 úloh na prípravu nasadenia. Odporúčané poradie je v časti 2.
+- **Pred nasadením** (časť 4): 30 nálezov, 20 ID z registra a 16 úloh na prípravu nasadenia. Odporúčané poradie je v časti 2.
 - **Po nasadení** (časť 5): 96 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
 - **Rozhodnutia** (časť 6): čaká 10 z 11; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.
 - **Hosting** nového servera sa rieši až keď bude aplikácia hotová (Railway ostáva na testy); odporúčanie je v prílohe C.
@@ -54,11 +54,11 @@ Očíslované nálezy 1–204:
 | Skupina | Počet | Poznámka |
 | --- | --- | --- |
 | Hotové (zlúčené do `main`) | 49 | tabuľka v časti 7 |
-| Opravené, čaká na zlúčenie | 2 | tabuľka v časti 7 |
+| Opravené, čaká na zlúčenie | 3 | tabuľka v časti 7 |
 | Zatvorené rozhodnutím | 4 | časť 8 |
 | Informačné bez akcie | 20 | časť 8 |
 | **HNEĎ** | 2 | časť 3 (183, 184) |
-| **PRED NASADENÍM** | 31 | časť 4 |
+| **PRED NASADENÍM** | 30 | časť 4 |
 | **PO NASADENÍ** | 96 | časť 5 |
 | **Spolu** | 204 | 172 pôvodných + 32 nových (173–204) |
 
@@ -93,7 +93,7 @@ Okrem toho (mimo číslovania 1–204):
 
 ## 4. PRED NASADENÍM
 
-59 riadkov v 14 balíkoch (jeden riadok registra môže spájať viac ID). Balík „Príprava ostrého nasadenia“ sa robí až keď bude aplikácia hotová. Každý balík je jedna alebo dve vetvy z `main` (číslo vetvy sa pridelí pri štarte).
+58 riadkov v 14 balíkoch (jeden riadok registra môže spájať viac ID). Balík „Príprava ostrého nasadenia“ sa robí až keď bude aplikácia hotová. Každý balík je jedna alebo dve vetvy z `main` (číslo vetvy sa pridelí pri štarte).
 
 ### Bezpečnosť a produkčná odolnosť
 
@@ -147,7 +147,6 @@ Okrem toho (mimo číslovania 1–204):
 | --- | --- | --- | --- |
 | 91 | REÁLNA chyba: zdieľaná karta na Nástenke ukazuje pokazený obrázok po zmazaní pôvodnej fotky (chýba záložný obrázok a snímok je zastaraný). | Pokazený obrázok je viditeľný pre každého, kto zdieľanú kartu uvidí. Frontend oprava je malá (záložný obrázok), obnova snímku na backende je väčšia a môže prísť potom. | stredný · S |
 | 92 | iPhone: okná zdieľania sa otvárajú „posunuté“ (horná časť orezaná) – hypotéza `90vh` vs `dvh`, neoverené. | iPhone: okná zdieľania sa otvárajú orezané hore (hypotéza `90vh` vs `dvh`, neoverené). Je to prvé, čo používateľ vidí pri zdieľaní; treba overiť na zariadení. Rovnaký vzor je v 36 (lightboxy). | stredný · M |
-| 199 | `FeedPostCard` podáva mobilnému prehliadaču fotky (`FeedPhotoViewer`) zastaraný príspevok: fotky, ktoré sa po vytvorení príspevku ešte spracúvajú (`pending`), dosleduje polling len na karte (`usePendingFeedImages`), no `currentPost` ostáva so starým zoznamom bez adries. Po ťuknutí na hotovú fotku dostane prehliadač prázdny zoznam a `ImageLightbox` sa pri prázdnom zozname sám hneď zatvorí (`ImageLightbox.tsx:146`), takže sa na mobile „nič nestane“, kým sa feed nenačíta znova. | Zistené manuálnym testom na iPhone po PR #203 (ťuk hneď aj po 10 s nič, po reloade funguje; nezávisí od súboru). Reprodukované Jest testom v troch prípadoch: príspevok schválený od začiatku sa otvorí, príspevok vytvorený ako `pending` a dorovnaný pollingom sa neotvorí, po nahradení príspevku čerstvou verziou (reload) sa otvorí. Súbory sú nezmenené od PR #127, nejde teda o regresiu z PR #202 ani #203. Oprava: prehliadač dostane živé fotky karty (nie cez `currentPost`, aby sa nereštartoval polling). | stredný · S |
 | 200 | HEIC fotka prejde backendom len v procese gunicornu, ktorý už predtým spracoval iný obrázok: podpora HEIC (`register_heif_opener`) sa registruje lenivo až vo funkciách spracovania (`strip_image_metadata`, miniatúry, moderácia), no validácia `ImageField` v DRF (`SendMessageSerializer`, `UserProfileSerializer`) beží skôr. V čerstvom procese HEIC zlyhá s „Uploadujte prosím obrázok…“ (400). Podľa správ WebKitu posiela iPhone pri `accept="image/*"` originál HEIC (zmena z jari 2024). | Overené 27. 10. v čerstvom procese so starými aj novými knižnicami (Pillow 10.1.0 s pillow-heif 0.22.0 aj Pillow 13.0.0 s 1.8.1): rovnaký výsledok, po `register_heif_opener()` HEIC prejde, takže nejde o regresiu z PR #203. Backend testy to nezachytia, lebo si opener registrujú samy (`generate_heic_file`). Oprava: registrácia pri štarte (`AppConfig.ready`) + test v čerstvom procese. Kým platí nález 197, v praxi sa neprejaví (fotka z iPhonu na server nedorazí). | stredný · S |
 
 ### Upozornenia na zmazaný obsah
@@ -444,7 +443,7 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 
 ## 7. Hotové
 
-51 položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.
+52 položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.
 
 | PR | Vetva | Položky |
 | --- | --- | --- |
@@ -460,6 +459,7 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 | #200 | 140 | 173 |
 | #201 | 141 | 188 |
 | PR čaká | 144 | 197, 198 |
+| PR čaká | 145 | 199 |
 
 Séria Upozornenia (nečíslované nálezy): #187 riadky upozornení na mobile majú 72 px ako riadky konverzácií, #188 dlhé slová sa zalamujú a obnovenie drží načítané dávky, #189 chyba „Zobraziť ďalšie“ sa ukáže pri tlačidle, #190 scroll desktopového panela neodpojí aplikáciu od okna, #192 realtime resync pri návrate / pripojení / online + polling 30 s (nad 90 načítaných vypnutý), #194 nekonečný scroll s kostrami a opakovaním s odstupom. PR #191 (vetva `134-diag`) je len diagnostika a nesmie sa zlúčiť (nález 182).
 
@@ -518,6 +518,7 @@ Všetky hotové položky:
 | 188 | HOTOVÉ: test „rejects expired records and future timestamps“ v `searchScrollMemory.test.ts` zafixuje hodiny pred zápisom záznamu, takže už nepadá náhodne. Starý variant: 16 pádov zo 4 000 bez záťaže a približne 104 zo 4 000 pod záťažou, nový 0 z 12 000. Mutácie expirácie a odmietania budúcich časov test stále zabijú. |
 | 197 | HOTOVÉ (čaká na overenie na iPhone po nasadení): nahrávanie fotiek z iPhonu (iOS 27.0.1, podľa hlásení aj Safari 26.5.x) prišlo cez `/api` na server s prázdnym telom, takže správa skončila hláškou „Neplatné údaje“ a zmena avatara všeobecnou chybou. Príčina je chyba WebKitu: `File` z `<input type="file">` sa cez XHR/fetch pošle s `Content-Length: 0` (hlásia ju aj iné projekty; oprava je v WebKite zlúčená, vydanie nie je známe). Appka teraz pred odoslaním kopíruje súbory z `FormData` do pamäte (`lib/materializeUploadFiles.ts`, jeden axios interceptor v `lib/api.ts`) a pri zlyhaní čítania pošle pôvodný súbor. Backend rozpoznáva prázdny multipart zdieľanou stráž ou `swaply/empty_upload.py` (správy: kód `empty_message_upload`, avatar: `empty_avatar_upload`) a zapíše ho do logu s user-agentom. Priame nahrávanie na S3 (príspevky, ponuky, portfólio) sa nemenilo, z iPhonu funguje. Overené Jestom, pytestom a mutačnými kontrolami a v Chromiu so simuláciou chyby. |
 | 198 | HOTOVÉ: pri 400 na odoslanie správy appka ukazovala všeobecné „Neplatné údaje“, aj keď backend poslal dôvod pri fotke (príliš veľká, zlý formát, zlyhaná kontrola obsahu); `getMessagingErrorMessage` teraz ukáže dôvod z `validation_errors.image`. Fotka, ktorá na server nedorazila, má vlastné preložené hlášky (`messages.uploadEmpty`, `profile.photoUploadEmpty`) vo všetkých šiestich jazykoch a pri avatare sa namiesto doslovného textu v kóde používa existujúci preklad `profile.photoUploadError`. |
+| 199 | HOTOVÉ (čaká na overenie na iPhone po nasadení): mobilný prehliadač fotky na Nástenke dostával od karty zastaraný príspevok bez adries fotiek (fotky, ktoré sa po vytvorení príspevku ešte spracúvali, dosleduje polling len v stave karty), takže sa `ImageLightbox` hneď po otvorení zavrel a ťuk na hotovú fotku „nič neurobil“, kým sa feed nenačítal znova. Prehliadač teraz dostane príspevok s živými fotkami karty (`feed/useViewerPost.ts`); polling sa nereštartuje a objekt sa mení len pri zmene príspevku alebo fotiek. Overené Jestom (dva regresné testy zlyhajú, keď sa zapojenie vráti) a v Chromiu s rozmermi iPhonu na produkčnom builde. |
 
 ## 8. Zatvorené a informačné (bez akcie)
 
@@ -621,6 +622,7 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 | Dátum | Zmena |
 | --- | --- |
+| 27. 10. 2026 | Vetva 145 (čaká na zlúčenie, nadväzuje na vetvu 144): nález 199 – mobilný prehliadač fotky na Nástenke dostane od karty príspevok s živými fotkami, takže sa po vytvorení príspevku fotka po ťuknutí otvorí aj bez opätovného načítania feedu. |
 | 27. 10. 2026 | Vetva 144 (čaká na zlúčenie): manuálne testy na iPhone (iOS 27.0.1) po PR #203 odhalili, že fotka z iPhonu príde cez `/api` na server s prázdnym telom (chyba WebKitu). Nález 197 (appka kopíruje súbory do pamäte pred odoslaním, backend stráž `swaply/empty_upload.py` a log so zariadením) a 198 (dôvod odmietnutia fotky a preložené hlášky pri nahrávaní správ a avatara). Nové nálezy 199 (Nástenka: fotka sa po vytvorení príspevku nedá otvoriť na mobile), 200 (HEIC padá na validácii), 201 (avatar: vstup súboru mimo DOM), 202 (E2E: beh dlhší než 15 minút stratí prihlásenie; z 318 pádov celého behu má túto príčinu 297), 203 (`?` namiesto diakritiky v textoch o fotkách) a 204 (chýbajúce a nepoužité kľúče prekladov). Vetva 143 je zlúčená (PR #203). |
 | 27. 10. 2026 | Vetva 143 (čaká na zlúčenie): časť 183a nálezu 183 – rýchle upgrady backendu (Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30), odstránený nepoužívaný `django-allauth` aj jeho mŕtve nastavenia a CI na Pythone 3.11 (záznamy `pip-audit` 191 → 22; zostáva Django 5.2, Twisted, protobuf, pytest). Rozhodnutie R8 je zodpovedané. Vetva 142 je zlúčená (PR #202). Nové nálezy 193 (`Image.open` bez `formats=`), 194 (CI nekontroluje zraniteľné závislosti), 195 (`.coveragerc`) a 196 (akcie CI cielia na Node.js 20). Po kontrole CodeRabbit (PR #203): minimálna opravená verzia DRF je 3.18.2 a audit z nálezu 194 musí porovnávať výsledok so známymi výnimkami. |
 | 27. 10. 2026 | Vetva 142 (zlúčená, PR #202): časť 184a nálezu 184 – odstránený nepoužívaný `next-intl`, `npm audit fix` a vyššie dolné hranice `axios`, `@sentry/nextjs`, `js-cookie` (zraniteľné balíky frontendu 19 → 2; zostáva `next` 14 → 16 a vnorený `postcss`), import `withSentryConfig` z `@sentry/nextjs/config`. Nález 188 je zlúčený (PR #201). Nový nález 192 (zbytočné súbory v repozitári). Úvod dokumentu podľa CodeRabbit (PR #201): rozsah čísel nálezov sa dopočítava z dát a už nezostarne. |
@@ -634,7 +636,7 @@ Generátor pri zostavení overil:
 
 - pôvodný zoznam má presne čísla 1–172 raz (47 + 4 + 20 + 101 = 172); všetky pôvodne otvorené sú buď roztriedené, alebo zapísané ako opravené;
 - nové nálezy majú súvislé čísla 173–204;
-- súčet skupín 49 + 2 + 4 + 20 + 2 + 31 + 96 = **204**;
+- súčet skupín 49 + 3 + 4 + 20 + 2 + 30 + 96 = **204**;
 - všetkých 68 ID z registra je zaradených práve v jednej skupine (otvorené / čaká živé overenie / zatvorené / pokryté nálezom); žiadne nechýba a žiadne nie je dvakrát;
 - úlohy N1–N16 a rozhodnutia R1–R11 majú súvislé čísla; vlny v časti 2 spomínajú len otvorené položky.
 
