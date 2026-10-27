@@ -41,29 +41,35 @@ def _multipart_body(**fields: str) -> bytes:
 
 @pytest.mark.parametrize("method", ["POST", "PUT", "PATCH"])
 def test_empty_multipart_body_is_detected(method):
+    """Multipart požiadavka s prázdnym telom sa pozná pri každej metóde nahrávania."""
     assert is_empty_multipart_request(_drf_request(method)) is True
 
 
 def test_multipart_with_a_field_is_not_empty():
+    """Multipart s aspoň jedným poľom (napr. len text správy) nie je prázdne nahrávanie."""
     request = _drf_request("POST", body=_multipart_body(text="Ahoj"))
     assert is_empty_multipart_request(request) is False
 
 
 def test_json_request_is_never_treated_as_an_empty_upload():
+    """JSON požiadavka sa nikdy nepovažuje za prázdne nahrávanie súboru."""
     request = _drf_request("POST", body=b"{}", content_type="application/json")
     assert is_empty_multipart_request(request) is False
 
 
 def test_get_request_is_ignored():
+    """GET požiadavka nenesie telo, preto ju stráž ignoruje."""
     assert is_empty_multipart_request(_drf_request("GET")) is False
 
 
 def test_methods_can_be_narrowed():
+    """Zoznam kontrolovaných metód sa dá zúžiť (avatar kontroluje len PATCH)."""
     assert is_empty_multipart_request(_drf_request("POST"), methods=("PATCH",)) is False
     assert is_empty_multipart_request(_drf_request("PATCH"), methods=("PATCH",)) is True
 
 
 def test_response_carries_only_the_code_and_is_a_400():
+    """Odpoveď je HTTP 400 s jediným poľom `code`, ktoré frontend preloží do hlášky."""
     response = empty_multipart_response(_drf_request("POST"), EMPTY_MESSAGE_UPLOAD)
 
     assert response.status_code == 400
@@ -72,6 +78,7 @@ def test_response_carries_only_the_code_and_is_a_400():
 
 
 def test_response_logs_technical_details_only(caplog):
+    """Log nesie cestu, metódu, dĺžku a user-agent, ale nie tokeny ani cookies."""
     request = _drf_request(
         "POST",
         HTTP_USER_AGENT="Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X)",
@@ -93,6 +100,7 @@ def test_response_logs_technical_details_only(caplog):
 
 
 def test_logged_user_agent_is_truncated(caplog):
+    """Príliš dlhý user-agent sa v logu skráti na 160 znakov."""
     request = _drf_request("POST", HTTP_USER_AGENT="A" * 1000)
 
     with caplog.at_level("WARNING", logger="swaply.empty_upload"):
@@ -103,6 +111,7 @@ def test_logged_user_agent_is_truncated(caplog):
 
 
 def test_missing_user_agent_does_not_break_logging(caplog):
+    """Požiadavka bez user-agentu nezhodí logovanie a dostane rovnakú odpoveď."""
     with caplog.at_level("WARNING", logger="swaply.empty_upload"):
         response = empty_multipart_response(_drf_request("POST"), EMPTY_MESSAGE_UPLOAD)
 

@@ -23,7 +23,10 @@ IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1 like Mac OS X) AppleWebKi
 
 @pytest.mark.django_db
 class TestMessagingEmptyUpload(APITestCase):
+    """Odoslanie správy s prázdnym multipart telom (fotka z iPhonu nedorazila) cez oba endpointy."""
+
     def setUp(self):
+        """Pripraví dvoch používateľov, ich konverzáciu a dočasné médiá bez skutočných push notifikácií."""
         cache.clear()
         media_root = tempfile.mkdtemp()
         override = override_settings(MEDIA_ROOT=media_root, SAFESEARCH_ENABLED=False)
@@ -51,6 +54,7 @@ class TestMessagingEmptyUpload(APITestCase):
         self.direct_url = reverse("accounts:messaging_send_direct_message")
 
     def tearDown(self):
+        """Vyčistí cache, aby sa stav nepreniesol do ďalšieho testu."""
         cache.clear()
 
     def _post_empty_multipart(self, url, **extra):
@@ -60,6 +64,7 @@ class TestMessagingEmptyUpload(APITestCase):
         )
 
     def test_empty_multipart_send_gets_a_dedicated_code(self):
+        """Prázdny multipart pri odoslaní do konverzácie dostane kód `empty_message_upload` a správa sa neuloží."""
         self.client.force_authenticate(user=self.u1)
 
         response = self._post_empty_multipart(self.send_url)
@@ -69,6 +74,7 @@ class TestMessagingEmptyUpload(APITestCase):
         assert Message.objects.count() == 0
 
     def test_empty_multipart_direct_send_gets_a_dedicated_code(self):
+        """To isté platí pri začatí novej konverzácie (priama správa)."""
         self.client.force_authenticate(user=self.u1)
 
         response = self._post_empty_multipart(self.direct_url)
@@ -78,6 +84,7 @@ class TestMessagingEmptyUpload(APITestCase):
         assert Message.objects.count() == 0
 
     def test_empty_multipart_is_logged_with_the_device_but_without_personal_data(self):
+        """Log uvedie zariadenie (user-agent) a cestu, ale nie e-mail používateľa."""
         self.client.force_authenticate(user=self.u1)
 
         with self.assertLogs("swaply.empty_upload", level="WARNING") as logs:
@@ -90,12 +97,14 @@ class TestMessagingEmptyUpload(APITestCase):
         assert "u1@example.com" not in output
 
     def test_unauthenticated_empty_multipart_is_still_rejected_by_auth(self):
+        """Neprihlásený používateľ dostane 401/403 skôr, než sa stráž prázdneho nahrávania vôbec použije."""
         response = self._post_empty_multipart(self.send_url)
 
         assert response.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
         assert Message.objects.count() == 0
 
     def test_multipart_with_text_only_is_not_treated_as_an_empty_upload(self):
+        """Multipart len s textom je platná správa: prejde do validácie a uloží sa."""
         self.client.force_authenticate(user=self.u1)
 
         with self.captureOnCommitCallbacks(execute=True):
@@ -105,6 +114,7 @@ class TestMessagingEmptyUpload(APITestCase):
         assert Message.objects.get().text == "Ahoj"
 
     def test_json_message_still_works(self):
+        """Správa poslaná ako JSON funguje ako doteraz."""
         self.client.force_authenticate(user=self.u1)
 
         with self.captureOnCommitCallbacks(execute=True):

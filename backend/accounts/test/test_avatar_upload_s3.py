@@ -133,6 +133,8 @@ class TestAvatarValidators:
 
 @pytest.mark.django_db
 class TestAvatarUploadIntegration(APITestCase):
+    """Nahrávanie avatara cez `PATCH /profile/` (S3, validácia, prázdny multipart z iPhonu)."""
+
     def setUp(self):
         self.user = User.objects.create_user(
             username="john",
