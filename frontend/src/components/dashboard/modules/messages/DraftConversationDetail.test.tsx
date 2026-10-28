@@ -190,6 +190,27 @@ describe('DraftConversationDetail', () => {
     );
   });
 
+  it('gives the error mapper the message for a photo that never reached the server', async () => {
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+    (sendDirectMessage as jest.Mock).mockRejectedValueOnce({
+      response: { status: 400, data: { code: 'empty_message_upload' } },
+    });
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    fireEvent.change(await screen.findByRole('textbox'), { target: { value: 'Fotka' } });
+    fireEvent.click(screen.getByRole('button', { name: /odosla/i }));
+
+    await waitFor(() => {
+      expect(getMessagingErrorMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ response: expect.objectContaining({ status: 400 }) }),
+        expect.objectContaining({
+          emptyUploadFallback: 'Fotka sa nedostala na server. Skúste ju odoslať znova.',
+        }),
+      );
+    });
+  });
+
   it('redirects immediately when a started conversation already exists', async () => {
     (openConversation as jest.Mock).mockResolvedValue({
       id: 77,

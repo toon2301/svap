@@ -2,17 +2,17 @@
 
 > Hlavný zoznam nálezov projektu. Súbor je **generovaný** z dát v tomto priečinku (`build.py`) a neupravuje sa ručne: pozri časť 10.
 
-Posledná aktualizácia: **27. 10. 2026**. Stav kódu: `main` `1100c9cc` (po PR #202); register: 21. 10. 2026 + PR #193. Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách od 127 (čísla 173–196) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).
+Posledná aktualizácia: **27. 10. 2026**. Stav kódu: `main` `c776998c` (po PR #203); register: 21. 10. 2026 + PR #193. Zlučuje tri zdroje: (1) pôvodný zoznam 1–172 (viedol sa v samostatnej konverzácii), (2) nálezy z práce na vetvách od 127 (čísla 173–206) a (3) evidenciu OW- / TEST- / APP- / TECH- z `docs/testing/findings-register.md`, ktorá ostáva podrobným denníkom týchto položiek. Súčasťou sú aj kontroly z 26. 10. 2026 (`pip-audit`, `npm audit`, prehľad repozitára a nasadzovacích súborov).
 
-**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. Čísla nálezov sú stabilné, nikdy sa nemenia ani nepoužívajú znova; nový nález dostane číslo 197. Aktuálne je v zozname 196 nálezov.
+**Dôležité:** roztriedenie na HNEĎ / PRED NASADENÍM / PO NASADENÍ je návrh agenta; nič sa neopravuje bez výberu používateľa. Čísla nálezov sú stabilné, nikdy sa nemenia ani nepoužívajú znova; nový nález dostane číslo 207. Aktuálne je v zozname 206 nálezov.
 
 ## V skratke
 
-- Nálezy 1–196: hotové 49, zatvorené 4, informačné 20; otvorené: **HNEĎ 2**, **PRED NASADENÍM 25**, **PO NASADENÍ 96**.
+- Nálezy 1–206: hotové 54 (z toho 5 čaká na zlúčenie), zatvorené 4, informačné 20; otvorené: **HNEĎ 2**, **PRED NASADENÍM 28**, **PO NASADENÍ 98**.
 - Z pôvodných 101 otvorených položiek je dnes otvorených 101 (13 pred nasadením, 88 po nasadení, 0 hneď). Pri vzniku dokumentu (26. 10. 2026) nebola žiadna z nich kritická.
 - **Hneď** (časť 3): 183 – zraniteľné knižnice (backend): zostáva Django 5.2; 184 – zraniteľný `next` (frontend).
-- **Pred nasadením** (časť 4): 25 nálezov, 20 ID z registra a 16 úloh na prípravu nasadenia. Odporúčané poradie je v časti 2.
-- **Po nasadení** (časť 5): 96 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
+- **Pred nasadením** (časť 4): 28 nálezov, 20 ID z registra a 16 úloh na prípravu nasadenia. Odporúčané poradie je v časti 2.
+- **Po nasadení** (časť 5): 98 nálezov a 20 ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).
 - **Rozhodnutia** (časť 6): čaká 10 z 11; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.
 - **Hosting** nového servera sa rieši až keď bude aplikácia hotová (Railway ostáva na testy); odporúčanie je v prílohe C.
 
@@ -49,19 +49,20 @@ Pravidlá práce: každá oprava ide na novú očíslovanú vetvu z `main`, najp
 
 ## 1. Prehľad v číslach
 
-Očíslované nálezy 1–196:
+Očíslované nálezy 1–206:
 
 | Skupina | Počet | Poznámka |
 | --- | --- | --- |
 | Hotové (zlúčené do `main`) | 49 | tabuľka v časti 7 |
+| Opravené, čaká na zlúčenie | 5 | tabuľka v časti 7 |
 | Zatvorené rozhodnutím | 4 | časť 8 |
 | Informačné bez akcie | 20 | časť 8 |
 | **HNEĎ** | 2 | časť 3 (183, 184) |
-| **PRED NASADENÍM** | 25 | časť 4 |
-| **PO NASADENÍ** | 96 | časť 5 |
-| **Spolu** | 196 | 172 pôvodných + 24 nových (173–196) |
+| **PRED NASADENÍM** | 28 | časť 4 |
+| **PO NASADENÍ** | 98 | časť 5 |
+| **Spolu** | 206 | 172 pôvodných + 34 nových (173–206) |
 
-Okrem toho (mimo číslovania 1–196):
+Okrem toho (mimo číslovania 1–206):
 
 | Zdroj | HNEĎ | PRED | PO | Zlúčené, čaká živé overenie (N16) | Zatvorené alebo pokryté nálezom |
 | --- | --- | --- | --- | --- | --- |
@@ -72,10 +73,10 @@ Okrem toho (mimo číslovania 1–196):
 
 | Vlna | Čo | Prečo v tomto poradí |
 | --- | --- | --- |
-| **0 – najprv** | Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, Django 4.2.30, odstránenie allauth) je hotový na vetve 143 a čaká na zlúčenie, frontend (`npm audit fix`, odstránený `next-intl`) je zlúčený (vetva 142). Zvyšok 183 a 184 (Django 5.2, protobuf, `next` 14 → 16) je vo vlne 1 | Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód. |
-| **1 – základ, kým sa aplikácia dokončuje** | Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190) | Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy. |
+| **0 – najprv** | Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je zlúčený (vetva 142). Zvyšok 183 a 184 (Django 5.2, protobuf, `next` 14 → 16) je vo vlne 1 | Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód. |
+| **1 – základ, kým sa aplikácia dokončuje** | Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190, 202) | Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy. |
 | **2 – viditeľné chyby a overenia (iPhone a mobil)** | Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92), Upozornenia na zmazaný obsah (74), Žiadosti (17), Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03 | To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone. |
-| **3 – texty a súkromie** | 120, 175, 176, 177, APP-03, 186 (a podľa R2 poradie jazykov) | Závisí od toho, ktoré jazyky budú pri štarte (R2). |
+| **3 – texty a súkromie** | 120, 175, 176, 177, 203, 204, APP-03, 186 (a podľa R2 poradie jazykov) | Závisí od toho, ktoré jazyky budú pri štarte (R2). |
 | **4 – keď bude aplikácia hotová** | Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 (diagnostiku 180 možno začať už teraz) | Robí sa na novom serveri po dokončení aplikácie. |
 | **5 – po nasadení** | Časť 5: funkcie, upratovanie, výkon, nástroje | Podľa spätnej väzby od prvých používateľov. |
 
@@ -92,7 +93,7 @@ Okrem toho (mimo číslovania 1–196):
 
 ## 4. PRED NASADENÍM
 
-53 riadkov v 14 balíkoch (jeden riadok registra môže spájať viac ID). Balík „Príprava ostrého nasadenia“ sa robí až keď bude aplikácia hotová. Každý balík je jedna alebo dve vetvy z `main` (číslo vetvy sa pridelí pri štarte).
+56 riadkov v 14 balíkoch (jeden riadok registra môže spájať viac ID). Balík „Príprava ostrého nasadenia“ sa robí až keď bude aplikácia hotová. Každý balík je jedna alebo dve vetvy z `main` (číslo vetvy sa pridelí pri štarte).
 
 ### Bezpečnosť a produkčná odolnosť
 
@@ -120,6 +121,7 @@ Okrem toho (mimo číslovania 1–196):
 | 31 | Spevnenie nestabilných Jest testov (časové limity) – čaká na tvoj súhlas. | Nestabilné Jest testy (časové limity). Ak nasadenie čaká na zelené CI, náhodné zlyhanie zablokuje vydanie. Návrh: `asyncUtilTimeout` + `jest.setTimeout`, len testové súbory. | stredný · S |
 | 189 | `e2e/mobile-language-header.spec.ts`: pomocník `ownProfilePath` (riadok 36) pustí len slug zo znakov `A-Za-z0-9_-` (riadok 42), no backend generuje slugy s bodkami (medzery sa menia na bodky, napr. `svaplynko.malicky.mlady`). Pre taký účet vezme pomocník číselné ID, aplikácia číselnú adresu prepíše na slug a stratí pod-cestu `/language`. Vo webkit-mobile preto padá 12 scenárov `profile-section` a 2 scenáre „app Back and browser Back“ (beh 26. 10.). | Reprodukované lokálne v Chromiu s iPhone emuláciou na produkčnom builde: so slugom s bodkami rovnaké chyby ako na Railway (s workerom aj bez neho), so slugom bez bodiek „app Back“ prejde. Oprava: povoliť bodku v regulárnom výraze. Pozor: aplikácia pridáva k adrese profilu sama `?tab=offers` (`profileTabQuery.ts`), takže `profile-section` môže po oprave padnúť ešte na poslednej kontrole adresy (riadok 136); tú treba porovnávať bez query. Overiť behom na Railway. | nízky · S |
 | 190 | `e2e/search-country-scroll.spec.ts`, test „review: a restored profile-return snapshot follows user scrolling…“: volá `page.mouse.wheel(0, -700)` (riadok 125) aj v mobilnom projekte, no Playwright v mobilnom WebKite kolieskom nehýbe („Mouse wheel is not supported in mobile WebKit“). V projekte webkit-mobile preto padá vždy, od pridania 17. 10. (commit `66c15acc`). | Overené v zdroji Playwrightu 1.63 (`RawMouseImpl.wheel`). Rovnaké obmedzenie už raz zachytil TEST-11 v inom špecu. Na výber: v mobile použiť iný skutočný vstup (ťah prstom), alebo tento jeden scenár v mobilnom WebKite preskočiť s vysvetlením. | nízky · S |
+| 202 | `frontend/e2e/global-setup.ts` sa prihlási raz a všetky testy štartujú z uloženého stavu (`e2e/.auth/user.json`), no access token žije 15 minút a refresh token sa po prvom použití zablokuje (`ROTATE_REFRESH_TOKENS`, `BLACKLIST_AFTER_ROTATION`). Beh dlhší než približne 15 minút preto kolabuje: prvý test po vypršaní obnoví token, každý ďalší dostane 401 „Token is blacklisted“, appka ho vráti na prihlásenie a `feed-list` sa nezobrazí. Celý beh z 27. 10. (732 testov, `--workers=2`, 1,0 h) mal 318 pádov, z toho 297 má túto príčinu (webkit-desktop 22, webkit-mobile 157, chromium-desktop 118); prvých približne 160 testov vo webkit-desktop prešlo, potom sa pády rozbehli. | Mechanizmus overený na kóde backendu: prvý kontext po vypršaní dostane z obnovenia 200, druhý a tretí 401. Zvyšných 21 pádov má iné príčiny: `google-login-completion` vo WebKit projektoch (10), `notifications-infinite-scroll` (1), druhý testovací účet bez ponuky (3), `search-*` (7). Do opravy treba spúšťať E2E po skupinách pod približne 12 minút (každý beh má vlastné prihlásenie). Návrh opravy len v testoch: prihlásenie na začiatku každého špecu cez API fixture alebo obnova uloženého stavu so zdieľaným zámkom. | stredný · S |
 | TEST-03, 04, 09, 12–16, 18 | Jednorazové a neobjasnené zlyhania a upozornenia testov: push-timeout (03), WebKit timeouty (04, 09, 12, 13), `OfferWatchSettingsMobileHost.openState` (14), Jest nekončí (15), vlákno registračného e-mailu v SQLite testoch (16), dlhšie živé E2E skončili pred overením (18). | Spolu s 31 a 179. Bez diagnostiky ich neoznačovať za opravené; ak CI blokuje nasadenie, treba ich stabilizovať. | stredný · M |
 | TEST-17 | Starý diagnostický E2E (`search-diagnostics.spec.ts:106–141`) očakáva po opakovaní nulový HTTP, čo OW-20 zámerne mení. | Aktualizovať podľa nového kontraktu, inak dá falošné RED. | nízky · S |
 
@@ -175,6 +177,8 @@ Okrem toho (mimo číslovania 1–196):
 | 175 | Surový `error.message` z knižnice axios (napr. „Network Error“) sa ukazuje aj v Obľúbených (`FavoritesModule.tsx:35`) a v Spoluprácach (`RequestsDesktop.tsx:636`, `RequestsMobile.tsx:698`). | Použiť pomocníka z `foreignProfileHelpers.ts` (`profileActionErrorMessage`) alebo ho presunúť do spoločného modulu. Neoverené: či backend niekde posiela anglické `detail` texty (DRF). | stredný · S |
 | 176 | Zvyšné slovenské kópie v češtine a poľštine (a jedna v nemčine). V profile a vyhľadávaní je to asi 30 hodnôt v češtine a 14 v poľštine (karty ponúk „Správa“, „Cena do“, „Skrytá“, vyhľadávanie „PONÚKAM/HĽADÁM“, „Posledné vyhľadávania“, portfólio); v nemčine ostáva „Vyčistiť vyhľadávanie“. V celej aplikácii mimo katalógu zručností je to hrubo cs ~210 a pl ~90 (časť sú legitímne rovnaké slová). Poľské texty bez diakritiky: heuristika našla 27 kľúčov (najmä `messages.*` a `requests.*`, napr. „Nie udalo sie wyslac wiadomosci.“). | Zahŕňa APP-02 a APP-03 z registra. Ak štart nepokryje češtinu a poľštinu, môže počkať (rozhodnutie R2). Odporúčanie: jeden preklad naraz, najprv profil, vyhľadávanie a karty ponúk. **Rozhodnutie R2** (časť 6). | stredný · L |
 | 177 | Pruh o stave pripojenia je natvrdo po slovensky (`OfflineIndicator.tsx:54–55`: „Offline režim - niektoré funkcie môžu byť obmedzené.“ a „Pripojenie obnovené! Aplikácia je online.“); pri výpadku ho vidno v každom jazyku. | Pridať dva kľúče do všetkých šiestich jazykov. | nízky · S |
+| 203 | V `messages/{cs,de,hu,pl}.json` majú texty o fotkách v časti Správy namiesto písmen s diakritikou znak `?` (cs 5, de 4, hu 7, pl 4 hodnoty, napr. `messages.attachImage` „P?ilo?it obr?zek“, ďalej `chooseImage`, `takePhoto`, `imageOnlyPreview`, `imageTooLarge`, `invalidImageType`), takže pri výbere alebo odmietnutí fotky ukážu tieto jazyky otázniky. | Zistené pri vetve 144 hľadaním vzoru písmeno–`?`–písmeno (angličtina 0). Súvisí s nálezom 176 (poľské a maďarské texty bez diakritiky). Oprava: doplniť správne texty a pridať test, ktorý v hodnotách prekladov zakáže `?` medzi písmenami. | nízky · S |
+| 204 | `npm run check:used-translation-keys` hlási kľúče, ktoré kód používa, ale nie sú v `messages/sk.json`: `feed.captionPlaceholder` (`FeedPostEditModal.tsx`), `feed.commentsClose` (`FeedPhotoCommentsSheet.tsx`) a `feed.openProfile` (`FeedPhotoViewerChrome.tsx`, `FeedPostCard.tsx`, `FeedPostComments.tsx`, `FeedPostMobileDetail.tsx`), takže sa vo všetkých jazykoch ukáže natvrdo zadaná slovenčina. Naopak `profile.photoRemovedError` je preložený vo všetkých jazykoch, no kód ho nepoužíva a ukazuje doslovný text „Nepodarilo sa odstrániť fotku. Skúste znova.“ (`ProfileModule.tsx`). | Skript hlási ešte tri kľúče z testu (`common`, `common.save.unavailable`, `missing.path` v `LanguageContext.locale.test.tsx`), ktoré sú falošný poplach. Skript nie je súčasťou CI. Oprava: doplniť tri kľúče do všetkých šiestich jazykov, použiť `profile.photoRemovedError` a vylúčiť test zo skriptu. | nízky · S |
 | APP-03 | Záložky a tlačidlá vyhľadávania (Všetko / Ľudia / Ponuky, Zobraziť viac / všetko) sú slovenské literály, nie `t()`. | Súčasť 176; ak štart nie je viacjazyčný, môže počkať (R2). **Rozhodnutie R2** (časť 6). | stredný · S |
 
 ### Súkromie a krajina
@@ -219,7 +223,7 @@ Okrem toho (mimo číslovania 1–196):
 
 ## 5. PO NASADENÍ
 
-106 riadkov v 17 skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.
+108 riadkov v 17 skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.
 
 ### Pravdepodobne už vyriešené
 
@@ -335,7 +339,7 @@ Okrem toho (mimo číslovania 1–196):
 
 | Č. | Čo | Poznámka / prečo | Dopad · Zl. |
 | --- | --- | --- | --- |
-| 187 | `public/sw.js`: vetvy `respondWith(fetch(request))` pre `/api/*`, dokumenty a `/_next/` len znovu vydajú tú istú požiadavku (bez cache a bez offline náhrady). Sú zbytočné a robia `page.route` v Playwrighte slepým (príčina nálezu 173). | Overené v Chromiu na produkčnom builde: keď worker tieto požiadavky nevybavuje, `page.route` funguje aj s aktívnym workerom. Lokálne meranie nepreukázalo rozdiel v latencii (medián 5,8 ms s workerom, 4,6 ms bez). Zmena `sw.js` je produkčná (PWA, iPhone), preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: 'block'` v špecoch nebolo nutné (poistka `E2eServiceWorker.guard.test.ts` by sa upravila). | nízky · M |
+| 187 | `public/sw.js`: vetvy `respondWith(fetch(request))` pre `/api/*`, dokumenty a `/_next/` len znovu vydajú tú istú požiadavku (bez cache a bez offline náhrady). Sú zbytočné a robia `page.route` v Playwrighte slepým (príčina nálezu 173). | Overené v Chromiu na produkčnom builde: keď worker tieto požiadavky nevybavuje, `page.route` funguje aj s aktívnym workerom. Lokálne meranie nepreukázalo rozdiel v latencii (medián 5,8 ms s workerom, 4,6 ms bez). Zmena `sw.js` je produkčná (PWA, iPhone), preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: 'block'` v špecoch nebolo nutné (poistka `E2eServiceWorker.guard.test.ts` by sa upravila). Vetva 144: rovnaký vzorec je podľa hlásení iných projektov spúšťačom chyby WebKitu pri nahrávaní z iPhonu (nález 197); appka ju obchádza kopírovaním súborov do pamäte, takže zmena `sw.js` už nie je naliehavá, no vynechanie `respondWith` pri POST a PATCH by bolo ďalšou poistkou. | nízky · M |
 
 ### Vyhľadávanie a Sledovania
 
@@ -382,7 +386,8 @@ Okrem toho (mimo číslovania 1–196):
 | 152 | Audit: `Sidebar.tsx` a `RightSidebar.tsx` (ďalší používatelia `AnimatePresence`) môžu držať globálne efekty počas výstupu. |  | nízky · M |
 | 153 | Poznámka k upgradu: `inert` je nastavené imperatívne; pri Reacte 19 použiť prop. |  | nízky · S |
 | 156 | Pozorovania pre všetky riadky Nastavení (panel sa vytvára nanovo, zástupná obrazovka pri Späť, stmievač blokuje ťuknutia, fokus). |  | nízky · M |
-| 192 | V repozitári sú sledované dva zbytočné súbory: `frontend/backend/.coverage` (53 KB, databáza pokrytia Pythonu v priečinku frontendu) a `frontend/profilecard-test.txt` (15 KB, výstup PowerShellu z behu `jest --testPathPattern=ProfileCard`). | Oba pridal merge PR #127 (24. 9.). Koreňový `.gitignore` ignoruje len `backend/.coverage`, nie `frontend/backend/.coverage`. Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa. | nízky · S |
+| 192 | V repozitári sú sledované dva zbytočné súbory: `frontend/backend/.coverage` (53 KB, databáza pokrytia Pythonu v priečinku frontendu) a `frontend/profilecard-test.txt` (15 KB, výstup PowerShellu z behu `jest --testPathPattern=ProfileCard`). | Oba pridal merge PR #127 (24. 9.). Koreňový `.gitignore` ignoruje len `backend/.coverage`, nie `frontend/backend/.coverage`. Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa. Na vetve 144 sa zistili aj tri nepoužité komponenty so starou kópiou nahrávania avatara (nikde sa neimportujú, v meraní pokrytia sú vynechané): `ProfileEditForm.tsx`, `ProfileAvatar.tsx` a `profile-edit/shared/AvatarActionsModal.tsx` (aj s testami). | nízky · S |
+| 205 | `register_heif_opener()` sa volá lenivo v piatich moduloch spracovania obrázkov: `swaply/image_metadata.py`, `swaply/staged_image_moderation.py`, `swaply/tasks/offer_images.py`, `portfolio/image_processing.py` a `messaging/services/image_thumbnails.py`. Od opravy 200 sa podpora HEIC registruje raz pri štarte aplikácie (`swaply/heif_support.py`), takže tieto volania sú nadbytočné. | Neškodné (registrácia je opakovateľná), preto sa v oprave 200 nemenili, aby zmena ostala malá a ľahko vrátiteľná. Upratanie: volania zmazať alebo nahradiť jedným `register_heif_support()`; prirodzene to ide spolu s nálezom 193 (`Image.open` bez `formats=`), ktorý tie isté miesta tiež rieši. | nízky · S |
 | TECH-01…11 | Nadlimitné súbory (>500 riadkov): `DashboardContent` 711, `lib/api.ts` 907, `useDashboardState` 921, `app/search/page.tsx` 648, `useDashboardNavigation` 514, `ProfileOffersSection` 1108, `ProfileOffersMobileSection` 945, `SkillDescriptionModal` 502, `useSkillsDescriptionScreenState` 638, `DashboardContentView.test` 895 (počty riadkov z 26. 10. 2026; TECH-08 už nie je nad limitom). | Technický dlh; podľa `svaply.mdc` len nahlásiť. | nízky · L |
 
 ### Nástroje a testy
@@ -404,6 +409,7 @@ Okrem toho (mimo číslovania 1–196):
 | 182 | PR #191 / vetva `134-diag`: len diagnostika, nikdy nezlúčiť; po vyriešení 180 uzavrieť a vetvu zmazať. | Vetva sa maže len na pokyn používateľa. | nízky · S |
 | 195 | `backend/.coveragerc`: zoznam `omit` obsahuje päť neexistujúcich súborov (`swaply/settings_clean.py`, `swaply/migrate_api.py`, `accounts/views/google_oauth.py`, `accounts/views/simple_google_oauth.py`, `accounts/views/oauth.py`) a prah `fail_under = 94.8` sa líši od `--cov-fail-under=85` v `pytest.ini`. Riadok `accounts/views/*` navyše vynecháva z merania pokrytia všetky views. | CI beží s `--no-cov` (pokrytie sa nevynucuje), takže nič z toho nespôsobuje chybu; číslo pokrytia však o views nič nehovorí. Zistené pri odstraňovaní allauth (143), kde som z `omit` zmazal len riadky pre zmazané allauth súbory. Patrí k téme „pokrytie sa rieši samostatne“ z komentára v `deploy.yml`: treba rozhodnúť, aký prah platí a čo sa meria. | nízky · S |
 | 196 | `.github/workflows/deploy.yml`: akcie `actions/checkout@v4`, `actions/setup-node@v4` a `actions/setup-python@v4` sú staršie než verzie pre Node.js 24 (`setup-python@v4` deklaruje `node16`, ostatné dve `node20`). GitHub ich dnes núti bežať na Node.js 24 a v logu každého behu vypíše varovanie „Node.js 20 is deprecated“ (beh CI na PR #203, 27. 10.). CI pritom prechádza a krok `Setup Python` nezlyhal. | Overené v `action.yml` jednotlivých tagov: `setup-python@v5` deklaruje `node20` (varovanie by zostalo), až `setup-python@v6` `node24`; `checkout@v5` a `setup-node@v5` už `node24`. CodeRabbit (PR #203) navrhol len `setup-python@v5` s tvrdením, že krok môže zlyhať; beh CI to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; robiť spolu s nálezom 194 (úprava workflow). | nízky · S |
+| 206 | `npx eslint src` hlási 681 chýb a 31 varovaní v 124 z 1 255 súborov frontendu (104 súborov s chybou, z toho 51 testov a 53 produkčných). Najviac je `no-unused-vars` (359), `no-explicit-any` (213), `no-require-imports` (66) a `no-unused-expressions` (29, najmä modaly úpravy profilu `profile-edit/modals/*`). Deväť chýb `react-hooks/rules-of-hooks` je v `messages/ConversationMessageRow.tsx` (riadky 173–233: hooky stoja za predčasným `return` pre skupinové pozvánky a systémové správy). | Zmerané 27. 10. na vetve 147. Rozširuje nález 178 (ten opisuje jediný súbor) a súvisí s TOOL-01 (CI lint nespúšťa). `ConversationMessageRow` dnes nepadá, lebo typ správy sa pri tom istom `id` nemení; ak by sa niekedy zmenil (napr. skupinová pozvánka na obyčajnú správu), React hodí „Rendered more hooks than during the previous render“. Odporúčanie: najprv hooky pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory). | nízky · M |
 | APP-05 | Asynchrónne overenie položky histórie môže prepísať novší dotaz (`useRecentSearches.tsx`). | Spolu s 178. | nízky · S |
 | ENV-01 | Dva backendové testy obrazovej moderácie blokuje Windows / gRPC (na Linuxe CI prejdú). | Prostredie, nie produkt. | nízky · S |
 | OW-08 | Upratať historické testovacie dáta v Railway (karta ID 165 sa nemaže). | Na novej, čistej databáze odpadá. | nízky · S |
@@ -437,7 +443,7 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 
 ## 7. Hotové
 
-49 položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.
+54 položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.
 
 | PR | Vetva | Položky |
 | --- | --- | --- |
@@ -452,6 +458,10 @@ Pri každom čakajúcom rozhodnutí je odporúčanie agenta. Odpovedať stačí 
 | #198 | 138 | 154, 165, 166 (+ „a ďalší (N)“ a hlášky pri Obľúbených) |
 | #200 | 140 | 173 |
 | #201 | 141 | 188 |
+| PR čaká | 144 | 197, 198 |
+| PR čaká | 145 | 199 |
+| PR čaká | 146 | 200 |
+| PR čaká | 147 | 201 |
 
 Séria Upozornenia (nečíslované nálezy): #187 riadky upozornení na mobile majú 72 px ako riadky konverzácií, #188 dlhé slová sa zalamujú a obnovenie drží načítané dávky, #189 chyba „Zobraziť ďalšie“ sa ukáže pri tlačidle, #190 scroll desktopového panela neodpojí aplikáciu od okna, #192 realtime resync pri návrate / pripojení / online + polling 30 s (nad 90 načítaných vypnutý), #194 nekonečný scroll s kostrami a opakovaním s odstupom. PR #191 (vetva `134-diag`) je len diagnostika a nesmie sa zlúčiť (nález 182).
 
@@ -508,6 +518,11 @@ Všetky hotové položky:
 | 172 | HOTOVÉ (#197): po zablokovaní a z chybovej obrazovky profilu sa zobrazí Nástenka, nie zablokovaný profil. |
 | 173 | HOTOVÉ: E2E špecy, ktoré strážia zápisy alebo podvrhujú sieť cez `page.route`, blokujú service worker (`serviceWorkers: 'block'`); nové špecy stráži Jest poistka `E2eServiceWorker.guard.test.ts`. Overené v Chromiu na produkčnom builde (Playwright 1.63): bez bloku strážca zápis 1,5 s po načítaní nezachytí. |
 | 188 | HOTOVÉ: test „rejects expired records and future timestamps“ v `searchScrollMemory.test.ts` zafixuje hodiny pred zápisom záznamu, takže už nepadá náhodne. Starý variant: 16 pádov zo 4 000 bez záťaže a približne 104 zo 4 000 pod záťažou, nový 0 z 12 000. Mutácie expirácie a odmietania budúcich časov test stále zabijú. |
+| 197 | HOTOVÉ (čaká na overenie na iPhone po nasadení): nahrávanie fotiek z iPhonu (iOS 27.0.1, podľa hlásení aj Safari 26.5.x) prišlo cez `/api` na server s prázdnym telom, takže správa skončila hláškou „Neplatné údaje“ a zmena avatara všeobecnou chybou. Príčina je chyba WebKitu: `File` z `<input type="file">` sa cez XHR/fetch pošle s `Content-Length: 0` (hlásia ju aj iné projekty; oprava je v WebKite zlúčená, vydanie nie je známe). Appka teraz pred odoslaním kopíruje súbory z `FormData` do pamäte (`lib/materializeUploadFiles.ts`, jeden axios interceptor v `lib/api.ts`) a pri zlyhaní čítania pošle pôvodný súbor. Backend rozpoznáva prázdny multipart zdieľanou stráž ou `swaply/empty_upload.py` (správy: kód `empty_message_upload`, avatar: `empty_avatar_upload`) a zapíše ho do logu s user-agentom. Priame nahrávanie na S3 (príspevky, ponuky, portfólio) sa nemenilo, z iPhonu funguje. Overené Jestom, pytestom a mutačnými kontrolami a v Chromiu so simuláciou chyby. |
+| 198 | HOTOVÉ: pri 400 na odoslanie správy appka ukazovala všeobecné „Neplatné údaje“, aj keď backend poslal dôvod pri fotke (príliš veľká, zlý formát, zlyhaná kontrola obsahu); `getMessagingErrorMessage` teraz ukáže dôvod z `validation_errors.image`. Fotka, ktorá na server nedorazila, má vlastné preložené hlášky (`messages.uploadEmpty`, `profile.photoUploadEmpty`) vo všetkých šiestich jazykoch a pri avatare sa namiesto doslovného textu v kóde používa existujúci preklad `profile.photoUploadError`. |
+| 199 | HOTOVÉ (čaká na overenie na iPhone po nasadení): mobilný prehliadač fotky na Nástenke dostával od karty zastaraný príspevok bez adries fotiek (fotky, ktoré sa po vytvorení príspevku ešte spracúvali, dosleduje polling len v stave karty), takže sa `ImageLightbox` hneď po otvorení zavrel a ťuk na hotovú fotku „nič neurobil“, kým sa feed nenačítal znova. Prehliadač teraz dostane príspevok s živými fotkami karty (`feed/useViewerPost.ts`); polling sa nereštartuje a objekt sa mení len pri zmene príspevku alebo fotiek. Overené Jestom (dva regresné testy zlyhajú, keď sa zapojenie vráti) a v Chromiu s rozmermi iPhonu na produkčnom builde. |
+| 200 | HOTOVÉ (čaká na overenie na iPhone po nasadení): podpora HEIC (`pillow-heif`) sa registruje pri štarte aplikácie (`swaply/heif_support.py`, volané z `AccountsConfig.ready()`), takže HEIC z iPhonu prejde validáciou `ImageField` v DRF už od prvej požiadavky v každom procese; predtým len v procese, ktorý už predtým spracoval iný obrázok. Chýbajúca knižnica štart nezhodí, zapíše varovanie. Overené: test v čerstvom procese (pred opravou zlyhal s „Uploadujte prosím obrázok…“, po oprave prejde) a odoslanie HEIC správy cez HTTP v čerstvom procese (pred opravou 400 „Neplatné údaje“, po oprave 201 aj s miniatúrou). Päť lenivých registrácií v moduloch spracovania obrázkov sa nemenilo (nález 205). |
+| 201 | HOTOVÉ (čaká na overenie na iPhone po nasadení): výber fotky avatara cez „Zmeniť fotku“ (profil aj mobilná úprava profilu) a v desktopovom formulári úpravy profilu používal `document.createElement('input')`, ktorý sa nikdy nepripojil do DOM; WebKit na iOS takýto element po zatvorení modalu môže odpratať a `change` sa nespustí, takže sa po výbere fotky nestalo nič (ani chyba). Nový pomocník `lib/pickImageFile.ts` drží skrytý vstup v `document.body` až do výberu alebo zrušenia a používa ho modal aj formulár. Overené Jestom (tri mutácie testy zabijú: odpojený vstup v modale aj vo formulári a pomocník bez pripojenia do DOM). Príčinu na iPhone som tu nemohol reprodukovať (chýba WebKit), preto ostáva overenie po nasadení. Po opravách 197 a 198 zlyhaná zmena avatara vždy ukáže hlášku; ak by sa po výbere fotky stále nestalo vôbec nič (ani hláška), `change` sa nespúšťa z iného dôvodu a treba ďalšie hlásenie z iPhonu. |
 
 ## 8. Zatvorené a informačné (bez akcie)
 
@@ -599,7 +614,7 @@ Zlúčené PR podľa histórie `main`: #168 (OW-01, OW-02), #172 (OW-10, OW-12, 
 Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 - **Po každom novom nálezi alebo oprave** sa dokument aktualizuje v tej istej vetve, v ktorej sa zmena robí: nález = nový riadok, oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.
-- **Čísla:** nový nález dostane ďalšie voľné číslo (197); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
+- **Čísla:** nový nález dostane ďalšie voľné číslo (207); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
 - **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `register.py`, `stav.py`), spustiť z koreňa repozitára `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.
 - **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `stav.DONE_SINCE` (číslo vetvy, PR keď je známe, `zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali.
 - **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
@@ -611,6 +626,10 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 | Dátum | Zmena |
 | --- | --- |
+| 27. 10. 2026 | Vetva 147 (čaká na zlúčenie, nadväzuje na vetvu 146): nález 201 – výber fotky avatara cez vstup, ktorý žije v DOM (iOS). Nový nález 206 (ESLint hlási 681 chýb v 104 súboroch frontendu, deväť z nich `rules-of-hooks` v `ConversationMessageRow.tsx`). |
+| 27. 10. 2026 | Vetva 146 (čaká na zlúčenie, nadväzuje na vetvu 145): nález 200 – HEIC z iPhonu prejde validáciou obrázka hneď od prvej požiadavky, pretože sa `pillow-heif` registruje pri štarte aplikácie. Nový nález 205 (päť lenivých registrácií HEIC je nadbytočných). |
+| 27. 10. 2026 | Vetva 145 (čaká na zlúčenie, nadväzuje na vetvu 144): nález 199 – mobilný prehliadač fotky na Nástenke dostane od karty príspevok s živými fotkami, takže sa po vytvorení príspevku fotka po ťuknutí otvorí aj bez opätovného načítania feedu. |
+| 27. 10. 2026 | Vetva 144 (čaká na zlúčenie): manuálne testy na iPhone (iOS 27.0.1) po PR #203 odhalili, že fotka z iPhonu príde cez `/api` na server s prázdnym telom (chyba WebKitu). Nález 197 (appka kopíruje súbory do pamäte pred odoslaním, backend stráž `swaply/empty_upload.py` a log so zariadením) a 198 (dôvod odmietnutia fotky a preložené hlášky pri nahrávaní správ a avatara). Nové nálezy 199 (Nástenka: fotka sa po vytvorení príspevku nedá otvoriť na mobile), 200 (HEIC padá na validácii), 201 (avatar: vstup súboru mimo DOM), 202 (E2E: beh dlhší než 15 minút stratí prihlásenie; z 318 pádov celého behu má túto príčinu 297), 203 (`?` namiesto diakritiky v textoch o fotkách) a 204 (chýbajúce a nepoužité kľúče prekladov). Vetva 143 je zlúčená (PR #203). |
 | 27. 10. 2026 | Vetva 143 (čaká na zlúčenie): časť 183a nálezu 183 – rýchle upgrady backendu (Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30), odstránený nepoužívaný `django-allauth` aj jeho mŕtve nastavenia a CI na Pythone 3.11 (záznamy `pip-audit` 191 → 22; zostáva Django 5.2, Twisted, protobuf, pytest). Rozhodnutie R8 je zodpovedané. Vetva 142 je zlúčená (PR #202). Nové nálezy 193 (`Image.open` bez `formats=`), 194 (CI nekontroluje zraniteľné závislosti), 195 (`.coveragerc`) a 196 (akcie CI cielia na Node.js 20). Po kontrole CodeRabbit (PR #203): minimálna opravená verzia DRF je 3.18.2 a audit z nálezu 194 musí porovnávať výsledok so známymi výnimkami. |
 | 27. 10. 2026 | Vetva 142 (zlúčená, PR #202): časť 184a nálezu 184 – odstránený nepoužívaný `next-intl`, `npm audit fix` a vyššie dolné hranice `axios`, `@sentry/nextjs`, `js-cookie` (zraniteľné balíky frontendu 19 → 2; zostáva `next` 14 → 16 a vnorený `postcss`), import `withSentryConfig` z `@sentry/nextjs/config`. Nález 188 je zlúčený (PR #201). Nový nález 192 (zbytočné súbory v repozitári). Úvod dokumentu podľa CodeRabbit (PR #201): rozsah čísel nálezov sa dopočítava z dát a už nezostarne. |
 | 26. 10. 2026 | Nález 188 opravený na vetve 141 (čaká na zlúčenie): v teste `searchScrollMemory` sú hodiny pevné už pri zápise záznamu (starý variant padal v 0,4 % pokusov, pod záťažou v 2,6 %, nový v 0 z 12 000). Nález 173 je zlúčený (PR #200). Z celého behu E2E na vetve 140 (30 pádov) sú nové nálezy 189–191; ostatné pády sú už zapísané (TEST-17, TEST-12) alebo čakajú na overenie (jazykový test pri zmene jazyka vo webkit-mobile). |
@@ -622,8 +641,8 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 Generátor pri zostavení overil:
 
 - pôvodný zoznam má presne čísla 1–172 raz (47 + 4 + 20 + 101 = 172); všetky pôvodne otvorené sú buď roztriedené, alebo zapísané ako opravené;
-- nové nálezy majú súvislé čísla 173–196;
-- súčet skupín 49 + 0 + 4 + 20 + 2 + 25 + 96 = **196**;
+- nové nálezy majú súvislé čísla 173–206;
+- súčet skupín 49 + 5 + 4 + 20 + 2 + 28 + 98 = **206**;
 - všetkých 68 ID z registra je zaradených práve v jednej skupine (otvorené / čaká živé overenie / zatvorené / pokryté nálezom); žiadne nechýba a žiadne nie je dvakrát;
 - úlohy N1–N16 a rozhodnutia R1–R11 majú súvislé čísla; vlny v časti 2 spomínajú len otvorené položky.
 

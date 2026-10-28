@@ -181,3 +181,63 @@ describe('getMessagingErrorMessage recipient_unavailable', () => {
     ).toBe('generic');
   });
 });
+
+describe('getMessagingErrorMessage – fotka, ktorá nedorazila, a dôvod odmietnutia fotky', () => {
+  const emptyUpload = { response: { status: 400, data: { code: 'empty_message_upload' } } };
+  const imageRejected = (reason: unknown) => ({
+    response: {
+      status: 400,
+      data: {
+        error: 'Neplatné údaje',
+        message: 'Neplatné údaje',
+        code: 'VALIDATION_ERROR',
+        validation_errors: { image: reason },
+      },
+    },
+  });
+
+  it('maps the empty_message_upload code to its dedicated message', () => {
+    expect(
+      getMessagingErrorMessage(emptyUpload, {
+        fallback: 'generic',
+        emptyUploadFallback: 'photo did not arrive',
+      }),
+    ).toBe('photo did not arrive');
+  });
+
+  it('falls back to the generic message when no dedicated empty-upload message is given', () => {
+    expect(getMessagingErrorMessage(emptyUpload, { fallback: 'generic' })).toBe('generic');
+  });
+
+  it('shows the concrete reason a photo was rejected instead of the generic "Neplatné údaje"', () => {
+    expect(
+      getMessagingErrorMessage(imageRejected(['Obrázok je príliš veľký. Maximálna veľkosť je 5MB.']), {
+        fallback: 'generic',
+      }),
+    ).toBe('Obrázok je príliš veľký. Maximálna veľkosť je 5MB.');
+    expect(getMessagingErrorMessage(imageRejected('Neplatný typ súboru.'), { fallback: 'generic' })).toBe(
+      'Neplatný typ súboru.',
+    );
+  });
+
+  it('keeps the generic backend message when the 400 carries no image reason', () => {
+    const noImageReason = {
+      response: {
+        status: 400,
+        data: {
+          error: 'Neplatné údaje',
+          message: 'Neplatné údaje',
+          validation_errors: { non_field_errors: ['Either text or image is required.'] },
+        },
+      },
+    };
+    expect(getMessagingErrorMessage(noImageReason, { fallback: 'generic' })).toBe('Neplatné údaje');
+    expect(getMessagingErrorMessage(imageRejected([]), { fallback: 'generic' })).toBe('Neplatné údaje');
+    expect(getMessagingErrorMessage(imageRejected(['  ']), { fallback: 'generic' })).toBe('Neplatné údaje');
+  });
+
+  it('ignores an image reason on responses that are not a 400', () => {
+    const forbidden = { response: { status: 403, data: { validation_errors: { image: ['x'] } } } };
+    expect(getMessagingErrorMessage(forbidden, { fallback: 'generic', unavailableFallback: 'gone' })).toBe('gone');
+  });
+});

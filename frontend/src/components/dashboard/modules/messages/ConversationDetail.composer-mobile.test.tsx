@@ -14,6 +14,7 @@ import {
   deferred,
   deleteMessage,
   execCommandMock,
+  getMessagingErrorMessage,
   hideConversation,
   installControllableResizeObserver,
   listConversations,
@@ -248,6 +249,35 @@ describe('ConversationDetail mobile composer', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Friendly messaging error');
       expect(input.value).toBe('Nový text');
+    });
+  });
+
+  it('gives the error mapper the message for a photo that never reached the server', async () => {
+    useIsMobile.mockReturnValue(true);
+    (sendMessage as jest.Mock).mockRejectedValue({
+      response: { status: 400, data: { code: 'empty_message_upload' } },
+    });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Fotka' } });
+    fireEvent.focus(input);
+    const sendButton = await screen.findByRole('button', { name: /odosla/i });
+    fireEvent(sendButton, createEvent.pointerDown(sendButton, { bubbles: true, cancelable: true }));
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(getMessagingErrorMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ response: expect.objectContaining({ status: 400 }) }),
+        expect.objectContaining({
+          emptyUploadFallback: 'Fotka sa nedostala na server. Skúste ju odoslať znova.',
+        }),
+      );
     });
   });
 });

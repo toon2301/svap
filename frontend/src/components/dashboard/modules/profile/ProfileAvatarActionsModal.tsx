@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { pickImageFile } from '@/lib/pickImageFile';
 import UserAvatar from './UserAvatar';
 
 interface ProfileAvatarActionsModalProps {
@@ -37,18 +38,9 @@ export default function ProfileAvatarActionsModal({
   };
 
   const handleChangePhotoClick = () => {
+    // Vstup súboru žije v DOM aj po zatvorení modalu, inak na iOS po výbere fotky nepríde `change` (nález 201).
+    pickImageFile(onPhotoUpload);
     onClose();
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (file) {
-        onPhotoUpload(file);
-      }
-    };
-    input.click();
   };
 
   return (

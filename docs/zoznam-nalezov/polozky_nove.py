@@ -110,7 +110,9 @@ NEW_ITEMS = [
          note='Overené v Chromiu na produkčnom builde: keď worker tieto požiadavky nevybavuje, `page.route` funguje aj s aktívnym workerom. '
               'Lokálne meranie nepreukázalo rozdiel v latencii (medián 5,8 ms s workerom, 4,6 ms bez). Zmena `sw.js` je produkčná (PWA, iPhone), '
               'preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
-              '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila).',
+              '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila). Vetva 144: rovnaký vzorec je podľa hlásení iných projektov spúšťačom chyby '
+              'WebKitu pri nahrávaní z iPhonu (nález 197); appka ju obchádza kopírovaním súborov do pamäte, takže zmena `sw.js` už nie je naliehavá, '
+              'no vynechanie `respondWith` pri POST a PATCH by bolo ďalšou poistkou.',
          dec=None, src='vetva 140'),
     dict(n=189, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: jazyk z profilu pri slugu s bodkami',
          what='`e2e/mobile-language-header.spec.ts`: pomocník `ownProfilePath` (riadok 36) pustí len slug zo znakov `A-Za-z0-9_-` (riadok 42), '
@@ -141,7 +143,9 @@ NEW_ITEMS = [
          what='V repozitári sú sledované dva zbytočné súbory: `frontend/backend/.coverage` (53 KB, databáza pokrytia Pythonu v priečinku '
               'frontendu) a `frontend/profilecard-test.txt` (15 KB, výstup PowerShellu z behu `jest --testPathPattern=ProfileCard`).',
          note='Oba pridal merge PR #127 (24. 9.). Koreňový `.gitignore` ignoruje len `backend/.coverage`, nie `frontend/backend/.coverage`. '
-              'Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa.',
+              'Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa. '
+              'Na vetve 144 sa zistili aj tri nepoužité komponenty so starou kópiou nahrávania avatara (nikde sa neimportujú, v meraní pokrytia '
+              'sú vynechané): `ProfileEditForm.tsx`, `ProfileAvatar.tsx` a `profile-edit/shared/AvatarActionsModal.tsx` (aj s testami).',
          dec=None, src='vetva 142'),
     dict(n=193, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='obrázky sa dekódujú bez `formats=`',
          what='Obrázky sa dekódujú cez `Image.open(...)` bez parametra `formats=` na piatich miestach produkčného kódu '
@@ -185,6 +189,53 @@ NEW_ITEMS = [
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
               'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
+    dict(n=202, bucket=P, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: beh dlhší než 15 minút stratí prihlásenie',
+         what='`frontend/e2e/global-setup.ts` sa prihlási raz a všetky testy štartujú z uloženého stavu (`e2e/.auth/user.json`), no access token žije '
+              '15 minút a refresh token sa po prvom použití zablokuje (`ROTATE_REFRESH_TOKENS`, `BLACKLIST_AFTER_ROTATION`). Beh dlhší než približne '
+              '15 minút preto kolabuje: prvý test po vypršaní obnoví token, každý ďalší dostane 401 „Token is blacklisted“, appka ho vráti na '
+              'prihlásenie a `feed-list` sa nezobrazí. Celý beh z 27. 10. (732 testov, `--workers=2`, 1,0 h) mal 318 pádov, z toho 297 má túto príčinu '
+              '(webkit-desktop 22, webkit-mobile 157, chromium-desktop 118); prvých približne 160 testov vo webkit-desktop prešlo, potom sa pády rozbehli.',
+         note='Mechanizmus overený na kóde backendu: prvý kontext po vypršaní dostane z obnovenia 200, druhý a tretí 401. Zvyšných 21 pádov má iné '
+              'príčiny: `google-login-completion` vo WebKit projektoch (10), `notifications-infinite-scroll` (1), druhý testovací účet bez ponuky '
+              '(3), `search-*` (7). Do opravy treba spúšťať E2E po skupinách pod približne 12 minút (každý beh má vlastné prihlásenie). Návrh '
+              'opravy len v testoch: prihlásenie na začiatku každého špecu cez API fixture alebo obnova uloženého stavu so zdieľaným zámkom.',
+         dec=None, src='vetva 144'),
+    dict(n=203, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='diakritika (`?`) v textoch o fotkách v cs, de, hu, pl',
+         what='V `messages/{cs,de,hu,pl}.json` majú texty o fotkách v časti Správy namiesto písmen s diakritikou znak `?` (cs 5, de 4, hu 7, pl 4 '
+              'hodnoty, napr. `messages.attachImage` „P?ilo?it obr?zek“, ďalej `chooseImage`, `takePhoto`, `imageOnlyPreview`, `imageTooLarge`, '
+              '`invalidImageType`), takže pri výbere alebo odmietnutí fotky ukážu tieto jazyky otázniky.',
+         note='Zistené pri vetve 144 hľadaním vzoru písmeno–`?`–písmeno (angličtina 0). Súvisí s nálezom 176 (poľské a maďarské texty bez '
+              'diakritiky). Oprava: doplniť správne texty a pridať test, ktorý v hodnotách prekladov zakáže `?` medzi písmenami.',
+         dec=None, src='vetva 144'),
+    dict(n=204, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='chýbajúce a nepoužité kľúče prekladov',
+         what='`npm run check:used-translation-keys` hlási kľúče, ktoré kód používa, ale nie sú v `messages/sk.json`: `feed.captionPlaceholder` '
+              '(`FeedPostEditModal.tsx`), `feed.commentsClose` (`FeedPhotoCommentsSheet.tsx`) a `feed.openProfile` (`FeedPhotoViewerChrome.tsx`, '
+              '`FeedPostCard.tsx`, `FeedPostComments.tsx`, `FeedPostMobileDetail.tsx`), takže sa vo všetkých jazykoch ukáže natvrdo zadaná slovenčina. '
+              'Naopak `profile.photoRemovedError` je preložený vo všetkých jazykoch, no kód ho nepoužíva a ukazuje doslovný text '
+              '„Nepodarilo sa odstrániť fotku. Skúste znova.“ (`ProfileModule.tsx`).',
+         note='Skript hlási ešte tri kľúče z testu (`common`, `common.save.unavailable`, `missing.path` v `LanguageContext.locale.test.tsx`), ktoré '
+              'sú falošný poplach. Skript nie je súčasťou CI. Oprava: doplniť tri kľúče do všetkých šiestich jazykov, použiť '
+              '`profile.photoRemovedError` a vylúčiť test zo skriptu.',
+         dec=None, src='vetva 144'),
+    dict(n=205, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='päť lenivých registrácií HEIC je po nálezu 200 nadbytočných',
+         what='`register_heif_opener()` sa volá lenivo v piatich moduloch spracovania obrázkov: `swaply/image_metadata.py`, '
+              '`swaply/staged_image_moderation.py`, `swaply/tasks/offer_images.py`, `portfolio/image_processing.py` a '
+              '`messaging/services/image_thumbnails.py`. Od opravy 200 sa podpora HEIC registruje raz pri štarte aplikácie '
+              '(`swaply/heif_support.py`), takže tieto volania sú nadbytočné.',
+         note='Neškodné (registrácia je opakovateľná), preto sa v oprave 200 nemenili, aby zmena ostala malá a ľahko vrátiteľná. Upratanie: '
+              'volania zmazať alebo nahradiť jedným `register_heif_support()`; prirodzene to ide spolu s nálezom 193 (`Image.open` bez `formats=`), '
+              'ktorý tie isté miesta tiež rieši.',
+         dec=None, src='vetva 146'),
+    dict(n=206, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy', kratko='ESLint hlási 681 chýb v 104 súboroch',
+         what='`npx eslint src` hlási 681 chýb a 31 varovaní v 124 z 1 255 súborov frontendu (104 súborov s chybou, z toho 51 testov a 53 produkčných). '
+              'Najviac je `no-unused-vars` (359), `no-explicit-any` (213), `no-require-imports` (66) a `no-unused-expressions` (29, najmä modaly '
+              'úpravy profilu `profile-edit/modals/*`). Deväť chýb `react-hooks/rules-of-hooks` je v `messages/ConversationMessageRow.tsx` '
+              '(riadky 173–233: hooky stoja za predčasným `return` pre skupinové pozvánky a systémové správy).',
+         note='Zmerané 27. 10. na vetve 147. Rozširuje nález 178 (ten opisuje jediný súbor) a súvisí s TOOL-01 (CI lint nespúšťa). '
+              '`ConversationMessageRow` dnes nepadá, lebo typ správy sa pri tom istom `id` nemení; ak by sa niekedy zmenil (napr. skupinová '
+              'pozvánka na obyčajnú správu), React hodí „Rendered more hooks than during the previous render“. Odporúčanie: najprv hooky '
+              'pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory).',
+         dec=None, src='vetva 147'),
 ]
 
 NTASKS = [

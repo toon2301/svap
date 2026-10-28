@@ -12,21 +12,16 @@ from django.core.files.storage import default_storage
 
 from swaply.rate_limiting import api_rate_limit
 from swaply.audit_logger import log_profile_update
+from swaply.empty_upload import (
+    EMPTY_AVATAR_UPLOAD,
+    empty_multipart_response,
+    is_empty_multipart_request,
+)
 
 from ..authentication import invalidate_user_auth_cache
 from ..serializers import UserProfileSerializer
 
 User = get_user_model()
-
-
-def _is_empty_multipart_patch(request) -> bool:
-    """Rozpoznaj úplne prázdny multipart PATCH, ktorý nesmie uspieť naprázdno."""
-    content_type = str(getattr(request, "content_type", "") or "").lower()
-    return (
-        request.method == "PATCH"
-        and content_type.startswith("multipart/form-data")
-        and not request.data
-    )
 
 
 @api_view(["PUT", "PATCH"])
@@ -35,11 +30,9 @@ def _is_empty_multipart_patch(request) -> bool:
 @api_rate_limit
 def update_profile_view(request):
     """Validuj a ulož aktualizáciu profilu prihláseného používateľa."""
-    if _is_empty_multipart_patch(request):
-        return Response(
-            {"code": "empty_avatar_upload"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    # Prázdny multipart PATCH (súbor sa nedoručil) nesmie uspieť naprázdno.
+    if is_empty_multipart_request(request, methods=("PATCH",)):
+        return empty_multipart_response(request, EMPTY_AVATAR_UPLOAD)
 
     # Ulož pôvodné hodnoty pre audit log
     original_data = {

@@ -133,6 +133,8 @@ class TestAvatarValidators:
 
 @pytest.mark.django_db
 class TestAvatarUploadIntegration(APITestCase):
+    """Nahrávanie avatara cez `PATCH /profile/` (S3, validácia, prázdny multipart z iPhonu)."""
+
     def setUp(self):
         self.user = User.objects.create_user(
             username="john",
@@ -187,6 +189,24 @@ class TestAvatarUploadIntegration(APITestCase):
         assert response.data == {"code": "empty_avatar_upload"}
         self.user.refresh_from_db()
         assert self.user.avatar.name == original_name
+
+    def test_empty_multipart_patch_is_logged_without_personal_data(self):
+        """Prázdny upload sa zaloguje s zariadením, ale bez e-mailu či tokenov."""
+        with self.assertLogs("swaply.empty_upload", level="WARNING") as logs:
+            self.client.generic(
+                "PATCH",
+                self.url,
+                data=b"",
+                content_type="multipart/form-data; boundary=----WebKitFormBoundaryX",
+                CONTENT_LENGTH="0",
+                HTTP_USER_AGENT="Mozilla/5.0 (iPhone; CPU iPhone OS 27_0_1)",
+            )
+
+        output = "\n".join(logs.output)
+        assert "code=empty_avatar_upload" in output
+        assert "method=PATCH" in output
+        assert "iPhone OS 27_0_1" in output
+        assert "john@example.com" not in output
 
     def test_json_profile_patch_and_avatar_removal_remain_supported(self):
         """Multipart guard nesmie blokovať JSON profil ani explicitné zmazanie."""

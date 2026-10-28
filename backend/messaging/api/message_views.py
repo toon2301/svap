@@ -15,6 +15,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from swaply.empty_upload import (
+    EMPTY_MESSAGE_UPLOAD,
+    empty_multipart_response,
+    is_empty_multipart_request,
+)
 from swaply.rate_limiting import messaging_send_rate_limit
 from accounts.services.user_blocks import BlockedUserInteractionError
 from ..models import Conversation, ConversationParticipant, Message
@@ -243,10 +248,16 @@ class MessageImageThumbnailView(APIView):
 
 
 class SendMessageView(APIView):
+    """Odošle správu (text a/alebo fotku) do existujúcej konverzácie."""
+
     permission_classes = [IsAuthenticated]
 
     @method_decorator(messaging_send_rate_limit)
     def post(self, request, conversation_id: int):
+        """Vytvorí správu; prázdny multipart (fotka na server nedorazila) odmietne vlastným kódom."""
+        # Fotka, ktorá na server nedorazila (prázdny multipart), dostane vlastný kód.
+        if is_empty_multipart_request(request):
+            return empty_multipart_response(request, EMPTY_MESSAGE_UPLOAD)
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         serializer = SendMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -388,10 +399,16 @@ class PinMessageView(APIView):
 
 
 class StartDirectMessageView(APIView):
+    """Začne priamu konverzáciu a odošle jej prvú správu (text a/alebo fotku)."""
+
     permission_classes = [IsAuthenticated]
 
     @method_decorator(messaging_send_rate_limit)
     def post(self, request):
+        """Vytvorí konverzáciu a správu; prázdny multipart (fotka nedorazila) odmietne vlastným kódom."""
+        # Fotka, ktorá na server nedorazila (prázdny multipart), dostane vlastný kód.
+        if is_empty_multipart_request(request):
+            return empty_multipart_response(request, EMPTY_MESSAGE_UPLOAD)
         serializer = StartDirectMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

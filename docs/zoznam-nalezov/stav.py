@@ -7,12 +7,28 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='27. 10. 2026',
-    kod='`main` `1100c9cc` (po PR #202)',
+    kod='`main` `c776998c` (po PR #203)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('27. 10. 2026',
+     'Vetva 147 (čaká na zlúčenie, nadväzuje na vetvu 146): nález 201 – výber fotky avatara cez vstup, ktorý žije v DOM (iOS). Nový nález 206 '
+     '(ESLint hlási 681 chýb v 104 súboroch frontendu, deväť z nich `rules-of-hooks` v `ConversationMessageRow.tsx`).'),
+    ('27. 10. 2026',
+     'Vetva 146 (čaká na zlúčenie, nadväzuje na vetvu 145): nález 200 – HEIC z iPhonu prejde validáciou obrázka hneď od prvej požiadavky, '
+     'pretože sa `pillow-heif` registruje pri štarte aplikácie. Nový nález 205 (päť lenivých registrácií HEIC je nadbytočných).'),
+    ('27. 10. 2026',
+     'Vetva 145 (čaká na zlúčenie, nadväzuje na vetvu 144): nález 199 – mobilný prehliadač fotky na Nástenke dostane od karty príspevok '
+     's živými fotkami, takže sa po vytvorení príspevku fotka po ťuknutí otvorí aj bez opätovného načítania feedu.'),
+    ('27. 10. 2026',
+     'Vetva 144 (čaká na zlúčenie): manuálne testy na iPhone (iOS 27.0.1) po PR #203 odhalili, že fotka z iPhonu príde cez `/api` na server s '
+     'prázdnym telom (chyba WebKitu). Nález 197 (appka kopíruje súbory do pamäte pred odoslaním, backend stráž `swaply/empty_upload.py` a log so '
+     'zariadením) a 198 (dôvod odmietnutia fotky a preložené hlášky pri nahrávaní správ a avatara). Nové nálezy 199 (Nástenka: fotka sa po '
+     'vytvorení príspevku nedá otvoriť na mobile), 200 (HEIC padá na validácii), 201 (avatar: vstup súboru mimo DOM), 202 (E2E: beh dlhší než '
+     '15 minút stratí prihlásenie; z 318 pádov celého behu má túto príčinu 297), 203 (`?` namiesto diakritiky v textoch o fotkách) a 204 '
+     '(chýbajúce a nepoužité kľúče prekladov). Vetva 143 je zlúčená (PR #203).'),
     ('27. 10. 2026',
      'Vetva 143 (čaká na zlúčenie): časť 183a nálezu 183 – rýchle upgrady backendu (Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
      'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30), odstránený nepoužívaný `django-allauth` '
@@ -52,6 +68,42 @@ DONE_SINCE = [
          text='HOTOVÉ: test „rejects expired records and future timestamps“ v `searchScrollMemory.test.ts` zafixuje hodiny pred zápisom '
               'záznamu, takže už nepadá náhodne. Starý variant: 16 pádov zo 4 000 bez záťaže a približne 104 zo 4 000 pod záťažou, '
               'nový 0 z 12 000. Mutácie expirácie a odmietania budúcich časov test stále zabijú.'),
+    dict(n=197, vetva='144', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na overenie na iPhone po nasadení): nahrávanie fotiek z iPhonu (iOS 27.0.1, podľa hlásení aj Safari 26.5.x) prišlo cez '
+              '`/api` na server s prázdnym telom, takže správa skončila hláškou „Neplatné údaje“ a zmena avatara všeobecnou chybou. Príčina je '
+              'chyba WebKitu: `File` z `<input type="file">` sa cez XHR/fetch pošle s `Content-Length: 0` (hlásia ju aj iné projekty; oprava je v '
+              'WebKite zlúčená, vydanie nie je známe). Appka teraz pred odoslaním kopíruje súbory z `FormData` do pamäte (`lib/materializeUploadFiles.ts`, '
+              'jeden axios interceptor v `lib/api.ts`) a pri zlyhaní čítania pošle pôvodný súbor. Backend rozpoznáva prázdny multipart zdieľanou '
+              'stráž ou `swaply/empty_upload.py` (správy: kód `empty_message_upload`, avatar: `empty_avatar_upload`) a zapíše ho do logu s '
+              'user-agentom. Priame nahrávanie na S3 (príspevky, ponuky, portfólio) sa nemenilo, z iPhonu funguje. Overené Jestom, pytestom a '
+              'mutačnými kontrolami a v Chromiu so simuláciou chyby.'),
+    dict(n=198, vetva='144', pr=None, zlucene=False,
+         text='HOTOVÉ: pri 400 na odoslanie správy appka ukazovala všeobecné „Neplatné údaje“, aj keď backend poslal dôvod pri fotke (príliš veľká, '
+              'zlý formát, zlyhaná kontrola obsahu); `getMessagingErrorMessage` teraz ukáže dôvod z `validation_errors.image`. Fotka, ktorá na server '
+              'nedorazila, má vlastné preložené hlášky (`messages.uploadEmpty`, `profile.photoUploadEmpty`) vo všetkých šiestich jazykoch a pri '
+              'avatare sa namiesto doslovného textu v kóde používa existujúci preklad `profile.photoUploadError`.'),
+    dict(n=199, vetva='145', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na overenie na iPhone po nasadení): mobilný prehliadač fotky na Nástenke dostával od karty zastaraný príspevok bez '
+              'adries fotiek (fotky, ktoré sa po vytvorení príspevku ešte spracúvali, dosleduje polling len v stave karty), takže sa `ImageLightbox` '
+              'hneď po otvorení zavrel a ťuk na hotovú fotku „nič neurobil“, kým sa feed nenačítal znova. Prehliadač teraz dostane príspevok '
+              's živými fotkami karty (`feed/useViewerPost.ts`); polling sa nereštartuje a objekt sa mení len pri zmene príspevku alebo fotiek. '
+              'Overené Jestom (dva regresné testy zlyhajú, keď sa zapojenie vráti) a v Chromiu s rozmermi iPhonu na produkčnom builde.'),
+    dict(n=200, vetva='146', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na overenie na iPhone po nasadení): podpora HEIC (`pillow-heif`) sa registruje pri štarte aplikácie '
+              '(`swaply/heif_support.py`, volané z `AccountsConfig.ready()`), takže HEIC z iPhonu prejde validáciou `ImageField` v DRF už od prvej '
+              'požiadavky v každom procese; predtým len v procese, ktorý už predtým spracoval iný obrázok. Chýbajúca knižnica štart nezhodí, zapíše '
+              'varovanie. Overené: test v čerstvom procese (pred opravou zlyhal s „Uploadujte prosím obrázok…“, po oprave prejde) a odoslanie HEIC '
+              'správy cez HTTP v čerstvom procese (pred opravou 400 „Neplatné údaje“, po oprave 201 aj s miniatúrou). Päť lenivých registrácií v '
+              'moduloch spracovania obrázkov sa nemenilo (nález 205).'),
+    dict(n=201, vetva='147', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na overenie na iPhone po nasadení): výber fotky avatara cez „Zmeniť fotku“ (profil aj mobilná úprava profilu) a v '
+              'desktopovom formulári úpravy profilu používal `document.createElement(\'input\')`, ktorý sa nikdy nepripojil do DOM; WebKit na iOS '
+              'takýto element po zatvorení modalu môže odpratať a `change` sa nespustí, takže sa po výbere fotky nestalo nič (ani chyba). '
+              'Nový pomocník `lib/pickImageFile.ts` drží skrytý vstup v `document.body` až do výberu alebo zrušenia a používa ho modal aj '
+              'formulár. Overené Jestom (tri mutácie testy zabijú: odpojený vstup v modale aj vo formulári a pomocník bez pripojenia do DOM). '
+              'Príčinu na iPhone som tu nemohol reprodukovať (chýba WebKit), preto ostáva overenie po nasadení. Po opravách 197 a 198 zlyhaná '
+              'zmena avatara vždy ukáže hlášku; ak by sa po výbere fotky stále nestalo vôbec nič (ani hláška), `change` sa nespúšťa z iného '
+              'dôvodu a treba ďalšie hlásenie z iPhonu.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
@@ -81,24 +133,24 @@ SERIA_UPOZORNENIA = (
 PORADIE = [
     dict(vlna='0 – najprv',
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
-            'Django 4.2.30, odstránenie allauth) je hotový na vetve 143 a čaká na zlúčenie, frontend (`npm audit fix`, odstránený `next-intl`) je '
+            'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
             'zlúčený (vetva 142). Zvyšok 183 a 184 (Django 5.2, protobuf, `next` 14 → 16) je vo vlne 1',
          preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), '
-            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190)',
+            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190, 202)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190']),
+         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190', '202']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone.',
          polozky=['13', '14', '174', '81', '119', '91', '92', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='120, 175, 176, 177, APP-03, 186 (a podľa R2 poradie jazykov)',
+         co='120, 175, 176, 177, 203, 204, APP-03, 186 (a podľa R2 poradie jazykov)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
-         polozky=['120', '175', '176', '177', 'APP-03', '186']),
+         polozky=['120', '175', '176', '177', '203', '204', 'APP-03', '186']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',
