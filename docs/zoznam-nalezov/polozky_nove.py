@@ -189,17 +189,6 @@ NEW_ITEMS = [
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
               'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
-    dict(n=202, bucket=P, imp=S_, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: beh dlhší než 15 minút stratí prihlásenie',
-         what='`frontend/e2e/global-setup.ts` sa prihlási raz a všetky testy štartujú z uloženého stavu (`e2e/.auth/user.json`), no access token žije '
-              '15 minút a refresh token sa po prvom použití zablokuje (`ROTATE_REFRESH_TOKENS`, `BLACKLIST_AFTER_ROTATION`). Beh dlhší než približne '
-              '15 minút preto kolabuje: prvý test po vypršaní obnoví token, každý ďalší dostane 401 „Token is blacklisted“, appka ho vráti na '
-              'prihlásenie a `feed-list` sa nezobrazí. Celý beh z 27. 10. (732 testov, `--workers=2`, 1,0 h) mal 318 pádov, z toho 297 má túto príčinu '
-              '(webkit-desktop 22, webkit-mobile 157, chromium-desktop 118); prvých približne 160 testov vo webkit-desktop prešlo, potom sa pády rozbehli.',
-         note='Mechanizmus overený na kóde backendu: prvý kontext po vypršaní dostane z obnovenia 200, druhý a tretí 401. Zvyšných 21 pádov má iné '
-              'príčiny: `google-login-completion` vo WebKit projektoch (10), `notifications-infinite-scroll` (1), druhý testovací účet bez ponuky '
-              '(3), `search-*` (7). Do opravy treba spúšťať E2E po skupinách pod približne 12 minút (každý beh má vlastné prihlásenie). Návrh '
-              'opravy len v testoch: prihlásenie na začiatku každého špecu cez API fixture alebo obnova uloženého stavu so zdieľaným zámkom.',
-         dec=None, src='vetva 144'),
     dict(n=204, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='chýbajúce a nepoužité kľúče prekladov',
          what='`npm run check:used-translation-keys` hlási kľúče, ktoré kód používa, ale nie sú v `messages/sk.json`: `feed.captionPlaceholder` '
               '(`FeedPostEditModal.tsx`), `feed.commentsClose` (`FeedPhotoCommentsSheet.tsx`) a `feed.openProfile` (`FeedPhotoViewerChrome.tsx`, '
@@ -236,13 +225,30 @@ NEW_ITEMS = [
               'Vision (`check_image_safety` vo `validate_image_file`, limit `SAFESEARCH_TIMEOUT` 5 s); potom v transakcii so zámkom konverzácie '
               '`strip_image_metadata` (odstránenie EXIF prekódovaním), uloženie originálu a miniatúry do úložiska (S3). Počas odosielania sa len '
               'zablokujú tlačidlá (`sending`, nižšia priehľadnosť), bez indikátora priebehu.',
-         note='Lokálne meranie 28. 10. (bez Google Vision a S3, snímka 4032 × 3024 JPEG 3,3 MB): spracovanie na serveri 0,4 až 0,8 s (medián '
-              '0,59 s), z toho prekódovanie `strip_image_metadata` 0,25 s a miniatúra 0,16 s. Zvyšok je sieť (nahranie z telefónu, Vision, S3), '
-              'ktorú tu nemožno zmerať. Prvý krok bez zmeny kódu: na Railway zapnúť `SAFESEARCH_TIMING_LOG=true` a porovnať čas Vision s celkovým '
-              'časom. Možné zlepšenia: zmenšiť fotku v prehliadači pred odoslaním (napr. dlhšia strana 2048 px, výrazne menej dát aj práce servera; '
+         note='Meranie na iPhone 28. 10. (jedna fotka, stopky od ťuknutia po zobrazenie správy): Wi-Fi približne 5 s, mobilné dáta 4,25 s. Rozdiel '
+              'medzi sieťami je malý a mobilné dáta vyšli rýchlejšie, čo naznačuje, že väčšinu času netvorí nahranie z telefónu; je to len hypotéza '
+              'z jedného merania. Lokálne meranie 28. 10. (v sandboxe bez Google Vision a S3, snímka 4032 × 3024 JPEG 3,3 MB): spracovanie na serveri '
+              '0,4 až 0,8 s (medián 0,59 s), z toho prekódovanie `strip_image_metadata` 0,25 s a miniatúra 0,16 s. Obe merania prebehli v rôznych '
+              'prostrediach (iPhone a Railway oproti lokálnemu stroju bez Vision a S3), preto z ich rozdielu nemožno určiť, koľko času pripadá na '
+              'náš kód, Vision, S3 alebo siete; Railway môže mať pomalší procesor, takže aj náš kód tam môže trvať dlhšie než 0,6 s. Všetko to sú '
+              'zatiaľ hypotézy. Prvý krok bez zmeny kódu: na Railway zapnúť `SAFESEARCH_TIMING_LOG=true` a porovnať čas Vision s celkovým časom '
+              '(podľa výsledku doplniť meranie krokov spracovania priamo na serveri). Možné zlepšenia: zmenšiť fotku v prehliadači pred odoslaním (napr. dlhšia strana 2048 px, výrazne menej dát aj práce servera; '
               'zasahuje do kvality a do pravidla 5 MB, treba rozhodnúť), ukázať indikátor odosielania, spracovanie obrazu mimo transakcie so '
               'zámkom konverzácie.',
          dec=None, src='vetva 148'),
+    dict(n=208, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='CI beží na Node 18, ktorý už nemá podporu',
+         what='`.github/workflows/deploy.yml` spúšťa testy aj build frontendu na Node 18 (`node-version: \'18\'`). Node 18 skončil podporu v apríli '
+              '2025, takže nedostáva ani bezpečnostné opravy (Node 20 skončil podporu 30. 4. 2026, Node 22 ju má do 30. 4. 2027). Playwright 1.63 '
+              'vyžaduje Node 20 alebo novší (`engines`) a na Node 18 sa pri načítaní sám ukončí, čo na vetve 149 zhodilo celý Jest v CI; `next` 16 '
+              '(nález 184) vyžaduje Node 20.9 alebo novší. Frontend nemá zafixovanú verziu Node (žiadne `engines`, `.nvmrc` ani Dockerfile), '
+              'takže nie je jasné, na akej verzii beží na Railway.',
+         note='Zistené 28. 10. pri neúspešnom CI na PR #206 (reprodukované lokálne príkazom na Node 18). Dočasné riešenie vo vetve 149: pravidlá '
+              'obnovy prihlásenia sú v module bez Playwrightu a tri testy proti zástupnému serveru sa na Node nižšom než 20 preskočia. '
+              'CodeRabbit na PR #206 navrhol zvýšiť Node v CI na 20, aby bežali aj tie tri testy. Smer je správny, no zmena workflow ovplyvní '
+              'všetky testy aj build, nielen strážcu prihlásenia, a Node 20 už tiež nemá podporu, preto sa robí samostatne a nie v PR #206. '
+              'Oprava: zvýšiť Node v CI na 22 LTS (alebo novší LTS), zafixovať verziu pre Railway (`engines` v `package.json`) a overiť '
+              '`npm test` aj `npm run build`; patrí k úprave workflow spolu s nálezmi 194 a 196 a k veľkej aktualizácii 184.',
+         dec=None, src='vetva 149'),
 ]
 
 NTASKS = [
