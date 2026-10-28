@@ -16,7 +16,8 @@ ZMENY = [
     ('28. 10. 2026',
      'Vetva 149 (čaká na zlúčenie): nález 202 – strážca prihlásenia v E2E testoch: počas behu každých 5 minút obnoví prihlásenie a prepíše súbor, '
      'z ktorého štartujú testy, takže dlhý beh sa po 15 minútach nerozpadne (297 z 318 pádov celého behu). Vetva 148 je zlúčená (PR #205). '
-     'Do nálezu 207 doplnené meranie na iPhone (Wi-Fi približne 5 s, mobilné dáta 4,25 s).'),
+     'Do nálezu 207 doplnené meranie na iPhone (Wi-Fi približne 5 s, mobilné dáta 4,25 s). CI na PR #206 zlyhalo, lebo Playwright sa na Node 18 '
+     '(verzia v CI) pri načítaní sám ukončí a zhodil Jest; test strážcu je upravený a nový nález 208 (CI beží na Node 18).'),
     ('28. 10. 2026',
      'Vetva 148 (čaká na zlúčenie): nález 203 – opravená poškodená diakritika (`?`) v prekladoch cs, de, hu a pl a test, ktorý ju hlási; '
      'ukázala ju veľká fotka v správach pri českom rozhraní (toast „Obr?zek je p??li? velk?“). Poškodených hodnôt je 23, nie 20. Nový nález 207 '
@@ -128,8 +129,9 @@ DONE_SINCE = [
               '(`e2e/support/sessionKeeper.ts`, obnova v `e2e/support/refreshStorageState.ts`, zapojenie v `global-setup.ts`) počas behu každých '
               '5 minút (voliteľne `E2E_SESSION_KEEPER_SECONDS`) obnoví prihlásenie rovnako ako appka (`POST /api/token/refresh/` s CSRF hlavičkou '
               'a pôvodom požiadavky) a atomicky prepíše súbor s prihlásením, takže každý nový test štartuje s čerstvým; na konci behu počká na '
-              'rozbehnutú obnovu. Zmena sa týka len testov. Overené Jestom (13 testov, 7 skúšobných poškodení zabité, vrátane zástupného servera, '
-              'ktorý kontroluje CSRF a pôvod) a v Chromiu proti lokálnej kópii s prihlásením platným 90 s: bez strážcu padol test hneď po vypršaní '
+              'rozbehnutú obnovu. Zmena sa týka len testov. Overené Jestom (16 testov, 10 skúšobných poškodení zabitých; tri testy proti zástupnému '
+              'serveru, ktorý kontroluje CSRF a pôvod, bežia len na Node 20 a novšom, na Node 18 z CI sa preskočia, nález 208) a v Chromiu proti '
+              'lokálnej kópii s prihlásením platným 90 s: bez strážcu padol test hneď po vypršaní '
               '(test 7 po 113 s), so strážcom prešlo všetkých 10 testov za 3 minúty (súbor s prihlásením mal pri štarte testov najviac 27 s). '
               'Celý beh na Railway a vo WebKite sa tu overiť nedal; zvyšných približne 21 pádov z iných príčin (napr. 189, 190) táto oprava '
               'nerieši.'),
@@ -168,9 +170,9 @@ PORADIE = [
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), '
-            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190)',
+            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190, 208)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190']),
+         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190', '208']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',

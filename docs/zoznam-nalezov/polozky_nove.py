@@ -234,6 +234,16 @@ NEW_ITEMS = [
               'zasahuje do kvality a do pravidla 5 MB, treba rozhodnúť), ukázať indikátor odosielania, spracovanie obrazu mimo transakcie so '
               'zámkom konverzácie.',
          dec=None, src='vetva 148'),
+    dict(n=208, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='CI beží na Node 18, ktorý už nemá podporu',
+         what='`.github/workflows/deploy.yml` spúšťa testy aj build frontendu na Node 18 (`node-version: \'18\'`). Node 18 skončil podporu v apríli '
+              '2025, takže nedostáva ani bezpečnostné opravy. Playwright 1.63 vyžaduje Node 20 alebo novší (`engines`) a na Node 18 sa pri načítaní '
+              'sám ukončí, čo na vetve 149 zhodilo celý Jest v CI; `next` 16 (nález 184) vyžaduje Node 20.9 alebo novší. Frontend nemá zafixovanú '
+              'verziu Node (žiadne `engines`, `.nvmrc` ani Dockerfile), takže nie je jasné, na akej verzii beží na Railway.',
+         note='Zistené 28. 10. pri neúspešnom CI na PR #206 (reprodukované lokálne príkazom na Node 18). Dočasné riešenie vo vetve 149: pravidlá '
+              'obnovy prihlásenia sú v module bez Playwrightu a tri testy proti zástupnému serveru sa na Node nižšom než 20 preskočia. Oprava: '
+              'zvýšiť Node v CI na 22 LTS (alebo aspoň 20), zafixovať verziu pre Railway (`engines` v `package.json`) a overiť `npm test` aj '
+              '`npm run build`; patrí k úprave workflow spolu s nálezmi 194 a 196 a k veľkej aktualizácii 184.',
+         dec=None, src='vetva 149'),
 ]
 
 NTASKS = [
