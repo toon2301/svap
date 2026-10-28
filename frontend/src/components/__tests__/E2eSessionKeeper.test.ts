@@ -70,6 +70,7 @@ describe('strážca prihlásenia', () => {
 
   afterEach(async () => {
     await Promise.all(keepers.splice(0).map((keeper) => keeper.stop()));
+    jest.restoreAllMocks();
     fs.rmSync(directory, { recursive: true, force: true });
   });
 
@@ -111,6 +112,36 @@ describe('strážca prihlásenia', () => {
     expect(warnings[0].length).toBeLessThan(400);
 
     await until(() => marker() === 'obnova');
+    expect(warnings).toHaveLength(1);
+  });
+
+  it('keď zápis po úspešnej obnove zlyhá, nový stav sa nestratí a nabudúce sa len zapíše', async () => {
+    // Obnova je jednorazová: server už starý refresh token zablokoval, takže nová obnova zo zastaraného súboru by už nikdy nepreišla.
+    const warnings: string[] = [];
+    const refreshedFrom: string[] = [];
+    const realRename = fs.promises.rename.bind(fs.promises);
+    jest
+      .spyOn(fs.promises, 'rename')
+      .mockRejectedValueOnce(Object.assign(new Error('no space left on device'), { code: 'ENOSPC' }))
+      .mockImplementation((from, to) => realRename(from, to));
+    start({
+      storageStatePath: file,
+      intervalMs: FAST,
+      warn: (message) => warnings.push(message),
+      refresh: async () => {
+        refreshedFrom.push(marker());
+        return state(`obnova-${refreshedFrom.length}`);
+      },
+    });
+
+    await until(() => marker() === 'obnova-1');
+    expect(refreshedFrom).toEqual(['login']);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('zápis');
+    expect(warnings[0]).toContain('v pamäti');
+
+    await until(() => marker() === 'obnova-2');
+    expect(refreshedFrom).toEqual(['login', 'obnova-1']);
     expect(warnings).toHaveLength(1);
   });
 

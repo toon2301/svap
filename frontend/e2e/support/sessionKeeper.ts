@@ -80,17 +80,28 @@ export function startSessionKeeper(options: SessionKeeperOptions): SessionKeeper
   let stopped = false;
   let inFlight: Promise<void> | null = null;
   let failuresInRow = 0;
+  // Čerstvo obnovený stav, ktorý sa ešte nepodarilo zapísať. Obnova je jednorazová (server už starý refresh token zablokoval), takže
+  // ho nesmieme zahodiť: ďalšia obnova zo zastaraného súboru by už nikdy nepreišla. Ďalší pokus ho preto len zapíše.
+  let unsavedState: StoredBrowserState | null = null;
 
   const refreshNow = async () => {
+    let step = 'obnova';
     try {
-      const state = await options.refresh();
-      await writeFileAtomically(options.storageStatePath, JSON.stringify(state, null, 2));
+      if (!unsavedState) {
+        unsavedState = await options.refresh();
+      }
+      step = 'zápis';
+      await writeFileAtomically(options.storageStatePath, JSON.stringify(unsavedState, null, 2));
+      unsavedState = null;
       failuresInRow = 0;
     } catch (error) {
       failuresInRow += 1;
       warn(
-        `Strážca prihlásenia: obnova zlyhala (${failuresInRow}. pokus za sebou): ${describeError(error)}. ` +
-          'Súbor s prihlásením ostal bez zmeny, testy po vypršaní prihlásenia môžu padať.',
+        step === 'zápis'
+          ? `Strážca prihlásenia: obnova prebehla, no zápis súboru zlyhal (${failuresInRow}. pokus za sebou): ${describeError(error)}. ` +
+              'Nový stav ostal v pamäti a zápis sa zopakuje pri ďalšom pokuse; do vtedy testy štartujú so starším prihlásením.'
+          : `Strážca prihlásenia: obnova zlyhala (${failuresInRow}. pokus za sebou): ${describeError(error)}. ` +
+              'Súbor s prihlásením ostal bez zmeny, testy po vypršaní prihlásenia môžu padať.',
       );
     }
   };
