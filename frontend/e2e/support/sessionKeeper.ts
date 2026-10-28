@@ -48,8 +48,9 @@ const MAX_RENAME_ATTEMPTS = 5;
  */
 export async function writeFileAtomically(target: string, content: string): Promise<void> {
   const temporary = `${target}.${process.pid}.tmp`;
-  await fs.promises.writeFile(temporary, content, { mode: 0o600 });
   try {
+    // Aj zlyhanie uprostred zápisu (plný disk) nesmie nechať čiastočný súbor s prihlásením na disku.
+    await fs.promises.writeFile(temporary, content, { mode: 0o600 });
     for (let attempt = 1; ; attempt += 1) {
       try {
         await fs.promises.rename(temporary, target);

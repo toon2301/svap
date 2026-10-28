@@ -238,6 +238,19 @@ describe('zápis súboru s prihlásením', () => {
     expect(fs.readFileSync(target, 'utf8')).toBe('{"ok":true}');
   });
 
+  it('keď zápis dočasného súboru zlyhá uprostred, čiastočný súbor sa odstráni', async () => {
+    const target = path.join(directory, 'user.json');
+    const realWriteFile = fs.promises.writeFile.bind(fs.promises);
+    jest.spyOn(fs.promises, 'writeFile').mockImplementation(async (file, _data, options) => {
+      await realWriteFile(file, 'čiastočný obsah', options);
+      throw Object.assign(new Error('no space left on device'), { code: 'ENOSPC' });
+    });
+
+    await expect(writeFileAtomically(target, '{"a":1}')).rejects.toThrow('no space left');
+
+    expect(fs.readdirSync(directory)).toEqual([]);
+  });
+
   it('inú chybu než zámok súboru nezopakuje, dočasný súbor odstráni a chybu vráti', async () => {
     const target = path.join(directory, 'user.json');
     jest
