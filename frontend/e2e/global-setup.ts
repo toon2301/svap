@@ -1,4 +1,6 @@
 import { chromium, type FullConfig } from '@playwright/test';
+import { refreshStorageState } from './support/refreshStorageState';
+import { startSessionKeeper } from './support/sessionKeeper';
 
 const REQUIRED_ENV = ['E2E_TEST_EMAIL', 'E2E_TEST_PASSWORD'] as const;
 
@@ -50,4 +52,14 @@ export default async function globalSetup(config: FullConfig) {
   } finally {
     await browser.close();
   }
+
+  // Prihlásenie platí 15 minút a jeho obnova je jednorazová, takže bez strážcu by po približne 15 minútach všetky testy
+  // štartovali s neplatným prihlásením (nález 202). Strážca ho počas behu obnovuje a súbor prepisuje.
+  const seconds = Number(process.env.E2E_SESSION_KEEPER_SECONDS);
+  const keeper = startSessionKeeper({
+    storageStatePath: storageState as string,
+    intervalMs: Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : undefined,
+    refresh: () => refreshStorageState({ baseURL: baseURL as string, storageStatePath: storageState as string }),
+  });
+  return () => keeper.stop();
 }
