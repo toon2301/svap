@@ -23,9 +23,9 @@ import {
 const FAST = 15;
 
 /**
- * `refreshStorageState` používa Playwright, ktorý sa na Node 18 (tak beží CI) pri načítaní sám ukončí a zhodil by celý Jest.
- * Načíta sa preto až v teste a len tam, kde to Node dovolí (testy proti zástupnému serveru). Pravidlá požiadavky sú v
- * `refreshRequest.ts` bez Playwrightu, takže ich overuje aj CI.
+ * `refreshStorageState` používa Playwright, ktorý sa na Node nižšom než 20 pri načítaní sám ukončí a zhodil by celý Jest (kým CI
+ * bežalo na Node 18, zhodil). Načíta sa preto až v teste a len tam, kde to Node dovolí; CI beží na Node 22, takže testy proti
+ * zástupnému serveru bežia aj v ňom. Pravidlá požiadavky sú v `refreshRequest.ts` bez Playwrightu, takže sa overujú aj na starom Node.
  */
 const PLAYWRIGHT_SUPPORTED = Number(process.versions.node.split('.')[0]) >= 20;
 const describeWithPlaywright = PLAYWRIGHT_SUPPORTED ? describe : describe.skip;
