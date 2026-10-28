@@ -13,7 +13,7 @@ import http from 'http';
 import type { AddressInfo } from 'net';
 import os from 'os';
 import path from 'path';
-import { refreshStorageState } from '../../../e2e/support/refreshStorageState';
+import { REFRESH_PATH, buildRefreshHeaders } from '../../../e2e/support/refreshRequest';
 import {
   startSessionKeeper,
   writeFileAtomically,
@@ -21,6 +21,18 @@ import {
 } from '../../../e2e/support/sessionKeeper';
 
 const FAST = 15;
+
+/**
+ * `refreshStorageState` používa Playwright, ktorý sa na Node 18 (tak beží CI) pri načítaní sám ukončí a zhodil by celý Jest.
+ * Načíta sa preto až v teste a len tam, kde to Node dovolí (testy proti zástupnému serveru). Pravidlá požiadavky sú v
+ * `refreshRequest.ts` bez Playwrightu, takže ich overuje aj CI.
+ */
+const PLAYWRIGHT_SUPPORTED = Number(process.versions.node.split('.')[0]) >= 20;
+const describeWithPlaywright = PLAYWRIGHT_SUPPORTED ? describe : describe.skip;
+
+async function loadRefreshStorageState() {
+  return (await import('../../../e2e/support/refreshStorageState')).refreshStorageState;
+}
 
 function state(marker: string): StoredBrowserState {
   return { cookies: [{ name: 'access_token', value: marker }], origins: [] };
@@ -238,7 +250,28 @@ describe('zápis súboru s prihlásením', () => {
   });
 });
 
-describe('obnova prihlásenia proti zástupnému serveru', () => {
+describe('hlavičky obnovy prihlásenia (bez prehliadača)', () => {
+  it('posiela CSRF token, pôvod a odkazujúcu stránku podľa adresy aplikácie', () => {
+    expect(buildRefreshHeaders('https://app.example.test/dashboard?x=1', 'csrf-abc')).toEqual({
+      Origin: 'https://app.example.test',
+      Referer: 'https://app.example.test/',
+      'X-CSRFToken': 'csrf-abc',
+    });
+  });
+
+  it('bez cookie csrftoken CSRF hlavičku nevymýšľa', () => {
+    expect(buildRefreshHeaders('http://localhost:3914')).toEqual({
+      Origin: 'http://localhost:3914',
+      Referer: 'http://localhost:3914/',
+    });
+  });
+
+  it('obnova mieri na rovnakú cestu ako appka', () => {
+    expect(REFRESH_PATH).toBe('/api/token/refresh/');
+  });
+});
+
+describeWithPlaywright('obnova prihlásenia proti zástupnému serveru', () => {
   let server: http.Server;
   let baseURL: string;
   let directory: string;
@@ -323,6 +356,7 @@ describe('obnova prihlásenia proti zástupnému serveru', () => {
       { name: 'refresh_token', value: 'refresh-1', path: '/api' },
     ]);
 
+    const refreshStorageState = await loadRefreshStorageState();
     const result = (await refreshStorageState({ baseURL, storageStatePath: stored })) as {
       cookies: Array<{ name: string; value: string }>;
       origins: Array<{ localStorage: Array<{ name: string; value: string }> }>;
@@ -340,6 +374,7 @@ describe('obnova prihlásenia proti zástupnému serveru', () => {
       { name: 'refresh_token', value: 'refresh-0-zablokovany', path: '/api' },
     ]);
 
+    const refreshStorageState = await loadRefreshStorageState();
     const failure = await refreshStorageState({ baseURL, storageStatePath: stored }).then(
       () => null,
       (error: Error) => error,
@@ -353,6 +388,7 @@ describe('obnova prihlásenia proti zástupnému serveru', () => {
   it('bez cookie csrftoken server požiadavku odmietne a obnova zlyhá (nepredstiera úspech)', async () => {
     const stored = writeStored([{ name: 'refresh_token', value: 'refresh-1', path: '/api' }]);
 
+    const refreshStorageState = await loadRefreshStorageState();
     await expect(refreshStorageState({ baseURL, storageStatePath: stored })).rejects.toThrow('HTTP 403');
   });
 });
