@@ -18,7 +18,8 @@ ZMENY = [
      'z ktorého štartujú testy, takže dlhý beh sa po 15 minútach nerozpadne (297 z 318 pádov celého behu). Vetva 148 je zlúčená (PR #205). '
      'Do nálezu 207 doplnené meranie na iPhone (Wi-Fi približne 5 s, mobilné dáta 4,25 s). CI na PR #206 zlyhalo, lebo Playwright sa na Node 18 '
      '(verzia v CI) pri načítaní sám ukončí a zhodil Jest; test strážcu je upravený a nový nález 208 (CI beží na Node 18). Po kontrole CodeRabbit '
-     '(PR #206): dočasný súbor s prihlásením sa odstráni aj vtedy, keď zlyhá až jeho zápis, a text nálezu 207 vedie príčinu spomalenia ako hypotézu.'),
+     '(PR #206): dočasný súbor s prihlásením sa odstráni aj vtedy, keď zlyhá až jeho zápis, text nálezu 207 vedie príčinu spomalenia ako '
+     'hypotézu a nový stav po úspešnej obnove sa nestratí, keď zlyhá zápis súboru (ostane v pamäti a zapíše sa pri ďalšom pokuse).'),
     ('28. 10. 2026',
      'Vetva 148 (čaká na zlúčenie): nález 203 – opravená poškodená diakritika (`?`) v prekladoch cs, de, hu a pl a test, ktorý ju hlási; '
      'ukázala ju veľká fotka v správach pri českom rozhraní (toast „Obr?zek je p??li? velk?“). Poškodených hodnôt je 23, nie 20. Nový nález 207 '
@@ -129,8 +130,9 @@ DONE_SINCE = [
               'navyše dovolí len 10 obnovení za minútu z jednej adresy, čo pád po vypršaní ešte zhoršilo. Nový strážca prihlásenia '
               '(`e2e/support/sessionKeeper.ts`, obnova v `e2e/support/refreshStorageState.ts`, zapojenie v `global-setup.ts`) počas behu každých '
               '5 minút (voliteľne `E2E_SESSION_KEEPER_SECONDS`) obnoví prihlásenie rovnako ako appka (`POST /api/token/refresh/` s CSRF hlavičkou '
-              'a pôvodom požiadavky) a atomicky prepíše súbor s prihlásením, takže každý nový test štartuje s čerstvým; na konci behu počká na '
-              'rozbehnutú obnovu. Zmena sa týka len testov. Overené Jestom (16 testov, 10 skúšobných poškodení zabitých; tri testy proti zástupnému '
+              'a pôvodom požiadavky) a atomicky prepíše súbor s prihlásením, takže každý nový test štartuje s čerstvým; ak zápis po úspešnej obnove zlyhá, nový stav '
+              'ostane v pamäti a zapíše sa pri ďalšom pokuse (obnova je jednorazová, zo zastaraného súboru by už neprešla); na konci behu počká '
+              'na rozbehnutú obnovu. Zmena sa týka len testov. Overené Jestom (18 testov, 14 skúšobných poškodení zabitých; tri testy proti zástupnému '
               'serveru, ktorý kontroluje CSRF a pôvod, bežia len na Node 20 a novšom, na Node 18 z CI sa preskočia, nález 208) a v Chromiu proti '
               'lokálnej kópii s prihlásením platným 90 s: bez strážcu padol test hneď po vypršaní '
               '(test 7 po 113 s), so strážcom prešlo všetkých 10 testov za 3 minúty (súbor s prihlásením mal pri štarte testov najviac 27 s). '
