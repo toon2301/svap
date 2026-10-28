@@ -18,6 +18,17 @@ const dictionaries: Record<string, Dictionary> = { sk, en, cs, de, pl, hu };
 /** Znak `?` vložený do slova (písmeno–`?`–písmeno) alebo dvojica `??`: stopa po stratenej diakritike. */
 const BROKEN_DIACRITICS = /[\p{L}?]\?[\p{L}?]/u;
 
+/**
+ * Posledné písmeno slova nahradené `?` tesne pred bodkou alebo čiarkou („velk?.“). Predchádzajúci vzor ho nezachytí, lebo za `?`
+ * vyžaduje písmeno. Bežné otázky (`?` na konci textu, pred medzerou alebo novým riadkom) a tri bodky po otázke („zmazať?...“) prejdú.
+ */
+const BROKEN_FINAL_DIACRITICS = /\p{L}\?(?=[.,])(?!\.\.)/u;
+
+/** Text je poškodený, ak nesie ktorúkoľvek zo stôp po strate diakritiky. */
+function hasBrokenDiacritics(value: string): boolean {
+  return BROKEN_DIACRITICS.test(value) || BROKEN_FINAL_DIACRITICS.test(value);
+}
+
 /** Zoznam „kľúč → text“ zo vnorených slovníkov; kľúče sú zapísané ako `messages.attachImage`. */
 function flatten(dictionary: Dictionary, prefix = ''): Array<[string, string]> {
   return Object.entries(dictionary).flatMap(([key, value]) => {
@@ -30,7 +41,7 @@ function flatten(dictionary: Dictionary, prefix = ''): Array<[string, string]> {
 describe('preklady: diakritika sa nestratila (nález 203)', () => {
   it.each(Object.keys(dictionaries))('%s: v textoch nie je `?` namiesto písmen s diakritikou', (locale) => {
     const broken = flatten(dictionaries[locale])
-      .filter(([, value]) => BROKEN_DIACRITICS.test(value))
+      .filter(([, value]) => hasBrokenDiacritics(value))
       .map(([key, value]) => `${key}: ${value}`);
 
     expect(broken).toEqual([]);
@@ -38,7 +49,7 @@ describe('preklady: diakritika sa nestratila (nález 203)', () => {
 
   it.each(Object.keys(dictionaries))('%s: v textoch nie je náhradný znak U+FFFD', (locale) => {
     const replaced = flatten(dictionaries[locale])
-      .filter(([, value]) => value.includes('�'))
+      .filter(([, value]) => value.includes('\uFFFD'))
       .map(([key]) => key);
 
     expect(replaced).toEqual([]);
@@ -50,5 +61,14 @@ describe('preklady: diakritika sa nestratila (nález 203)', () => {
     expect(BROKEN_DIACRITICS.test('Naozaj chcete zrušiť túto žiadosť? Príjemca o tom dostane oznámenie.')).toBe(false);
     expect(BROKEN_DIACRITICS.test('Máš otázku alebo potrebuješ pomoc?\nNapíš nám')).toBe(false);
     expect(BROKEN_DIACRITICS.test('Smazat konverzaci?')).toBe(false);
+  });
+
+  it('zachytí aj posledné písmeno slova nahradené `?` pred bodkou alebo čiarkou, no nie bežné otázky', () => {
+    expect(hasBrokenDiacritics('Obrázek je příliš velk?.')).toBe(true);
+    expect(hasBrokenDiacritics('Je příliš velk?, zkuste menší.')).toBe(true);
+    expect(hasBrokenDiacritics('Smazat konverzaci?')).toBe(false);
+    expect(hasBrokenDiacritics('Naozaj chcete zrušiť túto žiadosť? Príjemca o tom dostane oznámenie.')).toBe(false);
+    expect(hasBrokenDiacritics('Máš otázku alebo potrebuješ pomoc?\nNapíš nám')).toBe(false);
+    expect(hasBrokenDiacritics('Naozaj to chceš zmazať?...')).toBe(false);
   });
 });
