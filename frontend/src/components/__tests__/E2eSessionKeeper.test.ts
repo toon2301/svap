@@ -74,25 +74,44 @@ describe('strážca prihlásenia', () => {
     fs.rmSync(directory, { recursive: true, force: true });
   });
 
-  it('prepíše súbor novým prihlásením pri každom intervale, nie skôr', async () => {
+  it('nezačne obnovovať skôr než po prvom intervale', async () => {
     let calls = 0;
     start({
       storageStatePath: file,
-      intervalMs: 60,
+      intervalMs: 5000,
       refresh: async () => state(`obnova-${++calls}`),
     });
 
-    await pause(25);
-    expect(marker()).toBe('login');
-    expect(calls).toBe(0);
+    await pause(50);
 
-    await until(() => calls >= 1 && marker() === 'obnova-1');
-    await until(() => marker() === 'obnova-2');
+    expect(calls).toBe(0);
+    expect(marker()).toBe('login');
+  });
+
+  it('pri každom intervale zapíše nové prihlásenie a ďalšia obnova vychádza z posledného zapísaného', async () => {
+    const refreshedFrom: string[] = [];
+    start({
+      storageStatePath: file,
+      intervalMs: FAST,
+      refresh: async () => {
+        refreshedFrom.push(marker());
+        return state(`obnova-${refreshedFrom.length}`);
+      },
+    });
+
+    await until(() => refreshedFrom.length >= 3);
+
+    // Poradie nezávisí od časovania: každá obnova vidí súbor presne taký, ako ho zapísala predchádzajúca.
+    expect(refreshedFrom.slice(0, 3)).toEqual(['login', 'obnova-1', 'obnova-2']);
   });
 
   it('pri zlyhaní nechá starý súbor, upozorní bez tajných údajov a nabudúce to skúsi znova', async () => {
     const warnings: string[] = [];
     let calls = 0;
+    let release!: () => void;
+    const secondRefreshMayFinish = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     start({
       storageStatePath: file,
       intervalMs: FAST,
@@ -100,16 +119,23 @@ describe('strážca prihlásenia', () => {
       refresh: async () => {
         calls += 1;
         if (calls === 1) throw new Error('HTTP 401\nrefresh_token=SECRET-VALUE\n' + 'x'.repeat(500));
+        // Druhý pokus zadržíme, aby test skontroloval stav po zlyhaní, kým sa nič ďalšie nezapíše.
+        await secondRefreshMayFinish;
         return state('obnova');
       },
     });
 
-    await until(() => warnings.length === 1);
-    expect(marker()).toBe('login');
-    expect(warnings[0]).toContain('HTTP 401');
-    expect(warnings[0]).toContain('1. pokus');
-    expect(warnings[0]).not.toContain('SECRET-VALUE');
-    expect(warnings[0].length).toBeLessThan(400);
+    try {
+      await until(() => calls === 2);
+      expect(marker()).toBe('login');
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('HTTP 401');
+      expect(warnings[0]).toContain('1. pokus');
+      expect(warnings[0]).not.toContain('SECRET-VALUE');
+      expect(warnings[0].length).toBeLessThan(400);
+    } finally {
+      release();
+    }
 
     await until(() => marker() === 'obnova');
     expect(warnings).toHaveLength(1);
@@ -119,6 +145,10 @@ describe('strážca prihlásenia', () => {
     // Obnova je jednorazová: server už starý refresh token zablokoval, takže nová obnova zo zastaraného súboru by už nikdy nepreišla.
     const warnings: string[] = [];
     const refreshedFrom: string[] = [];
+    let release!: () => void;
+    const secondRefreshMayFinish = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const realRename = fs.promises.rename.bind(fs.promises);
     jest
       .spyOn(fs.promises, 'rename')
@@ -130,18 +160,26 @@ describe('strážca prihlásenia', () => {
       warn: (message) => warnings.push(message),
       refresh: async () => {
         refreshedFrom.push(marker());
+        // Druhú obnovu zadržíme, aby test skontroloval súbor, kým sa nezmení.
+        if (refreshedFrom.length === 2) await secondRefreshMayFinish;
         return state(`obnova-${refreshedFrom.length}`);
       },
     });
 
-    await until(() => marker() === 'obnova-1');
-    expect(refreshedFrom).toEqual(['login']);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('zápis');
-    expect(warnings[0]).toContain('v pamäti');
+    try {
+      await until(() => refreshedFrom.length === 2);
+      // Druhá obnova vyšla z nového stavu, ktorý sa zapísal až pri druhom pokuse, nie z pôvodného súboru.
+      expect(refreshedFrom).toEqual(['login', 'obnova-1']);
+      expect(marker()).toBe('obnova-1');
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('zápis');
+      expect(warnings[0]).toContain('v pamäti');
+    } finally {
+      release();
+    }
 
-    await until(() => marker() === 'obnova-2');
-    expect(refreshedFrom).toEqual(['login', 'obnova-1']);
+    await until(() => refreshedFrom.length >= 3);
+    expect(refreshedFrom.slice(0, 3)).toEqual(['login', 'obnova-1', 'obnova-2']);
     expect(warnings).toHaveLength(1);
   });
 
@@ -205,7 +243,7 @@ describe('strážca prihlásenia', () => {
     const warnings: string[] = [];
     const target = path.join(directory, 'je-priecinok');
     fs.mkdirSync(target);
-    start({
+    const keeper = start({
       storageStatePath: target,
       intervalMs: FAST,
       warn: (message) => warnings.push(message),
@@ -213,6 +251,9 @@ describe('strážca prihlásenia', () => {
     });
 
     await until(() => warnings.length >= 1);
+    // Strážca by mohol medzitým začať ďalší pokus, preto priečinok kontrolujeme až po jeho zastavení.
+    await keeper.stop();
+
     expect(fs.readdirSync(directory).filter((name) => name.endsWith('.tmp'))).toEqual([]);
   });
 });
