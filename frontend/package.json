@@ -2,6 +2,9 @@
   "name": "svaply-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "node scripts/clean-next-dev.js && next dev",
     "build": "node scripts/prebuild-check.js && next build",

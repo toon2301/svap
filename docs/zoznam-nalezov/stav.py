@@ -7,18 +7,23 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='28. 10. 2026',
-    kod='`main` `6c2bfd94` (po PR #205)',
+    kod='`main` `9f56aec8` (po PR #206)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('28. 10. 2026',
+     'Vetva 150 (čaká na zlúčenie): nález 208 – CI beží na Node 22 LTS namiesto Node 18 a `frontend/package.json` (aj zámok) zafixuje '
+     '`engines.node` na `22.x`, takže Railway pri builde použije tú istú verziu. Tri testy strážcu prihlásenia proti zástupnému serveru, '
+     'ktoré sa na Node 18 preskakovali, bežia teraz aj v CI. Vetva 149 je zlúčená (PR #206). Po kontrole CodeRabbit (PR #206) sa v zázname '
+     'vetvy 149 opravilo slovo „vedie“ na „uvádza“.'),
+    ('28. 10. 2026',
      'Vetva 149 (čaká na zlúčenie): nález 202 – strážca prihlásenia v E2E testoch: počas behu každých 5 minút obnoví prihlásenie a prepíše súbor, '
      'z ktorého štartujú testy, takže dlhý beh sa po 15 minútach nerozpadne (297 z 318 pádov celého behu). Vetva 148 je zlúčená (PR #205). '
      'Do nálezu 207 doplnené meranie na iPhone (Wi-Fi približne 5 s, mobilné dáta 4,25 s). CI na PR #206 zlyhalo, lebo Playwright sa na Node 18 '
      '(verzia v CI) pri načítaní sám ukončí a zhodil Jest; test strážcu je upravený a nový nález 208 (CI beží na Node 18). Po kontrole CodeRabbit '
-     '(PR #206): dočasný súbor s prihlásením sa odstráni aj vtedy, keď zlyhá až jeho zápis, text nálezu 207 vedie príčinu spomalenia ako '
+     '(PR #206): dočasný súbor s prihlásením sa odstráni aj vtedy, keď zlyhá až jeho zápis, text nálezu 207 uvádza príčinu spomalenia ako '
      'hypotézu a nový stav po úspešnej obnove sa nestratí, keď zlyhá zápis súboru (ostane v pamäti a zapíše sa pri ďalšom pokuse). Tretia '
      'kontrola CodeRabbit: testy strážcu už nezávisia od načasovania (druhú obnovu test zadrží a kontroluje poradie volaní) a návrh zvýšiť '
      'Node v CI na 20 sa rieši samostatne v náleze 208 (odporúčanie 22 LTS, lebo Node 20 už tiež nemá podporu).'),
@@ -126,7 +131,7 @@ DONE_SINCE = [
               '(doplnené po kontrole CodeRabbit na PR #205) a náhradný znak U+FFFD vo všetkých šiestich jazykoch. Pred opravou zlyhal na týchto 23 '
               'hodnotách, skúšobné poškodenia zabije a bežné otázky (aj „zmazať?...“) nepovažuje za chybu. Overené aj v Chromiu na produkčnom '
               'builde: toast pri fotke nad 5 MB aj pri zlom type súboru je vo všetkých šiestich jazykoch správny.'),
-    dict(n=202, vetva='149', pr=None, zlucene=False,
+    dict(n=202, vetva='149', pr='#206', zlucene=True,
          text='HOTOVÉ: E2E testy po približne 15 minútach strácali prihlásenie. `global-setup.ts` sa prihlási raz, prihlásenie platí 15 minút a jeho '
               'obnova je jednorazová (rotácia refresh tokenu), takže ju spravil len prvý test a ostatné ostali so zablokovaným tokenom. Backend '
               'navyše dovolí len 10 obnovení za minútu z jednej adresy, čo pád po vypršaní ešte zhoršilo. Nový strážca prihlásenia '
@@ -136,11 +141,23 @@ DONE_SINCE = [
               'ostane v pamäti a zapíše sa pri ďalšom pokuse (obnova je jednorazová, zo zastaraného súboru by už neprešla); na konci behu počká '
               'na rozbehnutú obnovu. Zmena sa týka len testov. Overené Jestom (19 testov, 14 skúšobných poškodení zabitých, testy strážcu '
               'nespoliehajú na presné načasovanie a 12 behov pri plne vyťaženom procesore prešlo; tri testy proti zástupnému '
-              'serveru, ktorý kontroluje CSRF a pôvod, bežia len na Node 20 a novšom, na Node 18 z CI sa preskočia, nález 208) a v Chromiu proti '
+              'serveru, ktorý kontroluje CSRF a pôvod, bežia len na Node 20 a novšom; v CI sa na Node 18 preskakovali, od vetvy 150 (nález 208) '
+              'beží CI na Node 22 a bežia aj tam) a v Chromiu proti '
               'lokálnej kópii s prihlásením platným 90 s: bez strážcu padol test hneď po vypršaní '
               '(test 7 po 113 s), so strážcom prešlo všetkých 10 testov za 3 minúty (súbor s prihlásením mal pri štarte testov najviac 27 s). '
               'Celý beh na Railway a vo WebKite sa tu overiť nedal; zvyšných približne 21 pádov z iných príčin (napr. 189, 190) táto oprava '
               'nerieši.'),
+    dict(n=208, vetva='150', pr=None, zlucene=False,
+         text='HOTOVÉ: CI (`.github/workflows/deploy.yml`) beží na Node 22 LTS namiesto Node 18, ktorý skončil podporu v apríli 2025 (Node 20 ju '
+              'skončil 30. 4. 2026, Node 22 ju má do 30. 4. 2027). `frontend/package.json` má `engines.node` `22.x` (zapísané aj v '
+              '`package-lock.json`), takže je verzia Node zafixovaná na jednom mieste (predtým nikde). Railway ju pri builde prečíta: Nixpacks '
+              'aj Railpack čítajú `engines.node`; bez nej má Nixpacks predvolene Node 18 a Railpack najnovší LTS, premenná `NIXPACKS_NODE_VERSION` '
+              'alebo `RAILPACK_NODE_VERSION` v nastaveniach služby by `engines` prebila. Playwright 1.63 vyžaduje Node 20 alebo novší a `next` 16 '
+              '(nález 184) Node 20.9 alebo novší. Tri testy strážcu prihlásenia proti zástupnému serveru v `E2eSessionKeeper.test.ts`, ktoré sa na Node 18 '
+              'preskakovali, bežia teraz aj v CI. Overené na Node 22 podľa krokov workflow: čistá inštalácia (`npm ci`) bez varovaní o '
+              'nepodporovanej verzii, celý Jest (513 sád, 7 901 testov, žiadny preskočený) a `npm run build` (prešiel aj s kontrolou typov). Akú verziu Node Railway používalo doteraz, sa nedalo '
+              'zistiť (v repozitári nebolo nič zafixované) a nasadenie na Railway sa tu overiť nedalo; po zlúčení treba v build logu frontendu '
+              'skontrolovať, že beží Node 22 a nasadenie prejde. Úprava workflow pre nálezy 194 a 196 sa nerobila.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
@@ -176,9 +193,9 @@ PORADIE = [
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), '
-            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190, 208)',
+            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190', '208']),
+         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
