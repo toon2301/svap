@@ -4,8 +4,12 @@
 // Dôkazy sa tlačia do výstupu behu a prikladajú k testu, preto obsahujú len to, čo osobné údaje nenesie: cesty bez
 // slugov a ID používateľov, názvy parametrov bez hodnôt, počty a časy. Telá odpovedí, texty z konzoly a texty stránky
 // sa sem nikdy nedostanú. Z chyby stránky sa vypíše len jej druh (napr. `TypeError`), nikdy text správy: ten môže
-// obsahovať kus spracúvaných údajov (napr. `JSON.parse` vloží do správy časť vstupu). Každý voľný text, ktorý do bloku
-// prejde (zlyhanie siete, aktívny prvok, chyby), sa čistí tu, v čistých pomôckach, aby to strážil Jest.
+// obsahovať kus spracúvaných údajov (napr. `JSON.parse` vloží do správy časť vstupu).
+//
+// Pravidlo pre každú hodnotu z prehliadača: nevypíše sa jej text, ani skrátený alebo „očistený“, ale len číslo, príznak
+// alebo jedna z pevných hodnôt zo zoznamov nižšie (zlyhanie siete → druh, aktívny prvok → značka a povolené hodnoty
+// atribútov). Čokoľvek mimo zoznamu sa vypíše ako `other`, takže ani nový slug, adresa či ID sa do bloku nedostanú. Čistí
+// sa tu, v čistých pomôckach, aby to strážil Jest.
 
 /** Jedna požiadavka stránky (API alebo navigácia) so stavom a trvaním. */
 export type ActivityEntry = {
@@ -20,8 +24,20 @@ export type ActivityEntry = {
   durationMs: number | null;
   /** HTTP stav, `null` keď ešte nie je známy. */
   status: number | null;
-  /** Text zlyhania siete, ak požiadavka zlyhala. */
+  /** Surový text zlyhania siete, ak požiadavka zlyhala; vypíše sa len ako druh cez `failureKind`. */
   failure: string | null;
+};
+
+/**
+ * Prvok s fokusom tak, ako ho prečítal prehliadač. Hodnoty sú surové (môže ich nastaviť ktokoľvek, kto vie meniť DOM),
+ * preto sa vypisujú až cez `describeActive`, ktoré pustí len pevné zoznamy.
+ */
+export type ActiveElement = {
+  tag: string;
+  role: string | null;
+  type: string | null;
+  navItem: string | null;
+  onboarding: string | null;
 };
 
 /** Stav stránky v čase pádu, zmeraný v prehliadači. */
@@ -36,7 +52,8 @@ export type PageSnapshot = {
   clientHeight: number | null;
   panelAriaHidden: string | null;
   viewerReady: boolean;
-  active: string;
+  /** `null`, keď dokument nemá žiadny prvok s fokusom. */
+  active: ActiveElement | null;
 };
 
 export type EvidenceInput = {
@@ -57,6 +74,55 @@ const KNOWN_ERROR_KINDS = new Set([
 ]);
 // Za týmito segmentmi nasleduje identifikátor používateľa alebo profilu.
 const IDENTIFIER_PARENTS = new Set(['users', 'user', 'profile', 'profiles', 'slug', 'owner']);
+
+/** Chromium uvádza zlyhanie siete pevným kódom (`net::ERR_TIMED_OUT`); povolené sú len veľké písmená, číslice a `_`. */
+const CHROMIUM_FAILURE_CODE = /^net::ERR_[A-Z0-9_]{1,50}$/;
+/**
+ * Iné prehliadače píšu zlyhanie vetou, ktorá môže obsahovať adresu alebo názov servera (napr. WebKit pri zlom certifikáte).
+ * Z vety sa uchová len druh podľa kľúčového slova; poradie rozhoduje, prvá zhoda vyhráva.
+ */
+const FAILURE_KINDS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/time[ds]? ?out/i, 'timeout'],
+  [/cancel|abort/i, 'cancelled'],
+  [/lost|reset|closed/i, 'connection-lost'],
+  [/offline|not connected to the internet/i, 'offline'],
+  [/hostname|dns|resolve/i, 'dns'],
+  [/refused|could not connect|cannot connect|unreachable/i, 'unreachable'],
+  [/certificate|secure connection|ssl|tls/i, 'tls'],
+];
+
+// Povolené hodnoty stavu stránky a aktívneho prvku; hodnota mimo zoznamu sa vypíše ako `other`.
+const READY_STATES = new Set(['loading', 'interactive', 'complete']);
+const ARIA_HIDDEN_VALUES = new Set(['true', 'false']);
+const ACTIVE_TAGS = new Set([
+  'A', 'ARTICLE', 'ASIDE', 'BODY', 'BUTTON', 'DETAILS', 'DIALOG', 'DIV', 'FOOTER', 'FORM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+  'HEADER', 'HTML', 'IFRAME', 'IMG', 'INPUT', 'LABEL', 'LI', 'MAIN', 'NAV', 'OL', 'P', 'SECTION', 'SELECT', 'SPAN', 'SUMMARY',
+  'SVG', 'TEXTAREA', 'UL', 'VIDEO',
+]);
+const ACTIVE_ROLES = new Set([
+  'alertdialog', 'article', 'button', 'cell', 'checkbox', 'combobox', 'dialog', 'gridcell', 'group', 'img', 'link', 'list',
+  'listbox', 'listitem', 'main', 'menu', 'menubar', 'menuitem', 'navigation', 'none', 'option', 'presentation', 'radio',
+  'region', 'row', 'search', 'searchbox', 'slider', 'spinbutton', 'switch', 'tab', 'tablist', 'tabpanel', 'textbox',
+  'toolbar', 'treeitem',
+]);
+const ACTIVE_INPUT_TYPES = new Set([
+  'button', 'checkbox', 'color', 'date', 'datetime-local', 'email', 'file', 'hidden', 'image', 'month', 'number', 'password',
+  'radio', 'range', 'reset', 'search', 'submit', 'tel', 'text', 'time', 'url', 'week',
+]);
+// Hodnoty `data-sidebar-nav-item` (Sidebar.tsx) a `data-onboarding` (onboarding/*, MobileTopNav.tsx a stránky profilu).
+const NAV_ITEMS = new Set([
+  'home', 'search', 'messages', 'favorites', 'requests', 'notifications', 'statistics', 'watches', 'profile', 'settings',
+]);
+const ONBOARDING_TARGETS = new Set([
+  'home-welcome', 'messages-create-group', 'messages-nav-icon', 'messages-tabs', 'profile-edit-button', 'profile-edit-form',
+  'profile-edit-save', 'profile-header', 'profile-icon', 'profile-skills-button', 'requests-nav-icon', 'requests-tabs',
+  'search-filter', 'search-input', 'search-nav-icon',
+]);
+
+/** Hodnota z prehliadača prejde, len ak je v zozname povolených; inak sa vypíše `other` (nikdy jej text). */
+function allowed(value: unknown, list: ReadonlySet<string>): string {
+  return typeof value === 'string' && list.has(value) ? value : 'other';
+}
 
 /** Nahradí identifikátory v ceste zástupnými názvami: číselné segmenty, segmenty za `users`/`profile` a slugy s bodkou. */
 export function normalizePath(pathname: string): string {
@@ -83,28 +149,41 @@ export function errorKind(raw: string): string {
   return KNOWN_ERROR_KINDS.has(name) ? name : 'Error';
 }
 
-/** Zlyhanie siete prejde, len ak vyzerá ako kód alebo krátka veta (`net::ERR_TIMED_OUT`), nie ako adresa či e-mail. */
-export function safeFailure(text: string | null): string {
+/**
+ * Zlyhanie siete sa vypíše ako druh, nikdy ako text: kód Chromia (`net::ERR_TIMED_OUT`) sa ponechá, veta iného prehliadača
+ * sa zmení na jedno z pevných slov (`timeout`, `cancelled`, `connection-lost`, …), všetko ostatné je `failed`. Veta môže
+ * obsahovať adresu, IP alebo názov servera, preto sa z nej nikdy nič neprepisuje.
+ */
+export function failureKind(text: string | null): string {
   const flat = (text ?? '').replace(/\s+/g, ' ').trim();
   if (!flat) return 'unknown';
-  return /^[A-Za-z0-9_:. -]{1,60}$/.test(flat) && !/[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(flat) ? flat : 'failed';
+  if (CHROMIUM_FAILURE_CODE.test(flat)) return flat;
+  return FAILURE_KINDS.find(([pattern]) => pattern.test(flat))?.[1] ?? 'failed';
 }
 
 /**
- * Popis aktívneho prvku (`TAG atribút=hodnota …`): číslice v hodnote (ID v `data-testid`) sa nahradia `#` a hodnota, ktorá
- * nie je obyčajný identifikátor, sa nahradí `?`.
+ * Popis aktívneho prvku (`TAG atribút=hodnota …`) len z povolených zoznamov: značka, `role`, `type`, `data-sidebar-nav-item`
+ * a `data-onboarding`. Iné atribúty (`data-testid`, `id`, `name`, `aria-label`) sa nečítajú a hodnota mimo zoznamu sa
+ * vypíše ako `other`, takže ani slug alebo ID v atribúte sa do bloku nedostane.
  */
-export function safeActive(text: string): string {
-  return text.split(' ').slice(0, 8).map((token) => {
-    const [key, ...rest] = token.split('=');
-    if (!rest.length) return /^[A-Za-z]{1,20}$/.test(token) ? token : '?';
-    const value = rest.join('=').replace(/\d+/g, '#');
-    return `${/^[a-z-]{1,24}$/.test(key) ? key : '?'}=${/^[A-Za-z#_-]{1,40}$/.test(value) ? value : '?'}`;
-  }).join(' ');
+export function describeActive(active: ActiveElement | null): string {
+  if (!active) return 'none';
+  const tag = typeof active.tag === 'string' ? active.tag.toUpperCase() : '';
+  const parts = [ACTIVE_TAGS.has(tag) ? tag : 'OTHER'];
+  const attributes: ReadonlyArray<readonly [string, string | null, ReadonlySet<string>]> = [
+    ['role', active.role, ACTIVE_ROLES],
+    ['type', active.type, ACTIVE_INPUT_TYPES],
+    ['data-sidebar-nav-item', active.navItem, NAV_ITEMS],
+    ['data-onboarding', active.onboarding, ONBOARDING_TARGETS],
+  ];
+  for (const [name, value, list] of attributes) {
+    if (typeof value === 'string' && value !== '') parts.push(`${name}=${allowed(value, list)}`);
+  }
+  return parts.join(' ');
 }
 
 function formatEntry(entry: ActivityEntry): string {
-  const status = entry.failure ? `FAILED(${safeFailure(entry.failure)})` : entry.status === null ? 'pending' : String(entry.status);
+  const status = entry.failure ? `FAILED(${failureKind(entry.failure)})` : entry.status === null ? 'pending' : String(entry.status);
   const duration = entry.durationMs === null ? '…' : `${entry.durationMs} ms`;
   const query = entry.query ? ` [${entry.query}]` : '';
   return `${String(entry.startedAt).padStart(6)}  ${entry.method.padEnd(4)} ${entry.path}${query}  ${status}  ${duration}`;
@@ -112,13 +191,14 @@ function formatEntry(entry: ActivityEntry): string {
 
 function formatSnapshot(snapshot: PageSnapshot | null): string[] {
   if (!snapshot) return ['page state: unavailable (page closed or not responding)'];
+  const panelAriaHidden = snapshot.panelAriaHidden === null ? 'n/a' : allowed(snapshot.panelAriaHidden, ARIA_HIDDEN_VALUES);
   return [
-    `page state: readyState=${snapshot.readyState} viewerReady=${snapshot.viewerReady} loadingMarkers=${snapshot.loadingMarkers}`
-      + ` panelAriaHidden=${snapshot.panelAriaHidden ?? 'n/a'}`,
+    `page state: readyState=${allowed(snapshot.readyState, READY_STATES)} viewerReady=${snapshot.viewerReady}`
+      + ` loadingMarkers=${snapshot.loadingMarkers} panelAriaHidden=${panelAriaHidden}`,
     `document timing (ms since navigation start): domContentLoaded=${snapshot.domContentLoadedMs ?? 'n/a'} load=${snapshot.loadMs ?? 'n/a'}`,
     `scroll root: scrollTop=${snapshot.scrollTop ?? 'n/a'} scrollHeight=${snapshot.scrollHeight ?? 'n/a'}`
       + ` clientHeight=${snapshot.clientHeight ?? 'n/a'}`,
-    `active element: ${safeActive(snapshot.active)}`,
+    `active element: ${describeActive(snapshot.active)}`,
   ];
 }
 

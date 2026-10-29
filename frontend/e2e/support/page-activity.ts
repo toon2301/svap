@@ -3,6 +3,7 @@ import {
   formatEvidence,
   normalizePath,
   queryNames,
+  type ActiveElement,
   type ActivityEntry,
   type PageSnapshot,
 } from './page-activity-format';
@@ -26,20 +27,22 @@ function isSearch(request: Request): boolean {
   return SEARCH_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-/** Tento kód sa serializuje do prehliadača; nesmie používať nič z modulu. Vracia len čísla, príznaky a názvy značiek. */
+/**
+ * Tento kód sa serializuje do prehliadača; nesmie používať nič z modulu. Vracia čísla, príznaky a surové hodnoty vybraných
+ * atribútov aktívneho prvku; do výpisu sa dostanú až cez `describeActive`, ktoré pustí len pevné zoznamy.
+ */
 function readPageSnapshot(): PageSnapshot {
   const main = document.querySelector<HTMLElement>('[data-dashboard-main]');
   const panel = document.querySelector('[data-search-scroll-root]')?.previousElementSibling ?? null;
   const active = document.activeElement as HTMLElement | null;
-  const describe = (element: HTMLElement | null): string => {
-    if (!element) return 'none';
-    const parts = [element.tagName];
-    for (const name of ['role', 'type', 'data-sidebar-nav-item', 'data-testid', 'data-onboarding']) {
-      const value = element.getAttribute(name);
-      if (value) parts.push(`${name}=${value.slice(0, 40)}`);
-    }
-    return parts.join(' ');
-  };
+  const attribute = (element: HTMLElement, name: string): string | null => element.getAttribute(name)?.slice(0, 40) ?? null;
+  const describe = (element: HTMLElement | null): ActiveElement | null => (element ? {
+    tag: element.tagName,
+    role: attribute(element, 'role'),
+    type: attribute(element, 'type'),
+    navItem: attribute(element, 'data-sidebar-nav-item'),
+    onboarding: attribute(element, 'data-onboarding'),
+  } : null);
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
   const finished = (value: number | undefined): number | null => (value && value > 0 ? Math.round(value) : null);
   return {
@@ -109,6 +112,7 @@ export class PageActivity {
     const entry = this.entries.get(request);
     if (!entry) return;
     entry.durationMs = Date.now() - this.startedAt - entry.startedAt;
+    // Surový text zostáva len v pamäti; do bloku prejde výlučne ako druh cez `failureKind` (veta môže obsahovať adresu).
     entry.failure = request.failure()?.errorText ?? 'unknown';
     this.finishSearch(request);
   }

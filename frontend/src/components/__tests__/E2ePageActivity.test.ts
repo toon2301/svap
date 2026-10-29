@@ -4,7 +4,8 @@
  *
  * Blok smie obsahovať len to, čo osobné údaje nenesie: cesty bez slugov a ID, názvy parametrov bez hodnôt, počty a časy.
  * Z chyby stránky sa vypíše len druh (napr. `TypeError`), nikdy text správy: ten môže obsahovať kus spracúvaných údajov
- * (`JSON.parse` vloží do správy časť vstupu).
+ * (`JSON.parse` vloží do správy časť vstupu). Zlyhanie siete a aktívny prvok sa nevypisujú „očistené“, ale len ako druh
+ * alebo hodnota z pevného zoznamu, takže IP adresa, názov servera ani slug z atribútu sa do bloku nedostanú.
  * E2E špecy Jest nespúšťa, no čisté pomôcky na zostavenie bloku (`page-activity-format.ts`) nezávisia od Playwrightu, preto sa
  * dajú overiť tu, vrátane toho, že do výstupu nepreniknú hodnoty z adries.
  *
@@ -13,16 +14,19 @@
 import fs from 'fs';
 import path from 'path';
 import {
+  describeActive,
   errorKind,
+  failureKind,
   formatEvidence,
   normalizePath,
   queryNames,
-  safeActive,
-  safeFailure,
+  type ActiveElement,
   type ActivityEntry,
   type EvidenceInput,
   type PageSnapshot,
 } from '../../../e2e/support/page-activity-format';
+
+const WATCHES_NAV: ActiveElement = { tag: 'BUTTON', role: null, type: null, navItem: 'watches', onboarding: null };
 
 const SNAPSHOT: PageSnapshot = {
   readyState: 'complete',
@@ -34,7 +38,7 @@ const SNAPSHOT: PageSnapshot = {
   clientHeight: 900,
   panelAriaHidden: 'true',
   viewerReady: true,
-  active: 'BUTTON data-sidebar-nav-item=watches',
+  active: WATCHES_NAV,
 };
 
 function entry(overrides: Partial<ActivityEntry> = {}): ActivityEntry {
@@ -102,37 +106,91 @@ describe('errorKind', () => {
   });
 });
 
-describe('safeFailure', () => {
-  it('ponechá kód alebo krátku vetu bez adresy', () => {
-    expect(safeFailure('net::ERR_TIMED_OUT')).toBe('net::ERR_TIMED_OUT');
-    expect(safeFailure('net::ERR_HTTP2_PROTOCOL_ERROR')).toBe('net::ERR_HTTP2_PROTOCOL_ERROR');
-    expect(safeFailure('The network connection was lost.')).toBe('The network connection was lost.');
+describe('failureKind', () => {
+  it('ponechá kód Chromia, ktorý tvoria len veľké písmená, číslice a podčiarkovník', () => {
+    expect(failureKind('net::ERR_TIMED_OUT')).toBe('net::ERR_TIMED_OUT');
+    expect(failureKind('net::ERR_HTTP2_PROTOCOL_ERROR')).toBe('net::ERR_HTTP2_PROTOCOL_ERROR');
+    expect(failureKind('net::ERR_ABORTED')).toBe('net::ERR_ABORTED');
   });
 
-  it('adresu, e-mail alebo názov domény nahradí slovom failed', () => {
-    expect(safeFailure('Failed to fetch https://svaply.example/api/auth/me/?token=abc')).toBe('failed');
-    expect(safeFailure('boris@test.sk')).toBe('failed');
-    expect(safeFailure('Could not reach railway.app')).toBe('failed');
-    expect(safeFailure('x'.repeat(61))).toBe('failed');
+  it('vetu z iného prehliadača zmení na druh a nič z jej textu neprepíše', () => {
+    expect(failureKind('The request timed out.')).toBe('timeout');
+    expect(failureKind('cancelled')).toBe('cancelled');
+    expect(failureKind('The network connection was lost.')).toBe('connection-lost');
+    expect(failureKind('The Internet connection appears to be offline.')).toBe('offline');
+    expect(failureKind('A server with the specified hostname could not be found.')).toBe('dns');
+    expect(failureKind('Could not connect to the server.')).toBe('unreachable');
+    expect(failureKind('The certificate for this server is invalid.')).toBe('tls');
+  });
+
+  it('IP adresu, názov servera, e-mail ani krátky identifikátor z textu nikdy nevypíše', () => {
+    expect(failureKind('Failed to connect to 192.168.1.2')).toBe('failed');
+    expect(failureKind('Could not connect to 192.168.1.2')).toBe('unreachable');
+    expect(failureKind('Failed to fetch https://svaply.example/api/auth/me/?token=abc')).toBe('failed');
+    expect(failureKind('boris@test.sk')).toBe('failed');
+    expect(failureKind('railway.app')).toBe('failed');
+    expect(failureKind('boris')).toBe('failed');
+    expect(failureKind('profile-boris')).toBe('failed');
+    expect(failureKind('eva.alfa')).toBe('failed');
+    expect(failureKind('x'.repeat(61))).toBe('failed');
+  });
+
+  it('kód Chromia s pripojeným textom alebo malými písmenami neprejde', () => {
+    expect(failureKind('net::ERR_TIMED_OUT 10.0.0.1')).toBe('failed');
+    expect(failureKind('net::ERR_timed_out')).toBe('failed');
+    expect(failureKind('net::ERR_' + 'A'.repeat(51))).toBe('failed');
+  });
+
+  it('vetu s názvom servera v certifikáte zmení na druh bez názvu servera', () => {
+    const sentence = 'The certificate for this server is invalid. You might be connecting to a server that is pretending to be '
+      + '“boris.svaply.example”, which could put your confidential information at risk.';
+    expect(failureKind(sentence)).toBe('tls');
+    for (const secret of ['boris', 'svaply', 'example', 'confidential']) expect(failureKind(sentence)).not.toContain(secret);
   });
 
   it('prázdny text alebo null je unknown', () => {
-    expect(safeFailure(null)).toBe('unknown');
-    expect(safeFailure('   ')).toBe('unknown');
+    expect(failureKind(null)).toBe('unknown');
+    expect(failureKind('   ')).toBe('unknown');
   });
 });
 
-describe('safeActive', () => {
-  it('ponechá značku a obyčajné identifikátory', () => {
-    expect(safeActive('BUTTON data-sidebar-nav-item=watches')).toBe('BUTTON data-sidebar-nav-item=watches');
-    expect(safeActive('INPUT type=text data-onboarding=search-input')).toBe('INPUT type=text data-onboarding=search-input');
-    expect(safeActive('none')).toBe('none');
+describe('describeActive', () => {
+  it('bez prvku vypíše none', () => {
+    expect(describeActive(null)).toBe('none');
   });
 
-  it('číslice v hodnote nahradí # a hodnotu s inými znakmi znakom ?', () => {
-    expect(safeActive('BUTTON data-testid=message-image-trigger-4821')).toBe('BUTTON data-testid=message-image-trigger-#');
-    expect(safeActive('DIV data-testid=boris@test.sk')).toBe('DIV data-testid=?');
-    expect(safeActive('DIV data-testid=a/b')).toBe('DIV data-testid=?');
+  it('ponechá značku a povolené hodnoty atribútov', () => {
+    expect(describeActive(WATCHES_NAV)).toBe('BUTTON data-sidebar-nav-item=watches');
+    expect(describeActive({ tag: 'INPUT', role: null, type: 'text', navItem: null, onboarding: 'search-input' }))
+      .toBe('INPUT type=text data-onboarding=search-input');
+    expect(describeActive({ tag: 'DIV', role: 'button', type: null, navItem: null, onboarding: null })).toBe('DIV role=button');
+    expect(describeActive({ tag: 'svg', role: null, type: null, navItem: null, onboarding: null })).toBe('SVG');
+  });
+
+  it('hodnotu mimo zoznamu vypíše ako other, aj keď je to obyčajný slug písaný písmenami', () => {
+    expect(describeActive({ tag: 'BUTTON', role: 'profile-boris', type: null, navItem: 'profile-boris', onboarding: 'profile-boris' }))
+      .toBe('BUTTON role=other data-sidebar-nav-item=other data-onboarding=other');
+    expect(describeActive({ tag: 'INPUT', role: null, type: 'boris@test.sk', navItem: null, onboarding: null })).toBe('INPUT type=other');
+    expect(describeActive({ tag: 'DIV', role: null, type: null, navItem: 'message-image-trigger-4821', onboarding: null }))
+      .toBe('DIV data-sidebar-nav-item=other');
+  });
+
+  it('vlastný prvok (značka mimo zoznamu) vypíše ako OTHER bez jeho názvu', () => {
+    expect(describeActive({ tag: 'PROFILE-BORIS-CARD', role: null, type: null, navItem: null, onboarding: null })).toBe('OTHER');
+  });
+
+  it('prázdne a chýbajúce hodnoty vynechá', () => {
+    expect(describeActive({ tag: 'BUTTON', role: '', type: null, navItem: '', onboarding: null })).toBe('BUTTON');
+    const missing = { tag: 'BUTTON' } as unknown as ActiveElement;
+    expect(describeActive(missing)).toBe('BUTTON');
+  });
+
+  it('nikdy nevráti nič z neznámej hodnoty', () => {
+    const text = describeActive({
+      tag: 'a-boris', role: 'boris-role', type: 'boris-type', navItem: 'boris-nav', onboarding: 'boris-onboarding',
+    });
+    expect(text).toBe('OTHER role=other type=other data-sidebar-nav-item=other data-onboarding=other');
+    expect(text).not.toMatch(/boris/i);
   });
 });
 
@@ -192,16 +250,30 @@ describe('formatEvidence', () => {
     for (const secret of ['boris', 'tajne', 'heslo', 'yyyy', 'JSON', 'Unexpected']) expect(text).not.toContain(secret);
   });
 
-  it('zlyhanie siete a aktívny prvok prejdú čistením, takže adresa, e-mail ani ID nepreniknú do výstupu', () => {
+  it('zlyhanie siete a aktívny prvok prejdú pevnými zoznamami, takže IP, adresa, e-mail ani slug nepreniknú do výstupu', () => {
     const text = formatEvidence(input({
-      entries: [entry({
-        status: null, durationMs: 15_000, failure: 'Failed to fetch https://svaply.example/api/auth/me/?token=abc',
-      })],
-      snapshot: { ...SNAPSHOT, active: 'BUTTON data-testid=message-image-trigger-4821 mail=boris@test.sk' },
+      entries: [
+        entry({ status: null, durationMs: 15_000, failure: 'Failed to fetch https://svaply.example/api/auth/me/?token=abc' }),
+        entry({ status: null, durationMs: 15_000, failure: 'Failed to connect to 192.168.1.2' }),
+        entry({ status: null, durationMs: 15_000, failure: 'profile-boris' }),
+      ],
+      snapshot: {
+        ...SNAPSHOT,
+        active: { tag: 'BUTTON', role: 'boris@test.sk', type: null, navItem: 'profile-boris', onboarding: 'profile-4821' },
+      },
     }));
-    expect(text).toContain('FAILED(failed)');
-    expect(text).toContain('active element: BUTTON data-testid=message-image-trigger-# mail=?');
-    for (const secret of ['svaply.example', 'token=abc', '4821', 'boris', 'test.sk']) expect(text).not.toContain(secret);
+    expect(text.match(/FAILED\(failed\)/g)).toHaveLength(3);
+    expect(text).toContain('active element: BUTTON role=other data-sidebar-nav-item=other data-onboarding=other');
+    for (const secret of ['svaply.example', 'token=abc', '192.168', '4821', 'boris', 'test.sk']) expect(text).not.toContain(secret);
+  });
+
+  it('stav stránky z prehliadača prejde len pevnými hodnotami', () => {
+    const text = formatEvidence(input({ snapshot: { ...SNAPSHOT, readyState: 'boris-state', panelAriaHidden: 'boris@test.sk' } }));
+    expect(text).toContain('readyState=other');
+    expect(text).toContain('panelAriaHidden=other');
+    expect(text).not.toContain('boris');
+    expect(formatEvidence(input({ snapshot: { ...SNAPSHOT, panelAriaHidden: null } }))).toContain('panelAriaHidden=n/a');
+    expect(formatEvidence(input({ snapshot: { ...SNAPSHOT, panelAriaHidden: 'false' } }))).toContain('panelAriaHidden=false');
   });
 
   it('nepustí do výstupu hodnoty z adries ani slugy, ak sa najprv prepustia cez normalizePath a queryNames', () => {
