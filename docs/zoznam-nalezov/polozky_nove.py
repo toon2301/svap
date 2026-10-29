@@ -61,7 +61,7 @@ NEW_ITEMS = [
               'pripnuté balíky: 180 záznamov). Časť 183a (vetva 143, 27. 10.) je hotová: Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
               '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b sa robí v dvoch krokoch: nastavenia úložísk '
-              'sú presunuté do `STORAGES` (vetva 152, čaká na zlúčenie; na Djangu 4.2 sa správanie nemení), samotné povýšenie na Django 5.2 s DRF 3.18.3 '
+              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209; na Djangu 4.2 sa správanie nemení), samotné povýšenie na Django 5.2 s DRF 3.18.3 '
               'je vetva 154. Zostáva: Django 4.2.30 (9 záznamov), Twisted 26.4.0 (6), DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
