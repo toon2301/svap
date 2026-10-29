@@ -34,10 +34,17 @@ REG_ITEMS = [
     dict(id='APP-05', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Asynchrónne overenie položky histórie môže prepísať novší dotaz (`useRecentSearches.tsx`).', note='Spolu s 178.', dec=None),
     dict(id='ENV-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Dva backendové testy obrazovej moderácie blokuje Windows / gRPC (na Linuxe CI prejdú).', note='Prostredie, nie produkt.', dec=None),
     dict(id='TECH-01…11', bucket=A, imp=N, eff=EL, pkg='Upratovanie a architektúra',
-         what='Nadlimitné súbory (>500 riadkov): `DashboardContent` 711, `lib/api.ts` 907, `useDashboardState` 921, `app/search/page.tsx` 648, '
-              '`useDashboardNavigation` 514, `ProfileOffersSection` 1108, `ProfileOffersMobileSection` 945, `SkillDescriptionModal` 502, '
-              '`useSkillsDescriptionScreenState` 638, `DashboardContentView.test` 895 (počty riadkov z 26. 10. 2026; TECH-08 už nie je nad limitom).',
-         note='Technický dlh; podľa `svaply.mdc` len nahlásiť.', dec=None),
+         what='Nadlimitné súbory (>500 riadkov, bez testov), stav 29. 10. 2026, spolu 33: `FeedPostComments` 1 487, `ProfileOffersSection` 1 108, '
+              '`RequestsNotificationsContext` 1 034, `FeedPostCard` 1 033, `ProfileOffersMobileSection` 945, `useDashboardState` 921, `lib/api.ts` 912, '
+              '`ConversationsList` 864, `ProfileMobileView` 768, `MobileOnboardingOverlay` 763, `DashboardContent` 711, `DesktopOnboardingContext` 706, '
+              '`RequestsMobile` 706, `OfferReviewsView` 692, `RequestSummaryCard` 683, `MobileOnboardingContext` 661, `app/search/page.tsx` 648, '
+              '`RequestsDesktop` 646, `useSkillsDescriptionScreenState` 638, `DesktopOnboardingOverlay` 612, `FeedPostMobileDetail` 594, '
+              '`RequestDetailModal` 587, `SkillsModuleRouter` 583, `ProfileModule` 563, `ConversationDetail` 556, `lib/feedApi.ts` 545, '
+              '`OfferReviewsMobile` 545, `messagingApi` 542, `DraftConversationDetail` 527, `useDashboardNavigation` 514, '
+              '`useConversationThreadController` 505, `districts` 502, `SkillDescriptionModal` 502.',
+         note='Technický dlh; podľa `svaply.mdc` len nahlásiť, nič s nimi nerobiť. Zoznam prepočítaný 29. 10. 2026 (predtým desať súborov z '
+              '26. 10.). Pri nálezoch v správach to znamená, že nová logika ide do nového súboru a do `ConversationDetail` ani '
+              '`useConversationThreadController` sa nezasahuje (nález 218).', dec=None),
     dict(id='TOOL-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='`next lint` vyžaduje interaktívnu konfiguráciu; CI lint nespúšťa.', note='Pridať neinteraktívny lint do CI až po vyčistení chýb (178).', dec=None),
     dict(id='TOOL-02', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Windows WebKit natívne nejde (Code Integrity); funguje cez Docker kontajner.', note='Obmedzenie prostredia.', dec=None),
 ]
