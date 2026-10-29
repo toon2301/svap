@@ -269,8 +269,9 @@ NEW_ITEMS = [
          note='Zmerané 29. 10. 2026 na vetve 152 (Django 4.2.30): celá sada prechádza aj na PostgreSQL 16, takže dnes nič nepadá; ide o poistku do '
               'budúcna. Aplikácia sa na viacerých miestach spolieha na zámky riadkov (nález 185 uvádza 75× `select_for_update`) a práve tie SQLite '
               'neskúša. Návrh: do CI pridať službu PostgreSQL (`services: postgres`) a pustiť sadu s `DATABASE_URL`, buď namiesto SQLite, alebo '
-              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Hodí sa to urobiť pred povýšením na Django 5.2 (vetva 153), aby ho CI '
-              'overilo na rovnakej databáze ako produkcia.',
+              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Najlepšie pred povýšením na Django 5.2 (vetva 153), aby ho CI overilo na '
+              'rovnakej databáze ako produkcia; ak sa 153 robí skôr, PostgreSQL je pre ňu overený lokálne (celá sada na Djangu 5.2.18 a PostgreSQL 16 '
+              'prešla 29. 10.), takže 212 môže nasledovať hneď po ňom.',
          dec=None, src='vetva 152'),
     dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
          what='Django 5.1 nahradilo argument `check` v `CheckConstraint` argumentom `condition` a Django 6.0 `check` odstráni. Aplikácia používa `check=` '

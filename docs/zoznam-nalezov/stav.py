@@ -242,7 +242,7 @@ PORADIE = [
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.3 po presune úložísk z vetvy 152, `google-cloud-vision` kvôli protobuf, '
             'Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 212; '
-            '212 radšej pred Djangom 5.2)',
+            '212 pred povýšením na Django 5.2 alebo hneď po ňom)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
          polozky=['183', '184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '212']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
