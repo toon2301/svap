@@ -73,10 +73,9 @@ async function expectAutoLoading(
   // Prvá dávka je pripravená, až keď sú v zozname riadky (nadpis ukazuje aj horná lišta).
   await expect(rows.first()).toBeVisible();
   await expect(page.getByText('Načítavam upozornenia...')).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: 'Zobraziť ďalšie' }),
-    'Tlačidlo „Zobraziť ďalšie“ už nemá existovať',
-  ).toHaveCount(0);
+  // Hľadá sa len v zozname upozornení: na desktope beží pod panelom Nástenka, ktorá má vlastné tlačidlo „Zobraziť ďalšie“.
+  const loadMoreButton = scrollParent.getByRole('button', { name: 'Zobraziť ďalšie' });
+  await expect(loadMoreButton, 'Tlačidlo „Zobraziť ďalšie“ už nemá existovať').toHaveCount(0);
 
   const target = Math.min(total, TARGET_ROWS);
   await scrollUntilRows(scrollParent, rows, target);
@@ -86,7 +85,7 @@ async function expectAutoLoading(
     await expect(loadMoreSentinel(page)).toHaveCount(0);
     await expect(loadMoreSkeleton(page)).toHaveCount(0);
   }
-  await expect(page.getByRole('button', { name: 'Zobraziť ďalšie' })).toHaveCount(0);
+  await expect(loadMoreButton).toHaveCount(0);
 
   expect(requests.loadMore.length, 'Aspoň jedna dávka sa mala donačítať').toBeGreaterThan(0);
   expect(new Set(requests.loadMore).size, 'Rovnaká dávka sa načítala viackrát').toBe(requests.loadMore.length);
