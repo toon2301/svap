@@ -112,7 +112,9 @@ NEW_ITEMS = [
               'preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
               '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila). Vetva 144: rovnaký vzorec je podľa hlásení iných projektov spúšťačom chyby '
               'WebKitu pri nahrávaní z iPhonu (nález 197); appka ju obchádza kopírovaním súborov do pamäte, takže zmena `sw.js` už nie je naliehavá, '
-              'no vynechanie `respondWith` pri POST a PATCH by bolo ďalšou poistkou.',
+              'no vynechanie `respondWith` pri POST a PATCH by bolo ďalšou poistkou. Vetva 151: blok workera sa dnes vyžaduje aj pri '
+              '`context.route` (Playwright pri ňom upozorňuje na to isté ako pri `page.route`; desať testov `google-login-completion` padalo vo '
+              'WebKite) a poistka to stráži.',
          dec=None, src='vetva 140'),
     dict(n=189, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: jazyk z profilu pri slugu s bodkami',
          what='`e2e/mobile-language-header.spec.ts`: pomocník `ownProfilePath` (riadok 36) pustí len slug zo znakov `A-Za-z0-9_-` (riadok 42), '
@@ -123,14 +125,6 @@ NEW_ITEMS = [
               '(s workerom aj bez neho), so slugom bez bodiek „app Back“ prejde. Oprava: povoliť bodku v regulárnom výraze. Pozor: aplikácia '
               'pridáva k adrese profilu sama `?tab=offers` (`profileTabQuery.ts`), takže `profile-section` môže po oprave padnúť ešte na '
               'poslednej kontrole adresy (riadok 136); tú treba porovnávať bez query. Overiť behom na Railway.',
-         dec=None, src='vetva 141'),
-    dict(n=190, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: mouse.wheel v mobilnom WebKite',
-         what='`e2e/search-country-scroll.spec.ts`, test „review: a restored profile-return snapshot follows user scrolling…“: volá '
-              '`page.mouse.wheel(0, -700)` (riadok 125) aj v mobilnom projekte, no Playwright v mobilnom WebKite kolieskom nehýbe '
-              '(„Mouse wheel is not supported in mobile WebKit“). V projekte webkit-mobile preto padá vždy, od pridania 17. 10. '
-              '(commit `66c15acc`).',
-         note='Overené v zdroji Playwrightu 1.63 (`RawMouseImpl.wheel`). Rovnaké obmedzenie už raz zachytil TEST-11 v inom špecu. Na výber: '
-              'v mobile použiť iný skutočný vstup (ťah prstom), alebo tento jeden scenár v mobilnom WebKite preskočiť s vysvetlením.',
          dec=None, src='vetva 141'),
     dict(n=191, bucket=A, imp=N, eff=ES, pkg='Navigácia – drobnosti',
          what='Číselná adresa profilu s pod-cestou, napr. `/dashboard/users/<id>/language`, sa po načítaní prepíše na '
@@ -236,6 +230,27 @@ NEW_ITEMS = [
               'zasahuje do kvality a do pravidla 5 MB, treba rozhodnúť), ukázať indikátor odosielania, spracovanie obrazu mimo transakcie so '
               'zámkom konverzácie.',
          dec=None, src='vetva 148'),
+    dict(n=209, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', kratko='E2E: sedem testov čaká na údaje na Railway',
+         what='Druhý celý beh E2E na Railway (28. 10.) mal sedem pádov s hláškou „Príprava:“, lebo testy potrebujú údaje, ktoré si nevytvárajú '
+              'a ktoré na Railway chýbajú: (a) `offer-reviews-back.spec.ts:185` (3×, všetky tri projekty): druhý testovací účet '
+              '(`E2E_PEER_SLUG`) nemá ponuku s tlačidlom „Pridať recenziu“; (b) `messages-peer-profile.spec.ts:139` a `:157` (2×, webkit-mobile): '
+              'medzi najnovšími konverzáciami v Správach (prvá stránka zoznamu) nie je prijatá priama konverzácia s účtom z `E2E_PEER_SLUG` '
+              'alebo ten účet nemá zobrazované meno; (c) `profile-entry-scroll.spec.ts:218` a `:237` (2×, webkit-mobile): na prvých piatich '
+              'stranách Nástenky nie je zdieľaná vlastná ponuka hlavného testovacieho účtu.',
+         note='Nie je to chyba aplikácie ani testov: testy zámerne zlyhajú s hláškou „Príprava:“ (nepreskočia), aby chýbajúce údaje nevyzerali ako '
+              'úspešný beh. Údaje pripravuje používateľ na Railway (jedna ponuka druhého účtu, prijatá konverzácia medzi oboma účtami medzi '
+              'najnovšími a jedna zdieľaná ponuka hlavného účtu na Nástenke); potom sa zopakuje celý beh. Pri stagingu (N4) treba tieto tri '
+              'položky pripraviť v testovacích dátach od začiatku.',
+         dec=None, src='vetva 151'),
+    dict(n=211, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='tri rôzne záložné texty pre názov otváracích hodín',
+         what='Kľúč `skills.openingHours.title` má v kóde tri rôzne záložné texty: „Otváracia doba“ (`OpeningHoursModal.tsx`, '
+              '`SkillsDescriptionMobileLayout.tsx`, `SkillsDescriptionMobileModals.tsx`), „Otváracia doba (voliteľné)“ (`OpeningHoursSection.tsx`) a '
+              '„Otváracie hodiny“ (`ProfileOfferDetailMobileContent.tsx`, `ProfileOpeningHoursMobileModal.tsx`, `OfferCardBack.tsx`, '
+              '`ProfileOffersSection.tsx`, `OfferReviewsDesktop.tsx`). Používateľ rozdiel nevidí, lebo preklad existuje vo všetkých šiestich '
+              'jazykoch (sk: „Otváracia doba“).',
+         note='Záložný text sa zobrazí len pri chýbajúcom preklade. Rozdiel stál jeden E2E test: `search-mobile-cards.spec.ts` hľadal tlačidlo podľa '
+              'záložného textu „Otváracie hodiny“ a padal (vetva 151). Upratanie: jeden záložný text zhodný so slovenským prekladom.',
+         dec=None, src='vetva 151'),
 ]
 
 NTASKS = [
