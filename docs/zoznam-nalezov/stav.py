@@ -7,12 +7,26 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='29. 10. 2026',
-    kod='`main` `9346520e` (po PR #208)',
+    kod='`main` `ff0aa0ef` (po PR #209)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('29. 10. 2026',
+     'Vetva 153 (čaká na zlúčenie): nález 217 – štyri jednorazové pády záverečných behov E2E (29. 10.: tri samostatné behy aj spoločný beh '
+     'dali 427 prešlo, 2 padli, 303 preskočených; každý pád prešiel pri samostatnom opakovaní). Pád s posunom o 14 px v Chromiu je vysvetlený '
+     'a reprodukovaný: stránka `/search` posiela hľadanie pri prvom načítaní dvakrát a medzistav je o 14 px vyšší (nový nález 216; aplikácia '
+     'sa nemenila). Testy teraz pred meraním a klikaním čakajú, kým sa stránka ustáli, a špecy hľadania pri páde vypíšu dôkazy bez osobných '
+     'údajov (požiadavky s časmi, stav stránky). Pre dva pády vo WebKite (ťuknutie na autora, odpoveď hľadania do 15 s) príčina zatiaľ nie je '
+     'známa; vysvetlia ich dôkazy z ďalšieho behu. Opravy z vetvy 151 sa potvrdili: žiadny z desiatich testov `google-login-completion` vo '
+     'WebKite nepadol a rozpočet obnovy 3 s stačil. Vetva 152 je zlúčená (PR #209). Povýšenie na Django 5.2 sa posúva na vetvu 154. '
+     'Po kontrole CodeRabbit (PR #210): dôkazy pri páde neobsahujú text chyby stránky (môže niesť kus spracúvaných údajov, napr. pri '
+     '`JSON.parse`), vypíše sa len druh chyby, a nález 183 uvádza vetvu 152 ako zlúčenú. Po druhej kontrole sa nič z prehliadača nevypisuje '
+     '„očistené“: zlyhanie siete sa vypíše len ako druh (kód Chromia alebo pevné slovo), aktívny prvok len z pevných zoznamov (značka, '
+     '`role`, `type`, `data-sidebar-nav-item`, `data-onboarding`; `data-testid` sa už nečíta) a všetko mimo zoznamu ako `other`, takže ani '
+     'IP adresa, názov servera či slug z atribútu sa do výstupu nedostanú; cesty za `reset-password`, `password-reset`, '
+     '`password-reset-verify` a `check-email` sa nahradia. Doplnené sú aj opisy funkcií (CodeRabbit uviedol pokrytie opismi 66,67 % pri prahu 80 %).'),
     ('29. 10. 2026',
      'Vetva 152 (čaká na zlúčenie): prvý krok časti 183b nálezu 183 – úložiská (médiá na S3, statické súbory bez manifestu) sú nastavené cez '
      '`STORAGES` namiesto `DEFAULT_FILE_STORAGE` a `STATICFILES_STORAGE`, ktoré Django 5.1+ ticho ignoruje (fotky by sa ukladali na lokálny disk '
@@ -206,6 +220,36 @@ DONE_SINCE = [
               'celý beh na Railway. Neopravené: sedem testov čaká na testovacie údaje na Railway (nález 209) a jeden jednorazový pád '
               '(`search-country-scroll.spec.ts:74`, tmavý variant, ponuky, webkit-mobile: odpoveď hľadania neprišla do 15 s) sa nedal '
               'vysvetliť ani reprodukovať, preto sa neopravuje; ak sa zopakuje, treba ho vyšetriť.'),
+    dict(n=217, vetva='153', pr=None, zlucene=False,
+         text='HOTOVÉ (účinok vo WebKite potvrdí až ďalší celý beh na Railway): štyri jednorazové pády záverečných behov E2E 29. 10. 2026 '
+              '(tri samostatné behy aj spoločný beh dali 427 prešlo, 2 padli, 303 preskočených; každý pád prešiel pri samostatnom opakovaní): '
+              '(1) `search-panel-return.spec.ts:111`, ponuky, webkit-mobile: po ťuknutí na autora ostala adresa `/search` (`toHaveURL` 10 s, '
+              '`support/search-panel-return.ts:103`); (2) ten istý špec, ľudia, webkit-desktop: `page.waitForResponse` na '
+              '`/api/auth/search/global/` nedostal odpoveď do 15 s (`:71`); (3) `search-to-offer-watches.spec.ts:88`, tmavý variant, '
+              'webkit-desktop: po kliknutí na Vyhľadávanie sa nezobrazilo vyhľadávacie pole (`:97`); (4) `search-country-scroll.spec.ts:74`, '
+              'tmavý variant, všetko, Chromium: obnovená pozícia sa líšila o 14 px oproti toleranci 2 px (`support/search-country-scroll.ts:106`). '
+              'Príčina (4) je nájdená a reprodukovaná: stránka `/search` posiela hľadanie pri prvom načítaní dvakrát, pred a po `/api/auth/me/` '
+              '(nález 216), a druhé hľadanie na chvíľu nahradí sekciu „Ľudia“ kostrou vyššou o 14 px. Test zmeral `scrollTop` v tomto medzistave '
+              'a Chromium ho po skončení načítania posunul o 14 px späť (scroll anchoring), takže uložená pozícia už nezodpovedala meraniu; '
+              'aplikácia obnovuje správne. S pôvodnými pomocníkmi z `origin/main` a oneskorením `/me` a druhého hľadania zlyhalo 9 z 10 kombinácií '
+              'rovnakou hláškou (rozmery počítača aj iPhonu), s novými 0 z 10. '
+              'Príčina (3): panel s vyhľadávacím poľom sa pripojí až po odpovedi `/api/auth/me/`, no test klikol hneď po zobrazení nadpisu '
+              '(`toHaveCount(0)` prešlo len preto, že panel ešte neexistoval). Pri `/me` do 6 s sa panel po skorom kliknutí otvoril, rovnaké '
+              'zlyhanie vznikne až pri `/me` pomalšom než 10 s, takže na Railway išlo o pomalý alebo neúspešný `/me`. '
+              'Príčiny (1) a (2) sa lokálne reprodukovať nedali (WebKit, Railway). '
+              'Oprava (len testy, aplikácia sa nemenila): `e2e/support/search-settled.ts` (`waitForSearchSettled`: čaká na pripojený panel, koniec '
+              'oboch hľadaní a nemennú výšku výsledkov) sa volá v `openScrollableResults`, `openReturnFixture` a v teste panela; '
+              '`openDeepResultAuthor` navyše overí, že pozícia uložená pri odchode zodpovedá zmeranej (poistka, ktorú mal už `openLastAuthor`). '
+              'Asercie a tolerancie sú nezmenené. Pozorovateľ požiadaviek `e2e/support/page-activity.ts` (a čisté pomôcky '
+              '`page-activity-format.ts`) pri páde špecov `search-country-scroll`, `search-panel-return` a `search-to-offer-watches` vypíše a '
+              'pripojí blok dôkazov bez osobných údajov: požiadavky s časmi a stavmi, čas načítania dokumentu, stav panela, aktívny prvok, počty '
+              'chýb; cesty bez slugov, parametre bez hodnôt, žiadne telá odpovedí, texty z konzoly ani texty chýb stránky (z chyby sa vypíše len druh, napr. `TypeError`; zlyhanie siete len ako druh a aktívny prvok len z pevných zoznamov). Pád (1) alebo (2) sa tak pri ďalšom výskyte '
+              'vysvetlí sám (uvidí sa, či po ťuknutí vznikla požiadavka na profil a ako dlho trvala, a ako dlho trvalo načítanie stránky). '
+              'Overené: celý Jest (514 sád, 7 932 testov, z toho nový `E2ePageActivity.test.ts` s 31 testami), `tsc` a `eslint` čisté; v Chromiu proti lokálnej kópii '
+              '(rozmery počítača aj iPhonu) prešlo všetkých 39 testov troch špecov (13 sa preskočilo podľa návrhu); tie isté špecy šesťkrát za sebou pri 4-násobne spomalenom procesore prehliadača: 234 prešlo, 0 padlo, 78 preskočených (20 min). '
+              'Poistka súkromia: desať zámerne vnesených chýb v pomôckach (napr. výpis surového textu zlyhania alebo surovej hodnoty atribútu) testy odhalili všetkých desať; '
+              'blok dôkazov sa skúšal aj v skutočnom Chromiu na stránke so slugom a e-mailom v adrese a atribútoch, tokenom v ceste a zlyhaniami siete a nič z toho sa nevypísalo. '
+              'WebKit a Railway sa tu overiť nedali; to ukáže ďalší celý beh.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.

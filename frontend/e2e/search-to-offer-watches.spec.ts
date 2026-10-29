@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { gotoDashboardHome, historyLength, mainInstance, recordMainInstance } from './support/dashboard';
+import { observePage, reportFailureEvidence } from './support/page-activity';
+import { waitForSearchSettled } from './support/search-settled';
 
 // Run against Railway AFTER deployment. Reuse existing content; never create/edit cards or watches.
 // Disable trace/screenshot/video attachments; never print personal API bodies or credentials.
@@ -49,6 +51,12 @@ for (const theme of ['light', 'dark'] as const) {
         localStorage.setItem('svaply_theme', value);
       }, theme);
       await recordMainInstance(page);
+      observePage(page);
+    });
+
+    // Pri páde vypíše požiadavky a stav stránky bez osobných údajov (trace, screenshot a video sú v tomto špece vypnuté).
+    test.afterEach(async ({ page }, testInfo) => {
+      await reportFailureEvidence(page, testInfo);
     });
 
     for (const path of ['/search?q=te', '/search?q=te&tab=users', '/search?q=te&tab=offers&type=offer&price_min=5']) {
@@ -89,6 +97,9 @@ for (const theme of ['light', 'dark'] as const) {
       test.skip(isMobile, 'Desktop panel/keyboard regression.');
       await page.goto('/search?q=te');
       await expectSearchPage(page);
+      // Nadpis sa zobrazí hneď, no panel s vyhľadávacím poľom sa pripojí až po načítaní prihláseného používateľa. Bez čakania
+      // by `toHaveCount(0)` nižšie prešlo len preto, že panel ešte neexistuje, a klik by prišiel príliš skoro (nález 217).
+      await waitForSearchSettled(page);
       const source = page.url();
       const length = await historyLength(page);
       const input = page.locator('[data-onboarding="search-input"] input').filter({ visible: true });
