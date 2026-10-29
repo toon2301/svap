@@ -62,7 +62,7 @@ NEW_ITEMS = [
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
               '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b sa robí v dvoch krokoch: nastavenia úložísk '
               'sú presunuté do `STORAGES` (vetva 152, čaká na zlúčenie; na Djangu 4.2 sa správanie nemení), samotné povýšenie na Django 5.2 s DRF 3.18.3 '
-              'je vetva 153. Zostáva: Django 4.2.30 (9 záznamov), Twisted 26.4.0 (6), DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
+              'je vetva 154. Zostáva: Django 4.2.30 (9 záznamov), Twisted 26.4.0 (6), DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
               'Čisté riešenie je 183b (pred ostrým štartom): samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.2 alebo novším (3.18.0 a 3.18.1 '
@@ -75,7 +75,7 @@ NEW_ITEMS = [
               'a stráži ho `tests/test_production_settings_storages.py` (načíta produkčné nastavenia v samostatnom procese a zakáže staré nastavenia) '
               'spolu s `tests/test_messaging_storage_selection.py` (výber súkromného úložiska fotiek správ, ktorý doteraz nemal test). Django 4.2 '
               'odvodzuje `STORAGES` zo starých nastavení, preto je súkromné úložisko správ (ACL private, podpísané adresy) v produkcii aktívne už dnes '
-              'a po presune ostáva rovnaké. Zvyšok 183b (vetva 153): Django 5.2 vyžaduje PostgreSQL 14 a novší (Railway má 17), prihlásenie je asi '
+              'a po presune ostáva rovnaké. Zvyšok 183b (vetva 154): Django 5.2 vyžaduje PostgreSQL 14 a novší (Railway má 17), prihlásenie je asi '
               '1,7-krát náročnejšie na procesor (hashovanie hesiel 1 000 000 iterácií namiesto 600 000; staré heslá sa prepíšu pri prihlásení a Django 4.2 '
               'overí aj nový hash, takže rollback je bezpečný) a DRF 3.18 vyžaduje Django 5.2, preto sa povyšujú spolu. '
               '183c: `google-cloud-vision` 3.4.5 → 3.16.0 kvôli protobuf (treba overiť skutočné volania SafeSearch). '
@@ -269,8 +269,8 @@ NEW_ITEMS = [
          note='Zmerané 29. 10. 2026 na vetve 152 (Django 4.2.30): celá sada prechádza aj na PostgreSQL 16, takže dnes nič nepadá; ide o poistku do '
               'budúcna. Aplikácia sa na viacerých miestach spolieha na zámky riadkov (nález 185 uvádza 75× `select_for_update`) a práve tie SQLite '
               'neskúša. Návrh: do CI pridať službu PostgreSQL (`services: postgres`) a pustiť sadu s `DATABASE_URL`, buď namiesto SQLite, alebo '
-              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Najlepšie pred povýšením na Django 5.2 (vetva 153), aby ho CI overilo na '
-              'rovnakej databáze ako produkcia; ak sa 153 robí skôr, PostgreSQL je pre ňu overený lokálne (celá sada na Djangu 5.2.18 a PostgreSQL 16 '
+              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Najlepšie pred povýšením na Django 5.2 (vetva 154), aby ho CI overilo na '
+              'rovnakej databáze ako produkcia; ak sa 154 robí skôr, PostgreSQL je pre ňu overený lokálne (celá sada na Djangu 5.2.18 a PostgreSQL 16 '
               'prešla 29. 10.), takže 212 môže nasledovať hneď po ňom.',
          dec=None, src='vetva 152'),
     dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
@@ -279,7 +279,7 @@ NEW_ITEMS = [
               '`feed_posts/post.py`, `profile_likes.py`, `profile_visits.py` a `user_blocks.py` po 1×) a na 27 miestach v 16 migráciách. Celá '
               'backendová sada na Djangu 5.2 z toho vypíše 48 varovaní `RemovedInDjango60Warning`.',
          note='Na Djangu 5.2 (LTS do 04/2028) nič nepadá, preto to nie je naliehavé; treba to urobiť pred skokom na Django 6.0. Premenovať sa dá až po '
-              'povýšení (Django 4.2 argument `condition` nepozná), teda po vetve 153. Týka sa aj starých migrácií: v nich ide len o názov '
+              'povýšení (Django 4.2 argument `condition` nepozná), teda po vetve 154. Týka sa aj starých migrácií: v nich ide len o názov '
               'argumentu a schéma sa nemení; po zmene overiť `makemigrations --check`, že nevznikne nová migrácia. Zistené pri mapovaní 183b.',
          dec=None, src='vetva 152'),
     dict(n=214, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
@@ -294,7 +294,7 @@ NEW_ITEMS = [
               '(varovanie v teste na Djangu 5.2).',
          dec=None, src='vetva 152'),
     dict(n=215, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra', kratko='knižnice staršie než oficiálna podpora Djanga 5.2',
-         what='Po povýšení na Django 5.2 (vetva 153) ostanú pripnuté verzie, ktoré Django 5.2 oficiálne ešte neuvádzajú (podľa klasifikátorov na PyPI): '
+         what='Po povýšení na Django 5.2 (vetva 154) ostanú pripnuté verzie, ktoré Django 5.2 oficiálne ešte neuvádzajú (podľa klasifikátorov na PyPI): '
               '`django-cors-headers` 4.3.1 (Django 5.2 uvádza od 4.7.0), `django-filter` 23.3 (od 25.1), `django-redis` 5.4.0 (od 6.0.0), `channels` '
               '4.1.0 (od 4.2.1) a `whitenoise` 6.6.0 (od 6.9.0). Pri `channels-redis` 4.2.0 (najnovšia 4.3.0) a `django-storages` 1.14.2 (najnovšia '
               '1.14.6) klasifikátor Djanga 5.2 neuvádza žiadna verzia.',
@@ -303,6 +303,18 @@ NEW_ITEMS = [
               'podporu a opravy chýb, nie o súčasný problém. Povyšovať po jednej knižnici a po každej spustiť celú sadu; pred každým povýšením '
               'prečítať zápis zmien.',
          dec=None, src='vetva 152'),
+    dict(n=216, bucket=A, imp=N, eff=ES, pkg='Výkon a plynulosť', kratko='stránka `/search` pošle hľadanie pri prvom načítaní dvakrát',
+         what='Stránka `/search` pošle pri prvom načítaní to isté hľadanie dvakrát: hneď (prihlásený používateľ ešte nie je známy) a znova po '
+              'odpovedi `/api/auth/me/`, lebo `user?.id` je v závislostiach `fetchSearch` a `fetchGlobal` (`app/search/page.tsx`). Na kartách '
+              '„Všetko“ a „Ľudia“ druhé hľadanie na chvíľu nahradí sekciu „Ľudia“ kostrou, ktorá je o 14 px vyššia, takže sa obsah po prvom '
+              'vykreslení posunie a vzápätí vráti (výška `main` 2 175 → 2 189 → 2 175 px). Zmerané 29. 10. 2026 v Chromiu na produkčnom '
+              'builde; na Railway trvá medzistav tak dlho ako druhá odpoveď, teda aj stovky ms.',
+         note='Súbor `app/search/page.tsx` má 648 riadkov (chránený podľa `svaply.mdc`), preto sa nemenil. Klientske filtrovanie vlastných '
+              'ponúk podľa `user?.id` je pri prihlásených zbytočné: backend ich vynecháva sám (`accounts/views/search.py:65`, '
+              '`search_global.py:236`). Návrh: nechať `user?.id` mimo závislostí načítania (filter pri vykreslení alebo bez filtra), čím '
+              'zostane jedno hľadanie a zmizne posun obsahu. Chyba sa prejavila v E2E testoch ako nález 217 (testy sa kvôli nej teraz '
+              'čakajú na ustálenie stránky).',
+         dec=None, src='vetva 153'),
 ]
 
 NTASKS = [
