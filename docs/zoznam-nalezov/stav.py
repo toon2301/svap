@@ -26,7 +26,7 @@ ZMENY = [
      '„očistené“: zlyhanie siete sa vypíše len ako druh (kód Chromia alebo pevné slovo), aktívny prvok len z pevných zoznamov (značka, '
      '`role`, `type`, `data-sidebar-nav-item`, `data-onboarding`; `data-testid` sa už nečíta) a všetko mimo zoznamu ako `other`, takže ani '
      'IP adresa, názov servera či slug z atribútu sa do výstupu nedostanú; cesty za `reset-password`, `password-reset`, '
-     '`password-reset-verify` a `check-email` sa nahradia.'),
+     '`password-reset-verify` a `check-email` sa nahradia. Doplnené sú aj opisy funkcií (CodeRabbit uviedol pokrytie opismi 66,67 % pri prahu 80 %).'),
     ('29. 10. 2026',
      'Vetva 152 (čaká na zlúčenie): prvý krok časti 183b nálezu 183 – úložiská (médiá na S3, statické súbory bez manifestu) sú nastavené cez '
      '`STORAGES` namiesto `DEFAULT_FILE_STORAGE` a `STATICFILES_STORAGE`, ktoré Django 5.1+ ticho ignoruje (fotky by sa ukladali na lokálny disk '
