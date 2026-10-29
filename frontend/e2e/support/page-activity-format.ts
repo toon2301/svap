@@ -3,7 +3,9 @@
 //
 // Dôkazy sa tlačia do výstupu behu a prikladajú k testu, preto obsahujú len to, čo osobné údaje nenesie: cesty bez
 // slugov a ID používateľov, názvy parametrov bez hodnôt, počty a časy. Telá odpovedí, texty z konzoly a texty stránky
-// sa sem nikdy nedostanú.
+// sa sem nikdy nedostanú. Z chyby stránky sa vypíše len jej druh (napr. `TypeError`), nikdy text správy: ten môže
+// obsahovať kus spracúvaných údajov (napr. `JSON.parse` vloží do správy časť vstupu). Každý voľný text, ktorý do bloku
+// prejde (zlyhanie siete, aktívny prvok, chyby), sa čistí tu, v čistých pomôckach, aby to strážil Jest.
 
 /** Jedna požiadavka stránky (API alebo navigácia) so stavom a trvaním. */
 export type ActivityEntry = {
@@ -49,7 +51,10 @@ export type EvidenceInput = {
 };
 
 const MAX_ENTRIES = 40;
-const MAX_ERROR_LENGTH = 120;
+/** Štandardné druhy chýb; akýkoľvek iný názov (vlastná trieda) sa vypíše ako `Error`. */
+const KNOWN_ERROR_KINDS = new Set([
+  'Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'EvalError', 'URIError', 'AggregateError',
+]);
 // Za týmito segmentmi nasleduje identifikátor používateľa alebo profilu.
 const IDENTIFIER_PARENTS = new Set(['users', 'user', 'profile', 'profiles', 'slug', 'owner']);
 
@@ -72,14 +77,34 @@ export function queryNames(search: string): string {
   return names.map((name) => (name === 'q' ? `q(${(params.get('q') ?? '').length})` : name)).join(',');
 }
 
-/** Skráti text chyby stránky na bezpečnú dĺžku a zahodí prípadné zalomenia riadkov. */
-export function shortError(message: string): string {
-  const flat = message.replace(/\s+/g, ' ').trim();
-  return flat.length > MAX_ERROR_LENGTH ? `${flat.slice(0, MAX_ERROR_LENGTH)}…` : flat;
+/** Z chyby stránky vráti len druh (názov štandardnej triedy). Text správy sa nikdy nevracia, ani skrátený. */
+export function errorKind(raw: string): string {
+  const name = raw.trim().split(/[:\s]/, 1)[0] ?? '';
+  return KNOWN_ERROR_KINDS.has(name) ? name : 'Error';
+}
+
+/** Zlyhanie siete prejde, len ak vyzerá ako kód alebo krátka veta (`net::ERR_TIMED_OUT`), nie ako adresa či e-mail. */
+export function safeFailure(text: string | null): string {
+  const flat = (text ?? '').replace(/\s+/g, ' ').trim();
+  if (!flat) return 'unknown';
+  return /^[A-Za-z0-9_:. -]{1,60}$/.test(flat) && !/[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(flat) ? flat : 'failed';
+}
+
+/**
+ * Popis aktívneho prvku (`TAG atribút=hodnota …`): číslice v hodnote (ID v `data-testid`) sa nahradia `#` a hodnota, ktorá
+ * nie je obyčajný identifikátor, sa nahradí `?`.
+ */
+export function safeActive(text: string): string {
+  return text.split(' ').slice(0, 8).map((token) => {
+    const [key, ...rest] = token.split('=');
+    if (!rest.length) return /^[A-Za-z]{1,20}$/.test(token) ? token : '?';
+    const value = rest.join('=').replace(/\d+/g, '#');
+    return `${/^[a-z-]{1,24}$/.test(key) ? key : '?'}=${/^[A-Za-z#_-]{1,40}$/.test(value) ? value : '?'}`;
+  }).join(' ');
 }
 
 function formatEntry(entry: ActivityEntry): string {
-  const status = entry.failure ? `FAILED(${entry.failure})` : entry.status === null ? 'pending' : String(entry.status);
+  const status = entry.failure ? `FAILED(${safeFailure(entry.failure)})` : entry.status === null ? 'pending' : String(entry.status);
   const duration = entry.durationMs === null ? '…' : `${entry.durationMs} ms`;
   const query = entry.query ? ` [${entry.query}]` : '';
   return `${String(entry.startedAt).padStart(6)}  ${entry.method.padEnd(4)} ${entry.path}${query}  ${status}  ${duration}`;
@@ -93,7 +118,7 @@ function formatSnapshot(snapshot: PageSnapshot | null): string[] {
     `document timing (ms since navigation start): domContentLoaded=${snapshot.domContentLoadedMs ?? 'n/a'} load=${snapshot.loadMs ?? 'n/a'}`,
     `scroll root: scrollTop=${snapshot.scrollTop ?? 'n/a'} scrollHeight=${snapshot.scrollHeight ?? 'n/a'}`
       + ` clientHeight=${snapshot.clientHeight ?? 'n/a'}`,
-    `active element: ${snapshot.active}`,
+    `active element: ${safeActive(snapshot.active)}`,
   ];
 }
 
@@ -107,7 +132,7 @@ export function formatEvidence(input: EvidenceInput): string {
     ...formatSnapshot(input.snapshot),
     `requests (ms since test start${hidden > 0 ? `, ${hidden} older omitted` : ''}):`,
     ...(shown.length ? shown.map(formatEntry) : ['  none']),
-    `page errors: ${input.pageErrors.length}${input.pageErrors.length ? ` (${input.pageErrors.slice(0, 3).map(shortError).join(' | ')})` : ''}`
+    `page errors: ${input.pageErrors.length}${input.pageErrors.length ? ` (${input.pageErrors.slice(0, 3).map(errorKind).join(', ')})` : ''}`
       + ` | console errors: ${input.consoleErrors}`,
   ];
   return lines.join('\n');

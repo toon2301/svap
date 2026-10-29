@@ -68,7 +68,8 @@ export class PageActivity {
     page.on('request', (request) => this.onRequest(request));
     page.on('requestfinished', (request) => void this.onFinished(request));
     page.on('requestfailed', (request) => this.onFailed(request));
-    page.on('pageerror', (error) => this.pageErrors.push(`${error.name}: ${error.message}`));
+    // Z chyby stránky sa uchová len názov; text správy môže obsahovať spracúvané údaje a nesmie sa dostať do výpisu.
+    page.on('pageerror', (error) => this.pageErrors.push(error.name));
     page.on('console', (message) => {
       if (message.type() === 'error') this.consoleErrors += 1;
     });

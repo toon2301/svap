@@ -3,6 +3,8 @@
  * zostával len jeden riadok chyby. Teraz sa pri páde vypíše blok s požiadavkami, časmi a stavom stránky.
  *
  * Blok smie obsahovať len to, čo osobné údaje nenesie: cesty bez slugov a ID, názvy parametrov bez hodnôt, počty a časy.
+ * Z chyby stránky sa vypíše len druh (napr. `TypeError`), nikdy text správy: ten môže obsahovať kus spracúvaných údajov
+ * (`JSON.parse` vloží do správy časť vstupu).
  * E2E špecy Jest nespúšťa, no čisté pomôcky na zostavenie bloku (`page-activity-format.ts`) nezávisia od Playwrightu, preto sa
  * dajú overiť tu, vrátane toho, že do výstupu nepreniknú hodnoty z adries.
  *
@@ -11,10 +13,12 @@
 import fs from 'fs';
 import path from 'path';
 import {
+  errorKind,
   formatEvidence,
   normalizePath,
   queryNames,
-  shortError,
+  safeActive,
+  safeFailure,
   type ActivityEntry,
   type EvidenceInput,
   type PageSnapshot,
@@ -77,12 +81,58 @@ describe('queryNames', () => {
   });
 });
 
-describe('shortError', () => {
-  it('zlúči zalomenia a skráti dlhý text', () => {
-    expect(shortError('Chyba\n  na   riadku')).toBe('Chyba na riadku');
-    const long = shortError('x'.repeat(500));
-    expect(long.length).toBeLessThanOrEqual(121);
-    expect(long.endsWith('…')).toBe(true);
+describe('errorKind', () => {
+  it('vráti druh štandardnej chyby, aj keď dostane celú správu', () => {
+    expect(errorKind('TypeError')).toBe('TypeError');
+    expect(errorKind('SyntaxError: Unexpected token')).toBe('SyntaxError');
+    expect(errorKind('  RangeError : x')).toBe('RangeError');
+  });
+
+  it('neznámy názov alebo prázdny text vypíše ako Error', () => {
+    expect(errorKind('ValidationError: heslo=tajne')).toBe('Error');
+    expect(errorKind('')).toBe('Error');
+    expect(errorKind('boris@test.sk')).toBe('Error');
+  });
+
+  it('nikdy nevráti text správy', () => {
+    const message = 'SyntaxError: Unexpected token \'b\', "boris@test.sk,tajne" is not valid JSON';
+    const kind = errorKind(message);
+    expect(kind).toBe('SyntaxError');
+    for (const secret of ['boris', 'tajne', 'JSON', 'token']) expect(kind).not.toContain(secret);
+  });
+});
+
+describe('safeFailure', () => {
+  it('ponechá kód alebo krátku vetu bez adresy', () => {
+    expect(safeFailure('net::ERR_TIMED_OUT')).toBe('net::ERR_TIMED_OUT');
+    expect(safeFailure('net::ERR_HTTP2_PROTOCOL_ERROR')).toBe('net::ERR_HTTP2_PROTOCOL_ERROR');
+    expect(safeFailure('The network connection was lost.')).toBe('The network connection was lost.');
+  });
+
+  it('adresu, e-mail alebo názov domény nahradí slovom failed', () => {
+    expect(safeFailure('Failed to fetch https://svaply.example/api/auth/me/?token=abc')).toBe('failed');
+    expect(safeFailure('boris@test.sk')).toBe('failed');
+    expect(safeFailure('Could not reach railway.app')).toBe('failed');
+    expect(safeFailure('x'.repeat(61))).toBe('failed');
+  });
+
+  it('prázdny text alebo null je unknown', () => {
+    expect(safeFailure(null)).toBe('unknown');
+    expect(safeFailure('   ')).toBe('unknown');
+  });
+});
+
+describe('safeActive', () => {
+  it('ponechá značku a obyčajné identifikátory', () => {
+    expect(safeActive('BUTTON data-sidebar-nav-item=watches')).toBe('BUTTON data-sidebar-nav-item=watches');
+    expect(safeActive('INPUT type=text data-onboarding=search-input')).toBe('INPUT type=text data-onboarding=search-input');
+    expect(safeActive('none')).toBe('none');
+  });
+
+  it('číslice v hodnote nahradí # a hodnotu s inými znakmi znakom ?', () => {
+    expect(safeActive('BUTTON data-testid=message-image-trigger-4821')).toBe('BUTTON data-testid=message-image-trigger-#');
+    expect(safeActive('DIV data-testid=boris@test.sk')).toBe('DIV data-testid=?');
+    expect(safeActive('DIV data-testid=a/b')).toBe('DIV data-testid=?');
   });
 });
 
@@ -127,12 +177,31 @@ describe('formatEvidence', () => {
     expect(text).toContain('/api/auth/step/54');
   });
 
-  it('uvedie chyby stránky skrátené a počet chýb konzoly bez ich textu', () => {
+  it('z chýb stránky vypíše len druh, nikdy text správy, a počet chýb konzoly bez ich textu', () => {
     const text = formatEvidence(input({
-      pageErrors: ['TypeError: x is undefined', 'Error: '.concat('y'.repeat(400))], consoleErrors: 3,
+      pageErrors: [
+        'TypeError',
+        'SyntaxError: Unexpected token \'b\', "boris@test.sk,tajne" is not valid JSON',
+        'Error: '.concat('yyyy'.repeat(100)),
+        'ValidationError: heslo=tajne',
+      ],
+      consoleErrors: 3,
     }));
-    expect(text).toContain('page errors: 2 (TypeError: x is undefined | Error: yyy');
+    expect(text).toContain('page errors: 4 (TypeError, SyntaxError, Error)');
     expect(text).toContain('console errors: 3');
+    for (const secret of ['boris', 'tajne', 'heslo', 'yyyy', 'JSON', 'Unexpected']) expect(text).not.toContain(secret);
+  });
+
+  it('zlyhanie siete a aktívny prvok prejdú čistením, takže adresa, e-mail ani ID nepreniknú do výstupu', () => {
+    const text = formatEvidence(input({
+      entries: [entry({
+        status: null, durationMs: 15_000, failure: 'Failed to fetch https://svaply.example/api/auth/me/?token=abc',
+      })],
+      snapshot: { ...SNAPSHOT, active: 'BUTTON data-testid=message-image-trigger-4821 mail=boris@test.sk' },
+    }));
+    expect(text).toContain('FAILED(failed)');
+    expect(text).toContain('active element: BUTTON data-testid=message-image-trigger-# mail=?');
+    for (const secret of ['svaply.example', 'token=abc', '4821', 'boris', 'test.sk']) expect(text).not.toContain(secret);
   });
 
   it('nepustí do výstupu hodnoty z adries ani slugy, ak sa najprv prepustia cez normalizePath a queryNames', () => {
