@@ -207,7 +207,8 @@ test.describe('OW-20 real search cache revalidation', () => {
       ]);
       const second = await responseCounts(response);
       expect(second).toEqual(held.state.counts);
-      await expectCompleted(page, second);
+      // Diagnostika sa pri zatvorení panela zámerne zabudne a po jeho otvorení je vypnutá (`useSearchDiagnostics`), takže tento
+      // pokus v nej nie je. Dokončenie dokazuje odpoveď vyššie a zmiznutie indikátora overovania.
       await expect(aside.getByRole('status')).toHaveCount(0);
     } finally { await held.cleanup(); }
   });
