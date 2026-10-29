@@ -60,15 +60,24 @@ NEW_ITEMS = [
          what='Backend: `pip-audit` celého prostredia (aj tranzitívne balíky) hlásil 191 záznamov v 14 balíkoch (prvý sken 26. 10. bral len '
               'pripnuté balíky: 180 záznamov). Časť 183a (vetva 143, 27. 10.) je hotová: Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
-              '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Zostáva: Django 4.2.30 (9 záznamov), Twisted 26.4.0 (6), '
-              'DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
+              '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b sa robí v dvoch krokoch: nastavenia úložísk '
+              'sú presunuté do `STORAGES` (vetva 152, čaká na zlúčenie; na Djangu 4.2 sa správanie nemení), samotné povýšenie na Django 5.2 s DRF 3.18.3 '
+              'je vetva 153. Zostáva: Django 4.2.30 (9 záznamov), Twisted 26.4.0 (6), DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
               'Čisté riešenie je 183b (pred ostrým štartom): samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.2 alebo novším (3.18.0 a 3.18.1 '
               'ešte neopravujú nič; všetky 3 záznamy DRF majú opravu až v 3.18.2). Dva z nich sú DoS bez prihlásenia na verejných endpointoch '
               '(hlavička `Accept` a netextový `charset` v `Content-Type`), tretí sa týka DRF tokenov, ktoré aplikácia nepoužíva, prihlasuje len JWT. '
-              'Pred ním treba nastavenia `STATICFILES_STORAGE` (`static_media.py:6`, `settings_production.py:210`) a `DEFAULT_FILE_STORAGE` '
-              '(`settings_production.py:228`, číta ho aj `messaging/storage.py`) presunúť do `STORAGES`, Django 5.1+ ich nepozná. '
+              'Pred ním bolo treba presunúť `STATICFILES_STORAGE` a `DEFAULT_FILE_STORAGE` do `STORAGES`: Django 5.1+ ich ticho ignoruje, '
+              'aplikácia by bežala ďalej, no fotky (avatary, ponuky, správy) by sa ukladali na lokálny disk servera a po každom nasadení by zmizli '
+              '(skúška na Djangu 5.2 bez presunu: úložisko bolo lokálny disk a 3 z 38 kontrol zlyhali). Presun je na vetve 152: `STORAGES` je v '
+              '`static_media.py` a `settings_production.py`, `messaging/storage.py` ho číta (záložnú vetvu na `DEFAULT_FILE_STORAGE` odstránila) '
+              'a stráži ho `tests/test_production_settings_storages.py` (načíta produkčné nastavenia v samostatnom procese a zakáže staré nastavenia) '
+              'spolu s `tests/test_messaging_storage_selection.py` (výber súkromného úložiska fotiek správ, ktorý doteraz nemal test). Django 4.2 '
+              'odvodzuje `STORAGES` zo starých nastavení, preto je súkromné úložisko správ (ACL private, podpísané adresy) v produkcii aktívne už dnes '
+              'a po presune ostáva rovnaké. Zvyšok 183b (vetva 153): Django 5.2 vyžaduje PostgreSQL 14 a novší (Railway má 17), prihlásenie je asi '
+              '1,7-krát náročnejšie na procesor (hashovanie hesiel 1 000 000 iterácií namiesto 600 000; staré heslá sa prepíšu pri prihlásení a Django 4.2 '
+              'overí aj nový hash, takže rollback je bezpečný) a DRF 3.18 vyžaduje Django 5.2, preto sa povyšujú spolu. '
               '183c: `google-cloud-vision` 3.4.5 → 3.16.0 kvôli protobuf (treba overiť skutočné volania SafeSearch). '
               'Twisted: päť zo šiestich hlásení je v moduloch, ktoré aplikácia nepoužíva (IMAP, telnet, IRC, XMPP); šieste sa týka HTTP servera v daphne '
               '(holý CR/LF v hlavičke, request smuggling za proxy). Opravy sú zatiaľ len v 26.10.0rc1 (IMAP regex nemá opravu vôbec): počkať na finálne '
@@ -251,6 +260,48 @@ NEW_ITEMS = [
          note='Záložný text sa zobrazí len pri chýbajúcom preklade. Rozdiel stál jeden E2E test: `search-mobile-cards.spec.ts` hľadal tlačidlo podľa '
               'záložného textu „Otváracie hodiny“ a padal (vetva 151). Upratanie: jeden záložný text zhodný so slovenským prekladom.',
          dec=None, src='vetva 151'),
+    dict(n=212, bucket=P, imp=S_, eff=EM, pkg='Spoľahlivosť CI a testov', kratko='CI testuje backend len na SQLite, produkcia je PostgreSQL',
+         what='CI (`.github/workflows/deploy.yml`, krok „Run backend tests“) spúšťa celú backendovú sadu len na SQLite bez externých služieb, no '
+              'produkcia beží na PostgreSQL (Railway, verzia 17). Osem testov so zámkami riadkov sa na SQLite preskakuje, takže v CI nebežia nikdy: '
+              'súbežnosť limitu ponúk (`test_offer_limit_concurrency.py`, 1 test), značky príspevkov (`test_feed_post_tags.py`, 2), blokovanie žiadostí '
+              '(`test_skill_request_blocking.py`, 1) a blokovanie v správach (`test_messaging_blocking.py`, 4). Celá sada: na SQLite 1 983 prešlo a '
+              '10 preskočených, na PostgreSQL 16 1 991 prešlo a 2 preskočené (rozdiel je tých osem).',
+         note='Zmerané 29. 10. 2026 na vetve 152 (Django 4.2.30): celá sada prechádza aj na PostgreSQL 16, takže dnes nič nepadá; ide o poistku do '
+              'budúcna. Aplikácia sa na viacerých miestach spolieha na zámky riadkov (nález 185 uvádza 75× `select_for_update`) a práve tie SQLite '
+              'neskúša. Návrh: do CI pridať službu PostgreSQL (`services: postgres`) a pustiť sadu s `DATABASE_URL`, buď namiesto SQLite, alebo '
+              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Hodí sa to urobiť pred povýšením na Django 5.2 (vetva 153), aby ho CI '
+              'overilo na rovnakej databáze ako produkcia.',
+         dec=None, src='vetva 152'),
+    dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
+         what='Django 5.1 nahradilo argument `check` v `CheckConstraint` argumentom `condition` a Django 6.0 `check` odstráni. Aplikácia používa `check=` '
+              'na 21 miestach v siedmich súboroch modelov (`accounts/models/offer_watches.py` 9×, `reports.py` 4×, `bug_reports.py` 4×, '
+              '`feed_posts/post.py`, `profile_likes.py`, `profile_visits.py` a `user_blocks.py` po 1×) a na 27 miestach v 16 migráciách. Celá '
+              'backendová sada na Djangu 5.2 z toho vypíše 48 varovaní `RemovedInDjango60Warning`.',
+         note='Na Djangu 5.2 (LTS do 04/2028) nič nepadá, preto to nie je naliehavé; treba to urobiť pred skokom na Django 6.0. Premenovať sa dá až po '
+              'povýšení (Django 4.2 argument `condition` nepozná), teda po vetve 153. Týka sa aj starých migrácií: v nich ide len o názov '
+              'argumentu a schéma sa nemení; po zmene overiť `makemigrations --check`, že nevznikne nová migrácia. Zistené pri mapovaní 183b.',
+         dec=None, src='vetva 152'),
+    dict(n=214, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='`sentry_sdk.push_scope` zmizne v novej hlavnej verzii a `sentry-sdk` nie je pripnutý',
+         what='`swaply/sentry_reporting.py:24` (`capture_reportable_exception`) používa `sentry_sdk.push_scope()`, ktoré je v `sentry-sdk` 2.x zastarané '
+              '(„will be removed in the next major version“), a `backend/requirements.txt` má `sentry-sdk[django]` bez verzie. Pomocníka volajú bez '
+              'ochrany `GlobalErrorHandlingMiddleware.process_exception` (`swaply/middleware.py:135`) a obsluha výnimiek DRF (`middleware.py:196`).',
+         note='Dnes (verzia 2.73.0) to len vypíše `DeprecationWarning`. Odhad, nie skúška: ak by build nainštaloval novú hlavnú verziu bez '
+              '`push_scope`, pád by vznikol priamo v obsluhe chýb API, takže namiesto zamýšľanej JSON odpovede by klient dostal všeobecnú chybu 500. '
+              'Návrh: pripnúť `sentry-sdk[django]>=2,<3` (ako pri `celery` a `django-anymail`), prejsť na nové API (`sentry_sdk.new_scope()`, v 2.73.0 '
+              'existuje) a hlásenie do Sentry obaliť `try/except`, aby chyba hlásenia nikdy nepokazila odpoveď. Zistené pri mapovaní 183b '
+              '(varovanie v teste na Djangu 5.2).',
+         dec=None, src='vetva 152'),
+    dict(n=215, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra', kratko='knižnice staršie než oficiálna podpora Djanga 5.2',
+         what='Po povýšení na Django 5.2 (vetva 153) ostanú pripnuté verzie, ktoré Django 5.2 oficiálne ešte neuvádzajú (podľa klasifikátorov na PyPI): '
+              '`django-cors-headers` 4.3.1 (Django 5.2 uvádza od 4.7.0), `django-filter` 23.3 (od 25.1), `django-redis` 5.4.0 (od 6.0.0), `channels` '
+              '4.1.0 (od 4.2.1) a `whitenoise` 6.6.0 (od 6.9.0). Pri `channels-redis` 4.2.0 (najnovšia 4.3.0) a `django-storages` 1.14.2 (najnovšia '
+              '1.14.6) klasifikátor Djanga 5.2 neuvádza žiadna verzia.',
+         note='Skúška 29. 10. 2026 (Django 5.2.18 + DRF 3.18.3 s týmito verziami): celá backendová sada, 38 kontrol s produkčnými nastaveniami '
+              '(PostgreSQL, Redis, simulované S3), servery daphne a gunicorn s WebSocketom, Celery aj admin prešli, takže nič nehorí. Ide o oficiálnu '
+              'podporu a opravy chýb, nie o súčasný problém. Povyšovať po jednej knižnici a po každej spustiť celú sadu; pred každým povýšením '
+              'prečítať zápis zmien.',
+         dec=None, src='vetva 152'),
 ]
 
 NTASKS = [
