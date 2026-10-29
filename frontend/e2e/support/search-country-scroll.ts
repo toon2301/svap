@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page, type Request, type Response } from '@playwright/test';
 import { bottomNav, gotoDashboardHome, sideNav } from './dashboard';
+import { observePage } from './page-activity';
 
 export const DIAGNOSTICS_LABEL = 'Diagnostika vyhľadávania';
 export const SEARCH_PATH = '/api/auth/dashboard/search/';
@@ -62,6 +63,7 @@ export async function openScrollableResults(
   const query = process.env.E2E_SEARCH_NAV_QUERY?.trim() || 'te';
   if (query.length < 2) throw new Error('The reusable search query must contain at least two characters.');
   const path = tab === 'all' ? '/api/auth/search/global/' : '/api/auth/search/';
+  observePage(page);
   const responsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return response.request().method() === 'GET' && url.pathname === path && url.searchParams.get('q') === query;

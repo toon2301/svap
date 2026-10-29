@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { observePage } from './page-activity';
 
 export type ResultsTab = 'all' | 'offers' | 'users';
 export type ResultPosition = {
@@ -68,6 +69,7 @@ export async function openReturnFixture(page: Page, tab: ResultsTab): Promise<vo
   const query = process.env.E2E_SEARCH_NAV_QUERY?.trim() || 'te';
   if (query.length < 2) throw new Error('The existing reusable query must contain at least two characters.');
   const path = tab === 'offers' ? '/api/auth/search/' : '/api/auth/search/global/';
+  observePage(page);
   const responsePromise = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return response.request().method() === 'GET' && url.pathname === path && url.searchParams.get('q') === query;

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { bottomNav, gotoDashboardHome, sideNav } from './support/dashboard';
+import { observePage, reportFailureEvidence } from './support/page-activity';
 import { initializeSearchContext, isPanelSearch } from './support/search-country-scroll';
 import {
   measureReturn,
@@ -39,6 +40,7 @@ test.describe('Search panel visibility and prompt profile returns', () => {
       throw new Error('These tests are restricted to the configured Railway deployment.');
     }
     attemptedWrites = [];
+    observePage(page);
     await initializeSearchContext(page, 'dark');
     await page.route((url) => url.pathname.startsWith('/api/'), async (route) => {
       const request = route.request();
@@ -52,7 +54,9 @@ test.describe('Search panel visibility and prompt profile returns', () => {
     });
   });
 
-  test.afterEach(() => {
+  test.afterEach(async ({ page }, testInfo) => {
+    // Pri páde vypíše požiadavky a stav stránky bez osobných údajov (trace, screenshot a video sú v tomto špece vypnuté).
+    await reportFailureEvidence(page, testInfo);
     expect(attemptedWrites, 'Navigation tests must not write content or account preferences').toEqual([]);
   });
 
