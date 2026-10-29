@@ -158,7 +158,9 @@ ORIG_OPEN = {
     32: (A, N, ES, 'Nástroje a testy',
          'Cudzie súbory v repozitári. Rozšírené 26. 10. 2026: v koreni sú navyše commitnuté `cd`, `git`, `main`, '
          '`out)`, `.mp4`, `frontend-build.zip`, dva prázdne WinRAR zipy, `Dockerfile.backup`, `test-autosave.html`, '
-         '`linecount*`. Tajomstvá som v repozitári ani v histórii nenašiel.', None),
+         '`linecount*`. Tajomstvá som v repozitári ani v histórii nenašiel. Doplnené 29. 10. 2026 (vetva 152): v `backend/` sú sledované aj '
+         'štyri prázdne súbory `list`, `x.id`, `{` a `r.json())`, v koreni druhé video `ezgif.com-video-to-gif-converter-desktop.mp4` (0,6 MB) '
+         'a `.coverage` (98 KB).', None),
     33: (P, S_, ES, 'Produkčná odolnosť aplikácie',
          'Chýba `global-error.js`: chyby vykresľovania v app routeri sa nehlásia do Sentry. Pre ostrú prevádzku '
          'je to základ monitoringu.', None),

@@ -21,16 +21,12 @@ from django.core.files.storage import default_storage
 
 def _s3_default_storage_active() -> bool:
     """True ak je default storage S3 (produkcia); inak lokálny FS (DEV/test)."""
-    backend = ""
-    storages = getattr(settings, "STORAGES", None)
-    if isinstance(storages, dict):
-        backend = (storages.get("default") or {}).get("BACKEND", "") or ""
-    if not backend:
-        backend = getattr(settings, "DEFAULT_FILE_STORAGE", "") or ""
+    backend = (settings.STORAGES.get("default") or {}).get("BACKEND", "") or ""
     return "S3Boto3Storage" in backend
 
 
 def _build_private_message_storage():
+    """Vytvorí súkromné S3 úložisko pre fotky správ (ACL private, podpísané adresy, bez prepisovania súborov)."""
     from storages.backends.s3boto3 import S3Boto3Storage
 
     class PrivateMessageStorage(S3Boto3Storage):

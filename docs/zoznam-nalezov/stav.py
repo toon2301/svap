@@ -7,12 +7,22 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='29. 10. 2026',
-    kod='`main` `8de34fb1` (po PR #207)',
+    kod='`main` `9346520e` (po PR #208)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('29. 10. 2026',
+     'Vetva 152 (čaká na zlúčenie): prvý krok časti 183b nálezu 183 – úložiská (médiá na S3, statické súbory bez manifestu) sú nastavené cez '
+     '`STORAGES` namiesto `DEFAULT_FILE_STORAGE` a `STATICFILES_STORAGE`, ktoré Django 5.1+ ticho ignoruje (fotky by sa ukladali na lokálny disk '
+     'servera). Na Djangu 4.2 sa správanie nemení; výber súkromného úložiska fotiek správ číta už len `STORAGES`. Dva nové súbory testov (7 testov): '
+     'produkčné nastavenia v samostatnom procese a výber úložiska správ, ktorý doteraz nemal test. Celá backendová sada: Django 4.2.30 na SQLite '
+     '1 983 prešlo a 10 preskočených, na PostgreSQL 16 1 991 a 2, Django 5.2.18 na SQLite 1 983 a 10. Skúška povýšenia na Django 5.2.18 s DRF 3.18.3 '
+     'v oddelenom prostredí (sada na SQLite aj PostgreSQL, 38 kontrol s produkčnými nastaveniami, servery s WebSocketom, Celery, admin, migrácie '
+     'od nuly aj nad databázou z 4.2, tokeny v oboch smeroch) neukázala žiadnu prekážku; samotné povýšenie je vetva 153. Nové nálezy 212 (CI '
+     'testuje backend len na SQLite), 213 (`CheckConstraint(check=…)`), 214 (`sentry_sdk.push_scope`) a 215 (knižnice staršie než oficiálna podpora '
+     'Djanga 5.2); nález 32 doplnený o ďalšie zbytočné súbory. Vetva 151 je zlúčená (PR #208), nálezy 190 a 210 sú zlúčené.'),
     ('29. 10. 2026',
      'Vetva 151 (čaká na zlúčenie): nález 210 – oprava 27 zastaraných alebo chybných E2E testov z druhého celého behu na Railway (28. 10.: '
      '395 prešlo, 35 padlo, 302 preskočených): diagnostika vyhľadávania podľa kontraktu OW-20 (TEST-17), tlačidlo „Zobraziť ďalšie“ v '
@@ -167,14 +177,14 @@ DONE_SINCE = [
               'nepodporovanej verzii, celý Jest (513 sád, 7 901 testov, žiadny preskočený) a `npm run build` (prešiel aj s kontrolou typov). Po zlúčení (PR #207) používateľ overil, že Railway beží na Node 22. Akú verziu '
               'Node Railway používalo predtým, sa nedalo zistiť (v repozitári nebolo nič zafixované). Úprava workflow pre nálezy 194 a 196 sa '
               'nerobila.'),
-    dict(n=190, vetva='151', pr=None, zlucene=False,
+    dict(n=190, vetva='151', pr='#208', zlucene=True,
          text='HOTOVÉ: scenár „review: a restored profile-return snapshot follows user scrolling…“ v `search-country-scroll.spec.ts` sa v mobilnom '
               'WebKite preskočí (`test.skip(isMobile, …)` s vysvetlením), lebo Playwright v ňom koliesko myši nepozná („Mouse wheel is not '
               'supported in mobile WebKit“). Skutočný ťah prstom sa v Playwrighte nedá nahradiť rovnako verne a priamy zápis `scrollTop` by '
               'scenár o skutočnom vstupe zmenil na iný. Rovnaký scenár beží ďalej v desktopových projektoch (webkit-desktop, chromium-desktop); '
               'mobilná vetva odchodu cez tlačidlo Späť, ktorá je po preskočení nedosiahnuteľná, sa odstránila. Overené v Chromiu proti lokálnej '
               'kópii: v rozmeroch iPhonu sa test preskočí, v desktope prechádza. Súčasť opravy 210.'),
-    dict(n=210, vetva='151', pr=None, zlucene=False,
+    dict(n=210, vetva='151', pr='#208', zlucene=True,
          text='HOTOVÉ: oprava 27 zastaraných alebo chybných E2E testov z druhého celého behu na Railway 28. 10. (395 prešlo, 35 padlo, 302 '
               'preskočených; Docker, 2 workery, 29,4 min). Príčiny a opravy: (1) `search-diagnostics.spec.ts` (9 pádov) a '
               '`search-cache-revalidation.spec.ts` (2) čakali správanie spred OW-20 (opakované hľadanie bez HTTP, diagnostika po '
@@ -230,10 +240,11 @@ PORADIE = [
          preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
-         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), '
-            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209)',
+         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.3 po presune úložísk z vetvy 152, `google-cloud-vision` kvôli protobuf, '
+            'Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 212; '
+            '212 pred povýšením na Django 5.2 alebo hneď po ňom)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '209']),
+         polozky=['183', '184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '212']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
