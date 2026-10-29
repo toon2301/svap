@@ -6,6 +6,12 @@ import { GoogleLoginAudit } from './helpers/googleLoginAudit';
 // No content is created or deleted, and no credentials/cookies are recorded.
 test.use({ storageState: { cookies: [], origins: [] }, trace: 'off', screenshot: 'off', video: 'off' });
 
+// Service worker aplikácie (public/sw.js) preposiela volania /api/ cez vlastný fetch. Pomocník simuluje odpovede /me cez
+// `context.route`, ktorý podľa dokumentácie Playwrightu (rovnako ako `page.route`) nezaručuje zachytenie požiadaviek
+// vybavených workerom: v Chromiu ich zachytil, vo WebKite päť testov o obnove po 401, 429 a 500 padalo (beh na Railway
+// 28. 10.). Preto sa worker blokuje aj tu.
+test.use({ serviceWorkers: 'block' });
+
 test('valid completion before popup closure opens the dashboard', async ({ page, context }) => {
   const audit = await GoogleLoginAudit.start(page, context);
   try {
