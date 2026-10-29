@@ -141,6 +141,34 @@ describe('useStickToBottomOnGrowth', () => {
     expect(state.scrollTop).toBe(500);
   });
 
+  it('does not move when the content shrinks', () => {
+    const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 560 });
+
+    state.scrollHeight = 940;
+    act(() => resizeObserver.grow());
+
+    expect(state.scrollTop).toBe(560);
+  });
+
+  it('does not move when the observer fires without a change of the content height', () => {
+    const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 560 });
+
+    act(() => resizeObserver.grow());
+
+    expect(state.scrollTop).toBe(560);
+  });
+
+  it('follows the content again after a shrink, comparing with the height from before the latest change', () => {
+    const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
+
+    state.scrollHeight = 900;
+    act(() => resizeObserver.grow());
+    state.scrollHeight = 950;
+    act(() => resizeObserver.grow());
+
+    expect(state.scrollTop).toBe(950);
+  });
+
   it('follows again once the user scrolls back down to the bottom', () => {
     const { state, scroller } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 100 });
 
