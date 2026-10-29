@@ -1,6 +1,6 @@
 # Playwright: odovzdanie (stav k 29. 10. 2026)
 
-Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov; zmeny zlučuje aspoň do jednej vetvy naraz, nie po každom behu.
+Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
 ## Ako sa beh spúšťa
 
