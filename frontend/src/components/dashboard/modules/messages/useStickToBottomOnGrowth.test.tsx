@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useStickToBottomOnGrowth } from './useStickToBottomOnGrowth';
 
 type ObservedBox = { callback: () => void; observed: Element | null; disconnected: boolean };
+type Geometry = { scrollHeight: number; clientHeight: number; scrollTop: number };
 
 /** Nahradí `ResizeObserver` náhradou, ktorú test spúšťa ručne (`grow`), a zaznamená, čo sleduje a či ju hook odpojil. */
 function installResizeObserverStub() {
@@ -56,7 +57,7 @@ function Harness({ enabled = true }: { enabled?: boolean }) {
 }
 
 /** Nastaví prvku rozmery z objektu `geometry`; test ich potom mení priamo v ňom, ako keby sa zmenilo rozloženie. */
-function mockGeometry(element: HTMLElement, geometry: { scrollHeight: number; clientHeight: number; scrollTop: number }) {
+function mockGeometry(element: HTMLElement, geometry: Geometry) {
   Object.defineProperty(element, 'scrollTop', {
     configurable: true,
     get: () => geometry.scrollTop,
@@ -69,12 +70,18 @@ function mockGeometry(element: HTMLElement, geometry: { scrollHeight: number; cl
   return geometry;
 }
 
-/** Vykreslí hook vypnutý, nastaví rozmery a až potom ho zapne, aby si hook prečítal počiatočnú výšku obsahu. */
-function startAt(geometry: { scrollHeight: number; clientHeight: number; scrollTop: number }) {
+/** Vykreslí hook vypnutý, nastaví rozmery a až potom ho zapne, aby si hook prečítal počiatočnú polohu okna. */
+function startAt(geometry: Geometry) {
   const view = render(<Harness enabled={false} />);
-  const state = mockGeometry(screen.getByTestId('scroll'), geometry);
+  const scroller = screen.getByTestId('scroll');
+  const state = mockGeometry(scroller, geometry);
   view.rerender(<Harness enabled />);
-  return { state, view };
+  return { state, view, scroller };
+}
+
+/** Prehliadač pošle udalosť posunu po každej zmene `scrollTop` (aj z kódu); jsdom nie, preto ju test pošle sám. */
+function scrollEvent(scroller: HTMLElement) {
+  fireEvent.scroll(scroller);
 }
 
 describe('useStickToBottomOnGrowth', () => {
@@ -98,17 +105,18 @@ describe('useStickToBottomOnGrowth', () => {
   });
 
   it('keeps following when the content grows several times in a row', () => {
-    const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
+    const { state, scroller } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
 
     state.scrollHeight = 1060;
     act(() => resizeObserver.grow());
+    scrollEvent(scroller);
     state.scrollHeight = 1412;
     act(() => resizeObserver.grow());
 
     expect(state.scrollTop).toBe(1412);
   });
 
-  it('stays in place when the user has scrolled up', () => {
+  it('stays in place when the user was scrolled up before the growth', () => {
     const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 300 });
 
     state.scrollHeight = 1352;
@@ -118,31 +126,30 @@ describe('useStickToBottomOnGrowth', () => {
   });
 
   it('stops following once the user scrolls up between two growth steps', () => {
-    const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
+    const { state, scroller } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
 
     state.scrollHeight = 1060;
     act(() => resizeObserver.grow());
+    scrollEvent(scroller);
     expect(state.scrollTop).toBe(1060);
 
     state.scrollTop = 500;
+    scrollEvent(scroller);
     state.scrollHeight = 1412;
     act(() => resizeObserver.grow());
 
     expect(state.scrollTop).toBe(500);
   });
 
-  it('compares the scroll position with the content height from before the latest growth', () => {
-    const { state } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
+  it('follows again once the user scrolls back down to the bottom', () => {
+    const { state, scroller } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 100 });
 
+    state.scrollTop = 600;
+    scrollEvent(scroller);
     state.scrollHeight = 1352;
     act(() => resizeObserver.grow());
+
     expect(state.scrollTop).toBe(1352);
-
-    state.scrollTop = 800;
-    state.scrollHeight = 1404;
-    act(() => resizeObserver.grow());
-
-    expect(state.scrollTop).toBe(800);
   });
 
   it('treats a view at most 80px above the bottom as being at the bottom', () => {
@@ -158,14 +165,68 @@ describe('useStickToBottomOnGrowth', () => {
     expect(tooFarUp.state.scrollTop).toBe(519);
   });
 
-  it('does not observe anything while disabled', () => {
+  it('keeps the reading position when older messages are prepended and the position is restored before the observer fires', () => {
+    const { state, scroller } = startAt({ scrollHeight: 2000, clientHeight: 400, scrollTop: 48 });
+    scrollEvent(scroller);
+
+    // Aplikácia vráti čitateľa na jeho miesto (pridá výšku vložených správ), až potom príde oznam o zmene rozloženia.
+    state.scrollHeight = 4000;
+    state.scrollTop = 2048;
+    scrollEvent(scroller);
+    act(() => resizeObserver.grow());
+
+    expect(state.scrollTop).toBe(2048);
+  });
+
+  it('keeps the reading position when the observer fires before the position is restored', () => {
+    const { state, scroller } = startAt({ scrollHeight: 2000, clientHeight: 400, scrollTop: 48 });
+    scrollEvent(scroller);
+
+    state.scrollHeight = 4000;
+    act(() => resizeObserver.grow());
+    expect(state.scrollTop).toBe(48);
+
+    state.scrollTop = 2048;
+    scrollEvent(scroller);
+    state.scrollHeight = 4100;
+    act(() => resizeObserver.grow());
+
+    expect(state.scrollTop).toBe(2048);
+  });
+
+  it('keeps the reading position when the browser compensates the position for growth above the view', () => {
+    const { state, scroller } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 300 });
+    scrollEvent(scroller);
+
+    // Obrázok nad čitateľom narástol o 352 px a prehliadač posunul okno o toľko nižšie, aby čitateľ ostal na mieste.
+    state.scrollHeight = 1352;
+    state.scrollTop = 652;
+    scrollEvent(scroller);
+    act(() => resizeObserver.grow());
+
+    expect(state.scrollTop).toBe(652);
+  });
+
+  it('does not observe or listen while disabled', () => {
+    const original = HTMLDivElement.prototype.addEventListener;
+    const scrollListenerTargets: HTMLDivElement[] = [];
+    const addListener = jest
+      .spyOn(HTMLDivElement.prototype, 'addEventListener')
+      .mockImplementation(function recordScrollListener(this: HTMLDivElement, ...args: unknown[]) {
+        if (args[0] === 'scroll') scrollListenerTargets.push(this);
+        return original.apply(this, args as Parameters<typeof original>);
+      });
+
     render(<Harness enabled={false} />);
 
     expect(resizeObserver.boxes).toHaveLength(0);
+    expect(scrollListenerTargets.filter((target) => target.dataset.testid === 'scroll')).toHaveLength(0);
+    addListener.mockRestore();
   });
 
-  it('observes the content element and stops observing on unmount', () => {
-    const { view } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
+  it('observes the content element and releases the observer and the scroll listener on unmount', () => {
+    const { view, scroller } = startAt({ scrollHeight: 1000, clientHeight: 400, scrollTop: 600 });
+    const removeListener = jest.spyOn(scroller, 'removeEventListener');
 
     expect(resizeObserver.boxes).toHaveLength(1);
     expect(resizeObserver.boxes[0].observed).toBe(screen.getByTestId('content'));
@@ -173,6 +234,7 @@ describe('useStickToBottomOnGrowth', () => {
     view.unmount();
 
     expect(resizeObserver.boxes[0].disconnected).toBe(true);
+    expect(removeListener).toHaveBeenCalledWith('scroll', expect.any(Function));
   });
 
   it('does nothing when ResizeObserver is not available', () => {
