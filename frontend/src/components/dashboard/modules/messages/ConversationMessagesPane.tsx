@@ -49,6 +49,7 @@ type ConversationMessagesPaneProps = {
   busyInvitationId?: number | null;
 };
 
+/** Okno správ konverzácie: kostra, prázdny stav alebo riadky správ; drží okno na spodku, kým obsah rastie (`useStickToBottomOnGrowth`). */
 export function ConversationMessagesPane({
   loading,
   ordered,
