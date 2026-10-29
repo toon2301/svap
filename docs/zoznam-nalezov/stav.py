@@ -22,7 +22,11 @@ ZMENY = [
      'známa; vysvetlia ich dôkazy z ďalšieho behu. Opravy z vetvy 151 sa potvrdili: žiadny z desiatich testov `google-login-completion` vo '
      'WebKite nepadol a rozpočet obnovy 3 s stačil. Vetva 152 je zlúčená (PR #209). Povýšenie na Django 5.2 sa posúva na vetvu 154. '
      'Po kontrole CodeRabbit (PR #210): dôkazy pri páde neobsahujú text chyby stránky (môže niesť kus spracúvaných údajov, napr. pri '
-     '`JSON.parse`), vypíše sa len druh chyby, a nález 183 uvádza vetvu 152 ako zlúčenú.'),
+     '`JSON.parse`), vypíše sa len druh chyby, a nález 183 uvádza vetvu 152 ako zlúčenú. Po druhej kontrole sa nič z prehliadača nevypisuje '
+     '„očistené“: zlyhanie siete sa vypíše len ako druh (kód Chromia alebo pevné slovo), aktívny prvok len z pevných zoznamov (značka, '
+     '`role`, `type`, `data-sidebar-nav-item`, `data-onboarding`; `data-testid` sa už nečíta) a všetko mimo zoznamu ako `other`, takže ani '
+     'IP adresa, názov servera či slug z atribútu sa do výstupu nedostanú; cesty za `reset-password`, `password-reset`, '
+     '`password-reset-verify` a `check-email` sa nahradia.'),
     ('29. 10. 2026',
      'Vetva 152 (čaká na zlúčenie): prvý krok časti 183b nálezu 183 – úložiská (médiá na S3, statické súbory bez manifestu) sú nastavené cez '
      '`STORAGES` namiesto `DEFAULT_FILE_STORAGE` a `STATICFILES_STORAGE`, ktoré Django 5.1+ ticho ignoruje (fotky by sa ukladali na lokálny disk '
@@ -239,10 +243,13 @@ DONE_SINCE = [
               'Asercie a tolerancie sú nezmenené. Pozorovateľ požiadaviek `e2e/support/page-activity.ts` (a čisté pomôcky '
               '`page-activity-format.ts`) pri páde špecov `search-country-scroll`, `search-panel-return` a `search-to-offer-watches` vypíše a '
               'pripojí blok dôkazov bez osobných údajov: požiadavky s časmi a stavmi, čas načítania dokumentu, stav panela, aktívny prvok, počty '
-              'chýb; cesty bez slugov, parametre bez hodnôt, žiadne telá odpovedí, texty z konzoly ani texty chýb stránky (z chyby sa vypíše len druh, napr. `TypeError`; zlyhanie siete a aktívny prvok sa čistia). Pád (1) alebo (2) sa tak pri ďalšom výskyte '
+              'chýb; cesty bez slugov, parametre bez hodnôt, žiadne telá odpovedí, texty z konzoly ani texty chýb stránky (z chyby sa vypíše len druh, napr. `TypeError`; zlyhanie siete len ako druh a aktívny prvok len z pevných zoznamov). Pád (1) alebo (2) sa tak pri ďalšom výskyte '
               'vysvetlí sám (uvidí sa, či po ťuknutí vznikla požiadavka na profil a ako dlho trvala, a ako dlho trvalo načítanie stránky). '
-              'Overené: celý Jest (514 sád, 7 922 testov, z toho nový `E2ePageActivity.test.ts` s 21 testami), `tsc` a `eslint` čisté; v Chromiu proti lokálnej kópii '
-              '(rozmery počítača aj iPhonu) prešlo všetkých 39 testov troch špecov (13 sa preskočilo podľa návrhu); tie isté špecy šesťkrát za sebou pri 4-násobne spomalenom procesore prehliadača: 234 prešlo, 0 padlo, 78 preskočených (20 min). WebKit a Railway sa tu overiť nedali; to ukáže ďalší celý beh.'),
+              'Overené: celý Jest (514 sád, 7 932 testov, z toho nový `E2ePageActivity.test.ts` s 31 testami), `tsc` a `eslint` čisté; v Chromiu proti lokálnej kópii '
+              '(rozmery počítača aj iPhonu) prešlo všetkých 39 testov troch špecov (13 sa preskočilo podľa návrhu); tie isté špecy šesťkrát za sebou pri 4-násobne spomalenom procesore prehliadača: 234 prešlo, 0 padlo, 78 preskočených (20 min). '
+              'Poistka súkromia: desať zámerne vnesených chýb v pomôckach (napr. výpis surového textu zlyhania alebo surovej hodnoty atribútu) testy odhalili všetkých desať; '
+              'blok dôkazov sa skúšal aj v skutočnom Chromiu na stránke so slugom a e-mailom v adrese a atribútoch, tokenom v ceste a zlyhaniami siete a nič z toho sa nevypísalo. '
+              'WebKit a Railway sa tu overiť nedali; to ukáže ďalší celý beh.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
