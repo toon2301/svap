@@ -206,8 +206,6 @@ try:
             )
 except Exception:
     pass
-# Static files storage - bez manifest pre Railway
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # Whitenoise pre servovanie static files na Railway
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
@@ -224,8 +222,13 @@ if not os.path.exists(staticfiles_dir):
     except Exception:
         pass  # Ignorovať chyby pri vytváraní adresára
 
-# Media files – S3 storage in production
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+# Úložiská: médiá (fotky) na S3, statické súbory bez manifestu pre Railway (servíruje ich WhiteNoise).
+# Django 5.1+ pozná iba STORAGES; DEFAULT_FILE_STORAGE a STATICFILES_STORAGE by ticho ignorovalo a fotky by
+# sa ukladali na lokálny disk servera. Stráži to tests/test_production_settings_storages.py.
+STORAGES = {
+    "default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
