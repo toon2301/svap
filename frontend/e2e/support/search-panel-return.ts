@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { observePage } from './page-activity';
+import { waitForSearchSettled } from './search-settled';
 
 export type ResultsTab = 'all' | 'offers' | 'users';
 export type ResultPosition = {
@@ -83,6 +84,9 @@ export async function openReturnFixture(page: Page, tab: ResultsTab): Promise<vo
   await expect.poll(() => main.locator(resultSelector(tab)).count(), {
     message: 'The reusable search query must return a rendered result',
   }).toBeGreaterThan(0);
+  // Stránka pošle hľadanie pri prvom načítaní dvakrát; až po druhom sa výsledky prestanú hýbať (nález 217). Bez toho by sa
+  // pozícia merala a karta ťukala v rozložení, ktoré sa o chvíľu zmení.
+  await waitForSearchSettled(page);
 }
 
 /** Capture the geometry the actual author click must retain, without manufacturing history metadata. */

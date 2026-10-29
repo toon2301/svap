@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page, type Request, type Response } from '@playwright/test';
 import { bottomNav, gotoDashboardHome, sideNav } from './dashboard';
 import { observePage } from './page-activity';
+import { waitForSearchSettled } from './search-settled';
 
 export const DIAGNOSTICS_LABEL = 'Diagnostika vyhľadávania';
 export const SEARCH_PATH = '/api/auth/dashboard/search/';
@@ -82,6 +83,8 @@ export async function openScrollableResults(
   await page.keyboard.press('Escape');
   const panel = page.locator('[data-dashboard-main]').locator('xpath=preceding-sibling::div[@aria-hidden][1]');
   await expect(panel).toHaveAttribute('aria-hidden', 'true');
+  // Stránka pošle hľadanie pri prvom načítaní dvakrát; až po druhom sa výška výsledkov prestane meniť (nález 217).
+  await waitForSearchSettled(page);
   return page.url();
 }
 
@@ -92,11 +95,27 @@ export async function openDeepResultAuthor(page: Page, isMobile: boolean): Promi
   const main = page.locator('[data-dashboard-main]');
   const top = await main.evaluate((element) => Math.round(element.scrollTop));
   expect(top, 'The reusable result fixture must exercise a non-trivial nested scroll position').toBeGreaterThan(250);
+  const sourceUrl = page.url();
   if (isMobile) await author.tap();
   else await author.click();
   await expect(page).toHaveURL(/\/dashboard\/users\/[^/?]+(?:\?|$)/);
   await expect(page.locator('[data-dashboard-main]')).toBeVisible();
+  // Poistka merania: pozícia, ktorú appka uložila pri odchode, sa musí zhodovať s tou, ktorú test zmeral tesne pred klikom.
+  // Ak sa rozloženie pohlo medzi meraním a klikom, test to tu ohlási presne, namiesto mätúceho zlyhania po návrate.
+  expect(await savedPositionMatches(page, sourceUrl, top),
+    'The position saved on departure must match the position measured just before the click (the layout moved in between)')
+    .toBe(true);
   return top;
+}
+
+/** Overí, že medzi uloženými pozíciami návratu je pre danú adresu záznam s `top` v rámci 2 px od zmeranej hodnoty. */
+async function savedPositionMatches(page: Page, sourceUrl: string, top: number): Promise<boolean> {
+  return page.evaluate(({ url, expectedTop }) => {
+    const entries: unknown = JSON.parse(sessionStorage.getItem('svaplySearchScrollV1') || '[]');
+    const parsed = new URL(url);
+    return Array.isArray(entries) && entries.some((entry) => entry?.url === `${parsed.pathname}${parsed.search}${parsed.hash}`
+      && typeof entry.top === 'number' && Math.abs(entry.top - expectedTop) <= 2);
+  }, { url: sourceUrl, expectedTop: top });
 }
 
 export async function expectRestoredSearch(page: Page, url: string, top: number): Promise<void> {
