@@ -6,13 +6,21 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='28. 10. 2026',
-    kod='`main` `9f56aec8` (po PR #206)',
+    datum='29. 10. 2026',
+    kod='`main` `8de34fb1` (po PR #207)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('29. 10. 2026',
+     'Vetva 151 (čaká na zlúčenie): nález 210 – oprava 27 zastaraných alebo chybných E2E testov z druhého celého behu na Railway (28. 10.: '
+     '395 prešlo, 35 padlo, 302 preskočených): diagnostika vyhľadávania podľa kontraktu OW-20 (TEST-17), tlačidlo „Zobraziť ďalšie“ v '
+     'upozorneniach, blok service workera v testoch prihlásenia cez Google (desať pádov vo WebKite), preskočenie scenára s kolieskom myši v '
+     'mobilnom WebKite (nález 190), názov tlačidla „Otváracia doba“ a rozpočet obnovy pozície 3 s. Sedem testov čaká na testovacie údaje na '
+     'Railway (nový nález 209, pripraví ich používateľ), jeden jednorazový pád (`search-country-scroll.spec.ts:74`) sa nedal vysvetliť ani '
+     'reprodukovať a neopravuje sa. Nový nález 211 (tri rôzne záložné texty pre názov otváracích hodín). Vetva 150 je zlúčená (PR #207) a '
+     'používateľ overil, že Railway beží na Node 22 (nález 208 je overený).'),
     ('28. 10. 2026',
      'Vetva 150 (čaká na zlúčenie): nález 208 – CI beží na Node 22 LTS namiesto Node 18 a `frontend/package.json` (aj zámok) zafixuje '
      '`engines.node` na `22.x`, takže Railway pri builde použije tú istú verziu. Tri testy strážcu prihlásenia proti zástupnému serveru, '
@@ -83,7 +91,8 @@ DONE_SINCE = [
     dict(n=173, vetva='140', pr='#200', zlucene=True,
          text='HOTOVÉ: E2E špecy, ktoré strážia zápisy alebo podvrhujú sieť cez `page.route`, blokujú service worker (`serviceWorkers: \'block\'`); '
               'nové špecy stráži Jest poistka `E2eServiceWorker.guard.test.ts`. Overené v Chromiu na produkčnom builde (Playwright 1.63): '
-              'bez bloku strážca zápis 1,5 s po načítaní nezachytí.'),
+              'bez bloku strážca zápis 1,5 s po načítaní nezachytí. Vetva 151 (nález 210) poistku rozšírila aj na `context.route` a blok '
+              'doplnila do `google-login-completion.spec.ts`, kde vo WebKite padalo desať testov.'),
     dict(n=188, vetva='141', pr='#201', zlucene=True,
          text='HOTOVÉ: test „rejects expired records and future timestamps“ v `searchScrollMemory.test.ts` zafixuje hodiny pred zápisom '
               'záznamu, takže už nepadá náhodne. Starý variant: 16 pádov zo 4 000 bez záťaže a približne 104 zo 4 000 pod záťažou, '
@@ -147,17 +156,46 @@ DONE_SINCE = [
               '(test 7 po 113 s), so strážcom prešlo všetkých 10 testov za 3 minúty (súbor s prihlásením mal pri štarte testov najviac 27 s). '
               'Celý beh na Railway a vo WebKite sa tu overiť nedal; zvyšných približne 21 pádov z iných príčin (napr. 189, 190) táto oprava '
               'nerieši.'),
-    dict(n=208, vetva='150', pr=None, zlucene=False,
-         text='HOTOVÉ: CI (`.github/workflows/deploy.yml`) beží na Node 22 LTS namiesto Node 18, ktorý skončil podporu v apríli 2025 (Node 20 ju '
+    dict(n=208, vetva='150', pr='#207', zlucene=True,
+         text='HOTOVÉ (overené používateľom na Railway 28. 10.): CI (`.github/workflows/deploy.yml`) beží na Node 22 LTS namiesto Node 18, ktorý skončil podporu v apríli 2025 (Node 20 ju '
               'skončil 30. 4. 2026, Node 22 ju má do 30. 4. 2027). `frontend/package.json` má `engines.node` `22.x` (zapísané aj v '
               '`package-lock.json`), takže je verzia Node zafixovaná na jednom mieste (predtým nikde). Railway ju pri builde prečíta: Nixpacks '
               'aj Railpack čítajú `engines.node`; bez nej má Nixpacks predvolene Node 18 a Railpack najnovší LTS, premenná `NIXPACKS_NODE_VERSION` '
               'alebo `RAILPACK_NODE_VERSION` v nastaveniach služby by `engines` prebila. Playwright 1.63 vyžaduje Node 20 alebo novší a `next` 16 '
               '(nález 184) Node 20.9 alebo novší. Tri testy strážcu prihlásenia proti zástupnému serveru v `E2eSessionKeeper.test.ts`, ktoré sa na Node 18 '
               'preskakovali, bežia teraz aj v CI. Overené na Node 22 podľa krokov workflow: čistá inštalácia (`npm ci`) bez varovaní o '
-              'nepodporovanej verzii, celý Jest (513 sád, 7 901 testov, žiadny preskočený) a `npm run build` (prešiel aj s kontrolou typov). Akú verziu Node Railway používalo doteraz, sa nedalo '
-              'zistiť (v repozitári nebolo nič zafixované) a nasadenie na Railway sa tu overiť nedalo; po zlúčení treba v build logu frontendu '
-              'skontrolovať, že beží Node 22 a nasadenie prejde. Úprava workflow pre nálezy 194 a 196 sa nerobila.'),
+              'nepodporovanej verzii, celý Jest (513 sád, 7 901 testov, žiadny preskočený) a `npm run build` (prešiel aj s kontrolou typov). Po zlúčení (PR #207) používateľ overil, že Railway beží na Node 22. Akú verziu '
+              'Node Railway používalo predtým, sa nedalo zistiť (v repozitári nebolo nič zafixované). Úprava workflow pre nálezy 194 a 196 sa '
+              'nerobila.'),
+    dict(n=190, vetva='151', pr=None, zlucene=False,
+         text='HOTOVÉ: scenár „review: a restored profile-return snapshot follows user scrolling…“ v `search-country-scroll.spec.ts` sa v mobilnom '
+              'WebKite preskočí (`test.skip(isMobile, …)` s vysvetlením), lebo Playwright v ňom koliesko myši nepozná („Mouse wheel is not '
+              'supported in mobile WebKit“). Skutočný ťah prstom sa v Playwrighte nedá nahradiť rovnako verne a priamy zápis `scrollTop` by '
+              'scenár o skutočnom vstupe zmenil na iný. Rovnaký scenár beží ďalej v desktopových projektoch (webkit-desktop, chromium-desktop); '
+              'mobilná vetva odchodu cez tlačidlo Späť, ktorá je po preskočení nedosiahnuteľná, sa odstránila. Overené v Chromiu proti lokálnej '
+              'kópii: v rozmeroch iPhonu sa test preskočí, v desktope prechádza. Súčasť opravy 210.'),
+    dict(n=210, vetva='151', pr=None, zlucene=False,
+         text='HOTOVÉ: oprava 27 zastaraných alebo chybných E2E testov z druhého celého behu na Railway 28. 10. (395 prešlo, 35 padlo, 302 '
+              'preskočených; Docker, 2 workery, 29,4 min). Príčiny a opravy: (1) `search-diagnostics.spec.ts` (9 pádov) a '
+              '`search-cache-revalidation.spec.ts` (2) čakali správanie spred OW-20 (opakované hľadanie bez HTTP, diagnostika po '
+              'znovuotvorení panela), čo je register TEST-17; testy teraz zachytia skutočnú odpoveď na opakovanie a diagnostiku po '
+              'znovuotvorení panela nečakajú; (2) `notifications-infinite-scroll.spec.ts` (2) hľadal tlačidlo „Zobraziť ďalšie“ v celej '
+              'stránke, no na desktope ho má aj Nástenka pod panelom upozornení, lokátor sa zúžil na zoznam upozornení; (3) '
+              '`google-login-completion.spec.ts` (10, len WebKit) podvrhuje odpoveď `/me` cez `context.route`, ktorý podľa Playwrightu '
+              'nezaručuje zachytenie požiadaviek vybavených service workerom: spec blokuje worker a Jest poistka '
+              '`E2eServiceWorker.guard.test.ts` to vyžaduje aj pri `context.route`; (4) `search-panel-return.spec.ts` (1): rozpočet obnovy '
+              'pozície 1,5 s bol tesný (namerané 1 508 a 1 662 ms vo WebKite na desktope), je 3 s a stále je kratší než šesťsekundový časovač '
+              'obnovy; (5) `search-country-scroll.spec.ts` (1, nález 190): scenár s kolieskom myši sa v mobilnom WebKite preskočí; (6) '
+              '`search-mobile-cards.spec.ts` (2, webkit-mobile): test hľadal náhradný text „Otváracie hodiny“, no v slovenčine sa zobrazí '
+              '„Otváracia doba“ (nález 211). Overené v Chromiu (rozmery počítača aj iPhonu) proti lokálnej kópii na '
+              'produkčnom builde: zlyhanie sa podarilo reprodukovať pri (1), (2) a (6) a po úprave tieto testy prechádzajú; (3), (4) a (5) '
+              'sa v Chromiu reprodukovať nedali (správanie WebKitu a časovanie Railway), preto je tam overené len to, že upravené testy '
+              'prechádzajú alebo sa preskočia. Spolu 146 testov dotknutých špecov: 90 prešlo, 56 sa preskočilo (testy pre iný typ '
+              'obrazovky, chýbajúce ponuky „Hľadám“ v lokálnej kópii, scenár z nálezu 190), žiadny nepadol; Jest poistka 21/21 a mutačná '
+              'kontrola (bez bloku v `google-login-completion.spec.ts` poistka zlyhá). Účinok opráv (3) a (4) vo WebKite potvrdí až ďalší '
+              'celý beh na Railway. Neopravené: sedem testov čaká na testovacie údaje na Railway (nález 209) a jeden jednorazový pád '
+              '(`search-country-scroll.spec.ts:74`, tmavý variant, ponuky, webkit-mobile: odpoveď hľadania neprišla do 15 s) sa nedal '
+              'vysvetliť ani reprodukovať, preto sa neopravuje; ak sa zopakuje, treba ho vyšetriť.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
@@ -193,9 +231,9 @@ PORADIE = [
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.2 alebo novším, `google-cloud-vision` kvôli protobuf, Next 16 s Reactom 19), 179 (2FA), '
-            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 190)',
+            '9, 33, 52, 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '190']),
+         polozky=['183', '184', '179', '9', '33', '52', '185', 'OW-07', '31', '189', '209']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',

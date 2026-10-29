@@ -1,12 +1,15 @@
 /**
- * Poistka E2E špecov (nález 173): spec, ktorý stráži alebo podvrhuje sieť cez `page.route(...)`, musí zablokovať
- * service worker aplikácie, teda mať `test.use({ serviceWorkers: 'block' })`.
+ * Poistka E2E špecov (nález 173): spec, ktorý stráži alebo podvrhuje sieť cez `page.route(...)` alebo `context.route(...)`,
+ * musí zablokovať service worker aplikácie, teda mať `test.use({ serviceWorkers: 'block' })`.
  *
  * Prečo: `public/sw.js` preposiela volania `/api/` aj dokumenty cez vlastný `fetch`. Playwright takú požiadavku cez
  * `page.route` nevidí, takže keď worker prevezme stránku (asi 0,6 s po načítaní), strážca zápisov mlčky prestane
  * fungovať: zápis prejde na server a test sa tvári, že je všetko v poriadku. Overené v Chromiu na produkčnom builde
- * s Playwrightom 1.63 (verzia z `package.json`); WebKit sa lokálne neoveroval. `context.route(...)` (napr. pomocník
- * Google prihlásenia) v tej istej verzii zachytáva v Chromiu aj požiadavky workera, preto ho poistka nevyžaduje.
+ * s Playwrightom 1.63 (verzia z `package.json`). `context.route(...)` má podľa dokumentácie Playwrightu rovnaké obmedzenie
+ * ako `page.route(...)` a odporúča sa pri ňom blokovať workera. V Chromiu zachytí aj požiadavky workera (nález 173), no
+ * vo WebKite sa na to nedá spoliehať: päť testov Google prihlásenia, ktoré podvrhujú odpoveď `/me` cez `context.route`,
+ * padalo vo WebKite (desktop aj mobil), kým v Chromiu prechádzali (beh na Railway 28. 10.). Preto poistka vyžaduje blok pri
+ * oboch druhoch zásahu do siete. WebKit sa lokálne neoveroval, správnosť opravy potvrdí až ďalší beh na Railway.
  *
  * E2E špecy Jest nespúšťa (bežia len proti Railway), preto poistka číta ich zdrojáky a parsuje ich kompilátorom
  * TypeScriptu: komentáre ani reťazce ju neoklamú. Zlyhá s menom špecu, ktorý blokovanie nemá.
@@ -23,8 +26,8 @@ const IGNORED_DIRECTORIES = new Set(['node_modules', '.auth']);
 const ROUTE_METHODS = new Set(['route', 'routeFromHAR']);
 
 type SourceFacts = {
-  /** Súbor volá `route(...)` alebo `routeFromHAR(...)` na stránke (nie na kontexte). */
-  routesPage: boolean;
+  /** Súbor volá `route(...)` alebo `routeFromHAR(...)` na stránke alebo na kontexte prehliadača. */
+  routesNetwork: boolean;
   /** Súbor obsahuje `test.use({ serviceWorkers: 'block' })`. */
   blocksServiceWorker: boolean;
   /** Špecifikátory relatívnych importov a re-exportov. */
@@ -36,17 +39,10 @@ function propertyName(name: ts.PropertyName): string | null {
   return ts.isIdentifier(name) || ts.isStringLiteralLike(name) ? name.text : null;
 }
 
-/** `context`, `browserContext`, `this.context` alebo `page.context()`: kontext prehliadača, nie stránka. */
-function isContextReceiver(receiver: ts.Expression): boolean {
-  const text = receiver.getText();
-  return /(^|\.)(browserContext|context)$/.test(text) || /\.context\(\)$/.test(text);
-}
-
-/** Volanie `X.route(...)` / `X.routeFromHAR(...)`, kde `X` nie je kontext (inak sa berie ako stránka). */
-function isPageRouteCall(node: ts.Node): boolean {
+/** Volanie `X.route(...)` / `X.routeFromHAR(...)` na stránke aj na kontexte (`context`, `this.context`, `page.context()`). */
+function isRouteCall(node: ts.Node): boolean {
   if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) return false;
-  const { name, expression } = node.expression;
-  return ROUTE_METHODS.has(name.text) && !isContextReceiver(expression);
+  return ROUTE_METHODS.has(node.expression.name.text);
 }
 
 /** Volanie `test.use({ ..., serviceWorkers: 'block' })`. */
@@ -65,12 +61,12 @@ function isServiceWorkerBlock(node: ts.Node): boolean {
   );
 }
 
-/** Zistí z TypeScript zdrojáku, či zasahuje do siete cez `page.route`, či blokuje worker a čo importuje. */
+/** Zistí z TypeScript zdrojáku, či zasahuje do siete cez `page.route` alebo `context.route`, či blokuje worker a čo importuje. */
 function analyzeSource(fileName: string, source: string): SourceFacts {
   const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const facts: SourceFacts = { routesPage: false, blocksServiceWorker: false, localImports: [] };
+  const facts: SourceFacts = { routesNetwork: false, blocksServiceWorker: false, localImports: [] };
   const visit = (node: ts.Node): void => {
-    if (isPageRouteCall(node)) facts.routesPage = true;
+    if (isRouteCall(node)) facts.routesNetwork = true;
     if (isServiceWorkerBlock(node)) facts.blocksServiceWorker = true;
     if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -105,8 +101,8 @@ function resolveLocalImport(
   return [`${base}.ts`, path.join(base, 'index.ts'), base].find((candidate) => known.has(candidate));
 }
 
-/** Dosiahne súbor `start` (priamo alebo cez importované súbory) volanie `page.route`? */
-function reachesPageRoute(start: string, facts: ReadonlyMap<string, SourceFacts>): boolean {
+/** Dosiahne súbor `start` (priamo alebo cez importované súbory) volanie `page.route` alebo `context.route`? */
+function reachesRoute(start: string, facts: ReadonlyMap<string, SourceFacts>): boolean {
   const seen = new Set<string>();
   const pending = [start];
   while (pending.length > 0) {
@@ -115,7 +111,7 @@ function reachesPageRoute(start: string, facts: ReadonlyMap<string, SourceFacts>
     seen.add(file);
     const current = facts.get(file);
     if (!current) continue;
-    if (current.routesPage) return true;
+    if (current.routesNetwork) return true;
     for (const specifier of current.localImports) {
       const target = resolveLocalImport(file, specifier, facts);
       if (target) pending.push(target);
@@ -124,29 +120,29 @@ function reachesPageRoute(start: string, facts: ReadonlyMap<string, SourceFacts>
   return false;
 }
 
-/** Špecy (`*.spec.ts`) v priečinku `directory`: tie, čo zasahujú do siete cez `page.route`, a z nich tie bez bloku workera. */
-function analyzeE2eTree(directory: string): { pageRouteSpecs: string[]; missingBlock: string[] } {
+/** Špecy (`*.spec.ts`) v priečinku `directory`: tie, čo zasahujú do siete cez `route(...)`, a z nich tie bez bloku workera. */
+function analyzeE2eTree(directory: string): { routingSpecs: string[]; missingBlock: string[] } {
   const facts = new Map(
     listTypeScriptFiles(directory).map((file) => [file, analyzeSource(file, fs.readFileSync(file, 'utf8'))] as const),
   );
   const relative = (file: string) => path.relative(directory, file).split(path.sep).join('/');
-  const pageRouteSpecs = [...facts.keys()].filter((file) => file.endsWith('.spec.ts') && reachesPageRoute(file, facts));
-  const missingBlock = pageRouteSpecs.filter((file) => !facts.get(file)?.blocksServiceWorker);
-  return { pageRouteSpecs: pageRouteSpecs.map(relative).sort(), missingBlock: missingBlock.map(relative).sort() };
+  const routingSpecs = [...facts.keys()].filter((file) => file.endsWith('.spec.ts') && reachesRoute(file, facts));
+  const missingBlock = routingSpecs.filter((file) => !facts.get(file)?.blocksServiceWorker);
+  return { routingSpecs: routingSpecs.map(relative).sort(), missingBlock: missingBlock.map(relative).sort() };
 }
 
 describe('detekcia v zdrojáku špecu (analyzeSource)', () => {
   const cases: Array<[string, string, Partial<SourceFacts>]> = [
-    ['page.route na stránke', `await page.route('**/api/**', handler);`, { routesPage: true }],
-    ['this.page.route v pomocníkovi', `await this.page.route(matcher, handler);`, { routesPage: true }],
-    ['route na inak pomenovanej stránke', `await tab.route(matcher, handler);`, { routesPage: true }],
-    ['page.routeFromHAR', `await page.routeFromHAR('x.har');`, { routesPage: true }],
-    ['context.route nie je page.route', `await context.route(matcher, handler);`, { routesPage: false }],
-    ['this.context.route nie je page.route', `await this.context.route(matcher, handler);`, { routesPage: false }],
-    ['page.context().route nie je page.route', `await page.context().route(matcher, handler);`, { routesPage: false }],
-    ['page.route len v komentári', `// await page.route(matcher, handler);\n/* page.route(x) */`, { routesPage: false }],
-    ['page.route len v reťazci', `const text = "page.route(x)";`, { routesPage: false }],
-    ['page.unroute nie je route', `await page.unroute(matcher);`, { routesPage: false }],
+    ['page.route na stránke', `await page.route('**/api/**', handler);`, { routesNetwork: true }],
+    ['this.page.route v pomocníkovi', `await this.page.route(matcher, handler);`, { routesNetwork: true }],
+    ['route na inak pomenovanej stránke', `await tab.route(matcher, handler);`, { routesNetwork: true }],
+    ['page.routeFromHAR', `await page.routeFromHAR('x.har');`, { routesNetwork: true }],
+    ['context.route sa berie rovnako ako page.route', `await context.route(matcher, handler);`, { routesNetwork: true }],
+    ['this.context.route sa berie rovnako ako page.route', `await this.context.route(matcher, handler);`, { routesNetwork: true }],
+    ['page.context().route sa berie rovnako ako page.route', `await page.context().route(matcher, handler);`, { routesNetwork: true }],
+    ['page.route len v komentári', `// await page.route(matcher, handler);\n/* page.route(x) */`, { routesNetwork: false }],
+    ['page.route len v reťazci', `const text = "page.route(x)";`, { routesNetwork: false }],
+    ['page.unroute nie je route', `await page.unroute(matcher);`, { routesNetwork: false }],
     ['test.use s blokom', `test.use({ trace: 'off', serviceWorkers: 'block' });`, { blocksServiceWorker: true }],
     ['test.use s blokom a úvodzovkami', `test.use({ "serviceWorkers": "block" });`, { blocksServiceWorker: true }],
     ['test.use s povoleným workerom', `test.use({ serviceWorkers: 'allow' });`, { blocksServiceWorker: false }],
@@ -184,6 +180,7 @@ describe('prechod cez pomocníkov (analyzeE2eTree) na dočasnom strome', () => {
     write('helper-blocked.spec.ts', `import { guard } from './support/guard';\ntest.use({ serviceWorkers: 'block' });`);
     write('nested-missing.spec.ts', `import { guard } from './support/nested';\nguard(page);`);
     write('context-only.spec.ts', `import { mock } from './support/context-only';\nmock(context);`);
+    write('context-blocked.spec.ts', `import { mock } from './support/context-only';\ntest.use({ serviceWorkers: 'block' });\nmock(context);`);
     write('no-route.spec.ts', `test('x', async () => undefined);`);
     write('comment-only.spec.ts', `// page.route(x) sa tu len spomína\nconst text = 'page.route(x)';`);
     write('commented-block.spec.ts', `// test.use({ serviceWorkers: 'block' });\npage.route('**/api/**', () => undefined);`);
@@ -195,10 +192,12 @@ describe('prechod cez pomocníkov (analyzeE2eTree) na dočasnom strome', () => {
     fs.rmSync(directory, { recursive: true, force: true });
   });
 
-  it('nájde špecy, ktoré zasahujú do siete cez page.route (priamo aj cez pomocníkov)', () => {
-    expect(analyzeE2eTree(directory).pageRouteSpecs).toEqual([
+  it('nájde špecy, ktoré zasahujú do siete cez page.route alebo context.route (priamo aj cez pomocníkov)', () => {
+    expect(analyzeE2eTree(directory).routingSpecs).toEqual([
       'allowed-worker.spec.ts',
       'commented-block.spec.ts',
+      'context-blocked.spec.ts',
+      'context-only.spec.ts',
       'direct-blocked.spec.ts',
       'direct-missing.spec.ts',
       'helper-blocked.spec.ts',
@@ -211,6 +210,7 @@ describe('prechod cez pomocníkov (analyzeE2eTree) na dočasnom strome', () => {
     expect(analyzeE2eTree(directory).missingBlock).toEqual([
       'allowed-worker.spec.ts',
       'commented-block.spec.ts',
+      'context-only.spec.ts',
       'direct-missing.spec.ts',
       'helper-missing.spec.ts',
       'nested-missing.spec.ts',
@@ -222,13 +222,13 @@ describe('E2E špecy v repozitári', () => {
   const tree = analyzeE2eTree(E2E_DIR);
 
   it('poistka naozaj nachádza špecy, ktoré zasahujú do siete (inak by prešla naprázdno)', () => {
-    expect(tree.pageRouteSpecs.length).toBeGreaterThan(0);
+    expect(tree.routingSpecs.length).toBeGreaterThan(0);
   });
 
-  it('každý spec, ktorý používa page.route, blokuje service worker', () => {
+  it('každý spec, ktorý používa page.route alebo context.route, blokuje service worker', () => {
     if (tree.missingBlock.length > 0) {
       throw new Error(
-        'Tieto E2E špecy používajú page.route(...) (priamo alebo cez pomocníka), ale neblokujú service worker:\n' +
+        'Tieto E2E špecy používajú page.route(...) alebo context.route(...) (priamo alebo cez pomocníka), ale neblokujú service worker:\n' +
           tree.missingBlock.map((file) => `  - e2e/${file}`).join('\n') +
           "\nDoplň do každého z nich test.use({ serviceWorkers: 'block' }); dôvod je v hlavičke tohto súboru.",
       );

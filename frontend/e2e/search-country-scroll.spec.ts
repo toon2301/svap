@@ -111,6 +111,10 @@ test.describe('OW-18 independent search country and OW-19 result return position
   });
 
   test('review: a restored profile-return snapshot follows user scrolling before ordinary departure and Back', async ({ page, isMobile }) => {
+    // Playwright v mobilnom WebKite koliesko myši nepozná ("Mouse wheel is not supported in mobile WebKit") a skutočný
+    // ťah prstom tu nemá ako nahradiť; vymyslený scroll (`scrollTop`) by tento scenár o skutočnom vstupe nahradil iným.
+    // Rovnaký scenár beží v desktopových projektoch (nález 190).
+    test.skip(isMobile, 'Mouse wheel is not supported in mobile WebKit; the same scenario runs in the desktop projects.');
     await initializeSearchContext(page, 'dark');
     const source = await openScrollableResults(page, 'offers');
     const top = await openDeepResultAuthor(page, isMobile);
@@ -131,14 +135,8 @@ test.describe('OW-18 independent search country and OW-19 result return position
     }), { message: 'The real wheel movement must settle before its final position is compared' }).toBe(true);
     const latestTop = await main.evaluate((element) => Math.round(element.scrollTop));
     await expect.poll(() => savedSearchScrollTop(page, snapshotId!)).toBe(latestTop);
-    if (isMobile) {
-      // Full search has no mobile sidebar: use its actual visible, non-profile departure instead.
-      await page.getByRole('button', { name: 'Späť', exact: true }).filter({ visible: true }).first().tap();
-      await expect(page).toHaveURL(/\/dashboard\/search(?:[?#]|$)/);
-    } else {
-      await sideNav(page, 'Nástenka').click();
-      await expect(page).toHaveURL(/\/dashboard(?:[?#]|$)/);
-    }
+    await sideNav(page, 'Nástenka').click();
+    await expect(page).toHaveURL(/\/dashboard(?:[?#]|$)/);
     await page.goBack();
     await expectRestoredSearch(page, source, latestTop);
   });

@@ -73,13 +73,28 @@ async function openPanel(page: Page, isMobile: boolean, theme: 'light' | 'dark')
   return input;
 }
 
-async function runSearch(page: Page, input: Locator): Promise<Awaited<ReturnType<typeof searchSummary>>> {
+/** Spustí `trigger` a vráti zhrnutie odpovede na skutočné hľadanie `QUERY`; čakanie na odpoveď sa začne ešte pred ním. */
+async function searchAfter(page: Page, trigger: () => Promise<unknown>): Promise<Awaited<ReturnType<typeof searchSummary>>> {
   const response = page.waitForResponse((candidate) => (
     isSearchRequest(candidate.request()) && new URL(candidate.url()).searchParams.get('q') === QUERY
   ));
-  await input.fill(QUERY);
-  await input.press('Enter');
+  await trigger();
   return searchSummary(await response);
+}
+
+async function runSearch(page: Page, input: Locator): Promise<Awaited<ReturnType<typeof searchSummary>>> {
+  return searchAfter(page, async () => {
+    await input.fill(QUERY);
+    await input.press('Enter');
+  });
+}
+
+/**
+ * Opakovanie rovnakého hľadania. Od OW-20 appka nechá zobrazené staré výsledky, no vždy ich znovu overí skutočnou
+ * požiadavkou na server, takže diagnostika zachytí nový pokus zo siete, nie z pamäte (nález TEST-17).
+ */
+async function repeatSearch(page: Page, input: Locator): Promise<Awaited<ReturnType<typeof searchSummary>>> {
+  return searchAfter(page, () => input.press('Enter'));
 }
 
 test.describe('Local read-only search diagnostics', () => {
@@ -108,7 +123,7 @@ test.describe('Local read-only search diagnostics', () => {
   });
 
   for (const theme of ['light', 'dark'] as const) {
-    test(`${theme}: network aggregates match the real response; repeat uses memory and toggles stay passive`, async ({ page, isMobile }) => {
+    test(`${theme}: network aggregates match the real response; repeat is revalidated over the network and toggles stay passive`, async ({ page, isMobile }) => {
       const input = await openPanel(page, isMobile, theme);
       const toggle = page.getByRole('button', { name: DIAGNOSTICS, exact: true }).filter({ visible: true });
       const region = page.getByRole('region', { name: DIAGNOSTICS, exact: true });
@@ -128,13 +143,12 @@ test.describe('Local read-only search diagnostics', () => {
       await expect(region).not.toContainText(QUERY);
       await expect(region.getByRole('textbox')).toHaveCount(0);
 
-      await expectNoSearchRequest(page, async () => {
-        await input.press('Enter');
-        await expect(region.getByText('Pamäť výsledkov', { exact: true })).toBeVisible();
-        await expect(diagnosticValue(region, 'Odoslaná krajina')).toHaveText('—');
-        await expect(diagnosticValue(region, 'HTTP stav')).toHaveText('—');
-        await expect(diagnosticValue(region, 'Počet vrátených kariet')).toHaveText(String(actual.count));
-      });
+      const repeated = await repeatSearch(page, input);
+      await expect(region.getByText('Sieť', { exact: true })).toBeVisible();
+      await expect(region.getByText('Pamäť výsledkov', { exact: true })).toHaveCount(0);
+      await expect(diagnosticValue(region, 'Odoslaná krajina')).toHaveText(repeated.country || 'Neposlaná');
+      await expect(diagnosticValue(region, 'HTTP stav')).toHaveText(String(repeated.status));
+      await expect(diagnosticValue(region, 'Počet vrátených kariet')).toHaveText(String(repeated.count));
 
       await expectNoSearchRequest(page, async () => {
         await toggle.click();
@@ -169,9 +183,10 @@ test.describe('Local read-only search diagnostics', () => {
       await expect(diagnosticValue(region, 'HTTP stav')).toHaveCount(0);
       await expect(diagnosticValue(region, 'Krajina filtra')).toHaveCount(0);
     });
-    await expectNoSearchRequest(page, async () => {
-      await input.press('Enter');
-      await expect(region.getByText('Pamäť výsledkov', { exact: true })).toBeVisible();
-    });
+    // Prvý zachytený pokus je až opakovanie po zapnutí diagnostiky (zo siete), nie staršie hľadanie.
+    const repeated = await repeatSearch(page, input);
+    await expect(region.getByText(WAITING, { exact: true })).toHaveCount(0);
+    await expect(region.getByText('Sieť', { exact: true })).toBeVisible();
+    await expect(diagnosticValue(region, 'HTTP stav')).toHaveText(String(repeated.status));
   });
 });

@@ -16,6 +16,10 @@ test.use({ trace: 'off', screenshot: 'off', video: 'off' });
 // v tomto špecu blokuje.
 test.use({ serviceWorkers: 'block' });
 
+// Slovenský preklad kľúča `skills.openingHours.title` (messages/sk.json). Náhradný text v kóde ("Otváracie hodiny") sa pri
+// slovenskom jazyku nezobrazí, preto sa podľa neho tlačidlo ani nadpis okna nenájdu.
+const OPENING_HOURS_TITLE = 'Otváracia doba';
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(`Search mobile-card parity – ${theme}`, () => {
     let attemptedWrites: string[];
@@ -179,12 +183,12 @@ for (const theme of ['light', 'dark'] as const) {
       const card = searchOfferCards(page).nth(fixture.index);
       await expectSearchMobileFront(card, false);
       const sheet = await openSearchMobileDetail(page, card);
-      await sheet.getByRole('button', { name: 'Otváracie hodiny', exact: true }).tap();
+      await sheet.getByRole('button', { name: OPENING_HOURS_TITLE, exact: true }).tap();
       const hours = page.locator('div.fixed.inset-0').filter({
         has: page.getByRole('button', { name: 'Zavrieť', exact: true }),
       });
       await expect(hours).toBeVisible();
-      await expect(hours.getByText('Otváracie hodiny', { exact: true })).toBeVisible();
+      await expect(hours.getByText(OPENING_HOURS_TITLE, { exact: true })).toBeVisible();
       await hours.getByRole('button', { name: 'Zavrieť', exact: true }).tap();
       await expect(hours).toHaveCount(0);
       await expect(sheet).toBeVisible();

@@ -24,7 +24,6 @@ REG_ITEMS = [
               '`OfferWatchSettingsMobileHost.openState` (14), Jest nekončí (15), vlákno registračného e-mailu v SQLite testoch (16), '
               'dlhšie živé E2E skončili pred overením (18).',
          note='Spolu s 31 a 179. Bez diagnostiky ich neoznačovať za opravené; ak CI blokuje nasadenie, treba ich stabilizovať.', dec=None),
-    dict(id='TEST-17', bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov', what='Starý diagnostický E2E (`search-diagnostics.spec.ts:106–141`) očakáva po opakovaní nulový HTTP, čo OW-20 zámerne mení.', note='Aktualizovať podľa nového kontraktu, inak dá falošné RED.', dec=None),
     dict(id='APP-03', bucket=P, imp=S_, eff=ES, pkg='Preklady a hlášky', what='Záložky a tlačidlá vyhľadávania (Všetko / Ľudia / Ponuky, Zobraziť viac / všetko) sú slovenské literály, nie `t()`.', note='Súčasť 176; ak štart nie je viacjazyčný, môže počkať (R2).', dec='ROZHODNUTIE R2'),
     # otvorené, PO
     dict(id='OW-08', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Upratať historické testovacie dáta v Railway (karta ID 165 sa nemaže).', note='Na novej, čistej databáze odpadá.', dec=None),
@@ -59,6 +58,7 @@ REG_CLOSED = {
     'TEST-07': 'opravené a overené (nebola to chyba produktu)',
     'TEST-10': 'opravené v review kole (hlboký scroll)',
     'TEST-11': 'opravené v review kole',
+    'TEST-17': 'opravené na vetve 151 (nález 210): diagnostický E2E podľa kontraktu OW-20, opakované hľadanie ide cez sieť',
     'DOC-01': 'opravené v review kole',
     'DOC-02': 'opravené v review kole',
     'DOC-03': 'opravené v review kole',
