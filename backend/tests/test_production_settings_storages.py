@@ -63,12 +63,15 @@ def storage_settings() -> dict:
 
 
 def test_production_media_go_to_s3(storage_settings):
+    """Produkčné médiá (avatary, ponuky, správy) sa ukladajú na S3, nie na disk servera."""
     assert storage_settings["storages"]["default"] == S3_BACKEND
 
 
 def test_production_static_files_use_plain_storage_for_whitenoise(storage_settings):
+    """Produkčné statické súbory používajú úložisko bez manifestu, ktoré servíruje WhiteNoise."""
     assert storage_settings["storages"]["staticfiles"] == PLAIN_STATIC_BACKEND
 
 
 def test_production_settings_do_not_use_removed_storage_settings(storage_settings):
+    """Produkčné nastavenia nepoužívajú `DEFAULT_FILE_STORAGE` ani `STATICFILES_STORAGE`, ktoré Django 5.1+ ignoruje."""
     assert storage_settings["legacy"] == []

@@ -26,16 +26,24 @@ S3_SETTINGS = {
 
 
 class MessageImageStorageSelectionTests(SimpleTestCase):
+    """Overuje, že `messaging.storage` vyberie úložisko fotiek správ podľa `STORAGES["default"]`.
+
+    S3 dá súkromné úložisko, lokálny disk bežné `default_storage`.
+    """
+
     @override_settings(STORAGES=S3_STORAGES)
     def test_s3_default_storage_is_detected(self):
+        """Ak je `default` úložisko S3, `_s3_default_storage_active` vráti True."""
         self.assertTrue(message_storage._s3_default_storage_active())
 
     @override_settings(STORAGES=LOCAL_STORAGES)
     def test_local_default_storage_is_not_detected_as_s3(self):
+        """Ak je `default` úložisko lokálny disk, `_s3_default_storage_active` vráti False."""
         self.assertFalse(message_storage._s3_default_storage_active())
 
     @override_settings(STORAGES=S3_STORAGES, **S3_SETTINGS)
     def test_s3_uses_private_storage_with_signed_urls(self):
+        """Na S3 dostanú fotky správ súkromné úložisko: ACL private, podpísané adresy, bez prepisovania súborov."""
         storage = message_storage.get_message_image_storage()
 
         self.assertEqual(type(storage).__name__, "PrivateMessageStorage")
@@ -45,6 +53,7 @@ class MessageImageStorageSelectionTests(SimpleTestCase):
 
     @override_settings(STORAGES=LOCAL_STORAGES)
     def test_local_storage_uses_default_storage(self):
+        """Pri lokálnom disku sa fotky správ ukladajú do bežného `default_storage`."""
         storage = message_storage.get_message_image_storage()
 
         self.assertIs(storage, message_storage.default_storage)

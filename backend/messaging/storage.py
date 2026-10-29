@@ -26,6 +26,7 @@ def _s3_default_storage_active() -> bool:
 
 
 def _build_private_message_storage():
+    """Vytvorí súkromné S3 úložisko pre fotky správ (ACL private, podpísané adresy, bez prepisovania súborov)."""
     from storages.backends.s3boto3 import S3Boto3Storage
 
     class PrivateMessageStorage(S3Boto3Storage):
