@@ -72,6 +72,18 @@ describe('normalizePath', () => {
     expect(normalizePath('/api/auth/lookup/eva@test.sk/')).toBe('/api/auth/lookup/:id/');
     expect(normalizePath('/api/auth/offers/123/')).toBe('/api/auth/offers/:n/');
   });
+
+  it('nahradí všetko za odkazom na obnovu hesla a za overením e-mailu, aj keď ide o obyčajné písmená', () => {
+    expect(normalizePath('/reset-password/MQ/cbxwhp-tajnytoken')).toBe('/reset-password/:id/:id');
+    expect(normalizePath('/api/auth/password-reset/MQ/cbxwhp-tajnytoken/')).toBe('/api/auth/password-reset/:id/:id/');
+    expect(normalizePath('/api/auth/password-reset-verify/MQ/cbxwhp-tajnytoken/')).toBe('/api/auth/password-reset-verify/:id/:id/');
+    expect(normalizePath('/api/auth/check-email/boris/')).toBe('/api/auth/check-email/:id/');
+  });
+
+  it('žiadosť o obnovu hesla bez údajov v ceste ponechá', () => {
+    expect(normalizePath('/api/auth/password-reset/')).toBe('/api/auth/password-reset/');
+    expect(normalizePath('/reset-password')).toBe('/reset-password');
+  });
 });
 
 describe('queryNames', () => {

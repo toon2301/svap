@@ -74,6 +74,9 @@ const KNOWN_ERROR_KINDS = new Set([
 ]);
 // Za týmito segmentmi nasleduje identifikátor používateľa alebo profilu.
 const IDENTIFIER_PARENTS = new Set(['users', 'user', 'profile', 'profiles', 'slug', 'owner']);
+// Za týmito segmentmi nasleduje prihlasovací údaj: odkaz na obnovu hesla nesie `uidb64` a `token`, overenie e-mailu adresu.
+// Nahradí sa všetko, čo za nimi nasleduje.
+const CREDENTIAL_PARENTS = new Set(['reset-password', 'password-reset', 'password-reset-verify', 'check-email']);
 
 /** Chromium uvádza zlyhanie siete pevným kódom (`net::ERR_TIMED_OUT`); povolené sú len veľké písmená, číslice a `_`. */
 const CHROMIUM_FAILURE_CODE = /^net::ERR_[A-Z0-9_]{1,50}$/;
@@ -124,11 +127,17 @@ function allowed(value: unknown, list: ReadonlySet<string>): string {
   return typeof value === 'string' && list.has(value) ? value : 'other';
 }
 
-/** Nahradí identifikátory v ceste zástupnými názvami: číselné segmenty, segmenty za `users`/`profile` a slugy s bodkou. */
+/**
+ * Nahradí identifikátory v ceste zástupnými názvami: číselné segmenty, segmenty za `users`/`profile`, slugy s bodkou alebo
+ * `@` a všetko za `reset-password`, `password-reset`, `password-reset-verify` a `check-email` (token, `uidb64`, e-mail).
+ */
 export function normalizePath(pathname: string): string {
   const segments = pathname.split('/');
+  let afterCredential = false;
   return segments.map((segment, index) => {
     if (!segment) return segment;
+    if (afterCredential) return ':id';
+    if (CREDENTIAL_PARENTS.has(segment.toLowerCase())) afterCredential = true;
     if (/^\d+$/.test(segment)) return ':n';
     if (/[.@]/.test(segment)) return ':id';
     const parent = index > 0 ? segments[index - 1].toLowerCase() : '';
