@@ -41,12 +41,14 @@ const SNAPSHOT: PageSnapshot = {
   active: WATCHES_NAV,
 };
 
+/** Záznam jednej požiadavky s predvolenými hodnotami; test prepíše len to, čo skúma. */
 function entry(overrides: Partial<ActivityEntry> = {}): ActivityEntry {
   return {
     method: 'GET', path: '/api/auth/me/', query: '', startedAt: 312, durationMs: 58, status: 200, failure: null, ...overrides,
   };
 }
 
+/** Vstup pre `formatEvidence` s jednou požiadavkou a snímkou stránky; test prepíše len to, čo skúma. */
 function input(overrides: Partial<EvidenceInput> = {}): EvidenceInput {
   return {
     title: 'search-panel-return.spec.ts › users: browser Back', project: 'webkit-desktop', elapsedMs: 23_400,

@@ -191,6 +191,7 @@ export function describeActive(active: ActiveElement | null): string {
   return parts.join(' ');
 }
 
+/** Jeden riadok požiadavky: čas začiatku, metóda, cesta s názvami parametrov, stav (alebo druh zlyhania) a trvanie. */
 function formatEntry(entry: ActivityEntry): string {
   const status = entry.failure ? `FAILED(${failureKind(entry.failure)})` : entry.status === null ? 'pending' : String(entry.status);
   const duration = entry.durationMs === null ? '…' : `${entry.durationMs} ms`;
@@ -198,6 +199,7 @@ function formatEntry(entry: ActivityEntry): string {
   return `${String(entry.startedAt).padStart(6)}  ${entry.method.padEnd(4)} ${entry.path}${query}  ${status}  ${duration}`;
 }
 
+/** Riadky so stavom stránky (načítanie, panel, posun, aktívny prvok); bez snímky stránky jeden riadok `unavailable`. */
 function formatSnapshot(snapshot: PageSnapshot | null): string[] {
   if (!snapshot) return ['page state: unavailable (page closed or not responding)'];
   const panelAriaHidden = snapshot.panelAriaHidden === null ? 'n/a' : allowed(snapshot.panelAriaHidden, ARIA_HIDDEN_VALUES);

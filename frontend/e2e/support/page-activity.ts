@@ -16,12 +16,14 @@ import {
 const OBSERVED_TYPES = new Set(['document', 'fetch', 'xhr']);
 const SEARCH_PATH_PREFIXES = ['/api/auth/search', '/api/auth/dashboard/search'];
 
+/** Či požiadavka patrí do dôkazov: navigácia dokumentu, volanie API alebo načítanie dát stránky (`_rsc`). */
 function isRelevant(request: Request): boolean {
   if (!OBSERVED_TYPES.has(request.resourceType())) return false;
   const url = new URL(request.url());
   return request.resourceType() === 'document' || url.pathname.startsWith('/api/') || url.searchParams.has('_rsc');
 }
 
+/** Či ide o hľadanie, na ktoré čaká `searchQuietForMs` (cesty z `SEARCH_PATH_PREFIXES`). */
 function isSearch(request: Request): boolean {
   const { pathname } = new URL(request.url());
   return SEARCH_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -35,7 +37,9 @@ function readPageSnapshot(): PageSnapshot {
   const main = document.querySelector<HTMLElement>('[data-dashboard-main]');
   const panel = document.querySelector('[data-search-scroll-root]')?.previousElementSibling ?? null;
   const active = document.activeElement as HTMLElement | null;
+  /** Hodnota atribútu skrátená na 40 znakov; `null`, keď atribút chýba. */
   const attribute = (element: HTMLElement, name: string): string | null => element.getAttribute(name)?.slice(0, 40) ?? null;
+  /** Surový popis prvku s fokusom; do výpisu sa dostane až cez `describeActive`. */
   const describe = (element: HTMLElement | null): ActiveElement | null => (element ? {
     tag: element.tagName,
     role: attribute(element, 'role'),
@@ -44,6 +48,7 @@ function readPageSnapshot(): PageSnapshot {
     onboarding: attribute(element, 'data-onboarding'),
   } : null);
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+  /** Čas udalosti zaokrúhlený na ms; `null`, kým udalosť neskončila (hodnota chýba alebo je 0). */
   const finished = (value: number | undefined): number | null => (value && value > 0 ? Math.round(value) : null);
   return {
     readyState: document.readyState,
@@ -67,6 +72,7 @@ export class PageActivity {
   private readonly pageErrors: string[] = [];
   private consoleErrors = 0;
 
+  /** Pripojí sa na udalosti stránky; z chyby stránky uchová len názov a z konzoly len počet chýb. */
   constructor(private readonly page: Page) {
     page.on('request', (request) => this.onRequest(request));
     page.on('requestfinished', (request) => void this.onFinished(request));
@@ -78,6 +84,7 @@ export class PageActivity {
     });
   }
 
+  /** Zapíše novú požiadavku (cesta a názvy parametrov bez hodnôt) a započíta hľadanie, ktoré práve beží. */
   private onRequest(request: Request): void {
     if (!isRelevant(request)) return;
     const url = new URL(request.url());
@@ -96,6 +103,7 @@ export class PageActivity {
     }
   }
 
+  /** Doplní trvanie a HTTP stav dokončenej požiadavky; stav sa môže stratiť, ak sa stránka zavrela skôr. */
   private async onFinished(request: Request): Promise<void> {
     const entry = this.entries.get(request);
     if (!entry) return;
@@ -108,6 +116,7 @@ export class PageActivity {
     }
   }
 
+  /** Zapíše trvanie a surový text zlyhania siete; do výpisu z neho prejde len druh cez `failureKind`. */
   private onFailed(request: Request): void {
     const entry = this.entries.get(request);
     if (!entry) return;
@@ -117,6 +126,7 @@ export class PageActivity {
     this.finishSearch(request);
   }
 
+  /** Ukončí započítané hľadanie a zapíše čas poslednej aktivity hľadania. */
   private finishSearch(request: Request): void {
     if (!isSearch(request)) return;
     this.searchInFlight = Math.max(0, this.searchInFlight - 1);
