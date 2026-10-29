@@ -6,6 +6,7 @@ import { useStickToBottomOnGrowth } from './useStickToBottomOnGrowth';
 
 type ObservedBox = { callback: () => void; observed: Element | null; disconnected: boolean };
 
+/** Nahradí `ResizeObserver` náhradou, ktorú test spúšťa ručne (`grow`), a zaznamená, čo sleduje a či ju hook odpojil. */
 function installResizeObserverStub() {
   const original = global.ResizeObserver;
   const boxes: ObservedBox[] = [];
@@ -42,6 +43,7 @@ function installResizeObserverStub() {
   };
 }
 
+/** Okno s obsahom, na ktoré sa hook pripojí; `data-testid` slúži na dohľadanie prvkov v teste. */
 function Harness({ enabled = true }: { enabled?: boolean }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -53,6 +55,7 @@ function Harness({ enabled = true }: { enabled?: boolean }) {
   );
 }
 
+/** Nastaví prvku rozmery z objektu `geometry`; test ich potom mení priamo v ňom, ako keby sa zmenilo rozloženie. */
 function mockGeometry(element: HTMLElement, geometry: { scrollHeight: number; clientHeight: number; scrollTop: number }) {
   Object.defineProperty(element, 'scrollTop', {
     configurable: true,
