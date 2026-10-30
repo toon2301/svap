@@ -73,3 +73,57 @@ jobs:
         DEBUG: 'True'
         SECRET_KEY: ci-check-secret
         SAFESEARCH_ENABLED: 'False'
+
+  # Backend aj na PostgreSQL. Produkcia (Railway) beží na PostgreSQL 17, no job `checks` používa SQLite, kde sa osem testov
+  # so zámkami riadkov (`select_for_update`: limit ponúk, značky príspevkov, blokovanie žiadostí a správ) preskakuje, takže
+  # v CI nebežali nikdy. Samostatný job beží súbežne s `checks`, preto sa čas CI nepredlžuje.
+  backend-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: svaply
+          # Jednorazové heslo kontajnera, ktorý žije len počas tohto jobu.
+          POSTGRES_PASSWORD: svaply-ci
+          POSTGRES_DB: svaply
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U svaply -d svaply"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Python 3.11 = verzia z backend/Dockerfile; Pillow 13 vyžaduje Python >= 3.11.
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: |
+          backend/requirements.txt
+          backend/requirements-test.txt
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt -r requirements-test.txt
+
+    # Celá backend suita proti PostgreSQL (DATABASE_URL); Django si pre testy vytvorí databázu `test_svaply`.
+    # Coverage je vypnutá z rovnakého dôvodu ako v jobe `checks`.
+    - name: Run backend tests on PostgreSQL
+      working-directory: ./backend
+      run: python -m pytest --no-cov
+      env:
+        DEBUG: 'True'
+        SECRET_KEY: ci-check-secret
+        SAFESEARCH_ENABLED: 'False'
+        DATABASE_URL: postgresql://svaply:svaply-ci@localhost:5432/svaply

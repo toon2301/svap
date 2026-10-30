@@ -61,8 +61,8 @@ NEW_ITEMS = [
               'pripnuté balíky: 180 záznamov). Časť 183a (vetva 143, 27. 10.) je hotová: Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
               '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b je hotová v dvoch krokoch: nastavenia úložísk '
-              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, čaká na '
-              'zlúčenie; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Zostáva: protobuf 4.25.9 (2 záznamy, časť 183c) a '
+              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, zlúčená v '
+              'PR #214; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Zostáva: protobuf 4.25.9 (2 záznamy, časť 183c) a '
               'pytest 8.3.2 (2, len vývoj). Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama, takže jeho 6 záznamov zmizlo.',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
@@ -170,11 +170,11 @@ NEW_ITEMS = [
               '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
               'nepozorovane a odhalila ho až jednorazová kontrola 26. 10.',
          note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt` a '
-              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové 183b, 183c '
-              'a zvyšok 184 (`next` 14 → 16), audit hlási známe zraniteľnosti (backend 22 záznamov: Django, Twisted, DRF, protobuf, pytest; frontend `next`) pri každom '
+              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové 183c '
+              'a zvyšok 184 (`next` 14 → 16), audit hlási známe zraniteľnosti (backend 4 záznamy: protobuf ×2 a vývojový pytest ×2; frontend `next`) pri každom '
               'behu, takže opakované hlásenie samo o sebe neznamená novú zraniteľnosť. Workflow preto musí porovnávať výsledok so zoznamom známych '
               'výnimiek: ID záznamov vedené v repozitári (pri `pip-audit` priamo cez `--ignore-vuln <ID>`, pri `npm audit` porovnaním s uloženým '
-              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 183b“); upozorniť má len záznam, ktorý v zozname nie je. '
+              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 183c“); upozorniť má len záznam, ktorý v zozname nie je. '
               'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
          dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
@@ -262,19 +262,6 @@ NEW_ITEMS = [
          note='Záložný text sa zobrazí len pri chýbajúcom preklade. Rozdiel stál jeden E2E test: `search-mobile-cards.spec.ts` hľadal tlačidlo podľa '
               'záložného textu „Otváracie hodiny“ a padal (vetva 151). Upratanie: jeden záložný text zhodný so slovenským prekladom.',
          dec=None, src='vetva 151'),
-    dict(n=212, bucket=P, imp=S_, eff=EM, pkg='Spoľahlivosť CI a testov', kratko='CI testuje backend len na SQLite, produkcia je PostgreSQL',
-         what='CI (`.github/workflows/deploy.yml`, krok „Run backend tests“) spúšťa celú backendovú sadu len na SQLite bez externých služieb, no '
-              'produkcia beží na PostgreSQL (Railway, verzia 17). Osem testov so zámkami riadkov sa na SQLite preskakuje, takže v CI nebežia nikdy: '
-              'súbežnosť limitu ponúk (`test_offer_limit_concurrency.py`, 1 test), značky príspevkov (`test_feed_post_tags.py`, 2), blokovanie žiadostí '
-              '(`test_skill_request_blocking.py`, 1) a blokovanie v správach (`test_messaging_blocking.py`, 4). Celá sada: na SQLite 1 983 prešlo a '
-              '10 preskočených, na PostgreSQL 16 1 991 prešlo a 2 preskočené (rozdiel je tých osem).',
-         note='Zmerané 29. 10. 2026 na vetve 152 (Django 4.2.30): celá sada prechádza aj na PostgreSQL 16, takže dnes nič nepadá; ide o poistku do '
-              'budúcna. Aplikácia sa na viacerých miestach spolieha na zámky riadkov (nález 185 uvádza 75× `select_for_update`) a práve tie SQLite '
-              'neskúša. Návrh: do CI pridať službu PostgreSQL (`services: postgres`) a pustiť sadu s `DATABASE_URL`, buď namiesto SQLite, alebo '
-              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Najlepšie pred povýšením na Django 5.2 (vetva 154), aby ho CI overilo na '
-              'rovnakej databáze ako produkcia; vetva 154 sa urobila skôr, preto je PostgreSQL pre ňu overený lokálne (celá sada na Djangu 5.2.18 a '
-              'PostgreSQL 16 prešla 29. a znova 30. 10.) a 212 môže nasledovať hneď po nej.',
-         dec=None, src='vetva 152'),
     dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
          what='Django 5.1 nahradilo argument `check` v `CheckConstraint` argumentom `condition` a Django 6.0 `check` odstráni. Aplikácia používa `check=` '
               'na 21 miestach v siedmich súboroch modelov (`accounts/models/offer_watches.py` 9×, `reports.py` 4×, `bug_reports.py` 4×, '
@@ -338,6 +325,16 @@ NEW_ITEMS = [
               'prejsť celú sadu), alebo súbor zmazať a odstrániť jeho zmienky (`.coveragerc`, výnimka v `pyproject.toml`). Mazanie len na '
               'pokyn používateľa. Rýchly hasher je už zachránený v `backend/conftest.py` (nález 220). Zistené pri vetve 154.',
          dec=None, src='vetva 154'),
+    dict(n=223, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
+         kratko='občasné zlyhanie siete pri `GET /api/auth/me/` počas prípravy E2E (príčina nepreukázaná)',
+         what='Codex pri behu špecu `profile-numeric-language` (nasadený `main` `e3ed0f42`) hlásil občasné zlyhanie siete '
+              'pri prípravnom `GET /api/auth/me/`: z 8 pokusov 2 zastavilo toto zlyhanie už počas prípravy a poľský tmavý profilový variant preto '
+              'raz padol, pri troch opakovaniach potom prešiel (3 z 3). Presná príčina nie je preukázaná.',
+         note='Codex výslovne žiada nepripisovať ju automaticky Railway ani povýšeniu na Django 5.2 (nasadené 30. 10. 2026). V dvoch lokálnych '
+              'behoch špecu (30. 10., proti lokálnej kópii) sa to nevyskytlo, čo nič nedokazuje. Čo treba: čas zlyhania (UTC) z E2E správy a logy '
+              'Railway za ten čas (napr. reštart workera gunicorn, nasadenie, nedostatok pamäte, časový limit), aby sa dalo rozhodnúť, či ide o prostredie, aplikáciu alebo '
+              'test. Ak sa to zopakuje, treba k hláseniu pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
+         dec=None, src='správa Codexa z 30. 10. 2026'),
 ]
 
 NTASKS = [
