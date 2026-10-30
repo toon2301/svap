@@ -1,10 +1,10 @@
-# Playwright: odovzdanie (stav k 29. 10. 2026)
+# Playwright: odovzdanie (stav k 30. 10. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
 ## Ako sa beh spúšťa
 
-- Testy sú v `frontend/e2e/` (41 špecov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
+- Testy sú v `frontend/e2e/` (42 špecov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
 - Bežia proti produkčnej inštancii na Railway (`https://stunning-inspiration-svap.up.railway.app`). Lokálny server sa nespúšťa: appka sa v produkčnom režime správa inak (napr. `Cache-Control: no-store`).
 - Projekty: `webkit-desktop`, `webkit-mobile` (iPhone 15) a `chromium-desktop`. WebKit je povinný.
 - Na Windows sa beh púšťa v Dockeri (Smart App Control blokuje WebKit): z priečinka `frontend` `npm run test:e2e:docker -- --workers=1 --retries=0` (celý beh trvá okolo 40 minút). Jeden projekt: `... -- --project=webkit-mobile`. Skript je `frontend/scripts/e2e-docker.js`, obraz je `mcr.microsoft.com/playwright:v<verzia>-noble`.
@@ -81,7 +81,7 @@ Táto úprava nemení posledný prijatý stav, asercie, interval obnovy, retry a
 
 ### Lokálne kontroly diagnostiky bez aplikácie a prihlásenia
 
-Súbory v `e2e/diagnostics-tests/` používajú prípony `.check.ts` a `.scenario.ts`, nie `.test.ts` alebo `.spec.ts`; hlavný produkčný beh preto stále zbiera 732 variantov. Node kontroly nespúšťa Jest. Izolovaná konfigurácia nemá globalSetup, nečíta `.env.e2e`, používa prázdny inline storageState a všetky požiadavky synteticky zachytáva na rezervovanej doméne `.invalid`. Nejde o funkčné testovanie aplikácie na lokálnom serveri.
+Súbory v `e2e/diagnostics-tests/` používajú prípony `.check.ts` a `.scenario.ts`, nie `.test.ts` alebo `.spec.ts`; samotná diagnostika preto nepridáva varianty do hlavného produkčného behu. Node kontroly nespúšťa Jest. Izolovaná konfigurácia nemá globalSetup, nečíta `.env.e2e`, používa prázdny inline storageState a všetky požiadavky synteticky zachytáva na rezervovanej doméne `.invalid`. Nejde o funkčné testovanie aplikácie na lokálnom serveri.
 
 Z `frontend` na Windows s bežiacim Dockerom:
 
@@ -95,6 +95,117 @@ Remove-Item Env:E2E_DIAGNOSTICS_DOCKER
 Docker self-test pripája nainštalované knižnice iba na čítanie a spúšťa ich presnú verziu bez doinštalovania cez npx. Overuje WebKit desktop, WebKit mobil a Chromium. Jeho **vnútorný** beh má zámerne 3 PASS / 3 FAIL / 3 SKIP: každý FAIL je riadený pád `beforeEach`, ktorý musí zostať neúspešný a vytvoriť presne jeden bezpečný dôkaz. Vonkajší kontrolný test má prejsť. Toto nie je nový produkčný výsledok ani oslabenie asercie.
 
 Ďalší celý beh proti Railway spustiť až po potvrdení aktuálneho nasadenia a zákazu zlučovania počas behu; porovnávať podľa pravidla vyššie. Register nálezov a pridelenie čísel zostávajú v správe Claude.
+
+## Testová oprava profilových adries (30. 10. 2026)
+
+Základ vetvy `e2e/profilove-adresy`: potvrdený a nasadený main `e3ed0f4235f630cc9686dbccef7357f9485fda9e`. Nový main obsahuje Django 5.2.18, DRF 3.18.3 a backendové testovacie zmeny, nie zmenu frontendu. Rýchly hasher je iba pre pytest; produkčné E2E prihlásenie nemení.
+
+- Pôvodný helper v `mobile-language-header.spec.ts` odmietal bodky v slugu, hoci ich backend generuje. Neprávom tak volil numerické ID. `support/own-profile-paths.ts` teraz overí vlastnú identitu, použije platný kanonický slug a numerický fallback dovolí iba pri chýbajúcom historickom slugu. Chybný prítomný slug vyvolá bezpečnú chybu bez jeho hodnoty.
+- `support/own-profile-fixture.ts` prenáša z odpovede iba stav a vlastné ID/slug, nikdy ich neloguje. Overenie návratu porovná presnú doménu a cestu, nie prefix ani inú sekciu. Query a fragment nie sú predmetom kontroly sekcie; testy filtrov sa nemenia.
+- Zo štyroch rozpracovaných lokálnych úprav pôvodného špecu sa týmto rieši bodkovaný slug a kontrola profilovej cesty. Náhrada `tap` za `click` ani presun čakania na locale sa nepreberajú: samy nedokazujú opravu samostatného problému prepínania jazyka/tlačidla Späť. Pôvodná pracovná kópia a jej staged zmeny ostali nedotknuté.
+- `profile-numeric-language.spec.ts` samostatne stráži numerický hlboký vstup, dva režimy a zamýšľanú kontrolu po F5. Aplikačný pád nie je označený `test.fail`, vypnutý ani maskovaný zmenou adresy; skip zostáva iba pre iný typ obrazovky. Blokujú sa zápisy API okrem obnovy relácie.
+- Pribudol jeden produkčný špec: aktuálna kolekcia má **42 špecov / 738 variantov**, po 246 na projekt. Samotné diagnostické kontroly sa do nej nezbierajú. Posledný prijatý celý beh **427 / 2 / 303 sa nemení**; toto nie je nový celý ani prijatý beh.
+
+### Overenie opravy testov
+
+Cielený beh cez kanonický Docker skript, `--workers=1 --retries=0`, výber `profile-section|language app Back and browser Back|desktop: retains|číselná adresa`:
+
+| Projekt | Prešlo | Padlo | Preskočené | Trvanie projektu |
+| --- | ---: | ---: | ---: | --- |
+| webkit-desktop | 12 | 0 | 16 | 24,6 s |
+| webkit-mobile | 13 | 3 | 12 | 1 min 58,6 s |
+| chromium-desktop | 12 | 0 | 16 | 12,8 s |
+| **Spolu** | **37** | **3** | **44** | **2 min 52,8 s** |
+
+Celkové trvanie procesu vrátane spustenia: 2 min 59 s. Preskočené varianty sú určené pre iné rozloženie.
+
+Všetky tri pády sú nové kľúče oproti prijatému porovnaniu; nejde o známe pády č. 1–4. Numerické varianty sú nové pokrytie už skôr pozorovaného problému, nie dôkaz novej regresie alebo dôsledku aktualizácie Django. Cielene sa zopakovali po trikrát v projekte `webkit-mobile`, bez automatických retry. Diagnostické opakovanie trvalo 1 min 47,7 s a nemení pôvodný výsledok:
+
+| Špec a test | Výsledok troch opakovaní | Rozlíšenie |
+| --- | --- | --- |
+| `mobile-language-header.spec.ts` — `Language header – pl / dark › mobile: profile-section has one centered title, no profile shortcut, and six choices` | PASS / PASS / PASS | Pôvodne zlyhal prípravný GET `/api/auth/me/`; opakovania neoprávňujú príčinu označiť za opravenú. |
+| `profile-numeric-language.spec.ts` — `mobile: light číselná adresa zachová jazykovú podstránku aj po F5` | FAIL / FAIL / FAIL | Dvakrát strata jazykovej podstránky, raz zlyhanie siete už počas prípravy. |
+| `profile-numeric-language.spec.ts` — `mobile: dark číselná adresa zachová jazykovú podstránku aj po F5` | FAIL / FAIL / FAIL | Trikrát strata jazykovej podstránky; v úvodnom behu zlyhala sieťová príprava. |
+
+Lokálne kontroly: **43/43** Node kontrol vrátane izolovaného Docker self-testu diagnostiky v troch projektoch, **71/71** existujúcich Jest kontrol infraštruktúry, TypeScript aplikácie aj explicitne oboch produkčných špecov a `git diff --check` prešli. Nový čistý pomocník má pokrytie **100 % riadkov, 97,44 % vetiev, 100 % funkcií**; nie je to údaj o pokrytí celej aplikácie. Lokálne kontroly pracujúce so súbormi sa na Windows spúšťali mimo obmedzenia, ktoré blokovalo premenovanie dočasných súborov.
+
+### Podklad chyby aplikácie pre Claude
+
+**Názov:** Numerická adresa vlastného profilu stratí jazykovú podstránku.
+
+**Špec/projekt:** `profile-numeric-language.spec.ts`, oba režimy, `webkit-mobile`.
+
+**Kroky:** Prihlásený vlastník otvorí `/dashboard/users/:id/language` cez svoje číselné ID.
+
+**Očakávané:** Jazyková podstránka ostane otvorená, prípadne sa zmení len identifikátor na kanonický slug so zachovaním `/language`.
+
+**Skutočné:** Po úvodnej kanonizácii ostane základný profil `/dashboard/users/:id` s parametrom `tab`, jazyková hlavička chýba. Etapa F5 sa kvôli tomuto prvému pádu ešte neoverila.
+
+**Opakovateľnosť:** **6/6 pokusov, ktoré dokončili prípravu a otvorili numerický vstup**, spojené oba režimy a oba behy. Ďalšie 2/8 numerických pokusov skončili už pri sieťovej príprave; nie sú dôkazom tohto UI problému.
+
+**Podozrivé miesto, nie zásah Codexu:** route `frontend/src/app/dashboard/users/[userId]/language/page.tsx` podporuje ID aj slug. V `frontend/src/components/dashboard/hooks/useDashboardUserProfile.tsx:234` sa však počiatočná podsekcia aplikuje len pri zhode so slugom; vetva numerickej kanonizácie pri riadkoch 342–345 zvolí základný profil. Overí a opraví Claude na svojej vetve.
+
+Reprezentatívny bezpečný blok z opakovania numerického vstupu:
+
+```text
+[E2E-EVIDENCE] Numerický vstup do vlastného jazyka › mobile: light číselná adresa zachová jazykovú podstránku aj po F5 | webkit-mobile | 11.3 s
+url: /dashboard/users/:id [tab]
+page state: readyState=complete viewerReady=true loadingMarkers=0 panelAriaHidden=n/a
+document timing (ms since navigation start): domContentLoaded=225 load=288
+scroll root: scrollTop=0 scrollHeight=1610 clientHeight=659
+active element: [omitted]
+requests (ms since test start):
+17  GET  /dashboard  200  109 ms
+458  GET  /api/auth/me/  200  95 ms
+617  GET  /api/auth/feed/posts/  200  179 ms
+619  GET  /api/auth/messaging/conversations/unread-summary/  200  141 ms
+622  GET  /api/auth/notifications/unread-count/ [type]  200  130 ms
+925  GET  /api/auth/me/  200  81 ms
+1011  GET  /dashboard/users/:id/language  200  81 ms
+1311  GET  /api/auth/me/  200  97 ms
+1451  GET  /api/auth/dashboard/users/:id/skills/  200  152 ms
+1454  GET  /api/auth/messaging/conversations/unread-summary/  200  139 ms
+1456  GET  /api/auth/notifications/unread-count/ [type]  200  140 ms
+page errors: 0 | console errors: 0
+[E2E-CONTEXT] moment=first-observed at=1793367092594 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1793367092594 runStartedAt=1793367086572 generation=1 storedAt=1793367086572 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1793367086572 attempt=0 generation=1 status=n/a errorKind=n/a
+[E2E-CONTEXT] moment=failure-observed at=1793367103900 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1793367103900 runStartedAt=1793367086572 generation=1 storedAt=1793367086572 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1793367086572 attempt=0 generation=1 status=n/a errorKind=n/a
+```
+
+Samostatne zostáva neurčená príčina občasného sieťového zlyhania už pri príprave. Z blokov je preukázaná neúspešná požiadavka, nie pôvod chyby v Railway, prehliadači alebo aplikácii. Nezvyšovali sa timeouty, nepridali sa retry ani náhradné prihlasovanie. Reprezentatívny blok:
+
+```text
+[E2E-EVIDENCE] Language header – pl / dark › mobile: profile-section has one centered title, no profile shortcut, and six choices | webkit-mobile | 23.7 s
+url: /dashboard
+page state: readyState=complete viewerReady=true loadingMarkers=0 panelAriaHidden=n/a
+document timing (ms since navigation start): domContentLoaded=262 load=487
+scroll root: scrollTop=0 scrollHeight=10515 clientHeight=640
+active element: [omitted]
+requests (ms since test start):
+21  GET  /dashboard  200  161 ms
+569  GET  /api/auth/me/  200  81 ms
+710  GET  /api/auth/feed/posts/  200  119 ms
+712  GET  /api/auth/messaging/conversations/unread-summary/  200  80 ms
+714  GET  /api/auth/notifications/unread-count/ [type]  200  76 ms
+1069  GET  /api/auth/me/  FAILED(failed)  22609 ms
+9069  GET  /api/auth/feed/posts/:n/  FAILED(failed)  14621 ms
+9070  GET  /api/auth/feed/posts/:n/  FAILED(failed)  14618 ms
+20714  GET  /api/auth/notifications/unread-count/ [type]  FAILED(failed)  2963 ms
+20716  GET  /api/auth/notifications/unread-count/ [type]  FAILED(failed)  2962 ms
+20717  GET  /api/auth/messaging/conversations/unread-summary/  FAILED(failed)  2973 ms
+page errors: 0 | console errors: 22
+[E2E-CONTEXT] moment=first-observed at=1793366898646 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1793366898646 runStartedAt=1793366835236 generation=1 storedAt=1793366835236 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1793366835236 attempt=0 generation=1 status=n/a errorKind=n/a
+[E2E-CONTEXT] moment=failure-observed at=1793366922341 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1793366922341 runStartedAt=1793366835236 generation=1 storedAt=1793366835236 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1793366835236 attempt=0 generation=1 status=n/a errorKind=n/a
+```
+
+**Ďalší krok:** majiteľ odovzdá aplikačný podklad Claudovi. Po jeho oprave a potvrdenom nasadení sa zopakuje číselný vstup vrátane F5 a dotknuté profilové návraty; až následný celý beh môže aktualizovať prijatý porovnávací stav. Táto dávka neopravuje predchádzajúci nález pri samotnom prepínaní jazyka/tlačidle Späť.
 
 ## Ako nahlásiť chybu aplikácie
 
