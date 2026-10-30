@@ -262,19 +262,6 @@ NEW_ITEMS = [
          note='Záložný text sa zobrazí len pri chýbajúcom preklade. Rozdiel stál jeden E2E test: `search-mobile-cards.spec.ts` hľadal tlačidlo podľa '
               'záložného textu „Otváracie hodiny“ a padal (vetva 151). Upratanie: jeden záložný text zhodný so slovenským prekladom.',
          dec=None, src='vetva 151'),
-    dict(n=212, bucket=P, imp=S_, eff=EM, pkg='Spoľahlivosť CI a testov', kratko='CI testuje backend len na SQLite, produkcia je PostgreSQL',
-         what='CI (`.github/workflows/deploy.yml`, krok „Run backend tests“) spúšťa celú backendovú sadu len na SQLite bez externých služieb, no '
-              'produkcia beží na PostgreSQL (Railway, verzia 17). Osem testov so zámkami riadkov sa na SQLite preskakuje, takže v CI nebežia nikdy: '
-              'súbežnosť limitu ponúk (`test_offer_limit_concurrency.py`, 1 test), značky príspevkov (`test_feed_post_tags.py`, 2), blokovanie žiadostí '
-              '(`test_skill_request_blocking.py`, 1) a blokovanie v správach (`test_messaging_blocking.py`, 4). Celá sada: na SQLite 1 983 prešlo a '
-              '10 preskočených, na PostgreSQL 16 1 991 prešlo a 2 preskočené (rozdiel je tých osem).',
-         note='Zmerané 29. 10. 2026 na vetve 152 (Django 4.2.30): celá sada prechádza aj na PostgreSQL 16, takže dnes nič nepadá; ide o poistku do '
-              'budúcna. Aplikácia sa na viacerých miestach spolieha na zámky riadkov (nález 185 uvádza 75× `select_for_update`) a práve tie SQLite '
-              'neskúša. Návrh: do CI pridať službu PostgreSQL (`services: postgres`) a pustiť sadu s `DATABASE_URL`, buď namiesto SQLite, alebo '
-              'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Najlepšie pred povýšením na Django 5.2 (vetva 154), aby ho CI overilo na '
-              'rovnakej databáze ako produkcia; vetva 154 sa urobila skôr, preto je PostgreSQL pre ňu overený lokálne (celá sada na Djangu 5.2.18 a '
-              'PostgreSQL 16 prešla 29. a znova 30. 10.) a 212 môže nasledovať hneď po nej.',
-         dec=None, src='vetva 152'),
     dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
          what='Django 5.1 nahradilo argument `check` v `CheckConstraint` argumentom `condition` a Django 6.0 `check` odstráni. Aplikácia používa `check=` '
               'na 21 miestach v siedmich súboroch modelov (`accounts/models/offer_watches.py` 9×, `reports.py` 4×, `bug_reports.py` 4×, '
@@ -338,6 +325,16 @@ NEW_ITEMS = [
               'prejsť celú sadu), alebo súbor zmazať a odstrániť jeho zmienky (`.coveragerc`, výnimka v `pyproject.toml`). Mazanie len na '
               'pokyn používateľa. Rýchly hasher je už zachránený v `backend/conftest.py` (nález 220). Zistené pri vetve 154.',
          dec=None, src='vetva 154'),
+    dict(n=223, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
+         kratko='občasné zlyhanie siete pri `GET /api/auth/me/` počas prípravy E2E (príčina nepreukázaná)',
+         what='Codex pri behu špecu `profile-numeric-language` (nasadený `main` `e3ed0f42`) hlásil občasné zlyhanie siete '
+              'pri prípravnom `GET /api/auth/me/`: z 8 pokusov 2 zastavilo toto zlyhanie už počas prípravy a poľský tmavý profilový variant preto '
+              'raz padol, pri troch opakovaniach potom prešiel (3 z 3). Presná príčina nie je preukázaná.',
+         note='Codex výslovne žiada nepripisovať ju automaticky Railway ani povýšeniu na Django 5.2 (nasadené 30. 10. 2026). V dvoch lokálnych '
+              'behoch špecu (30. 10., proti lokálnej kópii) sa to nevyskytlo, čo nič nedokazuje. Čo treba: čas zlyhania (UTC) z E2E správy a logy '
+              'Railway za ten čas (napr. reštart workera gunicorn, nasadenie, nedostatok pamäte, časový limit), aby sa dalo rozhodnúť, či ide o prostredie, aplikáciu alebo '
+              'test. Ak sa to zopakuje, treba k hláseniu pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
+         dec=None, src='správa Codexa z 30. 10. 2026'),
 ]
 
 NTASKS = [

@@ -7,12 +7,19 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='30. 10. 2026',
-    kod='`main` `9bf1142d` (po PR #213)',
+    kod='`main` `e3ed0f42` (po PR #214)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('30. 10. 2026',
+     'Vetva 157 (čaká na zlúčenie): nález 212 – CI beží backendovú sadu aj na PostgreSQL 17 (nový job `backend-postgres` súbežne s `checks`; '
+     'osem testov so zámkami riadkov sa na SQLite preskakovalo a v CI nebežalo nikdy). Súčasne oprava nálezu 222 z Codexovej správy '
+     '(číselná adresa vlastného profilu stratila podstránku `/language`; príčina: pravá položka sa otvárala len pri zhode slugu a kanonizácia '
+     'ID → slug zahodila podstránku): na pokyn majiteľa je kód na Codexovej vetve `e2e/profilove-adresy` (čaká na zlúčenie), záznam v zozname '
+     'je tu, aby sa dokumentácia nerozchádzala medzi dvoma vetvami. Nový otvorený nález 223 (občasné zlyhanie siete pri `GET /api/auth/me/` '
+     'počas prípravy E2E; príčina nepreukázaná, nič sa neopravuje). Vetva 154 je zlúčená (PR #214), `main` `e3ed0f42`.'),
     ('30. 10. 2026',
      'Vetva 154 (čaká na zlúčenie): časť 183b nálezu 183 – backend sa povyšuje z Djanga 4.2.30 na 5.2.18 a z DRF 3.17.2 na 3.18.3 '
      '(v `backend/requirements.txt` sa menia dva riadky; DRF 3.18 vyžaduje Django 5.2, preto spolu). Pribudli dve poistky: test, že modely '
@@ -307,8 +314,8 @@ DONE_SINCE = [
               'WebKit (iPhone) a Railway sa tu overiť nedali. Playwright test '
               'sa nepridal: odoslanie fotky vytvára správu a súbor na Railway aj S3, čo je presne ten druh testu, ktorý má obsah po sebe '
               'upratať (rozhodnutie majiteľa).'),
-    dict(n=220, vetva='154', pr=None, zlucene=False,
-         text='HOTOVÉ (skutočný čas v CI ukáže až prvý beh na PR): po povýšení na Django 5.2 by sa backendové testy predĺžili, lebo Django 5.2 '
+    dict(n=220, vetva='154', pr='#214', zlucene=True,
+         text='HOTOVÉ (v CI potvrdené po zlúčení PR #214): po povýšení na Django 5.2 by sa backendové testy predĺžili, lebo Django 5.2 '
               'hashuje heslá algoritmom PBKDF2 s 1 000 000 iteráciami (Django 4.2: 600 000) a sada hashuje pri každom vytvorení používateľa. '
               'Zmerané na SQLite: Django 4.2.30 13 min (29. 10.), Django 5.2.18 19 min (29. 10.), Django 5.2.18 s rýchlym hasherom 2 min 7 s '
               '(30. 10.) pri rovnakom výsledku (1 983 prešlo, 10 preskočených). `pytest.ini` používa `swaply.settings`, takže rýchly hasher MD5 '
@@ -318,7 +325,35 @@ DONE_SINCE = [
               'je rozdiel v rámci chyby merania: 2 min 7 s a 2 min 11 s). Poistka: `tests/test_password_hasher_in_tests.py` (nové heslo je md5, '
               'PBKDF2 hash sa stále overí); tri zámerné chyby (odstránený `conftest.py`, zoznam bez PBKDF2, PBKDF2 na prvom mieste) ju vždy '
               'zhodili. Konečný strom vetvy: SQLite 1 987 prešlo a 10 preskočených za 2 min 8 s, PostgreSQL 16 '
-              '1 995 prešlo a 2 preskočené za 3 min 9 s.'),
+              '1 995 prešlo a 2 preskočené za 3 min 9 s. Skutočný čas v CI (GitHub, krok „Run backend tests“ na SQLite): 11 min 30 s na '
+              'Djangu 4.2.30 (beh po zlúčení PR #213, `main` `9bf1142d`) a 1 min 40 s na Djangu 5.2.18 s rýchlym hasherom (beh po zlúčení '
+              'PR #214, `main` `e3ed0f42`); celý job `checks` 15 min 54 s → 5 min 19 s.'),
+    dict(n=212, vetva='157', pr=None, zlucene=False,
+         text='HOTOVÉ (skutočný beh na PostgreSQL 17 ukáže až prvé CI na PR): CI testovalo backend len na SQLite, no produkcia beží na PostgreSQL 17 '
+              '(Railway). Osem testov so zámkami riadkov (`select_for_update`: limit ponúk 1, značky príspevkov 2, blokovanie žiadostí 1, blokovanie '
+              'v správach 4) sa na SQLite preskakuje, takže v CI nebežali nikdy. Oprava: do `.github/workflows/deploy.yml` pribudol druhý job '
+              '`backend-postgres` so službou `postgres:17` (celá sada `pytest --no-cov` s `DATABASE_URL`, limit 30 min); beží súbežne s jobom '
+              '`checks` (ten trvá po zrýchlení 5 min 19 s), takže by sa čas CI nemal predĺžiť. SQLite beh ostáva (pokrýva záložnú cestu bez `DATABASE_URL`). Po zrýchlení testov z nálezu 220 '
+              'trvá sada na PostgreSQL lokálne 3 až 4 minúty (3 min 9 s pri vetve 154, 4 min 19 s pri vetve 157, kde súbežne bežal aj celý '
+              'Jest). Overené: YAML sa načíta a obsahuje oba joby; presný strom vetvy 157 prešiel lokálne na PostgreSQL 16 '
+              '(CI používa 17): 1 995 prešlo a 2 preskočené za 4 min 19 s. GitHub runner a PostgreSQL 17 sa lokálne '
+              'overiť nedali; prvý beh na PR je overenie.'),
+    dict(n=222, vetva='e2e/profilove-adresy', pr=None, zlucene=False,
+         text='HOTOVÉ (účinok na Railway potvrdí až beh Playwrightu): číselná adresa vlastného profilu `/dashboard/users/<id>/language` stratila '
+              'jazykovú podstránku a skončila na základnom profile bez jazykovej hlavičky (hlásenie Codexa z 30. 10. 2026, `main` `e3ed0f42`, '
+              'webkit-mobile, svetlý aj tmavý režim, 6 z 6 pokusov, špec `profile-numeric-language.spec.ts`). Príčina v '
+              '`useDashboardUserProfile.tsx`: (1) počiatočná pravá položka (jazyk, účet, súkromie, úprava) sa otvárala len pri zhode slugu v adrese, '
+              'takže pri číselnom ID sa nikdy neotvorila; (2) kanonizácia ID → slug prepísala adresu na holý profil a podstránku zahodila (rovnako '
+              '`/account`, `/privacy` a `/edit`). Oprava: nový súbor `ownProfileAddress.ts` (`isOwnProfileIdentifier` pozná vlastný profil podľa slugu '
+              'aj číselného ID, `canonicalOwnProfilePath` ponechá podstránku pri výmene ID za slug, ale len pri identifikátore, ktorý patrí tomuto '
+              'používateľovi); v hooku sa menia štyri miesta (súbor má 491 riadkov, pod limitom 500). Kód je na Codexovej vetve '
+              '`e2e/profilove-adresy` na pokyn majiteľa (AGENTS.md inak zakazuje zápis do vetvy druhého agenta). Overené: 23 nových testov Jest '
+              '(8 cez hook, 15 na pomocníka; na pôvodnom hooku z `main` 5 z 8 testov hooku padá), deväť zámerne vnesených chýb všetky zachytené, '
+              f'`tsc` a `eslint` čisté, celý Jest na čistej kópii vetvy 518 sád a 7 973 testov prešlo; '
+              f'v Chromiu s rozmermi iPhonu proti lokálnej kópii špec Codexa pred opravou zlyhal v oboch režimoch (rovnaký obraz ako v hlásení: '
+              f'adresa na základnom profile, bez jazykovej hlavičky), po oprave prešli oba testy (2 z 2, vrátane F5). '
+              'WebKit a Railway sa tu overiť nedali. Súvisiace, nehlásené a preto nezmenené: pri starom slugu v adrese '
+              '(`/dashboard/users/<starý-slug>/language`) kanonizácia podstránku stále zahodí.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
@@ -349,15 +384,15 @@ PORADIE = [
     dict(vlna='0 – najprv',
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
             'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
-            'zlúčený (vetva 142). Zvyšok 183 a 184 (Django 5.2, protobuf, `next` 14 → 16) je vo vlne 1',
+            'zlúčený (vetva 142). Zvyšok 183 a 184 (protobuf, `next` 14 → 16) je vo vlne 1; Django 5.2 je zlúčený (vetva 154, PR #214)',
          preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
-         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.3 po presune úložísk z vetvy 152, `google-cloud-vision` kvôli protobuf, '
-            'Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 212; '
-            '212 pred povýšením na Django 5.2 alebo hneď po ňom)',
+         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.3 je hotový vo vetve 154, `google-cloud-vision` kvôli protobuf, '
+            'Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223; '
+            '212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '212']),
+         polozky=['183', '184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
