@@ -6,13 +6,30 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='29. 10. 2026',
-    kod='`main` `6323d8ec` (po PR #210)',
+    datum='30. 10. 2026',
+    kod='`main` `9bf1142d` (po PR #213)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('30. 10. 2026',
+     'Vetva 154 (čaká na zlúčenie): časť 183b nálezu 183 – backend sa povyšuje z Djanga 4.2.30 na 5.2.18 a z DRF 3.17.2 na 3.18.3 '
+     '(v `backend/requirements.txt` sa menia dva riadky; DRF 3.18 vyžaduje Django 5.2, preto spolu). Pribudli dve poistky: test, že modely '
+     'a migrácie sedia (`tests/test_migrations_up_to_date.py`; v CI ani v testoch sa to dosiaľ nekontrolovalo), a rýchly hasher hesiel len '
+     'v testoch (`backend/conftest.py` s testom; nález 220: Django 5.2 hashuje heslá 1 000 000 iteráciami, takže by sa backendová sada '
+     'predĺžila z 13 na 19 minút, s hasherom trvá 2). Od poslednej úpravy zoznamu sa zlúčili vetvy 155 (oprava posunu pri fotke, PR #211; '
+     'Railway ju nasadil po dokončení behu Playwrightu), 156 (odovzdanie Playwrightu druhému agentovi, PR #212) a Codexova vetva '
+     '`e2e/bezpecna-diagnostika` (PR #213, len E2E). Overené v čistom prostredí z reálnych súborov závislostí (Python 3.11): `pip check`, '
+     '`manage.py check` a `makemigrations --check` čisté; celá backendová sada s pôvodným hasherom, teda ako v produkcii: SQLite '
+     '1 983 prešlo a 10 preskočených, PostgreSQL 16 1 991 prešlo a 2 preskočené; konečný strom vetvy '
+     '(s novými testami a rýchlym hasherom): SQLite 1 987 prešlo a 10 preskočených za 2 min 8 s, PostgreSQL 16 '
+     '1 995 prešlo a 2 preskočené; v produkčných nastaveniach (PostgreSQL, Redis, simulované S3) 38 z 38 kontrol, '
+     'servery daphne a gunicorn s WebSocketom 15 z 15, Celery worker a beat 4 z 4, admin rovnako ako na Djangu 4.2 (67 stránok 200, tri '
+     'zámerne zakázané formuláre „pridať“), hlavičky odpovedí a CORS rovnaké. `pip-audit` projektových závislostí: 22 → 4 záznamy '
+     '(zostáva protobuf 4.25.9 a pytest 8.3.2); Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama (6 záznamov '
+     'zmizlo). Nové nálezy: 220 (hotový v tejto vetve) a 221 (nepoužívaný `swaply/test_settings.py`). Nález 218 má už vetvu 155 '
+     'zlúčenú (PR #211).'),
     ('29. 10. 2026',
      'Vetva 155 (čaká na zlúčenie): nález 218 – po odoslaní fotky v správach sa okno drží na spodku, kým sa fotka načíta (PC aj mobil; našiel '
      'ho používateľ manuálnym testom po nasadení vetvy 152). Príčina a overenie sú v zázname nálezu; oprava je nový hook '
@@ -262,7 +279,7 @@ DONE_SINCE = [
               'Poistka súkromia: desať zámerne vnesených chýb v pomôckach (napr. výpis surového textu zlyhania alebo surovej hodnoty atribútu) testy odhalili všetkých desať; '
               'blok dôkazov sa skúšal aj v skutočnom Chromiu na stránke so slugom a e-mailom v adrese a atribútoch, tokenom v ceste a zlyhaniami siete a nič z toho sa nevypísalo. '
               'WebKit a Railway sa tu overiť nedali; to ukáže ďalší celý beh.'),
-    dict(n=218, vetva='155', pr='#211', zlucene=False,
+    dict(n=218, vetva='155', pr='#211', zlucene=True,
          text='HOTOVÉ (účinok na iPhone a na Railway potvrdí manuálny test): po odoslaní fotky v správach ostalo okno na mieste a fotka bola '
               'schovaná pod ním a bolo ju treba nájsť ďalším posúvaním (PC aj mobil; našiel to používateľ manuálnym testom po nasadení vetvy 152, '
               '29. 10. 2026). Príčina: po odoslaní `refresh({ scrollBehavior: \'force_latest\' })` posunie okno na spodok jedenkrát, hneď po '
@@ -290,6 +307,18 @@ DONE_SINCE = [
               'WebKit (iPhone) a Railway sa tu overiť nedali. Playwright test '
               'sa nepridal: odoslanie fotky vytvára správu a súbor na Railway aj S3, čo je presne ten druh testu, ktorý má obsah po sebe '
               'upratať (rozhodnutie majiteľa).'),
+    dict(n=220, vetva='154', pr=None, zlucene=False,
+         text='HOTOVÉ (skutočný čas v CI ukáže až prvý beh na PR): po povýšení na Django 5.2 by sa backendové testy predĺžili, lebo Django 5.2 '
+              'hashuje heslá algoritmom PBKDF2 s 1 000 000 iteráciami (Django 4.2: 600 000) a sada hashuje pri každom vytvorení používateľa. '
+              'Zmerané na SQLite: Django 4.2.30 13 min (29. 10.), Django 5.2.18 19 min (29. 10.), Django 5.2.18 s rýchlym hasherom 2 min 7 s '
+              '(30. 10.) pri rovnakom výsledku (1 983 prešlo, 10 preskočených). `pytest.ini` používa `swaply.settings`, takže rýchly hasher MD5 '
+              'zo súboru `swaply/test_settings.py` nikdy nepomáhal (súbor sa nikde nepoužíva, pozri nález 221). Oprava: nový `backend/conftest.py` '
+              'nastaví na celú reláciu testov MD5 pre nové heslá a PBKDF2 nechá na overenie hashov pripravených vopred; produkčné nastavenia sa '
+              'nemenia. Fixture je na úrovni relácie, aby pokryla aj používateľov vytváraných v `setUpTestData` (oproti fixture na úrovni testu '
+              'je rozdiel v rámci chyby merania: 2 min 7 s a 2 min 11 s). Poistka: `tests/test_password_hasher_in_tests.py` (nové heslo je md5, '
+              'PBKDF2 hash sa stále overí); tri zámerné chyby (odstránený `conftest.py`, zoznam bez PBKDF2, PBKDF2 na prvom mieste) ju vždy '
+              'zhodili. Konečný strom vetvy: SQLite 1 987 prešlo a 10 preskočených za 2 min 8 s, PostgreSQL 16 '
+              '1 995 prešlo a 2 preskočené za 3 min 9 s.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
