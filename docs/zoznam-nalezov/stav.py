@@ -7,12 +7,24 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='29. 10. 2026',
-    kod='`main` `ff0aa0ef` (po PR #209)',
+    kod='`main` `6323d8ec` (po PR #210)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('29. 10. 2026',
+     'Vetva 155 (čaká na zlúčenie): nález 218 – po odoslaní fotky v správach sa okno drží na spodku, kým sa fotka načíta (PC aj mobil; našiel '
+     'ho používateľ manuálnym testom po nasadení vetvy 152). Príčina a overenie sú v zázname nálezu; oprava je nový hook '
+     '`useStickToBottomOnGrowth` s jedným zapojením v `ConversationMessagesPane`. Vetva 153 je zlúčená (PR #210), z jej kontroly CodeRabbit '
+     'ostáva nový nález 219 (časový limit pre snímku stránky v dôkazoch, text hlášky v `search-settled.ts`; nič z toho nie je vážne). '
+     'Zoznam nadlimitných súborov (TECH-01…11) je prepočítaný: 33 produkčných súborov nad 500 riadkov namiesto desiatich, medzi nimi '
+     '`ConversationDetail.tsx` 556 a `useConversationThreadController.ts` 505, ktoré sa podľa `svaply.mdc` nemenia, preto oprava posunu '
+     'v správach vznikla v novom súbore. Po kontrole PR #211: Codex upozornil na možný skok na spodok pri načítaní starších správ (platné, '
+     'opravené: poloha sa zisťuje pri posune a test to stráži), CodeRabbit na nejasný text nálezu 218 a chýbajúci opis funkcie panela správ. '
+     'Po tretej kontrole: CodeRabbit upozornil na chýbajúce číslo PR v zázname nálezu 218 (opravené), na posúvanie aj pri zmenšení obsahu '
+     '(platné, hook posúva len pri raste výšky a test to stráži) a na možný skok pri načítaní starších správ blízko spodku (neplatné: staršie '
+     'správy sa načítavajú až po plnej stránke 100 správ, takže poloha pri začiatku konverzácie nikdy nie je „blízko spodku“; zapísané do popisu hooku).'),
     ('29. 10. 2026',
      'Vetva 153 (čaká na zlúčenie): nález 217 – štyri jednorazové pády záverečných behov E2E (29. 10.: tri samostatné behy aj spoločný beh '
      'dali 427 prešlo, 2 padli, 303 preskočených; každý pád prešiel pri samostatnom opakovaní). Pád s posunom o 14 px v Chromiu je vysvetlený '
@@ -220,7 +232,7 @@ DONE_SINCE = [
               'celý beh na Railway. Neopravené: sedem testov čaká na testovacie údaje na Railway (nález 209) a jeden jednorazový pád '
               '(`search-country-scroll.spec.ts:74`, tmavý variant, ponuky, webkit-mobile: odpoveď hľadania neprišla do 15 s) sa nedal '
               'vysvetliť ani reprodukovať, preto sa neopravuje; ak sa zopakuje, treba ho vyšetriť.'),
-    dict(n=217, vetva='153', pr=None, zlucene=False,
+    dict(n=217, vetva='153', pr='#210', zlucene=True,
          text='HOTOVÉ (účinok vo WebKite potvrdí až ďalší celý beh na Railway): štyri jednorazové pády záverečných behov E2E 29. 10. 2026 '
               '(tri samostatné behy aj spoločný beh dali 427 prešlo, 2 padli, 303 preskočených; každý pád prešiel pri samostatnom opakovaní): '
               '(1) `search-panel-return.spec.ts:111`, ponuky, webkit-mobile: po ťuknutí na autora ostala adresa `/search` (`toHaveURL` 10 s, '
@@ -250,6 +262,34 @@ DONE_SINCE = [
               'Poistka súkromia: desať zámerne vnesených chýb v pomôckach (napr. výpis surového textu zlyhania alebo surovej hodnoty atribútu) testy odhalili všetkých desať; '
               'blok dôkazov sa skúšal aj v skutočnom Chromiu na stránke so slugom a e-mailom v adrese a atribútoch, tokenom v ceste a zlyhaniami siete a nič z toho sa nevypísalo. '
               'WebKit a Railway sa tu overiť nedali; to ukáže ďalší celý beh.'),
+    dict(n=218, vetva='155', pr='#211', zlucene=False,
+         text='HOTOVÉ (účinok na iPhone a na Railway potvrdí manuálny test): po odoslaní fotky v správach ostalo okno na mieste a fotka bola '
+              'schovaná pod ním a bolo ju treba nájsť ďalším posúvaním (PC aj mobil; našiel to používateľ manuálnym testom po nasadení vetvy 152, '
+              '29. 10. 2026). Príčina: po odoslaní `refresh({ scrollBehavior: \'force_latest\' })` posunie okno na spodok jedenkrát, hneď po '
+              'zobrazení nového riadku (`useConversationThreadController.ts`). `<img>` v riadku (`ConversationMessageRow.tsx`) má '
+              '`loading="lazy"` a nemá rozmery, takže nemá výšku, kým sa nenačíta; po načítaní obsah vyrastie o jej výšku (najviac 352 px, '
+              '`max-h-[22rem]`) pod okno a nič ho už neposunie. Pri otvorení konverzácie to rieši `useInitialBottomPin` (sleduje zmenu výšky '
+              'a načítanie obrázkov až 8 s), po odoslaní nič. '
+              'Zreprodukované v Chromiu proti lokálnej kópii (produkčný build, odoslanie fotky 1 200 × 1 500 px s oneskorením obrázka 0, 600 '
+              'a 1 500 ms, rozmery počítača aj iPhonu): bez opravy 6 z 6 pádov, okno 316 px nad spodkom a z 352 px vysokej fotky schovaných '
+              '291 px (PC) a 299 px (iPhone). '
+              'Oprava: nový hook `useStickToBottomOnGrowth.ts` sleduje obsah okna správ a ak bolo okno pred zväčšením na spodku (najviac 80 px '
+              'nad ním), po zväčšení ho posunie znova na spodok; ak používateľ odišiel vyššie, nehýbe sa. Posúva len pri raste výšky obsahu, nie pri zmenšení '
+              'ani pri zmene šírky bez zmeny výšky. Poloha sa zisťuje pri každom posune (aj programovom), nie porovnaním s výškou spred zmeny: '
+              'kontrola Codexu (PR #211) upozornila, že pri načítaní starších správ aplikácia vráti čitateľa na jeho miesto a pôvodné porovnanie '
+              'by ho mohlo hodiť na spodok. V Jeste sa to s pôvodnou logikou zreprodukovalo (poradie „vrátenie polohy, potom oznam o zmene '
+              'rozloženia“), v Chromiu nie (8 pokusov na počítači aj na mobile; poradie závisí od časovania prehliadača), preto je oprava '
+              'obranná a pokrytá testom. Zapojený je jedným volaním v '
+              '`ConversationMessagesPane.tsx`; `useConversationThreadController.ts` (505 riadkov) a `ConversationDetail.tsx` (556) sa nemenia, '
+              'lebo sú nad limitom 500 riadkov (TECH-01…11). Hook nerozlišuje odoslanú a prijatú fotku: platí pre každé zväčšenie obsahu, keď '
+              'je okno pri spodku (napr. aj fotka od druhého používateľa alebo štítok „Videné“); to sa v prehliadači neskúšalo. '
+              'Overené: 18 nových testov Jest (15 testov hooku a 3 integračné cez `ConversationDetail`: odoslanie fotky, odscrollovanie pred '
+              'načítaním fotky a načítanie starších správ), šestnásť zámerne vnesených chýb v hooku a zapojení testy odhalili všetkých šestnásť '
+              '(aj návrat k pôvodnej logike a posúvanie pri zmenšení obsahu); celý Jest 516 sád a 7 950 testov, `tsc` a `eslint` čisté. V Chromiu s opravou prešlo 6 z 6 '
+              'pri odoslaní fotky (okno na spodku, fotka celá) a 8 z 8 pokusov pri načítaní starších správ, na počítači aj na mobile. '
+              'WebKit (iPhone) a Railway sa tu overiť nedali. Playwright test '
+              'sa nepridal: odoslanie fotky vytvára správu a súbor na Railway aj S3, čo je presne ten druh testu, ktorý má obsah po sebe '
+              'upratať (rozhodnutie majiteľa).'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.

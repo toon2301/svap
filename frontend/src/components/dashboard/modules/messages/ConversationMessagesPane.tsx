@@ -10,6 +10,7 @@ import {
   DESKTOP_MESSAGE_SIDE_PADDING_CLASS,
   MOBILE_MESSAGE_SIDE_PADDING_CLASS,
 } from './conversationDetailConstants';
+import { useStickToBottomOnGrowth } from './useStickToBottomOnGrowth';
 
 type ConversationMessagesPaneProps = {
   loading: boolean;
@@ -48,6 +49,7 @@ type ConversationMessagesPaneProps = {
   busyInvitationId?: number | null;
 };
 
+/** Okno správ konverzácie: kostra, prázdny stav alebo riadky správ; drží okno na spodku, kým obsah rastie (`useStickToBottomOnGrowth`). */
 export function ConversationMessagesPane({
   loading,
   ordered,
@@ -77,6 +79,12 @@ export function ConversationMessagesPane({
   onGroupInvitationRespond,
   busyInvitationId = null,
 }: ConversationMessagesPaneProps) {
+  useStickToBottomOnGrowth({
+    enabled: !loading && ordered.length > 0,
+    scrollContainerRef: messagesScrollRef,
+    contentRef: messagesStackRef,
+  });
+
   return (
     <div className="relative flex-1 min-h-0">
       <div

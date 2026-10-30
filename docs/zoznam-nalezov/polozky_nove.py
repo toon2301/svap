@@ -315,6 +315,17 @@ NEW_ITEMS = [
               'zostane jedno hľadanie a zmizne posun obsahu. Chyba sa prejavila v E2E testoch ako nález 217 (testy sa kvôli nej teraz '
               'čakajú na ustálenie stránky).',
          dec=None, src='vetva 153'),
+    dict(n=219, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', kratko='dôkazy pri páde E2E: snímka stránky bez časového limitu',
+         what='`PageActivity.report()` (`e2e/support/page-activity.ts`) čaká na `page.evaluate(readPageSnapshot)` bez časového limitu. Ak hlavné vlákno '
+              'stránky zamrzne (napr. nekonečný cyklus), `evaluate` sa nevráti ani nevyhodí chybu, `afterEach` visí do limitu hooku, pôvodné '
+              'zlyhanie sa stratí a dôkazy o požiadavkách sa nevypíšu práve v prípade, na ktorý sú určené (CodeRabbit, PR #210, Minor).',
+         note='Návrh: obmedziť čakanie na snímku na 3 s pomocou pomôcky `withTimeout` v `page-activity-format.ts` (časovač sa musí zrušiť; test '
+              's nikdy nekončiacim sľubom) a pri vypršaní vypísať „page state: unavailable“ spolu s požiadavkami. Spolu s tým upraviť hlášku '
+              'v `search-settled.ts` („Both initial searches…“ → „The initial search requests…“): CodeRabbit ju čítal ako požiadavku na dve '
+              'hľadania, no kód čaká len na 0,4 s ticha po načítaní používateľa a jedno hľadanie stačí, takže jeho druhý bod (zaseknutie pri '
+              'už inicializovanom `authBootstrapSnapshot`) neplatí. Dve štylistické poznámky k `ZOZNAM.md` (rozdeliť dlhé súvetia pri nálezoch '
+              'o diagnostike a o dôkazoch) sú kozmetika a CodeRabbit ich sám označil za nepotvrdené. Vetva 153 sa zlúčila bez nich.',
+         dec=None, src='vetva 153'),
 ]
 
 NTASKS = [
