@@ -1,13 +1,15 @@
 import { chromium, type FullConfig } from '@playwright/test';
 import { refreshStorageState } from './support/refreshStorageState';
 import { startSessionKeeper } from './support/sessionKeeper';
+import { createSessionDiagnostics } from './support/session-diagnostics';
+import { captureWithin } from './support/evidence-deadline';
 
 const REQUIRED_ENV = ['E2E_TEST_EMAIL', 'E2E_TEST_PASSWORD'] as const;
 
 // Prihlási sa RAZ cez skutočný formulár (CSRF si appka rieši sama) a uloží
 // storage state, z ktorého štartujú všetky testy. Údaje idú len z prostredia
 // a nesmú skončiť v žiadnom výstupe — preto tu nebeží trace ani screenshoty
-// a text chyby sa pred vypísaním čistí. Pri zlyhaní sa neskúša znova: backend
+// a pri chybe sa vypíše len pevný výsledok, nikdy text formulára. Pri zlyhaní sa neskúša znova: backend
 // po 5 neúspešných pokusoch za 15 min účet dočasne zamkne.
 export default async function globalSetup(config: FullConfig) {
   const missing = REQUIRED_ENV.filter((name) => !process.env[name]);
@@ -39,12 +41,8 @@ export default async function globalSetup(config: FullConfig) {
     ]);
 
     if (outcome !== 'dashboard') {
-      const alerts = await loginCard.getByRole('alert').allInnerTexts().catch(() => []);
-      const detail = alerts.join(' | ').split(email).join('***').split(password).join('***');
       throw new Error(
-        `Prihlásenie zlyhalo (${outcome}) na ${new URL(page.url()).pathname}` +
-          (detail ? ` — hláška formulára: ${detail}` : '') +
-          '. Skontroluj údaje v .env.e2e.',
+        `Prihlásenie zlyhalo (${outcome}). Skontroluj údaje v .env.e2e.`,
       );
     }
 
@@ -56,10 +54,19 @@ export default async function globalSetup(config: FullConfig) {
   // Prihlásenie platí 15 minút a jeho obnova je jednorazová, takže bez strážcu by po približne 15 minútach všetky testy
   // štartovali s neplatným prihlásením (nález 202). Strážca ho počas behu obnovuje a súbor prepisuje.
   const seconds = Number(process.env.E2E_SESSION_KEEPER_SECONDS);
+  const diagnostics = await captureWithin(() => createSessionDiagnostics(storageState as string), 1000);
   const keeper = startSessionKeeper({
     storageStatePath: storageState as string,
     intervalMs: Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : undefined,
-    refresh: () => refreshStorageState({ baseURL: baseURL as string, storageStatePath: storageState as string }),
+    diagnostics: diagnostics ?? undefined,
+    refresh: () => refreshStorageState({
+      baseURL: baseURL as string,
+      storageStatePath: storageState as string,
+      onResponseStatus: (status) => diagnostics?.record({ kind: 'refresh-response', status }),
+    }),
   });
-  return () => keeper.stop();
+  return async () => {
+    await keeper.stop();
+    if (diagnostics) await captureWithin(() => diagnostics.flush(), 1000);
+  };
 }

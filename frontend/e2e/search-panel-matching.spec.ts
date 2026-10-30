@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/diagnostic-test';
 import { initializeSearchContext, openInitialSearch } from './support/search-country-scroll';
 import {
   configurePanel, descriptionOnlyFixture, expectPanelParity, searchPanelEvidence, viewerQuery,

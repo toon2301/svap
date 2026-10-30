@@ -1,6 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from './support/diagnostic-test';
 import { gotoDashboardHome, historyLength, mainInstance, recordMainInstance } from './support/dashboard';
-import { observePage, reportFailureEvidence } from './support/page-activity';
+import { observePage } from './support/page-activity';
 import { waitForSearchSettled } from './support/search-settled';
 
 // Run against Railway AFTER deployment. Reuse existing content; never create/edit cards or watches.
@@ -52,11 +52,6 @@ for (const theme of ['light', 'dark'] as const) {
       }, theme);
       await recordMainInstance(page);
       observePage(page);
-    });
-
-    // Pri páde vypíše požiadavky a stav stránky bez osobných údajov (trace, screenshot a video sú v tomto špece vypnuté).
-    test.afterEach(async ({ page }, testInfo) => {
-      await reportFailureEvidence(page, testInfo);
     });
 
     for (const path of ['/search?q=te', '/search?q=te&tab=users', '/search?q=te&tab=offers&type=offer&price_min=5']) {

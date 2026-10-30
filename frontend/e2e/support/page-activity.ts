@@ -1,8 +1,8 @@
 import type { Page, Request, TestInfo } from '@playwright/test';
+import { captureWithin } from './evidence-deadline';
+import { diagnosticMethod, diagnosticPath, diagnosticQuery, diagnosticTitle } from './diagnostic-identifiers';
 import {
   formatEvidence,
-  normalizePath,
-  queryNames,
   type ActiveElement,
   type ActivityEntry,
   type PageSnapshot,
@@ -15,6 +15,7 @@ import {
 
 const OBSERVED_TYPES = new Set(['document', 'fetch', 'xhr']);
 const SEARCH_PATH_PREFIXES = ['/api/auth/search', '/api/auth/dashboard/search'];
+const SNAPSHOT_BUDGET_MS = 1000;
 
 /** Či požiadavka patrí do dôkazov: navigácia dokumentu, volanie API alebo načítanie dát stránky (`_rsc`). */
 function isRelevant(request: Request): boolean {
@@ -89,9 +90,9 @@ export class PageActivity {
     if (!isRelevant(request)) return;
     const url = new URL(request.url());
     this.entries.set(request, {
-      method: request.method(),
-      path: normalizePath(url.pathname),
-      query: queryNames(url.search),
+      method: diagnosticMethod(request.method()),
+      path: diagnosticPath(url.pathname),
+      query: diagnosticQuery(url.search),
       startedAt: Date.now() - this.startedAt,
       durationMs: null,
       status: null,
@@ -141,18 +142,18 @@ export class PageActivity {
 
   /** Zostaví blok dôkazov; stav stránky je `null`, keď sa stránka zavrela alebo neodpovedá. */
   async report(title: string, project: string): Promise<string> {
-    let snapshot: PageSnapshot | null = null;
     let url = 'n/a';
     try {
-      snapshot = await this.page.evaluate(readPageSnapshot);
       const current = new URL(this.page.url());
-      url = `${normalizePath(current.pathname)}${current.search ? ` [${queryNames(current.search)}]` : ''}`;
+      url = `${diagnosticPath(current.pathname)}${current.search ? ` [${diagnosticQuery(current.search)}]` : ''}`;
     } catch {
-      /* Pád mohol zhodiť aj stránku; dôkazy o požiadavkách sa vypíšu aj tak. */
+      /* Aj pri neplatnej adrese zostanú zachované bezpečné dôkazy o sieti. */
     }
+    // Ohraničené je iba čítanie diagnostiky, nie pôvodná asercia ani sieťová požiadavka.
+    const snapshot = await captureWithin(() => this.page.evaluate(readPageSnapshot), SNAPSHOT_BUDGET_MS);
     return formatEvidence({
-      title,
-      project,
+      title: diagnosticTitle(title),
+      project: ['webkit-desktop', 'webkit-mobile', 'chromium-desktop'].includes(project) ? project : 'other',
       elapsedMs: Date.now() - this.startedAt,
       url,
       entries: Array.from(this.entries.values()),
@@ -176,11 +177,17 @@ export function observePage(page: Page): PageActivity {
 }
 
 /** Do `afterEach`: pri páde alebo vypršaní času vypíše dôkazy a pripojí ich k testu. Úspešné a preskočené testy ignoruje. */
-export async function reportFailureEvidence(page: Page, testInfo: TestInfo): Promise<void> {
-  if (testInfo.status === testInfo.expectedStatus) return;
+export async function reportFailureEvidence(page: Page, testInfo: TestInfo, sessionEvidence = ''): Promise<void> {
+  if (testInfo.status === 'skipped' || testInfo.status === testInfo.expectedStatus) return;
   const activity = observed.get(page);
   if (!activity) return;
-  const text = await activity.report(testInfo.titlePath.join(' › '), testInfo.project.name);
-  console.log(text);
-  await testInfo.attach('failure-evidence', { body: text, contentType: 'text/plain' });
+  try {
+    const pageEvidence = await activity.report(testInfo.titlePath.join(' › '), testInfo.project.name);
+    const text = sessionEvidence ? `${pageEvidence}\n${sessionEvidence}` : pageEvidence;
+    // Zlyhanie jedného diagnostického výstupu nesmie zablokovať druhý ani prekryť pôvodný pád.
+    try { console.log(text); } catch { /* Bez surového textu diagnostickej chyby. */ }
+    await captureWithin(() => testInfo.attach('failure-evidence', { body: text, contentType: 'text/plain' }), 1000);
+  } catch {
+    try { console.log('[E2E-EVIDENCE-UNAVAILABLE] reason=collection-failed'); } catch { /* Iba best-effort. */ }
+  }
 }
