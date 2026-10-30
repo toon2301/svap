@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support/diagnostic-test';
 import { bottomNav, gotoDashboardHome, sideNav } from './support/dashboard';
-import { observePage, reportFailureEvidence } from './support/page-activity';
+import { observePage } from './support/page-activity';
 import { initializeSearchContext, isPanelSearch } from './support/search-country-scroll';
 import {
   measureReturn,
@@ -54,9 +54,7 @@ test.describe('Search panel visibility and prompt profile returns', () => {
     });
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    // Pri páde vypíše požiadavky a stav stránky bez osobných údajov (trace, screenshot a video sú v tomto špece vypnuté).
-    await reportFailureEvidence(page, testInfo);
+  test.afterEach(() => {
     expect(attemptedWrites, 'Navigation tests must not write content or account preferences').toEqual([]);
   });
 

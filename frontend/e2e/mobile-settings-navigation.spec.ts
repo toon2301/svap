@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/diagnostic-test';
 
 import { gotoDashboardHome, pathOf, recordMainInstance, topBarBack } from './support/dashboard';
 

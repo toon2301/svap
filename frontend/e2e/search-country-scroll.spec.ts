@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/diagnostic-test';
 import { sideNav } from './support/dashboard';
-import { observePage, reportFailureEvidence } from './support/page-activity';
+import { observePage } from './support/page-activity';
 import {
   DIAGNOSTICS_LABEL,
   diagnosticValue,
@@ -45,9 +45,7 @@ test.describe('OW-18 independent search country and OW-19 result return position
     });
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    // Pri páde vypíše požiadavky a stav stránky bez osobných údajov (trace, screenshot a video sú v tomto špece vypnuté).
-    await reportFailureEvidence(page, testInfo);
+  test.afterEach(() => {
     expect(attemptedWrites, 'Search regressions must not write content, settings, likes, hints, requests, or messages')
       .toEqual([]);
   });

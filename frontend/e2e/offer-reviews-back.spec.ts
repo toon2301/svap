@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from './support/diagnostic-test';
 
 import {
   MAIN,

@@ -10,6 +10,8 @@ import type { StoredBrowserState } from './sessionKeeper';
 export async function refreshStorageState(options: {
   baseURL: string;
   storageStatePath: string;
+  /** Len HTTP stav; nesmie zmeniť výsledok požiadavky ani vracať telo odpovede. */
+  onResponseStatus?: (status: number) => void;
 }): Promise<StoredBrowserState> {
   const context = await request.newContext({
     baseURL: options.baseURL,
@@ -21,6 +23,7 @@ export async function refreshStorageState(options: {
     const response = await context.post(REFRESH_PATH, {
       headers: buildRefreshHeaders(options.baseURL, csrfToken),
     });
+    try { options.onResponseStatus?.(response.status()); } catch { /* Pozorovateľ nemení obnovu. */ }
     if (!response.ok()) {
       throw new Error(`HTTP ${response.status()}`);
     }

@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from './support/diagnostic-test';
 import sk from '../messages/sk.json';
 import cs from '../messages/cs.json';
 import en from '../messages/en.json';

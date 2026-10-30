@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type Request, type Response } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Request, type Response } from './support/diagnostic-test';
 import { bottomNav, gotoDashboardHome, sideNav } from './support/dashboard';
 
 const DIAGNOSTICS = 'Diagnostika vyhľadávania';
