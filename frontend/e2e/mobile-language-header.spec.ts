@@ -6,6 +6,7 @@ import de from '../messages/de.json';
 import pl from '../messages/pl.json';
 import hu from '../messages/hu.json';
 import { pathOf } from './support/dashboard';
+import { expectAppPath, readOwnProfilePaths } from './support/own-profile-fixture';
 
 // Real Railway routes only. Language/theme changes remain in this isolated browser's storage.
 // Do not create test accounts, modify cards, or publish profile/hint changes.
@@ -30,24 +31,6 @@ function mobileTopBar(page: Page): Locator {
   return page.locator('div.fixed.top-0.left-0.right-0').filter({
     has: page.locator('div.grid.h-12'),
   });
-}
-
-/** Return only a valid own identifier; never expose the authentication/profile response. */
-async function ownProfilePath(page: Page): Promise<string> {
-  await page.goto('/dashboard');
-  await expect(page.getByTestId('feed-list')).toBeVisible();
-  const own = await page.evaluate(async () => {
-    const response = await fetch('/api/auth/me/', { credentials: 'include' });
-    const data = await response.json().catch(() => null);
-    const slug = typeof data?.slug === 'string' && /^[A-Za-z0-9_-]+$/.test(data.slug)
-      ? data.slug : null;
-    const id = Number.isSafeInteger(data?.id) && data.id > 0 ? data.id : null;
-    return { status: response.status, identifier: slug ?? (id === null ? null : String(id)) };
-  });
-  if (own.status !== 200 || own.identifier === null) {
-    throw new Error(`Reading the own-profile route failed: HTTP ${own.status}.`);
-  }
-  return `/dashboard/users/${encodeURIComponent(own.identifier)}`;
 }
 
 /** Set initial browser preferences without overriding a later user language choice on reload. */
@@ -126,14 +109,15 @@ for (const locale of LOCALES) {
         test(`mobile: ${entry} has one centered title, no profile shortcut, and six choices`, async ({ page, isMobile }) => {
           test.skip(!isMobile, 'The mobile header and desktop detail are different layouts.');
           await page.setViewportSize({ width: 320, height: 640 });
-          const route = entry === 'standalone' ? '/dashboard/language' : `${await ownProfilePath(page)}/language`;
+          const route = entry === 'standalone' ? '/dashboard/language'
+            : `${(await readOwnProfilePaths(page)).canonical}/language`;
           await page.goto(route);
           await expectMobileLanguage(page, locale);
           await expect.poll(() => page.locator('html').evaluate((html) => html.classList.contains('dark')))
             .toBe(theme === 'dark');
           await page.reload();
           await expectMobileLanguage(page, locale);
-          await expect(page).toHaveURL(new RegExp(`${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?$`));
+          await expectAppPath(page, route, RAILWAY_ORIGIN);
         });
       }
 
@@ -182,7 +166,7 @@ for (const theme of ['light', 'dark'] as const) {
   test(`mobile: ${theme} language app Back and browser Back preserve the settings/profile flow`, async ({ page, isMobile }) => {
     test.skip(!isMobile, 'Real mobile settings navigation.');
     await setInitialPreferences(page, 'sk', theme);
-    const profilePath = await ownProfilePath(page);
+    const profilePath = (await readOwnProfilePaths(page)).canonical;
     await page.goto(profilePath);
     await mobileTopBar(page).getByRole('button', { name: sk.common.menu, exact: true }).tap();
     await expect.poll(() => pathOf(page)).toBe('/dashboard/settings');
@@ -199,7 +183,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect.poll(() => pathOf(page)).toBe('/dashboard/settings');
     await expect(languageRow).toBeVisible();
     await page.getByRole('button', { name: 'Zatvoriť', exact: true }).filter({ visible: true }).tap();
-    await expect.poll(() => pathOf(page)).toBe(profilePath);
+    await expectAppPath(page, profilePath, RAILWAY_ORIGIN);
     await expect(mobileTopBar(page).getByRole('button', { name: sk.common.menu, exact: true })).toBeVisible();
   });
 }
