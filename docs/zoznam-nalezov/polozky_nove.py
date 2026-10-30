@@ -56,16 +56,17 @@ NEW_ITEMS = [
     dict(n=182, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          what='PR #191 / vetva `134-diag`: len diagnostika, nikdy nezlúčiť; po vyriešení 180 uzavrieť a vetvu zmazať.',
          note='Vetva sa maže len na pokyn používateľa.', dec=None, src='séria Upozornenia'),
-    dict(n=183, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľné knižnice (backend): zostáva Django 5.2',
+    dict(n=183, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľné knižnice (backend): zostáva protobuf (183c) a pytest',
          what='Backend: `pip-audit` celého prostredia (aj tranzitívne balíky) hlásil 191 záznamov v 14 balíkoch (prvý sken 26. 10. bral len '
               'pripnuté balíky: 180 záznamov). Časť 183a (vetva 143, 27. 10.) je hotová: Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
-              '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b sa robí v dvoch krokoch: nastavenia úložísk '
-              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209; na Djangu 4.2 sa správanie nemení), samotné povýšenie na Django 5.2 s DRF 3.18.3 '
-              'je vetva 154. Zostáva: Django 4.2.30 (9 záznamov), Twisted 26.4.0 (6), DRF 3.17.2 (3), protobuf 4.25.9 (2) a pytest 8.3.2 (2, len vývoj).',
+              '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b je hotová v dvoch krokoch: nastavenia úložísk '
+              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, čaká na '
+              'zlúčenie; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Zostáva: protobuf 4.25.9 (2 záznamy, časť 183c) a '
+              'pytest 8.3.2 (2, len vývoj). Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama, takže jeho 6 záznamov zmizlo.',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
-              'Čisté riešenie je 183b (pred ostrým štartom): samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.2 alebo novším (3.18.0 a 3.18.1 '
+              'Riešenie 183b (vetva 154): samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.3 (3.18.0 a 3.18.1 '
               'ešte neopravujú nič; všetky 3 záznamy DRF majú opravu až v 3.18.2). Dva z nich sú DoS bez prihlásenia na verejných endpointoch '
               '(hlavička `Accept` a netextový `charset` v `Content-Type`), tretí sa týka DRF tokenov, ktoré aplikácia nepoužíva, prihlasuje len JWT. '
               'Pred ním bolo treba presunúť `STATICFILES_STORAGE` a `DEFAULT_FILE_STORAGE` do `STORAGES`: Django 5.1+ ich ticho ignoruje, '
@@ -75,19 +76,20 @@ NEW_ITEMS = [
               'a stráži ho `tests/test_production_settings_storages.py` (načíta produkčné nastavenia v samostatnom procese a zakáže staré nastavenia) '
               'spolu s `tests/test_messaging_storage_selection.py` (výber súkromného úložiska fotiek správ, ktorý doteraz nemal test). Django 4.2 '
               'odvodzuje `STORAGES` zo starých nastavení, preto je súkromné úložisko správ (ACL private, podpísané adresy) v produkcii aktívne už dnes '
-              'a po presune ostáva rovnaké. Zvyšok 183b (vetva 154): Django 5.2 vyžaduje PostgreSQL 14 a novší (Railway má 17), prihlásenie je asi '
+              'a po presune ostáva rovnaké. Povýšenie (vetva 154): Django 5.2 vyžaduje PostgreSQL 14 a novší (Railway má 17), prihlásenie je asi '
               '1,7-krát náročnejšie na procesor (hashovanie hesiel 1 000 000 iterácií namiesto 600 000; staré heslá sa prepíšu pri prihlásení a Django 4.2 '
-              'overí aj nový hash, takže rollback je bezpečný) a DRF 3.18 vyžaduje Django 5.2, preto sa povyšujú spolu. '
+              'overí aj nový hash, takže rollback je bezpečný; dôsledok pre CI je v náleze 220) a DRF 3.18 vyžaduje Django 5.2, preto sa povyšujú spolu. '
               '183c: `google-cloud-vision` 3.4.5 → 3.16.0 kvôli protobuf (treba overiť skutočné volania SafeSearch). '
               'Twisted: päť zo šiestich hlásení je v moduloch, ktoré aplikácia nepoužíva (IMAP, telnet, IRC, XMPP); šieste sa týka HTTP servera v daphne '
-              '(holý CR/LF v hlavičke, request smuggling za proxy). Opravy sú zatiaľ len v 26.10.0rc1 (IMAP regex nemá opravu vôbec): počkať na finálne '
-              'vydanie. pytest 8 → 9 je vývojový balík (spolu s pytest-django a pytest-cov). Pillow 13 vyžaduje Python 3.11: CI sa prepol z 3.10, '
+              '(holý CR/LF v hlavičke, request smuggling za proxy). Opravy prišli vo finálnom 26.10.0 (30. 10. 2026 ho už berie čerstvá inštalácia a '
+              '`pip-audit` pri ňom nehlási nič); `daphne` Twisted nepripína, preto by sa dala doplniť dolná hranica `Twisted>=26.10.0` (zatiaľ len '
+              'návrh, mimo vetvy 154). pytest 8 → 9 je vývojový balík (spolu s pytest-django a pytest-cov). Pillow 13 vyžaduje Python 3.11: CI sa prepol z 3.10, '
               '`backend/Dockerfile` je na 3.11 od začiatku a lokálne prostredie treba mať tiež na 3.11. Presne na 3.11: `psycopg2-binary==2.9.7` '
               'má hotové balíky najviac pre Python 3.11, takže na 3.12 a vyššom by sa musel najprv povýšiť aj on. Python 3.11 má podporu do '
               '10/2027 (Google knižnice na to už upozorňujú), prechod na 3.12+ spolu s povýšením `psycopg2-binary` preto patrí do plánu. Overené na vetve 143: celá backend sada '
               '(1955 testov, aj v CI na PR #203), porovnanie skutočných obrazových funkcií so starým Pillow (146 prípadov, rovnaké výsledky aj pixely), migrácie '
               '(nové sú len `token_blacklist.0013` a `authtoken.0004`, obe bez zmeny schémy), tokeny platia v oboch smeroch (nasadenie aj rollback). '
-              'Spustené 26. 10. 2026, časť 183a 27. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb.',
+              'Spustené 26. 10. 2026, časť 183a 27. 10. 2026, časť 183b (vetva 154) 30. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb.',
          dec='ROZHODNUTIE R8', src='kontrola 26. 10. 2026'),
     dict(n=184, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľný `next` (frontend)',
          what='Frontend: `npm audit --omit=dev` hlásil 19 balíkov (2 kritické, 10 vysokých). Časť 184a (vetva 142, PR #202, 27. 10.) je zlúčená: '
@@ -270,16 +272,16 @@ NEW_ITEMS = [
               'budúcna. Aplikácia sa na viacerých miestach spolieha na zámky riadkov (nález 185 uvádza 75× `select_for_update`) a práve tie SQLite '
               'neskúša. Návrh: do CI pridať službu PostgreSQL (`services: postgres`) a pustiť sadu s `DATABASE_URL`, buď namiesto SQLite, alebo '
               'ako druhý beh (lokálne asi 14,5 min oproti 13 min na SQLite). Najlepšie pred povýšením na Django 5.2 (vetva 154), aby ho CI overilo na '
-              'rovnakej databáze ako produkcia; ak sa 154 robí skôr, PostgreSQL je pre ňu overený lokálne (celá sada na Djangu 5.2.18 a PostgreSQL 16 '
-              'prešla 29. 10.), takže 212 môže nasledovať hneď po ňom.',
+              'rovnakej databáze ako produkcia; vetva 154 sa urobila skôr, preto je PostgreSQL pre ňu overený lokálne (celá sada na Djangu 5.2.18 a '
+              'PostgreSQL 16 prešla 29. a znova 30. 10.) a 212 môže nasledovať hneď po nej.',
          dec=None, src='vetva 152'),
     dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
          what='Django 5.1 nahradilo argument `check` v `CheckConstraint` argumentom `condition` a Django 6.0 `check` odstráni. Aplikácia používa `check=` '
               'na 21 miestach v siedmich súboroch modelov (`accounts/models/offer_watches.py` 9×, `reports.py` 4×, `bug_reports.py` 4×, '
               '`feed_posts/post.py`, `profile_likes.py`, `profile_visits.py` a `user_blocks.py` po 1×) a na 27 miestach v 16 migráciách. Celá '
               'backendová sada na Djangu 5.2 z toho vypíše 48 varovaní `RemovedInDjango60Warning`.',
-         note='Na Djangu 5.2 (LTS do 04/2028) nič nepadá, preto to nie je naliehavé; treba to urobiť pred skokom na Django 6.0. Premenovať sa dá až po '
-              'povýšení (Django 4.2 argument `condition` nepozná), teda po vetve 154. Týka sa aj starých migrácií: v nich ide len o názov '
+         note='Na Djangu 5.2 (LTS do 04/2028) nič nepadá, preto to nie je naliehavé; treba to urobiť pred skokom na Django 6.0. Premenovať sa dá od '
+              'povýšenia na Django 5.2 (vetva 154; Django 4.2 argument `condition` nepoznalo). Týka sa aj starých migrácií: v nich ide len o názov '
               'argumentu a schéma sa nemení; po zmene overiť `makemigrations --check`, že nevznikne nová migrácia. Zistené pri mapovaní 183b.',
          dec=None, src='vetva 152'),
     dict(n=214, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
@@ -326,6 +328,16 @@ NEW_ITEMS = [
               'už inicializovanom `authBootstrapSnapshot`) neplatí. Dve štylistické poznámky k `ZOZNAM.md` (rozdeliť dlhé súvetia pri nálezoch '
               'o diagnostike a o dôkazoch) sú kozmetika a CodeRabbit ich sám označil za nepotvrdené. Vetva 153 sa zlúčila bez nich.',
          dec=None, src='vetva 153'),
+    dict(n=221, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`swaply/test_settings.py` sa nikde nepoužíva',
+         what='Súbor `backend/swaply/test_settings.py` (rýchly hasher MD5, e-mail do pamäte, pamäťová cache, úprava limitov, SQLite v pamäti) '
+              'nepoužíva ani `pytest.ini` (`DJANGO_SETTINGS_MODULE = swaply.settings`), ani CI; spomína sa len v súhrnoch `REVIEW_SUMMARY.md` '
+              'a `FINAL_RESULTS.md`, v zozname vynechaných súborov `.coveragerc` a vo výnimke v `pyproject.toml`. Jeho komentár „Use fast '
+              'password hasher for tests“ vyvoláva dojem, že testy bežia rýchlo, a práve preto zostalo spomalenie od Djanga 5.2 (nález 220) '
+              'nepovšimnuté.',
+         note='Návrh: buď prepnúť `pytest.ini` na tento modul (zmení sa viac než hasher: cache, limity, e-mail, logovanie, takže treba '
+              'prejsť celú sadu), alebo súbor zmazať a odstrániť jeho zmienky (`.coveragerc`, výnimka v `pyproject.toml`). Mazanie len na '
+              'pokyn používateľa. Rýchly hasher je už zachránený v `backend/conftest.py` (nález 220). Zistené pri vetve 154.',
+         dec=None, src='vetva 154'),
 ]
 
 NTASKS = [
