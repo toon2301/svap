@@ -27,6 +27,7 @@ export function isOwnProfileIdentifier(
  * to podstránka vlastného profilu (`/dashboard/users/7/language` → `/dashboard/users/<slug>/language`).
  * Podstránku zachová len pri identifikátore, ktorý patrí tomuto používateľovi; pri inom ostáva holý slug,
  * aby cudzie ID nezískalo podstránku vlastného profilu.
+ * Číselné ID normalizuje rovnako ako profilová stránka, vrátane úvodných núl.
  */
 export function canonicalOwnProfilePath(slug: string, userId: number, currentPath: string): string {
   const base = `/dashboard/users/${slug}`;
@@ -34,6 +35,7 @@ export function canonicalOwnProfilePath(slug: string, userId: number, currentPat
   if (!match) return base;
 
   const [, identifier, subpage] = match;
-  const isOwnIdentifier = identifier === slug || identifier === String(userId);
+  const isOwnIdentifier = identifier === slug
+    || (/^\d+$/.test(identifier) && Number(identifier) === userId);
   return isOwnIdentifier && subpage && OWN_PROFILE_SUBPAGES.includes(subpage) ? `${base}/${subpage}` : base;
 }

@@ -65,9 +65,9 @@ beforeEach(() => {
 });
 
 describe('číselné ID vlastného účtu v adrese s podstránkou', () => {
-  it('otvorí jazykovú podstránku a pri kanonizácii zachová /language aj query a fragment', async () => {
-    const state = renderOwnProfile('/dashboard/users/7/language?tab=posts#sekcia', {
-      identifier: '7',
+  it.each(['7', '007', '0007'])('pre ID %s otvorí jazykovú podstránku a zachová /language aj query a fragment', async (identifier) => {
+    const state = renderOwnProfile(`/dashboard/users/${identifier}/language?tab=posts#sekcia`, {
+      identifier,
       rightItem: 'language',
     });
 
@@ -128,11 +128,12 @@ describe('adresy, ktoré sa nemajú zmeniť', () => {
     expect(window.location.pathname).toBe('/dashboard/users/moj.slug/language');
   });
 
-  it('cudzie číselné ID nezíska jazykovú podstránku vlastného profilu', async () => {
-    const state = renderOwnProfile('/dashboard/users/99/language', { identifier: '99', rightItem: 'language' });
+  it.each(['99', '099', '00099'])('cudzie číselné ID %s nezíska jazykovú podstránku vlastného profilu', async (identifier) => {
+    const foreignPath = `/dashboard/users/${identifier}/language`;
+    const state = renderOwnProfile(foreignPath, { identifier, rightItem: 'language' });
 
     // Adresa sa pri tomto (umelom) vstupe môže prepísať na vlastný profil, ale nikdy nie na jeho podstránku.
-    await waitFor(() => expect(window.location.pathname).not.toBe('/dashboard/users/99/language'));
+    await waitFor(() => expect(window.location.pathname).not.toBe(foreignPath));
     expect(window.location.pathname).toBe('/dashboard/users/moj.slug');
     expect(state.setActiveRightItem).not.toHaveBeenCalled();
     expect(state.setIsRightSidebarOpen).not.toHaveBeenCalled();
