@@ -12,6 +12,7 @@ import { type UseDashboardStateResult } from './useDashboardState';
 import { supportsSkillHighlight } from './useDashboardHighlighting';
 import { dashboardSectionPath, isSameDashboardPath } from '../components/dashboardRoutes';
 import { fetchUserProfile, startViewedUserResolution } from './viewedUserResolution';
+import { canonicalOwnProfilePath, isOwnProfileIdentifier } from './ownProfileAddress';
 
 export interface DashboardUserProfileProps {
   viewedUserId: number | null;
@@ -231,7 +232,8 @@ export function useDashboardUserProfile({
 
     if (!initialProfileSlug) return;
 
-    if (user.slug && user.slug === initialProfileSlug) {
+    // Vlastný profil označuje slug aj číselné ID (staré odkazy); inak by sa podstránka z ID neotvorila.
+    if (isOwnProfileIdentifier(user, initialProfileSlug, initialViewedUserId)) {
       initialRightItemAppliedRef.current = true;
 
       if (initialRightItem === 'edit-profile') {
@@ -278,6 +280,7 @@ export function useDashboardUserProfile({
     user,
     activeModule,
     initialProfileSlug,
+    initialViewedUserId,
     initialRightItem,
     setActiveModule,
     setIsRightSidebarOpen,
@@ -340,7 +343,8 @@ export function useDashboardUserProfile({
       
       // Ak je aktuálny identifikátor číslo (ID) a máme slug
       if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== user.slug) {
-        const newUrl = isEditMode ? expectedPathWithEdit : expectedPath;
+        // Podstránka (jazyk, účet, súkromie) patrí vlastnému profilu aj po výmene ID za slug.
+        const newUrl = isEditMode ? expectedPathWithEdit : canonicalOwnProfilePath(user.slug, user.id, currentPath);
         if (typeof window !== 'undefined') {
           window.history.replaceState(window.history.state, '', profileUrlKeepingQuery(newUrl));
         }
