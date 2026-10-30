@@ -327,7 +327,7 @@ DONE_SINCE = [
               'zhodili. Konečný strom vetvy: SQLite 1 987 prešlo a 10 preskočených za 2 min 8 s, PostgreSQL 16 '
               '1 995 prešlo a 2 preskočené za 3 min 9 s. Skutočný čas v CI (GitHub, krok „Run backend tests“ na SQLite): 11 min 30 s na '
               'Djangu 4.2.30 (beh po zlúčení PR #213, `main` `9bf1142d`) a 1 min 40 s na Djangu 5.2.18 s rýchlym hasherom (beh po zlúčení '
-              'PR #214, `main` `e3ed0f42`); celý job `checks` 15 min 54 s → 5 min 19 s.'),
+              'PR #214, `main` `e3ed0f42`); celý job `checks` 15 min 52 s → 5 min 19 s.'),
     dict(n=212, vetva='157', pr=None, zlucene=False,
          text='HOTOVÉ (skutočný beh na PostgreSQL 17 ukáže až prvé CI na PR): CI testovalo backend len na SQLite, no produkcia beží na PostgreSQL 17 '
               '(Railway). Osem testov so zámkami riadkov (`select_for_update`: limit ponúk 1, značky príspevkov 2, blokovanie žiadostí 1, blokovanie '
