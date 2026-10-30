@@ -61,8 +61,8 @@ NEW_ITEMS = [
               'pripnuté balíky: 180 záznamov). Časť 183a (vetva 143, 27. 10.) je hotová: Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
               '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b je hotová v dvoch krokoch: nastavenia úložísk '
-              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, čaká na '
-              'zlúčenie; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Zostáva: protobuf 4.25.9 (2 záznamy, časť 183c) a '
+              'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, zlúčená v '
+              'PR #214; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Zostáva: protobuf 4.25.9 (2 záznamy, časť 183c) a '
               'pytest 8.3.2 (2, len vývoj). Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama, takže jeho 6 záznamov zmizlo.',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
@@ -170,11 +170,11 @@ NEW_ITEMS = [
               '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
               'nepozorovane a odhalila ho až jednorazová kontrola 26. 10.',
          note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt` a '
-              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové 183b, 183c '
-              'a zvyšok 184 (`next` 14 → 16), audit hlási známe zraniteľnosti (backend 22 záznamov: Django, Twisted, DRF, protobuf, pytest; frontend `next`) pri každom '
+              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové 183c '
+              'a zvyšok 184 (`next` 14 → 16), audit hlási známe zraniteľnosti (backend 4 záznamy: protobuf ×2 a vývojový pytest ×2; frontend `next`) pri každom '
               'behu, takže opakované hlásenie samo o sebe neznamená novú zraniteľnosť. Workflow preto musí porovnávať výsledok so zoznamom známych '
               'výnimiek: ID záznamov vedené v repozitári (pri `pip-audit` priamo cez `--ignore-vuln <ID>`, pri `npm audit` porovnaním s uloženým '
-              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 183b“); upozorniť má len záznam, ktorý v zozname nie je. '
+              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 183c“); upozorniť má len záznam, ktorý v zozname nie je. '
               'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
          dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',

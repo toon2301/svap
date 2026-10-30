@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='30. 10. 2026',
-    kod='`main` `e3ed0f42` (po PR #214)',
+    kod='`main` `bd9131e6` (po PR #215)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -17,9 +17,9 @@ ZMENY = [
      'Vetva 157 (čaká na zlúčenie): nález 212 – CI beží backendovú sadu aj na PostgreSQL 17 (nový job `backend-postgres` súbežne s `checks`; '
      'osem testov so zámkami riadkov sa na SQLite preskakovalo a v CI nebežalo nikdy). Súčasne oprava nálezu 222 z Codexovej správy '
      '(číselná adresa vlastného profilu stratila podstránku `/language`; príčina: pravá položka sa otvárala len pri zhode slugu a kanonizácia '
-     'ID → slug zahodila podstránku): na pokyn majiteľa je kód na Codexovej vetve `e2e/profilove-adresy` (čaká na zlúčenie), záznam v zozname '
+     'ID → slug zahodila podstránku): na pokyn majiteľa je kód na Codexovej vetve `e2e/profilove-adresy` (zlúčená v PR #215), záznam v zozname '
      'je tu, aby sa dokumentácia nerozchádzala medzi dvoma vetvami. Nový otvorený nález 223 (občasné zlyhanie siete pri `GET /api/auth/me/` '
-     'počas prípravy E2E; príčina nepreukázaná, nič sa neopravuje). Vetva 154 je zlúčená (PR #214), `main` `e3ed0f42`.'),
+     'počas prípravy E2E; príčina nepreukázaná, nič sa neopravuje). Vetvy 154 (PR #214) a `e2e/profilove-adresy` (PR #215) sú zlúčené, `main` `bd9131e6`.'),
     ('30. 10. 2026',
      'Vetva 154 (čaká na zlúčenie): časť 183b nálezu 183 – backend sa povyšuje z Djanga 4.2.30 na 5.2.18 a z DRF 3.17.2 na 3.18.3 '
      '(v `backend/requirements.txt` sa menia dva riadky; DRF 3.18 vyžaduje Django 5.2, preto spolu). Pribudli dve poistky: test, že modely '
@@ -338,8 +338,8 @@ DONE_SINCE = [
               'Jest). Overené: YAML sa načíta a obsahuje oba joby; presný strom vetvy 157 prešiel lokálne na PostgreSQL 16 '
               '(CI používa 17): 1 995 prešlo a 2 preskočené za 4 min 19 s. GitHub runner a PostgreSQL 17 sa lokálne '
               'overiť nedali; prvý beh na PR je overenie.'),
-    dict(n=222, vetva='e2e/profilove-adresy', pr=None, zlucene=False,
-         text='HOTOVÉ (účinok na Railway potvrdí až beh Playwrightu): číselná adresa vlastného profilu `/dashboard/users/<id>/language` stratila '
+    dict(n=222, vetva='e2e/profilove-adresy', pr='#215', zlucene=True,
+         text='HOTOVÉ (zlúčené v PR #215; účinok na Railway potvrdí až beh Playwrightu): číselná adresa vlastného profilu `/dashboard/users/<id>/language` stratila '
               'jazykovú podstránku a skončila na základnom profile bez jazykovej hlavičky (hlásenie Codexa z 30. 10. 2026, `main` `e3ed0f42`, '
               'webkit-mobile, svetlý aj tmavý režim, 6 z 6 pokusov, špec `profile-numeric-language.spec.ts`). Príčina v '
               '`useDashboardUserProfile.tsx`: (1) počiatočná pravá položka (jazyk, účet, súkromie, úprava) sa otvárala len pri zhode slugu v adrese, '
@@ -352,6 +352,9 @@ DONE_SINCE = [
               f'`tsc` a `eslint` čisté, celý Jest na čistej kópii vetvy 518 sád a 7 973 testov prešlo; '
               f'v Chromiu s rozmermi iPhonu proti lokálnej kópii špec Codexa pred opravou zlyhal v oboch režimoch (rovnaký obraz ako v hlásení: '
               f'adresa na základnom profile, bez jazykovej hlavičky), po oprave prešli oba testy (2 z 2, vrátane F5). '
+              'Do tej istej vetvy pribudol pred zlúčením ešte commit `de91273f`: pomocník porovnáva číselné ID ako číslo, takže prejde aj adresa '
+              's úvodnými nulami (`/dashboard/users/007/language`), a testy pribudli pre vlastné ID `007` a `0007` a cudzie `099` a `00099`. '
+              'Testy hooku a pomocníka (4 súbory, 65 testov) prechádzajú aj na stave `main` `bd9131e6`. '
               'WebKit a Railway sa tu overiť nedali. Súvisiace, nehlásené a preto nezmenené: pri starom slugu v adrese '
               '(`/dashboard/users/<starý-slug>/language`) kanonizácia podstránku stále zahodí.'),
 ]
