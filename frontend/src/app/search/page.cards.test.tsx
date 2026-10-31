@@ -64,6 +64,10 @@ describe.each(['all', 'offers'] as const)('actual /search page %s cards', (tab) 
       expect(router.push).not.toHaveBeenCalled();
       expect(router.replace).not.toHaveBeenCalled();
     } else {
+      // jsdom nemá Tailwind: kým `useIsMobileState` nerozhodne (efekt po prvom vykreslení), je desktopová karta ešte v obale
+      // `hidden lg:block` a po rozhodnutí sa jej uzol vymení. React 19 ten efekt dobehne až pri ďalšom `act`, takže bez čakania
+      // by klik zasiahol zaniknutý uzol.
+      await waitFor(() => expect(document.querySelector('div.hidden.lg\\:block')).toBeNull());
       const front = screen.getByRole('button', { name: 'Páči sa mi to' }).closest('div.block')!;
       const wrapper = front.parentElement as HTMLElement;
       expect(within(wrapper).getAllByRole('button', { name: 'Otočiť' })).toHaveLength(2);

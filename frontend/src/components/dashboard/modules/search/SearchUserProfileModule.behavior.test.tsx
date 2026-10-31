@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { TextEncoder } from 'util';
+import { MessageChannel } from 'worker_threads';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import toast from 'react-hot-toast';
 
@@ -312,8 +313,8 @@ describe('SearchUserProfileModule – načítanie profilu', () => {
   });
 
   it('renders the loading text already in the very first render, before any effect runs', async () => {
-    // `react-dom/server` v jsdom potrebuje `TextEncoder`.
-    Object.assign(globalThis, { TextEncoder });
+    // `react-dom/server` v jsdom potrebuje `TextEncoder` a (od Reactu 19) aj `MessageChannel`.
+    Object.assign(globalThis, { TextEncoder, MessageChannel });
     // `render` z testovacej knižnice efekty hneď prebehne; `renderToString` ukáže presne prvé vykreslenie.
     const { renderToString } = await import('react-dom/server');
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});

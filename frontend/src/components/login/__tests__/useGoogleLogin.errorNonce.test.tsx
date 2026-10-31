@@ -46,7 +46,7 @@ async function advance(ms: number) {
 }
 
 beforeEach(() => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ doNotFake: ['queueMicrotask'] });
   jest.clearAllMocks();
   sessionStorage.clear();
   localStorage.clear();

@@ -12,7 +12,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostCard from '../FeedPostCard';
@@ -262,6 +262,21 @@ it('opens the window again after it was closed', async () => {
 
 
 describe('bežné zatvorenie okna z cudzieho profilu', () => {
+  // `history.back()` v jsdom dobehne až o kolo neskôr a React 19 vykreslí zatvorenie neskôr než React 18, takže „krok späť
+  // ešte beží" by sa dalo zachytiť len náhodou. Krok preto zadržíme a dokončíme ho až po skončení testu.
+  let backSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    backSpy = jest.spyOn(window.history, 'back').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    // Najprv odmountovať appku (nesmie reagovať na dokončený krok), potom krok dokončiť: odpojí poslucháča `popstate`.
+    cleanup();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    backSpy.mockRestore();
+  });
+
   /** Otvorí okno a vráti spôsob, akým ho test zatvorí. */
   async function openWindow() {
     renderApp();

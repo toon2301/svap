@@ -607,7 +607,7 @@ describe('useConversationsPaging', () => {
 
   describe('failed loadMore', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ doNotFake: ['queueMicrotask'] });
     });
 
     afterEach(() => {

@@ -52,7 +52,7 @@ async function failedAttempt() {
 }
 
 beforeEach(() => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ doNotFake: ['queueMicrotask'] });
   jest.clearAllMocks();
   sessionStorage.clear();
   localStorage.clear();

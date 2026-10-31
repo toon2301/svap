@@ -29,6 +29,11 @@ import { Providers } from '../providers';
 
 const MockedToaster = Toaster as unknown as jest.Mock;
 
+/** Props všetkých vykreslení Toastera; druhý argument funkcie komponentu sa medzi verziami Reactu líši (React 18: `{}`, React 19: `undefined`), preto sa nekontroluje. */
+function toasterRenders(): Array<Record<string, unknown>> {
+  return MockedToaster.mock.calls.map(([props]) => props as Record<string, unknown>);
+}
+
 // Helper: render + flush useEffect so mounted=true and portal appears
 async function renderProviders(children = <div />) {
   let result: ReturnType<typeof render>;
@@ -46,10 +51,7 @@ describe('Providers – Toaster configuration', () => {
 
   it('renderuje Toaster s containerClassName toast-modern', async () => {
     await renderProviders();
-    expect(MockedToaster).toHaveBeenCalledWith(
-      expect.objectContaining({ containerClassName: 'toast-modern' }),
-      expect.anything(),
-    );
+    expect(toasterRenders()).toContainEqual(expect.objectContaining({ containerClassName: 'toast-modern' }));
   });
 
   it('containerStyle má position fixed', async () => {
@@ -67,27 +69,18 @@ describe('Providers – Toaster configuration', () => {
   it('používa top-right na desktope', async () => {
     mockUseIsMobileState.mockReturnValue({ isMobile: false, isResolved: true });
     await renderProviders();
-    expect(MockedToaster).toHaveBeenCalledWith(
-      expect.objectContaining({ position: 'top-right' }),
-      expect.anything(),
-    );
+    expect(toasterRenders()).toContainEqual(expect.objectContaining({ position: 'top-right' }));
   });
 
   it('používa top-center na mobile', async () => {
     mockUseIsMobileState.mockReturnValue({ isMobile: true, isResolved: true });
     await renderProviders();
-    expect(MockedToaster).toHaveBeenCalledWith(
-      expect.objectContaining({ position: 'top-center' }),
-      expect.anything(),
-    );
+    expect(toasterRenders()).toContainEqual(expect.objectContaining({ position: 'top-center' }));
   });
 
   it('pred rozlíšením viewportu (isResolved=false) používa top-right', async () => {
     mockUseIsMobileState.mockReturnValue({ isMobile: true, isResolved: false });
     await renderProviders();
-    expect(MockedToaster).toHaveBeenCalledWith(
-      expect.objectContaining({ position: 'top-right' }),
-      expect.anything(),
-    );
+    expect(toasterRenders()).toContainEqual(expect.objectContaining({ position: 'top-right' }));
   });
 });

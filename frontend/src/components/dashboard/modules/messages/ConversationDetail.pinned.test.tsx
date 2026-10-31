@@ -180,7 +180,11 @@ describe('ConversationDetail pinned messages', () => {
       expect(listMessages).toHaveBeenNthCalledWith(2, 9, 100, 2);
     });
 
-    expect(await screen.findByText('Stara pripnuta sprava')).toBeInTheDocument();
+    // Pripnutá správa je vidieť dvakrát: v lište nad vláknom (hneď) a ako samotná správa v zozname (až po načítaní
+    // staršej strany). Čakáme na obe, nie na prvú, ktorá sa objaví – ich poradie závisí od časovania vykresľovania.
+    await waitFor(() => {
+      expect(screen.getAllByText('Stara pripnuta sprava')).toHaveLength(2);
+    });
     await waitFor(() => {
       expect(scrollIntoViewMock).toHaveBeenCalled();
     });
