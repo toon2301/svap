@@ -12,7 +12,7 @@ import type { VisualViewportBounds } from '../../../hooks/useVisualViewportBound
 export const OFFER_WATCH_PRICE_FIELD_SELECTOR = '[data-offer-watch-price-field]';
 
 type UseOfferWatchPriceFieldVisibilityOptions = {
-  scrollContainerRef: RefObject<HTMLElement>;
+  scrollContainerRef: RefObject<HTMLElement | null>;
   viewportBounds: VisualViewportBounds | null;
   padding?: number;
 };

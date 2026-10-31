@@ -10,7 +10,7 @@ def priloha_c(d):
     d.w('### C.1 Čo aplikácia potrebuje (zistené z repozitára)')
     d.w()
     d.tabulka(['Súčasť', 'Technológia', 'Poznámka'], [
-        ['Frontend', 'Next.js 14 (Node, `next start`), service worker',
+        ['Frontend', 'Next.js 16 a React 19 (Node, `next start`, zostavenie `--webpack`), service worker',
          'Podľa `next.config.js` Next preposiela `/api/*`, `/media/*` aj `/ws/*` na backend (`BACKEND_ORIGIN`, `BACKEND_WS_ORIGIN`). '
          'Pri `NEXT_PUBLIC_API_URL=/api` sa prehliadač pripája na WebSocket cez doménu frontendu, takže Next je v ceste aj pre WebSocket (viď 180).'],
         ['Backend HTTP', 'Django 5.2 LTS + DRF 3.18, gunicorn (2 workery × 4 vlákna)', 'Django 5.2 má podporu do 04/2028 (nález 183, vetva 154).'],

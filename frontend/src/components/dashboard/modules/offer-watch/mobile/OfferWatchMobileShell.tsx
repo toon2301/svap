@@ -10,8 +10,8 @@ type OfferWatchMobileShellProps = {
   title: string;
   onBack: () => void;
   backDisabled?: boolean;
-  initialFocusRef?: RefObject<HTMLButtonElement>;
-  contentRef?: RefObject<HTMLDivElement>;
+  initialFocusRef?: RefObject<HTMLButtonElement | null>;
+  contentRef?: RefObject<HTMLDivElement | null>;
   contentScrollable?: boolean;
   children: ReactNode;
 };

@@ -34,7 +34,7 @@ const sectionMotion = {
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-40px' },
-  transition: { duration: 0.55, ease: 'easeOut' },
+  transition: { duration: 0.55, ease: 'easeOut' as const },
 };
 
 function BulletList({ keys, t }: { keys: readonly string[]; t: (key: string, fallback?: string) => string }) {

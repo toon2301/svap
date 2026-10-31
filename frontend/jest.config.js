@@ -9,10 +9,14 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
+  // React 19 plánuje vlastné úlohy cez `queueMicrotask`; falošné časovače ho nesmú podvrhnúť, inak `jest.getTimerCount()` počíta aj interné úlohy Reactu.
+  fakeTimers: { doNotFake: ['queueMicrotask'] },
   // e2e/ patrí Playwrightu (npm run test:e2e), Jest ho nesmie zbierať
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/e2e/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // jsdom vyberá prehliadačový build `react-dom/server`, ktorý v React 19 vyžaduje `MessageChannel` (jsdom ho nemá); Node build ho nepotrebuje.
+    '^react-dom/server$': 'react-dom/server.node',
     '^@tsparticles/react$': '<rootDir>/src/__mocks__/@tsparticles/react.js',
     '^@tsparticles/slim$': '<rootDir>/src/__mocks__/@tsparticles/slim.js',
   },

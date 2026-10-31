@@ -1,15 +1,14 @@
 import Dashboard from '@/components/dashboard/Dashboard';
 
 interface UserPortfolioDetailDashboardPageProps {
-  params: {
+  params: Promise<{
     userId: string;
     portfolioId: string;
-  };
+  }>;
 }
 
-export default function UserPortfolioDetailDashboardPage({
-  params,
-}: UserPortfolioDetailDashboardPageProps) {
+export default async function UserPortfolioDetailDashboardPage(props: UserPortfolioDetailDashboardPageProps) {
+  const params = await props.params;
   const identifier = params.userId;
   const portfolioId = Number(params.portfolioId);
 

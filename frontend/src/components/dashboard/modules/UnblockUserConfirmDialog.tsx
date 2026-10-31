@@ -14,7 +14,7 @@ type UnblockUserConfirmDialogProps = {
 };
 
 type UnblockDialogBodyProps = {
-  cancelButtonRef: RefObject<HTMLButtonElement>;
+  cancelButtonRef: RefObject<HTMLButtonElement | null>;
   isSubmitting: boolean;
   onClose: () => void;
   onConfirm: () => void;

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 173 a úlohy na prípravu ostrého nasadenia (N1…).
+"""Nové nálezy od čísla 173 (úlohy na prípravu ostrého nasadenia N1… sú v `polozky_priprava.py`).
 
 `NEW_ITEMS` sú otvorené nálezy (po oprave sa odstránia a zapíšu do `stav.DONE_SINCE`). Nové nálezy dostanú vždy ďalšie
-voľné číslo, čísla sa nikdy nepoužívajú znova. `NTASKS` nie sú nálezy, preto majú vlastné číslovanie N1…; úloha bez
-kľúča `pkg` patrí do balíka „Príprava ostrého nasadenia“. Voliteľný kľúč `kratko` je krátky názov do časti „V skratke“.
+voľné číslo, čísla sa nikdy nepoužívajú znova. Voliteľný kľúč `kratko` je krátky názov do časti „V skratke“.
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -62,7 +61,7 @@ NEW_ITEMS = [
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
               '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b je hotová v dvoch krokoch: nastavenia úložísk '
               'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, zlúčená v '
-              'PR #214; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Časť 183c je hotová (vetva 158): '
+              'PR #214; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Časť 183c je hotová (vetva 158, zlúčená v PR #217): '
               '`google-cloud-vision` 3.4.5 → 3.16.0 vyžaduje protobuf od 6.33.5 (čerstvá inštalácia dá 7.36.2), takže hlásenie CVE-2026-0994 '
               'zmizlo (4 → 2 záznamy). Zostáva len `pytest` 8.3.2 (2 záznamy, len vývoj; oprava až v 9.0.3), preto sa nález presúva do skupiny '
               'po nasadení. Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama, takže jeho 6 záznamov zmizlo.',
@@ -86,9 +85,9 @@ NEW_ITEMS = [
               'takže pokazená knižnica by zamietla každé nahrávanie obrázka; preto pribudol test `swaply/test/test_vision_client_contract.py`, '
               'ktorý spúšťa skutočného klienta proti falošnému gRPC serveru (bez účtu a bez siete). Overené: čerstvé prostredie, `pip check` '
               'čistý, celá sada na SQLite (1 993 prešlo a 10 preskočených) aj na PostgreSQL 16 (2 001 prešlo a 2 preskočené), päť zámerných chýb test zachytil, nahratie obrázka '
-              'správy cez API proti falošnému serveru prešlo. Skutočné volanie serverov Google sa lokálne overiť nedá (potrebuje účet): po '
-              'nasadení treba nahrať bežnú fotku (produkcia je fail-closed, takže úspech znamená, že kontrola funguje), voliteľne '
-              '`python manage.py check_vision`. '
+              'správy cez API proti falošnému serveru prešlo. Skutočné volanie serverov Google sa lokálne overiť nedá (potrebuje účet); overil ho '
+              'majiteľ po nasadení 31. 10. 2026 (PC aj mobil): obyčajná fotka prešla, nevhodná sa nepridala so správnym hlásením a dobrá '
+              'prešla so správnym hlásením (produkcia je fail-closed, takže úspech znamená, že kontrola funguje). '
               'Twisted: päť zo šiestich hlásení je v moduloch, ktoré aplikácia nepoužíva (IMAP, telnet, IRC, XMPP); šieste sa týka HTTP servera v daphne '
               '(holý CR/LF v hlavičke, request smuggling za proxy). Opravy prišli vo finálnom 26.10.0 (30. 10. 2026 ho už berie čerstvá inštalácia a '
               '`pip-audit` pri ňom nehlási nič); `daphne` Twisted nepripína, preto by sa dala doplniť dolná hranica `Twisted>=26.10.0` (zatiaľ len '
@@ -100,17 +99,6 @@ NEW_ITEMS = [
               '(nové sú len `token_blacklist.0013` a `authtoken.0004`, obe bez zmeny schémy), tokeny platia v oboch smeroch (nasadenie aj rollback). '
               'Spustené 26. 10. 2026, časť 183a 27. 10. 2026, časť 183b (vetva 154) 30. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb.',
          dec='ROZHODNUTIE R8', src='kontrola 26. 10. 2026'),
-    dict(n=184, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľný `next` (frontend)',
-         what='Frontend: `npm audit --omit=dev` hlásil 19 balíkov (2 kritické, 10 vysokých). Časť 184a (vetva 142, PR #202, 27. 10.) je zlúčená: '
-              'odstránený nepoužívaný `next-intl`, `npm audit fix` opravil `axios`, `@sentry/nextjs`, `js-cookie`, `follow-redirects` a ďalšie '
-              'tranzitívne balíky (19 → 2). Zostáva `next` 14.2.35 (kritický, 24 hlásení) a vnorený `postcss`, ktorý má `next` 14 pripnutý.',
-         note='Zvyšok sa dá opraviť len skokom `next` 14 → 16 (nástroj navrhuje 16.4.3; veľký balík, pravdepodobne aj React 19, súvisí s 153); '
-              'rovnaký skok potrebuje aj `eslint-config-next` (dev). Dopad pre túto aplikáciu (odhad agenta, nie overené zneužitím): nepoužíva '
-              'Server Actions (`\'use server\'` sa nenašlo), `middleware.ts` len nastavuje `Cache-Control`, `images.remotePatterns` pustí len '
-              'localhost, Sentry `tunnelRoute` nie je nastavený. Relevantné zostávajú hlásenia o DoS pri Server Components, o request smuggling '
-              'v `rewrites` (`/api/*` ide cez rewrites na backend) a o Image Optimizeri. Robiť skôr ako neskôr (viď 183). '
-              'Súvisí s hostingom (vlastný hosting vs Vercel): R9. Spustené 26. 10. 2026, časť 184a 27. 10. 2026.',
-         dec='ROZHODNUTIE R9', src='kontrola 26. 10. 2026'),
     dict(n=185, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
          what='`SECURITY_AUDIT_REPORT.md` v koreni repozitára je z roku 2024 (názov Swaply) a vedie R1–R7 ako „neriešené“, '
               'hoci kód už väčšinou obsahuje riešenia (95× `transaction.atomic`, 75× `select_for_update`, SameSite, rate limity '
@@ -178,12 +166,12 @@ NEW_ITEMS = [
          what='Ani CI (`.github/workflows/deploy.yml`), ani iný plánovaný workflow nekontroluje zraniteľné závislosti: nebeží `pip-audit` ani '
               '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
               'nepozorovane a odhalila ho až jednorazová kontrola 26. 10.',
-         note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt` a '
-              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové zvyšok 184 '
-              '(`next` 14 → 16) a `pytest` z 183, audit hlási známe zraniteľnosti (backend 2 záznamy: vývojový pytest ×2; frontend `next`) pri každom '
+         note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt -r backend/requirements-test.txt` '
+              '(rovnaké súbory, aké inštaluje CI; `pytest` je len v druhom) a `npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové `pytest` z 183 '
+              'a build nástroj Sentry z 229, audit hlási známe zraniteľnosti (backend 2 záznamy vývojového `pytest`; frontend 5 stredných v build nástroji Sentry) pri každom '
               'behu, takže opakované hlásenie samo o sebe neznamená novú zraniteľnosť. Workflow preto musí porovnávať výsledok so zoznamom známych '
               'výnimiek: ID záznamov vedené v repozitári (pri `pip-audit` priamo cez `--ignore-vuln <ID>`, pri `npm audit` porovnaním s uloženým '
-              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 184b“); upozorniť má len záznam, ktorý v zozname nie je. '
+              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 229“); upozorniť má len záznam, ktorý v zozname nie je. '
               'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
          dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
@@ -352,9 +340,14 @@ NEW_ITEMS = [
               'nálezom 9); metriky CPU a RAM v logoch nie sú a zaseknuté požiadavky sa nepotvrdili. V dostupných logoch teda nie je dôkaz, že za '
               'pády testov môže Railway; príčina ostáva neurčená. V kóde je zapnutá rotácia obnovovacích tokenov (`ROTATE_REFRESH_TOKENS`, '
               '`BLACKLIST_AFTER_ROTATION`, prístupový token 15 minút, `swaply/settings_split/jwt.py`), čo je relevantné pri 401 a 403, no nie je to dôkaz. '
-              'Návrh pre Codexa: sonda z toho istého Dockeru mimo Playwrightu (asi 10 minút opakovaného jednoduchého volania Railway s meraním '
-              'oneskorení a zlyhaní): ak sa zasekne aj tam, ide o sieť alebo prostredie, ak nie, o WebKit v Dockeri alebo reláciu testov. Ak sa to '
-              'zopakuje, treba k hláseniu pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
+              'Sonda Codexa (31. 10. 2026, 13:06 až 13:16 UTC, 600 288 ms; Node `https` bez prehliadača, prihlásenia a cookies, z toho '
+              'istého kontajnera a obrazu `mcr.microsoft.com/playwright:v1.63.0-noble`; `GET /` na frontende a `GET /api/` na verejnom '
+              'koreni API, nové aj znovu použité spojenia, telo odpovede sa zahodilo): 122 z 122 odpovedí HTTP 200, 0 sieťových chýb, 0 '
+              'timeoutov, 0 meraní nad 10 s a dve nad 2 s (maximum 2,84 s; mediány 75 až 240 ms). Zaseknutie sa vo verejných Node volaniach '
+              'nezopakovalo. Je to indícia, nie dôkaz: sonda nepoužila autentifikované `/api/auth/me/`, obnovu JWT ani prehliadačový '
+              'protokol, takže nehovorí nič o WebKite ani o relácii testu. Nález ostáva otvorený. Ďalší krok (Codex): rovnaké verejné volania '
+              'priamo z WebKitu v Dockeri v tom istom čase ako Node sonda; nespúšťať celý beh len kvôli zelenému výsledku. Ak sa zasekne aj '
+              'tam, pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
          dec=None, src='správa Codexa z 30. 10. 2026'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
@@ -373,7 +366,7 @@ NEW_ITEMS = [
               'Codexa (profil → Menu → Jazyk → F5 → Späť → Zatvoriť → profil). Majiteľ ho vedome odkladá na čas po nasadení.',
          dec=None, src='manuálny test majiteľa, 30. 10. 2026'),
     dict(n=225, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
-         kratko='E2E: voľba jazyka sa v emulovanom WebKite (Docker) neprepne, dotyk bez kliku (iPhone v poriadku)',
+         kratko='E2E: voľba jazyka sa v emulovanom WebKite (Docker) neprepne, ťuk bez kliku pre `preventDefault` na `pointerdown` (iPhone v poriadku)',
          what='Testy `mobile: light language changes update the top title and survive reload` a ich tmavý variant (`mobile-language-header.spec.ts`, '
               '`webkit-mobile`) padajú vo WebKite v Dockeri: celý beh 30. 10. (`main` `e2612438`) 2 z 2, diagnostické opakovania 6 z 6 a porovnanie '
               'A/B 31. 10. v jednom kontajneri (obraz `mcr.microsoft.com/playwright:v1.63.0-noble`) 6 z 6 s historickou verziou špecu z `9346520e` '
@@ -383,71 +376,70 @@ NEW_ITEMS = [
               'ostane SK. Na reálnom iPhone (manuálny test majiteľa, 31. 10.) sa po výbere češtiny zmení text aj nadpis a v Chromiu s rozmermi '
               'iPhonu oba testy prechádzajú (30. 10., proti lokálnej kópii). Kód jazyka (`LanguageModule.tsx`, `MobileTopBar.tsx`, '
               '`LanguageContext.tsx`) ani preklady sa od posledného zeleného behu (29. 10., `main` `9346520e`) nezmenili.',
-         note='Najpravdepodobnejšia príčina je pod aplikáciou (emulácia gesta → klik vo WebKite v Dockeri); prečo klik nevznikne, nie je preukázané. '
-              'Aplikácia sa nemení, lebo na reálnom iPhone funguje. Test sa nemá potichu prepnúť na `click`. Voľba jazyka má `onPointerDown` s `preventDefault()` a `tabIndex={-1}`; pozorovateľ však nevidel '
-              '`defaultPrevented`, takže ani toto nie je preukázaná príčina. Návrh pre Codexa: izolovaná skúšobná stránka s tlačidlom s rovnakými '
-              'vlastnosťami a bez nich (ak klik vznikne len bez nich, ide o vlastnosť emulácie; potom v tomto kroku použiť `click` s odôvodnením a '
-              'odkazom, že na iPhone funguje). Posledný pokus tmavého variantu (31. 10.) skončil inak (sieťové chyby, 401 a 403) a patrí k '
-              'nálezu 223, nie sem.',
+         note='Izolovaný pokus Codexa (31. 10. 2026, vetva `e2e/izolovane-sondy`; syntetická stránka bez aplikácie, prihlásenia a osobných '
+              'údajov, 3 projekty, 96 pozorovaní, bez opakovaní): tlačidlo (natívne DOM aj React 18) so štyrmi kombináciami vlastností v '
+              'troch kolách. Ťuk vytvoril click pri tlačidle bez oboch vlastností 3 z 3, len s `tabindex=-1` 3 z 3, len s `preventDefault()` '
+              'na `pointerdown` 0 z 3 a s oboma 0 z 3 (natívne aj React); priamy click fungoval vo všetkých kombináciách. Rozdiel teda '
+              'spôsobuje `preventDefault()` na `pointerdown`, nie `tabindex`. Je to vlastnosť tejto testovacej konfigurácie WebKitu '
+              '(emulovaný dotyk v Dockeri); na reálnom iPhone voľba jazyka funguje (manuálny test majiteľa 31. 10.) a Codex ho fyzicky '
+              'netestoval. Predošlý záznam s `defaultPrevented=false` sa spätne neprepisuje. Aplikácia sa nemení; dôvod `preventDefault()` v '
+              '`LanguageModule.tsx` sa nezisťoval. Codex preto v jedinom kroku `mobile-language-header.spec.ts` (voľba jazyka) použil '
+              '`click()` namiesto `tap()` s komentárom a odkazom na tento nález; ostatné gestá, kontroly prekladov, F5, časové limity a '
+              'opakovania ostali; samostatné overenie: svetlý aj tmavý variant po trikrát, 6 z 6 prešlo (E2E súbory vlastní Codex a zmena je '
+              'na jeho vetve). Posledný pokus tmavého variantu (31. 10.) skončil inak (sieťové chyby, 401 a 403) a patrí k nálezu 223, nie '
+              'sem.',
          dec=None, src='správa Codexa z 31. 10. 2026'),
+    dict(n=226, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='mŕtvy `frontend/middleware.ts` (Next ho ignoruje)',
+         what='`frontend/middleware.ts` (37 riadkov) má pre HTML dokumenty v produkcii nastaviť `Cache-Control: no-store`, ale leží v koreni '
+              'frontendu a aplikácia má priečinok `src/`, v ktorom Next hľadá middleware len ako `src/middleware.ts`. Súbor sa preto nikdy '
+              'nespúšťa: `middleware-manifest.json` je pri Next 14 aj Next 16 prázdny (`"middleware": {}`).',
+         note='Skutočnú hlavičku `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate` posiela Next sám, lebo koreňový '
+              'layout má `dynamic = "force-dynamic"` a `revalidate = 0` (overené na Next 14 aj 16 na `/`, `/about`, `/login`, '
+              '`/reset-password/…` a `/dashboard/settings`; `Content-Security-Policy` je rovnaká). Súbor teda nič nerozbíja, len klame, a '
+              'poznámka v pôvodnom texte nálezu 184 („middleware.ts len nastavuje Cache-Control“) bola zavádzajúca. Návrh: súbor zmazať. '
+              'Presun do `src/` (v Next 16 sa volá `proxy.ts`, `middleware` je zastaraný) by ho aktivoval pre celú aplikáciu, preto až s '
+              'testom hlavičiek a po rozhodnutí majiteľa. Zistené pri 184b.',
+         dec=None, src='vetva 159'),
+    dict(n=227, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
+         kratko='lint: nové pravidlá React vypnuté, ESLint 9 už nie je podporovaný',
+         what='Po 184b (vetva 159) funguje `npm run lint` (`eslint .`); predtým sa pýtal na interaktívne nastavenie a v CI sa nespúšťa. Nový '
+              '`eslint-config-next` 16 prináša pravidlá „React Compiler“ z `eslint-plugin-react-hooks` 7; na dnešnom kóde by pridali ~340 '
+              'hlásení (`set-state-in-effect` 255, `refs` 57, `preserve-manual-memoization` 20, `immutability` 6, `purity` 1), preto sú v '
+              '`eslint.config.mjs` vypnuté. Lint hlási 779 problémov (336 chýb a 443 varovaní): `no-unused-vars` 363, `no-explicit-any` 213, '
+              '`no-require-imports` 101 a drobnosti; pred 184b to bolo 752 (721 chýb).',
+         note='Návrh: najprv vyčistiť `no-unused-vars` a `no-explicit-any`, potom zapínať vypnuté pravidlá po jednom (najprv `purity`, '
+              '`immutability`) a lint zapojiť do CI s prahom chýb. `npm ci` hlási, že `eslint@9.39.5` už nie je podporovaný; '
+              '`eslint-config-next` 16 vyžaduje `eslint >=9.0.0`, takže povýšenie na novšiu hlavnú verziu je samostatný malý krok.',
+         dec=None, src='vetva 159'),
+    dict(n=228, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov',
+         kratko='testy `useGoogleLogin` nezachytia vynechané `clearTimeout(delayTimer)`',
+         what='Pri mutačných kontrolách vetvy 159: keď sa v `useGoogleLogin.ts` (upratanie efektu) odstráni `clearTimeout(delayTimer)`, '
+              'nepadne žiadny zo 79 testov `useGoogleLogin*`, ani na pôvodnej verzii (Next 14), ani po aktualizácii. Vynechané '
+              '`clearInterval(poll)` testy zachytia (20 pádov).',
+         note='Zadržaný časovač oneskorenia po odpojení pravdepodobne nič nepokazí (`resolveDelay?.(false)` čakanie hneď ukončí), takže môže '
+              'ísť o nadbytočný riadok, nie o chýbajúci test. Návrh: buď pridať test, že po odpojení počas čakania nezostane žiadny časovač '
+              '(`jest.getTimerCount()` je 0), alebo riadok odstrániť. Nezmenené, len hlásim.',
+         dec=None, src='vetva 159'),
+    dict(n=229, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
+         kratko='5 stredných zraniteľností v build nástroji Sentry (frontend)',
+         what='`npm audit --omit=dev` hlási po 184b 5 stredných záznamov: `@sentry/nextjs` → `@sentry/bundler-plugins` a '
+              '`@sentry/webpack-plugin` → `glob` a `minimatch` (DoS cez zosilnenie `globparts` a obídenie zrušenia cez `AbortSignal`). '
+              'Všetko je v nástroji, ktorý beží len pri zostavení; nahrávanie zdrojových máp je vypnuté, kým nie je nastavený '
+              '`SENTRY_AUTH_TOKEN`.',
+         note='Nástroj navrhuje `npm audit fix --force`, no ponúka `@sentry/nextjs` 10.76.1, teda nižšiu verziu než dnešné `^10.76.2`, takže '
+              'to nie je oprava. Čakať na novšiu verziu `@sentry/nextjs`, ktorá bundler plugin aktualizuje, a medzitým ich viesť ako známu '
+              'výnimku v kontrole z nálezu 194.',
+         dec=None, src='vetva 159'),
+    dict(n=230, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
+         kratko='prechod z webpacku na Turbopack (Next 16)',
+         what='Next 16 používa predvolene Turbopack; aplikácia ho zatiaľ nepoužíva: `build` a `dev` majú od 184b `--webpack`, lebo Turbopack '
+              'padá pri tvorbe stránok `/404` a `/500` na starom `src/pages/_document.tsx` (`PageNotFoundError: /_document`) a '
+              '`next.config.js` má vlastný blok `webpack` (alias `@`, vypnutá cache vo vývoji).',
+         note='Návrh: zmazať `src/pages/_document.tsx` (16 riadkov, `<Html lang="sk">`; jazyk rieši koreňový layout) a overiť, že sa `/404` '
+              'a `/500` zostavia; potom zvážiť Turbopack najprv len pre `dev`. Nízka priorita, nič nehorí.',
+         dec=None, src='vetva 159'),
 ]
 
-NTASKS = [
-    dict(n='N1', bucket=P, eff=ES, what='Rozhodnúť hosting a región EÚ (odporúčanie v prílohe C).',
-         note='Až keď bude aplikácia hotová; teraz netreba (Railway ostáva na testy). Od rozhodnutia závisí zvyšok prípravy '
-              '(reverzný proxy, WebSocket, zálohy, náklady). Rozhodnutie R1.'),
-    dict(n='N2', bucket=P, eff=ES,
-         what='Doména a e-mail: v kóde sa už používa `svaply.com` (a `api.svaply.com`). Ak je doména vlastnená, treba nasmerovať DNS na nový '
-              'server a nastaviť SPF / DKIM / DMARC pre odosielateľa (Resend, `DEFAULT_FROM_EMAIL`) a schránku `info@svaply.com`.',
-         note='Dlhá dodacia lehota (šírenie DNS, reputácia odosielateľa): začať asi 2–3 mesiace pred plánovaným štartom. '
-              'Ak doména ešte nie je zaregistrovaná, treba ju najprv získať.'),
-    dict(n='N3', bucket=P, eff=EM,
-         what='Právne dokumenty: podmienky používania, ochrana osobných údajov (GDPR), cookies / súhlas, zmluvy so spracovateľmi '
-              '(hosting, Cloudflare, Resend, Google Vision, Sentry).',
-         note='Dlhá dodacia lehota (právnik), nie je to kód. Začať s dostatočným predstihom pred štartom. Pozor na prenosy osobných údajov mimo EÚ '
-              '(Google, Sentry, Resend, Cloudflare). Súvisí s nálezom 186.'),
-    dict(n='N4', bucket=P, eff=EM, what='Oddeliť prostredia: ostrá prevádzka bez testovacích účtov; staging pre E2E a testy.',
-         note='Pravidlo v `.cursor/rules/svaply.mdc` hovorí, že E2E bežia proti produkcii (Railway). Po štarte so skutočnými používateľmi musia '
-              'bežať proti stagingu, ktorý je kópiou ostrej prevádzky (inak by testy zasahovali do cudzích dát), a pravidlo sa musí upraviť '
-              '(rozhodnutie majiteľa). Railway môže slúžiť ako staging; nezachytí však chyby viazané na hosting (proxy, WebSocket). Súvisí s 173, 16, OW-08.'),
-    dict(n='N5', bucket=P, eff=EM,
-         what='Konfigurácia a tajomstvá: nové `SECRET_KEY`, `JWT_SIGNING_KEY`, `MFA_ENCRYPTION_KEY`, VAPID, '
-              'OAuth redirect URI a reCAPTCHA pre novú doménu, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `FRONTEND_ORIGIN`.',
-         note='Zahŕňa OW-06 (produkčné CORS domény). Žiadne kľúče z Railway nepreberať.'),
-    dict(n='N6', bucket=P, eff=EM,
-         what='PostgreSQL v EÚ: zálohy (denné + PITR), vyskúšaná obnova, migrácie od nuly (0125 vytvára dva GIN indexy `CONCURRENTLY`).',
-         note='Register: pri migráciách 0124 / 0125 nesmú staré procesy zapisovať; zaviesť politiku „rozšír, potom zmenši“.'),
-    dict(n='N7', bucket=P, eff=ES, what='Redis: oddeliť cache a broker pre Celery (politika vyhadzovania, perzistencia), sledovať pamäť.',
-         note='V repozitári je `RAILWAY_REDIS_FIX.md` – problémy s Redis už boli.'),
-    dict(n='N8', bucket=P, eff=EM,
-         what='Procesy a proxy: gunicorn (HTTP), daphne (WS), Celery worker + beat, healthchecky, WebSocket časové limity, '
-              '`TRUSTED_PROXY_HOPS` podľa skutočného reťazca proxy.',
-         note='Zlé `TRUSTED_PROXY_HOPS` rozbije rate limity podľa IP (nález 429 z histórie). Návrh: reverzný proxy smeruje '
-              '`/api/`, `/ws/` a `/media/` priamo na backend (rovnaká doména, cookies ostanú first-party) a Next v ceste nie je. Súvisí s 180.'),
-    dict(n='N9', bucket=P, eff=EM,
-         what='Médiá: S3-kompatibilné úložisko a CDN, CORS bucketu, podpísané alebo verejné URL; zvážiť, aby obrázky nešli cez Django.',
-         note='Obrázky Nástenky dnes streamuje Django (`feed_image_files.py`, `_stream_key`); `/media/*` ide cez Next proxy na backend.'),
-    dict(n='N10', bucket=P, eff=ES,
-         what='Obrazová moderácia: účet Google Cloud, kľúč služby (`GCP_VISION_SERVICE_ACCOUNT_JSON`), kvóty a sledovanie nákladov. V produkcii je '
-              'zapnutá a nastavená „fail-closed“: pri výpadku Google Vision sa nahranie obrázka odmietne s hláškou.',
-         note='Rozhodnutie R10 (odporúčanie: ponechať). Overiť pri smoke teste N14.'),
-    dict(n='N11', bucket=P, eff=ES,
-         what='Monitoring: Sentry (backend + frontend, `global-error`), kontrola dostupnosti, logy, upozornenia na disk a pamäť, kontrola Celery beat.',
-         note='Zahŕňa 33.'),
-    dict(n='N12', bucket=P, eff=EM,
-         what='CI/CD: nasadenie až po zelenom CI, rollback, migrácie pred novou verziou, bez výpadku pri zápise starých procesov.',
-         note='Dnes: Railway auto-deploy + „Wait for CI“ mimo repozitára (poznámka v `.github/workflows/deploy.yml`).'),
-    dict(n='N13', bucket=P, eff=ES, what='Bezpečnostné nastavenia: `manage.py check --deploy`, HSTS, secure cookies, CSP, ochrana admin URL, rate limity.',
-         note='Nadväzuje na 183 / 185.'),
-    dict(n='N14', bucket=P, eff=EM,
-         what='Záťažový a smoke test na novom serveri: WebSocket, nahrávanie obrázkov, e-mail, push, registrácia, prihlásenie cez Google.',
-         note='Pred pozvaním prvých používateľov.'),
-    dict(n='N15', bucket=P, eff=ES,
-         what='Čo s Railway po štarte: ostane na testy / staging, alebo sa vypne (sú tam len testovacie dáta, pravdepodobne sa nič neprenáša).',
-         note='Rozhodne sa spolu s N4; až po N14.'),
-    dict(n='N16', bucket=P, eff=EM, pkg='Vyhľadávanie a Sledovania',
-         what='Živé overenie zlúčených opráv vyhľadávania a Sledovaní: OW-16 (mobilné karty), OW-18 (krajina), OW-19 (scroll), OW-20 (cache), '
-              'OW-23 (viac ľudí / ponúk), TEST-01, TEST-02 a PR #193 (opisy a výsledky); vrátane migrácií 0124 / 0125.',
-         note='Všetko je zlúčené v `main` a nasadené na Railway, takže sa dá urobiť už teraz (ručne alebo cieleným E2E); register výslovne vedie '
-              'nasadený retest ako otvorený. Pred štartom stačí krátko zopakovať na novom serveri (N14).'),
-]
+# Úlohy na prípravu nasadenia (N1…) sú v `polozky_priprava.py`; tu sa len sprístupňujú pod pôvodným názvom.
+from polozky_priprava import NTASKS  # noqa: E402,F401

@@ -35,7 +35,7 @@ export interface SearchStateProps {
   setPriceMax: (price: string) => void;
 
   // Refs
-  searchInputRef: React.RefObject<HTMLInputElement>;
+  searchInputRef: React.RefObject<HTMLInputElement | null>;
   searchDebounceRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   searchAbortControllerRef: React.MutableRefObject<AbortController | null>;
 

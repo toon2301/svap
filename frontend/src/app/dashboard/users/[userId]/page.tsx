@@ -1,17 +1,19 @@
 import Dashboard from '@/components/dashboard/Dashboard';
 
 interface UserDashboardPageProps {
-  params: {
+  params: Promise<{
     userId: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     highlight?: string;
     offer?: string;
-  };
+  }>;
 }
 
 // Tento route segment `[userId]` slúži ako slug alebo numerické ID (backward compatible).
-export default function UserDashboardPage({ params, searchParams }: UserDashboardPageProps) {
+export default async function UserDashboardPage(props: UserDashboardPageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const identifier = params.userId;
   const rawHighlightId = searchParams.offer ?? searchParams.highlight;
   const parsedHighlightId = rawHighlightId ? Number(rawHighlightId) : null;
