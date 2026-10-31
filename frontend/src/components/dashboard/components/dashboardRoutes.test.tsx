@@ -84,7 +84,7 @@ describe('tabuľka pozná každú stránku dashboardu', () => {
     expect(PAGE_KEYS.length).toBeGreaterThanOrEqual(30);
   });
 
-  it.each(PAGE_KEYS)('%s má položku v tabuľke a rovnaké props', (pageKey) => {
+  it.each(PAGE_KEYS)('%s má položku v tabuľke a rovnaké props', async (pageKey) => {
     const entry = DASHBOARD_ROUTES.find((route) => route.page === pageKey);
     expect(entry).toBeDefined();
 
@@ -92,11 +92,13 @@ describe('tabuľka pozná každú stránku dashboardu', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const pageModule = require(path.join(DASHBOARD_PAGES_DIR, pageKey, 'page.tsx'));
     const Page = pageModule.default as (props: {
-      params: Record<string, string>;
-      searchParams: Record<string, string>;
-    }) => React.ReactElement;
+      params: Promise<Record<string, string>>;
+      searchParams: Promise<Record<string, string>>;
+    }) => React.ReactElement | Promise<React.ReactElement>;
 
-    render(<Page params={paramsFor(pageKey)} searchParams={{}} />);
+    // Od Next 15 sú `params` a `searchParams` sľuby a stránka môže byť `async` (serverový) komponent:
+    // zavoláme ju a vykreslíme až hotový element (u stránky bez `async` `await` nič nemení).
+    render(await Page({ params: Promise.resolve(paramsFor(pageKey)), searchParams: Promise.resolve({}) }));
 
     expect(capturedProps).toHaveLength(1);
     expect(definedProps(capturedProps[0])).toEqual(definedProps(matchDashboardRoute(url) ?? {}));

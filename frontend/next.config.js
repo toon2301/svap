@@ -49,6 +49,8 @@ const nextConfig = {
   },
   
   images: {
+    // Next 16 povolí len kvality zo zoznamu (predvolene len 75); logo sa vykresľuje s kvalitou 80.
+    qualities: [75, 80],
     remotePatterns: [
       {
         protocol: 'http',

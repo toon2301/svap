@@ -1,15 +1,14 @@
 import Dashboard from '@/components/dashboard/Dashboard';
 
 interface UserPrivacyDashboardPageProps {
-  params: {
+  params: Promise<{
     userId: string;
-  };
+  }>;
 }
 
 // `[userId]` funguje ako slug alebo numerické ID (BC pre staré URL).
-export default function UserPrivacyDashboardPage({
-  params,
-}: UserPrivacyDashboardPageProps) {
+export default async function UserPrivacyDashboardPage(props: UserPrivacyDashboardPageProps) {
+  const params = await props.params;
   const identifier = params.userId;
 
   return (

@@ -19,7 +19,7 @@ export function ConversationsListSearchInput({
   placeholder: string;
   clearLabel: string;
   className?: string;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (value: string) => void;
   onClear: () => void;
   onEnter: () => void;

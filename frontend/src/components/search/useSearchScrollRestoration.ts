@@ -8,7 +8,7 @@ const USER_INPUT_EVENTS = ['touchstart', 'wheel', 'keydown', 'mousedown'] as con
 
 /** Restore the nested main after real results, never merely because skeletons are tall. */
 export function useSearchScrollRestoration(
-  mainRef: RefObject<HTMLElement>,
+  mainRef: RefObject<HTMLElement | null>,
   viewerId: number | null | undefined,
 ): void {
   useEffect(() => {

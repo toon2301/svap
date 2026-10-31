@@ -18,7 +18,7 @@ type ConversationDesktopComposerProps = {
   text: string;
   hasContentToSend: boolean;
   isComposerInputDisabled: boolean;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   attachImageLabel: string;
   addEmojiLabel: string;
   typePlaceholder: string;
