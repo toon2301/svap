@@ -13,7 +13,7 @@ def priloha_c(d):
         ['Frontend', 'Next.js 14 (Node, `next start`), service worker',
          'Podľa `next.config.js` Next preposiela `/api/*`, `/media/*` aj `/ws/*` na backend (`BACKEND_ORIGIN`, `BACKEND_WS_ORIGIN`). '
          'Pri `NEXT_PUBLIC_API_URL=/api` sa prehliadač pripája na WebSocket cez doménu frontendu, takže Next je v ceste aj pre WebSocket (viď 180).'],
-        ['Backend HTTP', 'Django 4.2 + DRF, gunicorn (2 workery × 4 vlákna)', 'Pozor na koniec podpory Django 4.2 (nález 183).'],
+        ['Backend HTTP', 'Django 5.2 LTS + DRF 3.18, gunicorn (2 workery × 4 vlákna)', 'Django 5.2 má podporu do 04/2028 (nález 183, vetva 154).'],
         ['Backend WebSocket', 'Django Channels, daphne',
          'Potrebuje dlhé nečinné spojenia a kontrolu `Origin` (`ws_origins.py`). Pravidelný ping sa v kóde nenašiel.'],
         ['Úlohy na pozadí', 'Celery worker (concurrency 2) + beat (1 replika)', 'Plánovač v databáze (`django_celery_beat`).'],

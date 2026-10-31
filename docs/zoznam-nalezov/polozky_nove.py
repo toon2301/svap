@@ -56,14 +56,16 @@ NEW_ITEMS = [
     dict(n=182, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          what='PR #191 / vetva `134-diag`: len diagnostika, nikdy nezlúčiť; po vyriešení 180 uzavrieť a vetvu zmazať.',
          note='Vetva sa maže len na pokyn používateľa.', dec=None, src='séria Upozornenia'),
-    dict(n=183, bucket=H, imp=V, eff=EL, pkg='Bezpečnosť závislostí', kratko='zraniteľné knižnice (backend): zostáva protobuf (183c) a pytest',
+    dict(n=183, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy', kratko='zraniteľné knižnice (backend): zostáva len vývojový `pytest` (2 záznamy)',
          what='Backend: `pip-audit` celého prostredia (aj tranzitívne balíky) hlásil 191 záznamov v 14 balíkoch (prvý sken 26. 10. bral len '
               'pripnuté balíky: 180 záznamov). Časť 183a (vetva 143, 27. 10.) je hotová: Pillow 13.0.0, pillow-heif 1.x, DRF 3.17.2, simplejwt 5.5.1, '
               'gunicorn 23.0.0, daphne 4.2.3, requests 2.33.0, python-dotenv 1.2.2, bleach 6.4.0, Django 4.2.30 a odstránený nepoužívaný '
               '`django-allauth`; CI beží na Pythone 3.11 (191 → 22 záznamov v 5 balíkoch). Časť 183b je hotová v dvoch krokoch: nastavenia úložísk '
               'sú presunuté do `STORAGES` (vetva 152, zlúčená v PR #209) a backend je povýšený na Django 5.2.18 s DRF 3.18.3 (vetva 154, zlúčená v '
-              'PR #214; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Zostáva: protobuf 4.25.9 (2 záznamy, časť 183c) a '
-              'pytest 8.3.2 (2, len vývoj). Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama, takže jeho 6 záznamov zmizlo.',
+              'PR #214; 22 → 4 záznamy bez nástrojov samotného prostredia `pip` a `setuptools`). Časť 183c je hotová (vetva 158): '
+              '`google-cloud-vision` 3.4.5 → 3.16.0 vyžaduje protobuf od 6.33.5 (čerstvá inštalácia dá 7.36.2), takže hlásenie CVE-2026-0994 '
+              'zmizlo (4 → 2 záznamy). Zostáva len `pytest` 8.3.2 (2 záznamy, len vývoj; oprava až v 9.0.3), preto sa nález presúva do skupiny '
+              'po nasadení. Twisted 26.10.0, ktoré medzitým vyšlo, berie čerstvá inštalácia sama, takže jeho 6 záznamov zmizlo.',
          note='Django 4.2 LTS už nemá podporu (skončila 04/2026), preto 9 zvyšných záznamov nikto pre 4.2 nevyhodnotil (popisy sa týkajú Djanga 5.2 '
               'a 6.0: cache middleware, signed cookies, GeoDjango/GDAL, `DomainNameValidator`; aplikácia nič z toho v kóde nepoužíva). '
               'Riešenie 183b (vetva 154): samostatný balík Django 4.2 → 5.2 LTS spolu s DRF 3.18.3 (3.18.0 a 3.18.1 '
@@ -79,7 +81,14 @@ NEW_ITEMS = [
               'a po presune ostáva rovnaké. Povýšenie (vetva 154): Django 5.2 vyžaduje PostgreSQL 14 a novší (Railway má 17), prihlásenie je asi '
               '1,7-krát náročnejšie na procesor (hashovanie hesiel 1 000 000 iterácií namiesto 600 000; staré heslá sa prepíšu pri prihlásení a Django 4.2 '
               'overí aj nový hash, takže rollback je bezpečný; dôsledok pre CI je v náleze 220) a DRF 3.18 vyžaduje Django 5.2, preto sa povyšujú spolu. '
-              '183c: `google-cloud-vision` 3.4.5 → 3.16.0 kvôli protobuf (treba overiť skutočné volania SafeSearch). '
+              '183c (vetva 158): `google-cloud-vision` 3.4.5 → 3.16.0 kvôli protobuf (CVE-2026-0994: zacyklenie `json_format.ParseDict` '
+              'pri vnorených `Any`, oprava od 5.29.6 alebo 6.33.5; aplikácia protobuf priamo nepoužíva). Produkcia má `SAFESEARCH_FAIL_OPEN=False`, '
+              'takže pokazená knižnica by zamietla každé nahrávanie obrázka; preto pribudol test `swaply/test/test_vision_client_contract.py`, '
+              'ktorý spúšťa skutočného klienta proti falošnému gRPC serveru (bez účtu a bez siete). Overené: čerstvé prostredie, `pip check` '
+              'čistý, celá sada na SQLite (1 993 prešlo a 10 preskočených) aj na PostgreSQL 16 (2 001 prešlo a 2 preskočené), päť zámerných chýb test zachytil, nahratie obrázka '
+              'správy cez API proti falošnému serveru prešlo. Skutočné volanie serverov Google sa lokálne overiť nedá (potrebuje účet): po '
+              'nasadení treba nahrať bežnú fotku (produkcia je fail-closed, takže úspech znamená, že kontrola funguje), voliteľne '
+              '`python manage.py check_vision`. '
               'Twisted: päť zo šiestich hlásení je v moduloch, ktoré aplikácia nepoužíva (IMAP, telnet, IRC, XMPP); šieste sa týka HTTP servera v daphne '
               '(holý CR/LF v hlavičke, request smuggling za proxy). Opravy prišli vo finálnom 26.10.0 (30. 10. 2026 ho už berie čerstvá inštalácia a '
               '`pip-audit` pri ňom nehlási nič); `daphne` Twisted nepripína, preto by sa dala doplniť dolná hranica `Twisted>=26.10.0` (zatiaľ len '
@@ -170,11 +179,11 @@ NEW_ITEMS = [
               '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
               'nepozorovane a odhalila ho až jednorazová kontrola 26. 10.',
          note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt` a '
-              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové 183c '
-              'a zvyšok 184 (`next` 14 → 16), audit hlási známe zraniteľnosti (backend 4 záznamy: protobuf ×2 a vývojový pytest ×2; frontend `next`) pri každom '
+              '`npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové zvyšok 184 '
+              '(`next` 14 → 16) a `pytest` z 183, audit hlási známe zraniteľnosti (backend 2 záznamy: vývojový pytest ×2; frontend `next`) pri každom '
               'behu, takže opakované hlásenie samo o sebe neznamená novú zraniteľnosť. Workflow preto musí porovnávať výsledok so zoznamom známych '
               'výnimiek: ID záznamov vedené v repozitári (pri `pip-audit` priamo cez `--ignore-vuln <ID>`, pri `npm audit` porovnaním s uloženým '
-              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 183c“); upozorniť má len záznam, ktorý v zozname nie je. '
+              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 184b“); upozorniť má len záznam, ktorý v zozname nie je. '
               'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
          dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
@@ -329,12 +338,58 @@ NEW_ITEMS = [
          kratko='občasné zlyhanie siete pri `GET /api/auth/me/` počas prípravy E2E (príčina nepreukázaná)',
          what='Codex pri behu špecu `profile-numeric-language` (nasadený `main` `e3ed0f42`) hlásil občasné zlyhanie siete '
               'pri prípravnom `GET /api/auth/me/`: z 8 pokusov 2 zastavilo toto zlyhanie už počas prípravy a poľský tmavý profilový variant preto '
-              'raz padol, pri troch opakovaniach potom prešiel (3 z 3). Presná príčina nie je preukázaná.',
-         note='Codex výslovne žiada nepripisovať ju automaticky Railway ani povýšeniu na Django 5.2 (nasadené 30. 10. 2026). V dvoch lokálnych '
-              'behoch špecu (30. 10., proti lokálnej kópii) sa to nevyskytlo, čo nič nedokazuje. Čo treba: čas zlyhania (UTC) z E2E správy a logy '
-              'Railway za ten čas (napr. reštart workera gunicorn, nasadenie, nedostatok pamäte, časový limit), aby sa dalo rozhodnúť, či ide o prostredie, aplikáciu alebo '
-              'test. Ak sa to zopakuje, treba k hláseniu pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
+              'raz padol, pri troch opakovaniach potom prešiel (3 z 3). Presná príčina nie je preukázaná. Ďalšie dôkazy: v celom behu 30. 10. '
+              '(`main` `e2612438`, 19:08 až 19:45 UTC) skončil druhý `GET /api/auth/me/` sieťovou chybou po 24 178 ms (19:30:21 UTC), '
+              '25 246 ms (19:35:09) a 24 430 ms (19:36:43); v diagnostických opakovaniach `mobile-settings-navigation` (20:00:30 UTC) prišli 401 '
+              'na pollingových GET a 403 na `POST /api/token/refresh/` a v `offer-watch-card-actions` (20:02:46 UTC) vrátil `GET /api/auth/me/` 401 '
+              'a adresa skončila na `/`. Dňa 31. 10. (07:09 až 07:10 UTC) sa v tmavom variante jazykového špecu po úvodnom `GET /api/auth/me/` '
+              '200 dve požiadavky zasekli na 21 s (sieťová chyba) a potom prišli 401 (asi 1,3 s) a 403 pri obnove (asi 1,1 s), teda odpovede '
+              'boli pomalé, nielen odmietnuté.',
+         note='Codex výslovne žiada nepripisovať ju automaticky Railway ani povýšeniu na Django 5.2 (nasadené 30. 10. 2026). Kontrola logov Railway '
+              'majiteľom (okná 20:29 až 20:40 a 21:00 až 21:03 nášho času, teda 19:29 až 19:40 a 20:00 až 20:03 UTC; dátum v jeho súhrne bol 29. 10., '
+              'čaká na potvrdenie, že išlo o 30. 10.): žiadne reštarty ani pády, žiadne HTTP 500 až 504, PostgreSQL a Redis bez zjavných problémov, '
+              'Celery úspešne; opakované `WSREJECT` s `missing_token` pri WebSockete (pravdepodobne odhlásený testovací prehliadač, súvisí s '
+              'nálezom 9); metriky CPU a RAM v logoch nie sú a zaseknuté požiadavky sa nepotvrdili. V dostupných logoch teda nie je dôkaz, že za '
+              'pády testov môže Railway; príčina ostáva neurčená. V kóde je zapnutá rotácia obnovovacích tokenov (`ROTATE_REFRESH_TOKENS`, '
+              '`BLACKLIST_AFTER_ROTATION`, prístupový token 15 minút, `swaply/settings_split/jwt.py`), čo je relevantné pri 401 a 403, no nie je to dôkaz. '
+              'Návrh pre Codexa: sonda z toho istého Dockeru mimo Playwrightu (asi 10 minút opakovaného jednoduchého volania Railway s meraním '
+              'oneskorení a zlyhaní): ak sa zasekne aj tam, ide o sieť alebo prostredie, ak nie, o WebKit v Dockeri alebo reláciu testov. Ak sa to '
+              'zopakuje, treba k hláseniu pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
          dec=None, src='správa Codexa z 30. 10. 2026'),
+    dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
+         kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
+         what='Nález majiteľa z manuálneho testu na iPhone Safari (30. 10. 2026): vo vlastnom profile → Menu → zoznam Nastavení (Upozornenia, '
+              'Jazyk, Typ účtu, Sledovanie, Nastavenia súkromia, Blokované, Účet) po otvorení ktorejkoľvek sekcie a obnovení stránky (F5) vedie '
+              'šípka Späť správne na zoznam Nastavení, ale Zatvoriť potom nevedie na profil, odkiaľ sa Nastavenia otvorili, ale na Nástenku. '
+              'Lokálne reprodukované (30. 10., Chromium s rozmermi iPhonu): bez F5 vedie Zatvoriť na profil, po F5 v sekcii aj po F5 priamo '
+              'na zozname vedie na Nástenku.',
+         note='Príčina: záznam histórie Nastavení nesie značku s identitou načítania stránky (`PAGE_LOAD_ID` v `hooks/mobileSettingsOrigin.ts`), '
+              'takže po F5 neplatí a `handleMobileSettingsClose` (`hooks/useMobileSettings.ts`) použije deterministický cieľ, teda Nástenku. Pôvod '
+              'Nastavení (vlastný alebo cudzí profil, hamburger je na oboch) sa nikde neukladá. Šípka zo sekcie po F5 navyše vloží nový záznam '
+              'zoznamu s prázdnym stavom (`pushState(null, …)` v `hooks/useDashboardState.ts`, 921 riadkov, súbor sa nemení, pozri TECH-01…11), '
+              'takže ani zoznam už pôvod nenesie. Návrh: pôvod (adresu) uložiť do `history.state` záznamov Nastavení (prežije F5), alebo pre kartu '
+              'do `sessionStorage`, a pri zatvorení po F5 ísť naň; zmena v `mobileSettingsOrigin.ts` a `useMobileSettings.ts` plus Jest testy. '
+              'Zasahuje do histórie prehliadača, preto patrí do jedného balíka s nálezmi 13, 14 a 174 (Späť na mobile). Dopad na E2E: nový test pre '
+              'Codexa (profil → Menu → Jazyk → F5 → Späť → Zatvoriť → profil). Majiteľ ho vedome odkladá na čas po nasadení.',
+         dec=None, src='manuálny test majiteľa, 30. 10. 2026'),
+    dict(n=225, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
+         kratko='E2E: voľba jazyka sa v emulovanom WebKite (Docker) neprepne, dotyk bez kliku (iPhone v poriadku)',
+         what='Testy `mobile: light language changes update the top title and survive reload` a ich tmavý variant (`mobile-language-header.spec.ts`, '
+              '`webkit-mobile`) padajú vo WebKite v Dockeri: celý beh 30. 10. (`main` `e2612438`) 2 z 2, diagnostické opakovania 6 z 6 a porovnanie '
+              'A/B 31. 10. v jednom kontajneri (obraz `mcr.microsoft.com/playwright:v1.63.0-noble`) 6 z 6 s historickou verziou špecu z `9346520e` '
+              'aj 6 z 6 s aktuálnou; následný beh s pasívnou diagnostikou 0 PASS a 6 FAIL. Padajú na asercii prekladu tlačidla Späť po prvom '
+              'prepnutí slovenčina → čeština (prvý krok, v ktorom sa nadpis nezmení, ale názov tlačidla áno). Pasívna diagnostika ťuku (Codex): '
+              'dotyk na voľbu SK aj CZ vyvolá udalosti pointerdown, touchstart, pointerup a touchend, ale žiadny click; uložený aj označený jazyk '
+              'ostane SK. Na reálnom iPhone (manuálny test majiteľa, 31. 10.) sa po výbere češtiny zmení text aj nadpis a v Chromiu s rozmermi '
+              'iPhonu oba testy prechádzajú (30. 10., proti lokálnej kópii). Kód jazyka (`LanguageModule.tsx`, `MobileTopBar.tsx`, '
+              '`LanguageContext.tsx`) ani preklady sa od posledného zeleného behu (29. 10., `main` `9346520e`) nezmenili.',
+         note='Najpravdepodobnejšia príčina je pod aplikáciou (emulácia gesta → klik vo WebKite v Dockeri); prečo klik nevznikne, nie je preukázané. '
+              'Aplikácia sa nemení, lebo na reálnom iPhone funguje. Test sa nemá potichu prepnúť na `click`. Voľba jazyka má `onPointerDown` s `preventDefault()` a `tabIndex={-1}`; pozorovateľ však nevidel '
+              '`defaultPrevented`, takže ani toto nie je preukázaná príčina. Návrh pre Codexa: izolovaná skúšobná stránka s tlačidlom s rovnakými '
+              'vlastnosťami a bez nich (ak klik vznikne len bez nich, ide o vlastnosť emulácie; potom v tomto kroku použiť `click` s odôvodnením a '
+              'odkazom, že na iPhone funguje). Posledný pokus tmavého variantu (31. 10.) skončil inak (sieťové chyby, 401 a 403) a patrí k '
+              'nálezu 223, nie sem.',
+         dec=None, src='správa Codexa z 31. 10. 2026'),
 ]
 
 NTASKS = [

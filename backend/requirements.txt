@@ -19,7 +19,7 @@ python-dotenv==1.2.2
 requests==2.33.0
 pyotp==2.9.0
 bleach==6.4.0
-google-cloud-vision==3.4.5
+google-cloud-vision==3.16.0
 celery>=5.4,<6
 django-celery-beat==2.9.0
 cryptography>=42.0.0

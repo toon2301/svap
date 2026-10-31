@@ -7,12 +7,24 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='30. 10. 2026',
-    kod='`main` `bd9131e6` (po PR #215)',
+    kod='`main` `e2612438` (po PR #216)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('31. 10. 2026',
+     'Vetva 158 (čaká na zlúčenie): časť 183c nálezu 183 – `google-cloud-vision` 3.4.5 → 3.16.0 (vyžaduje protobuf od 6.33.5, dnes 7.36.2), čím '
+     'zmizlo hlásenie CVE-2026-0994; `pip-audit` projektových závislostí 4 → 2 záznamy (zostáva len vývojový `pytest`). Nový test '
+     '`swaply/test/test_vision_client_contract.py` (6 testov) spúšťa skutočného klienta Google Vision proti falošnému gRPC serveru, lebo '
+     'doterajšie testy používajú atrapu a produkcia je fail-closed. Overené: čerstvé prostredie, `pip check` čistý, celá backendová sada '
+     'na SQLite (1 993 prešlo a 10 preskočených) aj PostgreSQL 16 (2 001 prešlo a 2 preskočené), päť zámerných chýb test zachytil, nahratie obrázka správy cez API proti falošnému '
+     'serveru prešlo na starých aj nových knižniciach. Skutočné volanie serverov Google sa lokálne overiť nedá: čaká na test majiteľa po '
+     'nasadení. Zo 183 zostal len `pytest`, preto sa nález presúva zo skupiny HNEĎ do skupiny PO NASADENÍ. Nové nálezy: 224 (mobilné '
+     'Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil; nález majiteľa z iPhonu, odložený na čas po nasadení) a 225 (jazyk '
+     'v emulovanom WebKite: dotyk bez kliku, na reálnom iPhone v poriadku). Doplnené nálezy 222 (Codex ho overil v reálnom WebKite) '
+     'a 223 (nové dôkazy a výsledok kontroly logov Railway). Zlúčené: vetva 157 (PR #216) a E2E vetva `e2e/profilove-adresy` (PR #215), '
+     '`main` `e2612438`.'),
     ('30. 10. 2026',
      'Vetva 157 (čaká na zlúčenie): nález 212 – CI beží backendovú sadu aj na PostgreSQL 17 (nový job `backend-postgres` súbežne s `checks`; '
      'osem testov so zámkami riadkov sa na SQLite preskakovalo a v CI nebežalo nikdy). Súčasne oprava nálezu 222 z Codexovej správy '
@@ -328,8 +340,8 @@ DONE_SINCE = [
               '1 995 prešlo a 2 preskočené za 3 min 9 s. Skutočný čas v CI (GitHub, krok „Run backend tests“ na SQLite): 11 min 30 s na '
               'Djangu 4.2.30 (beh po zlúčení PR #213, `main` `9bf1142d`) a 1 min 40 s na Djangu 5.2.18 s rýchlym hasherom (beh po zlúčení '
               'PR #214, `main` `e3ed0f42`); celý job `checks` 15 min 52 s → 5 min 19 s.'),
-    dict(n=212, vetva='157', pr=None, zlucene=False,
-         text='HOTOVÉ (skutočný beh na PostgreSQL 17 ukáže až prvé CI na PR): CI testovalo backend len na SQLite, no produkcia beží na PostgreSQL 17 '
+    dict(n=212, vetva='157', pr='#216', zlucene=True,
+         text='HOTOVÉ (zlúčené v PR #216; PostgreSQL 17 v CI potvrdené): CI testovalo backend len na SQLite, no produkcia beží na PostgreSQL 17 '
               '(Railway). Osem testov so zámkami riadkov (`select_for_update`: limit ponúk 1, značky príspevkov 2, blokovanie žiadostí 1, blokovanie '
               'v správach 4) sa na SQLite preskakuje, takže v CI nebežali nikdy. Oprava: do `.github/workflows/deploy.yml` pribudol druhý job '
               '`backend-postgres` so službou `postgres:17` (celá sada `pytest --no-cov` s `DATABASE_URL`, limit 30 min); beží súbežne s jobom '
@@ -337,9 +349,10 @@ DONE_SINCE = [
               'trvá sada na PostgreSQL lokálne 3 až 4 minúty (3 min 9 s pri vetve 154, 4 min 19 s pri vetve 157, kde súbežne bežal aj celý '
               'Jest). Overené: YAML sa načíta a obsahuje oba joby; presný strom vetvy 157 prešiel lokálne na PostgreSQL 16 '
               '(CI používa 17): 1 995 prešlo a 2 preskočené za 4 min 19 s. GitHub runner a PostgreSQL 17 sa lokálne '
-              'overiť nedali; prvý beh na PR je overenie.'),
+              'overiť nedali; overenie priniesol prvý beh na GitHube: job `backend-postgres` prešiel v PR (2 min 46 s, z toho testy 2 min 9 s) '
+              'aj na `main` po zlúčení (3 min 24 s), súbežne s jobom `checks` (v PR 6 min 13 s).'),
     dict(n=222, vetva='e2e/profilove-adresy', pr='#215', zlucene=True,
-         text='HOTOVÉ (zlúčené v PR #215; účinok na Railway potvrdí až beh Playwrightu): číselná adresa vlastného profilu `/dashboard/users/<id>/language` stratila '
+         text='HOTOVÉ (zlúčené v PR #215; overené Codexom na Railway): číselná adresa vlastného profilu `/dashboard/users/<id>/language` stratila '
               'jazykovú podstránku a skončila na základnom profile bez jazykovej hlavičky (hlásenie Codexa z 30. 10. 2026, `main` `e3ed0f42`, '
               'webkit-mobile, svetlý aj tmavý režim, 6 z 6 pokusov, špec `profile-numeric-language.spec.ts`). Príčina v '
               '`useDashboardUserProfile.tsx`: (1) počiatočná pravá položka (jazyk, účet, súkromie, úprava) sa otvárala len pri zhode slugu v adrese, '
@@ -355,7 +368,10 @@ DONE_SINCE = [
               'Do tej istej vetvy pribudol pred zlúčením ešte commit `de91273f`: pomocník porovnáva číselné ID ako číslo, takže prejde aj adresa '
               's úvodnými nulami (`/dashboard/users/007/language`), a testy pribudli pre vlastné ID `007` a `0007` a cudzie `099` a `00099`. '
               'Testy hooku a pomocníka (4 súbory, 65 testov) prechádzajú aj na stave `main` `bd9131e6`. '
-              'WebKit a Railway sa tu overiť nedali. Súvisiace, nehlásené a preto nezmenené: pri starom slugu v adrese '
+              'Moje lokálne overenie nemalo WebKit ani Railway; Codex ich doplnil v celom behu 30. 10. na reálnom WebKite proti Railway '
+              '(`main` `e2612438`): oba mobilné varianty `profile-numeric-language.spec.ts` (svetlý aj tmavý) vrátane F5 a oba varianty '
+              'profilového návratu (app Back aj browser Back) prešli; varianty s úvodnými nulami, s query a fragmentom ani voliteľné '
+              '`/account`, `/privacy` a `/edit` s číselným ID sa v reálnom prehliadači osobitne neskúšali. Súvisiace, nehlásené a preto nezmenené: pri starom slugu v adrese '
               '(`/dashboard/users/<starý-slug>/language`) kanonizácia podstránku stále zahodí.'),
 ]
 
@@ -387,15 +403,16 @@ PORADIE = [
     dict(vlna='0 – najprv',
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
             'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
-            'zlúčený (vetva 142). Zvyšok 183 a 184 (protobuf, `next` 14 → 16) je vo vlne 1; Django 5.2 je zlúčený (vetva 154, PR #214)',
+            'zlúčený (vetva 142). Zvyšok 184 (`next` 14 → 16) je vo vlne 1; Django 5.2 je zlúčený (vetva 154, PR #214), protobuf opravený '
+            '(vetva 158) a zo 183 ostáva len vývojový `pytest` (skupina po nasadení)',
          preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
          polozky=['183', '184']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
-         co='Veľké skoky verzií z 183 a 184 (Django 5.2 LTS s DRF 3.18.3 je hotový vo vetve 154, `google-cloud-vision` kvôli protobuf, '
-            'Next 16 s Reactom 19), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223; '
+         co='Veľký skok verzií z 184 (Next 16 s Reactom 19; Django 5.2 LTS s DRF 3.18.3 je hotový vo vetve 154 a `google-cloud-vision` '
+            's protobuf vo vetve 158), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225; '
             '212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['183', '184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223']),
+         polozky=['184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223', '225']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
