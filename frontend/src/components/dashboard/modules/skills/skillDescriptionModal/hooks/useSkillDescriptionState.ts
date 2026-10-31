@@ -231,7 +231,7 @@ export const useSkillDescriptionState = ({
   }, [initialUrgency, isOpen]);
 
   // Synchronizácia popisu pri zmene initialDescription
-  const prevInitialDescriptionRef = useRef<string | undefined>();
+  const prevInitialDescriptionRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (isOpen && initialDescription !== prevInitialDescriptionRef.current) {
       prevInitialDescriptionRef.current = initialDescription;

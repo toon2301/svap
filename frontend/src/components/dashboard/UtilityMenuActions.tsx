@@ -14,7 +14,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { requestBugReportDialog } from './modules/bug-report/bugReportDialogEvents';
 
 type UtilityMenuActionsProps = {
-  firstItemRef?: RefObject<HTMLButtonElement>;
+  firstItemRef?: RefObject<HTMLButtonElement | null>;
   onActionComplete: () => void;
   onBugReportOpen?: () => void;
   onLogout: () => void;

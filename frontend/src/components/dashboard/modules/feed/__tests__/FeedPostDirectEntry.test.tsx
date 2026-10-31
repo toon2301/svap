@@ -25,8 +25,9 @@ beforeEach(() => {
   dashboardProps.mockReset();
 });
 
-it('opens the full-page detail module for a direct link', () => {
-  render(<FeedPostPage params={{ postId: '7' }} />);
+it('opens the full-page detail module for a direct link', async () => {
+  // Stránka je od Next 15 `async` (serverový) komponent s `params` ako sľubom: vykreslíme až jej hotový element.
+  render(await FeedPostPage({ params: Promise.resolve({ postId: '7' }) }));
 
   expect(screen.getByTestId('dashboard')).toBeInTheDocument();
   expect(dashboardProps).toHaveBeenCalledWith(
@@ -37,8 +38,8 @@ it('opens the full-page detail module for a direct link', () => {
   );
 });
 
-it('passes no id when the URL carries junk', () => {
-  render(<FeedPostPage params={{ postId: 'abc' }} />);
+it('passes no id when the URL carries junk', async () => {
+  render(await FeedPostPage({ params: Promise.resolve({ postId: 'abc' }) }));
 
   expect(dashboardProps).toHaveBeenCalledWith(
     expect.objectContaining({ initialFeedPostId: null }),

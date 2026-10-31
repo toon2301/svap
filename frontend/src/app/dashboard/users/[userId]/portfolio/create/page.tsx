@@ -1,14 +1,13 @@
 import Dashboard from '@/components/dashboard/Dashboard';
 
 interface UserPortfolioCreateDashboardPageProps {
-  params: {
+  params: Promise<{
     userId: string;
-  };
+  }>;
 }
 
-export default function UserPortfolioCreateDashboardPage({
-  params,
-}: UserPortfolioCreateDashboardPageProps) {
+export default async function UserPortfolioCreateDashboardPage(props: UserPortfolioCreateDashboardPageProps) {
+  const params = await props.params;
   const identifier = params.userId;
 
   return (
