@@ -58,7 +58,7 @@ async function message(data: unknown = { type: 'OAUTH_SUCCESS', nonce: sessionSt
 }
 
 beforeEach(() => {
-  jest.useFakeTimers({ doNotFake: ['queueMicrotask'] });
+  jest.useFakeTimers();
   jest.clearAllMocks();
   closed = false;
   disconnected = false;
