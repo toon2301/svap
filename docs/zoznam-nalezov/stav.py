@@ -6,15 +6,27 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='30. 10. 2026',
-    kod='`main` `e2612438` (po PR #216)',
+    datum='31. 10. 2026',
+    kod='`main` `0905aedd` (po PR #217)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('31. 10. 2026',
-     'Vetva 158 (čaká na zlúčenie): časť 183c nálezu 183 – `google-cloud-vision` 3.4.5 → 3.16.0 (vyžaduje protobuf od 6.33.5, dnes 7.36.2), čím '
+     'Vetva 159 (čaká na zlúčenie): nález 184b – frontend sa povyšuje z Next 14.2.35 a Reactu 18.3.1 na Next 16.4.3 a React 19.3.1 '
+     '(rozhodnutie R9, odpoveď majiteľa 31. 10. 2026). Štyri commity: (1) deväť testov upravených tak, aby fungovali na starej aj '
+     'novej verzii (celý Jest na Next 14 prešiel: 518 sád a 8 002 testov), (2) závislosti a konfigurácia (`package.json` a '
+     'lockfile, skripty `build` a `dev` s `--webpack`, `lint` ako `eslint .`, `eslint.config.mjs`, `tsconfig.json`, '
+     '`images.qualities`), (3) `await params` v 12 stránkach, typové opravy v 13 súboroch a dva testy stránok, (4) dokumentácia. '
+     '`npm audit --omit=dev` 7 → 5 (zmizla kritická zraniteľnosť `next` aj vysoká `postcss`). Nová minimálna podpora prehliadačov: '
+     'Safari 16.4 (Next 14 mal Safari 12). Nález 184 je hotový (čaká na zlúčenie). Nové nálezy: 226 (mŕtvy '
+     '`frontend/middleware.ts`), 227 (lint: vypnuté nové pravidlá, ESLint 9), 228 (testy `useGoogleLogin` nezachytia vynechané '
+     '`clearTimeout(delayTimer)`), 229 (5 stredných zraniteľností v build nástroji Sentry), 230 (prechod na Turbopack). Doplnené: '
+     '183 (test majiteľa po nasadení vetvy 158 prešiel: obyčajná fotka prešla, nevhodná sa nepridala, obe so správnym hlásením) a '
+     '194 (zostávajúce výnimky). Zlúčené: vetva 158 (PR #217), `main` `0905aedd`.'),
+    ('31. 10. 2026',
+     'Vetva 158 (zlúčená v PR #217): časť 183c nálezu 183 – `google-cloud-vision` 3.4.5 → 3.16.0 (vyžaduje protobuf od 6.33.5, dnes 7.36.2), čím '
      'zmizlo hlásenie CVE-2026-0994; `pip-audit` projektových závislostí 4 → 2 záznamy (zostáva len vývojový `pytest`). Nový test '
      '`swaply/test/test_vision_client_contract.py` (6 testov) spúšťa skutočného klienta Google Vision proti falošnému gRPC serveru, lebo '
      'doterajšie testy používajú atrapu a produkcia je fail-closed. Overené: čerstvé prostredie, `pip check` čistý, celá backendová sada '
@@ -373,6 +385,32 @@ DONE_SINCE = [
               'profilového návratu (app Back aj browser Back) prešli; varianty s úvodnými nulami, s query a fragmentom ani voliteľné '
               '`/account`, `/privacy` a `/edit` s číselným ID sa v reálnom prehliadači osobitne neskúšali. Súvisiace, nehlásené a preto nezmenené: pri starom slugu v adrese '
               '(`/dashboard/users/<starý-slug>/language`) kanonizácia podstránku stále zahodí.'),
+    dict(n=184, vetva='159', pr=None, zlucene=False,
+         text='HOTOVÉ (časť 184a: vetva 142, PR #202; časť 184b: vetva 159, čaká na zlúčenie): frontend je povýšený z Next 14.2.35 a Reactu '
+              '18.3.1 na Next 16.4.3 a React 19.3.1 (rozhodnutie R9). Zmizla kritická zraniteľnosť `next` aj vysoká `postcss`: `npm audit '
+              '--omit=dev` 7 → 5, zostáva 5 stredných v build nástroji Sentry (nález 229). Zmeny: (1) závislosti: framer-motion 12, Testing '
+              'Library 16 s novou povinnou `@testing-library/dom`, ESLint 9 a `eslint-config-next` 16, `overrides` pre `@emoji-mart/react` '
+              '(oficiálne React 19 nepodporuje, v skúške funguje); lockfile 964 → 990 balíkov; (2) skripty: `build` a `dev` s `--webpack` '
+              '(Turbopack padá na `src/pages/_document.tsx`, nález 230), `lint` ako `eslint .` (nález 227); (3) `tsconfig.json` (tri zmeny, '
+              'ktoré si Next 16 robí sám) a `images.qualities: [75, 80]` v `next.config.js` (Next 16 inak zníži kvalitu loga z 80 na 75; '
+              'overené v prehliadači); (4) 12 stránok v `src/app/dashboard/**` s `await params`; (5) typové opravy v 13 súboroch (`ease: '
+              '"easeOut" as const`, `RefObject<T | null>`, `useRef(undefined)`); (6) opravy 11 testových súborov: po samotnej zmene knižníc '
+              'padalo 65 testov (stránky sú `async`; React 19 volá komponenty s iným druhým argumentom; jsdom nemá `MessageChannel`; '
+              '`jest.getTimerCount()` počíta aj interné mikroúlohy Reactu; tri testy záviseli od poradia dobehnutia efektov). Aplikačný kód '
+              'sa kvôli testom nemenil, deväť súborov funguje na starej aj novej verzii a išlo do samostatného commitu. Overené z čistej '
+              'inštalácie (`npm ci`): `tsc` bez chýb (po samotnej zmene knižníc 26), celý Jest 518 sád a 8 002 testov, `npm run build` '
+              'prejde, mutačné kontroly všetkých opráv (nový aj pôvodný test padá rovnako), 94 testov z Codexových špecov v Chromiu (rozmery '
+              'iPhonu aj desktop) proti lokálnemu backendu: 63 prešlo, 8 padlo a 23 preskočených (pred aktualizáciou 64, 7 a 23); šesť pádov '
+              'je rovnakých ako pred aktualizáciou a nesúvisí s ňou (2× časový limit pri prihlásení, 2× chýbajúce testovacie dáta v kópii, '
+              '2× zámerný test nálezu 224) a dva sú časovo citlivý test fotiek, ktorý padal na kontrole pred odoslaním (okno nebolo na '
+              'spodku ešte pred odoslaním; padal raz aj v behu pred aktualizáciou; v štyroch čistých kolách prešiel 12 z 12), 15 stránok bez '
+              'nových chýb konzoly, hlavičky odpovedí (CSP, `Cache-Control: no-store`) rovnaké a obrázky cez `next/image` sa načítajú '
+              '(optimalizáciu odteraz robí `sharp`). WebKit/iPhone a Railway sa lokálne neskúšali: čaká plný beh Playwrightu po nasadení a '
+              'test majiteľa na iPhone. Nová minimálna podpora prehliadačov (overené v balíkoch Next): Safari 16.4 (iOS 16.4, 03/2023) a '
+              'Chrome, Edge a Firefox 111; Next 14 mal Safari 12 a Chrome 64, preto iPhony s iOS 15 a starším aplikáciu prestanú správne '
+              'zobrazovať (majiteľ plán odsúhlasil 31. 10. 2026). Stránka `/reset-password/…` sa vykresľuje na požiadanie (v Next 14 bola '
+              'predgenerovaná; pre používateľa rovnaké, overené bez chýb). Dopad na E2E: žiadna zmena E2E súborov; po nasadení plný beh '
+              'Playwrightu na všetkých troch projektoch a porovnanie s posledným behom (427 prešlo, 2 padli, 303 preskočených).'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
@@ -403,16 +441,16 @@ PORADIE = [
     dict(vlna='0 – najprv',
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
             'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
-            'zlúčený (vetva 142). Zvyšok 184 (`next` 14 → 16) je vo vlne 1; Django 5.2 je zlúčený (vetva 154, PR #214), protobuf opravený '
-            '(vetva 158) a zo 183 ostáva len vývojový `pytest` (skupina po nasadení)',
+            'zlúčený (vetva 142). Skok `next` 14 → 16 je hotový vo vetve 159; Django 5.2 je zlúčený (vetva 154, PR #214), protobuf opravený '
+            '(vetva 158, PR #217) a zo 183 ostáva len vývojový `pytest` (skupina po nasadení)',
          preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
-         polozky=['183', '184']),
+         polozky=['183']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
-         co='Veľký skok verzií z 184 (Next 16 s Reactom 19; Django 5.2 LTS s DRF 3.18.3 je hotový vo vetve 154 a `google-cloud-vision` '
-            's protobuf vo vetve 158), 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225; '
-            '212 je hotová vo vetve 157)',
+         co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
+            'Next 16 s Reactom 19 vo vetve 159); ďalej 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ '
+            '(31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['184', '179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223', '225']),
+         polozky=['179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223', '225', '228']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
@@ -483,7 +521,10 @@ DECISIONS = [
          otazka='Povýšiť Next pred štartom a kde bude frontend bežať?',
          odporucanie='Samostatný balík pred štartom (pravdepodobne aj React 19, viď 153). Frontend nechať na vlastnom serveri a zraniteľnosť '
                      'odstrániť upgradom, nie presunom na Vercel (C.4).',
-         kedy='Pred prácou na 184; časť o hostingu frontendu až neskôr (R1).'),
+         kedy='Pred prácou na 184; časť o hostingu frontendu až neskôr (R1).',
+         odpoved='Podľa odporúčania: samostatná vetva 159 pred štartom s Next 16.4.3 a Reactom 19.3.1; frontend ostáva na vlastnom serveri, '
+                 'nie na Verceli. Majiteľ odsúhlasil aj plán s upozornením na novú minimálnu podporu Safari 16.4 (iOS 16.4).',
+         datum='31. 10. 2026'),
     dict(id='R10', tema='Obrazová moderácia pri výpadku (N10)',
          otazka='Čo robiť, keď Google Vision nie je dostupný?',
          odporucanie='Produkcia je už nastavená „fail-closed“: obrázok sa odmietne s hláškou „Kontrola bezpečnosti obrázka zlyhala, skúste neskôr.“ '
