@@ -63,11 +63,12 @@ NEW_ITEMS_DALSIE = [
          note='Nič z toho nebolo v zadaní nálezu 179, preto sa neopravuje. Aj v časti, ktorá existuje, chýba: (1) ochrana pred opakovaním, '
               'už použitý kód ostáva platný do konca okna (dnes ±30 s, teda až 90 s); (2) technické zlyhanie overenia (neplatný šifrovací '
               'kľúč, poškodený secret) vráti len hlášku „Chyba pri overovaní 2FA.“ a nezapíše sa do logu, takže by ostalo nepovšimnuté. '
-              'CodeRabbit (PR #221) označil bod (1) ako Major; zatiaľ sa nerobí, lebo 2FA nikto nemôže zapnúť (cesta útoku dnes neexistuje) a '
-              'patrí k dokončeniu tejto funkcie. '
+              'CodeRabbit (PR #221) označil bod (1) ako Major; zatiaľ sa nerobí, lebo 2FA sa cez aplikáciu zapnúť nedá a ochrana patrí k '
+              'dokončeniu tejto funkcie. Cesta k opakovanému použitiu kódu však existuje pre každý účet, ktorému by sa 2FA zapol ručne v '
+              'databáze; či taký účet je v produkcii, nevieme (kontrola: počet profilov s `mfa_enabled`). Ak taký účet je, robí sa to hneď. '
               'Rozhodnutie R12 je na majiteľovi. Odporúčanie: dokončiť až po nasadení (väčší balík: koncové body, QR kód, záložné kódy, '
-              'obrazovky vo všetkých šiestich jazykoch, ochrana pred opakovaním, testy); dovtedy sa 2FA nikomu neponúka, takže jeho '
-              'chýbanie nikomu neškodí. Ak má byť pri štarte, patrí do vlny 1.',
+              'obrazovky vo všetkých šiestich jazykoch, ochrana pred opakovaním, testy); dovtedy sa 2FA používateľom neponúka, takže jeho '
+              'chýbanie bežným používateľom neškodí. Ak má byť pri štarte, patrí do vlny 1.',
          dec='ROZHODNUTIE R12', src='vetva 161'),
     dict(n=236, bucket=P, imp=N, eff=ES, pkg='Produkčná odolnosť aplikácie',
          kratko='Neznáma cesta pod `/ws/` skončí chybou 500 a výpisom v logu (asi po 1 s), aj bez prihlásenia',

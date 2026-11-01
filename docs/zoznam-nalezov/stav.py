@@ -217,7 +217,7 @@ PORADIE = [
          polozky=['183']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
-            'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 9, 33, 52 vo vetve 161); ďalej 185, 214, '
+            'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161); ďalej 185, 214, '
             '232, 236, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
          polozky=['185', '214', '232', '236', 'OW-07', '31', '189', '209', '223', '225', '228']),
@@ -307,8 +307,9 @@ DECISIONS = [
          kedy='Pred prácou na 185.'),
     dict(id='R12', tema='Dvojfázové overenie – 2FA (235)',
          otazka='Dokončiť 2FA (zapnutie, QR kód, záložné kódy, zadanie kódu pri prihlásení) pred štartom, alebo až po ňom?',
-         odporucanie='Až po nasadení. Dnes si ho nikto nemôže zapnúť, takže jeho chýbanie nikomu neškodí; dokončenie je väčšia práca '
+         odporucanie='Až po nasadení. Cez aplikáciu si ho dnes nemôže zapnúť nikto (zapnúť sa dá len ručne v databáze), takže jeho chýbanie bežným používateľom '
+                     'neškodí; dokončenie je väčšia práca '
                      '(koncové body, QR kód, záložné kódy, obrazovky vo všetkých jazykoch, ochrana pred opakovaním kódu, testy). Ak má byť '
                      '2FA pri štarte (napr. kvôli firemným účtom), patrí do vlny 1.',
-         kedy='Pred prácou na 235; dovtedy sa 2FA nikomu neponúka.'),
+         kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]

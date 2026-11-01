@@ -297,10 +297,12 @@ DONE_SINCE = [
               'nie je dotknutý; pred opravou zlyhalo šesť z 16 testov, ostatných desať pripína nezmenené správanie. Deväť zámerných pokazení '
               'kódu (okno 0 alebo 2, zlý kód sa neodmietne, chýbajúci secret, technická chyba, všeobecná hláška, únik kódu do hlášky, '
               'preskočené overenie, prázdny kód) testy zachytili všetky. Celá backendová sada na SQLite: 2 012 prešlo a 10 preskočených. Pozor: 2FA je dnes '
-              'nedokončená funkcia (nález 235), takže sa oprava v živej aplikácii neprejaví, kým ju niekto nezapne; opakované použitie už '
+              'nedokončená funkcia (nález 235): cez aplikáciu sa nedá zapnúť, takže sa oprava prejaví len na účte, ktorému by sa 2FA zapol ručne v '
+              'databáze; opakované použitie už '
               'videného kódu (bez ochrany pred replayom) existovalo aj predtým a platnosť kódu sa predĺžila z 30 na 90 s. Riziko je nízke '
               '(útočník musí poznať aj heslo) a je zapísané v 235. CodeRabbit (PR #221) označil rovnaký bod (opakované použitie kódu) ako Major; zatiaľ sa nerobí, '
-              'lebo 2FA nikto nemôže zapnúť, a čaká na rozhodnutie majiteľa (R12).'),
+              'lebo 2FA sa cez aplikáciu zapnúť nedá (ručne len v databáze) a ochrana patrí k dokončeniu tejto funkcie; čaká na rozhodnutie '
+              'majiteľa (R12). Ak by sa ukázalo, že taký účet v produkcii existuje, robí sa to hneď.'),
     dict(n=234, vetva='161', pr=None, zlucene=False,
          text='HOTOVÉ (čaká na zlúčenie; našlo sa pri mapovaní nálezu 179): prihlásenie s 2FA ukazovalo vždy len „Chyba pri overovaní 2FA.“, '
               'aj keď kód bol jednoducho zlý alebo expirovaný („Neplatný 2FA kód.“) alebo bolo 2FA zapnuté bez secretu („2FA nie je správne '
