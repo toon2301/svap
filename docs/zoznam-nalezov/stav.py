@@ -14,6 +14,14 @@ STAV = dict(
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('1. 11. 2026',
+     'Vetva 162 (čaká na zlúčenie; vychádza z vetvy 161, preto sa má zlúčiť až po nej): zoznam je pripravený na prácu kolegu na nálezoch '
+     '„po nasadení“. Nový súbor `fronta.py` vedie poradie prvej dávky (11 nálezov: 192, 221, 195, 226, 103, 58, 153, 178, APP-05, 134, 213) '
+     'a pri každom stav „voľné / rozrobené / čaká na zlúčenie“ s údajom, kto na ňom pracuje a od kedy. Poradie navrhol agent (od najjednoduchších '
+     'zmien bez dopadu na správanie po zložitejšie) a schvaľuje ho majiteľ. Pri každom nálezu je overené, že neznamená zmenu súboru nad 500 '
+     'riadkov (pri 134 sa to ukáže až podľa rozsahu); preto v dávke nie sú napríklad 216, 211 a 30. Kontrola v `model.py` zlyhá, ak záznam '
+     'odkazuje na nález, ktorý už nie je otvorený v skupine PO NASADENÍ, takže fronta nemôže ticho zastarať. Riadok o prvej dávke je aj '
+     'v časti „V skratke“.'),
+    ('1. 11. 2026',
      'Vetva 161 (čaká na zlúčenie): balík „Produkčná odolnosť aplikácie“ – nálezy 179, 234, 33, 9 a 52 sú hotové. (1) 179 a 234: 2FA pri '
      'prihlásení prijíma kód z predošlého a nasledujúceho okna (`TOTP_VALID_WINDOW = 1`, ±30 s) a zlý kód dostane hlášku „Neplatný 2FA kód.“ '
      'namiesto všeobecnej chyby (nový súbor `test_login_2fa.py`, 16 testov). (2) 33: `global-error.tsx` hlási chybu koreňového layoutu do '
