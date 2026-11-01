@@ -7,6 +7,7 @@ neskôr. Prílohu o hostingu zapisuje `priloha_hosting.py`.
 import re
 from collections import OrderedDict, defaultdict
 
+import fronta
 import polozky_nove
 import register
 import stav
@@ -96,6 +97,38 @@ def _hned(m):
     return sorted(riadky, key=lambda r: (not r['id'].isdigit(), int(r['id']) if r['id'].isdigit() else 0, r['id']))
 
 
+def _stav_fronty(zaznam):
+    """Text stavu záznamu fronty: „voľné“ alebo napr. „rozrobené: kolega od 3. 11. 2026“."""
+    if not zaznam.get('kto'):
+        return 'voľné'
+    return f'{zaznam["stav"]}: {zaznam["kto"]} od {zaznam["od"]}'
+
+
+def _fronta_v_skratke():
+    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, v akom stave a ktorý je na rade."""
+    zaznamy = fronta.FRONTA_PO_NASADENI
+    volne = [z for z in zaznamy if not z.get('kto')]
+    rozrobene = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_ROZROBENE)
+    caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
+    dalsi = f'ďalší na rade: č. {volne[0]["n"]}' if volne else 'voľný nález nie je'
+    return (f'- **Prvá dávka po nasadení** (časť 5): v poradí {len(zaznamy)} (voľné {len(volne)}, rozrobené {rozrobene}, '
+            f'čaká na zlúčenie {caka}); {dalsi}.')
+
+
+def _fronta(d):
+    """Zapíše podčasť 5 „Prvá dávka po nasadení“: poradie, prečo je nález v dávke a jeho stav (nič, ak je fronta prázdna)."""
+    if not fronta.FRONTA_PO_NASADENI:
+        return
+    d.w('### Prvá dávka po nasadení (poradie a stav)')
+    d.w()
+    d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nekolidujú s prácou pred nasadením a nemenia súbory nad '
+        '500 riadkov); schvaľuje majiteľ. Pred opravou treba overiť, že nález ešte platí. Úplný popis každého nálezu je v tabuľkách nižšie. '
+        'Stav „kto na tom robí“ sa vedie v `fronta.py`.')
+    d.w()
+    d.tabulka(['Poradie', 'Č.', 'Čo', 'Prečo v tejto dávke', 'Stav'],
+              [[i, z['n'], z['co'], z['preco'], _stav_fronty(z)] for i, z in enumerate(fronta.FRONTA_PO_NASADENI, 1)])
+
+
 def _uvod(d, m):
     """Zapíše nadpis, hlavičku (dátum, stav kódu) a úvodné odseky."""
     p = m.pocty
@@ -135,6 +168,8 @@ def _v_skratke(d, m):
     d.w(f'- **Pred nasadením** (časť 4): {p.nalezy[P]} nálezov, {p.registrove[P]} ID z registra a {p.uloh[P]} úloh na prípravu nasadenia. '
         'Odporúčané poradie je v časti 2.')
     d.w(f'- **Po nasadení** (časť 5): {p.nalezy[A]} nálezov a {p.registrove[A]} ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).')
+    if fronta.FRONTA_PO_NASADENI:
+        d.w(_fronta_v_skratke())
     d.w(f'- **Rozhodnutia** (časť 6): čaká {len(cakajuce)} z {len(stav.DECISIONS)}; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.')
     if hosting.get('odpoved'):
         d.w(f'- **Hosting**: rozhodnuté (R1): {hosting["odpoved"]}')
@@ -225,6 +260,7 @@ def _skupiny(d, m):
     d.w()
     d.w(f'{_riadkov(p.riadkov[A])} v {len(m.skupiny[A])} skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.')
     d.w()
+    _fronta(d)
     _skupina_balikov(d, m.skupiny[A])
 
 
@@ -313,12 +349,15 @@ def _udrzba(d, m):
         'oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.')
     d.w(f'- **Čísla:** nový nález dostane ďalšie voľné číslo ({m.posledne_cislo + 1}); čísla sa nikdy nemenia ani nepoužívajú znova. '
         'Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….')
-    d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `polozky_priprava.py`, `register.py`, `stav.py`, `hotove.py`), spustiť z koreňa repozitára '
+    d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `polozky_priprava.py`, `register.py`, `stav.py`, `hotove.py`, `fronta.py`), spustiť z koreňa repozitára '
         '`python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, '
         'súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.')
     d.w('- **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py` (číslo vetvy, PR keď je známe, '
         '`zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali.')
     d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.')
+    d.w('- **Poradie po nasadení:** pri začatí práce na nálezu z prvej dávky vyplniť v `fronta.py` `kto`, `stav` a `od`; po dokončení záznam '
+        'odstrániť a nález presunúť do `DONE_SINCE`. Kontrola zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo '
+        'skupiny PO NASADENÍ.')
     d.w('- **Vždy:** posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.')
     d.w('- **Kontrola:** `python docs/zoznam-nalezov/build.py --check` skončí chybou, ak sa `ZOZNAM.md` líši od dát.')
     d.w('- Podrobný denník položiek OW- / TEST- ostáva v `docs/testing/findings-register.md`; nové ID, ktoré tam pribudnú, treba zaradiť do '

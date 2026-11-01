@@ -653,9 +653,10 @@ Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:
 
 - **Po každom novom nálezi alebo oprave** sa dokument aktualizuje v tej istej vetve, v ktorej sa zmena robí: nález = nový riadok, oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.
 - **Čísla:** nový nález dostane ďalšie voľné číslo (237); čísla sa nikdy nemenia ani nepoužívajú znova. Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….
-- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `polozky_priprava.py`, `register.py`, `stav.py`, `hotove.py`), spustiť z koreňa repozitára `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.
+- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `polozky_priprava.py`, `register.py`, `stav.py`, `hotove.py`, `fronta.py`), spustiť z koreňa repozitára `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.
 - **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py` (číslo vetvy, PR keď je známe, `zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali.
 - **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
+- **Poradie po nasadení:** pri začatí práce na nálezu z prvej dávky vyplniť v `fronta.py` `kto`, `stav` a `od`; po dokončení záznam odstrániť a nález presunúť do `DONE_SINCE`. Kontrola zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ.
 - **Vždy:** posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
 - **Kontrola:** `python docs/zoznam-nalezov/build.py --check` skončí chybou, ak sa `ZOZNAM.md` líši od dát.
 - Podrobný denník položiek OW- / TEST- ostáva v `docs/testing/findings-register.md`; nové ID, ktoré tam pribudnú, treba zaradiť do `register.py`, inak skript zlyhá.
