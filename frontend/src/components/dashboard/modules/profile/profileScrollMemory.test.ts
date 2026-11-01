@@ -65,6 +65,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Obnova, ktorú test nechal bežať (stráži pozíciu), sa dokončí: jej poslucháče na `window` by inak
+  // prežili do ďalšieho testu a zmazali by mu zapamätanú pozíciu.
+  jest.advanceTimersByTime(PROFILE_SCROLL_RESTORE_TIMEOUT_MS + 1000);
   jest.useRealTimers();
   document.body.innerHTML = '';
 });
@@ -250,8 +253,12 @@ describe('startProfileScrollRestore', () => {
     startProfileScrollRestore();
 
     expect(fresh.writes).toEqual([2262]);
+    // Záznam histórie sa maže hneď (F5 na profile nemá skočiť na starú pozíciu).
     expect(readRememberedProfileScroll()).toBeNull();
-    // Hotovo: ani čakanie na snímku, ani časový limit nesmú ostať bežať.
+
+    // Pozícia sa ešte stráži; po časovom limite nesmie ostať bežať ani snímka, ani časovač.
+    frames(PROFILE_SCROLL_RESTORE_TIMEOUT_MS);
+    expect(fresh.writes).toEqual([2262]);
     expect(jest.getTimerCount()).toBe(0);
   });
 
@@ -270,11 +277,13 @@ describe('startProfileScrollRestore', () => {
     fresh.setHeight(6998);
     frames(16);
     expect(fresh.writes).toEqual([2262]);
-    expect(jest.getTimerCount()).toBe(0);
 
+    // Pokojný `<main>` sa ďalej neprepisuje.
     frames(1000);
     expect(fresh.writes).toEqual([2262]);
     expect(readRememberedProfileScroll()).toBeNull();
+    frames(PROFILE_SCROLL_RESTORE_TIMEOUT_MS);
+    expect(jest.getTimerCount()).toBe(0);
   });
 
   it('needs the content to reach the position: scrollHeight - clientHeight >= position', () => {
@@ -290,7 +299,7 @@ describe('startProfileScrollRestore', () => {
     expect(fresh.writes).toEqual([2262]);
   });
 
-  it.each(['touchstart', 'wheel', 'keydown', 'mousedown'])(
+  it.each(['touchstart', 'wheel', 'keydown', 'mousedown', 'pointerdown'])(
     'is cancelled by the user input (%s) and forgets the position',
     (eventName) => {
       rememberPosition(2262);
@@ -392,9 +401,12 @@ describe('startProfileScrollRestore', () => {
 
     try {
       startProfileScrollRestore();
+      frames(PROFILE_SCROLL_RESTORE_TIMEOUT_MS);
 
       const removed = removeSpy.mock.calls.map(([name]) => name);
-      expect(removed).toEqual(expect.arrayContaining(['touchstart', 'wheel', 'keydown', 'mousedown']));
+      expect(removed).toEqual(
+        expect.arrayContaining(['touchstart', 'wheel', 'keydown', 'mousedown', 'pointerdown']),
+      );
     } finally {
       removeSpy.mockRestore();
     }

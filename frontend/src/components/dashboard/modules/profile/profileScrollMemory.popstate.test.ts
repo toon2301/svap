@@ -7,6 +7,8 @@
  */
 
 import {
+  PROFILE_SCROLL_CARRY_TTL_MS,
+  PROFILE_SCROLL_RESTORE_TIMEOUT_MS,
   clearRememberedProfileScroll,
   readRememberedProfileScroll,
   startProfileScrollRestore,
@@ -53,6 +55,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Obnova, ktorú test nechal bežať (stráži pozíciu), sa dokončí: jej poslucháče na `window` by inak
+  // prežili do ďalšieho testu a zmazali by mu zapamätanú pozíciu.
+  jest.advanceTimersByTime(PROFILE_SCROLL_RESTORE_TIMEOUT_MS + 1000);
   jest.useRealTimers();
   document.body.innerHTML = '';
 });
@@ -114,11 +119,12 @@ describe('position carried by the popstate event', () => {
     expect(fresh.writes).toEqual([]);
   });
 
-  it('is used up by a finished restore', () => {
+  it('is used up by a finished restore (once the guarding has run out)', () => {
     popBackToProfile(2262);
     const first = mountMain({ scrollHeight: 7000 });
     startProfileScrollRestore();
     expect(first.writes).toEqual([2262]);
+    frames(PROFILE_SCROLL_RESTORE_TIMEOUT_MS);
     first.main.remove();
 
     const second = mountMain({ scrollHeight: 7000 });
@@ -126,6 +132,61 @@ describe('position carried by the popstate event', () => {
     frames(1000);
 
     expect(second.writes).toEqual([]);
+  });
+
+  it('is handed to the page that replaces the restored one while it is still guarded', () => {
+    popBackToProfile(2262);
+    const first = mountMain({ scrollHeight: 7000 });
+    const stop = startProfileScrollRestore();
+    expect(first.writes).toEqual([2262]);
+    stop();
+    first.main.remove();
+
+    // Router vymenil stránku a stav histórie je prepísaný bez našich kľúčov: ostáva pozícia v pamäti.
+    window.history.replaceState({ __NA: true }, '', PROFILE);
+    const second = mountMain({ scrollHeight: 664 });
+    startProfileScrollRestore();
+    second.setHeight(7000);
+    frames(16);
+
+    expect(second.writes).toEqual([2262]);
+  });
+
+  it('is forgotten after the time to live when nobody used it', () => {
+    popBackToProfile(2262);
+
+    frames(PROFILE_SCROLL_CARRY_TTL_MS + 100);
+
+    const late = mountMain({ scrollHeight: 7000 });
+    startProfileScrollRestore();
+    frames(1000);
+    expect(late.writes).toEqual([]);
+  });
+
+  it('still counts as carried just before the time to live runs out', () => {
+    popBackToProfile(2262);
+
+    frames(PROFILE_SCROLL_CARRY_TTL_MS - 100);
+
+    const fresh = mountMain({ scrollHeight: 7000 });
+    startProfileScrollRestore();
+    expect(fresh.writes).toEqual([2262]);
+  });
+
+  it('a write extends the time to live (the page is replaced later on a slow device)', () => {
+    popBackToProfile(2262);
+    frames(PROFILE_SCROLL_CARRY_TTL_MS - 1000);
+    const first = mountMain({ scrollHeight: 7000 });
+    const stop = startProfileScrollRestore();
+    expect(first.writes).toEqual([2262]);
+    stop();
+    first.main.remove();
+
+    frames(PROFILE_SCROLL_CARRY_TTL_MS - 100);
+
+    const second = mountMain({ scrollHeight: 7000 });
+    startProfileScrollRestore();
+    expect(second.writes).toEqual([2262]);
   });
 
   it('is forgotten when the restore gives up', () => {
