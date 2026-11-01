@@ -37,12 +37,6 @@ NEW_ITEMS = [
          what='ESLint hlási 10 chýb a 1 varovanie v nezmenenom súbore `search/hooks/useRecentSearches.tsx` (už na `main`).',
          note='CI lint nespúšťa (TOOL-01), preto si to nikto nevšimol. V tom istom súbore je aj APP-05 (závod pri '
               'overení histórie); riešiť spolu.', dec=None, src='vetva 138'),
-    dict(n=179, bucket=P, imp=S_, eff=ES, pkg='Produkčná odolnosť aplikácie',
-         what='`TestBioAnd2FAFlows::test_login_requires_totp_when_enabled` občas zlyháva. Príčina: `totp.verify(totp_code)` '
-              '(`auth_serializers.py:220`) bez `valid_window`.',
-         note='Nie je to len test: používateľ s 2FA, ktorého hodiny meškajú o pár sekúnd alebo ktorý zadá kód na '
-              'konci 30 s okna, môže mať správny kód odmietnutý. Oprava `valid_window=1` + test.',
-         dec=None, src='CI PR #194'),
     dict(n=180, bucket=P, imp=S_, eff=EM, pkg='iPhone a WebSocket',
          what='Upozornenia: na iPhone sa občas preruší WebSocket (kód 1006); na diagnostiku treba logy servera.',
          note='V predvolenej konfigurácii (`NEXT_PUBLIC_API_URL=/api`) ide WebSocket na doménu frontendu a Next ho preposiela na backend '
@@ -117,7 +111,7 @@ NEW_ITEMS = [
               '(bez cache a bez offline náhrady). Sú zbytočné a robia `page.route` v Playwrighte slepým (príčina nálezu 173).',
          note='Overené v Chromiu na produkčnom builde: keď worker tieto požiadavky nevybavuje, `page.route` funguje aj s aktívnym workerom. '
               'Lokálne meranie nepreukázalo rozdiel v latencii (medián 5,8 ms s workerom, 4,6 ms bez). Zmena `sw.js` je produkčná (PWA, iPhone), '
-              'preto samostatne a s overením na iPhone; rieši sa spolu s 52. Po nej by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
+              'preto samostatne a s overením na iPhone; nález 52 (vetva 161) `sw.js` nemenil, takže sa s ním neriešil. Po zmene `sw.js` by `serviceWorkers: \'block\'` v špecoch nebolo nutné '
               '(poistka `E2eServiceWorker.guard.test.ts` by sa upravila). Vetva 144: rovnaký vzorec je podľa hlásení iných projektov spúšťačom chyby '
               'WebKitu pri nahrávaní z iPhonu (nález 197); appka ju obchádza kopírovaním súborov do pamäte, takže zmena `sw.js` už nie je naliehavá, '
               'no vynechanie `respondWith` pri POST a PATCH by bolo ďalšou poistkou. Vetva 151: blok workera sa dnes vyžaduje aj pri '
@@ -337,7 +331,7 @@ NEW_ITEMS = [
               'majiteľom (okná 20:29 až 20:40 a 21:00 až 21:03 nášho času, teda 19:29 až 19:40 a 20:00 až 20:03 UTC; dátum v jeho súhrne bol 29. 10., '
               'čaká na potvrdenie, že išlo o 30. 10.): žiadne reštarty ani pády, žiadne HTTP 500 až 504, PostgreSQL a Redis bez zjavných problémov, '
               'Celery úspešne; opakované `WSREJECT` s `missing_token` pri WebSockete (pravdepodobne odhlásený testovací prehliadač, súvisí s '
-              'nálezom 9); metriky CPU a RAM v logoch nie sú a zaseknuté požiadavky sa nepotvrdili. V dostupných logoch teda nie je dôkaz, že za '
+              'nálezom 9, ktorý sa vo vetve 161 nepotvrdil: neprihlásené spojenie sa lokálne odmieta za milisekundy); metriky CPU a RAM v logoch nie sú a zaseknuté požiadavky sa nepotvrdili. V dostupných logoch teda nie je dôkaz, že za '
               'pády testov môže Railway; príčina ostáva neurčená. V kóde je zapnutá rotácia obnovovacích tokenov (`ROTATE_REFRESH_TOKENS`, '
               '`BLACKLIST_AFTER_ROTATION`, prístupový token 15 minút, `swaply/settings_split/jwt.py`), čo je relevantné pri 401 a 403, no nie je to dôkaz. '
               'Sonda Codexa (31. 10. 2026, 13:06 až 13:16 UTC, 600 288 ms; Node `https` bez prehliadača, prihlásenia a cookies, z toho '
@@ -355,7 +349,15 @@ NEW_ITEMS = [
               '`GET /api/auth/me/` zlyhal po 22 690 ms (nemecký tmavý profilový variant, po troch opakovaniach prešiel) a viaceré '
               'pollingové a zoznamové požiadavky ostali pending alebo zlyhali po asi 16 s. Pomer 17 z 21 svedčí skôr o nestabilite prostredia '
               'než o dôsledku povýšenia, no príčinu nepreukazuje. Návrh: majiteľ prejde logy Railway aj pre okno 07:32 až 08:30 UTC dňa '
-              '1. 11. (rovnaké otázky ako 30. 10.).',
+              '1. 11. (rovnaké otázky ako 30. 10.). Dodatok 1. 11. 2026 (Codex, `main` `583b94c0`): prvý pokus celého behu zasiahol vyčerpaný '
+              'limit Railway (stránka `/dashboard/watches` a obnova relácie vracali 404 o 15:13:34 a 15:18:33 UTC, potvrdil majiteľ) a '
+              'nezapočítava sa. Po navýšení limitu nový celý beh dal 418 prešlo, 13 zlyhalo a 307 preskočených (prijatý stav 427, 2, 303 '
+              'sa nemení); tri diagnostické vykonania každého zo 13 zlyhaných kľúčov dali 37 prešlo a 2 zlyhali. Zlyhania majú spoločný vzor: '
+              'príprava sa zastaví pred samotnou kontrolou (`feed-list` sa nezobrazil, `GET /api/auth/feed/posts/` ostal pending, '
+              '`GET /api/auth/me/` alebo vyhľadávanie zlyhali po asi 23 s, obnova relácie dostala 401 a 403). Dva pády sa zopakovali 2 zo 4 '
+              '(`offer-card-review-translations`, desktopový WebKit, a `profile-numeric-language`, svetlý mobilný variant). Z logov Railway, '
+              'ktoré majiteľ poslal, je potvrdená len jedna chyba: nález 232 (súbeh na serveri). Príčina '
+              'týchto zlyhaní ostáva neurčená; nález ostáva otvorený a Codex pokračuje v mapovaní.',
          dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',

@@ -23,7 +23,7 @@ def priloha_c(d):
          'Obrázky Nástenky dnes streamuje Django cez `_stream_key` (`feed_image_files.py`).'],
         ['E-mail', 'Resend (`django-anymail`)', 'SPF / DKIM / DMARC pre doménu (N2).'],
         ['Moderácia obrázkov', 'Google Cloud Vision (SafeSearch)', 'V produkcii „fail-closed“: pri výpadku sa obrázok odmietne (R10).'],
-        ['Monitoring', 'Sentry (backend aj frontend)', 'Chýba `global-error` (nález 33).'],
+        ['Monitoring', 'Sentry (backend aj frontend)', '`global-error` je doplnený (nález 33, vetva 161); na novom serveri treba nastaviť DSN (N11).'],
         ['Ďalšie', 'Web Push (VAPID), prihlásenie cez Google (vlastný kód `google_oauth_simple.py`), reCAPTCHA, MFA (pyotp), '
                    'HEIC obrázky (`pillow-heif`)',
          'Všetky kľúče nové pre novú doménu (N5). `django-allauth` sa už nepoužíva (odstránený na vetve 143).'],

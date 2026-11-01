@@ -65,6 +65,81 @@ export async function cleanupDevelopmentServiceWorkers({
   }
 }
 
+/** Ako často sa počas otvorenej stránky kontroluje nová verzia service workera. */
+export const SERVICE_WORKER_UPDATE_INTERVAL_MS = 10 * 60 * 1000;
+
+/**
+ * Text do konzoly, keď sa nainštaluje nová verzia. `public/sw.js` volá `skipWaiting()` už pri inštalácii,
+ * takže sa nová verzia aktivuje hneď a nečaká na obnovenie stránky; obnovenie potrebuje len kód stránky.
+ */
+export const NEW_VERSION_LOG_TEXT =
+  'New Service Worker version installed and active (the open page keeps running its current code until it is reloaded).';
+
+type RegisterDeps = {
+  serviceWorker: Pick<ServiceWorkerContainer, 'register' | 'controller'>;
+  logger?: (...args: unknown[]) => void;
+};
+
+/**
+ * Zaregistruje service worker a stará sa o zisťovanie jeho novej verzie; vráti funkciu na upratanie.
+ *
+ * Nová verzia sa hľadá hneď po registrácii (po nasadení tak zariadenie nebeží so starým workerom až do prvej
+ * periodickej kontroly) a potom každých `SERVICE_WORKER_UPDATE_INTERVAL_MS`. Pri prvej návšteve (bez
+ * `controller`) nie je čo aktualizovať. Stránka sa pri aktualizácii nikdy sama neobnovuje (cyklické obnovenia,
+ * rozdiely medzi súbormi Next.js).
+ */
+export function registerServiceWorker({
+  serviceWorker,
+  logger = console.log,
+}: RegisterDeps): () => void {
+  let intervalId: number | null = null;
+  let stopped = false;
+
+  // `update()` môže zlyhať (sieť, worker sa práve inštaluje); neošetrené zamietnutie by skončilo v Sentry
+  // ako chyba stránky, a ďalšia kontrola príde tak či tak.
+  const checkForUpdate = (registration: ServiceWorkerRegistration) => {
+    void Promise.resolve(registration.update()).catch(() => undefined);
+  };
+
+  const onUpdateFound = (registration: ServiceWorkerRegistration) => () => {
+    const newWorker = registration.installing;
+    if (!newWorker) return;
+    newWorker.addEventListener('statechange', () => {
+      if (newWorker.state === 'installed' && serviceWorker.controller) {
+        logger(NEW_VERSION_LOG_TEXT);
+      }
+    });
+  };
+
+  serviceWorker
+    .register('/sw.js', { updateViaCache: 'none' })
+    .then((registration) => {
+      // Stránka medzitým zanikla: nový časovač by už nikto nezastavil.
+      if (stopped) return;
+      logger('Service Worker registered:', registration);
+
+      if (serviceWorker.controller) checkForUpdate(registration);
+      intervalId = window.setInterval(
+        () => checkForUpdate(registration),
+        SERVICE_WORKER_UPDATE_INTERVAL_MS,
+      );
+
+      registration.addEventListener('updatefound', onUpdateFound(registration));
+    })
+    .catch((error) => {
+      logger('Service Worker registration failed:', error);
+    });
+
+  return () => {
+    stopped = true;
+    try {
+      if (intervalId != null) window.clearInterval(intervalId);
+    } catch {
+      // ignore
+    }
+  };
+}
+
 export default function ServiceWorker() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -81,44 +156,7 @@ export default function ServiceWorker() {
       return;
     }
 
-    let intervalId: number | null = null;
-    const onUpdateFound = (registration: ServiceWorkerRegistration) => () => {
-      const newWorker = registration.installing;
-      if (!newWorker) return;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // New version is available. Do NOT auto-swap controller or reload the page.
-          // This prevents infinite reload loops and stale Next.js asset mismatches.
-          console.log(
-            'New Service Worker version available (will activate on next reload).'
-          );
-        }
-      });
-    };
-
-    navigator.serviceWorker
-      .register('/sw.js', { updateViaCache: 'none' })
-      .then((registration) => {
-        console.log('Service Worker registered:', registration);
-
-        // Check for updates periodically without forcing reloads (prevents auth/navigation loops).
-        intervalId = window.setInterval(() => {
-          void registration.update();
-        }, 10 * 60 * 1000); // every 10 minutes
-
-        registration.addEventListener('updatefound', onUpdateFound(registration));
-      })
-      .catch((error) => {
-        console.log('Service Worker registration failed:', error);
-      });
-
-    return () => {
-      try {
-        if (intervalId != null) window.clearInterval(intervalId);
-      } catch {
-        // ignore
-      }
-    };
+    return registerServiceWorker({ serviceWorker: navigator.serviceWorker });
   }, []);
 
   return null;

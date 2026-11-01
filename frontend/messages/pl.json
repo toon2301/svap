@@ -4652,5 +4652,11 @@
   "reports": {
     "descriptionRequired": "Przy powodzie „inne” opis jest wymagany.",
     "submitSuccess": "Zgłoszenie zostało wysłane."
+  },
+  "appError": {
+    "title": "Coś poszło nie tak",
+    "description": "Nie udało się wyświetlić aplikacji. Spróbuj załadować ją ponownie. Jeśli problem nie ustępuje, spróbuj później.",
+    "reload": "Załaduj ponownie",
+    "home": "Strona główna"
   }
 }

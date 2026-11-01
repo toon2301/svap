@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   children: ReactNode;
@@ -12,6 +13,21 @@ interface State {
   hasError: boolean;
   error?: Error;
   errorInfo?: ErrorInfo;
+}
+
+/**
+ * Nahlási chybu vykresľovania do Sentry. Chyba zachytená touto hranicou sa inak do Sentry nedostane
+ * (nie je „nezachytená“), preto sa o hlásenie stará hranica sama (nález 33). Zlyhanie hlásenia nesmie
+ * rozbiť zobrazenie chybovej stránky.
+ */
+function reportRenderError(error: Error, errorInfo: ErrorInfo): void {
+  try {
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack } },
+    });
+  } catch {
+    // Chyba pri hlásení sa ignoruje.
+  }
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -33,8 +49,7 @@ class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    // Tu by sa mohol pridať error reporting service (napr. Sentry)
-    // reportError(error, errorInfo);
+    reportRenderError(error, errorInfo);
   }
 
   componentDidUpdate(prevProps: Props) {

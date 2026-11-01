@@ -166,6 +166,37 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
+# O koľko 30-sekundových okien sa smie 2FA kód líšiť od aktuálneho (1 = predošlé a nasledujúce okno, teda ±30 s).
+# Hodiny telefónu a servera nikdy nesedia presne a kód sa často zadáva na konci okna; s oknom 0 sa správny kód
+# odmietal (nález 179). Širšie okno ako 1 sa nepoužíva: každé ďalšie predĺži čas, v ktorom platí už videný kód.
+TOTP_VALID_WINDOW = 1
+
+
+def verify_login_totp(user, totp_code):
+    """Over 2FA kód (TOTP) pri prihlásení; pri neúspechu vyhodí `ValidationError` s hláškou podľa príčiny.
+
+    Hlášky: "2FA nie je správne nastavené." (zapnuté, ale chýba secret), "Neplatný 2FA kód." (zlý alebo
+    expirovaný kód) a "Chyba pri overovaní 2FA." len pre skutočné technické zlyhanie (neplatný šifrovací kľúč,
+    poškodený secret, chýbajúca knižnica). Všeobecná hláška sa predtým omylom ukazovala aj pri zlom kóde (nález 234),
+    lebo ju zachytil spoločný `except Exception`. Kód sa porovnáva v konštantnom čase (`pyotp`), do hlášok sa
+    nikdy nedostane kód ani secret.
+    """
+    try:
+        import pyotp
+
+        raw = getattr(getattr(user, "profile", None), "mfa_secret", None)
+        mfa_secret = decrypt_mfa_secret(raw) if raw else None
+        code_is_valid = bool(mfa_secret) and pyotp.TOTP(mfa_secret).verify(
+            totp_code, valid_window=TOTP_VALID_WINDOW
+        )
+    except Exception:
+        raise serializers.ValidationError("Chyba pri overovaní 2FA.")
+    if not mfa_secret:
+        raise serializers.ValidationError("2FA nie je správne nastavené.")
+    if not code_is_valid:
+        raise serializers.ValidationError("Neplatný 2FA kód.")
+
+
 class UserLoginSerializer(serializers.Serializer):
     """Serializátor pre prihlásenie"""
 
@@ -204,23 +235,8 @@ class UserLoginSerializer(serializers.Serializer):
                 totp_code = (self.initial_data.get("totp") or "").strip()
                 if not totp_code:
                     raise serializers.ValidationError("Vyžaduje sa 2FA kód.")
-                # Over TOTP cez jednoduchý storage secretu v profile (predpoklad: user.profile.mfa_secret)
-                try:
-                    import pyotp
-
-                    raw = getattr(
-                        getattr(user, "profile", None), "mfa_secret", None
-                    )
-                    mfa_secret = decrypt_mfa_secret(raw) if raw else None
-                    if not mfa_secret:
-                        raise serializers.ValidationError(
-                            "2FA nie je správne nastavené."
-                        )
-                    totp = pyotp.TOTP(mfa_secret)
-                    if not totp.verify(totp_code):
-                        raise serializers.ValidationError("Neplatný 2FA kód.")
-                except Exception:
-                    raise serializers.ValidationError("Chyba pri overovaní 2FA.")
+                # Secret je v profile (`user.profile.mfa_secret`, zašifrovaný), viď `verify_login_totp`.
+                verify_login_totp(user, totp_code)
             attrs["user"] = user
         else:
             raise serializers.ValidationError("Musí byť zadaný email a heslo.")

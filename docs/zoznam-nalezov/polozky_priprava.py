@@ -48,8 +48,9 @@ NTASKS = [
               'zapnutá a nastavená „fail-closed“: pri výpadku Google Vision sa nahranie obrázka odmietne s hláškou.',
          note='Rozhodnutie R10 (odporúčanie: ponechať). Overiť pri smoke teste N14.'),
     dict(n='N11', bucket=P, eff=ES,
-         what='Monitoring: Sentry (backend + frontend, `global-error`), kontrola dostupnosti, logy, upozornenia na disk a pamäť, kontrola Celery beat.',
-         note='Zahŕňa 33.'),
+         what='Monitoring: Sentry (backend + frontend), kontrola dostupnosti, logy, upozornenia na disk a pamäť, kontrola Celery beat.',
+         note='Nález 33 (`global-error`) je hotový vo vetve 161; na novom serveri treba overiť, že chyby z frontendu aj backendu v Sentry '
+              'skutočne pristanú (DSN, prostredie).'),
     dict(n='N12', bucket=P, eff=EM,
          what='CI/CD: nasadenie až po zelenom CI, rollback, migrácie pred novou verziou, bez výpadku pri zápise starých procesov.',
          note='Dnes: Railway auto-deploy + „Wait for CI“ mimo repozitára (poznámka v `.github/workflows/deploy.yml`).'),

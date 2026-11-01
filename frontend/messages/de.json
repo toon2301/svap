@@ -4652,5 +4652,11 @@
   "reports": {
     "descriptionRequired": "Bei „Sonstiges“ ist eine Beschreibung erforderlich.",
     "submitSuccess": "Deine Meldung wurde gesendet."
+  },
+  "appError": {
+    "title": "Etwas ist schiefgelaufen",
+    "description": "Die App konnte nicht angezeigt werden. Laden Sie sie bitte erneut. Besteht das Problem weiterhin, versuchen Sie es später noch einmal.",
+    "reload": "Neu laden",
+    "home": "Startseite"
   }
 }
