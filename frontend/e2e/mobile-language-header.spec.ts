@@ -7,6 +7,7 @@ import pl from '../messages/pl.json';
 import hu from '../messages/hu.json';
 import { pathOf } from './support/dashboard';
 import { expectAppPath, readOwnProfilePaths } from './support/own-profile-fixture';
+import { observeLanguageTaps } from './support/language-tap-diagnostics';
 
 // Real Railway routes only. Language/theme changes remain in this isolated browser's storage.
 // Do not create test accounts, modify cards, or publish profile/hint changes.
@@ -24,6 +25,10 @@ const EXPECTED_TITLES = {
 } as const;
 const LOCALES = ['sk', 'cs', 'en', 'de', 'pl', 'hu'] as const;
 const LANGUAGE_KEYS = ['slovak', 'czech', 'english', 'german', 'polish', 'hungarian'] as const;
+const BACK_LABELS = {
+  sk: sk.common.back, cs: cs.common.back, en: en.common.back,
+  de: de.common.back, pl: pl.common.back, hu: hu.common.back,
+};
 type Locale = typeof LOCALES[number];
 
 /** Identify the existing mobile header without adding a production-only test marker. */
@@ -144,23 +149,32 @@ for (const locale of LOCALES) {
 }
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`mobile: ${theme} language changes update the top title and survive reload`, async ({ page, isMobile }) => {
+  test(`mobile: ${theme} language changes update the top title and survive reload`, async ({ page, isMobile }, testInfo) => {
     test.skip(!isMobile, 'Browser-only mobile language selection.');
-    await setInitialPreferences(page, 'sk', theme);
-    await page.goto('/dashboard/language');
-    let currentLocale: Locale = 'sk';
-    await expectMobileLanguage(page, currentLocale);
-    for (const nextLocale of LOCALES) {
-      const key = LANGUAGE_KEYS[LOCALES.indexOf(nextLocale)];
-      await page.locator('[data-dashboard-main]').getByRole('button', {
-        name: MESSAGES[currentLocale].language[key], exact: true,
-      }).tap();
-      await expectMobileLanguage(page, nextLocale);
-      await expect.poll(() => page.evaluate(() => localStorage.getItem('appLocale'))).toBe(nextLocale);
-      currentLocale = nextLocale;
+    const finishTapDiagnostics = await observeLanguageTaps(page, testInfo, BACK_LABELS);
+    try {
+      await setInitialPreferences(page, 'sk', theme);
+      await page.goto('/dashboard/language');
+      let currentLocale: Locale = 'sk';
+      await expectMobileLanguage(page, currentLocale);
+      for (const nextLocale of LOCALES) {
+        const key = LANGUAGE_KEYS[LOCALES.indexOf(nextLocale)];
+        // Nález 225: izolované natívne aj React tlačidlo vo WebKite mobile
+        // pri pointerdown.preventDefault nevytvorí cez tap click (3/3).
+        // Majiteľ potvrdil funkčnosť na iPhone; výnimka platí iba pre túto voľbu.
+        await page.locator('[data-dashboard-main]').getByRole('button', {
+          name: MESSAGES[currentLocale].language[key], exact: true,
+        }).click();
+        await expectMobileLanguage(page, nextLocale);
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('appLocale'))).toBe(nextLocale);
+        currentLocale = nextLocale;
+      }
+      await finishTapDiagnostics('before-reload');
+      await page.reload();
+      await expectMobileLanguage(page, 'hu');
+    } finally {
+      await finishTapDiagnostics();
     }
-    await page.reload();
-    await expectMobileLanguage(page, 'hu');
   });
 
   test(`mobile: ${theme} language app Back and browser Back preserve the settings/profile flow`, async ({ page, isMobile }) => {

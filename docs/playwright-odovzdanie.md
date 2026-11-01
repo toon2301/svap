@@ -1,4 +1,4 @@
-# Playwright: odovzdanie (stav k 30. 10. 2026)
+# Playwright: odovzdanie (stav k 31. 10. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
@@ -210,3 +210,49 @@ page errors: 0 | console errors: 22
 ## Ako nahlásiť chybu aplikácie
 
 Pozri koniec `AGENTS.md`. Krátky popis pošle majiteľovi, ten ho odovzdá Claudovi.
+
+## Porovnanie jazykového špecu a diagnostika ťuku (31. 10. 2026)
+
+Základ: čerstvo overený main `e261243825a4625f6bfd38079aa4ecd0d5d3c660`, majiteľom potvrdené nasadenie a zákaz zmien počas porovnania. Toto nie je nový celý ani prijatý beh; porovnávací stav **427 / 2 / 303 sa nemení**.
+
+- V jednom fyzickom Docker kontajneri s Playwright 1.63.0 prebehli striedavo tri spustenia historického `mobile-language-header.spec.ts` z `9346520e` a tri spustenia aktuálneho špecu. Každé vybralo iba dva testy `mobile: light/dark language changes update the top title and survive reload`, projekt `webkit-mobile`, `--workers=1 --retries=0`.
+- Historická kópia mala zhodný Git blob `e517a74f9c331975718b4342863cecf51d0ab323`; aktuálna pred doplnením diagnostiky `29ba48d8de013657c1f728dcac3fdde1eb688eed`. Ostatné závislosti, konfigurácia, pomocníci, preklady a nasadená aplikácia boli spoločné aktuálne. Nešlo o spustenie celej historickej aplikácie ani celého historického testového prostredia.
+- Starý špec: svetlý **FAIL/FAIL/FAIL**, tmavý **FAIL/FAIL/FAIL**. Aktuálny špec: svetlý **FAIL/FAIL/FAIL**, tmavý **FAIL/FAIL/FAIL**. Všetkých 12 pokusov skončilo na rovnakej asercii pre preložené tlačidlo Späť (historicky riadok 77, aktuálne pred diagnostikou 60). Porovnanie nepotvrdilo regresiu zavedenú novším špecom; samo osebe nerozhoduje medzi pôvodnou chybou testu a aplikácie/prehliadača.
+- A/B beh trval 3 min 26 s (2026-10-31 06:54:57.272–06:58:23.312 UTC). Dočasná historická kópia bola odstránená; hlavná kolekcia zostáva **42 špecov / 738 variantov**.
+
+`support/language-tap-diagnostics.ts` teraz pasívne sleduje iba šesť mobilných jazykových volieb v uvedených dvoch testoch. Nevyvoláva ani neruší udalosti, nevolá API, nečíta cookies či texty stránky a nič neukladá do úložiska. Výstup `[E2E-TAP]` povoľuje len enumy, booleany, počty a časy (najviac 80 udalostí). Medzi pôvodným `.tap()` a aserciou nie je nové čakanie ani náhradná akcia. Snímky vznikajú až po aserciách pred F5 a vo `finally`; samostatné rozpočty diagnostiky nemenia limit asercie a jej chyba nezakryje pôvodný pád.
+
+Následné tri diagnostické vykonania každého variantu (`--repeat-each=3 --retries=0`) dali **0 PASS / 6 FAIL / 0 SKIP**, 118 s procesu:
+
+- V piatich pokusoch pozorovateľ zachytil dôveryhodné pointer/touch udalosti pre SK aj CZ, ale žiadny `click`. Úložisko aj označená voľba ostali SK; asercia českého tlačidla Späť preto neprešla. Prečo `click` nevznikol, ešte nie je preukázané; samotné `preventDefault` ani chybu prekladu z týchto údajov nemožno označiť za príčinu.
+- Posledný tmavý variant sa odlišoval: po úvodnej voľbe SK skončilo čakanie na locale; zachytili sa sieťové chyby, následné 401 a POST `/api/token/refresh/` 403. Snímka pádu **2026-10-31 07:10:09.741 UTC**. Nezlučovať automaticky s príčinou chýbajúceho kliku; súvis s nálezom 223 má preveriť Claude.
+
+Lokálne kontroly: 11 Node kontrol formátu/súkromia a zachovania gesta, izolovaný self-test vo WebKite desktop, WebKite mobile a Chromiu (**3/3 PASS**), explicitný TypeScript E2E súborov, TypeScript aplikácie a cielený ESLint s `next/core-web-vitals`. Izolovaný self-test nečíta `.env.e2e`, nemá prihlasovanie a všetky požiadavky vybaví na `diagnostic.invalid`.
+
+Ďalších päť produkčných špecov sa podľa zadania nemenilo. Diagnostika je podklad, nie oprava aplikácie, dôkaz celkovej chyby aplikácie ani dôvod nahradiť `.tap()` za `.click()`. Ďalší krok: oddelene overiť, prečo tento WebKit nevytvorí `click`, bez oslabovania pôvodného scenára; autentifikačné dôkazy odovzdať majiteľovi pre Claude.
+
+## Nálezy 225 a 223 — izolovaný pokus a sieťová sonda (31. 10. 2026)
+
+Základ tejto pokračujúcej úlohy je nový main `0905aeddf284b41ccaf879ba079683dcf6ac3261` (PR #217), majiteľom potvrdený ako nasadený a bez zmien počas merania. Predchádzajúce poznámky vyššie sú historické výsledky pred týmto pokusom. Prijatý celý stav **427 / 2 / 303 sa nemení**.
+
+### 225 — podmienka výnimky sa potvrdila
+
+- `diagnostics-tests/language-properties.scenario.ts` je samostatný pokus na `diagnostic.invalid`, nie produkčný regresný špec. Porovnáva natívne DOM a React 18 tlačidlo v troch kolách: bez vlastností, iba `tabindex=-1`, iba `pointerdown.preventDefault`, obe vlastnosti. Mobilný WebKit skúša tap aj click, desktopový WebKit a Chromium click ako kontrolu. Spolu 96 pozorovaní; všetky tri projekty dokončili pokus. Pevné 500-ms okno iba meria udalosti izolovaného pokusu, nemení produkčný timeout.
+- Pri mobilnom tap sa click vytvoril 3/3 bez vlastností a 3/3 s iba tabindex, ale 0/3 s preventDefault aj 0/3 s oboma vlastnosťami, zhodne pre natívne aj React tlačidlo. Handler preventDefault sa skutočne vykonal. Priamy click fungoval všade 3/3; desktopové kontroly tiež.
+- Majiteľ potvrdil, že na skutočnom iPhone jazyk funguje, a výslovne povolil click iba po takomto preukázaní. Preto sa **iba krok výberu jazykovej voľby** v dvoch testoch `mobile: light/dark language changes update the top title and survive reload` mení na `.click()` s komentárom a odkazom na 225. Nie ticho, nie globálnou náhradou tap, nie zmenou aplikácie. Ostatné gestá, asercie vrátane šiestich jazykov a F5, tolerancie, timeouty a retry ostali nezmenené. Lokálny guard stráži zdôvodnenie aj pôvodné asercie.
+- Cielené overenie proti potvrdenému nasadeniu: webkit-mobile, oba varianty po trikrát, workers=1, retries=0: **6 PASS / 0 FAIL / 0 SKIP**, report 42,0 s, proces približne 50 s. Toto nie je nový celý beh.
+
+### 223 — mimo Playwrightu sa výpadok nezopakoval
+
+- `diagnostics-tests/railway-network.probe.cjs` používa iba Node https: verejné GET `/` a `/api/`, približne každých 10 s, strieda nové a keep-alive spojenia, deadline 30 s. Bez prihlasovania, cookies, čítania .env, tiel a hlavičiek odpovedí, presmerovaní alebo automatických retry. Výstup sú len pevné kategórie, stavy a časy DNS/TCP/TLS/prvého bajtu/celku.
+- Node sonda aj izolovaný browser pokus vyššie bežali v tom istom kontajneri s Playwright 1.63.0. UTC **2026-10-31 13:06:15.750–13:16:15.898**, monotónne 600 288 ms: **122/122 HTTP 200**, **0 transportných chýb**, **0 timeoutov**, **0 volaní nad 10 s**. Dve merania prekročili 2 s, maximum bolo 2 843,6 ms. Existujúce spojenie sa reálne použilo 58×. Kontajner sa po sonde odstránil.
+- Mediány frontend nové/keep-alive: 239,9/104,6 ms; API nové/keep-alive: 189,6/74,7 ms. Maximum API 2 775,2 ms. Všetky stavy sa počítajú, HTTP chyba sa odlišuje od transportnej.
+- Toto zužuje ďalšie preverovanie, **nepreukazuje však definitívne príčinu vo WebKite alebo relácii**. Verejné Node volanie bez autentifikácie netestuje JWT obnovu ani úplne rovnaký prehliadačový protokol a aplikačnú cestu. Nález 223 sa neuzatvára. Následné overenie dvoch produkčných jazykových testov bežalo samostatným kanonickým Docker skriptom s rovnakým obrazom, nie s prihlasovacími údajmi v sonde.
+
+Lokálne kontroly: 5/5 Node testov sondy (aj vynútený timeout a chyby bez siete), 11/11 kontrol diagnostiky a výnimky 225, cielený aj úplný TypeScript aplikácie a cielený ESLint. Hlavná kolekcia zostáva 738 variantov v 42 špecoch; produkčné `.spec.ts` varianty nepribudli. Register nálezov vlastní Claude a v tejto dávke sa nemenil.
+
+### 224 — vedome odložené
+
+Nález „Zatvoriť po F5 vedie na Nástenku“ sa teraz neopravuje ani sa nepridáva produkčný test pred odloženou opravou. Pri budúcej oprave treba pripraviť samostatný E2E scenár: **vlastný profil → Menu → Jazyk → F5 → Späť → Zatvoriť → pôvodný profil**, nie Nástenka, a jeho úspech overiť po potvrdenom nasadení opravy. Ide o budúcu úlohu; neopomenúť F5 ani záverečné Zatvoriť.
+
+Ďalší krok pre 223: porovnať verejné volania zo samotného WebKitu a z Node v rovnakom čase, prípadne následne samostatne preveriť reláciu. Ďalších päť odložených produkčných špecov zostáva nezmenených. Nič sa nezlučuje ani nenasadzuje automaticky.
