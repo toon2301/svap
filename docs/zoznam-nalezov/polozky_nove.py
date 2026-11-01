@@ -347,8 +347,16 @@ NEW_ITEMS = [
               'nezopakovalo. Je to indícia, nie dôkaz: sonda nepoužila autentifikované `/api/auth/me/`, obnovu JWT ani prehliadačový '
               'protokol, takže nehovorí nič o WebKite ani o relácii testu. Nález ostáva otvorený. Ďalší krok (Codex): rovnaké verejné volania '
               'priamo z WebKitu v Dockeri v tom istom čase ako Node sonda; nespúšťať celý beh len kvôli zelenému výsledku. Ak sa zasekne aj '
-              'tam, pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať.',
-         dec=None, src='správa Codexa z 30. 10. 2026'),
+              'tam, pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať. Celý beh po nasadení Next 16 (1. 11. 2026, 07:32 až 08:14 UTC, '
+              '`main` `9e311839`, PR #218) priniesol 21 pádov oproti prijatému stavu: 17 z nich prešlo pri všetkých troch opakovaniach, '
+              'jeden (svetlý mobilný variant `profile-numeric-language`) padol 2 zo 4 pokusov na nedokončenom `GET /api/auth/feed/posts/` ešte '
+              'pred otvorením číselnej adresy (nie je to návrat nálezu 222), jeden preskočil dátový strážca (položka 16) a dva kľúče (jeden test v dvoch '
+              'projektoch) sú jedna skutočná regresia (nález 231, opravená). V pôvodných pádoch sa opäť objavili 401 (4×, z toho 3× aj 403 pri obnove relácie), '
+              '`GET /api/auth/me/` zlyhal po 22 690 ms (nemecký tmavý profilový variant, po troch opakovaniach prešiel) a viaceré '
+              'pollingové a zoznamové požiadavky ostali pending alebo zlyhali po asi 16 s. Pomer 17 z 21 svedčí skôr o nestabilite prostredia '
+              'než o dôsledku povýšenia, no príčinu nepreukazuje. Návrh: majiteľ prejde logy Railway aj pre okno 07:32 až 08:30 UTC dňa '
+              '1. 11. (rovnaké otázky ako 30. 10.).',
+         dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
          what='Nález majiteľa z manuálneho testu na iPhone Safari (30. 10. 2026): vo vlastnom profile → Menu → zoznam Nastavení (Upozornenia, '
@@ -363,8 +371,9 @@ NEW_ITEMS = [
               'takže ani zoznam už pôvod nenesie. Návrh: pôvod (adresu) uložiť do `history.state` záznamov Nastavení (prežije F5), alebo pre kartu '
               'do `sessionStorage`, a pri zatvorení po F5 ísť naň; zmena v `mobileSettingsOrigin.ts` a `useMobileSettings.ts` plus Jest testy. '
               'Zasahuje do histórie prehliadača, preto patrí do jedného balíka s nálezmi 13, 14 a 174 (Späť na mobile). Dopad na E2E: nový test pre '
-              'Codexa (profil → Menu → Jazyk → F5 → Späť → Zatvoriť → profil). Majiteľ ho vedome odkladá na čas po nasadení.',
-         dec=None, src='manuálny test majiteľa, 30. 10. 2026'),
+              'Codexa (profil → Menu → Jazyk → F5 → Späť → Zatvoriť → profil). Majiteľ ho vedome odkladá na čas po nasadení. Majiteľ 1. 11. 2026 potvrdil, že problém platí len na mobile; na desktope sa '
+              'nevyskytuje.',
+         dec=None, src='manuálny test majiteľa, 30. 10. a 1. 11. 2026'),
     dict(n=225, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
          kratko='E2E: voľba jazyka sa v emulovanom WebKite (Docker) neprepne, ťuk bez kliku pre `preventDefault` na `pointerdown` (iPhone v poriadku)',
          what='Testy `mobile: light language changes update the top title and survive reload` a ich tmavý variant (`mobile-language-header.spec.ts`, '
@@ -387,8 +396,10 @@ NEW_ITEMS = [
               '`click()` namiesto `tap()` s komentárom a odkazom na tento nález; ostatné gestá, kontroly prekladov, F5, časové limity a '
               'opakovania ostali; samostatné overenie: svetlý aj tmavý variant po trikrát, 6 z 6 prešlo (E2E súbory vlastní Codex a zmena je '
               'na jeho vetve). Posledný pokus tmavého variantu (31. 10.) skončil inak (sieťové chyby, 401 a 403) a patrí k nálezu 223, nie '
-              'sem.',
-         dec=None, src='správa Codexa z 31. 10. 2026'),
+              'sem. V celom behu po nasadení Next 16 (1. 11. 2026) oba reálne produkčné scenáre prepínania všetkých šiestich jazykov '
+              'vrátane F5 (svetlý aj tmavý) prešli; použitá je už schválená výnimka s `click()` pri voľbe jazyka, test sa nemenil. Nález '
+              'ostáva otvorený kvôli emulovanému WebKitu v Dockeri (príčinu v aplikácii nepreukazuje).',
+         dec=None, src='správa Codexa z 31. 10. a 1. 11. 2026'),
     dict(n=226, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
          kratko='mŕtvy `frontend/middleware.ts` (Next ho ignoruje)',
          what='`frontend/middleware.ts` (37 riadkov) má pre HTML dokumenty v produkcii nastaviť `Cache-Control: no-store`, ale leží v koreni '
@@ -443,3 +454,8 @@ NEW_ITEMS = [
 
 # Úlohy na prípravu nasadenia (N1…) sú v `polozky_priprava.py`; tu sa len sprístupňujú pod pôvodným názvom.
 from polozky_priprava import NTASKS  # noqa: E402,F401
+
+# Nálezy od 232 sú v `polozky_nove_dalsie.py` (kvôli limitu 500 riadkov); do `NEW_ITEMS` sa pridávajú tu.
+from polozky_nove_dalsie import NEW_ITEMS_DALSIE  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_DALSIE)

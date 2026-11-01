@@ -221,8 +221,8 @@ DONE_SINCE = [
               'profilového návratu (app Back aj browser Back) prešli; varianty s úvodnými nulami, s query a fragmentom ani voliteľné '
               '`/account`, `/privacy` a `/edit` s číselným ID sa v reálnom prehliadači osobitne neskúšali. Súvisiace, nehlásené a preto nezmenené: pri starom slugu v adrese '
               '(`/dashboard/users/<starý-slug>/language`) kanonizácia podstránku stále zahodí.'),
-    dict(n=184, vetva='159', pr='#218', zlucene=False,
-         text='HOTOVÉ (časť 184a: vetva 142, PR #202; časť 184b: vetva 159, čaká na zlúčenie): frontend je povýšený z Next 14.2.35 a Reactu '
+    dict(n=184, vetva='159', pr='#218', zlucene=True,
+         text='HOTOVÉ (časť 184a: vetva 142, PR #202; časť 184b: vetva 159, PR #218, zlúčené a nasadené na produkciu 1. 11. 2026): frontend je povýšený z Next 14.2.35 a Reactu '
               '18.3.1 na Next 16.4.3 a React 19.3.1 (rozhodnutie R9). Zmizla kritická zraniteľnosť `next` aj vysoká `postcss`: `npm audit '
               '--omit=dev` 7 → 5, zostáva 5 stredných v build nástroji Sentry (nález 229). Zmeny: (1) závislosti: framer-motion 12, Testing '
               'Library 16 s novou povinnou `@testing-library/dom`, ESLint 9 a `eslint-config-next` 16, `overrides` pre `@emoji-mart/react` '
@@ -251,8 +251,39 @@ DONE_SINCE = [
               'prehliadačov (overené v balíkoch Next): Safari 16.4 (iOS 16.4, 03/2023) a Chrome, Edge a Firefox 111; Next 14 mal Safari 12 a '
               'Chrome 64, preto iPhony s iOS 15 a starším aplikáciu prestanú správne zobrazovať (majiteľ plán odsúhlasil 31. 10. 2026). '
               'Stránka `/reset-password/…` sa vykresľuje na požiadanie (v Next 14 bola predgenerovaná; pre používateľa rovnaké, overené bez '
-              'chýb). Dopad na E2E: žiadna zmena E2E súborov; po nasadení plný beh Playwrightu na všetkých troch projektoch a porovnanie s '
-              'posledným behom (427 prešlo, 2 padli, 303 preskočených).'),
+              'chýb). Dopad na E2E: žiadna zmena E2E súborov. Plný beh Playwrightu po nasadení (Codex, 1. 11. 2026, `main` `9e311839`, tri '
+              'projekty): 411 prešlo, 21 padlo, 306 preskočených (prijatý stav 427, 2, 303; kolekcia vzrástla zo 732 na 738 testov). Z '
+              '21 pádov 17 prešlo pri všetkých troch opakovaniach, jeden preskočil dátový strážca, jeden padol 2 zo 4 pokusov na '
+              'nedokončenom načítaní Nástenky (nález 223) a jedna skutočná regresia po povýšení (dva kľúče, desktopový WebKit a Chromium) '
+              'je opravená vo vetve 160 (nález 231). Majiteľ po nasadení otestoval manuálne kroky 1 až 6 bez nového nálezu.'),
+    dict(n=231, vetva='160', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na zlúčenie): po povýšení na Next 16 a React 19 (nález 184b) sa profil po F5 na stránke recenzií a kroku späť '
+              'šípkou otvoril od vrchu namiesto pôvodného miesta. Zachytil to Codex v celom behu po nasadení (1. 11. 2026, `main` '
+              '`9e311839`): test `offer-reviews-back.spec.ts › after a reload the arrow still brings the profile back to the same place` padol '
+              '8 z 8 pokusov v desktopovom WebKite aj v Chromiu (profil sa vrátil, ale `scrollTop` ostal 0); mobilný variant prešiel a pred '
+              'povýšením prešiel aj tento. Príčina (lokálna reprodukcia v Chromiu na produkčných buildoch Next 14 a Next 16 proti lokálnemu '
+              'backendu, so záznamom zápisov do `history` a `scrollTop`): na Next 14 sa po šípke profil postaví raz, pozícia sa zapíše a drží '
+              '(369 z 369 px). Na Next 16 router po F5 (studená pamäť) vymení celú stránku profilu (`<main data-dashboard-main>`) po prvom '
+              'zápise ešte dvakrát; nový `<main>` je od vrchu a jednorazová obnova sa po prvom zápise hneď zabudla, takže výsledok bol 0. '
+              'Čas medzi zápisom a výmenou rastie so spomalením procesora (Chromium: 1× asi 0,1 s, 6× 1,2 s, 12× 2,4 až 2,8 s, 20× 4,0 až '
+              '4,3 s), preto pevný pokojný úsek nestačí (prvá verzia opravy s úsekom 2,5 s pri 20× zlyhala). Oprava '
+              '(`profile/profileScrollMemory.ts`, 216 riadkov): obnova po zápise nekončí, ale pozíciu stráži do vypršania času (6 s od '
+              'štartu, ako doteraz) alebo do vstupu používateľa (pribudol `pointerdown`): nový `<main>` ju dostane znova a scroll vrátený '
+              'nahor tiež; scroll, ktorý je ďalej dole než pozícia, sa nikdy nevracia (používateľ vyhráva). Záznam histórie sa maže hneď po '
+              'prvom zápise (F5 na profile nesmie skočiť na starú pozíciu); pozícia ostáva v pamäti modulu s platnosťou 12 s '
+              '(`PROFILE_SCROLL_CARRY_TTL_MS`), aby ju prevzala stránka, ktorú router ešte vymení, a nepreležala do neskoršej návštevy. '
+              'Overené: (1) Jest na React 19 z čistej inštalácie: štyri dotknuté sady (z toho nová `profileScrollMemory.guard.test.ts`) '
+              '101 testov a celý Jest 519 sád a 8 028 testov prešlo; (2) trinásť mutácií kódu (nový prvok sa nepíše znova, návrat nahor sa nepíše znova, pozícia sa '
+              'neuchová v pamäti, záznam histórie sa nemaže, chýba časový limit, symetrické stráženie, nulová tolerancia, koniec nezabudne '
+              'pozíciu, chýba platnosť pozície, zápis ju nepredlžuje, chýba `pointerdown`, zastavenie maže pozíciu, pozícia sa neviaže na '
+              'adresu), všetky zachytené; (3) v prehliadači (Chromium, desktop aj rozmery iPhonu, produkčný build Next 16, lokálny backend): '
+              '`offer-reviews-back.spec.ts` 11 prešlo a 7 preskočených (chýbajúce dáta v kópii) vrátane testu, ktorý u Codexa padal; ladiaci '
+              'scenár so spomalením procesora 1×, 6×, 12× a 20×: 369 z 369 px vo všetkých; kolesko myši po návrate drží pozíciu '
+              'používateľa (369 − 200 = 169) a stráženie sa s ním nevzpiera; susedné špecy (história, identita `<main>`, nastavenia, '
+              'vyhľadávanie): 47 prešlo, 28 preskočených a 3 padli pre chýbajúce dáta v kópii (portfólio, vlastná ponuka na Nástenke; '
+              'dva z nich padali rovnako aj pred zmenou). WebKit/iPhone a Railway sa lokálne neskúšali: čaká plný beh Playwrightu po '
+              'nasadení a test majiteľa na iPhone. Dopad na E2E: žiadna zmena E2E súborov; test `after a reload the arrow still brings the '
+              'profile back to the same place` by mal po nasadení prejsť.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
