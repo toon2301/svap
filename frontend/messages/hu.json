@@ -4652,5 +4652,11 @@
   "reports": {
     "descriptionRequired": "Az „egyéb” ok esetén a leírás kötelező.",
     "submitSuccess": "A jelentést elküldtük."
+  },
+  "appError": {
+    "title": "Valami hiba történt",
+    "description": "Az alkalmazást nem sikerült megjeleníteni. Próbálja meg újratölteni. Ha a probléma továbbra is fennáll, próbálja meg később.",
+    "reload": "Újratöltés",
+    "home": "Főoldal"
   }
 }

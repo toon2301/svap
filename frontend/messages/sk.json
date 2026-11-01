@@ -4652,5 +4652,11 @@
   "reports": {
     "descriptionRequired": "Pri dôvode „iné“ je popis povinný.",
     "submitSuccess": "Nahlásenie bolo úspešne odoslané."
+  },
+  "appError": {
+    "title": "Niečo sa pokazilo",
+    "description": "Aplikáciu sa nepodarilo zobraziť. Skúste ju načítať znova. Ak problém pretrváva, skúste to neskôr.",
+    "reload": "Načítať znova",
+    "home": "Domov"
   }
 }

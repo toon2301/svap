@@ -4652,5 +4652,11 @@
   "reports": {
     "descriptionRequired": "A description is required when the reason is “other”.",
     "submitSuccess": "Your report was sent."
+  },
+  "appError": {
+    "title": "Something went wrong",
+    "description": "The app could not be displayed. Try loading it again. If the problem persists, try again later.",
+    "reload": "Reload",
+    "home": "Home"
   }
 }
