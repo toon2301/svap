@@ -75,9 +75,6 @@ ORIG_OPEN = {
     5: (A, N, ES, 'Navigácia – drobnosti', '`SettingsDetailHeader`: udalosť klikom presakuje do `onBack` (8 obrazoviek).', None),
     6: (A, N, ES, 'Navigácia – drobnosti', 'Rozhodnúť spolu s 5.', None),
     7: (A, N, EM, 'Navigácia – drobnosti', 'Chvost histórie po šípke z `/edit`, zastaraná adresa.', None),
-    9: (P, S_, ES, 'Produkčná odolnosť aplikácie',
-        'Na internete drží neautentifikované spojenie zdroje (cieľ pre zahltenie); odmietnuť hneď po handshake. '
-         'Neoverené, najprv prečítať `ws_auth.py`.', None),
     10: (A, N, ES, 'Upratovanie a architektúra', 'Vedľajšie efekty vo vnútri updatera stavu (`handleUserUpdate`).', None),
     11: (A, N, EM, 'Navigácia – drobnosti', 'Desktopový overlay `goForward` vykreslí plný detail s novým `<main>`.', None),
     15: (A, N, EM, 'Navigácia – drobnosti', 'Desktopový vyhľadávací panel nie je route (produktové rozhodnutie).', None),
@@ -94,10 +91,6 @@ ORIG_OPEN = {
     29: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočné priame zápisy do `sessionStorage` v handleroch.', None),
     38: (A, N, ES, 'Navigácia – drobnosti', 'Záložka vlastného profilu závisí od identity objektu `user` (najprv overiť reálny dopad).', None),
     40: (A, N, EM, 'Navigácia – drobnosti', 'Zvýraznenie na 10–70 ms zhasne a vráti sa (efekt číta starú adresu).', None),
-    52: (P, S_, ES, 'Produkčná odolnosť aplikácie',
-         'Po nasadení môže zariadenie bežať so starým service workerom až 10 min (`registration.update()` len '
-         'každých 10 min). Pri častých nasadeniach po štarte zavolať `update()` hneď po `register()` a opraviť '
-         'zavádzajúci text v konzole.', None),
     53: (A, N, EM, 'Výkon a plynulosť',
          '`useMobileMessagePeer` beží aj na desktope: zbytočné požiadavky a druhý POST pri otvorení konverzácie '
          '(zaťažuje aj rate limit).', None),
@@ -161,9 +154,6 @@ ORIG_OPEN = {
          '`linecount*`. Tajomstvá som v repozitári ani v histórii nenašiel. Doplnené 29. 10. 2026 (vetva 152): v `backend/` sú sledované aj '
          'štyri prázdne súbory `list`, `x.id`, `{` a `r.json())`, v koreni druhé video `ezgif.com-video-to-gif-converter-desktop.mp4` (0,6 MB) '
          'a `.coverage` (98 KB).', None),
-    33: (P, S_, ES, 'Produkčná odolnosť aplikácie',
-         'Chýba `global-error.js`: chyby vykresľovania v app routeri sa nehlásia do Sentry. Pre ostrú prevádzku '
-         'je to základ monitoringu.', None),
     34: (A, N, ES, 'Nástroje a testy', 'Zmiešané konce riadkov (`autocrlf`, bez `.gitattributes`).', None),
     35: (A, N, ES, 'Nástroje a testy', 'Zabudnuté nečinné Jest procesy na počítači používateľa (pýtať sa pred ukončením).', None),
     78: (A, N, ES, 'Nástroje a testy', 'Tri TypeScript chyby v teste `onboardingHandlers`.', None),

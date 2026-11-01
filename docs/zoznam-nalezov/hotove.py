@@ -256,8 +256,8 @@ DONE_SINCE = [
               '21 pádov 17 prešlo pri všetkých troch opakovaniach, jeden preskočil dátový strážca, jeden padol 2 zo 4 pokusov na '
               'nedokončenom načítaní Nástenky (nález 223) a jedna skutočná regresia po povýšení (dva kľúče, desktopový WebKit a Chromium) '
               'je opravená vo vetve 160 (nález 231). Majiteľ po nasadení otestoval manuálne kroky 1 až 6 bez nového nálezu.'),
-    dict(n=231, vetva='160', pr=None, zlucene=False,
-         text='HOTOVÉ (čaká na zlúčenie): po povýšení na Next 16 a React 19 (nález 184b) sa profil po F5 na stránke recenzií a kroku späť '
+    dict(n=231, vetva='160', pr='#220', zlucene=True,
+         text='HOTOVÉ (zlúčené v PR #220 a nasadené na produkciu 1. 11. 2026): po povýšení na Next 16 a React 19 (nález 184b) sa profil po F5 na stránke recenzií a kroku späť '
               'šípkou otvoril od vrchu namiesto pôvodného miesta. Zachytil to Codex v celom behu po nasadení (1. 11. 2026, `main` '
               '`9e311839`): test `offer-reviews-back.spec.ts › after a reload the arrow still brings the profile back to the same place` padol '
               '8 z 8 pokusov v desktopovom WebKite aj v Chromiu (profil sa vrátil, ale `scrollTop` ostal 0); mobilný variant prešiel a pred '
@@ -284,6 +284,73 @@ DONE_SINCE = [
               'dva z nich padali rovnako aj pred zmenou). WebKit/iPhone a Railway sa lokálne neskúšali: čaká plný beh Playwrightu po '
               'nasadení tejto vetvy a test majiteľa na iPhone. Dopad na E2E: žiadna zmena E2E súborov; test `after a reload the arrow still brings the '
               'profile back to the same place` by mal po nasadení prejsť.'),
+    dict(n=179, vetva='161', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na zlúčenie): `TestBioAnd2FAFlows::test_login_requires_totp_when_enabled` občas zlyhával, lebo prihlásenie '
+              'overovalo kód 2FA len v aktuálnom 30-sekundovom okne (`totp.verify(totp_code)` bez `valid_window`). Správny kód zadaný na konci '
+              'okna alebo z telefónu s meškajúcimi hodinami sa odmietol; v teste sa okno zmenilo medzi vygenerovaním a overením kódu. Overenie je '
+              'teraz vo funkcii `verify_login_totp` (`accounts/auth_serializers.py`) a prijme kód z predošlého, aktuálneho aj nasledujúceho '
+              'okna (`TOTP_VALID_WINDOW = 1`, ±30 s); širšie okno sa zámerne nepoužíva. Ochrana pred hádaním ostáva ako bola (`login_rate_limit` '
+              'a zámok po neúspešných prihláseniach); šanca uhádnuť kód na jeden pokus stúpla z 1 na 3 zo 1 000 000. Nový súbor '
+              '`accounts/test/test_login_2fa.py` (16 testov, pevný čas cez `freezegun`, pevný testovací secret): kód z aktuálneho, predošlého '
+              'aj nasledujúceho okna prejde, kód o dve okná dozadu aj dopredu a kód iného účtu sa odmietne, hlášky sedia, používateľ bez 2FA '
+              'nie je dotknutý; pred opravou zlyhalo šesť z 16 testov, ostatných desať pripína nezmenené správanie. Deväť zámerných pokazení '
+              'kódu (okno 0 alebo 2, zlý kód sa neodmietne, chýbajúci secret, technická chyba, všeobecná hláška, únik kódu do hlášky, '
+              'preskočené overenie, prázdny kód) testy zachytili všetky. Celá backendová sada na SQLite: 2 012 prešlo a 10 preskočených. Pozor: 2FA je dnes '
+              'nedokončená funkcia (nález 235), takže sa oprava v živej aplikácii neprejaví, kým ju niekto nezapne; opakované použitie už '
+              'videného kódu (bez ochrany pred replayom) existovalo aj predtým a platnosť kódu sa predĺžila z 30 na 90 s. Riziko je nízke '
+              '(útočník musí poznať aj heslo) a je zapísané v 235.'),
+    dict(n=234, vetva='161', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na zlúčenie; našlo sa pri mapovaní nálezu 179): prihlásenie s 2FA ukazovalo vždy len „Chyba pri overovaní 2FA.“, '
+              'aj keď kód bol jednoducho zlý alebo expirovaný („Neplatný 2FA kód.“) alebo bolo 2FA zapnuté bez secretu („2FA nie je správne '
+              'nastavené.“), lebo ich spoločný `except Exception` prepísal vlastné `ValidationError`. Overenie je teraz vo funkcii '
+              '`verify_login_totp`: všeobecná hláška ostáva len pre skutočné technické zlyhanie (neplatný šifrovací kľúč, poškodený secret, '
+              'chýbajúca knižnica), hlášky „Vyžaduje sa 2FA kód.“ a „2FA nie je správne nastavené.“ ostali a do hlášok sa nedostane kód ani '
+              'secret. Pokrýva to osem testov hlášok v `test_login_2fa.py` (spolu s nálezom 179). Technické zlyhanie overenia sa stále nezapisuje '
+              'do logu (súčasť nálezu 235).'),
+    dict(n=33, vetva='161', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na zlúčenie): chýbal `app/global-error.tsx`, takže chyba, ktorá zhodila koreňový layout, sa nehlásila do Sentry, '
+              'používateľ videl predvolenú chybu Next-u a každý `npm run build` hlásil varovanie od Sentry. Pribudlo: (1) `src/app/global-error.tsx`: '
+              'chybu nahlási (`Sentry.captureException`) a vykreslí vlastné `<html>` aj `<body>` (Next ním nahrádza celý layout); '
+              '(2) `src/components/GlobalErrorView.tsx`: nadpis, vysvetlenie, tlačidlo „načítať znova“ a odkaz na úvod; stránka beží bez '
+              'poskytovateľov, bez `globals.css` a bez routera, preto má vlastné štýly (farby preberá z režimu prehliadača, takže je čitateľná aj '
+              'v tmavom), vlastné zistenie jazyka (uložená voľba `appLocale`, inak jazyk prehliadača, inak slovenčina; nedostupné úložisko ju '
+              'nezhodí) a obyčajný odkaz namiesto `next/link`; text ani zásobník chyby sa na nej neukážu; (3) kľúč `appError` v '
+              '`messages/{sk,cs,en,de,pl,hu}.json`; (4) samostatný commit, ktorý sa dá vrátiť osobitne: `ErrorBoundary` v koreňovom layoute '
+              'zachytí väčšinu chýb vykresľovania, takže sa nikdy nedostali ani na `global-error`, ani do Sentry (v kóde bola len poznámka); '
+              'teraz ich hlási aj s vetvou komponentov a zlyhanie hlásenia chybovú stránku nerozbije. Overené: 57 nových Jest testov '
+              '(`GlobalErrorView.test.tsx` 46, `global-error.test.tsx` 7, `ErrorBoundary.sentry.test.tsx` 4) a 14 zámerných pokazení kódu '
+              '(11 pri stránke, 3 pri hranici), všetky zachytené; v Chromiu na produkčnom builde Next 16 s vynútenou chybou v layoute 44 '
+              'kontrol prešlo (6 jazykov, jazyk prehliadača, tmavý režim, mobil bez vodorovného posunu, tlačidlo načíta stránku znova, odkaz '
+              'vedie na úvod) a falošný server Sentry dostal udalosť zo všetkých 14 načítaní; varovanie od Sentry z buildu zmizlo. Stránka '
+              'sa ukáže len pri páde layoutu (zriedkavé), hlavný prínos je hlásenie do Sentry. WebKit/iPhone a skutočný Sentry sa lokálne '
+              'neskúšali; na novom serveri treba overiť, že udalosti prichádzajú (úloha N11).'),
+    dict(n=9, vetva='161', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na zlúčenie; nález sa nepotvrdil, kód sa nemenil): tvrdenie, že WebSocket bez tokenu (`missing_token`) server '
+              'odmietne až po približne 31 s, sa lokálne nepotvrdilo na žiadnej vrstve. Meranie surovým spojením proti `daphne` (bez tokenu, '
+              's neplatným tokenom, s cudzím originom aj bez originu): odpoveď `403` za 2 až 8 ms a spojenie sa hneď zatvorí; cez proxy '
+              'Next 16 aj Next 14 (`rewrites` pre `/ws/:path*`) za 6 až 32 ms. Kód (`swaply/ws_auth.py`, `accounts/consumers.py`) odmieta '
+              'spojenie kódom 4401 ešte pred `accept()`, takže sa neprihlásené spojenie nikdy neprijme ani nedrží. Pribudli tri testy '
+              '`swaply/test/test_ws_unauthenticated.py` (celý produkčný reťazec s kontrolou originu; chýbajúci, neplatný aj prázdny token sa '
+              'odmietne kódom 4401 do 1 s), ktoré stráž, aby to tak ostalo; tri mutácie kódu (spojenie sa najprv prijme, odmietnutie sa '
+              'oneskorí o 2 s, neprihlásený sa prijme) a jedna v prihlásení (chýbajúci token sa berie ako prihlásený) test zachytil. '
+              'Čo sa lokálne overiť nedá: Railway a jeho okraj môžu pridať vlastné oneskorenie. V logu backendu sa dá porovnať čas riadkov '
+              '`WSCONNECTING` a `WSREJECT` (rozdiel majú byť milisekundy); časové limity proxy rieši úloha N8. Pri meraní sa našlo nové: '
+              'neznáma cesta pod `/ws/` skončí chybou 500 a výpisom v logu (nález 236).'),
+    dict(n=52, vetva='161', pr=None, zlucene=False,
+         text='HOTOVÉ (čaká na zlúčenie): `ServiceWorker.tsx` hľadal novú verziu workera len každých 10 minút a hneď po registrácii nie, takže '
+              'po nasadení mohlo zariadenie bežať so starým workerom až 10 minút (a text v konzole „will activate on next reload“ nebol '
+              'pravda: `public/sw.js` volá `skipWaiting()` už pri inštalácii, takže sa nová verzia aktivuje hneď). Registrácia je teraz vo '
+              'funkcii `registerServiceWorker` (komponent ju len volá): ak návštevník už workera má (stránku riadi `controller`), hneď po '
+              'registrácii sa zavolá `update()`, potom ako doteraz každých 10 minút; pri prvej návšteve nie je čo aktualizovať. Zlyhanie '
+              '`update()` sa ošetrí (inak by skončilo v Sentry ako neošetrené zamietnutie) a ak stránka zanikne skôr, než sa registrácia '
+              'dokončí, časovač sa už nezaloží. Nový text v konzole hovorí, že nová verzia je nainštalovaná a aktívna a že otvorená stránka '
+              'beží so starým kódom do obnovenia; stránka sa pri aktualizácii sama neobnovuje (ako doteraz). `public/sw.js` sa nemenil. '
+              'Overené: 14 Jest testov (React 19) a 10 zámerných pokazení kódu, všetky zachytené; v Chromiu na produkčnom builde Next 16 '
+              'po „nasadení“ novej verzie `sw.js` a navigácii sa nový worker prevzal za 0,6 až 0,9 s (tri behy), nič nečakalo na aktiváciu '
+              'a v konzole je nový text. Čo to nie je: Chromium kontroluje `sw.js` pri každej registrácii aj bez tejto zmeny, takže tam je '
+              'prínos zanedbateľný; zmena sa týka hlavne prehliadačov, ktoré to nerobia (podľa špecifikácie WebKit, teda iPhone). Tie '
+              'som lokálne vyskúšať nemohol: treba ich overiť po nasadení na iPhone (nasadiť novú verziu a pozrieť, či zariadenie prevezme '
+              'nový kód bez čakania).'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.

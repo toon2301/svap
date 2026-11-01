@@ -23,7 +23,7 @@ REG_ITEMS = [
          what='Jednorazové a neobjasnené zlyhania a upozornenia testov: push-timeout (03), WebKit timeouty (04, 09, 12, 13), '
               '`OfferWatchSettingsMobileHost.openState` (14), Jest nekončí (15), vlákno registračného e-mailu v SQLite testoch (16), '
               'dlhšie živé E2E skončili pred overením (18).',
-         note='Spolu s 31 a 179. Bez diagnostiky ich neoznačovať za opravené; ak CI blokuje nasadenie, treba ich stabilizovať.', dec=None),
+         note='Spolu s 31 (nález 179 je hotový vo vetve 161). Bez diagnostiky ich neoznačovať za opravené; ak CI blokuje nasadenie, treba ich stabilizovať.', dec=None),
     dict(id='APP-03', bucket=P, imp=S_, eff=ES, pkg='Preklady a hlášky', what='Záložky a tlačidlá vyhľadávania (Všetko / Ľudia / Ponuky, Zobraziť viac / všetko) sú slovenské literály, nie `t()`.', note='Súčasť 176; ak štart nie je viacjazyčný, môže počkať (R2).', dec='ROZHODNUTIE R2'),
     # otvorené, PO
     dict(id='OW-08', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Upratať historické testovacie dáta v Railway (karta ID 165 sa nemaže).', note='Na novej, čistej databáze odpadá.', dec=None),
