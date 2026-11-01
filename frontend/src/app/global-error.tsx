@@ -21,7 +21,11 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
   const [locale, setLocale] = useState<GlobalErrorLocale>('sk');
 
   useEffect(() => {
-    Sentry.captureException(error);
+    try {
+      Sentry.captureException(error);
+    } catch {
+      // Zlyhanie hlásenia nesmie zhodiť aj náhradnú stránku (rovnako ako v `ErrorBoundary`).
+    }
   }, [error]);
 
   useEffect(() => {

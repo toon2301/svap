@@ -76,6 +76,18 @@ describe('global-error', () => {
     expect(captureException).toHaveBeenCalledTimes(1);
   });
 
+  it('zlyhanie hlásenia do Sentry náhradnú stránku nerozbije', () => {
+    browserSpeaks('fr-FR');
+    captureException.mockImplementationOnce(() => {
+      throw new Error('Sentry zlyhal');
+    });
+
+    const { container } = render(<GlobalError error={new Error('x')} />);
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(container).toHaveTextContent(sk.appError.title);
+  });
+
   it('bez uloženej voľby a pri neznámom jazyku prehliadača ukáže slovenčinu', () => {
     browserSpeaks('fr-FR');
 
