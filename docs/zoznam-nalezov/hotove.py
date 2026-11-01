@@ -247,7 +247,7 @@ DONE_SINCE = [
               'citlivý test fotiek, ktorý padal na kontrole pred odoslaním (okno nebolo na spodku ešte pred odoslaním; padal raz aj v behu '
               'pred aktualizáciou; v štyroch čistých kolách prešiel 12 z 12), 15 stránok bez nových chýb konzoly, hlavičky odpovedí (CSP, '
               '`Cache-Control: no-store`) rovnaké a obrázky cez `next/image` sa načítajú (optimalizáciu odteraz robí `sharp`). WebKit/iPhone '
-              'a Railway sa lokálne neskúšali: čaká plný beh Playwrightu po nasadení a test majiteľa na iPhone. Nová minimálna podpora '
+              'a Railway sa lokálne neskúšali; ich výsledok je v behu Playwrightu po nasadení a v manuálnych testoch majiteľa nižšie. Nová minimálna podpora '
               'prehliadačov (overené v balíkoch Next): Safari 16.4 (iOS 16.4, 03/2023) a Chrome, Edge a Firefox 111; Next 14 mal Safari 12 a '
               'Chrome 64, preto iPhony s iOS 15 a starším aplikáciu prestanú správne zobrazovať (majiteľ plán odsúhlasil 31. 10. 2026). '
               'Stránka `/reset-password/…` sa vykresľuje na požiadanie (v Next 14 bola predgenerovaná; pre používateľa rovnaké, overené bez '
@@ -282,7 +282,7 @@ DONE_SINCE = [
               'používateľa (369 − 200 = 169) a stráženie sa s ním nevzpiera; susedné špecy (história, identita `<main>`, nastavenia, '
               'vyhľadávanie): 47 prešlo, 28 preskočených a 3 padli pre chýbajúce dáta v kópii (portfólio, vlastná ponuka na Nástenke; '
               'dva z nich padali rovnako aj pred zmenou). WebKit/iPhone a Railway sa lokálne neskúšali: čaká plný beh Playwrightu po '
-              'nasadení a test majiteľa na iPhone. Dopad na E2E: žiadna zmena E2E súborov; test `after a reload the arrow still brings the '
+              'nasadení tejto vetvy a test majiteľa na iPhone. Dopad na E2E: žiadna zmena E2E súborov; test `after a reload the arrow still brings the '
               'profile back to the same place` by mal po nasadení prejsť.'),
 ]
 
