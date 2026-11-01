@@ -21,6 +21,7 @@ jest.mock('./preloadAvatar', () => ({
 
 import { markProfileFreshEntry, resetProfileFreshEntry } from './profileFreshEntry';
 import {
+  PROFILE_SCROLL_RESTORE_TIMEOUT_MS,
   clearRememberedProfileScroll,
   readRememberedProfileScroll,
   rememberProfileScroll,
@@ -91,6 +92,33 @@ describe('useProfileFreshEntry – obnova pozície po návrate z recenzií', () 
     expect(fresh.writes).toEqual([2262]);
     expect(result.current).toBe(false);
     expect(readRememberedProfileScroll()).toBeNull();
+  });
+
+  it('a page that replaces the restored one while the position is guarded gets it again', () => {
+    // Po F5 na recenziách router po kroku späť vymení stránku profilu ešte raz; udalosť kroku histórie
+    // nesie pozíciu a router medzitým prepíše stav záznamu bez našich kľúčov.
+    const state = { __NA: true, __svaplyProfileScroll: { version: 1, top: 2262 } };
+    window.history.replaceState(state, '', PROFILE);
+    window.dispatchEvent(new PopStateEvent('popstate', { state }));
+    window.history.replaceState({ __NA: true }, '', PROFILE);
+    const first = mountMain({ scrollHeight: 7000 });
+    const firstPage = renderHook(() => useProfileFreshEntry(21, 'peter'));
+    expect(first.writes).toEqual([2262]);
+
+    // Starý hook sa odmountuje a nový `<main>` je od vrchu a ešte bez obsahu.
+    firstPage.unmount();
+    first.main.remove();
+    const second = mountMain({ scrollHeight: 0 });
+    renderHook(() => useProfileFreshEntry(21, 'peter'));
+    frames(100);
+    expect(second.writes).toEqual([]);
+
+    second.setHeight(7000);
+    frames(16);
+
+    expect(second.writes).toEqual([2262]);
+    frames(PROFILE_SCROLL_RESTORE_TIMEOUT_MS);
+    expect(jest.getTimerCount()).toBe(0);
   });
 
   it('waits for the offers to load and then restores the position exactly once', () => {

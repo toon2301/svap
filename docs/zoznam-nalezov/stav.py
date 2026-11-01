@@ -6,13 +6,23 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='31. 10. 2026',
-    kod='`main` `0905aedd` (po PR #217)',
+    datum='1. 11. 2026',
+    kod='`main` `9e311839` (po PR #218 a #219)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('1. 11. 2026',
+     'Vetva 160 (čaká na zlúčenie): nález 231 – regresia po povýšení na Next 16 a React 19, ktorú zachytil Codex v celom behu Playwrightu '
+     'po nasadení (`main` `9e311839`): po F5 na recenziách šípka vrátila profil od vrchu namiesto pôvodného miesta (8 z 8 pokusov na '
+     'desktope). Príčina a oprava sú pri nálezu 231 (obnova pozície po zápise nekončí, ale ju stráži do vypršania času alebo do vstupu '
+     'používateľa; zmena je len v `profileScrollMemory.ts` a jeho testoch). Nové nálezy: 232 (HTTP 500 pri upratovaní zdieľania z '
+     'Nástenky, príčina nepreukázaná, čaká na záznam z Railway) a 233 (E2E nemá scenár pre fotku v správach, emoji, reset hesla a '
+     'verejné stránky). Doplnené nálezy 223 (celý beh po nasadení: 17 z 21 pádov prešlo pri opakovaní), 224 (majiteľ: platí len na '
+     'mobile, na desktope nie) a 225 (oba jazykové scenáre v celom behu prešli). Nález 184 je zlúčený (PR #218) a nasadený na '
+     'produkciu; majiteľ po nasadení otestoval manuálne kroky 1 až 6 bez nového nálezu. Zlúčené: vetva 159 (PR #218) a E2E vetva '
+     '`e2e/izolovane-sondy` (PR #219), `main` `9e311839`.'),
     ('31. 10. 2026',
      'Vetva 159 (PR #218, čaká na zlúčenie): nález 184b – frontend sa povyšuje z Next 14.2.35 a Reactu 18.3.1 na Next 16.4.3 a '
      'React 19.3.1 (rozhodnutie R9, odpoveď majiteľa 31. 10. 2026). Commity: (1) deväť testov upravených tak, aby fungovali na '
@@ -191,9 +201,9 @@ PORADIE = [
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159); ďalej 179 (2FA), 9, 33, 52, 185, 214, OW-07 a balík „Spoľahlivosť CI a testov“ '
-            '(31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
+            '(31, TEST-…, 189, 209, 223, 225, 228, 232; 212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223', '225', '228']),
+         polozky=['179', '9', '33', '52', '185', '214', 'OW-07', '31', '189', '209', '223', '225', '228', '232']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',

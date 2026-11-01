@@ -11,7 +11,8 @@ nemôže ticho prestať sedieť.
 | `ZOZNAM.md` | Generovaný dokument, ktorý sa číta. |
 | `povodny_zoznam.json` | Pôvodný zoznam nálezov 1–172 (texty bez úprav). |
 | `polozky_povodne.py` | Roztriedenie otvorených položiek 1–172: skupina, dopad, zložitosť, balík, poznámka. |
-| `polozky_nove.py` | Nové nálezy od 173. |
+| `polozky_nove.py` | Nové nálezy od 173 do 231. |
+| `polozky_nove_dalsie.py` | Nové nálezy od 232. Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. |
 | `polozky_priprava.py` | Úlohy na prípravu ostrého nasadenia N1…. Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich sprístupňuje pod pôvodným názvom. |
 | `register.py` | Stav ID z `docs/testing/findings-register.md` (otvorené, zatvorené, čaká živé overenie). |
 | `stav.py` | Dátum a stav kódu, poradie práce, rozhodnutia, denník zmien. |
@@ -22,7 +23,7 @@ nemôže ticho prestať sedieť.
 
 Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení kód):
 
-1. **Nový nález:** pridať do `NEW_ITEMS` v `polozky_nove.py` s ďalším voľným číslom (čísla sa nikdy nemenia ani nepoužívajú znova).
+1. **Nový nález:** pridať do `NEW_ITEMS_DALSIE` v `polozky_nove_dalsie.py` (od 232; staršie sú v `NEW_ITEMS` v `polozky_nove.py`) s ďalším voľným číslom (čísla sa nikdy nemenia ani nepoužívajú znova).
    Nové ID v registri treba zaradiť do `register.py`.
 2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py`
    (`n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
