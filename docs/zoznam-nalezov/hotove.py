@@ -257,7 +257,7 @@ DONE_SINCE = [
               'nedokončenom načítaní Nástenky (nález 223) a jedna skutočná regresia po povýšení (dva kľúče, desktopový WebKit a Chromium) '
               'je opravená vo vetve 160 (nález 231). Majiteľ po nasadení otestoval manuálne kroky 1 až 6 bez nového nálezu.'),
     dict(n=231, vetva='160', pr='#220', zlucene=True,
-         text='HOTOVÉ (zlúčené v PR #220 a nasadené na produkciu 1. 11. 2026): po povýšení na Next 16 a React 19 (nález 184b) sa profil po F5 na stránke recenzií a kroku späť '
+         text='HOTOVÉ (zlúčené v PR #220, nasadené na produkciu a overené 1. 11. 2026): po povýšení na Next 16 a React 19 (nález 184b) sa profil po F5 na stránke recenzií a kroku späť '
               'šípkou otvoril od vrchu namiesto pôvodného miesta. Zachytil to Codex v celom behu po nasadení (1. 11. 2026, `main` '
               '`9e311839`): test `offer-reviews-back.spec.ts › after a reload the arrow still brings the profile back to the same place` padol '
               '8 z 8 pokusov v desktopovom WebKite aj v Chromiu (profil sa vrátil, ale `scrollTop` ostal 0); mobilný variant prešiel a pred '
@@ -281,9 +281,10 @@ DONE_SINCE = [
               'scenár so spomalením procesora 1×, 6×, 12× a 20×: 369 z 369 px vo všetkých; kolesko myši po návrate drží pozíciu '
               'používateľa (369 − 200 = 169) a stráženie sa s ním nevzpiera; susedné špecy (história, identita `<main>`, nastavenia, '
               'vyhľadávanie): 47 prešlo, 28 preskočených a 3 padli pre chýbajúce dáta v kópii (portfólio, vlastná ponuka na Nástenke; '
-              'dva z nich padali rovnako aj pred zmenou). WebKit/iPhone a Railway sa lokálne neskúšali: čaká plný beh Playwrightu po '
-              'nasadení tejto vetvy a test majiteľa na iPhone. Dopad na E2E: žiadna zmena E2E súborov; test `after a reload the arrow still brings the '
-              'profile back to the same place` by mal po nasadení prejsť.'),
+              'dva z nich padali rovnako aj pred zmenou). WebKit/iPhone a Railway sa lokálne neskúšali. Overenie po nasadení (1. 11. 2026, `main` `583b94c0`, Codex): ten istý nezmenený test '
+              '`after a reload the arrow still brings the profile back to the same place` prešiel v cielenom aj v novom celom behu vo všetkých '
+              'troch projektoch (6 z 6) a celý špec recenzií mal v oboch behoch 19 prešlo, 0 zlyhalo a 8 preskočených; manuálne testy majiteľa '
+              'po nasadení prešli bez nového nálezu. Dopad na E2E: žiadna zmena E2E súborov.'),
     dict(n=179, vetva='161', pr=None, zlucene=False,
          text='HOTOVÉ (čaká na zlúčenie): `TestBioAnd2FAFlows::test_login_requires_totp_when_enabled` občas zlyhával, lebo prihlásenie '
               'overovalo kód 2FA len v aktuálnom 30-sekundovom okne (`totp.verify(totp_code)` bez `valid_window`). Správny kód zadaný na konci '
@@ -298,7 +299,8 @@ DONE_SINCE = [
               'preskočené overenie, prázdny kód) testy zachytili všetky. Celá backendová sada na SQLite: 2 012 prešlo a 10 preskočených. Pozor: 2FA je dnes '
               'nedokončená funkcia (nález 235), takže sa oprava v živej aplikácii neprejaví, kým ju niekto nezapne; opakované použitie už '
               'videného kódu (bez ochrany pred replayom) existovalo aj predtým a platnosť kódu sa predĺžila z 30 na 90 s. Riziko je nízke '
-              '(útočník musí poznať aj heslo) a je zapísané v 235.'),
+              '(útočník musí poznať aj heslo) a je zapísané v 235. CodeRabbit (PR #221) označil rovnaký bod (opakované použitie kódu) ako Major; zatiaľ sa nerobí, '
+              'lebo 2FA nikto nemôže zapnúť, a čaká na rozhodnutie majiteľa (R12).'),
     dict(n=234, vetva='161', pr=None, zlucene=False,
          text='HOTOVÉ (čaká na zlúčenie; našlo sa pri mapovaní nálezu 179): prihlásenie s 2FA ukazovalo vždy len „Chyba pri overovaní 2FA.“, '
               'aj keď kód bol jednoducho zlý alebo expirovaný („Neplatný 2FA kód.“) alebo bolo 2FA zapnuté bez secretu („2FA nie je správne '
@@ -317,13 +319,14 @@ DONE_SINCE = [
               'nezhodí) a obyčajný odkaz namiesto `next/link`; text ani zásobník chyby sa na nej neukážu; (3) kľúč `appError` v '
               '`messages/{sk,cs,en,de,pl,hu}.json`; (4) samostatný commit, ktorý sa dá vrátiť osobitne: `ErrorBoundary` v koreňovom layoute '
               'zachytí väčšinu chýb vykresľovania, takže sa nikdy nedostali ani na `global-error`, ani do Sentry (v kóde bola len poznámka); '
-              'teraz ich hlási aj s vetvou komponentov a zlyhanie hlásenia chybovú stránku nerozbije. Overené: 57 nových Jest testov '
-              '(`GlobalErrorView.test.tsx` 46, `global-error.test.tsx` 7, `ErrorBoundary.sentry.test.tsx` 4) a 14 zámerných pokazení kódu '
+              'teraz ich hlási aj s vetvou komponentov a zlyhanie hlásenia chybovú stránku nerozbije. Overené: 58 nových Jest testov '
+              '(`GlobalErrorView.test.tsx` 46, `global-error.test.tsx` 8, `ErrorBoundary.sentry.test.tsx` 4) a 14 zámerných pokazení kódu '
               '(11 pri stránke, 3 pri hranici), všetky zachytené; v Chromiu na produkčnom builde Next 16 s vynútenou chybou v layoute 44 '
               'kontrol prešlo (6 jazykov, jazyk prehliadača, tmavý režim, mobil bez vodorovného posunu, tlačidlo načíta stránku znova, odkaz '
               'vedie na úvod) a falošný server Sentry dostal udalosť zo všetkých 14 načítaní; varovanie od Sentry z buildu zmizlo. Stránka '
               'sa ukáže len pri páde layoutu (zriedkavé), hlavný prínos je hlásenie do Sentry. WebKit/iPhone a skutočný Sentry sa lokálne '
-              'neskúšali; na novom serveri treba overiť, že udalosti prichádzajú (úloha N11).'),
+              'neskúšali; na novom serveri treba overiť, že udalosti prichádzajú (úloha N11). Po kontrole CodeRabbitu (PR #221) je hlásenie z `global-error` ošetrené `try/catch` rovnako ako v `ErrorBoundary`: nový test, '
+              'v ktorom `captureException` vyhodí výnimku, na starom kóde padal (výnimka unikla von) a teraz prechádza.'),
     dict(n=9, vetva='161', pr=None, zlucene=False,
          text='HOTOVÉ (čaká na zlúčenie; nález sa nepotvrdil, kód sa nemenil): tvrdenie, že WebSocket bez tokenu (`missing_token`) server '
               'odmietne až po približne 31 s, sa lokálne nepotvrdilo na žiadnej vrstve. Meranie surovým spojením proti `daphne` (bez tokenu, '

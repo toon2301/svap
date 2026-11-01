@@ -22,7 +22,14 @@ ZMENY = [
      '(4) 52: service worker hľadá novú verziu hneď po registrácii a text v konzole už nehovorí, že čaká na obnovenie (`sw.js` sa '
      'nemenil; prínos je hlavne na iPhone a lokálne sa tam neskúšal). Nové nálezy: 235 (2FA je nedokončená funkcia; rozhodnutie R12) a '
      '236 (neznáma cesta pod `/ws/` skončí chybou 500 a výpisom v logu). Overené: celá backendová sada na SQLite 2 012 prešlo a 10 preskočených; celý '
-     'Jest na React 19 522 sád a 8 097 testov prešlo. Nález 231 je zlúčený (PR #220) a nasadený na produkciu. Zlúčené: vetva 160 (PR #220), `main` `583b94c0`.'),
+     'Jest na React 19 522 sád a 8 097 testov prešlo. Nález 231 je zlúčený (PR #220) a nasadený na produkciu. Overenie vetvy 160 po nasadení (Codex, `main` `583b94c0`): oprava nálezu 231 '
+     'prešla (rovnaký nezmenený test 6 z 6 vo všetkých troch projektoch, celý špec recenzií 19 prešlo, 0 zlyhalo, 8 preskočených), vetva 160 je '
+     'uzavretá. Nový celý beh dal 418 prešlo, 13 zlyhalo, 307 preskočených (prijatý stav 427, 2, 303 sa nemení; prvý pokus zasiahol vyčerpaný '
+     'limit Railway a nezapočítava sa); zlyhania sú vzor príprava/sieť a 37 z 39 diagnostických vykonaní prešlo, preto 223 ostáva otvorený. Nález '
+     '232 má príčinu potvrdenú logom Railway (súbeh vytvorenia zdieľania a zmazania jeho zdroja, porušenie cudzieho kľúča), presunul sa do '
+     'balíka Produkčná odolnosť aplikácie a oprava pôjde ako samostatná vetva po 161. PR #221: CodeRabbit označil dva nálezy; zlyhanie Sentry '
+     'v `global-error` je opravené v tejto vetve, opakované použitie TOTP kódu je zapísané v nálezu 235 a čaká na rozhodnutie majiteľa (R12). '
+     'Zlúčené: vetva 160 (PR #220), `main` `583b94c0`.'),
     ('1. 11. 2026',
      'Vetva 160 (čaká na zlúčenie): nález 231 – regresia po povýšení na Next 16 a React 19, ktorú zachytil Codex v celom behu Playwrightu '
      'po nasadení (`main` `9e311839`): po F5 na recenziách šípka vrátila profil od vrchu namiesto pôvodného miesta (8 z 8 pokusov na '
@@ -211,9 +218,9 @@ PORADIE = [
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 9, 33, 52 vo vetve 161); ďalej 185, 214, '
-            '236, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228, 232; 212 je hotová vo vetve 157)',
+            '232, 236, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '214', '236', 'OW-07', '31', '189', '209', '223', '225', '228', '232']),
+         polozky=['185', '214', '232', '236', 'OW-07', '31', '189', '209', '223', '225', '228']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
