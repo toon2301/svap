@@ -235,7 +235,7 @@ Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nekoliduj
 | 8 | 178 | ESLint hlási chyby a varovania v `search/hooks/useRecentSearches.tsx`. | Typy a lint v jednom súbore (278 riadkov). Pozor na varovanie o závislostiach `useCallback`: oprava môže zmeniť správanie. | voľné |
 | 9 | APP-05 | Asynchrónne overenie položky histórie môže prepísať novší dotaz (`useRecentSearches.tsx`). | Oprava preteku v tom istom súbore ako 178; potrebuje nový test. | voľné |
 | 10 | 134 | Žiadna z mobilných animácií nerešpektuje `prefers-reduced-motion`. | Používateľsky viditeľné (prístupnosť). Najprv zistiť rozsah, lebo niekoľko miest to už rieši; súbory nad 500 riadkov sa nemenia. | voľné |
-| 11 | 213 | `CheckConstraint(check=…)` je od Djanga 5.1 zastarané (v 10 súboroch modelov v `accounts/models/`). | Backend: premenovať `check` na `condition`; nesmie vzniknúť nová migrácia (stráži to `tests/test_migrations_up_to_date.py`). | voľné |
+| 11 | 213 | `CheckConstraint(check=…)` je od Djanga 5.1 zastarané a Django 6.0 `check` odstráni (21 miest v 7 súboroch modelov, 27 miest v 16 starých migráciách). | Backend: premenovať `check` na `condition` v modeloch aj v starých migráciách (mení sa len názov argumentu, schéma nie); nesmie vzniknúť nová migrácia (stráži to `tests/test_migrations_up_to_date.py`, overiť aj `makemigrations --check`). | voľné |
 
 ### Pravdepodobne už vyriešené
 

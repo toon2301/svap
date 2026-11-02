@@ -159,6 +159,15 @@ def _chyby_poradia(otvorene_id):
     return chyby
 
 
+def _id_po_nasadeni(riadky_skupiny):
+    """Povolené ID pre frontu: čísla nálezov skupiny a jednotlivé (rozbalené) ID registra; spoločný názov riadku (`TECH-01…11`) ID nie je."""
+    ids = {d['id'] for _b, _k, d in riadky_skupiny if d['id'].isdigit()}
+    for polozka in register.REG_ITEMS:
+        if polozka['bucket'] == A:
+            ids.update(polozka['ids'])
+    return ids
+
+
 def _chyby_fronty(id_po_nasadeni):
     """Overí frontu prác po nasadení: ID sú otvorené nálezy zo skupiny PO NASADENÍ bez opakovania a stav je vyplnený celý alebo vôbec."""
     chyby = []
@@ -223,7 +232,7 @@ def zostav_model():
     otvorene_id = {d['id'] for sk in riadky.values() for _b, _k, d in sk}
     otvorene_id |= set(registrove_otvorene)
     chyby += _chyby_poradia(otvorene_id)
-    chyby += _chyby_fronty({d['id'] for _b, _k, d in riadky[A]})
+    chyby += _chyby_fronty(_id_po_nasadeni(riadky[A]))
     if chyby:
         raise ValueError('\n'.join(' - ' + c for c in chyby))
 

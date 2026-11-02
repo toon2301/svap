@@ -41,6 +41,8 @@ FRONTA_PO_NASADENI = [
          preco='Oprava preteku v tom istom súbore ako 178; potrebuje nový test.'),
     dict(n='134', co='Žiadna z mobilných animácií nerešpektuje `prefers-reduced-motion`.',
          preco='Používateľsky viditeľné (prístupnosť). Najprv zistiť rozsah, lebo niekoľko miest to už rieši; súbory nad 500 riadkov sa nemenia.'),
-    dict(n='213', co='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané (v 10 súboroch modelov v `accounts/models/`).',
-         preco='Backend: premenovať `check` na `condition`; nesmie vzniknúť nová migrácia (stráži to `tests/test_migrations_up_to_date.py`).'),
+    dict(n='213', co='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané a Django 6.0 `check` odstráni (21 miest v 7 súboroch modelov, '
+                     '27 miest v 16 starých migráciách).',
+         preco='Backend: premenovať `check` na `condition` v modeloch aj v starých migráciách (mení sa len názov argumentu, schéma nie); '
+               'nesmie vzniknúť nová migrácia (stráži to `tests/test_migrations_up_to_date.py`, overiť aj `makemigrations --check`).'),
 ]
