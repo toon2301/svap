@@ -349,7 +349,15 @@ NEW_ITEMS = [
               '`GET /api/auth/me/` zlyhal po 22 690 ms (nemecký tmavý profilový variant, po troch opakovaniach prešiel) a viaceré '
               'pollingové a zoznamové požiadavky ostali pending alebo zlyhali po asi 16 s. Pomer 17 z 21 svedčí skôr o nestabilite prostredia '
               'než o dôsledku povýšenia, no príčinu nepreukazuje. Návrh: majiteľ prejde logy Railway aj pre okno 07:32 až 08:30 UTC dňa '
-              '1. 11. (rovnaké otázky ako 30. 10.).',
+              '1. 11. (rovnaké otázky ako 30. 10.). Dodatok 1. 11. 2026 (Codex, `main` `583b94c0`): prvý pokus celého behu zasiahol vyčerpaný '
+              'limit Railway (stránka `/dashboard/watches` a obnova relácie vracali 404 o 15:13:34 a 15:18:33 UTC, potvrdil majiteľ) a '
+              'nezapočítava sa. Po navýšení limitu nový celý beh dal 418 prešlo, 13 zlyhalo a 307 preskočených (prijatý stav 427, 2, 303 '
+              'sa nemení); tri diagnostické vykonania každého zo 13 zlyhaných kľúčov dali 37 prešlo a 2 zlyhali. Zlyhania majú spoločný vzor: '
+              'príprava sa zastaví pred samotnou kontrolou (`feed-list` sa nezobrazil, `GET /api/auth/feed/posts/` ostal pending, '
+              '`GET /api/auth/me/` alebo vyhľadávanie zlyhali po asi 23 s, obnova relácie dostala 401 a 403). Dva pády sa zopakovali 2 zo 4 '
+              '(`offer-card-review-translations`, desktopový WebKit, a `profile-numeric-language`, svetlý mobilný variant). Z logov Railway, '
+              'ktoré majiteľ poslal, je potvrdená len jedna chyba: nález 232 (súbeh na serveri). Príčina '
+              'týchto zlyhaní ostáva neurčená; nález ostáva otvorený a Codex pokračuje v mapovaní.',
          dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
