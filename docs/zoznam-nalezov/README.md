@@ -17,6 +17,7 @@ nemôže ticho prestať sedieť.
 | `register.py` | Stav ID z `docs/testing/findings-register.md` (otvorené, zatvorené, čaká živé overenie). |
 | `stav.py` | Dátum a stav kódu, poradie práce, rozhodnutia, denník zmien. |
 | `hotove.py` | Nálezy opravené po prvom vydaní (`DONE_SINCE`), tabuľka PR a popis série Upozornenia. Samostatný súbor, aby žiadny súbor nepresiahol 500 riadkov; `stav.py` ich sprístupňuje pod pôvodnými názvami. |
+| `fronta.py` | Poradie prác na nálezoch po nasadení (prvá dávka pre kolegu) a stav ich riešenia: kto na nich pracuje a od kedy. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
 
 ## Ako aktualizovať
@@ -30,6 +31,9 @@ Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení 
 3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
 4. Posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
 5. Z koreňa repozitára spustiť `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`.
+
+**Poradie po nasadení:** pri začatí práce na nálezu z prvej dávky doplniť v `fronta.py` `kto`, `stav` a `od`; po dokončení záznam odstrániť
+a nález presunúť do `DONE_SINCE` (kontrola zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený).
 
 Kontrola, či `ZOZNAM.md` zodpovedá dátam (nič nezapíše): `python docs/zoznam-nalezov/build.py --check`.
 

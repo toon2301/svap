@@ -6,13 +6,29 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='1. 11. 2026',
-    kod='`main` `583b94c0` (po PR #220)',
+    datum='2. 11. 2026',
+    kod='`main` `5402c5de` (po PR #221)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('2. 11. 2026',
+     'Vetva 161 (PR 221) je zlúčená, nasadená a uzavretá: manuálne testy majiteľa prešli a Codex (celý beh na `main` `5402c5de`) dal 427 '
+     'prešlo, 4 zlyhali a 307 preskočených; všetkých 13 pádov z predošlého behu prešlo, štyri iné kľúče (jeden známy pád č. 3, tri nové '
+     'kombinácie) zlyhali raz a pri trojnásobnom opakovaní prešlo 12 z 12, takže regresia po PR 221 nie je preukázaná (nález 223 ostáva '
+     'otvorený). Nálezy 179, 234, 33, 9 a 52 sú označené ako zlúčené. Vetva 162 (PR 222): zlúčil sa do nej `main` (konflikt bol len '
+     'v generovanom `ZOZNAM.md`, ktorý sa znovu vygeneroval) a opravili sa dve pripomienky CodeRabbitu: rozsah nálezu 213 vo fronte (21 miest '
+     'v 7 súboroch modelov a 27 miest v 16 starých migráciách; moje pôvodné „10 súborov“ bolo chybné) a kontrola fronty, ktorá teraz berie '
+     'jednotlivé ID registra (napr. `TECH-01`), nie spoločný názov riadku (`TECH-01…11`).'),
+    ('1. 11. 2026',
+     'Vetva 162 (čaká na zlúčenie; vychádza z vetvy 161, preto sa má zlúčiť až po nej): zoznam je pripravený na prácu kolegu na nálezoch '
+     '„po nasadení“. Nový súbor `fronta.py` vedie poradie prvej dávky (11 nálezov: 192, 221, 195, 226, 103, 58, 153, 178, APP-05, 134, 213) '
+     'a pri každom stav „voľné / rozrobené / čaká na zlúčenie“ s údajom, kto na ňom pracuje a od kedy. Poradie navrhol agent (od najjednoduchších '
+     'zmien bez dopadu na správanie po zložitejšie) a schvaľuje ho majiteľ. Pri každom nálezu je overené, že neznamená zmenu súboru nad 500 '
+     'riadkov (pri 134 sa to ukáže až podľa rozsahu); preto v dávke nie sú napríklad 216, 211 a 30. Kontrola v `model.py` zlyhá, ak záznam '
+     'odkazuje na nález, ktorý už nie je otvorený v skupine PO NASADENÍ, takže fronta nemôže ticho zastarať. Riadok o prvej dávke je aj '
+     'v časti „V skratke“.'),
     ('1. 11. 2026',
      'Vetva 161 (čaká na zlúčenie): balík „Produkčná odolnosť aplikácie“ – nálezy 179, 234, 33, 9 a 52 sú hotové. (1) 179 a 234: 2FA pri '
      'prihlásení prijíma kód z predošlého a nasledujúceho okna (`TOTP_VALID_WINDOW = 1`, ±30 s) a zlý kód dostane hlášku „Neplatný 2FA kód.“ '

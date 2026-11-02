@@ -11,6 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 from types import SimpleNamespace
 
+import fronta
 import polozky_nove
 import polozky_povodne
 import register
@@ -158,6 +159,37 @@ def _chyby_poradia(otvorene_id):
     return chyby
 
 
+def _id_po_nasadeni(riadky_skupiny):
+    """Povolené ID pre frontu: čísla nálezov skupiny a jednotlivé (rozbalené) ID registra; spoločný názov riadku (`TECH-01…11`) ID nie je."""
+    ids = {d['id'] for _b, _k, d in riadky_skupiny if d['id'].isdigit()}
+    for polozka in register.REG_ITEMS:
+        if polozka['bucket'] == A:
+            ids.update(polozka['ids'])
+    return ids
+
+
+def _chyby_fronty(id_po_nasadeni):
+    """Overí frontu prác po nasadení: ID sú otvorené nálezy zo skupiny PO NASADENÍ bez opakovania a stav je vyplnený celý alebo vôbec."""
+    chyby = []
+    videne = set()
+    for z in fronta.FRONTA_PO_NASADENI:
+        n = z.get('n')
+        if n in videne:
+            chyby.append('fronta: %s je v poradí viackrát' % n)
+        videne.add(n)
+        if n not in id_po_nasadeni:
+            chyby.append('fronta: %s nie je otvorený nález zo skupiny PO NASADENÍ (je hotový, v inej skupine alebo neexistuje); '
+                         'odstráň ho z fronta.py' % n)
+        if not (z.get('co') and z.get('preco')):
+            chyby.append('fronta: %s nemá vyplnené `co` a `preco`' % n)
+        vyplnene = [k for k in ('kto', 'stav', 'od') if z.get(k)]
+        if vyplnene and len(vyplnene) != 3:
+            chyby.append('fronta: %s má vyplnené len %s; stav sa vypĺňa celý (kto, stav, od)' % (n, ', '.join(vyplnene)))
+        if z.get('stav') and z['stav'] not in fronta.STAVY:
+            chyby.append('fronta: %s má neznámy stav %r' % (n, z['stav']))
+    return chyby
+
+
 def _pocet_nalezov(riadky_skupiny):
     """Spočíta riadky skupiny, ktoré sú číslovanými nálezmi (nie ID z registra ani úlohy N)."""
     return sum(1 for _b, _k, d in riadky_skupiny if d['id'].isdigit())
@@ -200,6 +232,7 @@ def zostav_model():
     otvorene_id = {d['id'] for sk in riadky.values() for _b, _k, d in sk}
     otvorene_id |= set(registrove_otvorene)
     chyby += _chyby_poradia(otvorene_id)
+    chyby += _chyby_fronty(_id_po_nasadeni(riadky[A]))
     if chyby:
         raise ValueError('\n'.join(' - ' + c for c in chyby))
 
