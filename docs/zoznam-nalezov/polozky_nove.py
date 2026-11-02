@@ -357,7 +357,13 @@ NEW_ITEMS = [
               '`GET /api/auth/me/` alebo vyhľadávanie zlyhali po asi 23 s, obnova relácie dostala 401 a 403). Dva pády sa zopakovali 2 zo 4 '
               '(`offer-card-review-translations`, desktopový WebKit, a `profile-numeric-language`, svetlý mobilný variant). Z logov Railway, '
               'ktoré majiteľ poslal, je potvrdená len jedna chyba: nález 232 (súbeh na serveri). Príčina '
-              'týchto zlyhaní ostáva neurčená; nález ostáva otvorený a Codex pokračuje v mapovaní.',
+              'týchto zlyhaní ostáva neurčená; nález ostáva otvorený a Codex pokračuje v mapovaní. Dodatok 1. 11. 2026 večer (Codex, `main` '
+              '`5402c5de`, po PR 221): celý beh dal 427 prešlo, 4 zlyhali a 307 preskočených (WebKit desktop 129/1/116, WebKit mobil '
+              '169/2/75, Chromium 129/1/116); všetkých 13 pádov z predošlého behu tentoraz prešlo. Zlyhali štyri iné kľúče (jeden je '
+              'známy pád č. 3, tri sú nové kombinácie špec/projekt) a pri trojnásobnom opakovaní každého prešlo 12 z 12. Vzor je rovnaký ako '
+              'predtým: príprava alebo navigácia sa zastaví na pending požiadavke (`/api/auth/me/`, `/api/auth/search/`, RSC požiadavka '
+              'profilu asi 23 s), bez 401 a 403 a bez chýb stránky. Striedanie rôznych kľúčov a 12 z 12 pri opakovaní svedčí skôr o '
+              'nestabilite prostredia než o regresii po PR 221, no príčinu nepreukazuje; nález ostáva otvorený.',
          dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
