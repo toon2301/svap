@@ -21,6 +21,7 @@ wheels/
 *.egg
 MANIFEST
 backend/.coverage
+**/.coverage
 
 # Virtual environments
 venv/
