@@ -72,11 +72,14 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
-"~$*" 
-"backend/google-credentials.json" 
-"backend/svaply-8ae1b49fa953.json" 
-"backend/google-credentials.json" 
-"backend/svaply-8ae1b49fa953.json" 
+
+# Office dočasné súbory
+~$*
+
+# Prihlasovacie údaje Google: nikdy do gitu. Kľúč služobného účtu sa volá svaply-<ID kľúča>.json, preto wildcard.
+**/google-credentials*.json
+**/svaply-*.json
+
 backend/cloudflared.exe
 
 # Celery beat runtime state (shelve DB: .dat/.dir/.bak)

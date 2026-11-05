@@ -1,2 +1,3 @@
-"google-credentials.json" 
-"svaply-8ae1b49fa953.json" 
+# Prihlasovacie údaje Google (kľúč služobného účtu sa volá svaply-<ID kľúča>.json)
+google-credentials*.json
+svaply-*.json
