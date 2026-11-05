@@ -371,7 +371,7 @@ def _udrzba(d, m):
         '`stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na nález, '
         'ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ.')
     d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '
-        'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 1:1, kým majiteľ nezmení. Po každej práci kolegu majiteľ '
+        'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 1:1, kým majiteľ dohodu nezmení. Po každej práci kolegu majiteľ '
         'pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` (časť „Postup s kolegom“).')
     d.w('- **Vždy:** posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.')
     d.w('- **Kontrola:** `python docs/zoznam-nalezov/build.py --check` skončí chybou, ak sa `ZOZNAM.md` líši od dát.')
