@@ -14,7 +14,7 @@
  * premennej. Pôvodne tu premenná bola, s predpokladom, že medzi odchodom a
  * návratom nikdy nie je reload. Manuálny test ten predpoklad vyvrátil:
  * detail portfólia je vlastná Next stránka, takže Späť z neho vedie cez hranicu
- * stránky, a `middleware.ts` posiela na každý HTML dokument
+ * stránky, a Next (koreňový layout je `force-dynamic`) posiela na každý HTML dokument
  * `Cache-Control: no-store` – Safari pri takej hlavičke bfcache nepoužije a
  * dokument načíta nanovo. Tým zanikne CELÝ modulový stav, nielen jeden zahodený
  * render. `sessionStorage` reload prežije, je viazaný na jednu kartu (snímka

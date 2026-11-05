@@ -5,7 +5,6 @@ source =
     portfolio
     swaply
 omit =
-    swaply/test_settings.py
     */migrations/*
     */tests/*
     */test/*
@@ -13,13 +12,11 @@ omit =
     */manage.py
     */setup_email.py
     */setup_redis.py
-    swaply/settings_clean.py
     swaply/settings_production.py
     swaply/settings_test.py
     swaply/settings.py
     swaply/asgi.py
     swaply/wsgi.py
-    swaply/migrate_api.py
     swaply/image_moderation.py
     swaply/routing.py
     swaply/ws_auth.py
@@ -38,10 +35,7 @@ omit =
     swaply/audit_logger.py
     swaply/middleware.py
     swaply/urls.py
-    accounts/views/google_oauth.py
     accounts/views/google_oauth_simple.py
-    accounts/views/simple_google_oauth.py
-    accounts/views/oauth.py
 
 [report]
 fail_under = 94.8
