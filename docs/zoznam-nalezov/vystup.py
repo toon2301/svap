@@ -108,11 +108,14 @@ def _stav_fronty(zaznam):
 
 
 def _fronta_v_skratke():
-    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, ktorý je prvý v poradí a zapísaný stav (ak nejaký je)."""
+    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, ktorý je prvý v poradí a zapísaný stav (ak nejaký je).
+
+    Volá sa len pre neprázdnu frontu: pri prázdnej sa tento riadok ani podčasť 5 nezapisujú (viď `_v_skratke` a `_fronta`).
+    """
     zaznamy = fronta.FRONTA_PO_NASADENI
     rozrobene = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_ROZROBENE)
     caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
-    prvy = f'prvý v poradí: č. {zaznamy[0]["n"]}' if zaznamy else 'fronta je prázdna'
+    prvy = f'prvý v poradí: č. {zaznamy[0]["n"]}'
     if rozrobene or caka:
         stav_text = f' (zapísané: rozrobené {rozrobene}, čaká na zlúčenie {caka})'
         poznamka = ''
