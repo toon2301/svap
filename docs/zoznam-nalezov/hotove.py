@@ -362,6 +362,44 @@ DONE_SINCE = [
               'štvrtý v špecu s povoleným; všetky štyri prešli pri trojnásobnom opakovaní). Beh s čerstvými kontextmi nenahrádza riadenú '
               'skúšku starej nainštalovanej PWA pri prechode na nový worker, takže prínos na iPhone ostáva neoverený; manuálne testy majiteľa '
               'po nasadení prešli (appka sa na iPhone načíta normálne).'),
+    dict(n=192, vetva='K1', pr='#223', zlucene=True,
+         text='HOTOVÉ (prvá práca kolegu, zlúčené v PR #223 dňa 4. 11. 2026): zo sledovaných súborov sa odstránili '
+              '`frontend/backend/.coverage` (databáza pokrytia Pythonu v priečinku frontendu, 53 KB) a `frontend/profilecard-test.txt` '
+              '(výstup PowerShellu z behu Jestu, 15 KB) a do koreňového `.gitignore` pribudlo pravidlo `**/.coverage`, aby sa takýto '
+              'súbor nesledoval v žiadnom priečinku. Nič v kóde oba súbory nepoužívalo. Overenie: CI prešlo, kontrola CodeRabbit prešla '
+              'a manuálna kontrola prešla. Koreňový `.coverage` ostáva sledovaný (patrí k nálezu 32). Kolega pri práci nahlásil tri nové '
+              'veci: ochrana prihlasovacích súborov v `.gitignore` nefungovala (nález 237, hotové vo vetve 163), koreňový `.coverage` '
+              'obsahuje absolútne cesty z Windowsu (doplnok k nálezu 32) a zastarané npm balíky (nález 238). Druhá časť pôvodného zápisu '
+              'tohto nálezu (tri nepoužité komponenty so starou kópiou nahrávania avatara) s týmito dvoma súbormi nesúvisela, preto sa '
+              'presunula do nového nálezu 239, aby sa nestratila.'),
+    dict(n=237, vetva='163', pr='#224', zlucene=False,
+         text='HOTOVÉ (vetva 163, PR #224, čaká na zlúčenie; nahlásil kolega pri práci na nálezu 192, overil agent): nové súbory s '
+              'prihlasovacími údajmi Google sa pri bežnom pridaní do gitu (`git add .`, `git add -A`) ignorujú; `.gitignore` však '
+              'nezabráni `git add -f` a neodstráni súbor, ktorý už git sleduje. V koreňovom `.gitignore` (5 riadkov) a v '
+              '`backend/.gitignore` (2 riadky) boli '
+              'názvy kľúčov v úvodzovkách a s medzerou na konci (artefakt zápisu z PowerShellu). Git berie úvodzovky doslova, takže '
+              '`backend/google-credentials.json` ani kľúč služobného účtu `backend/svaply-<ID kľúča>.json` neboli ignorované '
+              '(`git check-ignore` vrátil „nie“); repozitár je verejný, takže jeden `git add .` alebo `git add -A` v `backend/` mohol '
+              'skončiť únikom kľúča. Únik nenastal: v celej histórii nie je súbor s takým názvom ani text súkromného kľúča (`BEGIN PRIVATE '
+              'KEY` sa nezmenil v žiadnom commite), takže kľúč netreba meniť. Oprava: pokazený blok v koreňovom `.gitignore` je nahradený '
+              'pravidlami bez úvodzoviek a bez duplicít (`~$*` pre dočasné súbory Office je tiež opravené; `**/google-credentials*.json` a '
+              '`**/svaply-*.json` kryjú aj kľúč po výmene, ktorý má iné ID, a súbor v ktoromkoľvek priečinku) a rovnaké pravidlá sú v '
+              '`backend/.gitignore`. Nové pravidlá nezachytili žiadny ďalší sledovaný súbor (`git ls-files -ci --exclude-standard` '
+              'vypíše len koreňový `.coverage`, ktorý ignoruje pravidlo z nálezu 192). Poistka: nový test '
+              '`backend/tests/test_gitignore_secrets.py` (15 testov) kontroluje, že žiadny riadok v troch `.gitignore` nie je v '
+              'úvodzovkách ani nekončí medzerou, že `git check-ignore --no-index` ignoruje názvy kľúčov (aj s iným ID a vo vnorených '
+              'priečinkoch mimo `backend/`) a že neignoruje `manage.py`, `requirements.txt`, `package.json` a `.gitignore`; ak chýba '
+              '`git` alebo `.git`, testy ignorovania sa preskočia, no neočakávaný kód gitu (napr. 128) test zhodí a nepreskočí. Deväť '
+              'zámerných pokazení pravidiel a testu (späť riadok v úvodzovkách, pevný názov namiesto wildcardu, chýbajúce pravidlá, '
+              'medzera na konci, príliš široké `*.json`, pôvodná chyba, pravidlá platné len pre koreň, preskočenie namiesto zlyhania '
+              'pri chybe gitu, chyba gitu braná ako „neignorované“) test zachytil všetky. V prvom kole unikla úprava `*.json`, preto '
+              'pomocná funkcia používa `--no-index` (bez neho git sledované súbory nikdy nehlási ako ignorované). Kontrola CodeRabbitu '
+              '(PR #224) potvrdila ďalšie dve medzery, ktoré sú opravené: pôvodný test by nezachytil pravidlá platné len pre koreň '
+              '(preto pribudli vnorené cesty) a preskočenie pri chybe gitu by poistku ticho vypolo (preto `pytest.fail` a vlastný test '
+              's kódom 128). Celá backendová sada na SQLite: 2 027 prešlo a 10 preskočených (predtým 2 012, pribudlo 15 '
+              'nových testov). Dopad na E2E: '
+              'žiadny. Voliteľná druhá poistka na strane GitHubu, ktorá môže zachytiť kľúč aj vtedy, keď sa `.gitignore` obíde (napr. '
+              '`git add -f`): zapnúť „Push protection“ (kontrola tajomstiev) v nastaveniach repozitára; rozhoduje majiteľ.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.

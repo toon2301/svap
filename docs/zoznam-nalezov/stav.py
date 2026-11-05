@@ -6,13 +6,31 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='2. 11. 2026',
-    kod='`main` `5402c5de` (po PR #221)',
+    datum='5. 11. 2026',
+    kod='`main` `08b62c73` (po PR #223)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('5. 11. 2026',
+     'Vetva 163 (PR #224, čaká na zlúčenie; vychádza z `main` `08b62c73`, teda po PR #223): oprava nálezu 237 – súbory s prihlasovacími údajmi '
+     'Google sa v `.gitignore` naozaj ignorujú (názvy boli v úvodzovkách a s medzerou na konci, takže ich git neignoroval; kľúč sa do '
+     'histórie nikdy nedostal) – s novým testom `test_gitignore_secrets.py` (15 testov, všetkých 9 zámerných pokazení zachytených); celá '
+     'backendová sada na SQLite: 2 027 prešlo a 10 preskočených. Po kontrole CodeRabbitu (PR #224, tri platné '
+     'pripomienky): test pri neočakávanom kóde gitu zlyhá namiesto preskočenia, pribudli vnorené cesty a generátor zoznamu už '
+     'záznam fronty bez stavu nepodáva ako „voľný“ (píše „nesleduje sa“ a neuvádza počet voľných, lebo kým kolega pracuje, zoznam o '
+     'tom nevie). Druhá kontrola (dve platné pripomienky): „prvý v poradí“ je vždy prvý záznam fronty bez ohľadu na stav a opis '
+     'nálezu 237 netvrdí, že sa kľúče „nikdy“ nedostanú do gitu (`.gitignore` nezabráni `git add -f` a neodstráni sledovaný '
+     'súbor). Prvá práca kolegu (vetva K1, PR #223, zlúčená 4. 11.) je zapísaná: '
+     'nález 192 je hotový a odišiel z fronty (v prvej dávke ostáva 10 nálezov). Tri nové veci od kolegu: 237 (hotové touto vetvou), '
+     'doplnok k nálezu 32 (koreňový `.coverage` obsahuje 241 absolútnych ciest z Windowsu; majiteľ 5. 11. súhlasil so zmazaním, pôjde ako 4. položka '
+     'dávky kolegu K2) a nový nález '
+     '238 (zastarané npm balíky). Nový je aj nález 239: tri nepoužité komponenty so starou kópiou nahrávania avatara boli skryté v '
+     'poznámke pôvodného nálezu 192, preto dostali vlastné číslo, aby sa nestratili. Doplnky: 223 (kontrola logov Railway majiteľom '
+     '2. 11.: vo všetkých štyroch časoch pádov `missing_token`, Redis a PostgreSQL bez zjavnej chyby, príčina nepotvrdená), 227 a 229 '
+     '(odkaz na 238; `@opentelemetry/sdk-trace-base` v produkčnom strome). Do `README.md` pribudol postup s kolegom (v kóde pracuje '
+     'vždy len jeden, striedanie 1:1, vetvy K1, K2…) a polia `kto` / `stav` / `od` vo fronte sa už nevyplňujú.'),
     ('2. 11. 2026',
      'Vetva 161 (PR 221) je zlúčená, nasadená a uzavretá: manuálne testy majiteľa prešli a Codex (celý beh na `main` `5402c5de`) dal 427 '
      'prešlo, 4 zlyhali a 307 preskočených; všetkých 13 pádov z predošlého behu prešlo, štyri iné kľúče (jeden známy pád č. 3, tri nové '

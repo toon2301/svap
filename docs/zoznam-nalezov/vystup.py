@@ -98,21 +98,31 @@ def _hned(m):
 
 
 def _stav_fronty(zaznam):
-    """Text stavu záznamu fronty: „voľné“ alebo napr. „rozrobené: kolega od 3. 11. 2026“."""
+    """Text stavu záznamu fronty: „nesleduje sa“ (stav nie je zapísaný) alebo napr. „rozrobené: kolega od 3. 11. 2026“.
+
+    Záznam bez stavu sa nikdy nepodáva ako „voľný“: kým kolega pracuje, zoznam o tom nevie (aktualizuje sa po každej práci).
+    """
     if not zaznam.get('kto'):
-        return 'voľné'
+        return 'nesleduje sa'
     return f'{zaznam["stav"]}: {zaznam["kto"]} od {zaznam["od"]}'
 
 
 def _fronta_v_skratke():
-    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, v akom stave a ktorý je na rade."""
+    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, ktorý je prvý v poradí a zapísaný stav (ak nejaký je).
+
+    Volá sa len pre neprázdnu frontu: pri prázdnej sa tento riadok ani podčasť 5 nezapisujú (viď `_v_skratke` a `_fronta`).
+    """
     zaznamy = fronta.FRONTA_PO_NASADENI
-    volne = [z for z in zaznamy if not z.get('kto')]
     rozrobene = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_ROZROBENE)
     caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
-    dalsi = f'ďalší na rade: č. {volne[0]["n"]}' if volne else 'voľný nález nie je'
-    return (f'- **Prvá dávka po nasadení** (časť 5): v poradí {len(zaznamy)} (voľné {len(volne)}, rozrobené {rozrobene}, '
-            f'čaká na zlúčenie {caka}); {dalsi}.')
+    prvy = f'prvý v poradí: č. {zaznamy[0]["n"]}'
+    if rozrobene or caka:
+        stav_text = f' (zapísané: rozrobené {rozrobene}, čaká na zlúčenie {caka})'
+        poznamka = ''
+    else:
+        stav_text = ''
+        poznamka = ' Stav riešenia sa nesleduje: v kóde pracuje vždy len jeden a zoznam sa aktualizuje po každej práci.'
+    return f'- **Prvá dávka po nasadení** (časť 5): v poradí {len(zaznamy)}{stav_text}; {prvy}.{poznamka}'
 
 
 def _fronta(d):
@@ -123,7 +133,9 @@ def _fronta(d):
     d.w()
     d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nekolidujú s prácou pred nasadením a nemenia súbory nad '
         '500 riadkov); schvaľuje majiteľ. Pred opravou treba overiť, že nález ešte platí. Úplný popis každého nálezu je v tabuľkách nižšie. '
-        'Stav „kto na tom robí“ sa vedie v `fronta.py`.')
+        'Hotový nález sa z poradia odstráni a presunie do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, '
+        'striedavo s agentom). Stav riešenia sa nesleduje: zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že '
+        'nález je voľný.')
     d.w()
     d.tabulka(['Poradie', 'Č.', 'Čo', 'Prečo v tejto dávke', 'Stav'],
               [[i, z['n'], z['co'], z['preco'], _stav_fronty(z)] for i, z in enumerate(fronta.FRONTA_PO_NASADENI, 1)])
@@ -355,9 +367,12 @@ def _udrzba(d, m):
     d.w('- **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py` (číslo vetvy, PR keď je známe, '
         '`zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali.')
     d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.')
-    d.w('- **Poradie po nasadení:** pri začatí práce na nálezu z prvej dávky vyplniť v `fronta.py` `kto`, `stav` a `od`; po dokončení záznam '
-        'odstrániť a nález presunúť do `DONE_SINCE`. Kontrola zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo '
-        'skupiny PO NASADENÍ.')
+    d.w('- **Poradie po nasadení:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE` (polia `kto`, '
+        '`stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na nález, '
+        'ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ.')
+    d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '
+        'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 1:1, kým majiteľ dohodu nezmení. Po každej práci kolegu majiteľ '
+        'pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` (časť „Postup s kolegom“).')
     d.w('- **Vždy:** posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.')
     d.w('- **Kontrola:** `python docs/zoznam-nalezov/build.py --check` skončí chybou, ak sa `ZOZNAM.md` líši od dát.')
     d.w('- Podrobný denník položiek OW- / TEST- ostáva v `docs/testing/findings-register.md`; nové ID, ktoré tam pribudnú, treba zaradiť do '
