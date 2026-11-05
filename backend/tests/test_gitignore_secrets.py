@@ -1,10 +1,12 @@
-"""Poistka: súbory s prihlasovacími údajmi Google sa nikdy nedostanú do gitu (nález 237).
+"""Poistka: súbory s prihlasovacími údajmi Google sa pri bežnom pridaní do gitu ignorujú (nález 237).
 
 V `.gitignore` boli názvy kľúčov v úvodzovkách a s medzerou na konci (artefakt zápisu z PowerShellu). Git ich berie
 doslova, takže `backend/google-credentials.json` ani kľúč služobného účtu neboli ignorované a jeden `git add .` v
 `backend/` mohol skončiť únikom kľúča do verejného repozitára. Testy strážia tri veci: žiadny riadok v `.gitignore`
 nie je v úvodzovkách ani nekončí medzerou, git skutočne ignoruje názvy kľúčov (aj kľúč s iným ID po výmene a v ktoromkoľvek
 priečinku), no bežné súbory neignoruje, a chyba samotného gitu poistku nevypne (test zlyhá, nepreskočí sa).
+
+`.gitignore` však nezabráni `git add -f` a neodstráni súbor, ktorý už git sleduje; to tieto testy nestrážia.
 """
 
 import shutil
