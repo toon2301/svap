@@ -110,10 +110,9 @@ def _stav_fronty(zaznam):
 def _fronta_v_skratke():
     """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, ktorý je prvý v poradí a zapísaný stav (ak nejaký je)."""
     zaznamy = fronta.FRONTA_PO_NASADENI
-    bez_stavu = [z for z in zaznamy if not z.get('kto')]
     rozrobene = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_ROZROBENE)
     caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
-    prvy = f'prvý v poradí: č. {bez_stavu[0]["n"]}' if bez_stavu else 'všetky majú zapísaný stav'
+    prvy = f'prvý v poradí: č. {zaznamy[0]["n"]}' if zaznamy else 'fronta je prázdna'
     if rozrobene or caka:
         stav_text = f' (zapísané: rozrobené {rozrobene}, čaká na zlúčenie {caka})'
         poznamka = ''
