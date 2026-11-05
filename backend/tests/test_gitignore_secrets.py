@@ -2,9 +2,9 @@
 
 V `.gitignore` boli názvy kľúčov v úvodzovkách a s medzerou na konci (artefakt zápisu z PowerShellu). Git ich berie
 doslova, takže `backend/google-credentials.json` ani kľúč služobného účtu neboli ignorované a jeden `git add .` v
-`backend/` mohol skončiť únikom kľúča do verejného repozitára. Testy strážia dve veci: žiadny riadok v `.gitignore`
-nie je v úvodzovkách ani nekončí medzerou a git skutočne ignoruje názvy kľúčov (aj kľúč s iným ID po výmene), no
-bežné súbory neignoruje.
+`backend/` mohol skončiť únikom kľúča do verejného repozitára. Testy strážia tri veci: žiadny riadok v `.gitignore`
+nie je v úvodzovkách ani nekončí medzerou, git skutočne ignoruje názvy kľúčov (aj kľúč s iným ID po výmene a v ktoromkoľvek
+priečinku), no bežné súbory neignoruje, a chyba samotného gitu poistku nevypne (test zlyhá, nepreskočí sa).
 """
 
 import shutil
@@ -17,12 +17,16 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 GITIGNORE_FILES = [".gitignore", "backend/.gitignore", "frontend/.gitignore"]
 
 # Názvy, ktoré musia byť ignorované: kľúč služobného účtu sa volá svaply-<ID kľúča>.json, po výmene kľúča má iné ID.
+# Súbor môže ležať v ktoromkoľvek priečinku, preto sú tu aj vnorené cesty mimo `backend/` (pravidlá v koreni nesmú platiť
+# len pre koreň).
 MUST_BE_IGNORED = [
     "backend/google-credentials.json",
     "backend/google-credentials-old.json",
     "backend/svaply-8ae1b49fa953.json",
     "backend/svaply-0123456789ab.json",
     "google-credentials.json",
+    "frontend/config/google-credentials.json",
+    "nested/svaply-0123456789ab.json",
 ]
 # Bežné súbory, ktoré sa ignorovať nesmú (pravidlá pre kľúče nesmú byť príliš široké).
 MUST_NOT_BE_IGNORED = [
@@ -48,7 +52,9 @@ def _ignored_by_git(path: str) -> bool:
         ["git", "check-ignore", "--no-index", "-q", path], cwd=REPO_ROOT, capture_output=True, check=False
     )
     if result.returncode not in (0, 1):
-        pytest.skip(f"git check-ignore zlyhal (kód {result.returncode}); ignorovanie sa nedá overiť")
+        # Preskočenie by poistku ticho vypolo (napr. kód 128 pri chybnom repozitári); chýbajúci git rieši `git_available`.
+        # Výstup gitu sa nevypisuje (môže obsahovať cestu s menom používateľa), len kód.
+        pytest.fail(f"git check-ignore zlyhal (kód {result.returncode}); ignorovanie sa nedá overiť", pytrace=False)
     return result.returncode == 0
 
 
@@ -77,3 +83,19 @@ def test_credential_file_names_are_ignored(path):
 def test_regular_files_are_not_ignored(path):
     """Pravidlá pre kľúče nie sú príliš široké: bežné súbory projektu sa neignorujú."""
     assert not _ignored_by_git(path), f"{path} je ignorovaný"
+
+
+def test_unexpected_git_exit_code_fails_instead_of_skipping(monkeypatch):
+    """Neočakávaný kód gitu (napr. 128 pri chybnom repozitári) test zhodí; preskočenie by poistku ticho vypolo.
+
+    Beží bez gitu: `subprocess.run` je nahradený odpoveďou s kódom 128. Preskočenie pri chýbajúcom gite rieši `git_available`.
+    """
+    monkeypatch.setattr(subprocess, "run", lambda args, **kwargs: subprocess.CompletedProcess(args, 128))
+    outcome = "bez výnimky"
+    try:
+        _ignored_by_git("backend/google-credentials.json")
+    except pytest.fail.Exception:
+        outcome = "zlyhanie"
+    except pytest.skip.Exception:
+        outcome = "preskočenie"
+    assert outcome == "zlyhanie", f"neočakávaný kód gitu skončil ako: {outcome}"
