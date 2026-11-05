@@ -2,7 +2,9 @@ Django==5.2.18
 djangorestframework==3.18.3
 django-cors-headers==4.3.1
 psycopg2-binary==2.9.7
-redis==5.0.1
+# redis musí spĺňať požiadavku kombu[redis]: kombu 5.7.0 chce redis-py >= 6.1.0 (pri redis==5.0.1 worker aj zadávanie úloh z
+# webu padali na VersionMismatch). Stráži to doplnok [redis] pri celery nižšie a test tests/test_celery_redis_compat.py.
+redis==6.4.0
 django-redis==5.4.0
 channels==4.1.0
 channels-redis==4.2.0
@@ -20,7 +22,8 @@ requests==2.33.0
 pyotp==2.9.0
 bleach==6.4.0
 google-cloud-vision==3.16.0
-celery>=5.4,<6
+# [redis]: pip vyberie kombu zlučiteľný s pripnutým redis, takže sa build nemôže ticho rozísť (viď redis vyššie).
+celery[redis]>=5.4,<6
 django-celery-beat==2.9.0
 cryptography>=42.0.0
 pywebpush>=2.0,<3
