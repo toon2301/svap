@@ -1,6 +1,6 @@
 /** Text chyby z odpovede API pri akcii s kartou: `error`, potom `detail`, inak záložný text. */
 
-import { getSkillActionErrorMessage } from './skillActionError';
+import { getSkillActionErrorMessage } from '../skillActionError';
 
 const FALLBACK = 'Akciu sa nepodarilo dokončiť.';
 const apiError = (data: unknown) => ({ response: { data } });

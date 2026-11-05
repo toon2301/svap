@@ -9,7 +9,7 @@ import type { ProfileTab } from '../modules/profile/profileTypes';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
 import { invalidateOffersCache } from '../modules/profile/profileOffersCache';
 import { setSkillsDescribeProfileReturn } from '../modules/skills/skillsDescribeReturnSession';
-import { getSkillActionErrorMessage } from '../components/skillActionError';
+import { getSkillActionErrorMessage } from './skillActionError';
 import type { DashboardSkill } from './useSkillsModals';
 
 type OwnProfileOfferActionsInput = {
