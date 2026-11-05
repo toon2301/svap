@@ -28,6 +28,7 @@ Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení 
    Nové ID v registri treba zaradiť do `register.py`.
 2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py`
    (`n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
+   Čiastočne hotový nález ostáva otvorený: jeho text sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.
 3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
 4. Posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
 5. Z koreňa repozitára spustiť `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`.

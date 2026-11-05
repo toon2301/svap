@@ -110,4 +110,44 @@ NEW_ITEMS_DALSIE = [
               '`jest.config.js`, potom overiť `tsc`, `build` a celý Jest. Žiadny z troch súborov nemá nad 500 riadkov. Mazanie len so '
               'súhlasom majiteľa.',
          dec=None, src='vetva 144, presunuté z nálezu 192'),
+    dict(n=241, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='nepoužívaný `backend/swaply/settings_test.py` (súrodenec nálezu 221)',
+         what='Súbor `backend/swaply/settings_test.py` nikto nepoužíva: odkazuje naň len konfigurácia (`backend/.coveragerc` v zozname '
+              '`omit` a `backend/pyproject.toml` vo výnimkách ruff) a text v starom reporte `CLEANUP_REPORT_FINAL.md`. Nahlásil kolega pri '
+              'práci na nálezu 221 (K2); agent to 5. 11. 2026 overil vyhľadávaním v celom repozitári.',
+         note='Návrh: zmazať súbor a jeho dva zápisy v konfigurácii, rovnako ako pri nálezu 221; staré reporty sú história. Nízka '
+              'závažnosť.',
+         dec=None, src='kolega pri vetve K2 (nález 221)'),
+    dict(n=242, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
+         kratko='pokrytie docstringami (cieľ 80 %) sa v repozitári nemeria; backend má asi 41 %',
+         what='Cieľ 80 % dokumentačného pokrytia (docstringov) pochádza z pre-merge kontroly CodeRabbit, ktorá ho posudzuje len pri '
+              'funkciách zmenených v danom PR. Repozitár sám pokrytie nemeria: nie je v ňom `interrogate` ani iný nástroj a CI ho '
+              'nekontroluje. Zmerané agentom 5. 11. 2026 (rozbor kódu, backend bez migrácií a testov): 805 z 1 962 modulov, tried a funkcií '
+              'má docstring, teda 41,0 % (vrátane testov 32,1 %); odhad kolegu (asi 41 %) sedí.',
+         note='Nízka závažnosť. Návrh: buď pridať meranie (napr. `interrogate` s hranicou, ktorú kód spĺňa dnes, a tú postupne zvyšovať), '
+              'alebo to nechať ako pravidlo kontroly zmenených funkcií v PR a cieľ 80 % nepovažovať za pokrytie celého kódu. Súvisí s '
+              'položkou DOC-03 v `docs/testing/findings-register.md`. Nahlásil kolega pri K2.',
+         dec=None, src='kolega pri vetve K2'),
+    dict(n=243, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
+         kratko='E2E nestráži hlavičku `Cache-Control: no-store` na HTML dokumenty',
+         what='Hlavičku `Cache-Control: no-store` posiela na HTML dokumenty Next, lebo koreňový layout (`frontend/src/app/layout.tsx`) je '
+              '`force-dynamic`; zmazaný `middleware.ts` ju nikdy neposielal (nález 226). Hlavička určuje, či Safari pri tlačidle Späť '
+              'použije bfcache; návrat do feedu je navrhnutý podľa toho, že sa dokument načíta nanovo (komentár vo `feedReturnState.ts`), '
+              'preto jej zmena potichu zmení správanie Späť. Žiadny test hlavičku nestráži, takže ju zmení napríklad odstránenie '
+              '`force-dynamic` z layoutu.',
+         note='Návrh (E2E vlastní Codex): jeden kontrolný test, že odpoveď na stránku HTML nesie `Cache-Control` s `no-store` (verejná '
+              'stránka aj stránka po prihlásení), na produkčnom builde. Nízka priorita; návrh vznikol pri K2.',
+         dec=None, src='kolega pri vetve K2 (nález 226)'),
+    dict(n=244, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='nepripnuté závislosti backendu: build na Railway sa môže zmeniť bez zmeny kódu',
+         what='Incident z 5. 11. 2026 (nález 240) vznikol, lebo `backend/requirements.txt` pripína presné verzie len časti balíkov. '
+              'Rozsah alebo nič majú: `celery[redis]>=5.4,<6` (a cez neho `kombu`, `billiard`, `amqp`, `vine`), `sentry-sdk[django]` '
+              '(bez verzie), `cryptography>=42.0.0`, `pywebpush>=2.0,<3`, `pillow-heif>=1.3,<2` a `django-anymail[resend]>=10.3,<16`, '
+              'plus všetky tranzitívne balíky. Každý nový build (Railway aj CI) môže nainštalovať inú verziu, takže sa produkcia môže '
+              'pokaziť bez zmeny kódu; CI to nezachytí, ak testy danú cestu nepoužijú.',
+         note='Návrh: zámok závislostí (napr. `pip-compile` z `requirements.in`, alebo súbor `constraints.txt` vytvorený z overeného '
+              'prostredia), ktorý používa Railway aj CI, a pravidelná (týždenná) aktualizácia zámku s celým behom testov; hodí sa k '
+              'pravidelnej kontrole zraniteľností z nálezu 194. Dočasne pomáha `celery[redis]` s pripnutým `redis` (nález 240) a nový '
+              'test `test_celery_redis_compat.py`.',
+         dec=None, src='vetva 164 (incident z nálezu 240)'),
 ]

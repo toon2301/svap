@@ -372,8 +372,8 @@ DONE_SINCE = [
               'obsahuje absolútne cesty z Windowsu (doplnok k nálezu 32) a zastarané npm balíky (nález 238). Druhá časť pôvodného zápisu '
               'tohto nálezu (tri nepoužité komponenty so starou kópiou nahrávania avatara) s týmito dvoma súbormi nesúvisela, preto sa '
               'presunula do nového nálezu 239, aby sa nestratila.'),
-    dict(n=237, vetva='163', pr='#224', zlucene=False,
-         text='HOTOVÉ (vetva 163, PR #224, čaká na zlúčenie; nahlásil kolega pri práci na nálezu 192, overil agent): nové súbory s '
+    dict(n=237, vetva='163', pr='#224', zlucene=True,
+         text='HOTOVÉ (vetva 163, zlúčené v PR #224 dňa 5. 11. 2026; nahlásil kolega pri práci na nálezu 192, overil agent): nové súbory s '
               'prihlasovacími údajmi Google sa pri bežnom pridaní do gitu (`git add .`, `git add -A`) ignorujú; `.gitignore` však '
               'nezabráni `git add -f` a neodstráni súbor, ktorý už git sleduje. V koreňovom `.gitignore` (5 riadkov) a v '
               '`backend/.gitignore` (2 riadky) boli '
@@ -400,6 +400,39 @@ DONE_SINCE = [
               'nových testov). Dopad na E2E: '
               'žiadny. Voliteľná druhá poistka na strane GitHubu, ktorá môže zachytiť kľúč aj vtedy, keď sa `.gitignore` obíde (napr. '
               '`git add -f`): zapnúť „Push protection“ (kontrola tajomstiev) v nastaveniach repozitára; rozhoduje majiteľ.'),
+    dict(n=221, vetva='K2', pr='#225', zlucene=True,
+         text='HOTOVÉ (druhá práca kolegu, zlúčené v PR #225 dňa 5. 11. 2026, commit `ae8e817e`): zmazaný nepoužívaný '
+              '`backend/swaply/test_settings.py` a jeho dva zápisy v konfigurácii (riadok v zozname `omit` v `backend/.coveragerc` a '
+              'výnimka ruff v `backend/pyproject.toml`). Overenie: CI prešlo, kontrola CodeRabbit prešla. Staré reporty '
+              '`FINAL_RESULTS.md` a `REVIEW_SUMMARY.md` ho stále spomínajú ako text (patria pod nález 32). Súrodenec: '
+              '`swaply/settings_test.py` (nález 241).'),
+    dict(n=226, vetva='K2', pr='#225', zlucene=True,
+         text='HOTOVÉ (zlúčené v PR #225 dňa 5. 11. 2026, commit `d079c2e9`): zmazaný mŕtvy `frontend/middleware.ts`, ktorý sa nikdy '
+              'nespúšťal. Komentár vo `frontend/src/components/dashboard/modules/feed/feedReturnState.ts` (r. 17) uvádzal `middleware.ts` '
+              'ako zdroj hlavičky `Cache-Control: no-store`; teraz uvádza, že ju posiela Next, lebo koreňový layout je `force-dynamic`. '
+              'Zmenil sa jediný riadok komentára, správanie aplikácie sa nemení. Overenie: CI prešlo, kontrola CodeRabbit prešla. '
+              'Dopad na E2E: žiadny; test hlavičky navrhuje nález 243.'),
+    dict(n=240, vetva='164', pr=None, zlucene=False,
+         text='HOTOVÉ (vetva 164, čaká na PR; nahlásil majiteľ z nasadenia na Railway 5. 11. 2026): worker sa po novom builde nespustil. '
+              'Príčina: `kombu` 5.7.0 (vyšlo 3. 11. 2026) vyžaduje `redis-py` 6.1.0 a novší (metadáta balíka: `redis>=6.4.0,<9`), kým '
+              '`requirements.txt` mal pripnuté `redis==5.0.1` a `celery>=5.4,<6` (bez hornej hranice pre `kombu`), takže čerstvá inštalácia '
+              'zobrala nový `kombu` k starému `redis`. Chyba `kombu.exceptions.VersionMismatch: Redis transport requires redis-py '
+              'versions 6.1.0 or later. You have 5.0.1` sa v čerstvom prostredí z pôvodného `requirements.txt` proti skutočnému Redisu '
+              'zopakovala presne tak a worker skončil. Dosah nebol len worker (a beat): aj webový server pri zadaní úlohy narazí na tú '
+              'istú chybu a kód ju zámerne potichu zachytí (e-mail na reset hesla sa nezaradí, fotky v príspevkoch a portfóliu sa označia '
+              'ako zamietnuté, ak sa nespracúvajú lokálne, fotky ponúk ostanú čakať, web push sa nezaradí). Oprava v '
+              '`backend/requirements.txt`: `redis==6.4.0` (spĺňa `kombu` 5.6.x aj 5.7.x) a `celery[redis]>=5.4,<6`; doplnok `[redis]` '
+              'núti pip vybrať `kombu` zlučiteľný s pripnutým `redis`, takže sa build nemôže ticho rozísť. CI ani `pip check` to predtým '
+              'nezachytili: testy prenos cez Redis nikdy nezavedú a `pip check` hlási „No broken requirements found“, lebo požiadavka je '
+              'v doplnku. Preto pribudol test `backend/tests/test_celery_redis_compat.py`, ktorý porovná nainštalovaný `redis` s '
+              'požiadavkou, ktorú `kombu` sám hlási; zlyhá na pôvodných závislostiach (kombu 5.7.0 + redis 5.0.1) aj pri redis 6.1.1, '
+              'prejde na opravených aj na kombu 5.6.2 + redis 5.0.1. Overené v čerstvom prostredí podľa nového `requirements.txt` proti '
+              'reálnemu Redisu 7.0: worker sa spustí a odpovedá, úloha zadaná z webu sa dostane k workeru, okruh úlohy s výsledkom prejde, '
+              'cache (`django-redis` 5.4.0) aj kanálová vrstva (`channels-redis` 4.2.0) fungujú, `pip check` bez chýb, `pip-audit` '
+              'nenašiel nič pre `redis`, `kombu` ani `celery`. Celá backendová sada: 2 028 prešlo a 10 preskočených (predtým 2 027, '
+              'pribudol 1 test). Rovnaká skúška prešla aj s `redis-py` 7.4.1 a 8.1.0; povýšenie na ne je samostatný krok. Širšia príčina '
+              '(nepripnuté závislosti) je v nálezu 244. Dopad na E2E: žiadny, no behy proti Railway, ktoré závisia od práce na pozadí '
+              '(fotky, e-maily, push), sa, kým nie je nasadená oprava, nedajú brať ako chyba aplikácie.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
