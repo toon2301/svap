@@ -372,8 +372,8 @@ DONE_SINCE = [
               'obsahuje absolútne cesty z Windowsu (doplnok k nálezu 32) a zastarané npm balíky (nález 238). Druhá časť pôvodného zápisu '
               'tohto nálezu (tri nepoužité komponenty so starou kópiou nahrávania avatara) s týmito dvoma súbormi nesúvisela, preto sa '
               'presunula do nového nálezu 239, aby sa nestratila.'),
-    dict(n=237, vetva='163', pr=None, zlucene=False,
-         text='HOTOVÉ (vetva 163, čaká na zlúčenie; nahlásil kolega pri práci na nálezu 192, overil agent): súbory s prihlasovacími '
+    dict(n=237, vetva='163', pr='#224', zlucene=False,
+         text='HOTOVÉ (vetva 163, PR #224, čaká na zlúčenie; nahlásil kolega pri práci na nálezu 192, overil agent): súbory s prihlasovacími '
               'údajmi Google sa nikdy nedostanú do gitu. V koreňovom `.gitignore` (5 riadkov) a v `backend/.gitignore` (2 riadky) boli '
               'názvy kľúčov v úvodzovkách a s medzerou na konci (artefakt zápisu z PowerShellu). Git berie úvodzovky doslova, takže '
               '`backend/google-credentials.json` ani kľúč služobného účtu `backend/svaply-<ID kľúča>.json` neboli ignorované '
@@ -384,13 +384,18 @@ DONE_SINCE = [
               '`**/svaply-*.json` kryjú aj kľúč po výmene, ktorý má iné ID, a súbor v ktoromkoľvek priečinku) a rovnaké pravidlá sú v '
               '`backend/.gitignore`. Nové pravidlá nezachytili žiadny ďalší sledovaný súbor (`git ls-files -ci --exclude-standard` '
               'vypíše len koreňový `.coverage`, ktorý ignoruje pravidlo z nálezu 192). Poistka: nový test '
-              '`backend/tests/test_gitignore_secrets.py` (12 testov) kontroluje, že žiadny riadok v troch `.gitignore` nie je v '
-              'úvodzovkách ani nekončí medzerou, že `git check-ignore --no-index` ignoruje názvy kľúčov (aj s iným ID) a že neignoruje '
-              '`manage.py`, `requirements.txt`, `package.json` a `.gitignore`; ak chýba `git` alebo `.git`, testy ignorovania sa '
-              'preskočia. Šesť zámerných pokazení pravidiel (späť riadok v úvodzovkách, pevný názov namiesto wildcardu, chýbajúce '
-              'pravidlá, medzera na konci, príliš široké `*.json`, pôvodná chyba) test zachytil všetky; v prvom kole unikla úprava '
-              '`*.json`, preto pomocná funkcia používa `--no-index` (bez neho git sledované súbory nikdy nehlási ako ignorované). Celá '
-              'backendová sada na SQLite: 2 024 prešlo a 10 preskočených (predtým 2 012, pribudlo 12 nových testov). Dopad na E2E: '
+              '`backend/tests/test_gitignore_secrets.py` (15 testov) kontroluje, že žiadny riadok v troch `.gitignore` nie je v '
+              'úvodzovkách ani nekončí medzerou, že `git check-ignore --no-index` ignoruje názvy kľúčov (aj s iným ID a vo vnorených '
+              'priečinkoch mimo `backend/`) a že neignoruje `manage.py`, `requirements.txt`, `package.json` a `.gitignore`; ak chýba '
+              '`git` alebo `.git`, testy ignorovania sa preskočia, no neočakávaný kód gitu (napr. 128) test zhodí a nepreskočí. Deväť '
+              'zámerných pokazení pravidiel a testu (späť riadok v úvodzovkách, pevný názov namiesto wildcardu, chýbajúce pravidlá, '
+              'medzera na konci, príliš široké `*.json`, pôvodná chyba, pravidlá platné len pre koreň, preskočenie namiesto zlyhania '
+              'pri chybe gitu, chyba gitu braná ako „neignorované“) test zachytil všetky. V prvom kole unikla úprava `*.json`, preto '
+              'pomocná funkcia používa `--no-index` (bez neho git sledované súbory nikdy nehlási ako ignorované). Kontrola CodeRabbitu '
+              '(PR #224) potvrdila ďalšie dve medzery, ktoré sú opravené: pôvodný test by nezachytil pravidlá platné len pre koreň '
+              '(preto pribudli vnorené cesty) a preskočenie pri chybe gitu by poistku ticho vypolo (preto `pytest.fail` a vlastný test '
+              's kódom 128). Celá backendová sada na SQLite: 2 027 prešlo a 10 preskočených (predtým 2 012, pribudlo 15 '
+              'nových testov). Dopad na E2E: '
               'žiadny. Voliteľná druhá poistka na strane GitHubu: zapnúť „Push protection“ (kontrola tajomstiev) v nastaveniach '
               'repozitára; rozhoduje majiteľ.'),
 ]

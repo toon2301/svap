@@ -98,21 +98,29 @@ def _hned(m):
 
 
 def _stav_fronty(zaznam):
-    """Text stavu záznamu fronty: „voľné“ alebo napr. „rozrobené: kolega od 3. 11. 2026“."""
+    """Text stavu záznamu fronty: „nesleduje sa“ (stav nie je zapísaný) alebo napr. „rozrobené: kolega od 3. 11. 2026“.
+
+    Záznam bez stavu sa nikdy nepodáva ako „voľný“: kým kolega pracuje, zoznam o tom nevie (aktualizuje sa po každej práci).
+    """
     if not zaznam.get('kto'):
-        return 'voľné'
+        return 'nesleduje sa'
     return f'{zaznam["stav"]}: {zaznam["kto"]} od {zaznam["od"]}'
 
 
 def _fronta_v_skratke():
-    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, v akom stave a ktorý je na rade."""
+    """Riadok pre „V skratke“: koľko nálezov je v prvej dávke po nasadení, ktorý je prvý v poradí a zapísaný stav (ak nejaký je)."""
     zaznamy = fronta.FRONTA_PO_NASADENI
-    volne = [z for z in zaznamy if not z.get('kto')]
+    bez_stavu = [z for z in zaznamy if not z.get('kto')]
     rozrobene = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_ROZROBENE)
     caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
-    dalsi = f'ďalší na rade: č. {volne[0]["n"]}' if volne else 'voľný nález nie je'
-    return (f'- **Prvá dávka po nasadení** (časť 5): v poradí {len(zaznamy)} (voľné {len(volne)}, rozrobené {rozrobene}, '
-            f'čaká na zlúčenie {caka}); {dalsi}.')
+    prvy = f'prvý v poradí: č. {bez_stavu[0]["n"]}' if bez_stavu else 'všetky majú zapísaný stav'
+    if rozrobene or caka:
+        stav_text = f' (zapísané: rozrobené {rozrobene}, čaká na zlúčenie {caka})'
+        poznamka = ''
+    else:
+        stav_text = ''
+        poznamka = ' Stav riešenia sa nesleduje: v kóde pracuje vždy len jeden a zoznam sa aktualizuje po každej práci.'
+    return f'- **Prvá dávka po nasadení** (časť 5): v poradí {len(zaznamy)}{stav_text}; {prvy}.{poznamka}'
 
 
 def _fronta(d):
@@ -124,7 +132,8 @@ def _fronta(d):
     d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nekolidujú s prácou pred nasadením a nemenia súbory nad '
         '500 riadkov); schvaľuje majiteľ. Pred opravou treba overiť, že nález ešte platí. Úplný popis každého nálezu je v tabuľkách nižšie. '
         'Hotový nález sa z poradia odstráni a presunie do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, '
-        'striedavo s agentom).')
+        'striedavo s agentom). Stav riešenia sa nesleduje: zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že '
+        'nález je voľný.')
     d.w()
     d.tabulka(['Poradie', 'Č.', 'Čo', 'Prečo v tejto dávke', 'Stav'],
               [[i, z['n'], z['co'], z['preco'], _stav_fronty(z)] for i, z in enumerate(fronta.FRONTA_PO_NASADENI, 1)])

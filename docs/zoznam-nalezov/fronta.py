@@ -9,7 +9,8 @@ Súbor sa upravuje len pri zmene stavu:
 - keď je nález hotový, záznam sa odstráni odtiaľto a nález sa presunie do `hotove.DONE_SINCE`.
 
 Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v kóde pracuje vždy len jeden a začiatok aj koniec práce
-hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
+hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
+nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
 Kontrola v `model.py` zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ, takže
 zoznam nemôže ticho zastarať.
@@ -29,6 +30,8 @@ FRONTA_PO_NASADENI = [
     dict(n='226', co='Mŕtvy `frontend/middleware.ts` (Next ho v priečinku `src/` nehľadá).',
          preco='Zahrievacie, frontend: súbor sa nikdy nespúšťa a hlavičku `Cache-Control` posiela Next sám. Zmazať, nepresúvať '
                '(presun do `src/` by ho aktivoval pre celú aplikáciu).'),
+    dict(n='32', co='Len koreňový sledovaný `.coverage` (98 KB, 241 absolútnych ciest z Windowsu): zmazať (`git rm`).',
+         preco='Súhlas majiteľa 5. 11. 2026 (dávka K2). Nič ho nepoužíva; v histórii ostane. Ostatné časti nálezu 32 sa nemenia.'),
     dict(n='103', co='Mŕtvy súbor `SkillModals.tsx` (428 riadkov), nikde nepoužitý.',
          preco='Frontend: nikto ho neimportuje; overí sa `tsc`, buildom a Jestom.'),
     dict(n='58', co='`skillActionError.ts` (aj s testom) patrí k hooku `useOwnProfileOfferActions`, nie do `components/`.',

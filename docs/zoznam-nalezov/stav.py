@@ -14,12 +14,16 @@ STAV = dict(
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('5. 11. 2026',
-     'Vetva 163 (čaká na zlúčenie; vychádza z `main` `08b62c73`, teda po PR #223): oprava nálezu 237 – súbory s prihlasovacími údajmi '
+     'Vetva 163 (PR #224, čaká na zlúčenie; vychádza z `main` `08b62c73`, teda po PR #223): oprava nálezu 237 – súbory s prihlasovacími údajmi '
      'Google sa v `.gitignore` naozaj ignorujú (názvy boli v úvodzovkách a s medzerou na konci, takže ich git neignoroval; kľúč sa do '
-     'histórie nikdy nedostal) – s novým testom `test_gitignore_secrets.py` (12 testov, všetkých 6 zámerných pokazení zachytených); celá '
-     'backendová sada na SQLite: 2 024 prešlo a 10 preskočených. Prvá práca kolegu (vetva K1, PR #223, zlúčená 4. 11.) je zapísaná: '
+     'histórie nikdy nedostal) – s novým testom `test_gitignore_secrets.py` (15 testov, všetkých 9 zámerných pokazení zachytených); celá '
+     'backendová sada na SQLite: 2 027 prešlo a 10 preskočených. Po kontrole CodeRabbitu (PR #224, tri platné '
+     'pripomienky): test pri neočakávanom kóde gitu zlyhá namiesto preskočenia, pribudli vnorené cesty a generátor zoznamu už '
+     'záznam fronty bez stavu nepodáva ako „voľný“ (píše „nesleduje sa“ a neuvádza počet voľných, lebo kým kolega pracuje, zoznam o '
+     'tom nevie). Prvá práca kolegu (vetva K1, PR #223, zlúčená 4. 11.) je zapísaná: '
      'nález 192 je hotový a odišiel z fronty (v prvej dávke ostáva 10 nálezov). Tri nové veci od kolegu: 237 (hotové touto vetvou), '
-     'doplnok k nálezu 32 (koreňový `.coverage` obsahuje 241 absolútnych ciest z Windowsu; nemazať bez súhlasu majiteľa) a nový nález '
+     'doplnok k nálezu 32 (koreňový `.coverage` obsahuje 241 absolútnych ciest z Windowsu; majiteľ 5. 11. súhlasil so zmazaním, pôjde ako 4. položka '
+     'dávky kolegu K2) a nový nález '
      '238 (zastarané npm balíky). Nový je aj nález 239: tri nepoužité komponenty so starou kópiou nahrávania avatara boli skryté v '
      'poznámke pôvodného nálezu 192, preto dostali vlastné číslo, aby sa nestratili. Doplnky: 223 (kontrola logov Railway majiteľom '
      '2. 11.: vo všetkých štyroch časoch pádov `missing_token`, Redis a PostgreSQL bez zjavnej chyby, príčina nepotvrdená), 227 a 229 '
