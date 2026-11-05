@@ -7,12 +7,22 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='5. 11. 2026',
-    kod='`main` `08b62c73` (po PR #223)',
+    kod='`main` `c1fcac25` (po PR #225)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('5. 11. 2026',
+     'Vetva 164 (čaká na PR; vychádza z `main` `c1fcac25`, teda po PR #225): oprava nasadenia na Railway (nález 240). `kombu` 5.7.0 (vyšlo '
+     '3. 11.) vyžaduje `redis-py` 6.1.0 a novší, kým `requirements.txt` mal `redis==5.0.1`, takže sa worker nespustil a web nevedel zadať úlohy '
+     'na pozadí (e-mail na reset hesla, spracovanie fotiek, push). Oprava: `redis==6.4.0` a `celery[redis]`; nový test '
+     '`test_celery_redis_compat.py` stráži, aby nainštalovaný `redis` vyhovoval požiadavke `kombu` (CI to predtým nezachytilo); celá '
+     'backendová sada 2 028 prešlo a 10 preskočených. Zápis druhej práce kolegu (vetva K2, PR #225, zlúčená 5. 11.): nálezy 221 a 226 sú '
+     'hotové, 195 a 32 sú čiastočne hotové a ostávajú otvorené so zvyškom, nález 237 je zlúčený (PR #224). Nové nálezy: 240 (táto oprava, '
+     'hotové), 241 (nepoužívaný `settings_test.py`, súrodenec 221), 242 (pokrytie docstringami sa nemeria, asi 41 %), 243 (E2E nestráži '
+     'hlavičku `Cache-Control: no-store`, pre Codexa) a 244 (nepripnuté závislosti, širšia príčina incidentu). Fronta: 221, 195, 226 a 32 '
+     'odišli, na čele je 241. Do `README.md` a časti 10 pribudlo pravidlo pre čiastočne hotový nález.'),
     ('5. 11. 2026',
      'Vetva 163 (PR #224, čaká na zlúčenie; vychádza z `main` `08b62c73`, teda po PR #223): oprava nálezu 237 – súbory s prihlasovacími údajmi '
      'Google sa v `.gitignore` naozaj ignorujú (názvy boli v úvodzovkách a s medzerou na konci, takže ich git neignoroval; kľúč sa do '

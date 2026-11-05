@@ -161,13 +161,16 @@ NEW_ITEMS = [
               'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
          dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
-         what='`backend/.coveragerc`: zoznam `omit` obsahuje päť neexistujúcich súborov (`swaply/settings_clean.py`, `swaply/migrate_api.py`, '
-              '`accounts/views/google_oauth.py`, `accounts/views/simple_google_oauth.py`, `accounts/views/oauth.py`) a prah `fail_under = 94.8` sa líši '
-              'od `--cov-fail-under=85` v `pytest.ini`. Riadok `accounts/views/*` navyše vynecháva z merania pokrytia všetky views.',
+         what='`backend/.coveragerc`: prah `fail_under = 94.8` sa líši od `--cov-fail-under=85` v `pytest.ini` a riadok `accounts/views/*` '
+              'v zozname `omit` vynecháva z merania pokrytia všetky views. Päť neexistujúcich súborov v `omit` (`swaply/settings_clean.py`, '
+              '`swaply/migrate_api.py`, `accounts/views/google_oauth.py`, `accounts/views/simple_google_oauth.py`, '
+              '`accounts/views/oauth.py`) odstránila K2 (PR #225, commit `0305eee0`); riadok `swaply/test_settings.py` zmizol spolu s '
+              'nálezom 221.',
          note='CI beží s `--no-cov` (pokrytie sa nevynucuje), takže nič z toho nespôsobuje chybu; číslo pokrytia však o views nič nehovorí. '
-              'Zistené pri odstraňovaní allauth (143), kde som z `omit` zmazal len riadky pre zmazané allauth súbory. Patrí k téme „pokrytie sa rieši '
-              'samostatne“ z komentára v `deploy.yml`: treba rozhodnúť, aký prah platí a čo sa meria.',
-         dec=None, src='vetva 143'),
+              'Zistené pri odstraňovaní allauth (143). Patrí k téme „pokrytie sa rieši samostatne“ z komentára v `deploy.yml`: ostávajú dve '
+              'rozhodnutia, aký prah platí (94,8 alebo 85) a či sa views majú z merania vynechávať. Vzor `*/venv/*` je zámerný (lokálne '
+              'virtuálne prostredie) a ostáva.',
+         dec=None, src='vetva 143, čiastočne K2'),
     dict(n=196, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          what='`.github/workflows/deploy.yml`: akcie `actions/checkout@v4`, `actions/setup-node@v4` a `actions/setup-python@v4` sú staršie než verzie pre '
               'Node.js 24 (`setup-python@v4` deklaruje `node16`, ostatné dve `node20`). GitHub ich dnes núti bežať na Node.js 24 a v logu každého behu '
@@ -298,16 +301,6 @@ NEW_ITEMS = [
               'už inicializovanom `authBootstrapSnapshot`) neplatí. Dve štylistické poznámky k `ZOZNAM.md` (rozdeliť dlhé súvetia pri nálezoch '
               'o diagnostike a o dôkazoch) sú kozmetika a CodeRabbit ich sám označil za nepotvrdené. Vetva 153 sa zlúčila bez nich.',
          dec=None, src='vetva 153'),
-    dict(n=221, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`swaply/test_settings.py` sa nikde nepoužíva',
-         what='Súbor `backend/swaply/test_settings.py` (rýchly hasher MD5, e-mail do pamäte, pamäťová cache, úprava limitov, SQLite v pamäti) '
-              'nepoužíva ani `pytest.ini` (`DJANGO_SETTINGS_MODULE = swaply.settings`), ani CI; spomína sa len v súhrnoch `REVIEW_SUMMARY.md` '
-              'a `FINAL_RESULTS.md`, v zozname vynechaných súborov `.coveragerc` a vo výnimke v `pyproject.toml`. Jeho komentár „Use fast '
-              'password hasher for tests“ vyvoláva dojem, že testy bežia rýchlo, a práve preto zostalo spomalenie od Djanga 5.2 (nález 220) '
-              'nepovšimnuté.',
-         note='Návrh: buď prepnúť `pytest.ini` na tento modul (zmení sa viac než hasher: cache, limity, e-mail, logovanie, takže treba '
-              'prejsť celú sadu), alebo súbor zmazať a odstrániť jeho zmienky (`.coveragerc`, výnimka v `pyproject.toml`). Mazanie len na '
-              'pokyn používateľa. Rýchly hasher je už zachránený v `backend/conftest.py` (nález 220). Zistené pri vetve 154.',
-         dec=None, src='vetva 154'),
     dict(n=223, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
          kratko='občasné zlyhanie siete pri `GET /api/auth/me/` počas prípravy E2E (príčina nepreukázaná)',
          what='Codex pri behu špecu `profile-numeric-language` (nasadený `main` `e3ed0f42`) hlásil občasné zlyhanie siete '
@@ -403,18 +396,6 @@ NEW_ITEMS = [
               'vrátane F5 (svetlý aj tmavý) prešli; použitá je už schválená výnimka s `click()` pri voľbe jazyka, test sa nemenil. Nález '
               'ostáva otvorený kvôli emulovanému WebKitu v Dockeri (príčinu v aplikácii nepreukazuje).',
          dec=None, src='správa Codexa z 31. 10. a 1. 11. 2026'),
-    dict(n=226, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
-         kratko='mŕtvy `frontend/middleware.ts` (Next ho ignoruje)',
-         what='`frontend/middleware.ts` (37 riadkov) má pre HTML dokumenty v produkcii nastaviť `Cache-Control: no-store`, ale leží v koreni '
-              'frontendu a aplikácia má priečinok `src/`, v ktorom Next hľadá middleware len ako `src/middleware.ts`. Súbor sa preto nikdy '
-              'nespúšťa: `middleware-manifest.json` je pri Next 14 aj Next 16 prázdny (`"middleware": {}`).',
-         note='Skutočnú hlavičku `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate` posiela Next sám, lebo koreňový '
-              'layout má `dynamic = "force-dynamic"` a `revalidate = 0` (overené na Next 14 aj 16 na `/`, `/about`, `/login`, '
-              '`/reset-password/…` a `/dashboard/settings`; `Content-Security-Policy` je rovnaká). Súbor teda nič nerozbíja, len klame, a '
-              'poznámka v pôvodnom texte nálezu 184 („middleware.ts len nastavuje Cache-Control“) bola zavádzajúca. Návrh: súbor zmazať. '
-              'Presun do `src/` (v Next 16 sa volá `proxy.ts`, `middleware` je zastaraný) by ho aktivoval pre celú aplikáciu, preto až s '
-              'testom hlavičiek a po rozhodnutí majiteľa. Zistené pri 184b.',
-         dec=None, src='vetva 159'),
     dict(n=227, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
          kratko='lint: nové pravidlá React vypnuté, ESLint 9 už nie je podporovaný',
          what='Po 184b (vetva 159) funguje `npm run lint` (`eslint .`); predtým sa pýtal na interaktívne nastavenie a v CI sa nespúšťa. Nový '

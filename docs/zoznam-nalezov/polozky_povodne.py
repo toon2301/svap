@@ -153,11 +153,12 @@ ORIG_OPEN = {
          '`out)`, `.mp4`, `frontend-build.zip`, dva prázdne WinRAR zipy, `Dockerfile.backup`, `test-autosave.html`, '
          '`linecount*`. Tajomstvá som v repozitári ani v histórii nenašiel. Doplnené 29. 10. 2026 (vetva 152): v `backend/` sú sledované aj '
          'štyri prázdne súbory `list`, `x.id`, `{` a `r.json())`, v koreni druhé video `ezgif.com-video-to-gif-converter-desktop.mp4` (0,6 MB) '
-         'a `.coverage` (98 KB). Doplnené 5. 11. 2026 (vetva 163, nahlásil kolega pri nálezu 192): koreňový `.coverage` obsahuje 241 '
-         'absolútnych ciest z Windowsu vrátane jedného používateľského adresára a je sledovaný vo verejnom repozitári (cesty sa '
-         'nevypisujú). Pravidlo `**/.coverage` (PR #223) zabraňuje pridaniu nových takých súborov, no už sledovaný koreňový súbor '
-         'ostáva sledovaný, kým sa nezmaže, a zmazanie zo `main` ho z histórie neodstráni. Majiteľ so zmazaním súhlasil (5. 11. 2026); '
-         'pôjde ako 4. položka dávky kolegu K2 (zvyšok nálezu 32 sa nemení).', None),
+         'a `.coverage` (98 KB). Doplnené 5. 11. 2026 (vetva 163, nahlásil kolega pri nálezu 192): koreňový `.coverage` obsahoval 241 '
+         'absolútnych ciest z Windowsu vrátane jedného používateľského adresára vo verejnom repozitári (cesty sa nevypisujú). '
+         'Odstránila ho K2 (PR #225, commit `2c7ec137`, so súhlasom majiteľa); v histórii ostáva a pravidlo `**/.coverage` (PR #223) '
+         'bráni pridaniu nových takých súborov. Staré reporty `FINAL_RESULTS.md` a `REVIEW_SUMMARY.md` spomínajú zmazaný '
+         '`swaply/test_settings.py` (nález 221) a `CLEANUP_REPORT_FINAL.md` spomína `swaply/settings_test.py` (nález 241); patria '
+         'pod tento nález. Ostatné časti nálezu 32 sú otvorené.', None),
     34: (A, N, ES, 'Nástroje a testy', 'Zmiešané konce riadkov (`autocrlf`, bez `.gitattributes`).', None),
     35: (A, N, ES, 'Nástroje a testy', 'Zabudnuté nečinné Jest procesy na počítači používateľa (pýtať sa pred ukončením).', None),
     78: (A, N, ES, 'Nástroje a testy', 'Tri TypeScript chyby v teste `onboardingHandlers`.', None),

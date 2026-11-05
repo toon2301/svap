@@ -22,15 +22,9 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA_PO_NASADENI = [
-    dict(n='221', co='Nepoužívaný súbor `backend/swaply/test_settings.py`.',
-         preco='Zahrievacie, backend: žiadny import ho nepoužíva; overí sa spustením backendových testov.'),
-    dict(n='195', co='`backend/.coveragerc`: zoznam `omit` obsahuje súbory, ktoré neexistujú.',
-         preco='Zahrievacie, backend: oprava nastavenia; CI beží bez merania pokrytia (`--no-cov`), takže sa správanie nezmení.'),
-    dict(n='226', co='Mŕtvy `frontend/middleware.ts` (Next ho v priečinku `src/` nehľadá).',
-         preco='Zahrievacie, frontend: súbor sa nikdy nespúšťa a hlavičku `Cache-Control` posiela Next sám. Zmazať, nepresúvať '
-               '(presun do `src/` by ho aktivoval pre celú aplikáciu).'),
-    dict(n='32', co='Len koreňový sledovaný `.coverage` (98 KB, 241 absolútnych ciest z Windowsu): zmazať (`git rm`).',
-         preco='Súhlas majiteľa 5. 11. 2026 (dávka K2). Nič ho nepoužíva; v histórii ostane. Ostatné časti nálezu 32 sa nemenia.'),
+    dict(n='241', co='Nepoužívaný súbor `backend/swaply/settings_test.py` (súrodenec nálezu 221).',
+         preco='Zahrievacie, backend: žiadny import ho nepoužíva; odkazuje naň len konfigurácia (`.coveragerc`, `pyproject.toml`) a '
+               'starý report. Rovnaký postup ako pri 221: zmazať súbor a jeho dva zápisy v konfigurácii.'),
     dict(n='103', co='Mŕtvy súbor `SkillModals.tsx` (428 riadkov), nikde nepoužitý.',
          preco='Frontend: nikto ho neimportuje; overí sa `tsc`, buildom a Jestom.'),
     dict(n='58', co='`skillActionError.ts` (aj s testom) patrí k hooku `useOwnProfileOfferActions`, nie do `components/`.',
