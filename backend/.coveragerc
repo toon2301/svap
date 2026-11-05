@@ -5,7 +5,6 @@ source =
     portfolio
     swaply
 omit =
-    swaply/test_settings.py
     */migrations/*
     */tests/*
     */test/*

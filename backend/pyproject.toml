@@ -47,7 +47,6 @@ known-first-party = ["accounts", "portfolio", "swaply"]
 # Django settings modules often use star-import patterns.
 "swaply/settings_production.py" = ["F403", "F405"]
 "swaply/settings_test.py" = ["F403", "F405"]
-"swaply/test_settings.py" = ["F403", "F405"]
 
 # Standalone maintenance scripts may intentionally import after setup.
 "clear_cache_now.py" = ["E402"]
