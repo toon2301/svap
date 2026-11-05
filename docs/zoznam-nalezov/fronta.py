@@ -8,6 +8,9 @@ Súbor sa upravuje len pri zmene stavu:
 - keď oprava čaká na zlúčenie, `stav` je `STAV_CAKA`;
 - keď je nález hotový, záznam sa odstráni odtiaľto a nález sa presunie do `hotove.DONE_SINCE`.
 
+Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v kóde pracuje vždy len jeden a začiatok aj koniec práce
+hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
+
 Kontrola v `model.py` zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ, takže
 zoznam nemôže ticho zastarať.
 """
@@ -16,11 +19,9 @@ STAV_ROZROBENE = 'rozrobené'
 STAV_CAKA = 'čaká na zlúčenie'
 STAVY = (STAV_ROZROBENE, STAV_CAKA)
 
-# Záznam: dict(n='192', co='krátky popis', preco='prečo je v dávke a v tomto poradí'); pri práci navyše
+# Záznam: dict(n='221', co='krátky popis', preco='prečo je v dávke a v tomto poradí'); pri práci navyše
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026'. ID je reťazec (číslo nálezu alebo ID z registra, napr. 'APP-05').
 FRONTA_PO_NASADENI = [
-    dict(n='192', co='Dva zbytočné sledované súbory: `frontend/backend/.coverage` a `frontend/profilecard-test.txt`.',
-         preco='Zahrievacie: nič v kóde ich nepoužíva a správanie sa nezmení. Naučí sa celý postup (vetva, zmena, kontroly, zlúčenie).'),
     dict(n='221', co='Nepoužívaný súbor `backend/swaply/test_settings.py`.',
          preco='Zahrievacie, backend: žiadny import ho nepoužíva; overí sa spustením backendových testov.'),
     dict(n='195', co='`backend/.coveragerc`: zoznam `omit` obsahuje súbory, ktoré neexistujú.',

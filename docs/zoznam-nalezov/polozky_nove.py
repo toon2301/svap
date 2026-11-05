@@ -135,14 +135,6 @@ NEW_ITEMS = [
          note='Zmerané 26. 10. v Chromiu na produkčnom builde. Dotýka sa len starých odkazov s číselným ID (route ich podporuje kvôli '
               'spätnej kompatibilite). Nízka priorita; vyplynulo z nálezu 189.',
          dec=None, src='vetva 141'),
-    dict(n=192, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
-         what='V repozitári sú sledované dva zbytočné súbory: `frontend/backend/.coverage` (53 KB, databáza pokrytia Pythonu v priečinku '
-              'frontendu) a `frontend/profilecard-test.txt` (15 KB, výstup PowerShellu z behu `jest --testPathPattern=ProfileCard`).',
-         note='Oba pridal merge PR #127 (24. 9.). Koreňový `.gitignore` ignoruje len `backend/.coverage`, nie `frontend/backend/.coverage`. '
-              'Odporúčanie: `git rm` oboch súborov a do `.gitignore` doplniť `**/.coverage`. Mazanie len so súhlasom používateľa. '
-              'Na vetve 144 sa zistili aj tri nepoužité komponenty so starou kópiou nahrávania avatara (nikde sa neimportujú, v meraní pokrytia '
-              'sú vynechané): `ProfileEditForm.tsx`, `ProfileAvatar.tsx` a `profile-edit/shared/AvatarActionsModal.tsx` (aj s testami).',
-         dec=None, src='vetva 142'),
     dict(n=193, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='obrázky sa dekódujú bez `formats=`',
          what='Obrázky sa dekódujú cez `Image.open(...)` bez parametra `formats=` na piatich miestach produkčného kódu '
               '(`staged_image_moderation.py:96`, `tasks/offer_images.py:88`, `image_metadata.py:82`, `portfolio/image_processing.py:81`, '
@@ -363,8 +355,11 @@ NEW_ITEMS = [
               'známy pád č. 3, tri sú nové kombinácie špec/projekt) a pri trojnásobnom opakovaní každého prešlo 12 z 12. Vzor je rovnaký ako '
               'predtým: príprava alebo navigácia sa zastaví na pending požiadavke (`/api/auth/me/`, `/api/auth/search/`, RSC požiadavka '
               'profilu asi 23 s), bez 401 a 403 a bez chýb stránky. Striedanie rôznych kľúčov a 12 z 12 pri opakovaní svedčí skôr o '
-              'nestabilite prostredia než o regresii po PR 221, no príčinu nepreukazuje; nález ostáva otvorený.',
-         dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026'),
+              'nestabilite prostredia než o regresii po PR 221, no príčinu nepreukazuje; nález ostáva otvorený. Kontrola logov Railway majiteľom (2. 11. 2026, všetky 4 časy pádov): vo '
+              'všetkých sa objavuje odmietnutie WebSocket spojenia pre chýbajúci token (`missing_token`; ten istý záznam ako pri skoršej '
+              'kontrole, súvisí s nálezom 9, ktorý sa nepotvrdil), Redis a PostgreSQL bez zjavnej chyby. Dôkaz, že tieto záznamy '
+              'spôsobujú pády E2E testov, nie je; príčina pádov ostáva nepotvrdená.',
+         dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026 a kontrola logov Railway od majiteľa (2. 11.)'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
          what='Nález majiteľa z manuálneho testu na iPhone Safari (30. 10. 2026): vo vlastnom profile → Menu → zoznam Nastavení (Upozornenia, '
@@ -429,7 +424,8 @@ NEW_ITEMS = [
               '`no-require-imports` 101 a drobnosti; pred 184b to bolo 752 (721 chýb).',
          note='Návrh: najprv vyčistiť `no-unused-vars` a `no-explicit-any`, potom zapínať vypnuté pravidlá po jednom (najprv `purity`, '
               '`immutability`) a lint zapojiť do CI s prahom chýb. `npm ci` hlási, že `eslint@9.39.5` už nie je podporovaný; '
-              '`eslint-config-next` 16 vyžaduje `eslint >=9.0.0`, takže povýšenie na novšiu hlavnú verziu je samostatný malý krok.',
+              '`eslint-config-next` 16 vyžaduje `eslint >=9.0.0`, takže povýšenie na novšiu hlavnú verziu je samostatný malý krok. Kolega ho nahlásil znova (5. 11. 2026); ostatné '
+              'zastarané balíky v `package-lock.json` sú v nálezu 238.',
          dec=None, src='vetva 159'),
     dict(n=228, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov',
          kratko='testy `useGoogleLogin` nezachytia vynechané `clearTimeout(delayTimer)`',
@@ -448,7 +444,9 @@ NEW_ITEMS = [
               '`SENTRY_AUTH_TOKEN`.',
          note='Nástroj navrhuje `npm audit fix --force`, no ponúka `@sentry/nextjs` 10.76.1, teda nižšiu verziu než dnešné `^10.76.2`, takže '
               'to nie je oprava. Čakať na novšiu verziu `@sentry/nextjs`, ktorá bundler plugin aktualizuje, a medzitým ich viesť ako známu '
-              'výnimku v kontrole z nálezu 194.',
+              'výnimku v kontrole z nálezu 194. Doplnené 5. 11. 2026: v produkčnom strome je aj `@opentelemetry/sdk-trace-base` 2.12.0 '
+              '(cez `@sentry/node`, `@sentry/node-core` a `@sentry/opentelemetry`), ktorý je v `package-lock.json` označený ako '
+              'zastaraný; vymení ho tá istá aktualizácia `@sentry/nextjs`, viď nález 238.',
          dec=None, src='vetva 159'),
     dict(n=230, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
          kratko='prechod z webpacku na Turbopack (Next 16)',

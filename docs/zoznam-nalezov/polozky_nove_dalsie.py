@@ -82,4 +82,32 @@ NEW_ITEMS_DALSIE = [
               '`swaply/routing.py` záverečnú cestu, ktorá spojenie na neznámu cestu hneď zatvorí (napr. kódom 4404) bez výnimky, plus test. '
               'Časové limity proxy (N8) to nenahradia.',
          dec=None, src='vetva 161'),
+    dict(n=238, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
+         kratko='zastarané npm balíky v `package-lock.json` (glob, abab, @opentelemetry/sdk-trace-base)',
+         what='Kolega pri práci na nálezu 192 nahlásil zastarané npm balíky (5. 11. 2026). Overené v `frontend/package-lock.json` '
+              '(označenie `deprecated`): štyri balíky. `eslint@9.39.5` (priama vývojárska závislosť) je už v nálezu 227. Ďalšie tri: '
+              '`glob@10.5.0` (vývojárska závislosť, vnorený v `sucrase` pod `tailwindcss` 3.4.17), `abab@2.0.6` (vývojárska závislosť '
+              'z `jsdom` 20 a `data-urls` pod `jest-environment-jsdom` 29; správa balíka odporúča natívne `atob()` a `btoa()`) a '
+              '`@opentelemetry/sdk-trace-base@2.12.0` (prichádza cez Sentry aj do produkčného stromu: `@sentry/node` ho vyžaduje, '
+              '`@sentry/node-core` a `@sentry/opentelemetry` ho majú ako peer; správa balíka odporúča balík `@opentelemetry/sdk-trace`).',
+         note='Nedá sa opraviť ručným zásahom do `package-lock.json`: každý z balíkov si pýta nadradený balík, takže sa vymení až '
+              'povýšením toho nadradeného. `@opentelemetry/sdk-trace-base`: čakať na novšiu verziu `@sentry/nextjs` (rovnaká aktualizácia '
+              'ako pri nálezu 229). `eslint`: nález 227. `glob` v `sucrase` a `abab` zmiznú až s novšími verziami `tailwindcss` a '
+              '`jest-environment-jsdom`, čo sú samostatné väčšie kroky s testami. Správanie aplikácie sa nemení; nerobiť pred ostrým '
+              'nasadením. Pri každej aktualizácii nadradených balíkov sa dá skontrolovať, či zmizli: '
+              '`npm ls glob abab @opentelemetry/sdk-trace-base`.',
+         dec=None, src='kolega pri vetve K1 (nález 192)'),
+    dict(n=239, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='tri nepoužité komponenty so starou kópiou nahrávania avatara (aj s testami)',
+         what='V `frontend/src/components/dashboard/modules/` sú tri komponenty, ktoré v aplikácii nikto neimportuje: '
+              '`ProfileEditForm.tsx` (432 riadkov), `ProfileAvatar.tsx` (182 riadkov) a `profile-edit/shared/AvatarActionsModal.tsx` '
+              '(72 riadkov; importuje ho len `ProfileEditForm.tsx`). Majú starú kópiu nahrávania avatara. Aplikácia používa '
+              '`ProfileEditFormDesktop.tsx`, `ProfileEditFormMobile.tsx` a `profile/ProfileAvatarActionsModal.tsx`. Importujú ich len '
+              'testy (`__tests__/ProfileEditForm.test.tsx`, `ProfileEditForm.coverage.test.tsx`, `ProfileEditForm.extra.test.tsx` a '
+              '`ProfileAvatar.test.tsx`) a v `jest.config.js` sú vynechané z merania pokrytia.',
+         note='Pôvodne súčasť poznámky nálezu 192 (zistené na vetve 144, znova overené 5. 11. 2026 na vetve 163); keď sa 192 presunul '
+              'medzi hotové, dostala vlastné číslo, aby sa nestratila. Návrh: zmazať všetky tri súbory, štyri testy a tri výnimky v '
+              '`jest.config.js`, potom overiť `tsc`, `build` a celý Jest. Žiadny z troch súborov nemá nad 500 riadkov. Mazanie len so '
+              'súhlasom majiteľa.',
+         dec=None, src='vetva 144, presunuté z nálezu 192'),
 ]

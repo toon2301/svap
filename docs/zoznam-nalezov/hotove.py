@@ -362,6 +362,37 @@ DONE_SINCE = [
               'štvrtý v špecu s povoleným; všetky štyri prešli pri trojnásobnom opakovaní). Beh s čerstvými kontextmi nenahrádza riadenú '
               'skúšku starej nainštalovanej PWA pri prechode na nový worker, takže prínos na iPhone ostáva neoverený; manuálne testy majiteľa '
               'po nasadení prešli (appka sa na iPhone načíta normálne).'),
+    dict(n=192, vetva='K1', pr='#223', zlucene=True,
+         text='HOTOVÉ (prvá práca kolegu, zlúčené v PR #223 dňa 4. 11. 2026): zo sledovaných súborov sa odstránili '
+              '`frontend/backend/.coverage` (databáza pokrytia Pythonu v priečinku frontendu, 53 KB) a `frontend/profilecard-test.txt` '
+              '(výstup PowerShellu z behu Jestu, 15 KB) a do koreňového `.gitignore` pribudlo pravidlo `**/.coverage`, aby sa takýto '
+              'súbor nesledoval v žiadnom priečinku. Nič v kóde oba súbory nepoužívalo. Overenie: CI prešlo, kontrola CodeRabbit prešla '
+              'a manuálna kontrola prešla. Koreňový `.coverage` ostáva sledovaný (patrí k nálezu 32). Kolega pri práci nahlásil tri nové '
+              'veci: ochrana prihlasovacích súborov v `.gitignore` nefungovala (nález 237, hotové vo vetve 163), koreňový `.coverage` '
+              'obsahuje absolútne cesty z Windowsu (doplnok k nálezu 32) a zastarané npm balíky (nález 238). Druhá časť pôvodného zápisu '
+              'tohto nálezu (tri nepoužité komponenty so starou kópiou nahrávania avatara) s týmito dvoma súbormi nesúvisela, preto sa '
+              'presunula do nového nálezu 239, aby sa nestratila.'),
+    dict(n=237, vetva='163', pr=None, zlucene=False,
+         text='HOTOVÉ (vetva 163, čaká na zlúčenie; nahlásil kolega pri práci na nálezu 192, overil agent): súbory s prihlasovacími '
+              'údajmi Google sa nikdy nedostanú do gitu. V koreňovom `.gitignore` (5 riadkov) a v `backend/.gitignore` (2 riadky) boli '
+              'názvy kľúčov v úvodzovkách a s medzerou na konci (artefakt zápisu z PowerShellu). Git berie úvodzovky doslova, takže '
+              '`backend/google-credentials.json` ani kľúč služobného účtu `backend/svaply-<ID kľúča>.json` neboli ignorované '
+              '(`git check-ignore` vrátil „nie“); repozitár je verejný, takže jeden `git add .` alebo `git add -A` v `backend/` mohol '
+              'skončiť únikom kľúča. Únik nenastal: v celej histórii nie je súbor s takým názvom ani text súkromného kľúča (`BEGIN PRIVATE '
+              'KEY` sa nezmenil v žiadnom commite), takže kľúč netreba meniť. Oprava: pokazený blok v koreňovom `.gitignore` je nahradený '
+              'pravidlami bez úvodzoviek a bez duplicít (`~$*` pre dočasné súbory Office je tiež opravené; `**/google-credentials*.json` a '
+              '`**/svaply-*.json` kryjú aj kľúč po výmene, ktorý má iné ID, a súbor v ktoromkoľvek priečinku) a rovnaké pravidlá sú v '
+              '`backend/.gitignore`. Nové pravidlá nezachytili žiadny ďalší sledovaný súbor (`git ls-files -ci --exclude-standard` '
+              'vypíše len koreňový `.coverage`, ktorý ignoruje pravidlo z nálezu 192). Poistka: nový test '
+              '`backend/tests/test_gitignore_secrets.py` (12 testov) kontroluje, že žiadny riadok v troch `.gitignore` nie je v '
+              'úvodzovkách ani nekončí medzerou, že `git check-ignore --no-index` ignoruje názvy kľúčov (aj s iným ID) a že neignoruje '
+              '`manage.py`, `requirements.txt`, `package.json` a `.gitignore`; ak chýba `git` alebo `.git`, testy ignorovania sa '
+              'preskočia. Šesť zámerných pokazení pravidiel (späť riadok v úvodzovkách, pevný názov namiesto wildcardu, chýbajúce '
+              'pravidlá, medzera na konci, príliš široké `*.json`, pôvodná chyba) test zachytil všetky; v prvom kole unikla úprava '
+              '`*.json`, preto pomocná funkcia používa `--no-index` (bez neho git sledované súbory nikdy nehlási ako ignorované). Celá '
+              'backendová sada na SQLite: 2 024 prešlo a 10 preskočených (predtým 2 012, pribudlo 12 nových testov). Dopad na E2E: '
+              'žiadny. Voliteľná druhá poistka na strane GitHubu: zapnúť „Push protection“ (kontrola tajomstiev) v nastaveniach '
+              'repozitára; rozhoduje majiteľ.'),
 ]
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
