@@ -39,9 +39,17 @@ export function getDashboardRenderValues({
   // aktualizuje po zmene mena aj po refreshi. Fallback na dashboardState.user
   // počas krátkeho auth bootstrapu.
   const accountNameUser = authUser ?? user;
+  const personalName = [accountNameUser?.first_name, accountNameUser?.last_name]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const companyName = (accountNameUser?.company_name || '').trim();
+  // Firemný účet (aj taký, ktorý bol pôvodne osobný a ponechal si osobné meno) ukazuje názov firmy ako jeho profil;
+  // ostatné typy účtov majú prednosť osobné meno.
   const mobileAccountName =
-    [accountNameUser?.first_name, accountNameUser?.last_name].filter(Boolean).join(' ').trim() ||
-    (accountNameUser?.company_name || '').trim() ||
+    (accountNameUser?.user_type === 'company'
+      ? companyName || personalName
+      : personalName || companyName) ||
     (accountNameUser?.username || '').trim() ||
     t('navigation.profile', 'Profil');
   // Anonymizovaný/zmazaný peer nemá profil → žiadny identifier (klik nikam nevedie).

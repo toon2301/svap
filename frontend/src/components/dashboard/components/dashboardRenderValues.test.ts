@@ -126,6 +126,57 @@ describe('názov účtu v mobilnej hlavičke', () => {
     compute({ authUser: makeUser({ first_name: 'Jana' }) });
     expect(t).not.toHaveBeenCalled();
   });
+
+  // Nález 119: firemný účet, ktorý bol pôvodne osobný, si po prepnutí typu ponechá osobné meno. Profil ukazuje
+  // názov firmy, a preto ho má ukazovať aj horná lišta (rovnako ako kanonické meno na backende).
+  describe('firemný účet', () => {
+    it('s ponechaným osobným menom ukáže názov firmy (orezaný)', () => {
+      const authUser = makeUser({
+        user_type: 'company',
+        first_name: 'Jana',
+        last_name: 'Nováková',
+        company_name: '  Firma s.r.o. ',
+        username: 'firma',
+      });
+      expect(compute({ authUser }).mobileAccountName).toBe('Firma s.r.o.');
+    });
+
+    it('bez názvu firmy ukáže osobné meno', () => {
+      const authUser = makeUser({
+        user_type: 'company',
+        first_name: 'Jana',
+        last_name: 'Nováková',
+        company_name: '',
+        username: 'firma',
+      });
+      expect(compute({ authUser }).mobileAccountName).toBe('Jana Nováková');
+    });
+
+    it('s názvom firmy z medzier ukáže osobné meno', () => {
+      const authUser = makeUser({ user_type: 'company', first_name: 'Jana', company_name: '   ' });
+      expect(compute({ authUser }).mobileAccountName).toBe('Jana');
+    });
+
+    it('bez názvu firmy aj mena ukáže používateľské meno, a bez neho "Profil"', () => {
+      expect(compute({ authUser: makeUser({ user_type: 'company', username: ' firma ' }) }).mobileAccountName).toBe('firma');
+      expect(compute({ authUser: makeUser({ user_type: 'company' }) }).mobileAccountName).toBe('Profil');
+    });
+
+    it('platí aj pre user, kým authUser ešte chýba (počas štartu)', () => {
+      const user = makeUser({ user_type: 'company', first_name: 'Peter', company_name: 'Firma' });
+      expect(compute({ authUser: null, user }).mobileAccountName).toBe('Firma');
+    });
+  });
+
+  it('osobný účet s company_name ostáva ako doteraz: meno má prednosť pred názvom firmy', () => {
+    const authUser = makeUser({
+      user_type: 'individual',
+      first_name: 'Jana',
+      last_name: 'Nováková',
+      company_name: 'Firma s.r.o.',
+    });
+    expect(compute({ authUser }).mobileAccountName).toBe('Jana Nováková');
+  });
 });
 
 describe('identifikátor protistrany konverzácie', () => {
