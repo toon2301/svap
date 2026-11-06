@@ -39,6 +39,11 @@ function flattenTranslationKeys(input: unknown, prefix = ''): Set<string> {
   return keys;
 }
 
+/**
+ * Rekurzívne zbiera cesty všetkých `.ts` a `.tsx` súborov pod `directory` do `out` a vráti ich. Preskakuje
+ * `node_modules`, adresáre `__tests__` a `__mocks__` a testové súbory (`*.test.*`, `*.spec.*`), aby skript
+ * hlásil len kľúče, ktoré používa produkčný kód.
+ */
 function collectSourceFiles(directory: string, out: string[] = []): string[] {
   const entries = readdirSync(directory);
 
