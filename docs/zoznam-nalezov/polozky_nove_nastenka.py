@@ -104,14 +104,14 @@ NEW_ITEMS_NASTENKA = [
               '`FeedPostCard.tsx` má 1 033 riadkov a `FeedPostMobileDetail.tsx` 594 (nad limitom), takže nová logika ide do nového súboru '
               'a zásah do týchto súborov si vyžaduje výnimku od majiteľa alebo ich rozdelenie (TECH-01…11).',
          dec=None, src=ZDROJ),
-    dict(n=259, bucket=A, imp=N, eff=ES, pkg='Nástenka a zdieľanie',
+    dict(n=259, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
          kratko='portfólio bez fotky má vyzerať rovnako ako ponuka alebo dopyt bez fotky (spoločný záložný vzhľad)',
          what='Zvyšok QA zdieľania, priorita 8: portfólio bez fotky má vyzerať presne ako ponuka alebo dopyt bez fotky, teda zjednotiť '
               'záložný obrázok; ruší to staršie rozhodnutie dať portfóliu vlastný vzhľad „bez fotky“. V kóde je v náhľadoch označenie '
               '„Bez fotografie“ (`skills.noPhoto`) v `feed/SharedContentPreviewCard.tsx` (327 riadkov); či sa vzhľad ponuky a portfólia '
               'líši, agent vizuálne neoveroval.',
-         note='Neoverené (vizuálna vec). Návrh: spoločný komponent záložného obrázka pre ponuku, dopyt a portfólio; pred prácou ukázať '
-              'majiteľovi dnešný aj cieľový vzhľad.',
+         note='Majiteľ 6. 11. 2026: všetky vzhľadové veci sú pred nasadením. Neoverené (vizuálna vec). Návrh: spoločný komponent '
+              'záložného obrázka pre ponuku, dopyt a portfólio; pred prácou ukázať majiteľovi dnešný aj cieľový vzhľad.',
          dec=None, src=ZDROJ),
     dict(n=260, bucket=A, imp=S_, eff=ES, pkg='Nástenka a zdieľanie',
          kratko='nedostupný pôvodný príspevok v reposte ukazuje popri neutrálnej správe aj starý text',
@@ -125,7 +125,7 @@ NEW_ITEMS_NASTENKA = [
               'vykresliť len neutrálnu správu a rozhodnúť, či sa snapshot (text) z odpovede backendu vôbec má posielať; test na oboch '
               'stranách. Frontend súbor má 327 riadkov, takže sa smie meniť.',
          dec=None, src=ZDROJ),
-    dict(n=261, bucket=A, imp=N, eff=EL, pkg='Nástenka a zdieľanie',
+    dict(n=261, bucket=P, imp=S_, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, tagy)',
          what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné doladenia: komentárová textarea '
               'vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači inline len keď je text orezaný; veľmi dlhé popisky zmenšiť '
@@ -136,11 +136,14 @@ NEW_ITEMS_NASTENKA = [
               'komentármi najvyššej úrovne; rozbalenie „Zobraziť odpovede“ má automaticky doscrollovať na prvú odpoveď s kúskom kontextu '
               'rodiča. Skupina 8, redizajn tagov (všade, kde sa zobrazujú): zrušiť farebné čipy a nahradiť ich obyčajným textom `@Meno`, '
               'ktorý rešpektuje svetlý a tmavý režim; tagy na vlastný riadok pod textom, ktoré sa balia a rozbaľujú spolu s „Viac“.',
-         note='Dizajnové priania, nie chyby; stav v kóde sa neoveroval (zdroj má stav k 29. 9. 2026). Dotýka sa súborov nad 500 riadkov '
-              '(`FeedPostComments.tsx` 1 487, `FeedPostCard.tsx` 1 033, `FeedPostMobileDetail.tsx` 594), takže redizajn komentárov si pred '
-              'štartom práce vyžaduje rozdelenie týchto súborov (TECH-01…11) alebo výnimku. Majiteľ plánuje upraviť vizuálnu stránku '
-              'Nástenky aj sám (príloha D), preto poradie dohodnúť, aby sa nerobilo dvakrát.',
-         dec=None, src=ZDROJ),
+         note='Majiteľ 6. 11. 2026: všetky vzhľadové veci sú pred nasadením. Dizajnové priania, nie chyby; stav v kóde sa neoveroval okrem '
+              'komentárov: komentár aj odpoveď majú dnes sivú bublinu (`rounded-2xl bg-gray-100`, v tmavom režime `bg-gray-800/60`) '
+              'v `FeedPostComments.tsx`, takže redizajn skupiny 7 je stále otvorený. Dotýka sa súborov nad 500 riadkov '
+              '(`FeedPostComments.tsx` 1 487, `FeedPostCard.tsx` 1 033, `FeedPostMobileDetail.tsx` 594), takže pred štartom práce '
+              'treba rozhodnúť R23 (najprv rozdeliť súbory, alebo výnimka z pravidla 500 riadkov). Majiteľ plánuje upraviť vizuálnu '
+              'stránku Nástenky aj sám (príloha D); po jeho úpravách nasleduje technická a bezpečnostná kontrola jeho zmien a jeden '
+              'súhrnný audit celej Nástenky (obe strany spolu), tiež pred nasadením. Poradie dohodnúť, aby sa nerobilo dvakrát.',
+         dec='ROZHODNUTIE R23', src=ZDROJ),
     dict(n=262, bucket=A, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
          kratko='zoznam „kto lajkol“ je len pre Nástenku; rozšírenie na ponuky, portfólio a profil nie je rozhodnuté',
          what='Zoznam lajkujúcich dnes existuje len pre Nástenku (`feed/FeedLikersDialog.tsx`); jeho rozšírenie na ponuky, portfólio a '

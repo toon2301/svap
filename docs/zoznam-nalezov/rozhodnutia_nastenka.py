@@ -65,4 +65,13 @@ DECISIONS_NASTENKA = [
                  'zatvorený. Overené v kóde: `VerifyEmailSection` v `AccountSettingsModule` posiela overovací e-mail a `is_verified` sa '
                  'nastaví až po potvrdení odkazu.',
          datum='6. 11. 2026'),
+    dict(id='R23', tema='Vzhľadové úpravy Nástenky a súbory nad 500 riadkov (261)',
+         otazka='Redizajn komentárov, tagov a mobilné úpravy Nástenky sa dotýkajú súborov nad 500 riadkov (`FeedPostComments.tsx` '
+                '1 487, `FeedPostCard.tsx` 1 033, `FeedPostMobileDetail.tsx` 594). Najprv súbory rozdeliť (bez zmeny vzhľadu), alebo '
+                'udeliť výnimku z pravidla 500 riadkov?',
+         odporucanie='Najprv rozdeliť, po jednom súbore (začať `FeedPostComments.tsx`), každé delenie vo vlastnej vetve bez zmeny '
+                     'vzhľadu a s manuálnym testom (aj zoznam majiteľa označuje delenie týchto súborov za rizikové). Redizajn potom '
+                     'prebehne nad menšími súbormi s menším rizikom regresie. Výnimka je rýchlejšia, no mení veľký súbor naraz. '
+                     'Ak vizuálnu stránku Nástenky upraví majiteľ sám, treba dohodnúť, či sa súbory delia pred jeho úpravami alebo po nich.',
+         kedy='Pred prácou na 261 (vzhľadové veci sú pred nasadením).'),
 ]

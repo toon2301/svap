@@ -14,6 +14,13 @@ STAV = dict(
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('6. 11. 2026',
+     'Vetva 166, tretie kolo (PR #233): majiteľ rozhodol, že všetky vzhľadové veci aplikácie sú pred nasadením. Z PO NASADENÍ do PRED '
+     'NASADENÍM sa presunuli 261 (redizajn komentárov, mobilné úpravy a redizajn tagov), 259 (portfólio bez fotky) a 36 (drobnosti '
+     'vrátane lightboxov, riešia sa s 92); vznikol balík „Vzhľad Nástenky“. Overené v kóde: komentár aj odpoveď majú dnes sivú bublinu, '
+     'takže redizajn komentárov je stále otvorený. Nové rozhodnutie R23: redizajn sa dotýka súborov nad 500 riadkov '
+     '(`FeedPostComments.tsx` 1 487), preto treba rozhodnúť, či sa najprv rozdelia, alebo sa udelí výnimka. Funkcia úpravy vlastného '
+     'komentára v aplikácii existuje; jej pokrytie testami rieši nález 257.'),
+    ('6. 11. 2026',
      'Vetva 166, druhé kolo (PR #233, po kontrole CodeRabbit a odpovediach majiteľa). Pripomienky CodeRabbitu (všetky tri platné, opravené '
      'v samostatnom commite): príloha D skladá stĺpec „Kde v zozname“ z `ids`, takže zobrazený odkaz sa nemôže líšiť od kontrolovaného; '
      'rozsahy `TECH-01…11` a `R13–R19` sa rozbalia a overia po jednom ID; nález 266 má v manuálnom teste aj priamu nepodpísanú adresu '
@@ -314,10 +321,11 @@ PORADIE = [
          polozky=['185', '245', '246', 'OW-07', '266', '31', '189', '209', '223', '225', '228']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
-            'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), živé overenie N16 a '
-            'RET-01..03',
+            'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
+            '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
+            'overenie N16 a RET-01..03',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '81', '119', '91', '92', '207', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '81', '119', '91', '92', '207', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='120, 175, 176, 177, 204, APP-03, 186 (a podľa R2 poradie jazykov)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',

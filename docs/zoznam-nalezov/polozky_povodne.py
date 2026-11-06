@@ -117,8 +117,10 @@ ORIG_OPEN = {
     3: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočný kód pri parsovaní cieľov upozornení.', None),
     26: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočný / nedosiahnuteľný kód na viacerých miestach.', None),
     30: (A, N, ES, 'Upratovanie a architektúra', 'Mojibake v komentároch `DashboardContent.tsx`.', None),
-    36: (A, N, EM, 'Upratovanie a architektúra',
-         'Rôzne drobnosti. Pozor: tri lightboxy s `max-h-[calc(100vh-2rem)]` patria do rodiny `vh` z nálezu 92.', None),
+    36: (P, N, EM, 'Zdieľanie a obrázky',
+         'Majiteľ 6. 11. 2026: všetky vzhľadové veci sú pred nasadením. Tri lightboxy s `max-h-[calc(100vh-2rem)]` patria do rodiny '
+         '`vh` z nálezu 92 a riešia sa s ním; zvyšok (lint v `SearchLayout`, mŕtve `max-lg:` triedy, `min-h-screen` vo '
+         '`FeedPostCreateScreen`) sú drobnosti.', None),
     39: (A, N, ES, 'Upratovanie a architektúra', 'Duplicitná kontrola „vlastný profil“; `/dashboard/messages/0`.', None),
     54: (A, N, ES, 'Upratovanie a architektúra', 'Mŕtvy kód v `useMobileMessagePeer`.', None),
     55: (A, N, ES, 'Upratovanie a architektúra', '`useOwnProfileOfferActions` vracia surový setter kvôli dialógu.', None),

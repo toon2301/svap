@@ -68,7 +68,7 @@ RIADKY = [
     dict(pdf='QA zdieľania, priorita 6: pôvodný autor repostu nie je klikateľný',
          stav='Nový nález.', ids=['258']),
     dict(pdf='QA zdieľania, priorita 8: portfólio bez fotky vyzerá inak než ponuka bez fotky',
-         stav='Nový nález (vizuálne neoverené).', ids=['259']),
+         stav='Nový nález (vizuálne neoverené); podľa majiteľa (6. 11. 2026) pred nasadením.', ids=['259']),
     dict(pdf='QA zdieľania, priorita 9: nedostupný pôvodný príspevok v reposte ukazuje starý text',
          stav='Nový nález; v kóde overené, že starý text ostáva (len stlmený), a backend ho zámerne posiela.',
          ids=['260']),
@@ -80,8 +80,10 @@ RIADKY = [
          stav='Pokryté E2E špecom `profile-numeric-language.spec.ts` (Codex).',
          ids=['191', '222']),
     dict(pdf='Skupiny 6–8: mobilné doladenia, redizajn komentárov, redizajn tagov',
-         stav='Nový nález (jeden pre všetky tri skupiny), dizajnové priania.',
-         ids=['261']),
+         stav='Nový nález (jeden pre všetky tri skupiny), dizajnové priania; podľa majiteľa (6. 11. 2026) všetko pred nasadením. '
+              'Komentáre majú dnes stále bublinu, takže skupina 7 je otvorená; pred prácou treba rozhodnúť R23 o súboroch nad 500 '
+              'riadkov.',
+         ids=['261', 'R23']),
     dict(pdf='FE UI na mazanie a správu vlastných príspevkov (`can_manage`)',
          stav='Zastarané: frontend `can_manage` používa (`FeedPostMobileDetail.tsx`, `FeedPhotoViewerChrome.tsx`), mazanie je vo '
               '`FeedPostCard.tsx` a v mobilnom detaile (`deleteFeedPost`) a úprava v `FeedPostEditModal`.',
@@ -92,8 +94,8 @@ RIADKY = [
          stav='Nový nález s čakajúcim rozhodnutím o rozsahu.', ids=['263', 'R21']),
     dict(pdf='Vlastný vizuálny pass majiteľa na Nástenke',
          stav='Plán, nie nález: majiteľ upraví vizuálnu stránku Nástenky a nahlási, keď bude hotový; potom technická bezpečnostná '
-              'kontrola jeho zmien a jeden súhrnný audit celej Nástenky (obe strany spolu). Má predchádzať nálezu 261, aby sa '
-              'nerobilo dvakrát.',
+              'kontrola jeho zmien a jeden súhrnný audit celej Nástenky (obe strany spolu); podľa majiteľa (6. 11. 2026) všetky vzhľadové '
+              'veci pred nasadením. Má predchádzať nálezu 261, aby sa nerobilo dvakrát.',
          ids=['261'], kde='poznámka pri nálezu'),
     dict(pdf='SkillRequest audit a UX audit nedostupného obsahu',
          stav='Nový nález, nezmapované.', ids=['264', '74', '18']),
@@ -151,6 +153,6 @@ def priloha_d(d):
     d.w('Majiteľ poslal 6. 11. 2026 druhý zoznam „Svaply — otvorené nálezy a rozpracovaná práca“ (okolo Nástenky). Je zostavený z '
         'konverzácie k 29. 9. 2026, takže pred zápisom sa každá jeho položka porovnala s týmto zoznamom a s kódom na `main` '
         f'`ea9fb101`. Z {len(RIADKY)} položiek je veľká časť zastaraná alebo už vedená; nové nálezy majú čísla 251–269 (269 je už zatvorený rozhodnutím), rozhodnutia '
-        'R13–R22. Tabuľka hovorí, čo z každej položky vzniklo, takže PDF netreba udržiavať popri tomto zozname.')
+        'R13–R23. Tabuľka hovorí, čo z každej položky vzniklo, takže PDF netreba udržiavať popri tomto zozname.')
     d.w()
     d.tabulka(['Položka v zozname majiteľa', 'Stav k 6. 11. 2026', 'Kde v zozname'], [[r['pdf'], r['stav'], stlpec_kde(r)] for r in RIADKY])
