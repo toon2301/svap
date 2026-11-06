@@ -257,17 +257,6 @@ NEW_ITEMS = [
               'povýšenia na Django 5.2 (vetva 154; Django 4.2 argument `condition` nepoznalo). Týka sa aj starých migrácií: v nich ide len o názov '
               'argumentu a schéma sa nemení; po zmene overiť `makemigrations --check`, že nevznikne nová migrácia. Zistené pri mapovaní 183b.',
          dec=None, src='vetva 152'),
-    dict(n=214, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
-         kratko='`sentry_sdk.push_scope` zmizne v novej hlavnej verzii a `sentry-sdk` nie je pripnutý',
-         what='`swaply/sentry_reporting.py:24` (`capture_reportable_exception`) používa `sentry_sdk.push_scope()`, ktoré je v `sentry-sdk` 2.x zastarané '
-              '(„will be removed in the next major version“), a `backend/requirements.txt` má `sentry-sdk[django]` bez verzie. Pomocníka volajú bez '
-              'ochrany `GlobalErrorHandlingMiddleware.process_exception` (`swaply/middleware.py:135`) a obsluha výnimiek DRF (`middleware.py:196`).',
-         note='Dnes (verzia 2.73.0) to len vypíše `DeprecationWarning`. Odhad, nie skúška: ak by build nainštaloval novú hlavnú verziu bez '
-              '`push_scope`, pád by vznikol priamo v obsluhe chýb API, takže namiesto zamýšľanej JSON odpovede by klient dostal všeobecnú chybu 500. '
-              'Návrh: pripnúť `sentry-sdk[django]>=2,<3` (ako pri `celery` a `django-anymail`), prejsť na nové API (`sentry_sdk.new_scope()`, v 2.73.0 '
-              'existuje) a hlásenie do Sentry obaliť `try/except`, aby chyba hlásenia nikdy nepokazila odpoveď. Zistené pri mapovaní 183b '
-              '(varovanie v teste na Djangu 5.2).',
-         dec=None, src='vetva 152'),
     dict(n=215, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra', kratko='knižnice staršie než oficiálna podpora Djanga 5.2',
          what='Po povýšení na Django 5.2 (vetva 154) ostanú pripnuté verzie, ktoré Django 5.2 oficiálne ešte neuvádzajú (podľa klasifikátorov na PyPI): '
               '`django-cors-headers` 4.3.1 (Django 5.2 uvádza od 4.7.0), `django-filter` 23.3 (od 25.1), `django-redis` 5.4.0 (od 6.0.0), `channels` '
@@ -351,8 +340,27 @@ NEW_ITEMS = [
               'nestabilite prostredia než o regresii po PR 221, no príčinu nepreukazuje; nález ostáva otvorený. Kontrola logov Railway majiteľom (2. 11. 2026, všetky 4 časy pádov): vo '
               'všetkých sa objavuje odmietnutie WebSocket spojenia pre chýbajúci token (`missing_token`; ten istý záznam ako pri skoršej '
               'kontrole, súvisí s nálezom 9, ktorý sa nepotvrdil), Redis a PostgreSQL bez zjavnej chyby. Dôkaz, že tieto záznamy '
-              'spôsobujú pády E2E testov, nie je; príčina pádov ostáva nepotvrdená.',
-         dec=None, src='správa Codexa z 30. 10. a 1. 11. 2026 a kontrola logov Railway od majiteľa (2. 11.)'),
+              'spôsobujú pády E2E testov, nie je; príčina pádov ostáva nepotvrdená. Dodatok 5. a 6. 11. 2026 (Codex, `main` `00d627ba`, '
+              'cielený beh siedmich špecov histórie, návratov z profilu, vyhľadávania a Sledovaní): 110 prešlo, 3 zlyhali a 31 '
+              'preskočených (WebKit desktop 38/2/8, WebKit mobil 32/1/15, Chromium 40/0/8). Všetky štyri pády z posledného celého '
+              'behu prešli; tri nové kľúče zlyhali raz a pri izolovaných opakovaniach prešli (desktop 6 z 6, mobil 3 z 3). Vzor ostáva '
+              'rovnaký: prvé požiadavky sú rýchle (stránka `/dashboard` 184 ms, `GET /api/auth/me/` 114 ms) a ďalšia požiadavka alebo '
+              'dávka ostane pending 10 až 26 s; raz skončili `unread-summary` a `unread-count` 200 po asi 26,4 s a hneď potom prišlo 401 '
+              'a pri obnove 403. Okná pádov: 20:08:42 až 20:08:53 UTC a 20:09:16 až 20:09:55 UTC (WebKit desktop) a 20:14:41 až '
+              '20:14:51 UTC (WebKit mobil). Kontrola logov Railway majiteľom (6. 11.): backend fungoval, väčšina požiadaviek skončila '
+              '200, dôkaz o výpadku servera sa nenašiel; dvakrát sa pri obnove prihlásenia objavilo 403 pre chýbajúce CSRF cookie, '
+              'objavili sa aj 401, a logy neukazujú, ako dlho backend jednotlivé požiadavky spracovával. Tabuľka Codexa (29. 10. až '
+              '5. 11. 2026; neúspešné testové pokusy so sieťovými alebo autentifikačnými príznakmi vrátane diagnostických opakovaní, nie '
+              'jednotlivé požiadavky): WebKit desktop 29 (z toho 7 s obnovou 401/403), WebKit mobil 54 (6), Chromium desktop 0 (0). '
+              'Spoločná príčina nie je preukázaná a počty zahŕňajú opakovania, no rozdiel je veľký a WebKit je engine Safari na '
+              'iPhone, preto sa 223 nezatvára ako chyba prostredia testov. Z kódu to nevysvetľujú: cache Redis (predvolený limit 0,3 s '
+              'a chyby sa ignorujú), pomalý dotaz do databázy (limit 5 s by skončil chybou) ani periodické úlohy (každých 5 minút, '
+              'časy pádov sa s nimi nekryjú). Backend posiela pri každej odpovedi API hlavičku `X-App-Duration-Ms` (čas spracovania v '
+              'Djangu); Codex ju od PR #229 (zlúčený 6. 11.) zapisuje do dôkazov pri obnove a pri odpovediach nad 5 s, spolu s názvami '
+              'cookies a prítomnosťou `X-CSRFToken` pri 401 a 403 na obnove. Podľa nich sa rozhodne, či sa čas stráca v backende. Slabé '
+              'miesta obnovy prihlásenia v prehliadači sú v nálezu 245. Navrhnutý ďalší krok: kontrolný beh WebKit proti Chromiu '
+              'striedavo, už s týmito dôkazmi (počas neho sa nič nezlučuje).',
+         dec=None, src='správa Codexa z 30. 10., 1. 11. a 5. 11. 2026 a kontrola logov Railway od majiteľa (2. 11. a 6. 11.)'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
          what='Nález majiteľa z manuálneho testu na iPhone Safari (30. 10. 2026): vo vlastnom profile → Menu → zoznam Nastavení (Upozornenia, '

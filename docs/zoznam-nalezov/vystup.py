@@ -361,14 +361,14 @@ def _udrzba(d, m):
         'oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.')
     d.w(f'- **Čísla:** nový nález dostane ďalšie voľné číslo ({m.posledne_cislo + 1}); čísla sa nikdy nemenia ani nepoužívajú znova. '
         'Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….')
-    d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `polozky_priprava.py`, `register.py`, `stav.py`, `hotove.py`, `fronta.py`), spustiť z koreňa repozitára '
+    d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_povodne.py`, `polozky_priprava.py`, `register.py`, `stav.py`, `hotove.py`, `hotove_dalsie.py`, `fronta.py`), spustiť z koreňa repozitára '
         '`python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, '
         'súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.')
-    d.w('- **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py` (číslo vetvy, PR keď je známe, '
-        '`zlucene=True` po zlúčení). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali. Čiastočne hotový nález ostáva otvorený: jeho text '
+    d.w('- **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py` (číslo vetvy, PR keď je známe, '
+        '`zlucene=True` po zlúčení; staršie opravy sú v `DONE_SINCE` v `hotove.py`). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali. Čiastočne hotový nález ostáva otvorený: jeho text '
         'sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.')
     d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.')
-    d.w('- **Poradie po nasadení:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE` (polia `kto`, '
+    d.w('- **Poradie po nasadení:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE_DALSIE` (polia `kto`, '
         '`stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na nález, '
         'ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ.')
     d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '

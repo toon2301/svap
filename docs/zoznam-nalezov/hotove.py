@@ -412,8 +412,8 @@ DONE_SINCE = [
               'ako zdroj hlavičky `Cache-Control: no-store`; teraz uvádza, že ju posiela Next, lebo koreňový layout je `force-dynamic`. '
               'Zmenil sa jediný riadok komentára, správanie aplikácie sa nemení. Overenie: CI prešlo, kontrola CodeRabbit prešla. '
               'Dopad na E2E: žiadny; test hlavičky navrhuje nález 243.'),
-    dict(n=240, vetva='164', pr=None, zlucene=False,
-         text='HOTOVÉ (vetva 164, čaká na PR; nahlásil majiteľ z nasadenia na Railway 5. 11. 2026): worker sa po novom builde nespustil. '
+    dict(n=240, vetva='164', pr='#226', zlucene=True,
+         text='HOTOVÉ (vetva 164, zlúčené v PR #226 dňa 5. 11. 2026; nahlásil majiteľ z nasadenia na Railway 5. 11. 2026): worker sa po novom builde nespustil. '
               'Príčina: `kombu` 5.7.0 (vyšlo 3. 11. 2026) vyžaduje `redis-py` 6.1.0 a novší (metadáta balíka: `redis>=6.4.0,<9`), kým '
               '`requirements.txt` mal pripnuté `redis==5.0.1` a `celery>=5.4,<6` (bez hornej hranice pre `kombu`), takže čerstvá inštalácia '
               'zobrala nový `kombu` k starému `redis`. Chyba `kombu.exceptions.VersionMismatch: Redis transport requires redis-py '
@@ -432,8 +432,14 @@ DONE_SINCE = [
               'nenašiel nič pre `redis`, `kombu` ani `celery`. Celá backendová sada: 2 028 prešlo a 10 preskočených (predtým 2 027, '
               'pribudol 1 test). Rovnaká skúška prešla aj s `redis-py` 7.4.1 a 8.1.0; povýšenie na ne je samostatný krok. Širšia príčina '
               '(nepripnuté závislosti) je v nálezu 244. Dopad na E2E: žiadny, no behy proti Railway, ktoré závisia od práce na pozadí '
-              '(fotky, e-maily, push), sa, kým nie je nasadená oprava, nedajú brať ako chyba aplikácie.'),
+              '(fotky, e-maily, push), sa pred nasadením opravy nedali brať ako chyba aplikácie. Po nasadení opravy beží worker aj web a '
+              'manuálne testy majiteľa prešli.'),
 ]
+
+# Nálezy opravené od 6. 11. 2026 sú v `hotove_dalsie.py` (kvôli limitu 500 riadkov); do `DONE_SINCE` sa pridávajú tu.
+from hotove_dalsie import DONE_SINCE_DALSIE  # noqa: E402
+
+DONE_SINCE.extend(DONE_SINCE_DALSIE)
 
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
 DONE_PR_TABLE = [

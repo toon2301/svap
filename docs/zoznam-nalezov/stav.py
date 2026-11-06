@@ -6,13 +6,29 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='5. 11. 2026',
-    kod='`main` `c1fcac25` (po PR #225)',
+    datum='6. 11. 2026',
+    kod='`main` `f5a5e244` (po PR #229)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('6. 11. 2026',
+     'Vetva 165 (čaká na PR; vychádza z `main` `f5a5e244`, teda po PR #229): opravy troch nálezov zo skupiny „pred nasadením“. 214: '
+     'hlásenie do Sentry používa `new_scope()` namiesto zastaraného `push_scope()`, chyba hlásenia sa nepreniesie k volajúcemu a `sentry-sdk` je pripnutý na '
+     '`>=2,<3`. 236: neznáma cesta WebSocketu sa zatvorí hneď (kód 4404), `daphne` už nevypisuje chybu a neodpovedá 500. 232: zdieľanie '
+     'a zmazanie príspevku sa pri súbehu zoradia zámkom riadku, namiesto 500 príde jasná chyba 4xx; obe poradia súbehu pokrýva test s '
+     'dvoma vláknami na PostgreSQL. Celá backendová sada v čerstvom prostredí z commitnutého `requirements.txt` (`pip check` bez chýb, '
+     '`sentry-sdk` 2.74.0): na SQLite 2 043 prešlo a 13 preskočených (predtým 2 028 a 10; pribudlo 18 testov a tri z nich, s dvoma '
+     'vláknami, sa na SQLite preskočia), na PostgreSQL 16 2 054 prešlo a 2 preskočené. Zápis tretej práce kolegu (vetva K3, PR #228, '
+     'zlúčená 6. 11.): nálezy 241, 103 a 58 sú hotové a odišli z fronty (na čele je 153); nové nálezy od kolegu neboli. Zápis Codexových '
+     'PR: #227 (zlúčený 5. 11.; nález 243 je hotový, hlavička `Cache-Control: no-store` na HTML prešla 18 z 18 na Railway) a #229 (zlúčený '
+     '6. 11.; dôkazy k nálezu 223: `X-App-Duration-Ms`, názvy cookies a `X-CSRFToken` pri obnove prihlásenia). Nález 240 je zlúčený '
+     '(PR #226, 5. 11.) a nasadenie na Railway aj manuálne testy majiteľa prešli. Doplnok k nálezu 223: kontrola logov Railway '
+     'majiteľom (backend v poriadku, dvakrát 403 pri obnove pre chýbajúce CSRF cookie) a Codexova tabuľka pádov (len WebKit). Nové '
+     'nálezy: 245 (obnova prihlásenia v prehliadači: pri chýbajúcom CSRF cookie 403, bez časového limitu a bez opakovania) a 246 '
+     '(rovnaký súbeh zdieľania a zmazania pri ponuke a položke portfólia, potvrdený sondou). Do nálezu 244 pribudla poznámka o '
+     'pripnutí `sentry-sdk`.'),
     ('5. 11. 2026',
      'Vetva 164 (čaká na PR; vychádza z `main` `c1fcac25`, teda po PR #225): oprava nasadenia na Railway (nález 240). `kombu` 5.7.0 (vyšlo '
      '3. 11.) vyžaduje `redis-py` 6.1.0 a novší, kým `requirements.txt` mal `redis==5.0.1`, takže sa worker nespustil a web nevedel zadať úlohy '
@@ -261,10 +277,11 @@ PORADIE = [
          polozky=['183']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
-            'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161); ďalej 185, 214, '
-            '232, 236, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
+            'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
+            'vo vetve 165; ostáva 245 a 246); ďalej 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; '
+            '212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '214', '232', '236', 'OW-07', '31', '189', '209', '223', '225', '228']),
+         polozky=['185', '245', '246', 'OW-07', '31', '189', '209', '223', '225', '228']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
