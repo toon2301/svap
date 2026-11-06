@@ -237,7 +237,11 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         ensure_text_within_limit(self.caption, field_label="Text príspevku")
         if self._state.adding:
             self._apply_shared_source()
-            super().save(*args, **kwargs)
+            # Zámok zdroja a INSERT v jednej transakcii: súbežné zmazanie zdroja sa zoradí
+            # so vznikom zdieľania namiesto chyby 500 pri COMMIT (nález 232).
+            with transaction.atomic():
+                self._lock_shared_feed_post_source()
+                super().save(*args, **kwargs)
             return
 
         refreshed = self._revalidate_changed_shared_source(
