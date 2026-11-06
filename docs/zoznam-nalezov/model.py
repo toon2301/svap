@@ -17,6 +17,7 @@ import polozky_povodne
 import priloha_nastenka
 import register
 import stav
+import zatvorene_dalsie
 from konstanty import A, EL, EM, ES, H, N, P, S_, V
 
 PRIECINOK = Path(__file__).resolve().parent
@@ -83,17 +84,23 @@ def _chyby_cisel(povodny):
         chyby.append('povodny_zoznam.json nemá presne čísla 1–%d raz' % POSLEDNY_POVODNY)
 
     hotove_po = [d['n'] for d in stav.DONE_SINCE]
+    zatvorene_po = [d['n'] for d in zatvorene_dalsie.CLOSED_SINCE]
     otvorene_povodne = set(polozky_povodne.ORIG_OPEN)
-    ocakavane = set(povodny['otvorene']) - {n for n in hotove_po if n <= POSLEDNY_POVODNY}
+    ocakavane = (set(povodny['otvorene']) - {n for n in hotove_po if n <= POSLEDNY_POVODNY}
+                 - {n for n in zatvorene_po if n <= POSLEDNY_POVODNY})
     if otvorene_povodne != ocakavane:
-        chyby.append('ORIG_OPEN sa nezhoduje s otvorenými z JSON (mínus opravené): chýba %s, navyše %s'
+        chyby.append('ORIG_OPEN sa nezhoduje s otvorenými z JSON (mínus opravené a zatvorené): chýba %s, navyše %s'
                      % (sorted(ocakavane - otvorene_povodne), sorted(otvorene_povodne - ocakavane)))
+    for n in zatvorene_po:
+        if n <= POSLEDNY_POVODNY and n not in povodny['otvorene']:
+            chyby.append('zatvorený nález %d nebol v pôvodnom zozname otvorený' % n)
 
     nove = [x['n'] for x in polozky_nove.NEW_ITEMS]
-    nove_vsetky = sorted(nove + [n for n in hotove_po if n > POSLEDNY_POVODNY])
-    if len(set(nove + hotove_po)) != len(nove + hotove_po):
-        chyby.append('číslo nálezu je naraz otvorené aj hotové alebo sa opakuje: %s'
-                     % sorted({n for n in nove + hotove_po if (nove + hotove_po).count(n) > 1}))
+    uzavrete = hotove_po + zatvorene_po
+    nove_vsetky = sorted(nove + [n for n in uzavrete if n > POSLEDNY_POVODNY])
+    if len(set(nove + uzavrete)) != len(nove + uzavrete):
+        chyby.append('číslo nálezu je naraz otvorené, hotové alebo zatvorené, alebo sa opakuje: %s'
+                     % sorted({n for n in nove + uzavrete if (nove + uzavrete).count(n) > 1}))
     if nove_vsetky != list(range(POSLEDNY_POVODNY + 1, POSLEDNY_POVODNY + 1 + len(nove_vsetky))):
         chyby.append('nové nálezy nemajú súvislé číslovanie od %d: %s' % (POSLEDNY_POVODNY + 1, nove_vsetky))
 
@@ -118,6 +125,18 @@ def _chyby_registra(id_registra):
         chyby.append('register: bez zaradenia %s, navyše (v registri nie je) %s'
                      % (sorted(id_registra - set(zaradene)), sorted(set(zaradene) - id_registra)))
     return chyby, otvorene
+
+
+def _chyby_zatvorenych():
+    """Overí, že každé zatvorenie rozhodnutím odkazuje na existujúce rozhodnutie s odpoveďou a má text aj dátum."""
+    chyby = []
+    rozhodnute = {d['id'] for d in stav.DECISIONS if d.get('odpoved')}
+    for d in zatvorene_dalsie.CLOSED_SINCE:
+        if d['rozhodnutie'] not in rozhodnute:
+            chyby.append('zatvorený nález %d: rozhodnutie %s neexistuje alebo ešte nemá odpoveď' % (d['n'], d['rozhodnutie']))
+        if not d.get('text') or not d.get('datum'):
+            chyby.append('zatvorený nález %d: chýba text alebo dátum' % d['n'])
+    return chyby
 
 
 def _chyby_hodnot():
@@ -248,7 +267,7 @@ def zostav_model():
     """
     povodny = nacitaj_povodny()
     id_registra = id_z_registra()
-    chyby = _chyby_cisel(povodny) + _chyby_hodnot()
+    chyby = _chyby_cisel(povodny) + _chyby_hodnot() + _chyby_zatvorenych()
     chyby_registra, registrove_otvorene = _chyby_registra(id_registra)
     chyby += chyby_registra
 
@@ -277,8 +296,11 @@ def zostav_model():
     hotove = dict(povodny['hotove'])
     hotove.update({d['n']: d['text'] for d in stav.DONE_SINCE})
     cakaju = [d for d in stav.DONE_SINCE if not d.get('zlucene')]
+    zatvorene_vsetky = dict(povodny['zatvorene'])
+    zatvorene_vsetky.update({d['n']: d['text'] for d in zatvorene_dalsie.CLOSED_SINCE})
     pocty = SimpleNamespace(
-        hotove=len(hotove) - len(cakaju), caka_na_zlucenie=len(cakaju), zatvorene=len(povodny['zatvorene']), info=len(povodny['info']),
+        hotove=len(hotove) - len(cakaju), caka_na_zlucenie=len(cakaju), zatvorene=len(zatvorene_vsetky),
+        zatvorene_povodne=len(povodny['zatvorene']), info=len(povodny['info']),
         nalezy={sk: _pocet_nalezov(riadky[sk]) for sk in riadky},
         uloh={sk: sum(1 for t in polozky_nove.NTASKS if t['bucket'] == sk) for sk in riadky},
         registrove={sk: sum(len(r['ids']) for r in register.REG_ITEMS if r['bucket'] == sk) for sk in riadky},
@@ -288,7 +310,8 @@ def zostav_model():
         povodne_otvorene_dnes={sk: sum(1 for v in polozky_povodne.ORIG_OPEN.values() if v[0] == sk) for sk in riadky},
     )
     pocty.spolu = pocty.hotove + pocty.caka_na_zlucenie + pocty.zatvorene + pocty.info + sum(pocty.nalezy.values())
-    posledne_cislo = POSLEDNY_POVODNY + len(polozky_nove.NEW_ITEMS) + sum(1 for d in stav.DONE_SINCE if d['n'] > POSLEDNY_POVODNY)
+    posledne_cislo = (POSLEDNY_POVODNY + len(polozky_nove.NEW_ITEMS) + sum(1 for d in stav.DONE_SINCE if d['n'] > POSLEDNY_POVODNY)
+                      + sum(1 for d in zatvorene_dalsie.CLOSED_SINCE if d['n'] > POSLEDNY_POVODNY))
     if pocty.spolu != posledne_cislo:
         raise ValueError('súčet skupín %d sa nerovná poslednému číslu nálezu %d' % (pocty.spolu, posledne_cislo))
     chyby_prilohy = _chyby_prilohy_d(posledne_cislo, id_registra)
@@ -296,6 +319,7 @@ def zostav_model():
         raise ValueError('\n'.join(' - ' + c for c in chyby_prilohy))
 
     return SimpleNamespace(
-        povodny=povodny, hotove=dict(sorted(hotove.items())), skupiny={sk: _zoskup(riadky[sk], sk) for sk in riadky},
+        povodny=povodny, hotove=dict(sorted(hotove.items())), zatvorene_vsetky=dict(sorted(zatvorene_vsetky.items())),
+        skupiny={sk: _zoskup(riadky[sk], sk) for sk in riadky},
         pocty=pocty, posledne_cislo=posledne_cislo, otvorene_id=otvorene_id,
     )

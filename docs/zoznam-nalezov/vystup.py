@@ -136,7 +136,8 @@ def _fronta(d):
     d.w('### Poradie prác pre kolegu po nasadení (dávky a stav)')
     d.w()
     d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nekolidujú s prácou pred nasadením a nemenia súbory nad '
-        '500 riadkov); schvaľuje majiteľ. Pred opravou treba overiť, že nález ešte platí. Úplný popis každého nálezu je v tabuľkách nižšie. '
+        '500 riadkov); schvaľuje majiteľ. ' + fronta.SCHVALENE + ' Pred opravou treba overiť, že nález ešte platí. '
+        'Úplný popis každého nálezu je v tabuľkách nižšie. '
         'Hotový nález sa z poradia odstráni a presunie do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, '
         'striedavo s agentom). Stav riešenia sa nesleduje: zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že '
         'nález je voľný.')
@@ -327,7 +328,7 @@ def _zatvorene(d, m):
     d.w()
     d.w(f'**Zatvorené rozhodnutím ({m.pocty.zatvorene}):**')
     d.w()
-    d.tabulka(['Č.', 'O čom'], [[n, t] for n, t in m.povodny['zatvorene'].items()])
+    d.tabulka(['Č.', 'O čom'], [[n, t] for n, t in m.zatvorene_vsetky.items()])
     d.w(f'**Informačné / ponaučenia / účtovanie mutantov ({m.pocty.info}):**')
     d.w()
     d.tabulka(['Č.', 'O čom'], [[n, t] for n, t in m.povodny['info'].items()])
@@ -367,19 +368,22 @@ def _udrzba(d, m):
     d.w(f'- **Čísla:** nový nález dostane ďalšie voľné číslo ({m.posledne_cislo + 1}); čísla sa nikdy nemenia ani nepoužívajú znova. '
         'Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….')
     d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_nove_dalsie.py`, `polozky_nove_nastenka.py`, `polozky_povodne.py`, `polozky_priprava.py`, '
-        '`register.py`, `stav.py`, `rozhodnutia_nastenka.py`, `hotove.py`, `hotove_dalsie.py`, `fronta.py`, `priloha_nastenka.py`), spustiť z koreňa repozitára '
+        '`register.py`, `stav.py`, `rozhodnutia_nastenka.py`, `hotove.py`, `hotove_dalsie.py`, `zatvorene_dalsie.py`, `fronta.py`, `priloha_nastenka.py`), spustiť z koreňa repozitára '
         '`python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, '
         'súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.')
     d.w('- **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py` (číslo vetvy, PR keď je známe, '
         '`zlucene=True` po zlúčení; staršie opravy sú v `DONE_SINCE` v `hotove.py`). Upraviť aj vlny `stav.PORADIE`, ak ju spomínali. Čiastočne hotový nález ostáva otvorený: jeho text '
         'sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.')
-    d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.')
+    d.w('- **Zatvorenie rozhodnutím:** nález, ktorý sa neopravuje (kozmetika, zámer majiteľa), odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do '
+        '`CLOSED_SINCE` v `zatvorene_dalsie.py` (číslo, rozhodnutie s odpoveďou, dátum, text); zobrazí sa v časti 8.')
+    d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (alebo v `rozhodnutia_nastenka.py` pri R13 až R22).')
     d.w('- **Poradie po nasadení:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE_DALSIE` (polia `kto`, '
         '`stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na nález, '
         'ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ.')
     d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '
         'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 1:1, kým majiteľ dohodu nezmení (výnimka z 6. 11. 2026: dve dávky '
-        'za sebou, K4 a K5, potom vetva agenta 166 len so zoznamom; ďalšie poradie určí majiteľ). Po každej práci kolegu majiteľ '
+        'za sebou, K4 a K5, potom vetva agenta 166 len so zoznamom; majiteľ schválil poradie kolega K6, agent 167, kolega K7 a ďalej 1:1). '
+        'Po každej práci kolegu majiteľ '
         'pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` (časť „Postup s kolegom“).')
     d.w('- **Príloha D** (zoznam majiteľa z 6. 11. 2026) je mapovanie jeho položiek na tento zoznam v `priloha_nastenka.py`; generátor '
         'overí, že každý odkaz v nej mieri na existujúci nález, ID z registra, úlohu N alebo rozhodnutie.')
@@ -401,8 +405,8 @@ def _prilohy_ab(d, m):
     d.w()
     d.w('Generátor pri zostavení overil:')
     d.w()
-    d.w(f'- pôvodný zoznam má presne čísla 1–172 raz ({len(povodne["hotove"])} + {p.zatvorene} + {p.info} + {p.povodne_otvorene} = 172); '
-        'všetky pôvodne otvorené sú buď roztriedené, alebo zapísané ako opravené;')
+    d.w(f'- pôvodný zoznam má presne čísla 1–172 raz ({len(povodne["hotove"])} + {p.zatvorene_povodne} + {p.info} + {p.povodne_otvorene} = 172); '
+        'všetky pôvodne otvorené sú buď roztriedené, zapísané ako opravené, alebo zatvorené rozhodnutím;')
     d.w(f'- nové nálezy majú súvislé čísla 173–{m.posledne_cislo};')
     d.w(f'- súčet skupín {p.hotove} + {p.caka_na_zlucenie} + {p.zatvorene} + {p.info} + {p.nalezy[H]} + {p.nalezy[P]} + {p.nalezy[A]} = **{p.spolu}**;')
     d.w(f'- všetkých {p.register_spolu} ID z registra je zaradených práve v jednej skupine (otvorené / čaká živé overenie / zatvorené / pokryté '

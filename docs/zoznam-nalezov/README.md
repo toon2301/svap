@@ -20,6 +20,7 @@ nemôže ticho prestať sedieť.
 | `hotove.py` | Nálezy opravené po prvom vydaní do 5. 11. 2026 (`DONE_SINCE`), tabuľka PR a popis série Upozornenia. Samostatný súbor, aby žiadny súbor nepresiahol 500 riadkov; `stav.py` ich sprístupňuje pod pôvodnými názvami. |
 | `hotove_dalsie.py` | Nálezy opravené od 6. 11. 2026 (`DONE_SINCE_DALSIE`). Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |
 | `fronta.py` | Poradie prác na nálezoch po nasadení (dávky pre kolegu, kľúč `davka`). Hotový nález sa odtiaľ odstráni. |
+| `zatvorene_dalsie.py` | Nálezy zatvorené rozhodnutím majiteľa po prvom vydaní (`CLOSED_SINCE`); zobrazujú sa v časti 8. |
 | `rozhodnutia_nastenka.py` | Rozhodnutia R13–R22 zo zoznamu majiteľa (R13–R19 rozhodnuté, R20–R22 čakajú); `stav.py` ich pripája do `DECISIONS`. |
 | `priloha_nastenka.py` | Príloha D: mapovanie zoznamu majiteľa na tento zoznam (jeden riadok na jeho položku). Generátor overí odkazy v nej. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
@@ -33,7 +34,8 @@ Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení 
 2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py`
    (staršie opravy sú v `DONE_SINCE` v `hotove.py`; `n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
    Čiastočne hotový nález ostáva otvorený: jeho text sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.
-3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
+3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (R13 až R22 sú v `rozhodnutia_nastenka.py`). Nález, ktorý sa kvôli
+   rozhodnutiu neopravuje, sa odstráni z otvorených a pridá do `CLOSED_SINCE` v `zatvorene_dalsie.py`.
 4. Posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
 5. Z koreňa repozitára spustiť `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`.
 
@@ -54,7 +56,7 @@ Dohoda s majiteľom z 5. 11. 2026; platí, kým ju majiteľ nezmení.
 - **Striedanie 1:1:** jedna dávka kolegu (aspoň tri nálezy, každý vo vlastnom commite v jednej vetve), potom jedna vetva agenta, a tak
   ďalej. Prvá práca kolegu bola skúšobná a mala jediný nález (192).
 - **Výnimka z 6. 11. 2026:** kolega dostal dve dávky za sebou (K4 a K5) a potom prišla vetva agenta 166, ktorá je len so zoznamom (K4
-  a K5, zoznam majiteľa z 6. 11., oprava starých údajov). Ďalšie poradie určí majiteľ; návrh agenta je vrátiť sa k striedaniu 1:1.
+  a K5, zoznam majiteľa z 6. 11., oprava starých údajov). Majiteľ 6. 11. 2026 schválil poradie: kolega K6, potom agent 167, potom kolega K7 a ďalej striedavo 1:1.
 - **Vetvy:** kolega K1, K2, K3…; agent číslované (163, 164…); Codex `e2e/<názov>`. S Codexom pracuje len agent.
 - **Čo dostane kolega:** opis nálezu a návrh najlepšej opravy (nálezy sú v časti 5 zoznamu, poradie vo fronte). Nález overuje kolega pri
   práci. Agent jeho PR pred zlúčením nekontroluje.

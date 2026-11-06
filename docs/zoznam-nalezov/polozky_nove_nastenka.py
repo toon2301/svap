@@ -32,8 +32,8 @@ NEW_ITEMS_NASTENKA = [
               'nehľadal ani nepotvrdil: vyhľadávanie v správach commitov našlo onboarding len pri refaktoroch `DashboardContent`. Mobilný '
               'onboarding je v `dashboard/onboarding/MobileOnboardingContext.tsx` (661 riadkov) a `MobileOnboardingOverlay.tsx` (763 '
               'riadkov), oba nad limitom 500 riadkov.',
-         note='Neoverené. Prvý krok: majiteľ pošle výsledok pôvodného mapovania (alebo ho agent zopakuje čítaním `MobileOnboarding*` a '
-              'reprodukciou na novom účte); až potom sa určí závažnosť a oprava. Zaradené PRED NASADENÍM, lebo ide o prvý dojem nových '
+         note='Neoverené. Majiteľ pôvodné mapovanie nemá (6. 11. 2026), preto ho zopakuje agent čítaním `MobileOnboarding*` a '
+              'reprodukciou na novom účte; až potom sa určí závažnosť a oprava. Zaradené PRED NASADENÍM, lebo ide o prvý dojem nových '
               'používateľov; ak sa slučka nepotvrdí, presunúť alebo zatvoriť. Oba súbory sú nad 500 riadkov, takže zmena si vyžaduje '
               'nový súbor alebo výnimku od majiteľa.',
          dec=None, src=ZDROJ),
@@ -84,7 +84,10 @@ NEW_ITEMS_NASTENKA = [
               '`e2e/sharing-from-profile.spec.ts` a `e2e/sharing-from-feed.spec.ts`) existujú. Zvyšok pokrytia je priebežný cieľ bez pevného '
               'konca, nie uzavretá úloha. Chýba viac scenárov zdieľania (z otvoreného detailu, z mobilných vrstiev, cudzie príspevky, Späť po '
               'zdieľaní z detailu) a širšie pokrytie ďalších tokov (história portfólia, nový vstup na profil, Nastavenia, zvýraznenie, '
-              'záložky). Podobné medzery už vedú 110, 113, 157 a 233.',
+              'záložky). Chýbajú aj komentáre (pridanie, odpoveď, úprava vlastného komentára, mazanie): `e2e/feed-post-detail.spec.ts` pokrýva '
+              'len otvorenie a zatvorenie vrstvy komentárov. Úprava vlastného komentára (tlačidlo „Upraviť“ vo `FeedPostComments.tsx`) '
+              'má testy len na backende (`accounts/test/test_feed_edit_api.py`); frontendové testy volanie `updateFeedPostComment` '
+              'iba nahrádzajú prázdnou funkciou. Podobné medzery už vedú 110, 113, 157 a 233.',
          note='E2E súbory vlastní Codex (`AGENTS.md`); agent len eviduje. Pravidlá ostávajú: testy bežia proti Railway, WebKit (desktop aj '
               'mobil) je povinný a test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Výber '
               'scenárov a poradie určí majiteľ s Codexom.',
@@ -198,16 +201,4 @@ NEW_ITEMS_NASTENKA = [
          note='Návrh: nové pole `rejected_code` na backende (model obrázka príspevku, serializér, migrácia) so stabilnými kódmi; po prechode '
               'zmazať aliasy. Dovtedy je dobré mať test súladu textov backendu s aliasmi.',
          dec=None, src=ZDROJ),
-    dict(n=269, bucket=A, imp=S_, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='overovací odznak: dnes svieti každému s overeným e-mailom, pravidlo „kto a podľa čoho“ chýba',
-         what='Zoznam majiteľa vedie odznak ako úplne novú funkciu s tým, že aplikácia nemá koncept „overeného používateľa“. Podľa kódu '
-              '(overil agent, 6. 11. 2026) odznak už existuje: `User.is_verified` („Overený“) sa nastaví pri overení e-mailu '
-              '(`accounts/models/verification.py`), frontend ukazuje `VerifiedBadge` pri avatare profilu (`UserAvatar.tsx`), vo výsledkoch '
-              'vyhľadávania (dve miesta) a v zozname konverzácií a odporúčania radia overené účty vyššie (`recommendations.py`). Odznak '
-              'teda dostane každý, kto potvrdí e-mail. Pre prémiovú úroveň je pripravený aj príznak `can_use_verified_badge` v '
-              '`accounts/services/entitlements.py`, no ani frontend, ani backend ním odznak nepodmieňuje.',
-         note='Dnešný odznak neznamená overenie totožnosti ani kvality, iba potvrdený e-mail, no pre používateľa vyzerá ako „overený účet“ '
-              '(text `common.verifiedAccount`). Pred štartom treba aspoň rozhodnúť (R22), či sa odznak zatiaľ skryje alebo premenuje; '
-              'kritériá a udeľovanie (ručne administrátorom, alebo ako prémiová funkcia) môžu prísť po štarte.',
-         dec='ROZHODNUTIE R22', src=ZDROJ),
 ]

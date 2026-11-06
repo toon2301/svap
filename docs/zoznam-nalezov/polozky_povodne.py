@@ -11,7 +11,6 @@ from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
 ORIG_OPEN = {
     # P1 – viditeľné a latentné chyby
     8: (A, N, ES, 'Navigácia – drobnosti', 'Kozmetika: prázdne zvýraznenie ľavého menu na jednej obrazovke.', None),
-    12: (A, N, ES, 'Navigácia – drobnosti', 'Zbytočné `?tab=offers` v adrese; mení len vzhľad adresy, nie správanie.', None),
     13: (P, S_, ES, 'Navigácia a Späť',
          'V iPhone PWA nie je prehliadačové Späť. Bez šípky v hornej lište plnostránkového detailu príspevku '
          '(vstup z upozornenia alebo odkazu) používateľ uviazne.', None),
@@ -107,7 +106,6 @@ ORIG_OPEN = {
     87: (A, N, ES, 'Navigácia – drobnosti', 'Handlery neukladajú modul do `localStorage` (pravdepodobne zámer).', None),
     104: (A, N, EM, 'Údaje a cache', 'Zastaraná vybraná karta po odloženom zmazaní fotky.', None),
     106: (A, N, ES, 'Výkon a plynulosť', 'Mobilné `initialTags || []` = nové pole pri každom vykreslení (neoverené).', None),
-    121: (A, N, ES, 'Navigácia – drobnosti', 'Záznam vyhľadávania dostane `?tab=offers` pri otvorení profilu (kozmetika).', None),
     124: (A, N, ES, 'Navigácia – drobnosti', 'Po F5 router prepíše `history.state` (pozorovanie).', None),
     152: (A, N, EM, 'Upratovanie a architektúra', 'Audit `Sidebar` / `RightSidebar` (`AnimatePresence`): držia globálne efekty počas výstupu?', None),
     # P4 – výkon

@@ -10,12 +10,14 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K5 sú hotové a zlúčené. Od 6. 11. 2026 fronta obsahuje návrh dvoch ďalších dávok (K6 a K7); kľúč `davka` je len
-označenie dávky pre čitateľa.
+Dávky K1 až K5 sú hotové a zlúčené. Od 6. 11. 2026 fronta obsahuje dve ďalšie dávky (K6 a K7); kľúč `davka` je len označenie dávky
+pre čitateľa. Poradie dávok schválil majiteľ 6. 11. 2026 (`SCHVALENE`).
 
 Kontrola v `model.py` zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ, takže
 zoznam nemôže ticho zastarať.
 """
+
+SCHVALENE = 'Majiteľ 6. 11. 2026 schválil poradie: kolega K6, potom vetva agenta 167, potom kolega K7 a ďalej striedavo 1:1.'
 
 STAV_ROZROBENE = 'rozrobené'
 STAV_CAKA = 'čaká na zlúčenie'

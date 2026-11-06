@@ -16,7 +16,8 @@ RIADKY = [
     dict(pdf='Scroll-restore bug na profile (najvyššia priorita, mobil)',
          stav='Vyriešené. Trvalá oprava `3356bc1b` (29. 9. 2026): nový `<main>` pri každej zmene modulu (`useDashboardMainKey`); podľa '
               'správy commitu na iPhone 10 z 10 čistých vstupov oproti 4 z 5 zlyhaní bez neho. Dočasný ladiaci pás `?debugscroll=1` je '
-              'odstránený (`617051c0`, 15. 10. 2026, po dokončení meraní na iPhone).',
+              'odstránený (`617051c0`, 15. 10. 2026, po dokončení meraní na iPhone). Majiteľ 6. 11. 2026 potvrdil, že na reálnom iPhone je '
+              'to v poriadku.',
          ids=['126', '131'], kde='commity `3356bc1b` a `617051c0`'),
     dict(pdf='Rovnaký druh chyby pri prechodoch Profil → Nastavenia, profil → profil a mobilné Vyhľadávanie → profil',
          stav='Pokryté tou istou opravou (každá zmena modulu dostane nový `<main>`); `DashboardMainIdentitySweep.test.tsx` prechádza celý '
@@ -30,7 +31,8 @@ RIADKY = [
               '`AbortController` v `hooks/useDashboardUserProfile.tsx`.',
          ids=[], kde='kód (`useDashboardUserProfile.tsx`); v zozname nie je samostatný nález'),
     dict(pdf='Nekonečná slučka pri mobilnom onboardingu',
-         stav='Otvorené, neoverené; PRED NASADENÍM. Podrobnosti pôvodného mapovania chýbajú.',
+         stav='Otvorené, neoverené; PRED NASADENÍM. Podrobnosti pôvodného mapovania chýbajú a majiteľ ich nemá (6. 11. 2026), preto '
+              'ho zmapuje agent.',
          ids=['252']),
     dict(pdf='Timeout obnovy prihlásenia počas výpadku (hypotéza)',
          stav='Doplnené do existujúceho nálezu o obnove prihlásenia; „minišatúry“ cez Django namiesto CDN (v PDF; čítam ako miniatúry '
@@ -109,12 +111,14 @@ RIADKY = [
     dict(pdf='Mapovanie dôvodu odmietnutia fotky na Nástenke',
          stav='Nový nález; overené (presné texty z backendu ako aliasy).', ids=['268']),
     dict(pdf='Overovací odznak (verified badge)',
-         stav='Nový nález; v kóde odznak už existuje a dostane ho každý s overeným e-mailom, takže ide o jeho význam.',
+         stav='Zatvorené rozhodnutím R22 (6. 11. 2026): odznak znamená potvrdený e-mail (používateľ ho získa overením v Nastaveniach, '
+              'záložka Účet) a je to zámer. PDF ho vedelo ako novú funkciu; v kóde už existuje.',
          ids=['269', 'R22']),
     dict(pdf='Kľúčové rozhodnutia (sedem)',
          stav='Zapísané ako rozhodnuté R13 až R19 (časť 6). Časť o tlačidle Domov z 29. 9. (vždy čistá Nástenka od vrchu) prekonala '
-              'oprava 159 (PR #180): Domov vráti na zapamätané miesto a druhý klik ide na vrch.',
-         ids=['R13–R19', '159']),
+              'oprava 159 (PR #180): Domov vráti na zapamätané miesto a druhý klik ide na vrch. Podľa R17 (`?tab=offers` je kozmetika) '
+              'sú zatvorené aj nálezy 12 a 121 (majiteľ potvrdil 6. 11. 2026).',
+         ids=['R13–R19', '159', '12', '121']),
     dict(pdf='„Čo je už hotové“: fázy 4.1–4.5 Nástenky, štatistiky a návštevy profilu, audit blokovania a hlasovania, CI, audit portfólia',
          stav='Informatívne; nič sa nezapisuje.', ids=[]),
     dict(pdf='Metodika (mapovanie bez zmeny kódu, mutačné testy, kontrola Rabbit pred manuálnym testom, manuálne testy v jednom zozname)',
@@ -146,7 +150,7 @@ def priloha_d(d):
     """Zapíše do dokumentu `d` prílohu D: mapovanie zoznamu majiteľa z 6. 11. 2026 na tento zoznam (jeden riadok na položku PDF)."""
     d.w('Majiteľ poslal 6. 11. 2026 druhý zoznam „Svaply — otvorené nálezy a rozpracovaná práca“ (okolo Nástenky). Je zostavený z '
         'konverzácie k 29. 9. 2026, takže pred zápisom sa každá jeho položka porovnala s týmto zoznamom a s kódom na `main` '
-        f'`ea9fb101`. Z {len(RIADKY)} položiek je veľká časť zastaraná alebo už vedená; nové nálezy majú čísla 251–269, rozhodnutia '
+        f'`ea9fb101`. Z {len(RIADKY)} položiek je veľká časť zastaraná alebo už vedená; nové nálezy majú čísla 251–269 (269 je už zatvorený rozhodnutím), rozhodnutia '
         'R13–R22. Tabuľka hovorí, čo z každej položky vzniklo, takže PDF netreba udržiavať popri tomto zozname.')
     d.w()
     d.tabulka(['Položka v zozname majiteľa', 'Stav k 6. 11. 2026', 'Kde v zozname'], [[r['pdf'], r['stav'], stlpec_kde(r)] for r in RIADKY])

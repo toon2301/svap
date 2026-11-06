@@ -2,8 +2,8 @@
 """Rozhodnutia R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20–R22 sú otázky, ktoré zoznam majiteľa vedie ako nerozhodnuté (čakajú na odpoveď). Samostatný súbor kvôli limitu
-500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
+(majú `odpoved`). R20 a R21 sú otázky, ktoré zoznam majiteľa vedie ako nerozhodnuté (čakajú na odpoveď); R22 majiteľ rozhodol 6. 11. 2026.
+Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
 """
 
 DATUM_PDF = 'pred 6. 11. 2026 (zoznam majiteľa)'
@@ -32,7 +32,8 @@ DECISIONS_NASTENKA = [
     dict(id='R17', tema='`?tab=offers` v adrese profilu',
          otazka='Má sa `?tab=offers` z adresy odstraňovať pre predvolený tab?', odporucanie=NEMENIT, kedy='—',
          odpoved='Pre predvolený tab sa `?tab=offers` v adrese nepotláča: je to kozmetika, nie chyba (Next.js tento parameter krátko po '
-                 'zápise ticho vráti späť bez neho; zdokumentované zvlášť, samo osebe neurgentné). Súvisí s nálezmi 12 a 121.',
+                 'zápise ticho vráti späť bez neho; zdokumentované zvlášť, samo osebe neurgentné). Majiteľ 6. 11. 2026 potvrdil, že podľa '
+                 'toho sa zatvárajú aj nálezy 12 a 121 (presakujúce `?tab=offers` v iných adresách).',
          datum=DATUM_PDF),
     dict(id='R18', tema='E2E testy proti produkcii',
          otazka='Proti čomu bežia Playwright testy?', odporucanie=NEMENIT, kedy='Prehodnotiť, keď appka bude mať reálnych používateľov (N4).',
@@ -55,8 +56,13 @@ DECISIONS_NASTENKA = [
          kedy='Pred prácou na 263.'),
     dict(id='R22', tema='Význam overovacieho odznaku (269)',
          otazka='Čo má odznak „overený účet“ znamenať a komu sa má ukazovať?',
-         odporucanie='Pred štartom rozhodnúť aspoň toľko, či sa odznak zatiaľ skryje alebo premenuje na „overený e-mail“, lebo dnes ho '
-                     'dostane každý s overeným e-mailom (`is_verified`). Udeľovanie podľa kritérií (ručne administrátorom, alebo ako '
-                     'prémiová funkcia `can_use_verified_badge`) môže prísť až po štarte.',
-         kedy='Pred štartom (význam odznaku); samotné udeľovanie po štarte.'),
+         odporucanie='Agent odporúčal pred štartom odznak skryť alebo premenovať na „overený e-mail“, lebo ho dostane každý s overeným '
+                     'e-mailom (`is_verified`); udeľovanie podľa kritérií (ručne administrátorom, alebo ako prémiová funkcia '
+                     '`can_use_verified_badge`) by mohlo prísť až po štarte.',
+         kedy='Rozhodnuté 6. 11. 2026.',
+         odpoved='Majiteľ rozhodol, že odznak má znamenať potvrdený e-mail a že je to zámer aplikácie: používateľ ho získa tým, že '
+                 'e-mail naozaj overí (odkaz z registrácie, alebo Nastavenia, záložka Účet). Odznak ostáva tak, ako je; nález 269 je '
+                 'zatvorený. Overené v kóde: `VerifyEmailSection` v `AccountSettingsModule` posiela overovací e-mail a `is_verified` sa '
+                 'nastaví až po potvrdení odkazu.',
+         datum='6. 11. 2026'),
 ]

@@ -14,6 +14,16 @@ STAV = dict(
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('6. 11. 2026',
+     'Vetva 166, druhé kolo (PR #233, po kontrole CodeRabbit a odpovediach majiteľa). Pripomienky CodeRabbitu (všetky tri platné, opravené '
+     'v samostatnom commite): príloha D skladá stĺpec „Kde v zozname“ z `ids`, takže zobrazený odkaz sa nemôže líšiť od kontrolovaného; '
+     'rozsahy `TECH-01…11` a `R13–R19` sa rozbalia a overia po jednom ID; nález 266 má v manuálnom teste aj priamu nepodpísanú adresu '
+     'objektu v S3. Odpovede majiteľa: (1) poradie schválené: kolega K6, potom agent 167, potom K7; (2) odznak „overený účet“ je zámer '
+     '(potvrdený e-mail, Nastavenia, záložka Účet): R22 je rozhodnuté a nález 269 zatvorený; (3) pôvodné mapovanie onboardingu (252) majiteľ '
+     'nemá, zmapuje ho agent; (4) oprava scrollu na profile je na reálnom iPhone v poriadku; (5) nálezy 12 a 121 (`?tab=offers`) sa zatvorili '
+     'podľa R17 po overení, že parameter `tab` čítajú len profil a žiadosti a neznáme hodnoty ignorujú. Nový mechanizmus „zatvorené '
+     'rozhodnutím“ (`zatvorene_dalsie.py`, `CLOSED_SINCE`) pre nálezy, ktoré sa neopravujú v kóde. Do nálezu 257 pribudlo chýbajúce '
+     'pokrytie komentárov (úprava komentára má testy len na backende).'),
+    ('6. 11. 2026',
      'Vetva 166 (len zoznam, vychádza z `main` `ea9fb101`, teda po PR #232; čaká na PR). (1) Zápis štvrtej a piatej práce kolegu (dve dávky za '
      'sebou podľa dohody z 6. 11.): K4 (PR #231: nálezy 153, 178 a APP-05) a K5 (PR #232: nálezy 213, 136 a 134) sú zlúčené, nasadené na '
      'Railway, CI (`checks` aj `backend-postgres`) aj kontrola CodeRabbit prešli a manuálne testy majiteľa prešli; nálezy odišli z poradia '
