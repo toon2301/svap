@@ -16,7 +16,8 @@ nemôže ticho prestať sedieť.
 | `polozky_priprava.py` | Úlohy na prípravu ostrého nasadenia N1…. Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich sprístupňuje pod pôvodným názvom. |
 | `register.py` | Stav ID z `docs/testing/findings-register.md` (otvorené, zatvorené, čaká živé overenie). |
 | `stav.py` | Dátum a stav kódu, poradie práce, rozhodnutia, denník zmien. |
-| `hotove.py` | Nálezy opravené po prvom vydaní (`DONE_SINCE`), tabuľka PR a popis série Upozornenia. Samostatný súbor, aby žiadny súbor nepresiahol 500 riadkov; `stav.py` ich sprístupňuje pod pôvodnými názvami. |
+| `hotove.py` | Nálezy opravené po prvom vydaní do 5. 11. 2026 (`DONE_SINCE`), tabuľka PR a popis série Upozornenia. Samostatný súbor, aby žiadny súbor nepresiahol 500 riadkov; `stav.py` ich sprístupňuje pod pôvodnými názvami. |
+| `hotove_dalsie.py` | Nálezy opravené od 6. 11. 2026 (`DONE_SINCE_DALSIE`). Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |
 | `fronta.py` | Poradie prác na nálezoch po nasadení (dávky pre kolegu). Hotový nález sa odtiaľ odstráni. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
 
@@ -26,8 +27,8 @@ Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení 
 
 1. **Nový nález:** pridať do `NEW_ITEMS_DALSIE` v `polozky_nove_dalsie.py` (od 232; staršie sú v `NEW_ITEMS` v `polozky_nove.py`) s ďalším voľným číslom (čísla sa nikdy nemenia ani nepoužívajú znova).
    Nové ID v registri treba zaradiť do `register.py`.
-2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE` v `hotove.py`
-   (`n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
+2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py`
+   (staršie opravy sú v `DONE_SINCE` v `hotove.py`; `n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
    Čiastočne hotový nález ostáva otvorený: jeho text sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.
 3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS`.
 4. Posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
@@ -55,4 +56,4 @@ Dohoda s majiteľom z 5. 11. 2026; platí, kým ju majiteľ nezmení.
 - **Po každej práci kolegu** majiteľ pošle agentovi názov PR, krátko ako sa nález opravil a prípadné nové nálezy. Agent ich zapíše do
   zoznamu alebo opraví hneď podľa závažnosti.
 - **Zoznam:** agent ho aktualizuje v každej vetve a ak to nezvláda, hlási to. Hotový nález kolegu sa z `fronta.py` presunie do
-  `hotove.DONE_SINCE` (vetva `K1`, číslo PR, `zlucene=True` po zlúčení).
+  `hotove_dalsie.DONE_SINCE_DALSIE` (vetva `K1`, číslo PR, `zlucene=True` po zlúčení).

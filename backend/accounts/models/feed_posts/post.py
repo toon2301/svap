@@ -31,6 +31,8 @@ class FeedPost(FeedPostSharingMixin, models.Model):
     verejne viditeľnej ponuky/portfólio položky (aj cudzej – viď save())."""
 
     class PostType(models.TextChoices):
+        """Druh príspevku: voľný, alebo zdieľanie ponuky, položky portfólia či iného príspevku."""
+
         FREE_POST = "free_post", _("Voľný príspevok")
         SHARED_OFFER = "shared_offer", _("Zdieľaná ponuka")
         SHARED_PORTFOLIO_ITEM = "shared_portfolio_item", _("Zdieľané portfólio")
@@ -146,6 +148,8 @@ class FeedPost(FeedPostSharingMixin, models.Model):
     )
 
     class Meta:
+        """Názvy v administrácii, poradie od najnovšieho, obmedzenia v databáze a indexy feedu."""
+
         verbose_name = _("Príspevok na nástenke")
         verbose_name_plural = _("Príspevky na nástenke")
         ordering = ["-created_at", "-id"]
@@ -220,6 +224,7 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         ]
 
     def __str__(self):
+        """Krátky popis príspevku (ID, druh, autor) pre administráciu a logy."""
         return f"FeedPost #{self.id} ({self.post_type}) od {self.author_id}"
 
     def save(self, *args, **kwargs):
@@ -237,7 +242,11 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         ensure_text_within_limit(self.caption, field_label="Text príspevku")
         if self._state.adding:
             self._apply_shared_source()
-            super().save(*args, **kwargs)
+            # Zámok zdroja a INSERT v jednej transakcii: súbežné zmazanie zdroja sa zoradí
+            # so vznikom zdieľania namiesto chyby 500 pri COMMIT (nález 232).
+            with transaction.atomic():
+                self._lock_shared_feed_post_source()
+                super().save(*args, **kwargs)
             return
 
         refreshed = self._revalidate_changed_shared_source(

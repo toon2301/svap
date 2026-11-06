@@ -72,11 +72,17 @@ def _validation_error_code(exc: ValidationError):
 
 
 def _validation_error_response(exc: ValidationError) -> Response:
+    """Odpoveď 400 na `ValidationError` pri vytváraní príspevku.
+
+    Chýbajúci alebo neviditeľný zdroj zdieľania dostane vždy rovnakú odpoveď (kvôli enumerácii ID), ostatné chyby
+    text chyby a jej kód.
+    """
     code = _validation_error_code(exc)
     # Neviditeľný CUDZÍ zdroj zdieľania musí vyzerať rovnako ako neexistujúci –
     # inak by sa dalo z rozdielu v odpovedi vyčítať, ktoré ID existujú
     # (enumeration). Vlastný obsah sem nespadne: self-share kontrolu obchádza.
-    if code in SHARE_REASON_MESSAGES:
+    # Rovnako sa tvári zdroj, ktorý sa zmazal medzi načítaním a vložením zdieľania.
+    if code == "shared_source_missing" or code in SHARE_REASON_MESSAGES:
         return _shared_source_missing_response()
     return Response(
         {"error": " ".join(exc.messages), "code": code},
@@ -94,6 +100,13 @@ def _shared_source_missing_response() -> Response:
     """Jednotná odpoveď pre „zdroj neexistuje ALEBO naň nemáš prístup"."""
     return _bad_request(
         "Zdielany obsah nie je dostupny.", "shared_source_missing"
+    )
+
+
+def _post_not_found_response() -> Response:
+    """404 pre príspevok, ktorý neexistuje, nie je viditeľný alebo ho medzitým zmazal iný request."""
+    return Response(
+        {"error": "Prispevok nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
     )
 
 
@@ -294,9 +307,7 @@ def feed_post_detail_view(request, post_id: int):
     """
     post = visible_feed_posts(request.user).filter(pk=post_id).first()
     if post is None:
-        return Response(
-            {"error": "Prispevok nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
-        )
+        return _post_not_found_response()
 
     if request.method == "PATCH":
         if not request.user.is_authenticated:
@@ -323,7 +334,21 @@ def feed_post_detail_view(request, post_id: int):
                 {"error": "Na zmazanie prispevku nemas opravnenie."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        post.delete()
+        with transaction.atomic():
+            # Zámok riadku príspevku PRED odpojením zdieľaní a zmazaním. Zdieľanie vznikajúce súbežne
+            # si berie ten istý zámok, takže sa zoradí s týmto zmazaním: buď ho zmazanie vidí a odpojí,
+            # alebo ho zdieľanie nenájde a dostane jasnú chybu. Bez zámku sa cudzí kľúč kontroluje až
+            # pri COMMIT a jeden z requestov skončil chybou 500 (nález 232).
+            still_exists = (
+                FeedPost.objects.select_for_update()
+                .filter(pk=post.pk)
+                .values_list("pk", flat=True)
+                .first()
+            )
+            if still_exists is None:
+                # Medzitým ho zmazal iný request (napr. dvojklik).
+                return _post_not_found_response()
+            post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     serializer = FeedPostSerializer(post, context=_serializer_context(request, [post]))

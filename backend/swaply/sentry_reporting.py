@@ -20,23 +20,34 @@ def capture_reportable_exception(exception: BaseException, request: Any | None =
     Report an exception to Sentry with request context (no sensitive message in logs).
 
     Returns the Sentry event id when the SDK accepts the event, else None.
+
+    Chybu hlásenia (`Exception`) nepreniesie k volajúcemu: beží pri tvorbe odpovede
+    na chybu, takže zlyhanie hlásenia (chyba SDK, nečitateľný atribút požiadavky)
+    nesmie nahradiť odpoveď, ktorú mal klient dostať. Do logu ide len typ chyby
+    hlásenia, nie jej text.
     """
-    with sentry_sdk.push_scope() as scope:
-        if request is not None:
-            method = str(getattr(request, "method", "") or "")
-            path = str(getattr(request, "path", "") or "")
-            if method:
-                scope.set_tag("http.method", method)
-            if path:
-                scope.set_tag("http.route", path)
+    try:
+        # new_scope() nahrádza zastarané push_scope() (sentry-sdk 2.x): značky a
+        # používateľ platia len pre toto hlásenie a po výstupe sa zahodia.
+        with sentry_sdk.new_scope() as scope:
+            if request is not None:
+                method = str(getattr(request, "method", "") or "")
+                path = str(getattr(request, "path", "") or "")
+                if method:
+                    scope.set_tag("http.method", method)
+                if path:
+                    scope.set_tag("http.route", path)
 
-            user = getattr(request, "user", None)
-            if user is not None and getattr(user, "is_authenticated", False):
-                user_id = getattr(user, "id", None)
-                if user_id is not None:
-                    scope.set_user({"id": str(user_id)})
+                user = getattr(request, "user", None)
+                if user is not None and getattr(user, "is_authenticated", False):
+                    user_id = getattr(user, "id", None)
+                    if user_id is not None:
+                        scope.set_user({"id": str(user_id)})
 
-        return sentry_sdk.capture_exception(exception)
+            return sentry_sdk.capture_exception(exception)
+    except Exception as reporting_error:
+        logger.warning("Sentry reporting failed (%s)", type(reporting_error).__name__)
+        return None
 
 
 def log_handled_api_exception(

@@ -81,6 +81,32 @@ class FeedPostSharingMixin:
         elif self.post_type == self.PostType.SHARED_FEED_POST:
             self._snapshot_from_feed_post(self.shared_feed_post, overwrite=False)
 
+    def _lock_shared_feed_post_source(self) -> None:
+        """Zamkni zdrojový príspevok, na ktorý nové zdieľanie ukazuje, a over, že ešte existuje.
+
+        Volá sa po ``_apply_shared_source`` (tá zdieľanie sploští na koreň, takže ``shared_feed_post_id``
+        je príspevok, na ktorý cudzí kľúč naozaj ukazuje) a pred INSERTom, v jednej transakcii s ním.
+        Cudzí kľúč sa v PostgreSQL kontroluje až pri COMMIT, takže bez zámku sa zdieľanie a zmazanie zdroja
+        dali prekryť a jeden z requestov skončil chybou 500. Zámok sa zosúlaďuje so zámkom, ktorý si
+        zmazanie zdroja berie pred odpojením zdieľaní: zmazanie počká, kým sa zdieľanie potvrdí (a potom
+        ho odpojí), alebo zdieľanie počká na zmazanie a zdroj už nenájde.
+        """
+        source_id = self.shared_feed_post_id
+        if source_id is None:
+            return  # iný druh zdieľania alebo osirelé zdieľanie: nie je čo zamykať
+        # Výsledok je len potvrdenie, že riadok žije; ide o zámok (rovnaký idióm ako vo FeedPost.save()).
+        locked = (
+            type(self)
+            .objects.select_for_update()
+            .filter(pk=source_id)
+            .values_list("pk", flat=True)
+            .first()
+        )
+        if locked is None:
+            raise ValidationError(
+                "Zdieľaný príspevok už neexistuje.", code="shared_source_missing"
+            )
+
     def _snapshot_from_current_source(self, *, overwrite: bool) -> None:
         """Naplň snapshot podľa AKTUÁLNEHO post_type a jeho FK.
 

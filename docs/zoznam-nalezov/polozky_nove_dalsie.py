@@ -8,33 +8,6 @@ Pravidlá sú rovnaké: otvorený nález sa po oprave odstráni odtiaľto a zap�
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
 
 NEW_ITEMS_DALSIE = [
-    dict(n=232, bucket=P, imp=S_, eff=EM, pkg='Produkčná odolnosť aplikácie',
-         kratko='HTTP 500 pri zmazaní príspevku, ktorý sa práve zdieľa (súbeh na serveri, príčina potvrdená logom Railway)',
-         what='Celý beh Playwrightu po nasadení (1. 11. 2026, `main` `9e311839`): v `sharing-from-feed.spec.ts` (desktopový WebKit, '
-              '07:34:13 až 07:34:54 UTC) vypršalo čakanie na odpoveď `POST` zdieľania a soft kontrola upratania hlásila pri mazaní príspevku '
-              'HTTP 500 namiesto 204. Tri samostatné pokusy zdieľania potom prešli aj s upratovaním (3 z 3). Jeden zvyšok testovacieho '
-              'príspevku sa so súhlasom majiteľa zmazal natrvalo. Test nevytvoril blok `[E2E-EVIDENCE]`, takže chýbajú údaje o požiadavke '
-              '(ID, trvanie). Zdieľanie a mazanie sa v tom čase prekrývali s dlho visiacou požiadavkou (podobne ako pri 223). Potvrdené logom Railway (majiteľ, 1. 11. 2026): 07:34:53 UTC, '
-              '`DELETE /api/auth/feed/posts/460/` vrátil 500; PostgreSQL `ForeignKeyViolation` na obmedzení '
-              '`accounts_feedpost_shared_feed_post_id_…`: príspevok 460 bol ešte referencovaný iným záznamom v `accounts_feedpost`, teda '
-              'zdieľaním.',
-         note='Príčina je súbeh na serveri, nie len chyba testu. Zdieľanie (vytvorenie príspevku so `shared_feed_post`) a zmazanie jeho zdroja sa '
-              'môžu prekryť: `DELETE` (`accounts/views/feed_posts.py`, `post.delete()`) riadok zdroja nezamyká a vytvorenie zdieľania (tamže, '
-              '`transaction.atomic()` s `FeedPost.objects.create`) zdroj nezamyká tiež. Cudzí kľúč sa v PostgreSQL kontroluje až pri `COMMIT`, takže ak '
-              'sa zdieľanie potvrdí po tom, čo `delete()` zistil súvisiace záznamy, ale pred jeho `COMMIT`, zmazanie zlyhá s 500 (v opačnom poradí '
-              'zlyhá vytvorenie zdieľania). V E2E to najpravdepodobnejšie spôsobilo pomalé `POST` zdieľania: čakanie vypršalo a upratovanie zmazalo zdroj, kým server '
-              'zdieľanie ešte dokončoval. Skutočný používateľ to zažije len pri prekrytí oboch akcií v tej istej chvíli (zriedkavé), no 500 je '
-              'nesprávna odpoveď. Rovnaký vzorec je pravdepodobne aj pri zdieľaní ponuky a položky portfólia (`shared_offer`, '
-              '`shared_portfolio_item`; neskúšané). Moja skoršia skúška súbehu v dvoch vláknach (PostgreSQL 16) ukázala jednu stranu mechanizmu '
-              '(zlyhá zdieľanie) a pripúšťala druhú (zlyhá zmazanie); log Railway potvrdil druhú. Návrh opravy (samostatná vetva po 161, teraz sa '
-              'nerobí): v tej istej transakcii zamknúť riadok zdroja (`select_for_update`) pri vytvorení zdieľania aj pri zmazaní (zdieľanie sa '
-              'sploští na koreňový príspevok, zamykať treba ten, na ktorý cudzí kľúč skutočne ukazuje); keď zdroj už neexistuje, vrátiť jasnú 4xx '
-              'namiesto 500; k tomu test súbehu v dvoch vláknach na PostgreSQL. Dopad na E2E (Codex): upratovať zdieľanie pred zdrojom a 500 '
-              'nemaskovať opakovaním (poradie upratovania v `e2e/support/feed.ts`). Codex 1. 11. 2026 (`main` `583b94c0`): riziko poradia '
-              'upratovania potvrdené (najprv sa maže známe ID, až potom sa hľadajú ďalšie podľa značky, len jedna stránka zoznamu, stav GET sa '
-              'neoveruje); návrh malej E2E opravy čaká na súhlas majiteľa a serverový súbeh nezmení; oba špecy zdieľania prešli v novom celom '
-              'behu vo všetkých troch projektoch (9 kontrol upratania bez neúspešného stavu).',
-         dec=None, src='správa Codexa z 1. 11. 2026 a log Railway od majiteľa'),
     dict(n=233, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
          kratko='E2E nemá scenár pre fotku v správach, emoji, reset hesla a O nás / FAQ / Kontakt',
          what='Codex v celom behu po nasadení (1. 11. 2026) potvrdil, že kolekcia 738 testov nemá samostatný scenár pre: odoslanie fotky v '
@@ -70,18 +43,6 @@ NEW_ITEMS_DALSIE = [
               'obrazovky vo všetkých šiestich jazykoch, ochrana pred opakovaním, testy); dovtedy sa 2FA používateľom neponúka, takže jeho '
               'chýbanie bežným používateľom neškodí. Ak má byť pri štarte, patrí do vlny 1.',
          dec='ROZHODNUTIE R12', src='vetva 161'),
-    dict(n=236, bucket=P, imp=N, eff=ES, pkg='Produkčná odolnosť aplikácie',
-         kratko='Neznáma cesta pod `/ws/` skončí chybou 500 a výpisom v logu (asi po 1 s), aj bez prihlásenia',
-         what='Zistené pri meraní nálezu 9 (vetva 161): WebSocket na cestu, ktorú aplikácia nepozná (napr. `/ws/unknown/`), prejde kontrolou '
-              'originu a prihlásením (to len zapíše stav do `scope`) a až `URLRouter` vyhodí `ValueError: No route found for path ...`. '
-              '`daphne` to zapíše do logu ako „Exception inside application“ s celým výpisom a odpovie HTTP 500; v lokálnom meraní to trvalo '
-              'asi 1 s (pri známej ceste bez tokenu príde odpoveď `403` za milisekundy). Platí to aj bez tokenu, takže to môže vyvolať '
-              'ktokoľvek z internetu.',
-         note='Dopad je malý, no po nasadení ide o dobre známy šum: každé preskúmanie ciest vyrobí v logu výpis a drží spojenie asi '
-              'sekundu, čo prekryje skutočné chyby. Navrhovaná oprava (nerobí sa bez odsúhlasenia, je mimo zadania nálezu 9): doplniť do '
-              '`swaply/routing.py` záverečnú cestu, ktorá spojenie na neznámu cestu hneď zatvorí (napr. kódom 4404) bez výnimky, plus test. '
-              'Časové limity proxy (N8) to nenahradia.',
-         dec=None, src='vetva 161'),
     dict(n=238, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          kratko='zastarané npm balíky v `package-lock.json` (glob, abab, @opentelemetry/sdk-trace-base)',
          what='Kolega pri práci na nálezu 192 nahlásil zastarané npm balíky (5. 11. 2026). Overené v `frontend/package-lock.json` '
@@ -110,14 +71,6 @@ NEW_ITEMS_DALSIE = [
               '`jest.config.js`, potom overiť `tsc`, `build` a celý Jest. Žiadny z troch súborov nemá nad 500 riadkov. Mazanie len so '
               'súhlasom majiteľa.',
          dec=None, src='vetva 144, presunuté z nálezu 192'),
-    dict(n=241, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
-         kratko='nepoužívaný `backend/swaply/settings_test.py` (súrodenec nálezu 221)',
-         what='Súbor `backend/swaply/settings_test.py` nikto nepoužíva: odkazuje naň len konfigurácia (`backend/.coveragerc` v zozname '
-              '`omit` a `backend/pyproject.toml` vo výnimkách ruff) a text v starom reporte `CLEANUP_REPORT_FINAL.md`. Nahlásil kolega pri '
-              'práci na nálezu 221 (K2); agent to 5. 11. 2026 overil vyhľadávaním v celom repozitári.',
-         note='Návrh: zmazať súbor a jeho dva zápisy v konfigurácii, rovnako ako pri nálezu 221; staré reporty sú história. Nízka '
-              'závažnosť.',
-         dec=None, src='kolega pri vetve K2 (nález 221)'),
     dict(n=242, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
          kratko='pokrytie docstringami (cieľ 80 %) sa v repozitári nemeria; backend má asi 41 %',
          what='Cieľ 80 % dokumentačného pokrytia (docstringov) pochádza z pre-merge kontroly CodeRabbit, ktorá ho posudzuje len pri '
@@ -128,21 +81,11 @@ NEW_ITEMS_DALSIE = [
               'alebo to nechať ako pravidlo kontroly zmenených funkcií v PR a cieľ 80 % nepovažovať za pokrytie celého kódu. Súvisí s '
               'položkou DOC-03 v `docs/testing/findings-register.md`. Nahlásil kolega pri K2.',
          dec=None, src='kolega pri vetve K2'),
-    dict(n=243, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
-         kratko='E2E nestráži hlavičku `Cache-Control: no-store` na HTML dokumenty',
-         what='Hlavičku `Cache-Control: no-store` posiela na HTML dokumenty Next, lebo koreňový layout (`frontend/src/app/layout.tsx`) je '
-              '`force-dynamic`; zmazaný `middleware.ts` ju nikdy neposielal (nález 226). Hlavička určuje, či Safari pri tlačidle Späť '
-              'použije bfcache; návrat do feedu je navrhnutý podľa toho, že sa dokument načíta nanovo (komentár vo `feedReturnState.ts`), '
-              'preto jej zmena potichu zmení správanie Späť. Žiadny test hlavičku nestráži, takže ju zmení napríklad odstránenie '
-              '`force-dynamic` z layoutu.',
-         note='Návrh (E2E vlastní Codex): jeden kontrolný test, že odpoveď na stránku HTML nesie `Cache-Control` s `no-store` (verejná '
-              'stránka aj stránka po prihlásení), na produkčnom builde. Nízka priorita; návrh vznikol pri K2.',
-         dec=None, src='kolega pri vetve K2 (nález 226)'),
     dict(n=244, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
          kratko='nepripnuté závislosti backendu: build na Railway sa môže zmeniť bez zmeny kódu',
          what='Incident z 5. 11. 2026 (nález 240) vznikol, lebo `backend/requirements.txt` pripína presné verzie len časti balíkov. '
-              'Rozsah alebo nič majú: `celery[redis]>=5.4,<6` (a cez neho `kombu`, `billiard`, `amqp`, `vine`), `sentry-sdk[django]` '
-              '(bez verzie), `cryptography>=42.0.0`, `pywebpush>=2.0,<3`, `pillow-heif>=1.3,<2` a `django-anymail[resend]>=10.3,<16`, '
+              'Rozsah alebo nič majú: `celery[redis]>=5.4,<6` (a cez neho `kombu`, `billiard`, `amqp`, `vine`), `sentry-sdk[django]>=2,<3` '
+              '(hranica pribudla vo vetve 165, nález 214; predtým bez verzie), `cryptography>=42.0.0`, `pywebpush>=2.0,<3`, `pillow-heif>=1.3,<2` a `django-anymail[resend]>=10.3,<16`, '
               'plus všetky tranzitívne balíky. Každý nový build (Railway aj CI) môže nainštalovať inú verziu, takže sa produkcia môže '
               'pokaziť bez zmeny kódu; CI to nezachytí, ak testy danú cestu nepoužijú.',
          note='Návrh: zámok závislostí (napr. `pip-compile` z `requirements.in`, alebo súbor `constraints.txt` vytvorený z overeného '
@@ -150,4 +93,40 @@ NEW_ITEMS_DALSIE = [
               'pravidelnej kontrole zraniteľností z nálezu 194. Dočasne pomáha `celery[redis]` s pripnutým `redis` (nález 240) a nový '
               'test `test_celery_redis_compat.py`.',
          dec=None, src='vetva 164 (incident z nálezu 240)'),
+    dict(n=245, bucket=P, imp=S_, eff=EM, pkg='Produkčná odolnosť aplikácie',
+         kratko='obnova prihlásenia v prehliadači: pri chýbajúcom CSRF cookie skončí 403, bez časového limitu a bez opakovania',
+         what='Kontrola logov Railway (majiteľ, 6. 11. 2026, pády E2E z 5. 11.) ukázala, že dvakrát skončila obnova prihlásenia '
+              '(`POST /api/token/refresh/`) kódom 403 pre chýbajúce CSRF cookie, a objavili sa aj 401. Rozbor kódu (agent, 6. 11. 2026): '
+              '(1) Server najprv overí, či neprišlo nič (hlavička ani cookie; vtedy odpovie „CSRF token missing“), a až potom Django '
+              'vyžaduje cookie `csrftoken` (`EnforceCSRFMiddleware` v `swaply/middleware.py`); hlásenie o chýbajúcom cookie teda znamená, '
+              'že hlavička `X-CSRFToken` prišla a cookie nie. (2) Prehliadač drží CSRF token aj v pamäti stránky (`csrfTokenFromResponse` '
+              'v `frontend/src/utils/csrf.ts`, 43 riadkov) a `getCsrfToken()` ho uprednostňuje pred cookie. Keď cookie zmizne alebo sa '
+              'neuloží (napr. odhlásenie posiela `Clear-Site-Data: "cookies"`, ktoré zmaže všetky cookies), obnova '
+              '(`ensureSessionRefreshed` vo `frontend/src/lib/api.ts`, 912 riadkov) token znova nenačíta a pošle hlavičku bez cookie. '
+              '(3) Ostatné zapisujúce požiadavky cez `api` dostanú po CSRF 403 jedno opakovanie s novým tokenom '
+              '(`shouldRetryWithFreshCsrf`), obnova nie: používa holý `axios` a 403 skončí ako `transient_failure`. (4) Načítanie '
+              'tokenu, samotná obnova aj kontrolná požiadavka po 401 používajú holý `axios` bez časového limitu (inštancia `api` má '
+              '30 s) a `fetchCsrfToken` zlyhanie potichu zachytí.',
+         note='Súvislosť s nálezom 223: zastavenia požiadaviek (10 až 26 s) to nevysvetľuje a nie je preukázané, že za pády E2E môže '
+              'práve toto. V zázname Codexa (29. 10. až 5. 11. 2026) sa však 401 a 403 pri obnove vyskytujú len vo WebKite (13 zo 83 '
+              'neúspešných pokusov; v Chromiu 0), pričom WebKit je engine Safari na iPhone. Ďalší krok: dôkazy z PR #229 (názvy cookies a '
+              'prítomnosť `X-CSRFToken` pri 401 a 403 na obnove) pri najbližšom behu Codexa. Ak sa potvrdí, že pri odoslanej hlavičke '
+              'cookie chýba, návrh opravy: v `csrf.ts` brať pri same-origin cookie ako zdroj pravdy (token načítať znova, keď cookie '
+              'chýba) a pridať časový limit k `fetchCsrfToken`; v `api.ts` jedno opakovanie obnovy po CSRF 403. `api.ts` má 912 '
+              'riadkov (limit 500), takže jeho zmena vyžaduje výnimku od majiteľa alebo rozdelenie súboru; oprava `csrf.ts` je možná '
+              'samostatne a testovateľná Jestom (`frontend/src/utils/__tests__/csrf.test.ts`).',
+         dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom a tabuľka Codexa (pri nálezu 223)'),
+    dict(n=246, bucket=P, imp=N, eff=EM, pkg='Produkčná odolnosť aplikácie',
+         kratko='rovnaký súbeh zdieľania a zmazania aj pri ponuke a položke portfólia (zmazanie skončí chybou)',
+         what='Sonda na PostgreSQL 16 (agent, 6. 11. 2026; dočasný test, nie je v repozitári): keď sa počas zmazania ponuky '
+              '(`OfferedSkill`) alebo položky portfólia (`PortfolioItem`) potvrdí zdieľanie tohto obsahu (`FeedPost.shared_offer` a '
+              '`shared_portfolio_item`, obe `SET_NULL`), zdieľanie dopadne 201 a zmazanie padne na `IntegrityError` (porušenie cudzieho '
+              'kľúča pri COMMIT), teda v API na HTTP 500. Je to ten istý mechanizmus ako pri nálezu 232, ktorý je opravený len pre '
+              'zdieľanie príspevku. Zmazanie ponuky je v `accounts/views/skills.py` (`skill.delete()`), zmazanie položky portfólia v '
+              '`portfolio/views.py` (`item.delete()`); sonda volala `delete()` priamo cez ORM, takže cestu cez API nemerala.',
+         note='Dopad je malý (musia sa prekryť dve akcie dvoch používateľov), no 500 je nesprávna odpoveď. Návrh: rovnaký zámok ako '
+              'pri nálezu 232. `FeedPost.save()` nech pri vzniku zdieľania zamkne (`select_for_update`) aj ponuku alebo položku '
+              'portfólia, na ktorú kľúč ukazuje, obe zmazania nech zamknú riadok pred `delete()` a pribudne test súbehu s dvoma '
+              'vláknami na PostgreSQL pre každý druh (rovnaký postup ako `accounts/test/test_feed_share_delete_race.py`).',
+         dec=None, src='vetva 165 (sonda pri nálezu 232)'),
 ]

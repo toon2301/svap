@@ -3,7 +3,7 @@
 
 Poradie je návrh agenta (malé, lokálne zmeny s nízkym rizikom, ktoré nekolidujú s prácou pred nasadením); schvaľuje majiteľ.
 Súbor sa upravuje len pri zmene poradia alebo keď je nález hotový:
-- keď je nález hotový, záznam sa odstráni odtiaľto a nález sa presunie do `hotove.DONE_SINCE`;
+- keď je nález hotový, záznam sa odstráni odtiaľto a nález sa presunie do `hotove_dalsie.DONE_SINCE_DALSIE`;
 - stav riešenia je voliteľný: ak sa zapíše, vyplnia sa spolu `kto`, `stav` (`STAV_ROZROBENE` alebo `STAV_CAKA`) a `od` (dátum).
 
 Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v kóde pracuje vždy len jeden a začiatok aj koniec práce
@@ -22,13 +22,6 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA_PO_NASADENI = [
-    dict(n='241', co='Nepoužívaný súbor `backend/swaply/settings_test.py` (súrodenec nálezu 221).',
-         preco='Zahrievacie, backend: žiadny import ho nepoužíva; odkazuje naň len konfigurácia (`.coveragerc`, `pyproject.toml`) a '
-               'starý report. Rovnaký postup ako pri 221: zmazať súbor a jeho dva zápisy v konfigurácii.'),
-    dict(n='103', co='Mŕtvy súbor `SkillModals.tsx` (428 riadkov), nikde nepoužitý.',
-         preco='Frontend: nikto ho neimportuje; overí sa `tsc`, buildom a Jestom.'),
-    dict(n='58', co='`skillActionError.ts` (aj s testom) patrí k hooku `useOwnProfileOfferActions`, nie do `components/`.',
-         preco='Frontend: presun jedného súboru a jedného importu; overí sa `tsc` a Jestom.'),
     dict(n='153', co='`OfferWatchSettingsMobile.tsx`: `inert` sa nastavuje imperatívne, v Reacte 19 má byť prop.',
          preco='Prvá skutočná zmena kódu: jeden súbor (268 riadkov), správanie stráži existujúci test '
                '`OfferWatchSettingsMobile.motion.test.tsx`.'),
