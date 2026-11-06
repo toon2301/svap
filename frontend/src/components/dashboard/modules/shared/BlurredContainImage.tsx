@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useProtectedImage } from './useProtectedImage';
 
 type BlurredContainImageProps = {
@@ -12,8 +12,14 @@ type BlurredContainImageProps = {
   imageClassName?: string;
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];
   decoding?: React.ImgHTMLAttributes<HTMLImageElement>['decoding'];
+  /**
+   * Volané, keď sa obrázok nepodarilo načítať: verejná adresa (napr. zmazaná fotka) aj chránený obrázok, ktorého
+   * stiahnutie zlyhalo. Rodič tak môže namiesto pokazeného obrázka ukázať náhradu; bez neho ostáva len neutrálne pozadie.
+   */
+  onError?: () => void;
 };
 
+/** Obrázok vložený do rámu cez `object-contain` s rozmazaným pozadím; zlyhanie načítania hlási cez `onError`. */
 export default function BlurredContainImage({
   src,
   alt,
@@ -21,11 +27,21 @@ export default function BlurredContainImage({
   imageClassName = '',
   loading,
   decoding = 'async',
+  onError,
 }: BlurredContainImageProps) {
   // Chránený portfolio obrázok načítame raz; rovnakú object URL použijeme pre
   // rozmazané pozadie aj hlavný obrázok. Verejné obrázky prejdú priamo.
-  const { resolvedSrc } = useProtectedImage(src);
+  const { resolvedSrc, isError } = useProtectedImage(src);
   const imageProps = { src: resolvedSrc ?? '', loading, decoding };
+
+  // Najnovší `onError` bez toho, aby jeho nová identita pri každom vykreslení znovu spúšťala efekt nižšie.
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
+  // Chránený obrázok, ktorého stiahnutie zlyhalo, sa nevykreslí vôbec (nie je z čoho), takže zlyhanie hlási hook.
+  useEffect(() => {
+    if (isError) onErrorRef.current?.();
+  }, [isError]);
 
   return (
     <div className={`h-full w-full overflow-hidden bg-gray-100 dark:bg-[#0e0e0f] ${className}`}>
@@ -44,6 +60,7 @@ export default function BlurredContainImage({
               {...imageProps}
               alt={alt}
               className={`absolute inset-0 h-full w-full object-contain ${imageClassName}`}
+              onError={onError}
             />
           </>
         ) : null}

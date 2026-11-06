@@ -22,6 +22,7 @@
  * zdieľaná ponuka bez fotky vyzerá ako ponuka bez fotky na profile.
  */
 
+import { useState } from 'react';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
@@ -96,6 +97,10 @@ function MissingImage({ type }: { type: SharedContentCard['type'] }) {
   );
 }
 
+/**
+ * Jedna karta zdieľaného obsahu (ponuka, portfólio alebo príspevok). Náhľad, ktorý sa nepodarilo načítať (napr. po
+ * zmazaní pôvodnej fotky), nahrádza náhradou namiesto pokazeného obrázka.
+ */
 export default function SharedContentPreviewCard({
   data,
   hideOwner = false,
@@ -126,11 +131,17 @@ export default function SharedContentPreviewCard({
   onOpenPostPhoto?: () => void;
 }) {
   const { t, locale } = useLanguage();
+  // Adresa náhľadu, ktorú sa nepodarilo načítať. Porovnáva sa s aktuálnou adresou, takže karta, ktorej sa náhľad
+  // zmení na inú fotku, chybu nezdedí.
+  const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
   if (!data) return null;
 
   const isPost = data.type === 'feed_post';
   const isOffer = data.type === 'offer';
   const unavailable = data.unavailable === true;
+  const thumbnailFailed = Boolean(data.thumbnailUrl) && failedThumbnail === data.thumbnailUrl;
+  /** Náhľad sa nenačítal (napr. pôvodná fotka je zmazaná): karta ukáže náhradu namiesto pokazeného obrázka. */
+  const handleThumbnailError = () => setFailedThumbnail(data.thumbnailUrl ?? null);
   // Spoločný helper s dialógom zdieľania – inak by používateľ pri zdieľaní
   // videl inú cenu než tú, čo o chvíľu pristane vo feede.
   const priceLabel = formatOfferPriceLabel(t, locale, data.price);
@@ -157,7 +168,7 @@ export default function SharedContentPreviewCard({
     ) : null;
 
   let photo = null;
-  if (data.thumbnailUrl) {
+  if (data.thumbnailUrl && !thumbnailFailed) {
     // Rámec má PEVNÚ výšku a fotka sa doň vkladá cez `object-contain`
     // s rozmazaným pozadím – ten istý `BlurredContainImage`, aký používa
     // karusel príspevku. `object-cover` by fotku orezal.
@@ -171,18 +182,32 @@ export default function SharedContentPreviewCard({
             aria-label={t('feed.imageOpen', 'Otvoriť fotku na celú obrazovku')}
             className="block h-full w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-purple-400/60"
           >
-            <BlurredContainImage src={data.thumbnailUrl} alt="" loading="lazy" />
+            <BlurredContainImage
+              src={data.thumbnailUrl}
+              alt=""
+              loading="lazy"
+              onError={handleThumbnailError}
+            />
           </button>
         ) : (
-          <BlurredContainImage src={data.thumbnailUrl} alt="" loading="lazy" />
+          <BlurredContainImage
+            src={data.thumbnailUrl}
+            alt=""
+            loading="lazy"
+            onError={handleThumbnailError}
+          />
         )}
         {typeBadge}
       </div>
     );
-  } else if (!isPost) {
+  } else if (!isPost && !(unavailable && thumbnailFailed)) {
     // Ponuka a portfólio si držia tvar dlaždice aj bez fotky – náhrada je tá
     // istá ako na pôvodnej karte. Zdieľaný príspevok nerezervuje nič: prázdny
     // rámec by ho len natiahol.
+    //
+    // Zlyhaný náhľad sa správa ako chýbajúci (zmazaná fotka): ponuka a portfólio
+    // dostanú náhradu, príspevok nič. Výnimka je nedostupný zdroj so zlyhaným
+    // náhľadom: `photo` ostáva `null`, takže platí ikona nedostupného zdroja nižšie.
     photo = (
       <div className={`relative w-full ${PHOTO_FRAME}`}>
         <MissingImage type={data.type} />
@@ -278,7 +303,10 @@ export default function SharedContentPreviewCard({
       <div data-testid="feed-shared-unavailable" className={frameClass}>
         {photo ?? (
           <div className={`relative w-full ${PHOTO_FRAME}`}>
-            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500">
+            <div
+              data-testid="feed-shared-unavailable-icon"
+              className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500"
+            >
               <UnavailableIcon />
             </div>
           </div>
