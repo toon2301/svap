@@ -78,12 +78,6 @@ export default function OfferWatchSettingsMobile({
 
   useModalFocusTrap(isPresent && !deleteDialogOpen, rootRef);
 
-  // `pointer-events: none` zastaví len ťuknutia; `inert` vyradí vysúvajúcu sa obrazovku aj z Tab a zo čítačky obrazovky.
-  // Atribút sa nastavuje priamo: typy Reactu 18 ho nepoznajú a React 19 by prázdny reťazec vyhodnotil ako „nie“.
-  useEffect(() => {
-    rootRef.current?.toggleAttribute('inert', !isPresent);
-  }, [isPresent]);
-
   useEffect(() => {
     if (!isPresent) return;
     const previousOverflow = document.body.style.overflow;
@@ -209,6 +203,8 @@ export default function OfferWatchSettingsMobile({
         aria-label={t('offerWatch.title', 'Sledovanie')}
         aria-labelledby={OFFER_WATCH_MOBILE_TITLE_ID}
         aria-hidden={deleteDialogOpen || undefined}
+        // `pointer-events: none` zastaví len ťuknutia; `inert` vyradí vysúvajúcu sa obrazovku aj z Tab a zo čítačky obrazovky.
+        inert={!isPresent}
         data-testid='offer-watch-mobile-screen'
       >
         {view.kind === 'list' || shouldShowLoadingList ? (
