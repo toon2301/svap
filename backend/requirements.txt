@@ -27,5 +27,6 @@ celery[redis]>=5.4,<6
 django-celery-beat==2.9.0
 cryptography>=42.0.0
 pywebpush>=2.0,<3
-sentry-sdk[django]
+# Hlavná verzia 3 môže odstrániť API, ktoré kód používa (swaply/sentry_reporting.py, settings.py); prechod na ňu je samostatná úloha.
+sentry-sdk[django]>=2,<3
 django-anymail[resend]>=10.3,<16
