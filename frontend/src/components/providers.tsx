@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
+import { MotionConfig } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -22,6 +23,16 @@ function getQueryErrorStatus(error: unknown): number | null {
   return typeof status === 'number' ? status : null;
 }
 
+/**
+ * Spoločné providery celej aplikácie (React Query, prihlásenie, jazyk, téma, hlásenia).
+ *
+ * `MotionConfig reducedMotion="user"` robí z nastavenia „Znížiť pohyb“ v systéme (iOS, macOS, Windows, Android)
+ * jedno pravidlo pre všetky animácie framer-motion naraz: pozičné a transformačné animácie (posun, mierka,
+ * rozmery) sa vtedy vykonajú okamžite, priehľadnosť a farba sa animujú ďalej. Bez neho knižnica nastavenie
+ * ignoruje (predvolene `never`). Nastavenie platí len pre `motion` komponenty: CSS animácie riadi globálny
+ * blok `prefers-reduced-motion` v `globals.css` a plynulé posúvanie cez JavaScript (`behavior: 'smooth'`) sa
+ * ním neriadi.
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
   const { isMobile, isResolved } = useIsMobileState();
   const useMobileToastLayout = isResolved && isMobile;
@@ -51,7 +62,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         <LanguageProvider>
           <ThemeProvider>
-            {children}
+            <MotionConfig reducedMotion="user">
+              {children}
+            </MotionConfig>
           </ThemeProvider>
         </LanguageProvider>
         {mounted && createPortal(
