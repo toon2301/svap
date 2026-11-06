@@ -121,6 +121,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='feedpost',
-            constraint=models.CheckConstraint(check=models.Q(models.Q(('post_type', 'free_post'), ('shared_offer__isnull', True), ('shared_portfolio_item__isnull', True), models.Q(('caption', ''), _negated=True)), models.Q(('image_status', ''), ('post_type', 'shared_offer'), ('shared_portfolio_item__isnull', True), models.Q(('shared_title', ''), _negated=True)), models.Q(('image_status', ''), ('post_type', 'shared_portfolio_item'), ('shared_offer__isnull', True), models.Q(('shared_title', ''), _negated=True)), _connector='OR'), name='feed_post_type_consistency'),
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('post_type', 'free_post'), ('shared_offer__isnull', True), ('shared_portfolio_item__isnull', True), models.Q(('caption', ''), _negated=True)), models.Q(('image_status', ''), ('post_type', 'shared_offer'), ('shared_portfolio_item__isnull', True), models.Q(('shared_title', ''), _negated=True)), models.Q(('image_status', ''), ('post_type', 'shared_portfolio_item'), ('shared_offer__isnull', True), models.Q(('shared_title', ''), _negated=True)), _connector='OR'), name='feed_post_type_consistency'),
         ),
     ]

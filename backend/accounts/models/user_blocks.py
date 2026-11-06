@@ -32,7 +32,7 @@ class UserBlock(models.Model):
                 name="unique_user_block",
             ),
             models.CheckConstraint(
-                check=~models.Q(blocker=models.F("blocked_user")),
+                condition=~models.Q(blocker=models.F("blocked_user")),
                 name="user_block_cannot_target_self",
             ),
         ]

@@ -60,7 +60,7 @@ class PhotoReport(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     Q(offer_image__isnull=False, reported_user__isnull=True)
                     | Q(
                         offer_image__isnull=True,
@@ -71,7 +71,7 @@ class PhotoReport(models.Model):
                 name="photo_report_has_exactly_one_target",
             ),
             models.CheckConstraint(
-                check=Q(reported_user__isnull=True)
+                condition=Q(reported_user__isnull=True)
                 | ~Q(reported_user=models.F("reported_by")),
                 name="photo_report_cannot_report_own_avatar",
             ),
@@ -189,7 +189,7 @@ class FavoriteUser(models.Model):
                 name="unique_favorite_user_per_owner",
             ),
             models.CheckConstraint(
-                check=~models.Q(user=models.F("favorite_user")),
+                condition=~models.Q(user=models.F("favorite_user")),
                 name="favorite_user_cannot_point_to_self",
             ),
         ]
@@ -244,7 +244,7 @@ class UserReport(models.Model):
                 name="unique_user_report_per_reporter",
             ),
             models.CheckConstraint(
-                check=~models.Q(reported_user=models.F("reported_by")),
+                condition=~models.Q(reported_user=models.F("reported_by")),
                 name="user_report_cannot_report_self",
             ),
         ]

@@ -45,18 +45,18 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='bugreport',
-            constraint=models.CheckConstraint(check=models.Q(('category__in', ['not_working', 'visual', 'performance', 'other'])), name='bug_report_category_valid'),
+            constraint=models.CheckConstraint(condition=models.Q(('category__in', ['not_working', 'visual', 'performance', 'other'])), name='bug_report_category_valid'),
         ),
         migrations.AddConstraint(
             model_name='bugreport',
-            constraint=models.CheckConstraint(check=models.Q(('status__in', ['new', 'triaged', 'in_progress', 'resolved', 'closed'])), name='bug_report_status_valid'),
+            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['new', 'triaged', 'in_progress', 'resolved', 'closed'])), name='bug_report_status_valid'),
         ),
         migrations.AddConstraint(
             model_name='bugreport',
-            constraint=models.CheckConstraint(check=models.Q(('priority__in', ['low', 'normal', 'high', 'critical'])), name='bug_report_priority_valid'),
+            constraint=models.CheckConstraint(condition=models.Q(('priority__in', ['low', 'normal', 'high', 'critical'])), name='bug_report_priority_valid'),
         ),
         migrations.AddConstraint(
             model_name='bugreport',
-            constraint=models.CheckConstraint(check=models.Q(('device_type__in', ['unknown', 'mobile', 'desktop', 'tablet'])), name='bug_report_device_type_valid'),
+            constraint=models.CheckConstraint(condition=models.Q(('device_type__in', ['unknown', 'mobile', 'desktop', 'tablet'])), name='bug_report_device_type_valid'),
         ),
     ]

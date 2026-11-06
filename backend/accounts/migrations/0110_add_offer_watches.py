@@ -67,7 +67,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('slot__gte', 1), ('slot__lte', 5)), name='acc_watch_slot_range'),
+            constraint=models.CheckConstraint(condition=models.Q(('slot__gte', 1), ('slot__lte', 5)), name='acc_watch_slot_range'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
@@ -75,27 +75,27 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('country_code__in', ('SK', 'CZ', 'PL', 'HU', 'AT', 'DE'))), name='acc_watch_supported_country'),
+            constraint=models.CheckConstraint(condition=models.Q(('country_code__in', ('SK', 'CZ', 'PL', 'HU', 'AT', 'DE'))), name='acc_watch_supported_country'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('category', ''), _negated=True), name='acc_watch_category_required'),
+            constraint=models.CheckConstraint(condition=models.Q(('category', ''), _negated=True), name='acc_watch_category_required'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('subcategory', ''), _negated=True), name='acc_watch_subcategory_required'),
+            constraint=models.CheckConstraint(condition=models.Q(('subcategory', ''), _negated=True), name='acc_watch_subcategory_required'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('price_min__isnull', True), ('price_min__gte', 0), _connector='OR'), name='acc_watch_price_min_nonneg'),
+            constraint=models.CheckConstraint(condition=models.Q(('price_min__isnull', True), ('price_min__gte', 0), _connector='OR'), name='acc_watch_price_min_nonneg'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('price_max__isnull', True), ('price_max__gte', 0), _connector='OR'), name='acc_watch_price_max_nonneg'),
+            constraint=models.CheckConstraint(condition=models.Q(('price_max__isnull', True), ('price_max__gte', 0), _connector='OR'), name='acc_watch_price_max_nonneg'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',
-            constraint=models.CheckConstraint(check=models.Q(('price_min__isnull', True), ('price_max__isnull', True), ('price_min__lte', models.F('price_max')), _connector='OR'), name='acc_watch_price_order'),
+            constraint=models.CheckConstraint(condition=models.Q(('price_min__isnull', True), ('price_max__isnull', True), ('price_min__lte', models.F('price_max')), _connector='OR'), name='acc_watch_price_order'),
         ),
         migrations.AddConstraint(
             model_name='offerwatch',

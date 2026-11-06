@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="userreport",
             constraint=models.CheckConstraint(
-                check=models.Q(
+                condition=models.Q(
                     ("reported_user", models.F("reported_by")), _negated=True
                 ),
                 name="user_report_cannot_report_self",

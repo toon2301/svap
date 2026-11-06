@@ -66,14 +66,14 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="offerwatch",
             constraint=models.CheckConstraint(
-                check=models.Q(price_min__isnull=True) | models.Q(price_min__gt=0),
+                condition=models.Q(price_min__isnull=True) | models.Q(price_min__gt=0),
                 name="acc_watch_price_min_positive",
             ),
         ),
         migrations.AddConstraint(
             model_name="offerwatch",
             constraint=models.CheckConstraint(
-                check=models.Q(price_max__isnull=True) | models.Q(price_max__gt=0),
+                condition=models.Q(price_max__isnull=True) | models.Q(price_max__gt=0),
                 name="acc_watch_price_max_positive",
             ),
         ),
