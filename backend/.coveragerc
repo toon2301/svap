@@ -13,7 +13,6 @@ omit =
     */setup_email.py
     */setup_redis.py
     swaply/settings_production.py
-    swaply/settings_test.py
     swaply/settings.py
     swaply/asgi.py
     swaply/wsgi.py
