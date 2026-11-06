@@ -325,7 +325,6 @@ describe('modul podľa adresy', () => {
     expect(activeModule()).toBe('home');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
   it('desktop: do localStorage sa zapíše Nástenka, nie celostránkový detail príspevku', async () => {
@@ -419,14 +418,12 @@ describe('adresy, ktoré krok ignoruje', () => {
   it('nepoznaná adresa nezruší zobrazený cudzí profil', async () => {
     await renderDashboard(false, FOREIGN_PROFILE);
     act(() => routerProps().onViewUserProfile?.(55, 'jana', summary));
-    expect(routerProps().viewedUserSummary).toEqual(summary);
 
     await popTo('/dashboard/neexistuje');
 
     expect(activeModule()).toBe('user-profile');
     expect(routerProps().viewedUserId).toBe(55);
     expect(routerProps().viewedUserSlug).toBe('jana');
-    expect(routerProps().viewedUserSummary).toEqual(summary);
   });
 });
 
@@ -514,22 +511,19 @@ describe('profil v adrese', () => {
     expect(activeModule()).toBe('portfolio-create');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
-  it('krok z profilu na iný modul zahodí zobrazeného používateľa aj jeho súhrn', async () => {
+  it('krok z profilu na iný modul zahodí zobrazeného používateľa', async () => {
     await renderDashboard(false, FOREIGN_PROFILE);
     act(() => routerProps().onViewUserProfile?.(55, 'jana', summary));
     expect(routerProps().viewedUserId).toBe(55);
     expect(routerProps().viewedUserSlug).toBe('jana');
-    expect(routerProps().viewedUserSummary).toEqual(summary);
 
     await popTo('/dashboard/settings');
 
     expect(activeModule()).toBe('settings');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
   it('podstránka úpravy profilu je modul profil a zobrazeného používateľa zahodí', async () => {
@@ -541,10 +535,9 @@ describe('profil v adrese', () => {
     expect(activeModule()).toBe('profile');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
-  it('krok z jedného cudzieho profilu na druhý (ID) zahodí súhrn a slug', async () => {
+  it('krok z jedného cudzieho profilu na druhý (ID) zahodí slug predošlého profilu', async () => {
     await renderDashboard(false, FOREIGN_PROFILE);
     act(() => routerProps().onViewUserProfile?.(55, 'jana', summary));
 
@@ -553,10 +546,9 @@ describe('profil v adrese', () => {
     expect(activeModule()).toBe('user-profile');
     expect(routerProps().viewedUserId).toBe(56);
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
-  it('krok z cudzieho profilu na iný profil (slug) zahodí ID a súhrn', async () => {
+  it('krok z cudzieho profilu na iný profil (slug) zahodí ID predošlého profilu', async () => {
     await renderDashboard(false, FOREIGN_PROFILE);
     act(() => routerProps().onViewUserProfile?.(55, 'jana', summary));
 
@@ -565,7 +557,6 @@ describe('profil v adrese', () => {
     expect(activeModule()).toBe('user-profile');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBe('peter-kovac');
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
   it('vlastný profil podľa slugu sa zobrazí ako modul profil', async () => {

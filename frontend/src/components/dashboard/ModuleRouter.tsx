@@ -71,7 +71,6 @@ interface ModuleRouterProps {
   /** Profil sa nepodarilo načítať (nie 404) – ukáže sa chyba s novým pokusom. */
   viewedUserLoadError?: boolean;
   onRetryViewedUserLoad?: () => void;
-  viewedUserSummary?: SearchUserResult | null;
   onEditProfileClick?: () => void;
   onViewUserProfile?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
   highlightedSkillId?: number | null;

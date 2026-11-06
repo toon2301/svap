@@ -47,7 +47,6 @@ export type DashboardModuleContentProps = {
     | 'viewedUserNotFound'
     | 'viewedUserLoadError'
     | 'retryViewedUserLoad'
-    | 'viewedUserSummary'
   >;
   navigation: Pick<
     DashboardNavigationProps,
@@ -167,7 +166,6 @@ export default function DashboardModuleContent({
       viewedUserNotFound={userProfile.viewedUserNotFound}
       viewedUserLoadError={userProfile.viewedUserLoadError}
       onRetryViewedUserLoad={userProfile.retryViewedUserLoad}
-      viewedUserSummary={userProfile.viewedUserSummary}
       onEditProfileClick={navigation.handleEditProfileClick}
       onViewUserProfile={navigation.handleViewUserProfileFromSearch}
       highlightedSkillId={highlighting.highlightedSkillId}

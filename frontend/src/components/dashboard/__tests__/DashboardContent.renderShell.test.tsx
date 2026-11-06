@@ -414,7 +414,7 @@ describe('sada props pre podriadené komponenty', () => {
       'setIsInSubcategories', 'setIsPersonalAccountModalOpen', 'setIsSkillDescriptionModalOpen',
       'setIsSkillsCategoryModalOpen', 'setSelectedSkillsCategory', 'standardCategories',
       'targetUserIdForMessages', 'user', 'viewedUserId', 'viewedUserLoadError', 'viewedUserNotFound',
-      'viewedUserSlug', 'viewedUserSummary',
+      'viewedUserSlug',
     ]);
   });
 
@@ -509,7 +509,6 @@ describe('sada props pre podriadené komponenty', () => {
       viewedUserSlug: null,
       viewedUserNotFound: false,
       viewedUserLoadError: false,
-      viewedUserSummary: null,
       highlightedSkillId: null,
       ownProfileTab: 'offers',
       offerIdForReviews: null,

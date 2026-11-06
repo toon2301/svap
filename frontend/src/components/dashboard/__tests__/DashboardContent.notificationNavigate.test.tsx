@@ -335,13 +335,13 @@ describe('žiadosti (requests)', () => {
 });
 
 describe('zobrazený používateľ', () => {
-  const summary = { id: 42, username: 'anna' } as unknown as SearchUserResult;
+  const summary = { id: 42, username: 'anna', slug: 'anna' } as unknown as SearchUserResult;
 
   async function withViewedUser() {
     await renderDashboard();
     act(() => routerProps().onViewUserProfile?.(42, 'anna', summary));
     expect(routerProps().viewedUserId).toBe(42);
-    expect(routerProps().viewedUserSummary).toBe(summary);
+    expect(routerProps().viewedUserSlug).toBe('anna');
   }
 
   it('číselný identifikátor nastaví id a zruší slug', async () => {
@@ -393,23 +393,23 @@ describe('zobrazený používateľ', () => {
     expect(routerProps().viewedUserSlug).toBe('anna');
   });
 
-  it('prechod na iný profil zahodí zhrnutie predošlého', async () => {
+  it('slug predošlého profilu sa neprenesie do adresy profilu otvoreného podľa ID', async () => {
+    // Zahodený súhrn je jediný dôvod, prečo adresa nového profilu nedostane slug predošlého (`anna`).
     await withViewedUser();
 
     clickNotification('/dashboard/users/77');
 
     expect(routerProps().viewedUserId).toBe(77);
-    expect(routerProps().viewedUserSummary).toBeNull();
+    expect(routerProps().viewedUserSlug).toBeNull();
   });
 
-  it('prechod na iný modul zahodí zobrazeného používateľa aj zhrnutie', async () => {
+  it('prechod na iný modul zahodí zobrazeného používateľa', async () => {
     await withViewedUser();
 
     clickNotification('/dashboard/favorites');
 
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
   it('neznáma adresa zobrazeného používateľa nemení', async () => {
@@ -418,7 +418,7 @@ describe('zobrazený používateľ', () => {
     clickNotification('/dashboard/unknown-section');
 
     expect(routerProps().viewedUserId).toBe(42);
-    expect(routerProps().viewedUserSummary).toBe(summary);
+    expect(routerProps().viewedUserSlug).toBe('anna');
   });
 });
 
