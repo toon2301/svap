@@ -174,8 +174,10 @@ NEW_ITEMS_NASTENKA = [
               'a `messaging/api/serializers.py` vracia adresu proxy `MessageImageView` (`accounts:messaging_message_image`), ktorá '
               'overuje členstvo v konverzácii. Na živom nasadení (S3) to agent neoveril.',
          note='Návrh manuálneho testu (Railway alebo nový server): otvoriť fotku v správach a v nástrojoch prehliadača skontrolovať, že '
-              'adresa je z domény aplikácie; potom tú istú adresu skúsiť v súkromnom okne bez prihlásenia (musí sa odmietnuť). Zaradené '
-              'PRED NASADENÍM, lebo ide o súkromie správ; pri novom serveri zopakovať (N9, N14).',
+              'adresa je z domény aplikácie; potom tú istú adresu skúsiť v súkromnom okne bez prihlásenia (musí sa odmietnuť). Test '
+              'adresy proxy sám neoverí, či je objekt dostupný priamo zo S3, preto skúsiť aj priamu nepodpísanú adresu toho istého '
+              'objektu v S3 bez prihlásenia: prístup sa musí odmietnuť (kontrola ACL a politiky bucketu). Zaradené PRED NASADENÍM, lebo '
+              'ide o súkromie správ; pri novom serveri zopakovať (N9, N14).',
          dec=None, src=ZDROJ),
     dict(n=267, bucket=A, imp=N, eff=EM, pkg='Údaje a cache',
          kratko='dôvody nahlásení: v databáze môže byť zmes starých textov a stabilných kódov',

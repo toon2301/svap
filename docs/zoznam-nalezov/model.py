@@ -192,23 +192,39 @@ def _chyby_fronty(id_po_nasadeni):
     return chyby
 
 
+ODKAZ_V_TEXTE = re.compile(
+    r'\b(?:nález|nálezy|rozhodnutie|rozhodnutia)\s+[RN]?\d|\b[RN]\d+\b|\b(?:%s)-\d+' % PREFIXY_REGISTRA, re.IGNORECASE)
+
+
+def _rozbal_odkaz(odkaz):
+    """Rozbalí odkaz z prílohy D na jednotlivé ID: `R13–R19` → R13…R19, `TECH-01…11` → TECH-01…TECH-11, ostatné ostane samo."""
+    rozsah = re.fullmatch(r'R(\d+)–R(\d+)', odkaz)
+    if rozsah:
+        return ['R%d' % i for i in range(int(rozsah.group(1)), int(rozsah.group(2)) + 1)]
+    return rozbal_id({'id': odkaz})
+
+
 def _chyby_prilohy_d(posledne_cislo, id_registra):
-    """Overí, že odkazy v prílohe D (mapovanie zoznamu majiteľa) mieria na existujúce nálezy, ID z registra, úlohy N a rozhodnutia."""
+    """Overí prílohu D: každé ID z `ids` (aj z rozsahov) existuje a voľný text `kde` neobsahuje odkazy (tie patria len do `ids`)."""
     chyby = []
     id_rozhodnuti = {d['id'] for d in stav.DECISIONS}
     cisla_uloh = {t['n'] for t in polozky_nove.NTASKS}
     for riadok in priloha_nastenka.RIADKY:
+        oznacenie = riadok['pdf'][:40]
         for odkaz in riadok['ids']:
-            if odkaz.isdigit():
-                existuje = 1 <= int(odkaz) <= posledne_cislo
-            elif re.fullmatch(r'R\d+', odkaz):
-                existuje = odkaz in id_rozhodnuti
-            elif re.fullmatch(r'N\d+', odkaz):
-                existuje = odkaz in cisla_uloh
-            else:
-                existuje = odkaz in id_registra
-            if not existuje:
-                chyby.append('príloha D (%s): odkaz na neexistujúce %s' % (riadok['pdf'][:40], odkaz))
+            for i in _rozbal_odkaz(odkaz):
+                if i.isdigit():
+                    existuje = 1 <= int(i) <= posledne_cislo
+                elif re.fullmatch(r'R\d+', i):
+                    existuje = i in id_rozhodnuti
+                elif re.fullmatch(r'N\d+', i):
+                    existuje = i in cisla_uloh
+                else:
+                    existuje = i in id_registra
+                if not existuje:
+                    chyby.append('príloha D (%s): odkaz na neexistujúce %s' % (oznacenie, i))
+        if ODKAZ_V_TEXTE.search(riadok.get('kde', '')):
+            chyby.append('príloha D (%s): voľný text `kde` obsahuje odkaz; zapíš ho do `ids`' % oznacenie)
     return chyby
 
 
