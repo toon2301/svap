@@ -7,14 +7,28 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='6. 11. 2026',
-    kod='`main` `f5a5e244` (po PR #229)',
+    kod='`main` `ea9fb101` (po PR #232)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
     ('6. 11. 2026',
-     'Vetva 165 (čaká na PR; vychádza z `main` `f5a5e244`, teda po PR #229): opravy troch nálezov zo skupiny „pred nasadením“. 214: '
+     'Vetva 166 (len zoznam, vychádza z `main` `ea9fb101`, teda po PR #232; čaká na PR). (1) Zápis štvrtej a piatej práce kolegu (dve dávky za '
+     'sebou podľa dohody z 6. 11.): K4 (PR #231: nálezy 153, 178 a APP-05) a K5 (PR #232: nálezy 213, 136 a 134) sú zlúčené, nasadené na '
+     'Railway, CI (`checks` aj `backend-postgres`) aj kontrola CodeRabbit prešli a manuálne testy majiteľa prešli; nálezy odišli z poradia '
+     'do časti 7 (APP-05 do časti 9). (2) Nové nálezy od kolegu: 247 a 248 (zvyšky po APP-05), 249 (plynulé posúvanie cez JavaScript '
+     'nekontroluje „Znížiť pohyb“, 11 miest v 9 súboroch) a 250 (chýbajúci test resetu súhrnu profilu). (3) Oprava starých údajov: nálezy '
+     '214, 232 a 236 sú zlúčené v PR #230 (predtým „čaká na zlúčenie“), hlavička ukazuje `main` `ea9fb101` a texty pri TOOL-01 a nálezu '
+     '206 sa upravili, lebo 178 je hotový. (4) Zoznam majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (PDF z 6. 11. 2026, stav '
+     'k 29. 9. 2026, Nástenka) sa porovnal s týmto zoznamom a s kódom na `main`: veľká časť je zastaraná alebo už vedená (trvalá oprava '
+     'scrollu `3356bc1b`, ladiaci pás odstránený `617051c0`, PR #190, vetva 157, šesť okrajových nálezov = 21–24, 26, 30), nových je 19 '
+     'nálezov (251–269), sedem už prijatých rozhodnutí (R13–R19) a tri čakajúce (R20–R22); celé mapovanie je v prílohe D. PRED NASADENÍM '
+     'z nich sú 252 (onboarding) a 266 (obrázky správ cez proxy). Pri overovaní sa ukázalo, že odznak „overený účet“ v kóde už existuje a '
+     'dostane ho každý s overeným e-mailom (269, R22). (5) Poradie prác pre kolegu má novú frontu (K6 a K7), v časti 5 je nový balík '
+     '„Nástenka a zdieľanie“ a README opisuje, že dve dávky za sebou boli výnimka.'),
+    ('6. 11. 2026',
+     'Vetva 165 (zlúčená v PR #230; vychádza z `main` `f5a5e244`, teda po PR #229): opravy troch nálezov zo skupiny „pred nasadením“. 214: '
      'hlásenie do Sentry používa `new_scope()` namiesto zastaraného `push_scope()`, chyba hlásenia sa nepreniesie k volajúcemu a `sentry-sdk` je pripnutý na '
      '`>=2,<3`. 236: neznáma cesta WebSocketu sa zatvorí hneď (kód 4404), `daphne` už nevypisuje chybu a neodpovedá 500. 232: zdieľanie '
      'a zmazanie príspevku sa pri súbehu zoradia zámkom riadku, namiesto 500 príde jasná chyba 4xx; obe poradia súbehu pokrýva test s '
@@ -284,15 +298,16 @@ PORADIE = [
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
-            'vo vetve 165; ostáva 245 a 246); ďalej 185, OW-07 a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; '
-            '212 je hotová vo vetve 157)',
+            'zlúčené vo vetve 165, PR #230; ostáva 245 a 246); ďalej 185, OW-07, overenie súkromia obrázkov správ (266) a balík '
+            '„Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '245', '246', 'OW-07', '31', '189', '209', '223', '225', '228']),
+         polozky=['185', '245', '246', 'OW-07', '266', '31', '189', '209', '223', '225', '228']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
-            'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), živé overenie N16 a RET-01..03',
+            'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), živé overenie N16 a '
+            'RET-01..03',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '81', '119', '91', '92', '207', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '81', '119', '91', '92', '207', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='120, 175, 176, 177, 204, APP-03, 186 (a podľa R2 poradie jazykov)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
@@ -380,3 +395,8 @@ DECISIONS = [
                      '2FA pri štarte (napr. kvôli firemným účtom), patrí do vlny 1.',
          kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]
+
+# Rozhodnutia R13–R22 zo zoznamu majiteľa (príloha D) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+from rozhodnutia_nastenka import DECISIONS_NASTENKA  # noqa: E402
+
+DECISIONS.extend(DECISIONS_NASTENKA)

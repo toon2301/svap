@@ -31,7 +31,6 @@ REG_ITEMS = [
     dict(id='TEST-06', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Živý OW-03 scenár nemá vlastnú ponukovú fixture.', note='Použiť existujúce sledovanie; nič nevytvárať.', dec=None),
     dict(id='TEST-08', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Historické nedosiahnuteľné vetvy stránky `/search` (93,45 % vetiev) – výnimka z 95 %.', note='Transparentne evidované.', dec=None),
     dict(id='APP-04', bucket=A, imp=N, eff=EL, pkg='Funkcie – väčšie balíky', what='Zohľadnenie krajiny a okresu vo vyhľadávaní (produktový návrh).', note='Odložené používateľom 21. 10.; nie je to chyba.', dec=None),
-    dict(id='APP-05', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Asynchrónne overenie položky histórie môže prepísať novší dotaz (`useRecentSearches.tsx`).', note='Spolu s 178.', dec=None),
     dict(id='ENV-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Dva backendové testy obrazovej moderácie blokuje Windows / gRPC (na Linuxe CI prejdú).', note='Prostredie, nie produkt.', dec=None),
     dict(id='TECH-01…11', bucket=A, imp=N, eff=EL, pkg='Upratovanie a architektúra',
          what='Nadlimitné súbory (>500 riadkov, bez testov), stav 29. 10. 2026, spolu 33: `FeedPostComments` 1 487, `ProfileOffersSection` 1 108, '
@@ -44,8 +43,10 @@ REG_ITEMS = [
               '`useConversationThreadController` 505, `districts` 502, `SkillDescriptionModal` 502.',
          note='Technický dlh; podľa `svaply.mdc` len nahlásiť, nič s nimi nerobiť. Zoznam prepočítaný 29. 10. 2026 (predtým desať súborov z '
               '26. 10.). Pri nálezoch v správach to znamená, že nová logika ide do nového súboru a do `ConversationDetail` ani '
-              '`useConversationThreadController` sa nezasahuje (nález 218).', dec=None),
-    dict(id='TOOL-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='`next lint` vyžaduje interaktívnu konfiguráciu; CI lint nespúšťa.', note='Pridať neinteraktívny lint do CI až po vyčistení chýb (178).', dec=None),
+              '`useConversationThreadController` sa nezasahuje (nález 218). Podľa zoznamu majiteľa (príloha D) sa veľké súbory '
+              '(`DashboardContent`, `ProfileOffersSection`, `RequestsNotificationsContext`, `lib/api.ts`, `FeedPostCard`, `FeedPostComments`) '
+              'majú deliť po jednom a po každom delení má nasledovať manuálny test, lebo riziko regresie je vysoké.', dec=None),
+    dict(id='TOOL-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='`next lint` vyžaduje interaktívnu konfiguráciu; CI lint nespúšťa.', note='Pridať neinteraktívny lint do CI až po vyčistení chýb (206; 178 je hotový len pre jediný súbor).', dec=None),
     dict(id='TOOL-02', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Windows WebKit natívne nejde (Code Integrity); funguje cez Docker kontajner.', note='Obmedzenie prostredia.', dec=None),
 ]
 
@@ -70,6 +71,9 @@ REG_CLOSED = {
     'DOC-02': 'opravené v review kole',
     'DOC-03': 'opravené v review kole',
     'REG-01': 'historická chyba opravená, nie je otvorená; držať ako regresiu pri zásahu do formulára',
+    'APP-05': 'opravené v K4 (PR #231, commit `bda2bc53`, 6. 11. 2026): klik na položku histórie ruší predchádzajúce hľadanie aj klik cez '
+              'zdieľaný `searchAbortControllerRef` a zrušený klik už nič nezapíše; nový test `useRecentSearches.race.test.tsx` (10 testov nad '
+              'skutočnými hookmi, 7 z nich pred opravou zlyhalo); zvyšky sú nálezy 247 a 248',
 }
 REG_AWAIT_LIVE = {
     'OW-16': 'PR #178', 'OW-18': 'PR #179 + #183', 'OW-19': 'PR #183', 'OW-20': 'PR #186', 'OW-23': 'PR #185',

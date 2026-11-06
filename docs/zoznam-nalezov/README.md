@@ -12,20 +12,23 @@ nemôže ticho prestať sedieť.
 | `povodny_zoznam.json` | Pôvodný zoznam nálezov 1–172 (texty bez úprav). |
 | `polozky_povodne.py` | Roztriedenie otvorených položiek 1–172: skupina, dopad, zložitosť, balík, poznámka. |
 | `polozky_nove.py` | Nové nálezy od 173 do 231. |
-| `polozky_nove_dalsie.py` | Nové nálezy od 232. Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. |
+| `polozky_nove_dalsie.py` | Nové nálezy od 232 do 250. Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. |
+| `polozky_nove_nastenka.py` | Nové nálezy od 251 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka). Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. |
 | `polozky_priprava.py` | Úlohy na prípravu ostrého nasadenia N1…. Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich sprístupňuje pod pôvodným názvom. |
 | `register.py` | Stav ID z `docs/testing/findings-register.md` (otvorené, zatvorené, čaká živé overenie). |
 | `stav.py` | Dátum a stav kódu, poradie práce, rozhodnutia, denník zmien. |
 | `hotove.py` | Nálezy opravené po prvom vydaní do 5. 11. 2026 (`DONE_SINCE`), tabuľka PR a popis série Upozornenia. Samostatný súbor, aby žiadny súbor nepresiahol 500 riadkov; `stav.py` ich sprístupňuje pod pôvodnými názvami. |
 | `hotove_dalsie.py` | Nálezy opravené od 6. 11. 2026 (`DONE_SINCE_DALSIE`). Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |
-| `fronta.py` | Poradie prác na nálezoch po nasadení (dávky pre kolegu). Hotový nález sa odtiaľ odstráni. |
+| `fronta.py` | Poradie prác na nálezoch po nasadení (dávky pre kolegu, kľúč `davka`). Hotový nález sa odtiaľ odstráni. |
+| `rozhodnutia_nastenka.py` | Rozhodnutia R13–R22 zo zoznamu majiteľa (R13–R19 rozhodnuté, R20–R22 čakajú); `stav.py` ich pripája do `DECISIONS`. |
+| `priloha_nastenka.py` | Príloha D: mapovanie zoznamu majiteľa na tento zoznam (jeden riadok na jeho položku). Generátor overí odkazy v nej. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
 
 ## Ako aktualizovať
 
 Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení kód):
 
-1. **Nový nález:** pridať do `NEW_ITEMS_DALSIE` v `polozky_nove_dalsie.py` (od 232; staršie sú v `NEW_ITEMS` v `polozky_nove.py`) s ďalším voľným číslom (čísla sa nikdy nemenia ani nepoužívajú znova).
+1. **Nový nález:** pridať do `NEW_ITEMS_DALSIE` v `polozky_nove_dalsie.py` (232 až 250; staršie sú v `NEW_ITEMS` v `polozky_nove.py`, od 251 v `polozky_nove_nastenka.py`; kým má súbor miesto pod 500 riadkov, nové nálezy patria do `polozky_nove_nastenka.py`) s ďalším voľným číslom (čísla sa nikdy nemenia ani nepoužívajú znova).
    Nové ID v registri treba zaradiť do `register.py`.
 2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py`
    (staršie opravy sú v `DONE_SINCE` v `hotove.py`; `n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
@@ -50,6 +53,8 @@ Dohoda s majiteľom z 5. 11. 2026; platí, kým ju majiteľ nezmení.
   predchádzajúca je úplne hotová.
 - **Striedanie 1:1:** jedna dávka kolegu (aspoň tri nálezy, každý vo vlastnom commite v jednej vetve), potom jedna vetva agenta, a tak
   ďalej. Prvá práca kolegu bola skúšobná a mala jediný nález (192).
+- **Výnimka z 6. 11. 2026:** kolega dostal dve dávky za sebou (K4 a K5) a potom prišla vetva agenta 166, ktorá je len so zoznamom (K4
+  a K5, zoznam majiteľa z 6. 11., oprava starých údajov). Ďalšie poradie určí majiteľ; návrh agenta je vrátiť sa k striedaniu 1:1.
 - **Vetvy:** kolega K1, K2, K3…; agent číslované (163, 164…); Codex `e2e/<názov>`. S Codexom pracuje len agent.
 - **Čo dostane kolega:** opis nálezu a návrh najlepšej opravy (nálezy sú v časti 5 zoznamu, poradie vo fronte). Nález overuje kolega pri
   práci. Agent jeho PR pred zlúčením nekontroluje.

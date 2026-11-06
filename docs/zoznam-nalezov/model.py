@@ -14,6 +14,7 @@ from types import SimpleNamespace
 import fronta
 import polozky_nove
 import polozky_povodne
+import priloha_nastenka
 import register
 import stav
 from konstanty import A, EL, EM, ES, H, N, P, S_, V
@@ -33,7 +34,8 @@ PORADIE_BALIKOV = {
         'Preklady a hlášky', 'Súkromie a krajina', 'iPhone a WebSocket', 'iPhone overenia', BALIK_PRIPRAVA,
     ],
     A: [
-        'Pravdepodobne už vyriešené', 'Funkcie – väčšie balíky', 'Navigácia – scroll', 'Navigácia – drobnosti', 'Zvýraznenie ponuky',
+        'Pravdepodobne už vyriešené', 'Funkcie – väčšie balíky', 'Nástenka a zdieľanie', 'Navigácia – scroll', 'Navigácia – drobnosti',
+        'Zvýraznenie ponuky',
         'Údaje a cache', 'Profil a identita', 'Mazanie ponuky', 'Výkon a plynulosť', 'Výkon (memoizácia)', 'Prístupnosť',
         'iPhone overenia', 'iPhone a WebSocket', 'Service worker a PWA', 'Vyhľadávanie a Sledovania', 'Upratovanie a architektúra',
         'Nástroje a testy',
@@ -190,6 +192,26 @@ def _chyby_fronty(id_po_nasadeni):
     return chyby
 
 
+def _chyby_prilohy_d(posledne_cislo, id_registra):
+    """Overí, že odkazy v prílohe D (mapovanie zoznamu majiteľa) mieria na existujúce nálezy, ID z registra, úlohy N a rozhodnutia."""
+    chyby = []
+    id_rozhodnuti = {d['id'] for d in stav.DECISIONS}
+    cisla_uloh = {t['n'] for t in polozky_nove.NTASKS}
+    for riadok in priloha_nastenka.RIADKY:
+        for odkaz in riadok['ids']:
+            if odkaz.isdigit():
+                existuje = 1 <= int(odkaz) <= posledne_cislo
+            elif re.fullmatch(r'R\d+', odkaz):
+                existuje = odkaz in id_rozhodnuti
+            elif re.fullmatch(r'N\d+', odkaz):
+                existuje = odkaz in cisla_uloh
+            else:
+                existuje = odkaz in id_registra
+            if not existuje:
+                chyby.append('príloha D (%s): odkaz na neexistujúce %s' % (riadok['pdf'][:40], odkaz))
+    return chyby
+
+
 def _pocet_nalezov(riadky_skupiny):
     """Spočíta riadky skupiny, ktoré sú číslovanými nálezmi (nie ID z registra ani úlohy N)."""
     return sum(1 for _b, _k, d in riadky_skupiny if d['id'].isdigit())
@@ -253,6 +275,9 @@ def zostav_model():
     posledne_cislo = POSLEDNY_POVODNY + len(polozky_nove.NEW_ITEMS) + sum(1 for d in stav.DONE_SINCE if d['n'] > POSLEDNY_POVODNY)
     if pocty.spolu != posledne_cislo:
         raise ValueError('súčet skupín %d sa nerovná poslednému číslu nálezu %d' % (pocty.spolu, posledne_cislo))
+    chyby_prilohy = _chyby_prilohy_d(posledne_cislo, id_registra)
+    if chyby_prilohy:
+        raise ValueError('\n'.join(' - ' + c for c in chyby_prilohy))
 
     return SimpleNamespace(
         povodny=povodny, hotove=dict(sorted(hotove.items())), skupiny={sk: _zoskup(riadky[sk], sk) for sk in riadky},
