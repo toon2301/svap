@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, endpoints } from '@/lib/api';
 import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import { type User } from '@/types';
@@ -30,7 +30,16 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
     setIsFromRecentSearch, 
     setError,
     setIsSearching,
+    searchAbortControllerRef,
   } = searchState;
+
+  // Controller posledného kliku na históriu; slúži len na zrušenie kliku pri odmontovaní hooku.
+  const clickControllerRef = useRef<AbortController | null>(null);
+
+  // Odmontovanie ruší rozbehnutý klik: po ňom sa už nič nezapíše do stavu ani do histórie.
+  useEffect(() => () => {
+    clickControllerRef.current?.abort();
+  }, []);
 
   // Načítať posledné vyhľadávania (výsledky) z localStorage pri mounte alebo zmene používateľa
   useEffect(() => {
@@ -149,6 +158,14 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
 
   // Zobraziť výsledok z histórie
   const handleRecentResultClick = useCallback((result: SearchResults) => {
+    // Rovnako ako nové hľadanie: klik zruší predchádzajúce hľadanie aj klik cez zdieľaný controller a sám sa zruší,
+    // keď ho nahradí novší klik, nové hľadanie, vymazanie alebo odmontovanie. Zrušený klik už nič nezapíše.
+    searchAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortControllerRef.current = controller;
+    clickControllerRef.current = controller;
+    const { signal } = controller;
+
     void (async () => {
       setIsSearching(true);
       setError(null);
@@ -170,7 +187,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
       await Promise.all(
         ownerIds.map(async (ownerId) => {
           try {
-            const resp = await api.get(endpoints.dashboard.userSkills(ownerId));
+            const resp = await api.get(endpoints.dashboard.userSkills(ownerId), { signal });
             const list = Array.isArray(resp.data) ? resp.data : [];
             for (const item of list) {
               if (item && typeof item.id === 'number') {
@@ -182,6 +199,9 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
           }
         }),
       );
+
+      // Zrušený klik (novší klik, nové hľadanie, vymazanie alebo odmontovanie) nič nezapíše.
+      if (signal.aborted) return;
 
       updatedResult.skills = candidates.filter((s) => allowedSkillIds.has(s.id));
 
@@ -224,7 +244,9 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         if (user && u.id === user.id) return;
         
         try {
-          const response = await api.get(endpoints.dashboard.userProfile(u.id));
+          const response = await api.get(endpoints.dashboard.userProfile(u.id), { signal });
+          // Obnova patrí ku kliku, ktorý ju spustil: po jeho zrušení nezapíše ani výsledky, ani históriu.
+          if (signal.aborted) return;
           const freshUser = response.data;
           
           // Ak sme dostali čerstvé dáta, aktualizujeme UI ak sa niečo zmenilo
@@ -268,7 +290,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
       });
     }
     })();
-  }, [user, setResults, setHasSearched, setIsFromRecentSearch, setError, setIsSearching, setRecentSearches]);
+  }, [user, setResults, setHasSearched, setIsFromRecentSearch, setError, setIsSearching, setRecentSearches, searchAbortControllerRef]);
 
   return {
     recentSearches,
