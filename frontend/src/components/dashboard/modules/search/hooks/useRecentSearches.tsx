@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
 import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import { type User } from '@/types';
-import { type SearchResults, type SearchUserResult } from '../types';
+import { type SearchResults, type SearchSkill } from '../types';
 import { getUserProfileFromCache } from '../../profile/profileUserCache';
 import { type SearchStateProps } from './useSearchState';
 
@@ -23,7 +22,6 @@ interface UseRecentSearchesParams {
  * Custom hook pre spravovanie posledných vyhľadávaní
  */
 export function useRecentSearches({ user, searchState }: UseRecentSearchesParams): RecentSearchesProps {
-  const { t } = useLanguage();
   const [recentSearches, setRecentSearches] = useState<SearchResults[]>([]);
   
   const { 
@@ -54,7 +52,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         // Ak nie sú žiadne vyhľadávania pre tohto používateľa, vymazať state
         setRecentSearches([]);
       }
-    } catch (error) {
+    } catch {
       // Ignorovať chyby pri parsovaní
       setRecentSearches([]);
     }
@@ -105,7 +103,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
           if (s.user_id === user.id) {
             const newName = getProfileDisplayName(user);
 
-            const currentName = (s as any).user_display_name;
+            const currentName = s.user_display_name;
             if (currentName && currentName !== newName) {
               hasChanges = true;
               resultChanged = true;
@@ -118,7 +116,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
              if (cachedUser) {
                const newName = getProfileDisplayName(cachedUser);
                
-               const currentName = (s as any).user_display_name;
+               const currentName = s.user_display_name;
                if (currentName && currentName !== newName) {
                  hasChanges = true;
                  resultChanged = true;
@@ -161,11 +159,12 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
       // Overiť ponuky cez API (localStorage môže mať zastarané dáta)
       // Pre cudzie profily endpoint vracia len is_hidden=false, takže to vieme použiť ako "truth source".
       const skills = Array.isArray(updatedResult.skills) ? updatedResult.skills : [];
+      // Údaje z localStorage môžu byť poškodené, preto sa `id` a `user_id` overujú aj za behu.
       const candidates = skills.filter(
-        (s) => typeof (s as any)?.id === 'number' && typeof (s as any)?.user_id === 'number',
+        (s): s is SearchSkill & { user_id: number } => typeof s?.id === 'number' && typeof s?.user_id === 'number',
       );
 
-      const ownerIds = Array.from(new Set<number>(candidates.map((s) => (s as any).user_id as number)));
+      const ownerIds = Array.from(new Set<number>(candidates.map((s) => s.user_id)));
       const allowedSkillIds = new Set<number>();
 
       await Promise.all(
@@ -184,7 +183,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         }),
       );
 
-      updatedResult.skills = candidates.filter((s) => allowedSkillIds.has((s as any).id as number));
+      updatedResult.skills = candidates.filter((s) => allowedSkillIds.has(s.id));
 
     // Aktualizovať používateľov v results podľa aktuálneho usera alebo cache
     if (updatedResult.users && updatedResult.users.length > 0) {
@@ -263,13 +262,13 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
                });
              }
           }
-        } catch (err) {
+        } catch {
           // Ticho ignorovať chyby pri refreshovaní dát na pozadí
         }
       });
     }
     })();
-  }, [user, setResults, setHasSearched, setIsFromRecentSearch, setError, setRecentSearches]);
+  }, [user, setResults, setHasSearched, setIsFromRecentSearch, setError, setIsSearching, setRecentSearches]);
 
   return {
     recentSearches,
