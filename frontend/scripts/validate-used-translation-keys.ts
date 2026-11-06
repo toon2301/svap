@@ -6,6 +6,10 @@ type JsonRecord = Record<string, unknown>;
 const SRC_DIR = path.join(process.cwd(), 'src');
 const SOURCE_MESSAGES_FILE = path.join(process.cwd(), 'messages', 'sk.json');
 const TS_FILE_EXTENSIONS = new Set(['.ts', '.tsx']);
+// Testy sa nekontrolujú: používajú vymyslené kľúče (napr. `missing.path`), ktoré v `sk.json` nemajú byť, a skript
+// má hlásiť len kľúče, ktoré používa produkčný kód.
+const IGNORED_DIRECTORIES = new Set(['node_modules', '__tests__', '__mocks__']);
+const TEST_FILE_PATTERN = /\.(test|spec)\.tsx?$/;
 
 function isPlainObject(value: unknown): value is JsonRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -39,7 +43,7 @@ function collectSourceFiles(directory: string, out: string[] = []): string[] {
   const entries = readdirSync(directory);
 
   for (const entry of entries) {
-    if (entry === 'node_modules') continue;
+    if (IGNORED_DIRECTORIES.has(entry) || TEST_FILE_PATTERN.test(entry)) continue;
 
     const fullPath = path.join(directory, entry);
     const stats = statSync(fullPath);
