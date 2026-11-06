@@ -1,6 +1,8 @@
-import type { Page, Request, TestInfo } from '@playwright/test';
+import type { Page, Request, Response, TestInfo } from '@playwright/test';
 import { captureWithin } from './evidence-deadline';
 import { diagnosticMethod, diagnosticPath, diagnosticQuery, diagnosticTitle } from './diagnostic-identifiers';
+import { isRefreshPath } from './response-diagnostics-format';
+import { readResponseDetails } from './response-diagnostics';
 import {
   formatEvidence,
   type ActiveElement,
@@ -72,10 +74,14 @@ export class PageActivity {
   private lastSearchActivityAt = 0;
   private readonly pageErrors: string[] = [];
   private consoleErrors = 0;
+  private readonly responseReads = new Set<Promise<void>>();
 
   /** Pripojí sa na udalosti stránky; z chyby stránky uchová len názov a z konzoly len počet chýb. */
   constructor(private readonly page: Page) {
     page.on('request', (request) => this.onRequest(request));
+    page.on('response', (response) => {
+      try { this.onResponse(response); } catch { /* Diagnostika nesmie prekryť pôvodný výsledok testu. */ }
+    });
     page.on('requestfinished', (request) => void this.onFinished(request));
     page.on('requestfailed', (request) => this.onFailed(request));
     // Z chyby stránky sa uchová len názov; text správy môže obsahovať spracúvané údaje a nesmie sa dostať do výpisu.
@@ -83,6 +89,24 @@ export class PageActivity {
     page.on('console', (message) => {
       if (message.type() === 'error') this.consoleErrors += 1;
     });
+  }
+
+  /** Zachytí metadáta hneď po prijatí hlavičiek, aj keď sa telo neskôr zasekne. */
+  private onResponse(response: Response): void {
+    const request = response.request();
+    const entry = this.entries.get(request);
+    if (!entry) return;
+    entry.status = response.status();
+    const deniedRefresh = isRefreshPath(entry.path) && (entry.status === 401 || entry.status === 403);
+    entry.responseDetails = {
+      appDurationMs: 'nezistiteľné',
+      ...(deniedRefresh ? { refreshAuth: { cookieNames: null, csrfHeaderPresent: null } } : {}),
+    };
+    const read = readResponseDetails(response, request, this.page.context(), deniedRefresh)
+      .then(details => { entry.responseDetails = details; })
+      .catch(() => { /* Nikdy nevypisovať chybu diagnostiky ani citlivý text. */ })
+      .finally(() => { this.responseReads.delete(read); });
+    this.responseReads.add(read);
   }
 
   /** Zapíše novú požiadavku (cesta a názvy parametrov bez hodnôt) a započíta hľadanie, ktoré práve beží. */
@@ -111,7 +135,8 @@ export class PageActivity {
     entry.durationMs = Date.now() - this.startedAt - entry.startedAt;
     this.finishSearch(request);
     try {
-      entry.status = (await request.response())?.status() ?? null;
+      const response = await request.response();
+      if (response) entry.status = response.status();
     } catch {
       /* Stránka sa mohla zavrieť skôr, než prišiel stav; trvanie ostáva zapísané. */
     }
@@ -150,7 +175,10 @@ export class PageActivity {
       /* Aj pri neplatnej adrese zostanú zachované bezpečné dôkazy o sieti. */
     }
     // Ohraničené je iba čítanie diagnostiky, nie pôvodná asercia ani sieťová požiadavka.
-    const snapshot = await captureWithin(() => this.page.evaluate(readPageSnapshot), SNAPSHOT_BUDGET_MS);
+    const [snapshot] = await Promise.all([
+      captureWithin(() => this.page.evaluate(readPageSnapshot), SNAPSHOT_BUDGET_MS),
+      captureWithin(() => Promise.all([...this.responseReads]), SNAPSHOT_BUDGET_MS),
+    ]);
     return formatEvidence({
       title: diagnosticTitle(title),
       project: ['webkit-desktop', 'webkit-mobile', 'chromium-desktop'].includes(project) ? project : 'other',
