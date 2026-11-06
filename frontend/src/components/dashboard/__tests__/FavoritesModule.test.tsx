@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+import toast from 'react-hot-toast';
+
 import FavoritesModule from '../modules/FavoritesModule';
 import { fetchFavoriteUsers, setFavoriteUserState } from '../modules/favoritesApi';
 
@@ -114,5 +116,67 @@ describe('FavoritesModule', () => {
     render(<FavoritesModule />);
 
     expect(await screen.findByText('Zatial nemate ziadnych oblubenych pouzivatelov')).toBeInTheDocument();
+  });
+
+  // Nález 175: hláška o chybe bola ako poslednú možnosť surový `message` z knižnice axios („Network Error“,
+  // „timeout of 30000ms exceeded“), a záložné texty boli bez diakritiky. Teraz platí text zo servera, potom hláška
+  // o sieti a až potom záložný text danej akcie.
+  describe('chyby', () => {
+    const NETWORK_TEXT = 'Chyba siete. Skontrolujte pripojenie a skúste to znova.';
+    const LOAD_FALLBACK = 'Nepodarilo sa načítať obľúbených používateľov.';
+    const REMOVE_FALLBACK = 'Nepodarilo sa odobrať používateľa z obľúbených.';
+
+    /** Zlyhania z API: [názov prípadu, chyba, očakávaný text pre načítanie, očakávaný text pre odobratie]. */
+    const FAILURES: Array<[string, unknown, string, string]> = [
+      ['výpadok siete', { code: 'ERR_NETWORK', message: 'Network Error' }, NETWORK_TEXT, NETWORK_TEXT],
+      [
+        'časový limit',
+        { code: 'ECONNABORTED', message: 'timeout of 30000ms exceeded' },
+        NETWORK_TEXT,
+        NETWORK_TEXT,
+      ],
+      [
+        'text zo servera v poli error',
+        { response: { status: 500, data: { error: 'Služba je dočasne nedostupná.' } } },
+        'Služba je dočasne nedostupná.',
+        'Služba je dočasne nedostupná.',
+      ],
+      [
+        'text zo servera v poli detail',
+        { response: { status: 403, data: { detail: 'Nemáte oprávnenie.' } } },
+        'Nemáte oprávnenie.',
+        'Nemáte oprávnenie.',
+      ],
+      [
+        'odpoveď servera bez textu',
+        { response: { status: 500 }, message: 'Request failed with status code 500' },
+        LOAD_FALLBACK,
+        REMOVE_FALLBACK,
+      ],
+      ['obyčajná chyba', new Error('boom'), LOAD_FALLBACK, REMOVE_FALLBACK],
+    ];
+
+    it.each(FAILURES)('načítanie zoznamu – %s', async (_name, failure, expectedLoad) => {
+      (fetchFavoriteUsers as jest.Mock).mockRejectedValue(failure);
+
+      render(<FavoritesModule />);
+
+      expect(await screen.findByText(expectedLoad)).toBeInTheDocument();
+      // Technická správa knižnice sa používateľovi nikdy neukáže.
+      const technical = (failure as { message?: string }).message;
+      if (technical) expect(screen.queryByText(technical)).toBeNull();
+    });
+
+    it.each(FAILURES)('odobratie z obľúbených – %s', async (_name, failure, _expectedLoad, expectedRemove) => {
+      (setFavoriteUserState as jest.Mock).mockRejectedValue(failure);
+
+      render(<FavoritesModule />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Odobrat' }));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expectedRemove));
+      expect(toast.error).toHaveBeenCalledTimes(1);
+      // Neúspešné odobratie používateľa zo zoznamu nevyhodí.
+      expect(screen.getByText('Jana Novakova')).toBeInTheDocument();
+    });
   });
 });
