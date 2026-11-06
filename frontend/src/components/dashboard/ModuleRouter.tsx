@@ -135,7 +135,6 @@ export default function ModuleRouter({
   viewedUserNotFound,
   viewedUserLoadError,
   onRetryViewedUserLoad,
-  viewedUserSummary,
   onEditProfileClick,
   onViewUserProfile,
   highlightedSkillId,
@@ -308,25 +307,8 @@ export default function ModuleRouter({
         <SearchUserProfileModule
           userId={viewedUserId}
           currentUserId={user.id}
-          initialSummary={viewedUserSummary ?? undefined}
           initialTab={initialProfileTab}
           highlightedSkillId={highlightedSkillId ?? null}
-          onBack={() => {
-            setActiveModule('search');
-            try {
-              localStorage.setItem('activeModule', 'search');
-            } catch {
-              // ignore
-            }
-          }}
-          onSendMessage={() => {
-            setActiveModule('messages');
-            try {
-              localStorage.setItem('activeModule', 'messages');
-            } catch {
-              // ignore
-            }
-          }}
         />
       );
     case 'profile':
