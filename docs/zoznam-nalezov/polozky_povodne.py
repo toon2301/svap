@@ -11,7 +11,6 @@ from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
 ORIG_OPEN = {
     # P1 – viditeľné a latentné chyby
     8: (A, N, ES, 'Navigácia – drobnosti', 'Kozmetika: prázdne zvýraznenie ľavého menu na jednej obrazovke.', None),
-    12: (A, N, ES, 'Navigácia – drobnosti', 'Zbytočné `?tab=offers` v adrese; mení len vzhľad adresy, nie správanie.', None),
     13: (P, S_, ES, 'Navigácia a Späť',
          'V iPhone PWA nie je prehliadačové Späť. Bez šípky v hornej lište plnostránkového detailu príspevku '
          '(vstup z upozornenia alebo odkazu) používateľ uviazne.', None),
@@ -52,7 +51,9 @@ ORIG_OPEN = {
     # P2 – väčšie balíky
     46: (A, S_, EL, 'Funkcie – väčšie balíky',
          'Mobil: detail príspevku nemá vlastnú adresu, F5 ho zavrie. Rozhodnuté odložiť (je to funkcia).', None),
-    70: (A, S_, EL, 'Funkcie – väčšie balíky', 'Zjednotenie dvoch obrazoviek detailu príspevku na mobile (funkcia).', None),
+    70: (A, S_, EL, 'Funkcie – väčšie balíky',
+         'Podľa zoznamu majiteľa (príloha D) niektoré upozornenia stále vedú na staršiu z týchto dvoch obrazoviek. Postup: najprv '
+         'zmapovať všetky vstupné body, ktoré naň ešte vedú, presmerovať ich a ak sa dá, starý komponent úplne zrušiť. Súvisí s 13 a 46.', None),
     74: (P, S_, EL, 'Upozornenia na zmazaný obsah',
          'Rozšíriť kontrolu existencie cieľa (oprava 111) na všetky typy upozornení: portfólio, príspevky, '
          'komentáre, pozvánky do skupiny (dnes mŕtve tlačidlo bez hlášky). Backend aj frontend naraz.',
@@ -63,9 +64,6 @@ ORIG_OPEN = {
     125: (A, N, EM, 'Navigácia – scroll', 'Pamätanie scrollu len po návrate z recenzií.', None),
     129: (A, N, EM, 'Navigácia – scroll', 'Obnova scrollu pri viackrokovom skoku v histórii.', None),
     132: (A, N, ES, 'Výkon a plynulosť', 'Sledovanie: najprv kostra, potom zoznam „vyskočí“.', None),
-    134: (A, N, ES, 'Prístupnosť',
-          'Rešpektovať `prefers-reduced-motion`: jeden `MotionConfig` pri koreni (rýchla výhra). '
-          'Pre mikropodnik zákon nevyžaduje, no je to lacné.', None),
     135: (A, N, ES, 'iPhone overenia',
           'Neoverené: systémové gesto späť + naša animácia = možná dvojitá animácia; pravdepodobne prijateľné.', None),
     148: (A, S_, EL, 'Upratovanie a architektúra',
@@ -82,10 +80,18 @@ ORIG_OPEN = {
          'OVERIŤ A ZATVORIŤ: hlavička konverzácie mimo prvej stránky zoznamu sa teraz dohľadá cez detail '
          '(`useMobileMessagePeer` → `listMessages`), čo prinieslo nález 161. Overené čítaním kódu 26. 10. 2026, '
          'chýba manuálny test.', None),
-    21: (A, N, ES, 'Navigácia – drobnosti', 'Ochrana cieľov upozornení odmieta `/dashboard?from=push` a `/dashboard#top`.', None),
+    21: (A, N, ES, 'Navigácia – drobnosti',
+         'Overené 6. 11. 2026 (agent): `from=push` ani `#top` sa v kóde (frontend, `public/sw.js` a backend) nikde nevytvára, takže '
+         'zatiaľ neexistuje adresa, ktorú by ochrana odmietla. Návrh: zatvoriť rozhodnutím, alebo len pridať test, že ochrana tieto '
+         'tvary odmietne. Zdroj: zoznam majiteľa (príloha D).', None),
     22: (A, N, ES, 'Navigácia – drobnosti', 'Nezhoda pravidiel pre ID zvýraznenia (0 / −3 / 1,5).', None),
     23: (A, N, ES, 'Upratovanie a architektúra', 'Nedosiahnuteľná vetva `null` v `parseRequestsTargetUrl`.', None),
-    24: (A, N, ES, 'Navigácia – drobnosti', '`setHighlightedSkillId(null)` necháva hodnotu v `sessionStorage`.', None),
+    24: (A, N, ES, 'Navigácia – drobnosti',
+         'Zoznam majiteľa (príloha D) to vedie ako pravdepodobne reálnu chybu: vynuluje sa len stav v pamäti, nie zápis v '
+         '`sessionStorage`, takže sa neskôr môže znova vytiahnuť stará zvýraznená karta. Overené 6. 11. 2026 (agent): hook '
+         '`useDashboardHighlighting.tsx` (346 riadkov) má `clearHighlighting()` aj `clearPersistedHighlight()`, ktoré zálohu mažú; '
+         'surový setter ju nemaže, takže chyba platí len pre volania s priamym `setHighlightedSkillId(null)`. Súvisí s 51 (zvyšok po '
+         'oprave 104).', None),
     27: (A, N, ES, 'Navigácia – drobnosti', 'Popstate na cudzie `/edit` sa kanonizuje na adresu vlastného profilu.', None),
     28: (A, N, ES, 'Navigácia – drobnosti', '`offerId: 0` zamaskuje platné `highlightId`; `goToMyProfile` ignoruje `offerId`.', None),
     29: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočné priame zápisy do `sessionStorage` v handleroch.', None),
@@ -100,7 +106,6 @@ ORIG_OPEN = {
     87: (A, N, ES, 'Navigácia – drobnosti', 'Handlery neukladajú modul do `localStorage` (pravdepodobne zámer).', None),
     104: (A, N, EM, 'Údaje a cache', 'Zastaraná vybraná karta po odloženom zmazaní fotky.', None),
     106: (A, N, ES, 'Výkon a plynulosť', 'Mobilné `initialTags || []` = nové pole pri každom vykreslení (neoverené).', None),
-    121: (A, N, ES, 'Navigácia – drobnosti', 'Záznam vyhľadávania dostane `?tab=offers` pri otvorení profilu (kozmetika).', None),
     124: (A, N, ES, 'Navigácia – drobnosti', 'Po F5 router prepíše `history.state` (pozorovanie).', None),
     152: (A, N, EM, 'Upratovanie a architektúra', 'Audit `Sidebar` / `RightSidebar` (`AnimatePresence`): držia globálne efekty počas výstupu?', None),
     # P4 – výkon
@@ -112,8 +117,10 @@ ORIG_OPEN = {
     3: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočný kód pri parsovaní cieľov upozornení.', None),
     26: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočný / nedosiahnuteľný kód na viacerých miestach.', None),
     30: (A, N, ES, 'Upratovanie a architektúra', 'Mojibake v komentároch `DashboardContent.tsx`.', None),
-    36: (A, N, EM, 'Upratovanie a architektúra',
-         'Rôzne drobnosti. Pozor: tri lightboxy s `max-h-[calc(100vh-2rem)]` patria do rodiny `vh` z nálezu 92.', None),
+    36: (P, N, EM, 'Zdieľanie a obrázky',
+         'Majiteľ 6. 11. 2026: všetky vzhľadové veci sú pred nasadením. Tri lightboxy s `max-h-[calc(100vh-2rem)]` patria do rodiny '
+         '`vh` z nálezu 92 a riešia sa s ním; zvyšok (lint v `SearchLayout`, mŕtve `max-lg:` triedy, `min-h-screen` vo '
+         '`FeedPostCreateScreen`) sú drobnosti.', None),
     39: (A, N, ES, 'Upratovanie a architektúra', 'Duplicitná kontrola „vlastný profil“; `/dashboard/messages/0`.', None),
     54: (A, N, ES, 'Upratovanie a architektúra', 'Mŕtvy kód v `useMobileMessagePeer`.', None),
     55: (A, N, ES, 'Upratovanie a architektúra', '`useOwnProfileOfferActions` vracia surový setter kvôli dialógu.', None),
@@ -131,11 +138,9 @@ ORIG_OPEN = {
     97: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočný kód v presunutom JSX.', None),
     105: (A, N, EM, 'Upratovanie a architektúra', '`SkillDescriptionModal.tsx` má 502 riadkov (=TECH-09).', None),
     133: (A, N, ES, 'Upratovanie a architektúra', 'Riadok „Sledovanie“ volá `onClose?.()` zbytočne.', None),
-    136: (A, N, ES, 'Upratovanie a architektúra', '`SearchUserProfileModule` prijíma nepoužívané props.', None),
     138: (A, N, EM, 'Upratovanie a architektúra', 'Kozmetika modulu cudzieho profilu (duplicitné zoznamy props).', None),
     145: (A, N, ES, 'Upratovanie a architektúra', 'Nadbytočné príkazy v dátovom hooku cudzieho profilu.', None),
     149: (A, N, ES, 'Navigácia – drobnosti', 'Menu meny vo formulári prežije výstup obrazovky Sledovanie (~0,5 s).', None),
-    153: (A, N, ES, 'Upratovanie a architektúra', 'Poznámka k upgradu na React 19: `inert` ako prop.', None),
     156: (A, N, EM, 'Upratovanie a architektúra', 'Pozorovania pre všetky riadky Nastavení.', None),
     # P6 – nástroje, testy, repozitár
     4: (A, N, EM, 'Nástroje a testy', '`tsc` nekontroluje testy; zapnutie môže odhaliť veľa chýb.', None),
@@ -167,4 +172,4 @@ ORIG_OPEN = {
 
 # Pri pôvodných položkách v časti PO NASADENÍ sa poznámka zobrazí len tam, kde pridáva informáciu
 # k textu zo zoznamu (inak by sa text len opakoval). V častiach HNEĎ a PRED NASADENÍM sa zobrazí vždy.
-KEEP_NOTE = {4, 16, 18, 32, 36, 51, 53, 57, 87, 93, 94, 105, 107, 134, 135, 143, 148}
+KEEP_NOTE = {4, 16, 18, 21, 24, 32, 36, 51, 53, 57, 70, 87, 93, 94, 105, 107, 135, 143, 148}

@@ -10,29 +10,41 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
+Dávky K1 až K5 sú hotové a zlúčené. Od 6. 11. 2026 fronta obsahuje dve ďalšie dávky (K6 a K7); kľúč `davka` je len označenie dávky
+pre čitateľa. Poradie dávok schválil majiteľ 6. 11. 2026 (`SCHVALENE`).
+
 Kontrola v `model.py` zlyhá, ak záznam odkazuje na nález, ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ, takže
 zoznam nemôže ticho zastarať.
 """
+
+SCHVALENE = 'Majiteľ 6. 11. 2026 schválil poradie: kolega K6, potom vetva agenta 167, potom kolega K7 a ďalej striedavo 1:1.'
 
 STAV_ROZROBENE = 'rozrobené'
 STAV_CAKA = 'čaká na zlúčenie'
 STAVY = (STAV_ROZROBENE, STAV_CAKA)
 
-# Záznam: dict(n='221', co='krátky popis', preco='prečo je v dávke a v tomto poradí'); voliteľne navyše
+# Záznam: dict(n='221', co='krátky popis', preco='prečo je v dávke a v tomto poradí'); voliteľne navyše davka='K6' a
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA_PO_NASADENI = [
-    dict(n='153', co='`OfferWatchSettingsMobile.tsx`: `inert` sa nastavuje imperatívne, v Reacte 19 má byť prop.',
-         preco='Prvá skutočná zmena kódu: jeden súbor (268 riadkov), správanie stráži existujúci test '
-               '`OfferWatchSettingsMobile.motion.test.tsx`.'),
-    dict(n='178', co='ESLint hlási chyby a varovania v `search/hooks/useRecentSearches.tsx`.',
-         preco='Typy a lint v jednom súbore (278 riadkov). Pozor na varovanie o závislostiach `useCallback`: oprava môže zmeniť správanie.'),
-    dict(n='APP-05', co='Asynchrónne overenie položky histórie môže prepísať novší dotaz (`useRecentSearches.tsx`).',
-         preco='Oprava preteku v tom istom súbore ako 178; potrebuje nový test.'),
-    dict(n='134', co='Žiadna z mobilných animácií nerešpektuje `prefers-reduced-motion`.',
-         preco='Používateľsky viditeľné (prístupnosť). Najprv zistiť rozsah, lebo niekoľko miest to už rieši; súbory nad 500 riadkov sa nemenia.'),
-    dict(n='213', co='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané a Django 6.0 `check` odstráni (21 miest v 7 súboroch modelov, '
-                     '27 miest v 16 starých migráciách).',
-         preco='Backend: premenovať `check` na `condition` v modeloch aj v starých migráciách (mení sa len názov argumentu, schéma nie); '
-               'nesmie vzniknúť nová migrácia (stráži to `tests/test_migrations_up_to_date.py`, overiť aj `makemigrations --check`).'),
+    dict(n='24', davka='K6', co='`setHighlightedSkillId(null)` necháva hodnotu v `sessionStorage` (priame volania setteru namiesto '
+                                '`clearHighlighting()`).',
+         preco='Zoznam majiteľa ho vedie ako pravdepodobne reálnu chybu; hook `useDashboardHighlighting.tsx` má 346 riadkov. Najprv overiť, '
+               'ktoré volania nulujú surový setter, a doplniť test.'),
+    dict(n='22', davka='K6', co='`useDashboardHighlighting` prijíma 0, −3 a 1,5 ako ID zvýraznenia; handler upozornení vyžaduje celé číslo od 1.',
+         preco='Malá validácia v tom istom hooku ako 24, jeden súbor a test.'),
+    dict(n='23', davka='K6', co='Nedosiahnuteľná vetva `null` v `parseRequestsTargetUrl`.',
+         preco='Odstránenie mŕtveho kódu v krátkom súbore `requestsRouting.ts` (56 riadkov); správanie stráži existujúci test.'),
+    dict(n='26', davka='K6', co='Nadbytočný alebo nedosiahnuteľný kód na viacerých miestach (napr. `setIsSearchOpen(false)`, zdvojené '
+                                '`?? null`, zbytočné `Number.isFinite`; konkrétne miesta si kolega overí).',
+         preco='Upratanie malých miest v navigačných hookoch; každé miesto vo vlastnom commite, súbory nad 500 riadkov sa nemenia '
+               '(`DashboardContent.tsx` má 711).'),
+    dict(n='247', davka='K7', co='Klik na položku histórie sa pri písaní ruší až po odoslaní hľadania, nie hneď.',
+         preco='Dohrávka po APP-05 (K4): zrušiť rozbehnutý klik hneď pri zmene textu, test do `useRecentSearches.race.test.tsx`.'),
+    dict(n='248', davka='K7', co='Zrušené textové hľadanie nezresetuje `isRevalidating` (v UI nedosiahnuteľné).',
+         preco='Ten istý súbor `useSearchApi.tsx` (223 riadkov) ako 247; riešiť spolu.'),
+    dict(n='250', davka='K7', co='Chýba test resetu súhrnu profilu pri otvorení profilu z vyhľadávania (`useDashboardNavigation.tsx:289`).',
+         preco='Len test; `useDashboardNavigation.tsx` má 514 riadkov, takže sa súbor nemení.'),
+    dict(n='256', davka='K7', co='`FeedLikersDialog.tsx` otvára profil vlastným eventom namiesto spoločného `openUserProfile()`.',
+         preco='Jeden malý súbor (209 riadkov), vzor je v `feedProfileNavigation.ts`; doplniť test rovnako ako pri ostatných miestach.'),
 ]

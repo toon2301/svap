@@ -114,7 +114,11 @@ NEW_ITEMS_DALSIE = [
               'cookie chýba, návrh opravy: v `csrf.ts` brať pri same-origin cookie ako zdroj pravdy (token načítať znova, keď cookie '
               'chýba) a pridať časový limit k `fetchCsrfToken`; v `api.ts` jedno opakovanie obnovy po CSRF 403. `api.ts` má 912 '
               'riadkov (limit 500), takže jeho zmena vyžaduje výnimku od majiteľa alebo rozdelenie súboru; oprava `csrf.ts` je možná '
-              'samostatne a testovateľná Jestom (`frontend/src/utils/__tests__/csrf.test.ts`).',
+              'samostatne a testovateľná Jestom (`frontend/src/utils/__tests__/csrf.test.ts`). Zoznam majiteľa (príloha D, 6. 11. 2026) '
+              'dopĺňa: scenár „cudzí profil, približne minúta“ koreloval s reálnym produkčným výpadkom a obnova (`/api/token/refresh/`) '
+              'mohla pri výpadku alebo preťažení visieť dlho; zhoršovalo to, že „minišatúry“ (v zozname majiteľa; čítam ako miniatúry '
+              'obrázkov) idú cez Django namiesto CDN (N9). Je to hypotéza z korelácie, nie z logov, a zhoduje sa s návrhom pridať '
+              'časový limit k obnove.',
          dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom a tabuľka Codexa (pri nálezu 223)'),
     dict(n=246, bucket=P, imp=N, eff=EM, pkg='Produkčná odolnosť aplikácie',
          kratko='rovnaký súbeh zdieľania a zmazania aj pri ponuke a položke portfólia (zmazanie skončí chybou)',
@@ -129,4 +133,46 @@ NEW_ITEMS_DALSIE = [
               'portfólia, na ktorú kľúč ukazuje, obe zmazania nech zamknú riadok pred `delete()` a pribudne test súbehu s dvoma '
               'vláknami na PostgreSQL pre každý druh (rovnaký postup ako `accounts/test/test_feed_share_delete_race.py`).',
          dec=None, src='vetva 165 (sonda pri nálezu 232)'),
+    dict(n=247, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
+         kratko='klik na položku histórie sa pri písaní ruší až po odoslaní hľadania (debounce), nie hneď',
+         what='Zvyšok po oprave APP-05 (K4, PR #231), nahlásil kolega: klik na položku histórie ruší predchádzajúce hľadanie aj klik cez '
+              'zdieľaný `searchAbortControllerRef`, no opačným smerom to funguje až neskôr. Hľadanie z poľa zruší rozbehnutý klik, až keď sa '
+              'po oneskorení pri písaní skutočne odošle (`handleSearch` v `search/hooks/useSearchApi.tsx` volá `previousController?.abort()` '
+              'pri začatí požiadavky, nie pri zmene textu). Kým sa klik overuje a používateľ začne písať, môže klik ešte zapísať výsledky z '
+              'histórie a až odoslané hľadanie ich prekryje.',
+         note='Okno je veľmi krátke (oneskorenie pri písaní), preto to K4 nezahŕňa; podľa kolegu sa dá doplniť za pár riadkov. Návrh: zrušiť '
+              'rozbehnutý klik hneď pri zmene textu v poli a pridať test do `useRecentSearches.race.test.tsx`. Agent overil len miesto zrušenia '
+              'v `useSearchApi.tsx`; samotný záblesk výsledkov z histórie neoveroval.',
+         dec=None, src='K4 (správa kolegu cez majiteľa, 6. 11. 2026)'),
+    dict(n=248, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
+         kratko='zrušené textové hľadanie nezresetuje `isRevalidating` (v UI nedosiahnuteľné)',
+         what='Zvyšok po oprave APP-05 (K4, PR #231), nahlásil kolega: keď klik na položku histórie zruší rozbehnuté textové hľadanie, stav '
+              '`isRevalidating` v `search/hooks/useSearchApi.tsx` sa nezresetuje. V UI je to nedosiahnuteľné: história sa zobrazuje len pri '
+              'prázdnom poli bez hľadania a `isRevalidating` sa v `SearchResults.tsx` používa len spolu s `isSearching`.',
+         note='Agent overil len umiestnenie stavu (`useSearchApi.tsx` vracia `isRevalidating && hasPanelResults`) a jeho použitie v '
+              '`SearchResults.tsx`; samotný scenár neoveroval. Nízka priorita. Návrh: `setIsRevalidating(false)` aj pri zrušení z kliku '
+              '(spolu s 247) a krátky test.',
+         dec=None, src='K4 (správa kolegu cez majiteľa, 6. 11. 2026)'),
+    dict(n=249, bucket=A, imp=N, eff=EM, pkg='Prístupnosť',
+         kratko='plynulé posúvanie cez JavaScript nekontroluje „Znížiť pohyb“ (11 miest v 9 súboroch, 6 z nich nad 500 riadkov)',
+         what='Oprava 134 (K5, PR #232: `MotionConfig reducedMotion="user"`) platí len pre komponenty framer-motion; CSS animácie riadi '
+              'globálny blok `prefers-reduced-motion` v `globals.css`. Plynulé posúvanie cez JavaScript (`behavior` s hodnotou `smooth`) sa '
+              'nastavením „Znížiť pohyb“ neriadi; CSS `scroll-behavior` ani Tailwind `scroll-smooth` sa v zdrojoch nepoužívajú. Agent '
+              'našiel (6. 11. 2026, bez testov) 11 miest v 9 súboroch: `FeedPostComments.tsx` (1 487 riadkov), `ProfileOffersSection.tsx` '
+              '(1 108), `ProfileOffersMobileSection.tsx` (945), `app/search/page.tsx` (648), `FeedPostMobileDetail.tsx` (594), '
+              '`useConversationThreadController.ts` (505; 3 miesta) a menšie `useFeedShareLanding.ts`, `useTargetReviewScroll.ts` a '
+              '`districtValidation.ts`. Šesť z deviatich súborov má nad 500 riadkov, takže sa podľa pravidiel nemenia, len sa hlásia.',
+         note='Nález pôvodne nahlásil kolega pri K5; počty a veľkosti súborov agent prepočítal. Návrh: spoločný pomocník v novom súbore (funkcia, '
+              'ktorá pri `prefers-reduced-motion: reduce` vráti `auto` a inak `smooth`) a jeho použitie v troch malých súboroch hneď; v '
+              'súboroch nad 500 riadkov až pri ich rozdelení (TECH-01…11) alebo s výnimkou majiteľa.',
+         dec=None, src='K5 (správa kolegu cez majiteľa, 6. 11. 2026)'),
+    dict(n=250, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
+         kratko='chýbajúci test resetu súhrnu profilu pri otvorení profilu z vyhľadávania (`useDashboardNavigation.tsx:289`)',
+         what='Reset `setViewedUserSummary(null)` vo funkcii `handleViewUserSkillFromSearch` (`dashboard/hooks/useDashboardNavigation.tsx`, '
+              'riadok 289, overil agent) nemá žiadny test: po jeho odstránení podľa kolegu prejde všetkých 2 244 testov Dashboardu. Po '
+              'prepísaní troch testov v časti 136b (K5) už nechytí žiadny test ani štyri ďalšie resety súhrnu mimo vetvy profilu; boli kryté '
+              'len odstránenými kontrolami a podľa kolegu ide o hygienu.',
+         note='Návrh: jeden test v `hooks/__tests__` (otvoriť profil z vyhľadávania po predošlom profile so súhrnom a overiť, že sa súhrn '
+              'nepreniesol do nového). `useDashboardNavigation.tsx` má 514 riadkov (nad 500), takže sa nemení, pridáva sa len test.',
+         dec=None, src='K5 (správa kolegu cez majiteľa, 6. 11. 2026)'),
 ]

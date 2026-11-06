@@ -33,10 +33,6 @@ NEW_ITEMS = [
          what='Pruh o stave pripojenia je natvrdo po slovensky (`OfflineIndicator.tsx:54–55`: „Offline režim - niektoré funkcie môžu '
               'byť obmedzené.“ a „Pripojenie obnovené! Aplikácia je online.“); pri výpadku ho vidno v každom jazyku.',
          note='Pridať dva kľúče do všetkých šiestich jazykov.', dec=None, src='vetva 138'),
-    dict(n=178, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
-         what='ESLint hlási 10 chýb a 1 varovanie v nezmenenom súbore `search/hooks/useRecentSearches.tsx` (už na `main`).',
-         note='CI lint nespúšťa (TOOL-01), preto si to nikto nevšimol. V tom istom súbore je aj APP-05 (závod pri '
-              'overení histórie); riešiť spolu.', dec=None, src='vetva 138'),
     dict(n=180, bucket=P, imp=S_, eff=EM, pkg='iPhone a WebSocket',
          what='Upozornenia: na iPhone sa občas preruší WebSocket (kód 1006); na diagnostiku treba logy servera.',
          note='V predvolenej konfigurácii (`NEXT_PUBLIC_API_URL=/api`) ide WebSocket na doménu frontendu a Next ho preposiela na backend '
@@ -204,7 +200,7 @@ NEW_ITEMS = [
               'Najviac je `no-unused-vars` (359), `no-explicit-any` (213), `no-require-imports` (66) a `no-unused-expressions` (29, najmä modaly '
               'úpravy profilu `profile-edit/modals/*`). Deväť chýb `react-hooks/rules-of-hooks` je v `messages/ConversationMessageRow.tsx` '
               '(riadky 173–233: hooky stoja za predčasným `return` pre skupinové pozvánky a systémové správy).',
-         note='Zmerané 27. 10. na vetve 147. Rozširuje nález 178 (ten opisuje jediný súbor) a súvisí s TOOL-01 (CI lint nespúšťa). '
+         note='Zmerané 27. 10. na vetve 147. Rozširuje nález 178 (ten opisoval jediný súbor a je hotový v K4, PR #231) a súvisí s TOOL-01 (CI lint nespúšťa). '
               '`ConversationMessageRow` dnes nepadá, lebo typ správy sa pri tom istom `id` nemení; ak by sa niekedy zmenil (napr. skupinová '
               'pozvánka na obyčajnú správu), React hodí „Rendered more hooks than during the previous render“. Odporúčanie: najprv hooky '
               'pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory).',
@@ -248,15 +244,6 @@ NEW_ITEMS = [
          note='Záložný text sa zobrazí len pri chýbajúcom preklade. Rozdiel stál jeden E2E test: `search-mobile-cards.spec.ts` hľadal tlačidlo podľa '
               'záložného textu „Otváracie hodiny“ a padal (vetva 151). Upratanie: jeden záložný text zhodný so slovenským prekladom.',
          dec=None, src='vetva 151'),
-    dict(n=213, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='`CheckConstraint(check=…)` je od Djanga 5.1 zastarané',
-         what='Django 5.1 nahradilo argument `check` v `CheckConstraint` argumentom `condition` a Django 6.0 `check` odstráni. Aplikácia používa `check=` '
-              'na 21 miestach v siedmich súboroch modelov (`accounts/models/offer_watches.py` 9×, `reports.py` 4×, `bug_reports.py` 4×, '
-              '`feed_posts/post.py`, `profile_likes.py`, `profile_visits.py` a `user_blocks.py` po 1×) a na 27 miestach v 16 migráciách. Celá '
-              'backendová sada na Djangu 5.2 z toho vypíše 48 varovaní `RemovedInDjango60Warning`.',
-         note='Na Djangu 5.2 (LTS do 04/2028) nič nepadá, preto to nie je naliehavé; treba to urobiť pred skokom na Django 6.0. Premenovať sa dá od '
-              'povýšenia na Django 5.2 (vetva 154; Django 4.2 argument `condition` nepoznalo). Týka sa aj starých migrácií: v nich ide len o názov '
-              'argumentu a schéma sa nemení; po zmene overiť `makemigrations --check`, že nevznikne nová migrácia. Zistené pri mapovaní 183b.',
-         dec=None, src='vetva 152'),
     dict(n=215, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra', kratko='knižnice staršie než oficiálna podpora Djanga 5.2',
          what='Po povýšení na Django 5.2 (vetva 154) ostanú pripnuté verzie, ktoré Django 5.2 oficiálne ešte neuvádzajú (podľa klasifikátorov na PyPI): '
               '`django-cors-headers` 4.3.1 (Django 5.2 uvádza od 4.7.0), `django-filter` 23.3 (od 25.1), `django-redis` 5.4.0 (od 6.0.0), `channels` '
@@ -454,3 +441,8 @@ from polozky_priprava import NTASKS  # noqa: E402,F401
 from polozky_nove_dalsie import NEW_ITEMS_DALSIE  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_DALSIE)
+
+# Nálezy od 251 (zo zoznamu majiteľa, príloha D) sú v `polozky_nove_nastenka.py`.
+from polozky_nove_nastenka import NEW_ITEMS_NASTENKA  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_NASTENKA)
