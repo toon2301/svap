@@ -67,7 +67,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  user_type: 'individual' | 'company' | 'school';
+  user_type: 'individual' | 'company';
   subscription_tier?: SubscriptionTier;
   entitlements?: UserEntitlements;
   phone?: string;
@@ -121,6 +121,6 @@ export interface RegisterForm {
   password_confirm: string;
   first_name: string;
   last_name: string;
-  user_type: 'individual' | 'company' | 'school';
+  user_type: 'individual' | 'company';
   company_name?: string;
 }
