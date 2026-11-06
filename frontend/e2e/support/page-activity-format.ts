@@ -11,6 +11,8 @@
 // atribútov). Čokoľvek mimo zoznamu sa vypíše ako `other`, takže ani nový slug, adresa či ID sa do bloku nedostanú. Čistí
 // sa tu, v čistých pomôckach, aby to strážil Jest.
 
+import { formatResponseDetails, needsResponseDetails, type ResponseDetails } from './response-diagnostics-format';
+
 /** Jedna požiadavka stránky (API alebo navigácia) so stavom a trvaním. */
 export type ActivityEntry = {
   method: string;
@@ -26,6 +28,8 @@ export type ActivityEntry = {
   status: number | null;
   /** Surový text zlyhania siete, ak požiadavka zlyhala; vypíše sa len ako druh cez `failureKind`. */
   failure: string | null;
+  /** Iba číselné trvanie servera a bezpečné príznaky odpovede, nikdy hodnoty cookies. */
+  responseDetails?: ResponseDetails;
 };
 
 /**
@@ -192,11 +196,14 @@ export function describeActive(active: ActiveElement | null): string {
 }
 
 /** Jeden riadok požiadavky: čas začiatku, metóda, cesta s názvami parametrov, stav (alebo druh zlyhania) a trvanie. */
-function formatEntry(entry: ActivityEntry): string {
+function formatEntry(entry: ActivityEntry, elapsedMs: number): string[] {
   const status = entry.failure ? `FAILED(${failureKind(entry.failure)})` : entry.status === null ? 'pending' : String(entry.status);
   const duration = entry.durationMs === null ? '…' : `${entry.durationMs} ms`;
   const query = entry.query ? ` [${entry.query}]` : '';
-  return `${String(entry.startedAt).padStart(6)}  ${entry.method.padEnd(4)} ${entry.path}${query}  ${status}  ${duration}`;
+  return [
+    `${String(entry.startedAt).padStart(6)}  ${entry.method.padEnd(4)} ${entry.path}${query}  ${status}  ${duration}`,
+    ...formatResponseDetails(entry, elapsedMs),
+  ];
 }
 
 /** Riadky so stavom stránky (načítanie, panel, posun, aktívny prvok); bez snímky stránky jeden riadok `unavailable`. */
@@ -215,14 +222,16 @@ function formatSnapshot(snapshot: PageSnapshot | null): string[] {
 
 /** Zostaví čitateľný blok dôkazov pre výstup behu a prílohu testu. */
 export function formatEvidence(input: EvidenceInput): string {
-  const shown = input.entries.slice(-MAX_ENTRIES);
+  // Staršia obnova alebo pomalá odpoveď nesmie zmiznúť iba preto, že prišli ďalšie poll požiadavky.
+  const shown = input.entries.filter((entry, index) =>
+    index >= input.entries.length - MAX_ENTRIES || needsResponseDetails(entry, input.elapsedMs));
   const hidden = input.entries.length - shown.length;
   const lines = [
     `[E2E-EVIDENCE] ${input.title} | ${input.project} | ${(input.elapsedMs / 1000).toFixed(1)} s`,
     `url: ${input.url}`,
     ...formatSnapshot(input.snapshot),
     `requests (ms since test start${hidden > 0 ? `, ${hidden} older omitted` : ''}):`,
-    ...(shown.length ? shown.map(formatEntry) : ['  none']),
+    ...(shown.length ? shown.flatMap(entry => formatEntry(entry, input.elapsedMs)) : ['  none']),
     `page errors: ${input.pageErrors.length}${input.pageErrors.length ? ` (${input.pageErrors.slice(0, 3).map(errorKind).join(', ')})` : ''}`
       + ` | console errors: ${input.consoleErrors}`,
   ];

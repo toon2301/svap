@@ -1,10 +1,10 @@
-# Playwright: odovzdanie (stav k 31. 10. 2026)
+# Playwright: odovzdanie (stav k 6. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
 ## Ako sa beh spúšťa
 
-- Testy sú v `frontend/e2e/` (42 špecov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
+- Testy sú v `frontend/e2e/` (43 špecov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
 - Bežia proti produkčnej inštancii na Railway (`https://stunning-inspiration-svap.up.railway.app`). Lokálny server sa nespúšťa: appka sa v produkčnom režime správa inak (napr. `Cache-Control: no-store`).
 - Projekty: `webkit-desktop`, `webkit-mobile` (iPhone 15) a `chromium-desktop`. WebKit je povinný.
 - Na Windows sa beh púšťa v Dockeri (Smart App Control blokuje WebKit): z priečinka `frontend` `npm run test:e2e:docker -- --workers=1 --retries=0` (celý beh trvá okolo 40 minút). Jeden projekt: `... -- --project=webkit-mobile`. Skript je `frontend/scripts/e2e-docker.js`, obraz je `mcr.microsoft.com/playwright:v<verzia>-noble`.
@@ -256,3 +256,51 @@ Lokálne kontroly: 5/5 Node testov sondy (aj vynútený timeout a chyby bez siet
 Nález „Zatvoriť po F5 vedie na Nástenku“ sa teraz neopravuje ani sa nepridáva produkčný test pred odloženou opravou. Pri budúcej oprave treba pripraviť samostatný E2E scenár: **vlastný profil → Menu → Jazyk → F5 → Späť → Zatvoriť → pôvodný profil**, nie Nástenka, a jeho úspech overiť po potvrdenom nasadení opravy. Ide o budúcu úlohu; neopomenúť F5 ani záverečné Zatvoriť.
 
 Ďalší krok pre 223: porovnať verejné volania zo samotného WebKitu a z Node v rovnakom čase, prípadne následne samostatne preveriť reláciu. Ďalších päť odložených produkčných špecov zostáva nezmenených. Nič sa nezlučuje ani nenasadzuje automaticky.
+
+## Odpovede servera a odmietnutá obnova — nález 223 (6. 11. 2026)
+
+Základ vetvy `e2e/223-dokazy`: aktuálny main `2e84867e`. Mení sa iba diagnostika E2E, nie aplikácia, prihlásenie, asercie, retry ani časové limity testov. Táto úprava nie je opravou príčiny 223 a nemení prijatý celý porovnávací stav.
+
+### Nové polia v bloku `[E2E-EVIDENCE]`
+
+Pôvodný riadok požiadavky ostáva nezmenený. Pod ním sa pri **každej prijatej odpovedi obnovy** `/api/token/refresh/` (aj historický alias `/api/auth/token/refresh/`) a pri **každej pozorovanej odpovedi s trvaním striktne nad 5000 ms** doplní:
+
+```text
+        X-App-Duration-Ms: 12
+```
+
+- Číta sa len táto jedna hlavička, nie celé hlavičky či telo. Uchová sa iba nezáporné celé bezpečné číslo; hodnota `0` je platná. `chýba` znamená chýbajúcu alebo neplatnú číselnú hodnotu, `nezistiteľné` neúspešné alebo neukončené odčítanie. Surová hodnota neplatnej hlavičky sa nikdy nevypíše.
+- Bežné trvanie požiadavky je meranie z prehliadača; `X-App-Duration-Ms` je odlišné meranie spracovania v Djangu. Rozdiel sám neurčuje príčinu problému.
+- Hlavičky sa odčítajú pri udalosti odpovede, nie až po tele. Ak hlavičky prišli, ale telo ešte visí dlhšie než 5 s, serverové trvanie zostáva dostupné. Požiadavka bez prijatej odpovede ostáva `pending`, bez vymyslenej serverovej hodnoty.
+- Zachová sa posledných 40 bežných záznamov **aj všetky staršie prijaté obnovy/pomalé odpovede**, aby podstatná odpoveď nezmizla za neskorším pollingom. Súčet `older omitted` odráža iba skutočne vynechané riadky.
+
+Len pri odpovedi **401 alebo 403 na obnove** navyše:
+
+```text
+        refresh cookies: access_token,auth_state,csrftoken,refresh_token
+        refresh X-CSRFToken: áno
+```
+
+- `refresh cookies` obsahuje jedinečné zoradené **názvy**, nikdy hodnoty, domény, cesty ani expirácie. Odčítanie kontextu sa začne súbežne s hlavičkou hneď pri pozorovaní odmietnutej odpovede. Je to asynchrónny snímok kontextu v tomto čase, nie dôkaz cookies skutočne odoslaných v hlavičke `Cookie`.
+- Pevné povolené názvy: `access_token`, `refresh_token`, `auth_state`, `csrftoken`, `sessionid`, `google_oauth_state`, `google_oauth_nonce`, `csrf_token`, aj ich prefixy `__Host-` a `__Secure-`. Neznámy názov sa vypíše iba ako `other`, pretože aj názov môže niesť identifikátor. `žiadne` znamená úspešne odčítaný prázdny zoznam, `nezistiteľné` neúspešné odčítanie. Hodnota cookie sa neprečíta do vlastného diagnostického záznamu.
+- `refresh X-CSRFToken` patrí k **požiadavke danej odmietnutej odpovede**: `áno` = hlavička bola prítomná (aj prázdna), `nie` = preukázateľne chýbala, `nezistiteľné` = nedala sa odčítať. Hodnota tokenu sa nikdy neuchová ani nevypíše.
+- Úspešná obnova ani iná odpoveď 401/403 cookies či CSRF neodčítavajú. Nepoužíva sa `allHeaders`, telá, text odpovede ani ukladanie celého kontextu.
+
+Odčítania majú vlastný rozpočet 1000 ms, začínajú súbežne a neblokujú sieťové požiadavky ani pôvodné asercie. Report čaká na rozpracované odčítania súbežne s už ohraničenou snímkou stránky, nie sériovo. Chyba odčítania ani zatvorený kontext neprekryjú pôvodný pád. Zdieľacie nástroje, ktoré whitelistujú riadky dôkazov, musia zachovať aj tri nové vyššie opísané riadky; nesmú kvôli tomu povoľovať surové hlavičky.
+
+### Lokálne overenie bez Railway
+
+Pomocníci: `support/response-diagnostics.ts` a `response-diagnostics-format.ts`. Nové kontroly sú v `diagnostics-tests/response-diagnostics.check.ts`; izolovaný browser pokus má samostatný `.scenario.ts`, konfiguráciu a `response-diagnostics-browser.check.ts`. Nepridáva produkčné varianty, nečíta `.env.e2e`, nemá global setup ani účet a všetky požiadavky synteticky zachytí na `diagnostic.invalid`.
+
+Z `frontend`:
+
+```powershell
+node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/response-diagnostics.check.ts e2e/diagnostics-tests/page-activity.check.ts
+node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/response-diagnostics-browser.check.ts
+```
+
+Kontroly zahŕňajú chýbajúcu/neplatnú hlavičku, hranicu 5000/5001 ms, pomalé nedokončené telo, všetky tri stavy CSRF, prázdne či neodčítateľné cookies, ochranu starších odpovedí aj výpis a prílohu. Cookie s getterom `value`, ktorý by test zhodil, dokazuje, že sa číta iba `name`; súkromné syntetické značky nesmú byť ani vo výpise, ani v prílohe. Browser pokus kontroluje 401, 403, úspešnú obnovu a skutočne oneskorenú syntetickú odpoveď vo WebKite desktop, WebKite mobile a Chromiu. Docker dostane knižnice iba na čítanie; surový report sa nevypisuje.
+
+Dlhý ani prihlasovaný beh proti Railway sa v tejto úlohe nespúšťa. Pri 223 sa naďalej čaká na HTTP logy Railway.
+
+Lokálne overenie: 42/42 Node kontrol novej diagnostiky a existujúcich page/deadline/session poistiek, 52/52 existujúcich Jest kontrol formátu a service workerov, TypeScript aplikácie aj explicitne nových E2E súborov, cielený ESLint a `git diff --check` prešli. Nové dva pomocníky majú 97,98 % riadkov / 96,39 % vetiev / 100 % funkcií; nejde o pokrytie celej aplikácie. Izolovaná browser kontrola prešla 3/3 projektov. Existujúci self-test fixture navyše zachoval svoje riadené PASS/FAIL/SKIP a po jednom bezpečnom bloku pri úmyselnom páde prípravy. Kolekcia na tomto maine má 43 špecov / 756 variantov, po 252 na projekt; táto diagnostika nepridáva produkčné testy.
