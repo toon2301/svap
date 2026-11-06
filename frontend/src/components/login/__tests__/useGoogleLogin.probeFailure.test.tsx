@@ -155,6 +155,27 @@ it.each(['explicit cancellation', 'unmount'])('%s removes the preserved listener
   expect(onError).toHaveBeenCalledTimes(1);
 });
 
+// Nález 228: žiadny test nezachytil vynechané `clearTimeout(delayTimer)` v `detach()`. Zatvorené okno prihlásenia
+// a odpoveď 401 (nie je chyba) nechajú hook čakať 500 ms pred ďalším pokusom; odpojenie počas tohto čakania nesmie
+// zanechať živý časovač ani spustiť ďalšiu kontrolu. Kontrola časovača je v tele testu, nie až v `afterEach`.
+it.each(['unmount', 'explicit cancellation'])('%s during the retry wait leaves no timer and no further probe', async action => {
+  mockGet.mockReset().mockResolvedValue({ status: 401, data: {} });
+  const { view } = await failedAttempt();
+  expect(mockGet).toHaveBeenCalledTimes(1);
+  // Jediný živý časovač je čakanie na ďalší pokus: sonda už vrátila 401 a kontrola popupu (interval) je zastavená.
+  expect(jest.getTimerCount()).toBe(1);
+
+  if (action === 'unmount') view.unmount();
+  else act(() => view.result.current.cancelGoogleLogin());
+
+  expect(jest.getTimerCount()).toBe(0);
+  await advance(10_000);
+  expect(mockGet).toHaveBeenCalledTimes(1);
+  expect(onError).not.toHaveBeenCalled();
+  expect(mockRefreshUser).not.toHaveBeenCalled();
+  expect(mockPush).not.toHaveBeenCalled();
+});
+
 it('a new Google attempt removes the old listener and only accepts its own nonce', async () => {
   const { view, nonce, messageHandler } = await failedAttempt();
   act(() => view.result.current.handleGoogleLogin());
