@@ -75,6 +75,8 @@
   "common": {
     "loading": "Načítání...",
     "networkError": "Chyba sítě. Zkontrolujte připojení a zkuste to znovu.",
+    "offlineBanner": "Režim offline - některé funkce mohou být omezené.",
+    "backOnlineBanner": "Připojení obnoveno! Aplikace je online.",
     "error": "Chyba",
     "success": "Úspěch",
     "cancel": "Zrušit",

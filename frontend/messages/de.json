@@ -75,6 +75,8 @@
   "common": {
     "loading": "Laden...",
     "networkError": "Netzwerkfehler. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "offlineBanner": "Offline-Modus - einige Funktionen sind möglicherweise eingeschränkt.",
+    "backOnlineBanner": "Verbindung wiederhergestellt! Die App ist online.",
     "error": "Fehler",
     "success": "Erfolg",
     "cancel": "Abbrechen",

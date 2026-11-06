@@ -75,6 +75,8 @@
   "common": {
     "loading": "Ładowanie...",
     "networkError": "Błąd sieci. Sprawdź połączenie i spróbuj ponownie.",
+    "offlineBanner": "Tryb offline - niektóre funkcje mogą być ograniczone.",
+    "backOnlineBanner": "Połączenie przywrócone! Aplikacja jest online.",
     "error": "Błąd",
     "success": "Sukces",
     "cancel": "Anuluj",

@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
+/** Pruh o stave pripojenia (červený pri výpadku, zelený po obnovení); texty sú v jazyku aplikácie. */
 export default function OfflineIndicator() {
+  const { t } = useLanguage();
   const [isOnline, setIsOnline] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
 
@@ -50,9 +53,9 @@ export default function OfflineIndicator() {
           {isOnline ? '🟢' : '🔴'}
         </span>
         <span>
-          {isOnline 
-            ? 'Pripojenie obnovené! Aplikácia je online.' 
-            : 'Offline režim - niektoré funkcie môžu byť obmedzené.'
+          {isOnline
+            ? t('common.backOnlineBanner', 'Pripojenie obnovené! Aplikácia je online.')
+            : t('common.offlineBanner', 'Offline režim - niektoré funkcie môžu byť obmedzené.')
           }
         </span>
       </div>

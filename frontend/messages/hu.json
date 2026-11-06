@@ -75,6 +75,8 @@
   "common": {
     "loading": "Betöltés...",
     "networkError": "Hálózati hiba. Ellenőrizze a kapcsolatot, és próbálja újra.",
+    "offlineBanner": "Offline mód - egyes funkciók korlátozottak lehetnek.",
+    "backOnlineBanner": "A kapcsolat helyreállt! Az alkalmazás online.",
     "error": "Hiba",
     "success": "Siker",
     "cancel": "Mégse",
