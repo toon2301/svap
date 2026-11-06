@@ -156,7 +156,10 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
     });
   }, [user, recentSearches]);
 
-  // Zobraziť výsledok z histórie
+  /**
+   * Zobrazí položku histórie: overí ponuky cez API (localStorage môže mať zastarané dáta), zapíše výsledok a na pozadí
+   * obnoví mená používateľov. Klik zruší predchádzajúce hľadanie aj klik; zrušený klik už nič nezapíše.
+   */
   const handleRecentResultClick = useCallback((result: SearchResults) => {
     // Rovnako ako nové hľadanie: klik zruší predchádzajúce hľadanie aj klik cez zdieľaný controller a sám sa zruší,
     // keď ho nahradí novší klik, nové hľadanie, vymazanie alebo odmontovanie. Zrušený klik už nič nezapíše.

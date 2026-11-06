@@ -53,6 +53,7 @@ function installTransport(rejectOnAbort = false) {
     }));
 }
 
+/** Nájde nevybavené volanie API podľa adresy (`nth` = poradie, ak sa tá istá adresa volala viackrát). */
 function call(url: string, nth = 0): Call {
   const found = calls.filter((item) => item.url === url)[nth];
   if (!found) throw new Error(`Chýba volanie API: ${url}`);
@@ -63,9 +64,11 @@ const USER_ID = 12;
 const HISTORY_KEY = `searchRecentResults_${USER_ID}`;
 const ME = { id: USER_ID, username: 'ja', slug: 'ja' };
 
+/** Ponuka s daným id a vlastníkom; ostatné polia sú pre test nepodstatné. */
 const skill = (id: number, ownerId: number) => ({
   id, user_id: ownerId, category: 'Kategória', subcategory: 'Podkategória', description: `Ponuka ${id}`,
 }) as unknown as SearchSkill;
+/** Používateľ vo výsledkoch hľadania so zadaným menom. */
 const person = (id: number, name: string): SearchUserResult => ({
   id, display_name: name, slug: `slug-${id}`, is_verified: false,
 });
@@ -89,6 +92,7 @@ function harness() {
 }
 type Harness = ReturnType<typeof harness>;
 
+/** Klikne na položku histórie (v `act`, aby sa spracovali zmeny stavu). */
 const click = (hook: Harness, entry: SearchResults) => act(() => {
   hook.result.current.recent.handleRecentResultClick(entry);
 });
@@ -96,6 +100,7 @@ const click = (hook: Harness, entry: SearchResults) => act(() => {
 const respond = (target: Call, data: unknown, status = 200) => act(async () => {
   target.resolve({ data, status });
 });
+/** Id ponúk, ktoré sú práve vo výsledkoch hľadania (`undefined`, ak výsledky nie sú). */
 const resultIds = (hook: Harness) => hook.result.current.state.results?.skills.map((item) => item.id);
 
 beforeEach(() => {
@@ -237,7 +242,9 @@ describe('useRecentSearches – zastaraný klik nesmie prepísať novší stav',
 
 describe('useRecentSearches – obnova mien na pozadí a zápis histórie', () => {
   const freshProfile = { id: 5, username: 'zmenene', first_name: 'Nové', last_name: 'Meno', slug: 'nove-meno' };
+  /** Uloží do localStorage históriu s jednou položkou, v ktorej je používateľ so starým menom. */
   const seedHistory = () => localStorage.setItem(HISTORY_KEY, JSON.stringify([entryWithUser]));
+  /** Meno prvého používateľa v prvej položke uloženej histórie (alebo `undefined`). */
   const storedName = () => JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]')[0]?.users[0]?.display_name;
 
   it('aktuálny klik po overení obnoví meno vo výsledkoch aj v histórii (kontrolný prípad)', async () => {

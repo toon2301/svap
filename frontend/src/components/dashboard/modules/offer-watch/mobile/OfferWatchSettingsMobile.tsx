@@ -32,6 +32,11 @@ type OfferWatchSettingsMobileProps = {
   placement?: 'over-app' | 'under-settings';
 };
 
+/**
+ * Mobilná obrazovka „Sledovanie“ (zoznam, vytvorenie a úprava sledovaní) ako okno nad aplikáciou alebo pod panelom
+ * Nastavení (`placement`). Kým sa vysúva, je neaktívna (`inert`, bez zámku scrollu a uväzneného fokusu), aby ťuknutia,
+ * Tab aj čítačka obrazovky išli na obrazovku pod ňou.
+ */
 export default function OfferWatchSettingsMobile({
   view,
   onBack,
