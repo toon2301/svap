@@ -169,7 +169,7 @@ class FeedPost(FeedPostSharingMixin, models.Model):
             # úrovni riadku vyjadriť nedá. Presunula sa do ``_create_feed_post``,
             # kde klient posiela ``will_attach_photo``.
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(
                         post_type="free_post",
                         shared_offer__isnull=True,

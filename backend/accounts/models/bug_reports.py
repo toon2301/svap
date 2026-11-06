@@ -159,19 +159,19 @@ class BugReport(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=Q(category__in=BugReportCategory.values),
+                condition=Q(category__in=BugReportCategory.values),
                 name="bug_report_category_valid",
             ),
             models.CheckConstraint(
-                check=Q(status__in=BugReportStatus.values),
+                condition=Q(status__in=BugReportStatus.values),
                 name="bug_report_status_valid",
             ),
             models.CheckConstraint(
-                check=Q(priority__in=BugReportPriority.values),
+                condition=Q(priority__in=BugReportPriority.values),
                 name="bug_report_priority_valid",
             ),
             models.CheckConstraint(
-                check=Q(device_type__in=BugReportDeviceType.values),
+                condition=Q(device_type__in=BugReportDeviceType.values),
                 name="bug_report_device_type_valid",
             ),
         ]

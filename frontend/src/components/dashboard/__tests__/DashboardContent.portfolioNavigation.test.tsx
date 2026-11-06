@@ -225,7 +225,6 @@ describe('krok späť z detailu portfólia', () => {
       expect(activeModule()).toBe('user-profile');
       expect(routerProps().viewedUserSlug).toBe('anna');
       expect(routerProps().viewedUserId).toBeNull();
-      expect(routerProps().viewedUserSummary).toBeNull();
       expect(localStorage.getItem('activeModule')).toBe('user-profile');
       // Záložka vlastného profilu sa pri cudzom profile nemení.
       expect(routerProps().ownProfileTab).toBe('posts');
@@ -315,17 +314,22 @@ describe('krok späť z detailu portfólia', () => {
       expect(routerProps().viewedUserSlug).toBeNull();
     });
 
-    it('zabudne zhrnutie cudzieho používateľa, ktoré bolo otvorené', async () => {
-      await renderPortfolioDetail('/dashboard/users/anna/portfolio/5', { initialProfileSlug: 'anna' });
+    it('slug cudzieho profilu otvoreného zo zoznamu sa neprenesie do adresy vlastníka detailu', async () => {
+      await renderPortfolioDetail('/dashboard/users/42/portfolio/5');
       // Handler „späť“ platí len pri module detailu, preto sa berie z chvíle, keď detail je aktívny.
       const back = layoutProps().onMobileBack as () => void;
-      const summary = { id: 77, username: 'bob' } as unknown as SearchUserResult;
+      // Zahodený súhrn je jediný dôvod, prečo adresa vlastníka (`42`) nedostane slug iného profilu (`bob`).
+      const summary = { id: 77, username: 'bob', slug: 'bob' } as unknown as SearchUserResult;
       act(() => routerProps().onViewUserProfile?.(77, 'bob', summary));
-      expect(routerProps().viewedUserSummary).toBe(summary);
+      expect(routerProps().viewedUserId).toBe(77);
+      // Router, ktorý ako Next skutočne zmení adresu: po kroku späť je adresa vlastníka detailu číselná.
+      mockRouter.replace.mockImplementationOnce((url: string) => window.history.replaceState(null, '', url));
 
       act(() => back());
 
-      expect(routerProps().viewedUserSummary).toBeNull();
+      expect(window.location.pathname).toBe('/dashboard/users/42/portfolio');
+      expect(routerProps().viewedUserId).toBe(42);
+      expect(routerProps().viewedUserSlug).toBeNull();
     });
 
     it('vlastník z medzier sa berie ako žiadny a vráti na vlastný profil', async () => {

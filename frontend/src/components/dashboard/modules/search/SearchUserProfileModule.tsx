@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks";
-import type { SearchUserResult } from "./types";
 import ProfileMobileView from "../profile/ProfileMobileView";
 import ProfileDesktopView from "../profile/ProfileDesktopView";
 import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
@@ -25,19 +24,18 @@ import { useForeignProfileData } from './useForeignProfileData';
 interface SearchUserProfileModuleProps {
   userId: number;
   currentUserId: number;
-  onBack?: () => void;
-  onSendMessage?: () => void;
   highlightedSkillId?: number | null;
-  initialSummary?: SearchUserResult;
   initialTab?: ProfileTab;
 }
 
+/**
+ * Profil cudzieho používateľa. Údaje si načíta sám podľa `userId`, preto nepotrebuje ani súhrn z vyhľadávania.
+ * Odchod z profilu (po zablokovaní, z chybovej obrazovky) rieši vlastným prechodom na Nástenku (`goHome`),
+ * a správu otvára cez `useForeignProfileActions`, takže nemá ani spätné, ani správové callbacky.
+ */
 export function SearchUserProfileModule({
   userId,
   currentUserId,
-  // onBack is still accepted for API compatibility but no longer consumed:
-  // the block redirect and the unreachable-profile fallback both go to
-  // /dashboard rather than back to search.
   highlightedSkillId = null,
   initialTab,
 }: SearchUserProfileModuleProps) {

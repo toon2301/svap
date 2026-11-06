@@ -319,14 +319,17 @@ describe('goToUserProfile: cudzí profil', () => {
     expect(pushState).toHaveBeenCalledWith(originState, '', '/dashboard/users/j%C3%A1n%20ov%C3%A1?highlight=3');
   });
 
-  it('súhrn predošlého profilu sa zahodí', async () => {
+  it('slug predošlého profilu sa neprenesie do adresy profilu otvoreného podľa ID', async () => {
+    // Zahodený súhrn je jediný dôvod, prečo adresa nového profilu nedostane slug predošlého (`jana`).
     await renderDashboard();
     showForeignProfile();
-    expect(routerProps().viewedUserSummary).toEqual(summary);
+    expect(routerProps().viewedUserSlug).toBe('jana');
 
     await goToUserProfile({ identifier: '42' });
 
-    expect(routerProps().viewedUserSummary).toBeNull();
+    expect(routerProps().viewedUserId).toBe(42);
+    expect(routerProps().viewedUserSlug).toBeNull();
+    expect(currentUrl()).toBe('/dashboard/users/42');
   });
 
   it('krok z profilu na profil vymení ID za slug a naopak', async () => {
@@ -557,14 +560,12 @@ describe('goToMyProfile: vlastný profil', () => {
     showForeignProfile();
     expect(routerProps().viewedUserId).toBe(55);
     expect(routerProps().viewedUserSlug).toBe('jana');
-    expect(routerProps().viewedUserSummary).toEqual(summary);
 
     await goToMyProfile();
 
     expect(activeModule()).toBe('profile');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
   it('pridá záznam histórie s adresou vlastného profilu a tá sa potom prepíše na slug', async () => {

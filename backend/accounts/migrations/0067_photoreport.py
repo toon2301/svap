@@ -78,7 +78,7 @@ class Migration(migrations.Migration):
                 "ordering": ["-created_at"],
                 "constraints": [
                     models.CheckConstraint(
-                        check=(
+                        condition=(
                             models.Q(
                                 offer_image__isnull=False,
                                 reported_user__isnull=True,
@@ -92,7 +92,7 @@ class Migration(migrations.Migration):
                         name="photo_report_has_exactly_one_target",
                     ),
                     models.CheckConstraint(
-                        check=(
+                        condition=(
                             models.Q(reported_user__isnull=True)
                             | ~models.Q(reported_user=models.F("reported_by"))
                         ),

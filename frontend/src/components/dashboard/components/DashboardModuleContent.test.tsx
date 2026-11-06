@@ -72,7 +72,6 @@ const makeProps = (variant = 0): DashboardModuleContentProps => {
       viewedUserNotFound: flagFor(3, variant),
       viewedUserLoadError: flagFor(4, variant),
       retryViewedUserLoad: fn('retryViewedUserLoad'),
-      viewedUserSummary: { id: 55 },
     },
     navigation: {
       handleEditProfileClick: fn('handleEditProfileClick'),
@@ -147,7 +146,6 @@ const PASS_THROUGH: Array<[string, string]> = [
   ['viewedUserNotFound', 'userProfile.viewedUserNotFound'],
   ['viewedUserLoadError', 'userProfile.viewedUserLoadError'],
   ['onRetryViewedUserLoad', 'userProfile.retryViewedUserLoad'],
-  ['viewedUserSummary', 'userProfile.viewedUserSummary'],
   ['onEditProfileClick', 'navigation.handleEditProfileClick'],
   ['onViewUserProfile', 'navigation.handleViewUserProfileFromSearch'],
   ['highlightedSkillId', 'highlighting.highlightedSkillId'],
@@ -192,11 +190,11 @@ describe('štruktúra', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('ModuleRouter dostane presne dohodnutú sadu 58 props', () => {
+  it('ModuleRouter dostane presne dohodnutú sadu 57 props', () => {
     render(<DashboardModuleContent {...makeProps()} />);
 
     expect(Object.keys(lastRouterProps()).sort()).toEqual(ROUTER_KEYS);
-    expect(ROUTER_KEYS).toHaveLength(58);
+    expect(ROUTER_KEYS).toHaveLength(57);
   });
 
   it('pri novom renderi dostane ModuleRouter znova úplnú sadu', () => {
@@ -209,9 +207,9 @@ describe('štruktúra', () => {
 });
 
 describe('podávanie hodnôt do ModuleRouteru', () => {
-  it('na zozname je 54 priamo podávaných props a každý má vlastný vstup', () => {
-    expect(PASS_THROUGH).toHaveLength(54);
-    expect(new Set(PASS_THROUGH.map(([prop]) => prop)).size).toBe(54);
+  it('na zozname je 53 priamo podávaných props a každý má vlastný vstup', () => {
+    expect(PASS_THROUGH).toHaveLength(53);
+    expect(new Set(PASS_THROUGH.map(([prop]) => prop)).size).toBe(53);
   });
 
   it.each(VARIANTS)('každý priamo podávaný prop je hodnota svojho vstupu, rovnaká identita (variant %s)', (variant) => {

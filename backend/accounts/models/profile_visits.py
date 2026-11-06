@@ -41,7 +41,7 @@ class ProfileVisit(models.Model):
                 name="unique_profile_visit_per_day",
             ),
             models.CheckConstraint(
-                check=~models.Q(profile_user=models.F("viewer")),
+                condition=~models.Q(profile_user=models.F("viewer")),
                 name="profile_visit_cannot_point_to_self",
             ),
         ]

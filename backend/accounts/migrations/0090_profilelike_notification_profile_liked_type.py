@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="profilelike",
             constraint=models.CheckConstraint(
-                check=~models.Q(profile_user=models.F("user")),
+                condition=~models.Q(profile_user=models.F("user")),
                 name="profile_like_cannot_point_to_self",
             ),
         ),

@@ -68,7 +68,7 @@ class OfferWatch(models.Model):
         ordering = ["-created_at", "-id"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(slot__gte=1, slot__lte=MAX_OFFER_WATCHES_PER_USER),
+                condition=models.Q(slot__gte=1, slot__lte=MAX_OFFER_WATCHES_PER_USER),
                 name="acc_watch_slot_range",
             ),
             models.UniqueConstraint(
@@ -76,27 +76,27 @@ class OfferWatch(models.Model):
                 name="acc_watch_unique_user_slot",
             ),
             models.CheckConstraint(
-                check=models.Q(country_code__in=SUPPORTED_OFFER_COUNTRIES),
+                condition=models.Q(country_code__in=SUPPORTED_OFFER_COUNTRIES),
                 name="acc_watch_supported_country",
             ),
             models.CheckConstraint(
-                check=~models.Q(category=""),
+                condition=~models.Q(category=""),
                 name="acc_watch_category_required",
             ),
             models.CheckConstraint(
-                check=~models.Q(subcategory=""),
+                condition=~models.Q(subcategory=""),
                 name="acc_watch_subcategory_required",
             ),
             models.CheckConstraint(
-                check=models.Q(price_min__isnull=True) | models.Q(price_min__gt=0),
+                condition=models.Q(price_min__isnull=True) | models.Q(price_min__gt=0),
                 name="acc_watch_price_min_positive",
             ),
             models.CheckConstraint(
-                check=models.Q(price_max__isnull=True) | models.Q(price_max__gt=0),
+                condition=models.Q(price_max__isnull=True) | models.Q(price_max__gt=0),
                 name="acc_watch_price_max_positive",
             ),
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(price_min__isnull=True)
                     | models.Q(price_max__isnull=True)
                     | models.Q(price_min__lte=models.F("price_max"))
@@ -104,7 +104,7 @@ class OfferWatch(models.Model):
                 name="acc_watch_price_order",
             ),
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(
                         price_min__isnull=True,
                         price_max__isnull=True,
@@ -266,7 +266,7 @@ class OfferWatchNotification(models.Model):
                 name="acc_watch_notif_unique_offer",
             ),
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(notified_at__isnull=True)
                     | models.Q(processed_at__isnull=False)
                 ),

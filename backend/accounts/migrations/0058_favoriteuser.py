@@ -62,7 +62,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="favoriteuser",
             constraint=models.CheckConstraint(
-                check=~models.Q(user=models.F("favorite_user")),
+                condition=~models.Q(user=models.F("favorite_user")),
                 name="favorite_user_cannot_point_to_self",
             ),
         ),

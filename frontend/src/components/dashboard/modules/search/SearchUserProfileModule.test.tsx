@@ -294,10 +294,7 @@ describe('SearchUserProfileModule', () => {
     // Na Nástenku prepína Dashboard (žiadosť `feed-go-home`), nie router (nález 172).
     const homeRequests = jest.fn();
     const stopHomeRequests = onFeedHomeNavigation(homeRequests);
-    const onBack = jest.fn();
-    render(
-      <SearchUserProfileModule userId={42} currentUserId={7} onBack={onBack} />,
-    );
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'block profile' }));
     expect(api.post).not.toHaveBeenCalled();
@@ -311,10 +308,8 @@ describe('SearchUserProfileModule', () => {
     });
     stopHomeRequests();
     expect(replaceMock).not.toHaveBeenCalled();
+    // Po zablokovaní sa ide priamo na domovskú stránku Nástenky, nie späť do vyhľadávania.
     expect(window.location.pathname).toBe('/dashboard');
-    // Navigates to the dashboard home directly rather than restoring
-    // the previous "back to search" module state.
-    expect(onBack).not.toHaveBeenCalled();
   });
 
   it('does not expose the block action for the current user profile', async () => {

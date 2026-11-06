@@ -19,7 +19,7 @@ export interface DashboardUserProfileProps {
   setViewedUserId: (userId: number | null) => void;
   viewedUserSlug: string | null;
   setViewedUserSlug: (slug: string | null) => void;
-  viewedUserSummary: SearchUserResult | null;
+  /** Súhrn používateľa z výsledkov vyhľadávania: hook ho používa len ako zdroj slugu pre adresu profilu, obrazovke profilu sa nepredáva. */
   setViewedUserSummary: (summary: SearchUserResult | null) => void;
   viewedUserNotFound: boolean;
   /** Profil sa nepodarilo načítať (sieť, 5xx, 429, timeout) – nie 404. */
@@ -481,7 +481,6 @@ export function useDashboardUserProfile({
     setViewedUserId,
     viewedUserSlug,
     setViewedUserSlug,
-    viewedUserSummary,
     setViewedUserSummary,
     viewedUserNotFound,
     viewedUserLoadError,

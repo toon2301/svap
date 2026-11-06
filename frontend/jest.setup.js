@@ -30,6 +30,8 @@ jest.mock('framer-motion', () => ({
     footer: 'footer',
   },
   AnimatePresence: ({ children }) => children,
+  // `Providers` ním obaľuje celú appku; v mocku len prepúšťa potomkov.
+  MotionConfig: ({ children }) => children,
   // Mimo `AnimatePresence` je komponent vždy prítomný (rovnako ako v skutočnom framer-motion).
   useIsPresent: () => true,
 }))

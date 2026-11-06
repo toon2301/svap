@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="offerwatch",
             constraint=models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(
                         price_min__isnull=True,
                         price_max__isnull=True,

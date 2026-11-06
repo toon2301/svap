@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="offerwatchnotification",
             constraint=models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(notified_at__isnull=True)
                     | models.Q(processed_at__isnull=False)
                 ),

@@ -71,7 +71,6 @@ interface ModuleRouterProps {
   /** Profil sa nepodarilo načítať (nie 404) – ukáže sa chyba s novým pokusom. */
   viewedUserLoadError?: boolean;
   onRetryViewedUserLoad?: () => void;
-  viewedUserSummary?: SearchUserResult | null;
   onEditProfileClick?: () => void;
   onViewUserProfile?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
   highlightedSkillId?: number | null;
@@ -135,7 +134,6 @@ export default function ModuleRouter({
   viewedUserNotFound,
   viewedUserLoadError,
   onRetryViewedUserLoad,
-  viewedUserSummary,
   onEditProfileClick,
   onViewUserProfile,
   highlightedSkillId,
@@ -308,25 +306,8 @@ export default function ModuleRouter({
         <SearchUserProfileModule
           userId={viewedUserId}
           currentUserId={user.id}
-          initialSummary={viewedUserSummary ?? undefined}
           initialTab={initialProfileTab}
           highlightedSkillId={highlightedSkillId ?? null}
-          onBack={() => {
-            setActiveModule('search');
-            try {
-              localStorage.setItem('activeModule', 'search');
-            } catch {
-              // ignore
-            }
-          }}
-          onSendMessage={() => {
-            setActiveModule('messages');
-            try {
-              localStorage.setItem('activeModule', 'messages');
-            } catch {
-              // ignore
-            }
-          }}
         />
       );
     case 'profile':

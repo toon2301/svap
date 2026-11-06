@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="userblock",
             constraint=models.CheckConstraint(
-                check=~models.Q(blocker=models.F("blocked_user")),
+                condition=~models.Q(blocker=models.F("blocked_user")),
                 name="user_block_cannot_target_self",
             ),
         ),

@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="offerwatch",
             constraint=models.CheckConstraint(
-                check=models.Q(country_code__in=COUNTRY_CODES),
+                condition=models.Q(country_code__in=COUNTRY_CODES),
                 name="acc_watch_supported_country",
             ),
         ),

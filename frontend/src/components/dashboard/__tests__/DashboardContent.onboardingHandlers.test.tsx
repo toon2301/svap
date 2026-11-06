@@ -509,14 +509,12 @@ describe('desktopový sprievodca otvára vlastný profil', () => {
     act(() => routerProps().onViewUserProfile?.(42, 'anna', summary));
     expect(routerProps().viewedUserId).toBe(42);
     expect(routerProps().viewedUserSlug).toBe('anna');
-    expect(routerProps().viewedUserSummary).toBe(summary);
 
     act(() => desktop().onOpenProfile?.());
 
     expect(activeModule()).toBe('profile');
     expect(routerProps().viewedUserId).toBeNull();
     expect(routerProps().viewedUserSlug).toBeNull();
-    expect(routerProps().viewedUserSummary).toBeNull();
   });
 
   it('zruší zvýraznenú kartu', async () => {
