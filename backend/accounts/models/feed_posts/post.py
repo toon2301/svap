@@ -31,6 +31,8 @@ class FeedPost(FeedPostSharingMixin, models.Model):
     verejne viditeľnej ponuky/portfólio položky (aj cudzej – viď save())."""
 
     class PostType(models.TextChoices):
+        """Druh príspevku: voľný, alebo zdieľanie ponuky, položky portfólia či iného príspevku."""
+
         FREE_POST = "free_post", _("Voľný príspevok")
         SHARED_OFFER = "shared_offer", _("Zdieľaná ponuka")
         SHARED_PORTFOLIO_ITEM = "shared_portfolio_item", _("Zdieľané portfólio")
@@ -146,6 +148,8 @@ class FeedPost(FeedPostSharingMixin, models.Model):
     )
 
     class Meta:
+        """Názvy v administrácii, poradie od najnovšieho, obmedzenia v databáze a indexy feedu."""
+
         verbose_name = _("Príspevok na nástenke")
         verbose_name_plural = _("Príspevky na nástenke")
         ordering = ["-created_at", "-id"]
@@ -220,6 +224,7 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         ]
 
     def __str__(self):
+        """Krátky popis príspevku (ID, druh, autor) pre administráciu a logy."""
         return f"FeedPost #{self.id} ({self.post_type}) od {self.author_id}"
 
     def save(self, *args, **kwargs):

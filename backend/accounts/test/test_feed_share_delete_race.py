@@ -10,11 +10,14 @@ zmazanie zdroja sa preto dali prekryť dvoma spôsobmi a v oboch dopadol jeden r
 Oprava zamyká riadok zdroja pri vzniku zdieľania aj pri zmazaní (`SELECT ... FOR UPDATE`), takže sa oba
 requesty zoradia. Súbeh na zámku riadku sa dá overiť len na PostgreSQL (SQLite riadky nezamyká), preto sa
 testy dvoch vlákien tam spúšťajú a inde sa preskočia; beh `backend-postgres` v CI ich vykoná. Poradie sa
-vynucuje udalosťami, nie spánkom, a čakanie je obmedzené: bez opravy sa druhé vlákno dokončí hneď, s opravou
-ho zámok zastaví a čakanie vypršia.
+vynucuje udalosťami, nie spánkom: prvé vlákno pokračuje až po tom, čo druhé príspevok načítalo a ide si zobrať
+zámok (alebo vložiť zdieľanie). Čakanie je obmedzené: bez opravy sa druhé vlákno dokončí hneď, s opravou ho zámok
+zastaví a čakanie vypršia.
 """
 
+import contextlib
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -33,7 +36,7 @@ User = get_user_model()
 # Najdlhšie čakanie jedného vlákna na druhé. S opravou ho zámok zastaví, takže čakanie vypršia a test
 # o toľko trvá; bez opravy sa druhé vlákno dokončí hneď a čakanie sa nevyužije.
 HANDOVER_TIMEOUT_SECONDS = 2.0
-# Čakanie na začiatok práce prvého vlákna (iba poistka pred zaseknutím testu).
+# Najdlhšie čakanie, kým druhé vlákno príde k zámku alebo skončí (iba poistka pred zaseknutím testu).
 START_TIMEOUT_SECONDS = 10.0
 
 
@@ -70,6 +73,35 @@ def _call(results, key, make_request):
     finally:
         # Vlákno si otvorilo vlastné spojenie – bez zatvorenia ostane visieť a zablokuje upratanie tabuliek.
         connections.close_all()
+
+
+def _wait_for_any(events, timeout):
+    """Počkaj, kým sa nenastaví aspoň jedna z udalostí; vráti True, ak sa to stalo pred vypršaním limitu."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if any(event.is_set() for event in events):
+            return True
+        time.sleep(0.005)
+    return False
+
+
+@contextlib.contextmanager
+def _signal_when_called(method_name, thread_name, event):
+    """Nastav `event`, keď vlákno `thread_name` zavolá `FeedPost.objects.<method_name>` (tesne pred jeho vykonaním).
+
+    Tak sa pozná, že druhé vlákno už príspevok načítalo a ide si zobrať zámok (alebo vložiť zdieľanie), ešte
+    predtým, než prvé vlákno pokračuje.
+    """
+    original = getattr(FeedPost.objects, method_name)
+
+    def signalling(*args, **kwargs):
+        """Vo sledovanom vlákne nastav udalosť a zavolaj pôvodnú metódu."""
+        if threading.current_thread().name == thread_name:
+            event.set()
+        return original(*args, **kwargs)
+
+    with mock.patch.object(FeedPost.objects, method_name, signalling):
+        yield
 
 
 class _FeedShareFixtureMixin:
@@ -119,15 +151,19 @@ class FeedShareDeleteRaceTests(_FeedShareFixtureMixin, TransactionTestCase):
         takže zdieľanie dostane jasnú chybu a zdroj zmizne.
         """
         updates_done = threading.Event()
+        share_reached_insert = threading.Event()
         share_finished = threading.Event()
         results = {}
         original_delete_batch = DeleteQuery.delete_batch
 
         def delete_batch_after_updates(query, pk_list, using):
-            """Pozastav zmazanie príspevku vo vlákne `deleter`, kým zdieľanie neskončí (alebo nevyprší čakanie)."""
+            """Pozastav zmazanie príspevku vo vlákne `deleter`, kým zdieľanie nedôjde k vloženiu a neskončí (alebo nevyprší čakanie)."""
             # Pauza tesne pred zmazaním riadku príspevku, po odpojení existujúcich zdieľaní.
             if threading.current_thread().name == "deleter" and query.model is FeedPost:
                 updates_done.set()
+                _wait_for_any(
+                    [share_reached_insert, share_finished], START_TIMEOUT_SECONDS
+                )
                 share_finished.wait(HANDOVER_TIMEOUT_SECONDS)
             return original_delete_batch(query, pk_list, using)
 
@@ -139,7 +175,10 @@ class FeedShareDeleteRaceTests(_FeedShareFixtureMixin, TransactionTestCase):
             finally:
                 share_finished.set()
 
-        with mock.patch.object(DeleteQuery, "delete_batch", delete_batch_after_updates):
+        with (
+            mock.patch.object(DeleteQuery, "delete_batch", delete_batch_after_updates),
+            _signal_when_called("create", "sharer", share_reached_insert),
+        ):
             deleter = threading.Thread(
                 name="deleter",
                 target=_call,
@@ -169,15 +208,19 @@ class FeedShareDeleteRaceTests(_FeedShareFixtureMixin, TransactionTestCase):
         zdieľanie nepotvrdí; zmazanie ho potom zbadá a odpojí od zdroja (zdieľanie prežije ako osirelé).
         """
         inserted = threading.Event()
+        delete_reached_lock = threading.Event()
         delete_finished = threading.Event()
         results = {}
         original_tags = None
 
         def tags_after_insert(post, tagged_user_ids):
-            """Pozastav vlákno `sharer` po vložení zdieľania, kým zmazanie neskončí (alebo nevyprší čakanie)."""
+            """Pozastav vlákno `sharer` po vložení zdieľania, kým zmazanie nedôjde k zámku a neskončí (alebo nevyprší čakanie)."""
             # Pauza až PO vložení zdieľania, ešte pred jeho potvrdením.
             if threading.current_thread().name == "sharer":
                 inserted.set()
+                _wait_for_any(
+                    [delete_reached_lock, delete_finished], START_TIMEOUT_SECONDS
+                )
                 delete_finished.wait(HANDOVER_TIMEOUT_SECONDS)
             return original_tags(post, tagged_user_ids)
 
@@ -192,8 +235,11 @@ class FeedShareDeleteRaceTests(_FeedShareFixtureMixin, TransactionTestCase):
         from accounts.views import feed_posts as feed_posts_view_module
 
         original_tags = feed_posts_view_module.apply_feed_post_tags
-        with mock.patch.object(
-            feed_posts_view_module, "apply_feed_post_tags", tags_after_insert
+        with (
+            mock.patch.object(
+                feed_posts_view_module, "apply_feed_post_tags", tags_after_insert
+            ),
+            _signal_when_called("select_for_update", "deleter", delete_reached_lock),
         ):
             sharer = threading.Thread(
                 name="sharer",
@@ -218,14 +264,18 @@ class FeedShareDeleteRaceTests(_FeedShareFixtureMixin, TransactionTestCase):
         Druhý request príspevok pri načítaní ešte vidí; až pod zámkom zistí, že ho medzitým zmazal prvý.
         """
         first_holds_the_lock = threading.Event()
+        second_reached_lock = threading.Event()
         second_finished = threading.Event()
         results = {}
         original_delete_batch = DeleteQuery.delete_batch
 
         def delete_batch_while_holding_the_lock(query, pk_list, using):
-            """Pozastav prvé zmazanie, kým drží zámok, kým druhé neskončí (alebo nevyprší čakanie)."""
+            """Pozastav prvé zmazanie, kým drží zámok, kým druhé nedôjde k zámku a neskončí (alebo nevyprší čakanie)."""
             if threading.current_thread().name == "first" and query.model is FeedPost:
                 first_holds_the_lock.set()
+                _wait_for_any(
+                    [second_reached_lock, second_finished], START_TIMEOUT_SECONDS
+                )
                 second_finished.wait(HANDOVER_TIMEOUT_SECONDS)
             return original_delete_batch(query, pk_list, using)
 
@@ -237,8 +287,11 @@ class FeedShareDeleteRaceTests(_FeedShareFixtureMixin, TransactionTestCase):
             finally:
                 second_finished.set()
 
-        with mock.patch.object(
-            DeleteQuery, "delete_batch", delete_batch_while_holding_the_lock
+        with (
+            mock.patch.object(
+                DeleteQuery, "delete_batch", delete_batch_while_holding_the_lock
+            ),
+            _signal_when_called("select_for_update", "second", second_reached_lock),
         ):
             first = threading.Thread(
                 name="first",

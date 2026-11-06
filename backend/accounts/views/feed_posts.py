@@ -72,6 +72,11 @@ def _validation_error_code(exc: ValidationError):
 
 
 def _validation_error_response(exc: ValidationError) -> Response:
+    """Odpoveď 400 na `ValidationError` pri vytváraní príspevku.
+
+    Chýbajúci alebo neviditeľný zdroj zdieľania dostane vždy rovnakú odpoveď (kvôli enumerácii ID), ostatné chyby
+    text chyby a jej kód.
+    """
     code = _validation_error_code(exc)
     # Neviditeľný CUDZÍ zdroj zdieľania musí vyzerať rovnako ako neexistujúci –
     # inak by sa dalo z rozdielu v odpovedi vyčítať, ktoré ID existujú

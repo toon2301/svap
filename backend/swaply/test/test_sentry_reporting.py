@@ -17,7 +17,10 @@ from swaply.sentry_reporting import capture_reportable_exception
 
 
 class TestCaptureReportableException(TestCase):
+    """Pomocník `capture_reportable_exception` odovzdáva SDK živú výnimku."""
+
     def test_capture_passes_live_exception_with_traceback(self):
+        """Do SDK ide tá istá výnimka (nie jej text), takže Sentry dostane aj jej traceback."""
         factory = RequestFactory()
         request = factory.post("/api/auth/skills/")
 
@@ -35,7 +38,10 @@ class TestCaptureReportableException(TestCase):
 
 @override_settings(DEBUG=False)
 class TestUnhandledApiExceptionSentryReporting(TestCase):
+    """Neošetrená výnimka v API ide do Sentry a klient dostane všeobecnú JSON odpoveď 500."""
+
     def setUp(self):
+        """Pripraví továreň požiadaviek a middleware na obsluhu chýb."""
         self.factory = RequestFactory()
         self.middleware = GlobalErrorHandlingMiddleware(lambda r: None)
 
@@ -44,6 +50,7 @@ class TestUnhandledApiExceptionSentryReporting(TestCase):
     def test_unhandled_api_exception_captured_not_error_logged(
         self, mock_logger, mock_capture
     ):
+        """Výnimka sa pošle do Sentry, nezapíše sa do logu ako chyba a jej text nepríde do odpovede."""
         request = self.factory.post("/api/auth/skills/")
         exc = FileNotFoundError("secrets.json")
 
@@ -60,12 +67,16 @@ class TestUnhandledApiExceptionSentryReporting(TestCase):
 
 @override_settings(DEBUG=False)
 class TestDrfExceptionHandlerSentryReporting(TestCase):
+    """Obsluha výnimiek DRF hlási do Sentry len chyby 5xx."""
+
     def setUp(self):
+        """Pripraví továreň požiadaviek DRF."""
         self.factory = APIRequestFactory()
 
     @patch("swaply.middleware.capture_reportable_exception")
     @patch("swaply.sentry_reporting.logger")
     def test_5xx_calls_capture_not_error_log(self, mock_logger, mock_capture):
+        """Chyba 5xx ide do Sentry a v logu je len informácia, nie chyba."""
         exc = APIException("Upstream unavailable")
         context = {"request": self.factory.get("/api/auth/me/")}
 
@@ -80,6 +91,7 @@ class TestDrfExceptionHandlerSentryReporting(TestCase):
     @patch("swaply.middleware.capture_reportable_exception")
     @patch("swaply.middleware.logger")
     def test_401_does_not_call_capture(self, mock_logger, mock_capture):
+        """Chyba 401 sa do Sentry neposiela a v logu nie je chyba."""
         exc = AuthenticationFailed("Authentication credentials were not provided.")
         context = {"request": self.factory.get("/api/auth/skills/")}
 
@@ -100,6 +112,7 @@ class TestCaptureReportableExceptionResilience(TestCase):
     """
 
     def setUp(self):
+        """Pripraví požiadavku POST na API, z ktorej pomocník berie značky pre hlásenie."""
         self.request = RequestFactory().post("/api/auth/skills/")
 
     def test_uses_no_deprecated_sentry_api(self):
@@ -156,21 +169,26 @@ class TestCaptureReportableExceptionResilience(TestCase):
         self.assertFalse(record.exc_info)
 
     def test_event_carries_request_context_and_the_scope_does_not_leak(self):
-        """Skutočné SDK: značky a používateľ idú len k hlásenej chybe, nie k nasledujúcim udalostiam."""
+        """Skutočné SDK: značky a používateľ idú len k hlásenej chybe, nie k nasledujúcim udalostiam.
+
+        Klient je viazaný len na izolovaný scope tohto testu (bez `sentry_sdk.init`), takže sa globálny stav SDK
+        nemení; po teste sa klient zatvorí.
+        """
         events = []
-        previous_client = sentry_sdk.get_global_scope().client
-        self.addCleanup(sentry_sdk.get_global_scope().set_client, previous_client)
-        sentry_sdk.init(
+        client = sentry_sdk.Client(
             dsn="https://public@example.invalid/1",
             transport=events.append,
             default_integrations=False,
             auto_enabling_integrations=False,
             send_default_pii=False,
         )
+        self.addCleanup(client.close)
         self.request.user = SimpleNamespace(is_authenticated=True, id=7)
 
-        event_id = capture_reportable_exception(ValueError("boom"), self.request)
-        sentry_sdk.capture_message("later")
+        with sentry_sdk.isolation_scope() as scope:
+            scope.set_client(client)
+            event_id = capture_reportable_exception(ValueError("boom"), self.request)
+            sentry_sdk.capture_message("later")
 
         self.assertIsInstance(event_id, str)
         reported, later = events

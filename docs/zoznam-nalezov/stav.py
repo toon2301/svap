@@ -28,7 +28,13 @@ ZMENY = [
      'majiteľom (backend v poriadku, dvakrát 403 pri obnove pre chýbajúce CSRF cookie) a Codexova tabuľka pádov (len WebKit). Nové '
      'nálezy: 245 (obnova prihlásenia v prehliadači: pri chýbajúcom CSRF cookie 403, bez časového limitu a bez opakovania) a 246 '
      '(rovnaký súbeh zdieľania a zmazania pri ponuke a položke portfólia, potvrdený sondou). Do nálezu 244 pribudla poznámka o '
-     'pripnutí `sentry-sdk`.'),
+     'pripnutí `sentry-sdk`. Po kontrole PR #230 (Codex a CodeRabbit): Codex požadoval docstring k metóde `setUp` v teste Sentry '
+     '(pravidlo z `.cursor/rules/svaply.mdc`); vlastná kontrola našla navyše upravenú funkciu `_validation_error_response` bez '
+     'docstringu, takže docstring majú všetky nové a upravené funkcie a pokrytie upravených súborov backendu je 87 až 100 %. Test '
+     'Sentry už nevolá `sentry_sdk.init` (nemení globálny stav SDK; klient je v izolovanom scope a po teste sa zatvorí) a tri testy '
+     's dvoma vláknami počkajú, kým druhé vlákno príspevok načíta a príde k zámku, a až potom pustia prvé. Pripomienka na spoločnú '
+     'továreň reťazca WebSocketu v teste ostáva bez zmeny: rovnaké zostavenie majú aj `test_ws_unauthenticated.py` a '
+     '`test_ws_security.py` a továreň by menila produkčný `asgi.py`.'),
     ('5. 11. 2026',
      'Vetva 164 (čaká na PR; vychádza z `main` `c1fcac25`, teda po PR #225): oprava nasadenia na Railway (nález 240). `kombu` 5.7.0 (vyšlo '
      '3. 11.) vyžaduje `redis-py` 6.1.0 a novší, kým `requirements.txt` mal `redis==5.0.1`, takže sa worker nespustil a web nevedel zadať úlohy '
