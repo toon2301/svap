@@ -15,8 +15,11 @@ jest.mock('@/lib/api', () => ({
   api: { get: jest.fn() },
 }));
 
+/** Preklady, ktoré si test podmení (kľúč → text); ostatné kľúče vrátia záložný text alebo samotný kľúč. */
+const mockTranslations: Record<string, string> = {};
+
 jest.mock('@/contexts/LanguageContext', () => ({
-  useLanguage: () => ({ t: (key: string, fallback?: string) => fallback ?? key }),
+  useLanguage: () => ({ t: (key: string, fallback?: string) => mockTranslations[key] ?? fallback ?? key }),
 }));
 
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -55,6 +58,7 @@ const displayImage: PortfolioDisplayImage = {
 beforeEach(() => {
   jest.clearAllMocks();
   (api.get as jest.Mock).mockReset();
+  Object.keys(mockTranslations).forEach((key) => delete mockTranslations[key]);
 });
 
 describe('PortfolioCard: titulná fotka sa nenačíta', () => {
@@ -111,8 +115,9 @@ describe('PortfolioDetailHero: fotka detailu sa nenačíta', () => {
 });
 
 describe('PortfolioGalleryImageTile: fotka galérie sa nenačíta', () => {
-  it('ukáže neutrálnu plochu a tlačidlá na správu fotky ostanú', () => {
-    render(
+  /** Dlaždica prvej z dvoch fotiek v režime správy fotiek. */
+  function renderTile() {
+    return render(
       <PortfolioGalleryImageTile
         image={displayImage}
         itemTitle={TITLE}
@@ -126,16 +131,51 @@ describe('PortfolioGalleryImageTile: fotka galérie sa nenačíta', () => {
         onDelete={jest.fn()}
       />,
     );
+  }
+
+  it('ukáže neutrálnu plochu a tlačidlá na správu fotky ostanú', () => {
+    renderTile();
 
     fireEvent.error(screen.getByAltText(`${TITLE} 1`));
 
     expect(screen.getByTestId('image-load-failed')).toBeInTheDocument();
-    // Dlaždica je malá, preto len ikona: dôvod nesie `aria-label`, nie viditeľný text.
-    expect(screen.getByRole('img', { name: 'Fotku sa nepodarilo načítať' })).toBeInTheDocument();
+    // Dlaždica je malá, preto len ikona, nie viditeľný text.
     expect(screen.queryByText('Fotku sa nepodarilo načítať')).not.toBeInTheDocument();
     expect(screen.queryByAltText(`${TITLE} 1`)).not.toBeInTheDocument();
     // Pokazenú fotku sa musí dať ešte odstrániť alebo nahradiť.
     expect(screen.getByTestId('portfolio-gallery-delete-button-3')).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-gallery-cover-button-3')).toBeInTheDocument();
+  });
+
+  it('dôvod zlyhania je v prístupnom názve tlačidla dlaždice, nie len v popise ikony', () => {
+    renderTile();
+    const tile = screen.getByRole('button', { name: new RegExp(`^${TITLE}`) });
+    const nameBefore = tile.getAttribute('aria-label') as string;
+    expect(nameBefore).not.toContain('Fotku sa nepodarilo načítať');
+
+    fireEvent.error(screen.getByAltText(`${TITLE} 1`));
+
+    // Potomkovia tlačidla sú pre čítačky obrazovky len prezentační, takže popis ikony náhrady by nezaznel (jsdom to
+    // nerozlišuje): dôvod musí byť v názve samotného tlačidla, za pôvodným názvom s počítadlom.
+    expect(tile).toHaveAccessibleName(`${nameBefore}: Fotku sa nepodarilo načítať`);
+  });
+
+  it('dôvod v názve tlačidla je v jazyku aplikácie, nie natvrdo po slovensky', () => {
+    mockTranslations['common.imageLoadFailed'] = 'Could not load photo';
+    renderTile();
+    const tile = screen.getByRole('button', { name: new RegExp(`^${TITLE}`) });
+    const nameBefore = tile.getAttribute('aria-label') as string;
+
+    fireEvent.error(screen.getByAltText(`${TITLE} 1`));
+
+    expect(tile).toHaveAccessibleName(`${nameBefore}: Could not load photo`);
+  });
+
+  it('názov tlačidla dlaždice sa nemení, kým sa fotka načíta', () => {
+    renderTile();
+    const tile = screen.getByRole('button', { name: new RegExp(`^${TITLE}`) });
+
+    expect(tile).toHaveAccessibleName(`${TITLE} portfolio.photoCounter`);
+    expect(screen.queryByTestId('image-load-failed')).not.toBeInTheDocument();
   });
 });

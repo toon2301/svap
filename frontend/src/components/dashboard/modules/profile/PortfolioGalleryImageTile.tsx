@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
-import ImageLoadFailed from '../shared/ImageLoadFailed';
+import ImageLoadFailed, { useImageLoadFailedLabel } from '../shared/ImageLoadFailed';
 import type { PortfolioDisplayImage } from './portfolioDisplay';
 import { formatPortfolioPhotoCounter } from './portfolioDisplay';
 
@@ -53,13 +53,18 @@ export function PortfolioGalleryImageTile({
   const { t } = useLanguage();
   // Adresa fotky, ktorej načítanie zlyhalo: dlaždica ostane (aj s tlačidlami na správu), len bez obrázka.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === image.mediumSrc;
+  const failedLabel = useImageLoadFailedLabel();
   const hasImageId = typeof image.id === 'number' && image.id > 0;
   const counterText = formatPortfolioPhotoCounter(
     t('portfolio.photoCounter'),
     index + 1,
     total,
   );
-  const label = `${itemTitle} ${counterText}`;
+  // Potomkovia tlačidla sú pre čítačky obrazovky len prezentační, takže popis ikony náhrady by nezaznel: dôvod zlyhania
+  // preto patrí do názvu samotného tlačidla.
+  const baseLabel = `${itemTitle} ${counterText}`;
+  const label = failed ? `${baseLabel}: ${failedLabel}` : baseLabel;
   const pinLabel = isCover ? t('portfolio.coverPhoto') : t('portfolio.setAsCoverPhoto');
 
   return (
@@ -78,7 +83,7 @@ export function PortfolioGalleryImageTile({
             : 'hover:-translate-y-0.5 hover:shadow-md',
         ].join(' ')}
       >
-        {failedSrc === image.mediumSrc ? (
+        {failed ? (
           <ImageLoadFailed variant="compact" />
         ) : (
           <BlurredContainImage

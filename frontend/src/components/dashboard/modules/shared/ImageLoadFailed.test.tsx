@@ -4,7 +4,7 @@
  * Predtým to bol prázdny obdĺžnik, ktorý v tmavom režime vyzeral ako veľká čierna plocha bez vysvetlenia.
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, renderHook, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import cs from '../../../../../messages/cs.json';
 import de from '../../../../../messages/de.json';
@@ -12,7 +12,7 @@ import en from '../../../../../messages/en.json';
 import hu from '../../../../../messages/hu.json';
 import pl from '../../../../../messages/pl.json';
 import sk from '../../../../../messages/sk.json';
-import ImageLoadFailed from './ImageLoadFailed';
+import ImageLoadFailed, { useImageLoadFailedLabel } from './ImageLoadFailed';
 
 const LABEL = 'Fotku sa nepodarilo načítať';
 
@@ -78,6 +78,20 @@ describe('ImageLoadFailed', () => {
 
     expect(screen.getByText('Preklad z kľúča')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Preklad z kľúča' })).toBeInTheDocument();
+  });
+
+  it('hook `useImageLoadFailedLabel` vráti ten istý text z kľúča `common.imageLoadFailed`', () => {
+    mockTranslate = (key) => (key === 'common.imageLoadFailed' ? 'Preklad z kľúča' : `iný kľúč: ${key}`);
+
+    const { result } = renderHook(() => useImageLoadFailedLabel());
+
+    expect(result.current).toBe('Preklad z kľúča');
+  });
+
+  it('hook bez prekladu vráti záložný slovenský text', () => {
+    const { result } = renderHook(() => useImageLoadFailedLabel());
+
+    expect(result.current).toBe(LABEL);
   });
 
   it('záložný text v kóde sa zhoduje so slovenským prekladom a kľúč má všetkých šesť jazykov', () => {

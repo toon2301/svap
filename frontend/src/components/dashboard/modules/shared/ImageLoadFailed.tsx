@@ -6,7 +6,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 /**
  * Vzhľad náhrady:
  *  - `default`: ikona a text na neutrálnej ploche (karusel príspevku),
- *  - `compact`: len ikona, text nesie `aria-label` (malé dlaždice, kam by sa text nezmestil),
+ *  - `compact`: len ikona, text nesie `aria-label` (malé dlaždice, kam by sa text nezmestil). Vo vnútri tlačidla s
+ *    vlastným `aria-label` ho čítačky obrazovky neoznámia (potomkovia tlačidla sú len prezentační), preto rodič
+ *    pridá dôvod do názvu tlačidla cez `useImageLoadFailedLabel`,
  *  - `onDark`: svetlé farby pre fullscreen prehliadač na tmavom podklade.
  */
 export type ImageLoadFailedVariant = 'default' | 'compact' | 'onDark';
@@ -34,6 +36,15 @@ const ICON_SIZE: Record<ImageLoadFailedVariant, string> = {
 };
 
 /**
+ * Text náhrady zlyhanej fotky v aktuálnom jazyku. Je aj samostatným hookom, aby ho rodič (napr. tlačidlo s dlaždicou)
+ * vedel zahrnúť do vlastného prístupného názvu a aby kľúč prekladu so záložným textom bol len na jednom mieste.
+ */
+export function useImageLoadFailedLabel(): string {
+  const { t } = useLanguage();
+  return t('common.imageLoadFailed', 'Fotku sa nepodarilo načítať');
+}
+
+/**
  * Viditeľná náhrada na mieste fotky, ktorú sa nepodarilo načítať (zmazaný alebo nedostupný súbor). Rozloženie ostáva
  * rovnaké ako pri fotke (obal vypĺňa rodiča), no namiesto prázdnej plochy, ktorá v tmavom režime vyzerala ako veľká
  * čierna škvrna, je na nej ikona a text. Obal je `role="img"` s popisom, takže dôvod zistia aj čítačky obrazovky.
@@ -43,8 +54,7 @@ export default function ImageLoadFailed({
   className = '',
   testId = 'image-load-failed',
 }: ImageLoadFailedProps) {
-  const { t } = useLanguage();
-  const label = t('common.imageLoadFailed', 'Fotku sa nepodarilo načítať');
+  const label = useImageLoadFailedLabel();
 
   return (
     <div
