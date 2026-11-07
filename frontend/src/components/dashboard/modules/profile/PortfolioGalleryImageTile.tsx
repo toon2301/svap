@@ -79,7 +79,7 @@ export function PortfolioGalleryImageTile({
         ].join(' ')}
       >
         {failedSrc === image.mediumSrc ? (
-          <ImageLoadFailed />
+          <ImageLoadFailed variant="compact" />
         ) : (
           <BlurredContainImage
             src={image.mediumSrc}

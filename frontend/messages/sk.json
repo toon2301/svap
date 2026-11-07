@@ -75,6 +75,7 @@
   "common": {
     "loading": "Načítavam...",
     "networkError": "Chyba siete. Skontrolujte pripojenie a skúste to znova.",
+    "imageLoadFailed": "Fotku sa nepodarilo načítať",
     "offlineBanner": "Offline režim - niektoré funkcie môžu byť obmedzené.",
     "backOnlineBanner": "Pripojenie obnovené! Aplikácia je online.",
     "error": "Chyba",

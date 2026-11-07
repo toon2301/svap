@@ -130,6 +130,9 @@ describe('PortfolioGalleryImageTile: fotka galérie sa nenačíta', () => {
     fireEvent.error(screen.getByAltText(`${TITLE} 1`));
 
     expect(screen.getByTestId('image-load-failed')).toBeInTheDocument();
+    // Dlaždica je malá, preto len ikona: dôvod nesie `aria-label`, nie viditeľný text.
+    expect(screen.getByRole('img', { name: 'Fotku sa nepodarilo načítať' })).toBeInTheDocument();
+    expect(screen.queryByText('Fotku sa nepodarilo načítať')).not.toBeInTheDocument();
     expect(screen.queryByAltText(`${TITLE} 1`)).not.toBeInTheDocument();
     // Pokazenú fotku sa musí dať ešte odstrániť alebo nahradiť.
     expect(screen.getByTestId('portfolio-gallery-delete-button-3')).toBeInTheDocument();

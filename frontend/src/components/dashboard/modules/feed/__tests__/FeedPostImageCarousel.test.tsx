@@ -229,6 +229,17 @@ describe('FeedPostImageCarousel: fotka, ktorá sa nenačíta (nález 279)', () =
     expect(screen.getByTestId('feed-post-image').querySelector('img')).toBeNull();
   });
 
+  it('náhrada nie je prázdna plocha: má text a ten sa ukáže spolu s počítadlom', () => {
+    render(<FeedPostImageCarousel images={[approved(1), approved(2)]} alt="Fotka" />);
+
+    fireEvent.error(mainImage());
+
+    const placeholder = screen.getByTestId('image-load-failed');
+    expect(placeholder).toHaveTextContent('Fotku sa nepodarilo načítať');
+    expect(screen.getByRole('img', { name: 'Fotku sa nepodarilo načítať' })).toBe(placeholder);
+    expect(screen.getByTestId('feed-post-image')).toHaveTextContent('1/2');
+  });
+
   it('rozloženie aj počítadlo ostanú a ďalšia fotka sa načíta normálne', async () => {
     render(<FeedPostImageCarousel images={[approved(1), approved(2)]} alt="Fotka" />);
 
