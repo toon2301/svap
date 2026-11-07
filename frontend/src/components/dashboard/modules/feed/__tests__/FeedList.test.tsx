@@ -43,6 +43,8 @@ jest.mock('framer-motion', () => ({
       <article {...props}>{children}</article>
     ),
   },
+  /** `FeedList` obaľuje karty do `AnimatePresence`; v teste len prepúšťa potomkov. */
+  AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
 const mockedListFeedPosts = listFeedPosts as jest.MockedFunction<typeof listFeedPosts>;
