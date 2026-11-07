@@ -22,6 +22,7 @@ from ..models import (
     REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
 )
+from ..offer_image_upload import prepare_offer_image_upload
 from ..serializers import OfferedSkillSerializer
 from ..services.offer_visibility import offer_hidden_from_user
 from ..services.offer_watch_match_dispatch import schedule_offer_watch_matching
@@ -55,6 +56,7 @@ MAX_SKILLS_PER_TYPE = 3
 def _matching_offer_identity(
     *, user, category, subcategory, is_seeking, exclude_id=None
 ):
+    """Vráti ponuky používateľa s rovnakou identitou (kategória, podkategória, typ), bez ponuky `exclude_id`."""
     queryset = OfferedSkill.objects.filter(
         user=user,
         category=category,
@@ -67,6 +69,7 @@ def _matching_offer_identity(
 
 
 def _has_reached_card_limit(*, user, is_seeking, exclude_id=None) -> bool:
+    """Dosiahol používateľ limit kariet daného typu (`MAX_SKILLS_PER_TYPE`)? `exclude_id` vynechá upravovanú kartu."""
     queryset = OfferedSkill.objects.filter(user=user, is_seeking=is_seeking)
     if exclude_id is not None:
         queryset = queryset.exclude(id=exclude_id)
@@ -385,6 +388,12 @@ def skill_images_view(request, skill_id):
 
     # Reset file pointer po validácii
     file.seek(0)
+
+    # GDPR: fotka ponuky je verejná, preto sa v pôvodnej podobe neukladá (EXIF/GPS, názov súboru) – nález 282.
+    try:
+        file = prepare_offer_image_upload(file)
+    except ValidationError as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         t1 = perf_counter()
