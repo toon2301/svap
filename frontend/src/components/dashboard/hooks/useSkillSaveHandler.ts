@@ -13,8 +13,7 @@ import {
 } from '../modules/skills/skillsDescribeReturnSession';
 import type { DashboardSkill } from './useSkillsModals';
 import { startBoundedImageRefresh } from './offerImageRefresh';
-import { getApiErrorMessage } from '@/lib/apiError';
-import { getOfferSaveErrorMessage } from '../modules/skills/offerSaveErrors';
+import { getOfferImageUploadErrorMessage, getOfferSaveErrorMessage } from '../modules/skills/offerSaveErrors';
 import { isCountryMissingForNewOffer } from '../modules/skills/offerCountryRequirement';
 
 type Translator = (key: string, fallback: string) => string;
@@ -38,22 +37,7 @@ type SkillSaveHandlerParams = {
   setSelectedSkillsCategory?: (updater: (prev: DashboardSkill | null) => DashboardSkill | null) => void;
 };
 
-type ApiErrorLike = {
-  response?: {
-    data?: {
-      error?: unknown;
-      detail?: unknown;
-    };
-  };
-  message?: unknown;
-};
-
 type SkillSavePayload = Record<string, unknown>;
-
-function isModerationRejection(error: unknown): boolean {
-  return (error as ApiErrorLike & { response?: { data?: { code?: unknown } } })
-    ?.response?.data?.code === 'image_moderation_rejected';
-}
 
 /**
  * Vráti handler na uloženie karty (create/update + upload images) bez zmeny existujúcej logiky.
@@ -239,12 +223,7 @@ export function useSkillSaveHandler({
               savedSkill = await fetchSkillDetail(skill.id);
               applySkillUpdate(savedSkill);
             } catch (imgError: unknown) {
-              if (isModerationRejection(imgError)) {
-                toast.error(t('skills.uploadModerationRejected', 'Fotka nebola prijatá kvôli nevhodnému obsahu.'));
-              } else {
-                const imgMsg = getApiErrorMessage(imgError, t('skills.imageUploadFailed', 'Nahrávanie obrázka zlyhalo'));
-                toast.error(`${t('skills.imageUploadError', 'Chyba pri nahrávaní obrázka')} ${i + 1}: ${imgMsg}`);
-              }
+              toast.error(getOfferImageUploadErrorMessage(imgError, i + 1, t));
             }
           }
           const hasPending = (savedSkill.images ?? []).some((img) => img.status === 'pending');
@@ -295,12 +274,7 @@ export function useSkillSaveHandler({
               savedSkill = await fetchSkillDetail(savedSkillId);
               applySkillUpdate(savedSkill);
             } catch (imgError: unknown) {
-              if (isModerationRejection(imgError)) {
-                toast.error(t('skills.uploadModerationRejected', 'Fotka nebola prijatá kvôli nevhodnému obsahu.'));
-              } else {
-                const imgMsg = getApiErrorMessage(imgError, t('skills.imageUploadFailed', 'Nahrávanie obrázka zlyhalo'));
-                toast.error(`${t('skills.imageUploadError', 'Chyba pri nahrávaní obrázka')} ${i + 1}: ${imgMsg}`);
-              }
+              toast.error(getOfferImageUploadErrorMessage(imgError, i + 1, t));
             }
           }
           const hasPending = (savedSkill.images ?? []).some((img) => img.status === 'pending');

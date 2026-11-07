@@ -20,7 +20,7 @@ import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/lib/apiError';
 import toast from 'react-hot-toast';
-import { getOfferSaveErrorMessage } from './modules/skills/offerSaveErrors';
+import { getOfferImageUploadErrorMessage, getOfferSaveErrorMessage } from './modules/skills/offerSaveErrors';
 import { isCountryMissingForNewOffer } from './modules/skills/offerCountryRequirement';
 
 type Translator = (key: string, fallback: string) => string;
@@ -109,9 +109,9 @@ export default function DashboardModals({
       try {
         await uploadOfferImage(skillId, file);
       } catch (imgError: unknown) {
-        const imgMsg = getApiErrorMessage(imgError, 'Nahrávanie obrázka zlyhalo');
-        alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
-        throw imgError;
+        // Ponuka je v tejto chvíli už uložená (PATCH alebo POST predchádza nahrávaniu), zlyhala len fotka. Chybu preto len
+        // oznámime a ponuku dokončíme ako mobilná úprava; inak by ju používateľ vytváral znova a narazil na duplicate_offer.
+        toast.error(getOfferImageUploadErrorMessage(imgError, i + 1, t));
       }
     }
   };
