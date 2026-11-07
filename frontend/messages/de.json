@@ -75,6 +75,7 @@
   "common": {
     "loading": "Laden...",
     "networkError": "Netzwerkfehler. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "imageLoadFailed": "Foto konnte nicht geladen werden",
     "offlineBanner": "Offline-Modus - einige Funktionen sind möglicherweise eingeschränkt.",
     "backOnlineBanner": "Verbindung wiederhergestellt! Die App ist online.",
     "error": "Fehler",

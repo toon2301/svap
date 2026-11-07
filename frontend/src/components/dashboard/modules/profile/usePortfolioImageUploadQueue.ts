@@ -109,6 +109,10 @@ function adjustedActiveServerCount(
   return Math.max(0, activeImageCount - duplicateLocalPendingIds.size);
 }
 
+/**
+ * Rada nahrávania fotiek do existujúcej položky portfólia: kontrola súborov (typ, veľkosť, limit fotiek), nahrávanie
+ * s priebehom, opakovanie zlyhaných a toasty (súhrnný za dávku a jeden za každý dôvod zamietnutia vopred).
+ */
 export function usePortfolioImageUploadQueue({
   itemId,
   activeImageCount,
@@ -229,6 +233,7 @@ export function usePortfolioImageUploadQueue({
     await Promise.resolve(onRefresh());
   }, [onRefresh]);
 
+  /** Pridá vybrané súbory do rady: zlé zamietne hneď (riadok s chybou a toast), platné nahrá a ohlási výsledok dávky. */
   const uploadFiles = useCallback(
     (fileList: FileList | File[]) => {
       const files = Array.from(fileList);
@@ -247,6 +252,8 @@ export function usePortfolioImageUploadQueue({
       );
       const uploadable: PortfolioUploadQueueItem[] = [];
       const nextItems: PortfolioUploadQueueItem[] = [];
+      // Dôvody, pre ktoré sa súbor zamietol ešte pred nahrávaním; každý ide do toastu raz za dávku, nie za súbor.
+      const rejectionReasons = new Set<string>();
 
       files.forEach((file) => {
         const id = createQueueId();
@@ -254,26 +261,16 @@ export function usePortfolioImageUploadQueue({
         if (previewUrl) previewUrlsRef.current.set(id, previewUrl);
 
         if (!isSupportedImageFile(file)) {
-          nextItems.push({
-            id,
-            file,
-            previewUrl,
-            progress: 0,
-            status: 'failed',
-            error: t('portfolio.invalidPhotoType'),
-          });
+          const error = t('portfolio.invalidPhotoType');
+          rejectionReasons.add(error);
+          nextItems.push({ id, file, previewUrl, progress: 0, status: 'failed', error });
           return;
         }
 
         if (file.size > PORTFOLIO_IMAGE_MAX_BYTES) {
-          nextItems.push({
-            id,
-            file,
-            previewUrl,
-            progress: 0,
-            status: 'failed',
-            error: t('portfolio.photoTooLarge'),
-          });
+          const error = t('portfolio.photoTooLarge');
+          rejectionReasons.add(error);
+          nextItems.push({ id, file, previewUrl, progress: 0, status: 'failed', error });
           return;
         }
 
@@ -295,6 +292,10 @@ export function usePortfolioImageUploadQueue({
         nextItems.push(queueItem);
         uploadable.push(queueItem);
       });
+
+      // Riadok s chybou v rade ostáva (nesie dôvod pri konkrétnom súbore), toast ho len doplní: bez neho by pri dávke,
+      // v ktorej sa nič nenahráva, nezaznel žiadny signál (súbory zamietnuté vopred nie sú vo výsledkoch nahrávania nižšie).
+      rejectionReasons.forEach((reason) => toast.error(reason));
 
       if (nextItems.length > 0) {
         setItems((current) => [...current, ...nextItems]);
