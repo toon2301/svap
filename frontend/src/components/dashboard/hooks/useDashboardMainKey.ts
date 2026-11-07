@@ -43,10 +43,15 @@ import { useState } from 'react';
  * renderu (vzor z dokumentácie Reactu), nie efektom: inak by prvý render
  * s obsahom starej obrazovky ešte stihol namaľovať snímok predtým, než by sa
  * kľúč stihol zmeniť.
+ *
+ * `hold`: kým je zapnuté, kľúč sa nemení ani pri zmene `screen` a zmena sa nezapamätá. Použitie: mobilný zoznam
+ * Nastavení je panel, ktorý sa vsúva ponad obrazovku, z ktorej sa otvoril. Pod ním musí ostať ONA, nie nový
+ * prázdny `<main>`. Po zatvorení zoznamu sa `screen` porovná s obrazovkou spred podržania, takže návrat na ten istý
+ * modul nevymení element, kým iná obrazovka dostane nový ako vždy.
  */
-export function useDashboardMainKey(screen: string): string {
+export function useDashboardMainKey(screen: string, hold = false): string {
   const [track, setTrack] = useState({ screen, generation: 0 });
-  if (track.screen !== screen) {
+  if (!hold && track.screen !== screen) {
     const next = { screen, generation: track.generation + 1 };
     setTrack(next);
     return `main-${next.generation}`;
