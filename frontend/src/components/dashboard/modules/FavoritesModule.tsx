@@ -12,7 +12,7 @@ import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
 import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
 import { profileActionErrorMessage, type SearchProfileApiError } from './search/foreignProfileHelpers';
-import BlurredContainImage from './shared/BlurredContainImage';
+import FavoriteAvatar from './FavoriteAvatar';
 import { clearFeedReturn } from './feed/feedReturnState';
 
 function favoriteProfileIdentifier(
@@ -143,7 +143,7 @@ export default function FavoritesModule() {
 
       {isLoading ? (
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-400">
-          {t('favorites.loading', 'Nacitavam oblubenych pouzivatelov...')}
+          {t('favorites.loading', 'Načítavam obľúbených používateľov...')}
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-200 bg-white p-12 text-center shadow-sm dark:border-red-900/40 dark:bg-[#0f0f10]">
@@ -153,19 +153,19 @@ export default function FavoritesModule() {
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center shadow-sm dark:border-gray-800 dark:bg-[#0f0f10]">
           <HeartIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-            {t('favorites.emptyTitle', 'Zatial nemate ziadnych oblubenych pouzivatelov')}
+            {t('favorites.emptyTitle', 'Zatiaľ nemáte žiadnych obľúbených používateľov')}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {t(
               'favorites.emptyHint',
-              'Ked si niekoho pridate k oblubenym v profile, zobrazi sa tu.',
+              'Keď si niekoho pridáte k obľúbeným v profile, zobrazí sa tu.',
             )}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
           {favoriteUsers.map((favoriteUser) => {
-            const displayName = favoriteUser.display_name || t('favorites.unknownUser', 'Pouzivatel');
+            const displayName = favoriteUser.display_name || t('favorites.unknownUser', 'Používateľ');
             const initials = initialsFromName(displayName);
             const isRemoving = pendingRemoveId === favoriteUser.id;
 
@@ -183,17 +183,15 @@ export default function FavoritesModule() {
                   aria-label={displayName}
                 >
                   <div className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-purple-100 dark:bg-purple-950/40">
-                    {favoriteUser.avatar_url ? (
-                      <BlurredContainImage
-                        src={favoriteUser.avatar_url}
-                        alt={displayName}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="text-5xl font-bold text-purple-700 dark:text-purple-200">
-                        {initials || <UserIcon className="h-14 w-14" />}
-                      </span>
-                    )}
+                    <FavoriteAvatar
+                      avatarUrl={favoriteUser.avatar_url}
+                      alt={displayName}
+                      fallback={
+                        <span className="text-5xl font-bold text-purple-700 dark:text-purple-200">
+                          {initials || <UserIcon className="h-14 w-14" />}
+                        </span>
+                      }
+                    />
                   </div>
                 </button>
 
@@ -213,7 +211,7 @@ export default function FavoritesModule() {
                     onClick={() => handleOpenMessages(favoriteUser)}
                     className="w-full rounded-lg border border-purple-200 bg-purple-100 px-4 py-2.5 text-sm font-semibold text-purple-800 transition-colors hover:bg-purple-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-purple-800/60 dark:bg-purple-900/40 dark:text-purple-100 dark:hover:bg-purple-900/60 dark:focus-visible:ring-purple-500/40"
                   >
-                    {t('skills.message', 'Sprava')}
+                    {t('skills.message', 'Správa')}
                   </button>
                   <button
                     type="button"
@@ -223,7 +221,7 @@ export default function FavoritesModule() {
                     disabled={isRemoving}
                     className="w-full rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#3a3c3d] dark:text-white dark:hover:bg-[#454748]"
                   >
-                    {t('favorites.removeAction', 'Odobrat')}
+                    {t('favorites.removeAction', 'Odobrať')}
                   </button>
                 </div>
               </motion.div>

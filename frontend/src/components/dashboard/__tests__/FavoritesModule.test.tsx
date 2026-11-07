@@ -92,7 +92,7 @@ describe('FavoritesModule', () => {
   it('opens messages from the primary action button', async () => {
     render(<FavoritesModule />);
 
-    const messageButton = await screen.findByRole('button', { name: 'Sprava' });
+    const messageButton = await screen.findByRole('button', { name: 'Správa' });
     fireEvent.click(messageButton);
 
     expect(pushMock).toHaveBeenCalledWith('/dashboard/messages?targetUserId=7');
@@ -101,7 +101,7 @@ describe('FavoritesModule', () => {
   it('removes a favorite user after clicking remove', async () => {
     render(<FavoritesModule />);
 
-    const removeButton = await screen.findByRole('button', { name: 'Odobrat' });
+    const removeButton = await screen.findByRole('button', { name: 'Odobrať' });
     fireEvent.click(removeButton);
 
     await waitFor(() => {
@@ -115,7 +115,26 @@ describe('FavoritesModule', () => {
 
     render(<FavoritesModule />);
 
-    expect(await screen.findByText('Zatial nemate ziadnych oblubenych pouzivatelov')).toBeInTheDocument();
+    expect(await screen.findByText('Zatiaľ nemáte žiadnych obľúbených používateľov')).toBeInTheDocument();
+  });
+
+  // Nález 279: avatar, ktorý sa nenačíta (zmazaný súbor), ostal ako pokazený obrázok s alt textom. Teraz ho nahradia
+  // iniciály, ako pri používateľovi bez avatara.
+  it('shows the initials when the avatar fails to load', async () => {
+    (fetchFavoriteUsers as jest.Mock).mockResolvedValue([
+      {
+        id: 7,
+        slug: 'jana-novakova',
+        display_name: 'Jana Novakova',
+        avatar_url: 'https://cdn.example.com/avatars/7.webp',
+      },
+    ]);
+
+    render(<FavoritesModule />);
+    fireEvent.error(await screen.findByAltText('Jana Novakova'));
+
+    expect(screen.getByText('JN')).toBeInTheDocument();
+    expect(screen.queryByAltText('Jana Novakova')).not.toBeInTheDocument();
   });
 
   // Nález 175: hláška o chybe bola ako poslednú možnosť surový `message` z knižnice axios („Network Error“,
@@ -171,7 +190,7 @@ describe('FavoritesModule', () => {
       (setFavoriteUserState as jest.Mock).mockRejectedValue(failure);
 
       render(<FavoritesModule />);
-      fireEvent.click(await screen.findByRole('button', { name: 'Odobrat' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Odobrať' }));
 
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expectedRemove));
       expect(toast.error).toHaveBeenCalledTimes(1);

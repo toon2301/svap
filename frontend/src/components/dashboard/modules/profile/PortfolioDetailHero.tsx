@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
 import { PortfolioLikeButton } from './PortfolioLikeButton';
@@ -25,10 +26,13 @@ export function PortfolioDetailHero({
 }: PortfolioDetailHeroProps) {
   const { t } = useLanguage();
   const description = String(item.description || '').trim();
+  // Adresa fotky, ktorej načítanie zlyhalo; pri nej sa ukáže ten istý text ako pri portfóliu bez titulnej fotky.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showHeroImage = Boolean(heroImage) && failedSrc !== heroImage?.mediumSrc;
 
   return (
     <section className="grid gap-6 lg:grid-cols-2 lg:gap-x-8 lg:gap-y-4 lg:items-start">
-      {heroImage ? (
+      {heroImage && showHeroImage ? (
         <button
           type="button"
           onClick={onOpenImage}
@@ -39,6 +43,7 @@ export function PortfolioDetailHero({
             alt={item.title}
             loading="eager"
             className="rounded-3xl"
+            onError={() => setFailedSrc(heroImage.mediumSrc)}
           />
         </button>
       ) : (

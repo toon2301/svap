@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from './BlurredContainImage';
 
@@ -30,6 +30,38 @@ type PreparedImage = {
 
 const DEFAULT_INTERVAL = 5000;
 
+/** Plocha „Bez fotografie“: ponuka nemá fotku, alebo sa žiadna z jej fotiek nenačítala. */
+function NoPhotoPlaceholder() {
+  const { t } = useLanguage();
+
+  return (
+    <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-[#141415] dark:via-[#0f0f10] dark:to-[#0a0a0b] flex items-center justify-center">
+      <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          className="w-10 h-10 mb-1.5 opacity-60"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6.75 7.5l1.027-1.37A1.5 1.5 0 0 1 9 5.5h6a1.5 1.5 0 0 1 1.223.63L17.25 7.5H19.5A1.5 1.5 0 0 1 21 9v7.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5V9A1.5 1.5 0 0 1 4.5 7.5h2.25Z"
+          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+        </svg>
+        <span className="text-[11px] uppercase tracking-wide opacity-70">{t('skills.noPhoto', 'Bez fotografie')}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Automaticky sa pretáčajúce fotky ponuky. Fotka, ktorú sa nepodarilo načítať (zmazaný alebo nedostupný súbor), sa
+ * v rotácii vynechá a „Bez fotografie“ sa ukáže až vtedy, keď zlyhajú všetky; platí pre oba varianty.
+ */
 const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
   images,
   alt,
@@ -67,6 +99,24 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
 
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // Adresy fotiek, ktorých načítanie zlyhalo. Viažu sa na adresu, takže nová adresa tej istej fotky sa skúsi znova.
+  const [failedSrcs, setFailedSrcs] = useState<readonly string[]>([]);
+  /** Zapíše adresu fotky, ktorej načítanie zlyhalo (opakované hlásenie tej istej adresy nič nezmení). */
+  const markFailed = (src: string) =>
+    setFailedSrcs((prev) => (prev.includes(src) ? prev : [...prev, src]));
+
+  // Zobraziť sa dajú len fotky, ktoré nezlyhali; rotácia ide cez ne.
+  const visibleImages = useMemo(
+    () => preparedImages.filter((img) => !failedSrcs.includes(img.src)),
+    [preparedImages, failedSrcs],
+  );
+  const visibleCountRef = useRef(visibleImages.length);
+  // Referencia sa aktualizuje až po potvrdení renderu, nie počas neho: React môže render zopakovať alebo zahodiť,
+  // takže by v nej mohol ostať počet z renderu, ktorý sa nikdy nezobrazil.
+  useEffect(() => {
+    visibleCountRef.current = visibleImages.length;
+  }, [visibleImages.length]);
+
   useEffect(() => {
     setActiveIndex(0);
 
@@ -75,7 +125,9 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
     }
 
     const timer = window.setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % preparedImages.length);
+      // Počet zobraziteľných fotiek sa mení, keď niektorá zlyhá, preto sa číta z referencie, nie z uzáveru.
+      const count = visibleCountRef.current;
+      setActiveIndex((prev) => (count > 1 ? (prev + 1) % count : 0));
     }, intervalMs);
 
     return () => window.clearInterval(timer);
@@ -124,35 +176,21 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
       );
     }
 
-    return (
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-[#141415] dark:via-[#0f0f10] dark:to-[#0a0a0b] flex items-center justify-center">
-        <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            className="w-10 h-10 mb-1.5 opacity-60"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6.75 7.5l1.027-1.37A1.5 1.5 0 0 1 9 5.5h6a1.5 1.5 0 0 1 1.223.63L17.25 7.5H19.5A1.5 1.5 0 0 1 21 9v7.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5V9A1.5 1.5 0 0 1 4.5 7.5h2.25Z"
-            />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-          </svg>
-          <span className="text-[11px] uppercase tracking-wide opacity-70">{t('skills.noPhoto', 'Bez fotografie')}</span>
-        </div>
-      </div>
-    );
   }
+
+  // Ponuka nemá fotku, alebo sa nenačítala ani jedna.
+  if (visibleImages.length === 0) {
+    return <NoPhotoPlaceholder />;
+  }
+
+  // Index po zlyhaní fotky môže presiahnuť počet zobraziteľných; ďalšia fotka tak nastúpi na jej miesto.
+  const shownIndex = activeIndex % visibleImages.length;
 
   return (
     <div className="absolute inset-0">
-      {preparedImages.map((img, idx) => {
+      {visibleImages.map((img, idx) => {
         const imageClassName = `absolute inset-0 transition-opacity duration-700 ease-in-out ${
-          idx === activeIndex ? 'opacity-100' : 'opacity-0'
+          idx === shownIndex ? 'opacity-100' : 'opacity-0'
         }`;
         const loading = idx === 0 ? 'eager' : 'lazy';
 
@@ -163,6 +201,7 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
             alt={alt}
             className={imageClassName}
             loading={loading}
+            onError={() => markFailed(img.src)}
           />
         ) : (
           <img
@@ -171,6 +210,7 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
             alt={alt}
             className={`${imageClassName} h-full w-full object-cover`}
             loading={loading}
+            onError={() => markFailed(img.src)}
           />
         );
       })}

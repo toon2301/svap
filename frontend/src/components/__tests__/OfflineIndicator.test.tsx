@@ -136,6 +136,83 @@ describe('OfflineIndicator', () => {
       expect(bannerOf(/Pripojenie obnovené/)).toBeNull();
     });
   });
+
+  // Nález 277: pruh neoznámil čítaču obrazovky zmenu pripojenia (žiadna `role` ani `aria-live`). Živý región musí byť
+  // v stránke ešte pred zmenou: vložený hotový ho čítače nemusia oznámiť a zmena `role` na existujúcom uzle tiež nie je
+  // spoľahlivá. Preto sú oba obaly (`alert` a `status`) stále prítomné a pruh sa vkladá ako ich obsah.
+  describe('čítač obrazovky (nález 277)', () => {
+    it('obaly sú v stránke aj pri pripojení online a sú prázdne', () => {
+      render(<OfflineIndicator />);
+
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    });
+
+    it('pri výpadku je text v obale `alert` a `status` ostane prázdny', () => {
+      render(<OfflineIndicator />);
+
+      changeConnection(false);
+
+      expect(screen.getByRole('alert')).toHaveTextContent(/Offline režim/);
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    });
+
+    it('po obnovení je text v obale `status` a `alert` je prázdny', () => {
+      setOnLine(false);
+      render(<OfflineIndicator />);
+
+      changeConnection(true);
+
+      expect(screen.getByRole('status')).toHaveTextContent(/Pripojenie obnovené/);
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+    });
+
+    it('pruh je jediná kópia textu: žiadna skrytá duplicita, ktorú by čítač prečítal dvakrát', () => {
+      render(<OfflineIndicator />);
+
+      changeConnection(false);
+
+      expect(screen.getAllByText(/Offline režim/)).toHaveLength(1);
+    });
+
+    it('obaly sú tie isté uzly pred zmenou aj po nej, takže živý región existuje vopred', () => {
+      render(<OfflineIndicator />);
+      const alertRegion = screen.getByRole('alert');
+      const statusRegion = screen.getByRole('status');
+
+      changeConnection(false);
+      changeConnection(true);
+
+      expect(screen.getByRole('alert')).toBe(alertRegion);
+      expect(screen.getByRole('status')).toBe(statusRegion);
+    });
+
+    it('po 3 s sú oba obaly znova prázdne a ostávajú v stránke', () => {
+      setOnLine(false);
+      render(<OfflineIndicator />);
+      changeConnection(true);
+
+      act(() => {
+        jest.advanceTimersByTime(3000);
+      });
+
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    });
+
+    it('`status` je atomický a `alert` nemá `aria-live` (dvojité čítanie vo VoiceOver na iOS)', () => {
+      render(<OfflineIndicator />);
+
+      expect(screen.getByRole('status')).toHaveAttribute('aria-atomic', 'true');
+      expect(screen.getByRole('alert')).not.toHaveAttribute('aria-live');
+    });
+
+    it('emoji v pruhu čítač nečíta', () => {
+      render(<OfflineIndicator />);
+
+      changeConnection(false);
+
+      expect(screen.getByText('🔴')).toHaveAttribute('aria-hidden', 'true');
+    });
+  });
 });
-
-

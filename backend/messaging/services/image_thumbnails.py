@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from django.core.files.base import ContentFile
 from django.db import transaction
 
+from swaply.image_signature import open_allowed_image
+
 if TYPE_CHECKING:
     from ..models import Message
 
@@ -42,12 +44,13 @@ def build_message_thumbnail(image_field) -> ContentFile | None:
 
     _register_heif_support()
     try:
-        from PIL import Image, ImageOps
+        from PIL import ImageOps
 
         image_field.open("rb")
         image_file = image_field.file
         image_file.seek(0)
-        with Image.open(image_file) as source:
+        # Len povolené formáty: pri inom (TIFF, BMP…) sa náhľad nevyrobí a správa ostane bez neho.
+        with open_allowed_image(image_file) as source:
             image = ImageOps.exif_transpose(source)
             image.thumbnail((MESSAGE_THUMBNAIL_MAX_SIDE, MESSAGE_THUMBNAIL_MAX_SIDE))
             image = _normalize_image_mode(image)

@@ -12,6 +12,7 @@ from django.core.files.storage import default_storage
 from django.db import transaction
 
 from swaply.image_moderation import check_image_safety
+from swaply.image_signature import open_allowed_image
 
 from .image_storage import delete_storage_keys
 from .image_storage import get_s3_client as _s3_client
@@ -75,10 +76,11 @@ def _normalize_image_mode(image):
 
 
 def _decode_image(raw_bytes: bytes):
-    from PIL import Image, ImageOps
+    """Dekóduje povolený formát (JPEG, PNG, WebP, GIF, HEIC); iný vyhodí `UnidentifiedImageError`."""
+    from PIL import ImageOps
 
     _register_heif_support()
-    with Image.open(io.BytesIO(raw_bytes)) as source:
+    with open_allowed_image(io.BytesIO(raw_bytes)) as source:
         source.load()
         return ImageOps.exif_transpose(source).copy()
 
