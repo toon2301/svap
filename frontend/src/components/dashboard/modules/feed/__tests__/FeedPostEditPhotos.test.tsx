@@ -132,6 +132,29 @@ beforeEach(() => {
   mockedGetPost.mockResolvedValue(makePost({ images: [image(12)] }));
 });
 
+describe('náhľady fotiek v okne úpravy (nález 274)', () => {
+  const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  beforeEach(() => {
+    // Ako na Railway: frontend preposiela `/api` na backend, takže cookie ide s požiadavkou len na doménu frontendu.
+    process.env.NEXT_PUBLIC_API_URL = '/api';
+  });
+
+  afterEach(() => {
+    if (originalApiUrl === undefined) delete process.env.NEXT_PUBLIC_API_URL;
+    else process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
+  });
+
+  it('náhľad fotky z hostu backendu načíta cez doménu frontendu, aby ho videl aj autor súkromného profilu', () => {
+    const backendThumb =
+      'https://backend.example.up.railway.app/api/auth/feed/posts/7/images/11/file/?variant=thumbnail';
+    renderModal(makePost({ images: [{ id: 11, thumbnail_url: backendThumb, large_url: backendThumb }] }));
+
+    const thumbs = screen.getAllByAltText('Fotka príspevku');
+    expect(thumbs[0]).toHaveAttribute('src', '/api/auth/feed/posts/7/images/11/file/?variant=thumbnail');
+  });
+});
+
 describe('draft odobratia', () => {
   it('marks a photo instead of hiding it right away', async () => {
     renderModal();

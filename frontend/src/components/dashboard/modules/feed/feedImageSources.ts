@@ -12,10 +12,11 @@
  */
 
 import type { FeedPost, FeedPostImage } from '@/lib/feedApi';
+import { sameOriginFeedImageUrl } from './feedImageUrl';
 
 /** Veľká varianta, inak náhľad; prázdny reťazec = fotka sa ešte spracúva. */
 export function feedImageSrc(image: FeedPostImage): string {
-  return image.large_url || image.thumbnail_url || '';
+  return sameOriginFeedImageUrl(image.large_url || image.thumbnail_url);
 }
 
 /** Fotky, ktoré karta vykresľuje (vrátane rozpracovaných stavových plôch). */
@@ -55,5 +56,5 @@ export function sharedFeedPostPhoto(
   if (post?.shared_content_unavailable) return null;
   const thumbnailUrl = (shared.thumbnail_url || '').trim();
   if (!thumbnailUrl || shared.id == null) return null;
-  return { postId: shared.id, thumbnailUrl };
+  return { postId: shared.id, thumbnailUrl: sameOriginFeedImageUrl(thumbnailUrl) };
 }

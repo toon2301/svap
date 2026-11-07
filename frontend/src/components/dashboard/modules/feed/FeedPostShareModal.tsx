@@ -8,6 +8,7 @@
  */
 
 import FeedShareDialog, { type FeedSharePreview } from './FeedShareDialog';
+import { sameOriginFeedImageUrl } from './feedImageUrl';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import { shareFeedPost, type FeedPost } from '@/lib/feedApi';
 
@@ -18,6 +19,7 @@ type FeedPostShareModalProps = {
   onShared?: (created: FeedPost) => void;
 };
 
+/** Okno zdieľania príspevku ďalej: skladá náhľad príspevku a po potvrdení ho odošle cez API. */
 export default function FeedPostShareModal({
   open,
   onClose,
@@ -42,7 +44,7 @@ export default function FeedPostShareModal({
     // Prvá fotka nemusí mať náhľad (autor vidí aj pending/rejected, tie ho
     // nemajú) – hľadá sa teda prvá SPRACOVANÁ, nie doslova images[0].
     thumbnailUrl:
-      post.images?.find((image) => image.thumbnail_url)?.thumbnail_url ?? null,
+      sameOriginFeedImageUrl(post.images?.find((image) => image.thumbnail_url)?.thumbnail_url) || null,
     owner: {
       displayName: post.author?.display_name || '',
       avatarUrl: post.author?.avatar_url ?? null,

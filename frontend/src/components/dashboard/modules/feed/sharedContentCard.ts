@@ -11,6 +11,7 @@
 
 import type { FeedPost } from '@/lib/feedApi';
 import type { OfferPriceFields } from './offerPriceLabel';
+import { sameOriginFeedImageUrl } from './feedImageUrl';
 
 export type SharedContentCardOwner = {
   displayName: string;
@@ -50,7 +51,7 @@ export function sharedContentCardFromPost(post: FeedPost): SharedContentCard | n
     type: shared.type,
     title: shared.title,
     caption: shared.caption,
-    thumbnailUrl: shared.thumbnail_url,
+    thumbnailUrl: shared.thumbnail_url ? sameOriginFeedImageUrl(shared.thumbnail_url) : shared.thumbnail_url,
     isSeeking: shared.is_seeking,
     // Snapshot sám nesie polia ceny, takže ide rovno ako `OfferPriceFields`.
     price: shared,
