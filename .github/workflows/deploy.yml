@@ -31,6 +31,13 @@ jobs:
       working-directory: ./frontend
       run: npm ci
 
+    # Každý kľúč použitý v kóde ako `t('...')` musí existovať v messages/sk.json (nález 204). Beží hneď po `npm ci`,
+    # pred testami a buildom, takže chýbajúci preklad zlyhá rýchlo. Skript `check:missing-translations` sem nepatrí:
+    # kontroluje úplnosť ostatných jazykov, čo je iná kontrola.
+    - name: Check used translation keys
+      working-directory: ./frontend
+      run: npm run check:used-translation-keys
+
     - name: Run frontend tests
       working-directory: ./frontend
       run: npm test -- --ci --reporters=default --reporters=github-actions
