@@ -38,6 +38,10 @@ function PushPinIcon({ filled, className }: { filled?: boolean; className?: stri
   );
 }
 
+/**
+ * Dlaždica jednej fotky v galérii portfólia: otvorí fotku a v režime správy ponúka nastavenie titulnej fotky a zmazanie.
+ * Zlyhanú fotku nahradí neutrálnou plochou s dôvodom v názve tlačidla; tlačidlá na správu jej ostávajú.
+ */
 export function PortfolioGalleryImageTile({
   image,
   itemTitle,

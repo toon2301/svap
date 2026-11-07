@@ -109,6 +109,10 @@ function adjustedActiveServerCount(
   return Math.max(0, activeImageCount - duplicateLocalPendingIds.size);
 }
 
+/**
+ * Rada nahrávania fotiek do existujúcej položky portfólia: kontrola súborov (typ, veľkosť, limit fotiek), nahrávanie
+ * s priebehom, opakovanie zlyhaných a toasty (súhrnný za dávku a jeden za každý dôvod zamietnutia vopred).
+ */
 export function usePortfolioImageUploadQueue({
   itemId,
   activeImageCount,
@@ -229,6 +233,7 @@ export function usePortfolioImageUploadQueue({
     await Promise.resolve(onRefresh());
   }, [onRefresh]);
 
+  /** Pridá vybrané súbory do rady: zlé zamietne hneď (riadok s chybou a toast), platné nahrá a ohlási výsledok dávky. */
   const uploadFiles = useCallback(
     (fileList: FileList | File[]) => {
       const files = Array.from(fileList);

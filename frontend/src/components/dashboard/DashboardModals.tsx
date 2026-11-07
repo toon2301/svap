@@ -102,6 +102,10 @@ export default function DashboardModals({
     }
   };
 
+  /**
+   * Nahrá nové fotky už uloženej ponuky jednu po druhej. Chyba fotky sa oznámi toastom a nahrávanie pokračuje ďalšou,
+   * lebo ponuka je uložená a nesmie sa hlásiť ako neúspešná.
+   */
   const uploadImagesIfNeeded = async (skillId: number, images: File[]) => {
     if (!images.length) return;
     for (let i = 0; i < images.length; i += 1) {

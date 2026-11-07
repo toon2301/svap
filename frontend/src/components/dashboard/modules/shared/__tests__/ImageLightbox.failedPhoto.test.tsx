@@ -32,6 +32,7 @@ const LABELS = {
   counter: (current: number, total: number) => `${current} / ${total}`,
 };
 const PUBLIC = ['https://cdn.test/1.webp', 'https://cdn.test/2.webp', 'https://cdn.test/3.webp'];
+/** Chránená adresa fotky portfólia, ktorú prehliadač sťahuje cez `api` ako blob. */
 const protectedUrl = (id: number) => `https://backend.test/api/auth/portfolio/9/images/${id}/file/?variant=large`;
 
 /** Otvorený prehliadač s danými fotkami; `extra` prepíše vlastnosti (napr. `onImageActivate`). */

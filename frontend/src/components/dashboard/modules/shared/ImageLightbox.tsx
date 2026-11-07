@@ -88,6 +88,10 @@ function clampIndex(index: number, length: number): number {
   return Math.min(Math.max(index, 0), length - 1);
 }
 
+/**
+ * Fullscreen prehliadač fotiek (portfólio aj nástenka): prepínanie šípkami, swipe a klávesnicou, zatváranie, počítadlo
+ * a vrstva volajúceho. Samotnú fotku (aj jej zlyhanie) vykresľuje `LightboxPhoto`.
+ */
 export function ImageLightbox({
   open,
   sources,

@@ -103,6 +103,7 @@ describe('usePortfolioImageUploadQueue: súbory zamietnuté pred nahrávaním', 
     );
   }
 
+  /** Malý súbor so zadaným názvom a typom. */
   const imageFile = (name: string, type = 'image/jpeg') => new File([new Uint8Array(16)], name, { type });
   /** Súbor väčší než povolený limit (veľkosť sa len nastaví, nič sa nealokuje). */
   const oversizedFile = (name: string) => {
@@ -110,11 +111,13 @@ describe('usePortfolioImageUploadQueue: súbory zamietnuté pred nahrávaním', 
     Object.defineProperty(file, 'size', { value: PORTFOLIO_IMAGE_MAX_BYTES + 1 });
     return file;
   };
+  /** Nastaví všetky tri kroky nahrávania (init, uloženie, dokončenie) tak, aby prešli. */
   const mockSuccessfulUpload = () => {
     (uploadPortfolioImageInit as jest.Mock).mockResolvedValue({ url: 'https://storage.example/upload', fields: {}, key: 'k' });
     (uploadPortfolioImageToStorage as jest.Mock).mockResolvedValue(undefined);
     (uploadPortfolioImageComplete as jest.Mock).mockResolvedValue({ id: 55, status: 'pending' });
   };
+  /** Texty všetkých chybových toastov v poradí, v akom zazneli. */
   const errorToasts = () => (toast.error as jest.Mock).mock.calls.map(([text]) => text);
 
   beforeEach(() => {
