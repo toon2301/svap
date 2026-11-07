@@ -20,7 +20,12 @@ from accounts.test.test_avatar_upload_s3 import (
     generate_image_with_gps_exif,
     generate_jpeg_with_gps_exif,
 )
-from swaply.test.image_samples import UPLOAD_NAME, make_image
+from swaply.test.image_samples import (
+    UPLOAD_NAME,
+    animation_of,
+    make_animated_image,
+    make_image,
+)
 
 #: Názov po úprave: 32 hexadecimálnych znakov (uuid) a prípona podľa výstupného formátu.
 ANONYMOUS_NAME = re.compile(r"^[0-9a-f]{32}\.(jpg|png|webp|gif)$")
@@ -117,6 +122,43 @@ def test_gif_under_another_extension_is_rejected():
     """GIF sa ponechá len vtedy, keď prípona aj obsah súhlasia; GIF premenovaný na `.jpg` sa odmietne."""
     with pytest.raises(ValidationError):
         prepare_offer_image_upload(SimpleUploadedFile("photo.jpg", make_image("GIF")))
+
+
+@pytest.mark.parametrize(("fmt", "suffix"), [("WEBP", ".webp"), ("PNG", ".png")])
+def test_animated_images_keep_every_frame_and_lose_the_metadata(fmt, suffix):
+    """Animovaný WebP a PNG sa neprekódujú na jednu snímku: ostanú všetky snímky aj ich trvanie, GPS nie."""
+    source = make_animated_image(fmt, with_metadata=True)
+    with Image.open(BytesIO(source)) as original:
+        assert original.getexif().get_ifd(GPS_IFD), "vstup musí obsahovať GPS"
+
+    result = prepare_offer_image_upload(SimpleUploadedFile(UPLOAD_NAME[fmt], source))
+
+    assert isinstance(result, ContentFile)
+    assert ANONYMOUS_NAME.match(result.name)
+    assert result.name.endswith(suffix)
+    cleaned = result.read()
+    assert animation_of(cleaned) == animation_of(source)
+    with Image.open(BytesIO(cleaned)) as image:
+        assert not image.getexif().get_ifd(GPS_IFD)
+
+
+def test_a_damaged_animated_webp_is_rejected():
+    """Skrátený animovaný WebP sa nedá otvoriť, takže sa odmietne a v pôvodnej podobe sa neuloží."""
+    damaged = make_animated_image("WEBP", with_metadata=True)[:-40]
+
+    with pytest.raises(ValidationError):
+        prepare_offer_image_upload(SimpleUploadedFile("photo.webp", damaged))
+
+
+def test_an_animated_png_that_cannot_be_cleaned_is_reencoded_without_the_gps():
+    """Animáciu, ktorú nemožno očistiť so všetkými snímkami (tu skrátený koniec), ošetrí bežné prekódovanie: jedna snímka bez GPS."""
+    damaged = make_animated_image("PNG", with_metadata=True)[:-40]
+
+    result = prepare_offer_image_upload(SimpleUploadedFile("photo.png", damaged))
+
+    with _decode(result) as image:
+        assert image.n_frames == 1
+        assert not image.getexif().get_ifd(GPS_IFD)
 
 
 @pytest.mark.parametrize("name", ["photo.jpg", "photo.gif", "photo.heic"])

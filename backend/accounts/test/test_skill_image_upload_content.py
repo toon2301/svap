@@ -21,7 +21,12 @@ from accounts.test.test_avatar_upload_s3 import (
     generate_image_with_gps_exif,
     generate_jpeg_with_gps_exif,
 )
-from swaply.test.image_samples import make_image
+from swaply.test.image_samples import (
+    UPLOAD_NAME,
+    animation_of,
+    make_animated_image,
+    make_image,
+)
 
 User = get_user_model()
 
@@ -129,6 +134,32 @@ class TestSkillImageUploadContent(APITestCase):
             suffix=".jpg",
             pillow_format="JPEG",
         )
+
+    def _assert_animation_kept_without_gps(self, fmt, suffix):
+        """Nahrá animovaný obrázok s GPS a overí, že sa uložili všetky snímky s trvaním, bez GPS a pod anonymným názvom."""
+        source = make_animated_image(fmt, with_metadata=True)
+        with Image.open(BytesIO(source)) as original:
+            assert original.getexif().get_ifd(GPS_IFD), "vstup musí obsahovať GPS"
+
+        response = self._upload(SimpleUploadedFile(UPLOAD_NAME[fmt], source))
+
+        assert response.status_code == status.HTTP_201_CREATED
+        stored = OfferedSkillImage.objects.get(id=response.data["id"])
+        assert ANONYMOUS_STORED_NAME.match(stored.image.name), stored.image.name
+        assert stored.image.name.endswith(suffix)
+        assert animation_of(Path(stored.image.path).read_bytes()) == animation_of(
+            source
+        )
+        with Image.open(stored.image.path) as image:
+            assert not image.getexif().get_ifd(GPS_IFD)
+
+    def test_animated_webp_keeps_its_frames_but_not_the_gps(self):
+        """Animovaný WebP s polohou GPS sa uloží so všetkými snímkami, no bez GPS (nesploští sa na jednu snímku)."""
+        self._assert_animation_kept_without_gps("WEBP", ".webp")
+
+    def test_animated_png_keeps_its_frames_but_not_the_gps(self):
+        """Animovaný PNG (APNG) s polohou GPS sa uloží so všetkými snímkami, no bez GPS."""
+        self._assert_animation_kept_without_gps("PNG", ".png")
 
     def test_the_original_filename_is_not_part_of_the_stored_name(self):
         """Názov súboru od používateľa (môže byť osobný) sa nedostane do verejnej adresy fotky."""
