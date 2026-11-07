@@ -111,7 +111,11 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
     [preparedImages, failedSrcs],
   );
   const visibleCountRef = useRef(visibleImages.length);
-  visibleCountRef.current = visibleImages.length;
+  // Referencia sa aktualizuje až po potvrdení renderu, nie počas neho: React môže render zopakovať alebo zahodiť,
+  // takže by v nej mohol ostať počet z renderu, ktorý sa nikdy nezobrazil.
+  useEffect(() => {
+    visibleCountRef.current = visibleImages.length;
+  }, [visibleImages.length]);
 
   useEffect(() => {
     setActiveIndex(0);
