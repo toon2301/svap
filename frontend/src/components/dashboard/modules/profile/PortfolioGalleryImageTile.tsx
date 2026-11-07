@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
+import ImageLoadFailed from '../shared/ImageLoadFailed';
 import type { PortfolioDisplayImage } from './portfolioDisplay';
 import { formatPortfolioPhotoCounter } from './portfolioDisplay';
 
@@ -49,6 +51,8 @@ export function PortfolioGalleryImageTile({
   onDelete,
 }: PortfolioGalleryImageTileProps) {
   const { t } = useLanguage();
+  // Adresa fotky, ktorej načítanie zlyhalo: dlaždica ostane (aj s tlačidlami na správu), len bez obrázka.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const hasImageId = typeof image.id === 'number' && image.id > 0;
   const counterText = formatPortfolioPhotoCounter(
     t('portfolio.photoCounter'),
@@ -74,12 +78,17 @@ export function PortfolioGalleryImageTile({
             : 'hover:-translate-y-0.5 hover:shadow-md',
         ].join(' ')}
       >
-        <BlurredContainImage
-          src={image.mediumSrc}
-          alt={`${itemTitle} ${index + 1}`}
-          loading={index < 2 ? 'eager' : 'lazy'}
-          className="rounded-2xl"
-        />
+        {failedSrc === image.mediumSrc ? (
+          <ImageLoadFailed />
+        ) : (
+          <BlurredContainImage
+            src={image.mediumSrc}
+            alt={`${itemTitle} ${index + 1}`}
+            loading={index < 2 ? 'eager' : 'lazy'}
+            className="rounded-2xl"
+            onError={() => setFailedSrc(image.mediumSrc)}
+          />
+        )}
       </button>
 
       {isManaging && hasImageId && (

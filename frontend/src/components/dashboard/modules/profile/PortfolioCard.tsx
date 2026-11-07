@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
@@ -25,10 +26,12 @@ function PortfolioImageSlot({
   loading = 'lazy',
 }: Pick<PortfolioCardProps, 'item' | 'featured' | 'loading'>) {
   const { t } = useLanguage();
+  // Adresa titulnej fotky, ktorej načítanie zlyhalo (zmazaný alebo nedostupný súbor); nová adresa sa skúsi znova.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const thumbnailUrl = item.cover_image?.thumbnail_url?.trim() || '';
   const aspectClass = featured ? 'aspect-[16/9]' : 'aspect-[4/3]';
 
-  if (!thumbnailUrl) {
+  if (!thumbnailUrl || failedUrl === thumbnailUrl) {
     return (
       <div className={`${aspectClass} flex items-center justify-center bg-gray-100 text-xs text-gray-500 dark:bg-[#0e0e0f] dark:text-gray-400`}>
         <span>{t('portfolio.noCoverImage')}</span>
@@ -43,6 +46,7 @@ function PortfolioImageSlot({
         alt={item.title}
         loading={loading}
         className="rounded-t-2xl"
+        onError={() => setFailedUrl(thumbnailUrl)}
       />
     </div>
   );

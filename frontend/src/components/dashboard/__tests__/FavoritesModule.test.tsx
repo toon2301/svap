@@ -118,6 +118,25 @@ describe('FavoritesModule', () => {
     expect(await screen.findByText('Zatial nemate ziadnych oblubenych pouzivatelov')).toBeInTheDocument();
   });
 
+  // Nález 279: avatar, ktorý sa nenačíta (zmazaný súbor), ostal ako pokazený obrázok s alt textom. Teraz ho nahradia
+  // iniciály, ako pri používateľovi bez avatara.
+  it('shows the initials when the avatar fails to load', async () => {
+    (fetchFavoriteUsers as jest.Mock).mockResolvedValue([
+      {
+        id: 7,
+        slug: 'jana-novakova',
+        display_name: 'Jana Novakova',
+        avatar_url: 'https://cdn.example.com/avatars/7.webp',
+      },
+    ]);
+
+    render(<FavoritesModule />);
+    fireEvent.error(await screen.findByAltText('Jana Novakova'));
+
+    expect(screen.getByText('JN')).toBeInTheDocument();
+    expect(screen.queryByAltText('Jana Novakova')).not.toBeInTheDocument();
+  });
+
   // Nález 175: hláška o chybe bola ako poslednú možnosť surový `message` z knižnice axios („Network Error“,
   // „timeout of 30000ms exceeded“), a záložné texty boli bez diakritiky. Teraz platí text zo servera, potom hláška
   // o sieti a až potom záložný text danej akcie.

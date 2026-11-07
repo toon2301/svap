@@ -12,7 +12,7 @@ import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
 import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
 import { profileActionErrorMessage, type SearchProfileApiError } from './search/foreignProfileHelpers';
-import BlurredContainImage from './shared/BlurredContainImage';
+import FavoriteAvatar from './FavoriteAvatar';
 import { clearFeedReturn } from './feed/feedReturnState';
 
 function favoriteProfileIdentifier(
@@ -183,17 +183,15 @@ export default function FavoritesModule() {
                   aria-label={displayName}
                 >
                   <div className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-purple-100 dark:bg-purple-950/40">
-                    {favoriteUser.avatar_url ? (
-                      <BlurredContainImage
-                        src={favoriteUser.avatar_url}
-                        alt={displayName}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="text-5xl font-bold text-purple-700 dark:text-purple-200">
-                        {initials || <UserIcon className="h-14 w-14" />}
-                      </span>
-                    )}
+                    <FavoriteAvatar
+                      avatarUrl={favoriteUser.avatar_url}
+                      alt={displayName}
+                      fallback={
+                        <span className="text-5xl font-bold text-purple-700 dark:text-purple-200">
+                          {initials || <UserIcon className="h-14 w-14" />}
+                        </span>
+                      }
+                    />
                   </div>
                 </button>
 
