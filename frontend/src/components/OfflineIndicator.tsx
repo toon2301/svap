@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-/** Pruh o stave pripojenia (červený pri výpadku, zelený po obnovení); texty sú v jazyku aplikácie. */
+/**
+ * Pruh o stave pripojenia (červený pri výpadku, zelený po obnovení); texty sú v jazyku aplikácie.
+ *
+ * Čítač obrazovky zmenu oznámi spoľahlivo len vtedy, keď živý región existuje v stránke ešte pred zmenou. Preto sú
+ * oba obaly (`role="alert"` pre výpadok a `role="status"` pre obnovenie) stále prítomné a prázdne a pruh sa do nich
+ * vkladá ako obsah. Rola sa na žiadnom uzle neprepína a text je v stránke len raz.
+ */
 export default function OfflineIndicator() {
   const { t } = useLanguage();
   const [isOnline, setIsOnline] = useState(true);
@@ -53,19 +59,19 @@ export default function OfflineIndicator() {
     };
   }, []);
 
-  if (!showBanner && isOnline) return null;
+  const bannerVisible = showBanner || !isOnline;
 
-  return (
+  const banner = bannerVisible ? (
     <div className={`
       fixed top-0 left-0 right-0 z-50 p-4 text-center text-white font-medium
       transition-all duration-300 ease-in-out
-      ${isOnline 
+      ${isOnline
         ? 'bg-green-600 transform translate-y-0'
         : 'bg-red-600 transform translate-y-0'
       }
     `}>
       <div className="flex items-center justify-center gap-2">
-        <span className="text-lg">
+        <span className="text-lg" aria-hidden="true">
           {isOnline ? '🟢' : '🔴'}
         </span>
         <span>
@@ -76,5 +82,15 @@ export default function OfflineIndicator() {
         </span>
       </div>
     </div>
+  ) : null;
+
+  return (
+    <>
+      {/* Obaly sú v stránke stále; `alert` nesie `aria-live` sám (pridať ho navyše by vo VoiceOver na iOS čítalo dvakrát). */}
+      <div role="alert">{!isOnline ? banner : null}</div>
+      <div role="status" aria-atomic="true">
+        {isOnline ? banner : null}
+      </div>
+    </>
   );
 }
