@@ -28,20 +28,20 @@ ORIG_OPEN = {
          'človeka. Pri verejnom štarte si ľubovoľné meno (napr. „12345“, firma „2024“) vyberie ktokoľvek. '
          'Oprava: zakázať číselné slugy (predpona `u-`) + migrácia existujúcich, alebo uprednostniť slug vo frontende.',
          'ROZHODNUTIE R3'),
-    91: (P, S_, ES, 'Zdieľanie a obrázky',
-         'Pokazený obrázok je viditeľný pre každého, kto zdieľanú kartu uvidí. Frontend oprava je malá '
-         '(záložný obrázok), obnova snímku na backende je väčšia a môže prísť potom.', None),
+    91: (A, N, EM, 'Nástenka a zdieľanie',
+         'ČIASTOČNE HOTOVÉ: frontendová časť (záložný obrázok) je hotová v K7 (PR #235, zlúčené 7. 11. 2026, commit `0c89587f`): '
+         '`BlurredContainImage` má voliteľný `onError`, ktorý hlási aj zlyhanie chráneného obrázka, a zdieľaná karta '
+         '(`feed/SharedContentPreviewCard.tsx`) po zlyhanom náhľade ukáže náhradu: ponuka „Bez fotografie“, portfólio „Bez titulnej '
+         'fotky“, zdieľaný príspevok fotku vynechá (ako príspevok bez fotky) a nedostupný zdroj existujúcu ikonu (táto vetva bola predtým '
+         'nedosiahnuteľná, mŕtvy kód). Testy: 5 nových v `shared/BlurredContainImage.test.tsx` (blok `onError`) a 6 v '
+         '`feed/__tests__/SharedContentPreviewCard.imageError.test.tsx`. OSTÁVA: obnova zastaraného snímku na backende (väčšia vec, od '
+         'začiatku určená na neskôr, preto sa nález presúva do PO NASADENÍ) a manuálny test majiteľa (zdieľaná ponuka, ktorej sa potom '
+         'zmaže fotka), ktorý sa 7. 11. 2026 nedal urobiť kvôli nálezu 274. Rovnaké chýbajúce `onError` majú ďalšie miesta (nález 279).', None),
     92: (P, S_, EM, 'Zdieľanie a obrázky',
          'iPhone: okná zdieľania sa otvárajú orezané hore (hypotéza `90vh` vs `dvh`, neoverené). Je to prvé, '
          'čo používateľ vidí pri zdieľaní; treba overiť na zariadení. Rovnaký vzor je v 36 (lightboxy).', None),
     107: (A, N, EM, 'Údaje a cache',
           'Zastaraná odpoveď v lete môže prepísať novšie ponuky; nízke riziko, zdieľaný modul PC + mobil.', None),
-    119: (P, S_, ES, 'Profil a identita',
-          'Firemný účet, ktorý bol pôvodne osobný, ukazuje v hornej lište mobilu osobné meno namiesto názvu '
-          'firmy. Oprava je 1–2 riadky + test.', None),
-    120: (P, S_, ES, 'Preklady a hlášky',
-          'Tri použité kľúče chýbajú vo všetkých jazykoch, takže cs / pl / de / hu / en vidia slovenský text '
-          '(=APP-01 z registra). Overené 26. 10. 2026: stále chýbajú.', None),
     141: (A, N, EM, 'Profil a identita',
           'Druhá polovica nálezu: stavy „prebieha“ žijú v module, nie v profile; zriedkavé. Prvá polovica opravená.', None),
     142: (A, N, ES, 'Výkon a plynulosť', 'Záblesk „Načítavam profil…“ (~50 ms) po prepnutí cez číselné ID.', None),
@@ -172,4 +172,4 @@ ORIG_OPEN = {
 
 # Pri pôvodných položkách v časti PO NASADENÍ sa poznámka zobrazí len tam, kde pridáva informáciu
 # k textu zo zoznamu (inak by sa text len opakoval). V častiach HNEĎ a PRED NASADENÍM sa zobrazí vždy.
-KEEP_NOTE = {4, 16, 18, 21, 24, 32, 36, 51, 53, 57, 70, 87, 93, 94, 105, 107, 135, 143, 148}
+KEEP_NOTE = {4, 16, 18, 21, 24, 32, 36, 51, 53, 57, 70, 87, 91, 93, 94, 105, 107, 135, 143, 148}

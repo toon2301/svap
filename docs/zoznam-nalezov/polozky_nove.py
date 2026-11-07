@@ -16,23 +16,27 @@ NEW_ITEMS = [
               '(chránený), takže ide o jednoriadkovú zmenu `push` → `replace` + test; rieši sa spolu s balíkom 13 / 14.',
          dec=None, src='vetva 137'),
     dict(n=175, bucket=P, imp=S_, eff=ES, pkg='Preklady a hlášky',
-         what='Surový `error.message` z knižnice axios (napr. „Network Error“) sa ukazuje aj v Obľúbených '
-              '(`FavoritesModule.tsx:35`) a v Spoluprácach (`RequestsDesktop.tsx:636`, `RequestsMobile.tsx:698`).',
-         note='Použiť pomocníka z `foreignProfileHelpers.ts` (`profileActionErrorMessage`) alebo ho presunúť do spoločného '
-              'modulu. Neoverené: či backend niekde posiela anglické `detail` texty (DRF).',
-         dec=None, src='vetva 138'),
+         kratko='surový „Network Error“ v hláškach v Spoluprácach (časť Obľúbené je hotová)',
+         what='Surový `error.message` z knižnice axios (napr. „Network Error“) sa ukazuje v Spoluprácach (`RequestsDesktop.tsx:636`, '
+              '`RequestsMobile.tsx:698`). Časť Obľúbené je HOTOVÁ v K7 (PR #235, zlúčené 7. 11. 2026, commit `bcf3d955`): '
+              '`getErrorMessage` vo `FavoritesModule.tsx` je nahradené `profileActionErrorMessage` zo `search/foreignProfileHelpers.ts` '
+              '(text zo servera, potom hláška o sieti, potom záložný text s diakritikou); test pokrýva 6 druhov chýb pri načítaní aj pri '
+              'odobratí z obľúbených a surová správa sa nikdy nezobrazí (pred opravou sa pri výpadku siete ukázalo „Network Error“).',
+         note='Ostáva časť v Spoluprácach: oba súbory majú nad 500 riadkov (`RequestsDesktop.tsx` 646, `RequestsMobile.tsx` 706), takže '
+              'zmena vyžaduje delenie súboru alebo výnimku od majiteľa; pomocník `profileActionErrorMessage` je pripravený. Neoverené: '
+              'či backend niekde posiela anglické `detail` texty (DRF). Záložné texty v Obľúbených bez diakritiky: nález 281.',
+         dec=None, src='vetva 138, čiastočne K7'),
     dict(n=176, bucket=P, imp=S_, eff=EL, pkg='Preklady a hlášky',
          what='Zvyšné slovenské kópie v češtine a poľštine (a jedna v nemčine). V profile a vyhľadávaní je to asi 30 hodnôt v češtine a 14 v '
               'poľštine (karty ponúk „Správa“, „Cena do“, „Skrytá“, vyhľadávanie „PONÚKAM/HĽADÁM“, „Posledné vyhľadávania“, portfólio); v nemčine '
               'ostáva „Vyčistiť vyhľadávanie“. V celej aplikácii mimo katalógu zručností je to hrubo cs ~210 a pl ~90 (časť sú legitímne rovnaké slová). '
-              'Poľské texty bez diakritiky: heuristika našla 27 kľúčov (najmä `messages.*` a `requests.*`, napr. „Nie udalo sie wyslac wiadomosci.“).',
+              'Poľské texty bez diakritiky: heuristika našla 27 kľúčov (najmä `messages.*` a `requests.*`, napr. „Nie udalo sie wyslac wiadomosci.“). '
+              'Doplnok z K6 (6. 11. 2026, meranie kolegu): zhodných so slovenčinou je v `pl.json` 49 hodnôt, v `cs.json` 247 (aspoň 29 '
+              'určite slovenských), v `de.json` 3 a v `hu.json` 1, takže rozsah je väčší, než tu uvedené odhady (časť zhôd sú legitímne '
+              'rovnaké slová).',
          note='Zahŕňa APP-02 a APP-03 z registra. Ak štart nepokryje češtinu a poľštinu, môže počkať (rozhodnutie R2). '
               'Odporúčanie: jeden preklad naraz, najprv profil, vyhľadávanie a karty ponúk.',
          dec='ROZHODNUTIE R2', src='vetva 138'),
-    dict(n=177, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky',
-         what='Pruh o stave pripojenia je natvrdo po slovensky (`OfflineIndicator.tsx:54–55`: „Offline režim - niektoré funkcie môžu '
-              'byť obmedzené.“ a „Pripojenie obnovené! Aplikácia je online.“); pri výpadku ho vidno v každom jazyku.',
-         note='Pridať dva kľúče do všetkých šiestich jazykov.', dec=None, src='vetva 138'),
     dict(n=180, bucket=P, imp=S_, eff=EM, pkg='iPhone a WebSocket',
          what='Upozornenia: na iPhone sa občas preruší WebSocket (kód 1006); na diagnostiku treba logy servera.',
          note='V predvolenej konfigurácii (`NEXT_PUBLIC_API_URL=/api`) ide WebSocket na doménu frontendu a Next ho preposiela na backend '
@@ -176,16 +180,16 @@ NEW_ITEMS = [
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
               'robiť spolu s nálezom 194 (úprava workflow).',
          dec=None, src='vetva 143'),
-    dict(n=204, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='chýbajúce a nepoužité kľúče prekladov',
-         what='`npm run check:used-translation-keys` hlási kľúče, ktoré kód používa, ale nie sú v `messages/sk.json`: `feed.captionPlaceholder` '
-              '(`FeedPostEditModal.tsx`), `feed.commentsClose` (`FeedPhotoCommentsSheet.tsx`) a `feed.openProfile` (`FeedPhotoViewerChrome.tsx`, '
-              '`FeedPostCard.tsx`, `FeedPostComments.tsx`, `FeedPostMobileDetail.tsx`), takže sa vo všetkých jazykoch ukáže natvrdo zadaná slovenčina. '
-              'Naopak `profile.photoRemovedError` je preložený vo všetkých jazykoch, no kód ho nepoužíva a ukazuje doslovný text '
-              '„Nepodarilo sa odstrániť fotku. Skúste znova.“ (`ProfileModule.tsx`).',
-         note='Skript hlási ešte tri kľúče z testu (`common`, `common.save.unavailable`, `missing.path` v `LanguageContext.locale.test.tsx`), ktoré '
-              'sú falošný poplach. Skript nie je súčasťou CI. Oprava: doplniť tri kľúče do všetkých šiestich jazykov, použiť '
-              '`profile.photoRemovedError` a vylúčiť test zo skriptu.',
-         dec=None, src='vetva 144'),
+    dict(n=204, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='nepoužitý kľúč `profile.photoRemovedError` (zvyšok po K6)',
+         what='ČIASTOČNE HOTOVÉ: tri chýbajúce kľúče (`feed.captionPlaceholder`, `feed.commentsClose`, `feed.openProfile`) aj tri falošné '
+              'kľúče zo skriptu sú hotové v K6 (nález 120, PR #234, zlúčené 6. 11. 2026, commit `6fe2c8ea`): '
+              '`npm run check:used-translation-keys` teraz končí s 0 chýbajúcimi kľúčmi. OSTÁVA: `profile.photoRemovedError` je preložený '
+              'vo všetkých jazykoch, no kód ho nepoužíva a ukazuje doslovný text „Nepodarilo sa odstrániť fotku. Skúste znova.“ v '
+              '`ProfileModule.tsx:468` (563 riadkov, nad limitom); ten istý text je aj v `ProfileEditForm.tsx:250` (432 riadkov).',
+         note='`ProfileEditForm.tsx` sa dá opraviť samostatne (použiť `t("profile.photoRemovedError", …)`), `ProfileModule.tsx` vyžaduje '
+              'delenie súboru alebo výnimku od majiteľa. Skript je po K6 čistý, preto ho možno pridať do CI (dnes nie je súčasťou CI), aby '
+              'sa chýbajúce kľúče nevracali.',
+         dec=None, src='vetva 144, čiastočne K6'),
     dict(n=205, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='päť lenivých registrácií HEIC je po nálezu 200 nadbytočných',
          what='`register_heif_opener()` sa volá lenivo v piatich moduloch spracovania obrázkov: `swaply/image_metadata.py`, '
               '`swaply/staged_image_moderation.py`, `swaply/tasks/offer_images.py`, `portfolio/image_processing.py` a '
@@ -203,7 +207,10 @@ NEW_ITEMS = [
          note='Zmerané 27. 10. na vetve 147. Rozširuje nález 178 (ten opisoval jediný súbor a je hotový v K4, PR #231) a súvisí s TOOL-01 (CI lint nespúšťa). '
               '`ConversationMessageRow` dnes nepadá, lebo typ správy sa pri tom istom `id` nemení; ak by sa niekedy zmenil (napr. skupinová '
               'pozvánka na obyčajnú správu), React hodí „Rendered more hooks than during the previous render“. Odporúčanie: najprv hooky '
-              'pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory).',
+              'pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory). '
+              'Doplnok z K7 (7. 11. 2026): jeden z 213 `no-explicit-any` je v `frontend/src/components/dashboard/__tests__/FavoritesModule.test.tsx` '
+              'na riadku 13 (mock `framer-motion`: `({ children, ...props }: any)`); kolega ho v K7 nechal, lebo je mimo zadania (podľa neho '
+              'je z PR #171; agent to pre skrátenú históriu klonu nevie overiť), rovnaká chyba je na `main` aj pred K7 a CI ESLint nespúšťa.',
          dec=None, src='vetva 147'),
     dict(n=207, bucket=P, imp=N, eff=EM, pkg='Zdieľanie a obrázky', kratko='odoslanie fotky v správach trvá dlhšie',
          what='Po oprave 197 sa fotky z iPhonu v správach odosielajú, no podľa manuálneho testu (28. 10.) odoslanie trvá dlhšie, než by používateľ '
@@ -358,7 +365,7 @@ NEW_ITEMS = [
          note='Príčina: záznam histórie Nastavení nesie značku s identitou načítania stránky (`PAGE_LOAD_ID` v `hooks/mobileSettingsOrigin.ts`), '
               'takže po F5 neplatí a `handleMobileSettingsClose` (`hooks/useMobileSettings.ts`) použije deterministický cieľ, teda Nástenku. Pôvod '
               'Nastavení (vlastný alebo cudzí profil, hamburger je na oboch) sa nikde neukladá. Šípka zo sekcie po F5 navyše vloží nový záznam '
-              'zoznamu s prázdnym stavom (`pushState(null, …)` v `hooks/useDashboardState.ts`, 921 riadkov, súbor sa nemení, pozri TECH-01…11), '
+              'zoznamu s prázdnym stavom (`pushState(null, …)` v `hooks/useDashboardState.ts`, 922 riadkov po jedinej schválenej výnimke (R24), inak sa súbor nemení, pozri TECH-01…11), '
               'takže ani zoznam už pôvod nenesie. Návrh: pôvod (adresu) uložiť do `history.state` záznamov Nastavení (prežije F5), alebo pre kartu '
               'do `sessionStorage`, a pri zatvorení po F5 ísť naň; zmena v `mobileSettingsOrigin.ts` a `useMobileSettings.ts` plus Jest testy. '
               'Zasahuje do histórie prehliadača, preto patrí do jedného balíka s nálezmi 13, 14 a 174 (Späť na mobile). Dopad na E2E: nový test pre '
@@ -402,15 +409,6 @@ NEW_ITEMS = [
               '`immutability`) a lint zapojiť do CI s prahom chýb. `npm ci` hlási, že `eslint@9.39.5` už nie je podporovaný; '
               '`eslint-config-next` 16 vyžaduje `eslint >=9.0.0`, takže povýšenie na novšiu hlavnú verziu je samostatný malý krok. Kolega ho nahlásil znova (5. 11. 2026); ostatné '
               'zastarané balíky v `package-lock.json` sú v nálezu 238.',
-         dec=None, src='vetva 159'),
-    dict(n=228, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov',
-         kratko='testy `useGoogleLogin` nezachytia vynechané `clearTimeout(delayTimer)`',
-         what='Pri mutačných kontrolách vetvy 159: keď sa v `useGoogleLogin.ts` (upratanie efektu) odstráni `clearTimeout(delayTimer)`, '
-              'nepadne žiadny zo 79 testov `useGoogleLogin*`, ani na pôvodnej verzii (Next 14), ani po aktualizácii. Vynechané '
-              '`clearInterval(poll)` testy zachytia (20 pádov).',
-         note='Zadržaný časovač oneskorenia po odpojení pravdepodobne nič nepokazí (`resolveDelay?.(false)` čakanie hneď ukončí), takže môže '
-              'ísť o nadbytočný riadok, nie o chýbajúci test. Návrh: buď pridať test, že po odpojení počas čakania nezostane žiadny časovač '
-              '(`jest.getTimerCount()` je 0), alebo riadok odstrániť. Nezmenené, len hlásim.',
          dec=None, src='vetva 159'),
     dict(n=229, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          kratko='5 stredných zraniteľností v build nástroji Sentry (frontend)',

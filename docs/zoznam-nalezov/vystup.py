@@ -11,7 +11,7 @@ import fronta
 import polozky_nove
 import register
 import stav
-from konstanty import A, H, NAZOV_DOPADU, P
+from konstanty import A, H, NAZOV_DOPADU, NAZOV_SKUPINY, P
 from priloha_hosting import priloha_c
 from priloha_nastenka import priloha_d
 
@@ -112,9 +112,9 @@ def _stav_fronty(zaznam):
 def _fronta_v_skratke():
     """Riadok pre „V skratke“: koľko nálezov je vo fronte pre kolegu, v akých dávkach, ktorý je prvý v poradí a zapísaný stav (ak nejaký je).
 
-    Volá sa len pre neprázdnu frontu: pri prázdnej sa tento riadok ani podčasť 5 nezapisujú (viď `_v_skratke` a `_fronta`).
+    Volá sa len pre neprázdnu frontu: pri prázdnej sa tento riadok ani podčasť v časti 2 nezapisujú (viď `_v_skratke` a `_fronta`).
     """
-    zaznamy = fronta.FRONTA_PO_NASADENI
+    zaznamy = fronta.FRONTA
     rozrobene = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_ROZROBENE)
     caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
     davky = list(dict.fromkeys(z['davka'] for z in zaznamy if z.get('davka')))
@@ -126,25 +126,36 @@ def _fronta_v_skratke():
     else:
         stav_text = ''
         poznamka = ' Stav riešenia sa nesleduje: v kóde pracuje vždy len jeden a zoznam sa aktualizuje po každej práci.'
-    return f'- **Poradie prác pre kolegu po nasadení** (časť 5): v poradí {len(zaznamy)} nálezov{davky_text}{stav_text}; {prvy}.{poznamka}'
+    return f'- **Poradie prác pre kolegu** (časť 2): v poradí {len(zaznamy)} nálezov{davky_text}{stav_text}; {prvy}.{poznamka}'
 
 
-def _fronta(d):
-    """Zapíše podčasť 5 „Poradie prác pre kolegu po nasadení“: dávka, poradie, prečo je nález v dávke a jeho stav (nič, ak je fronta prázdna)."""
-    if not fronta.FRONTA_PO_NASADENI:
+def _skupiny_nalezov(m):
+    """Slovník ID → názov skupiny (HNEĎ / PRED NASADENÍM / PO NASADENÍ) pre otvorené nálezy a jednotlivé ID z registra; fronta z neho ukáže, odkiaľ záznam je."""
+    vysledok = {}
+    for sk, baliky in m.skupiny.items():
+        for _balik, riadky in baliky:
+            vysledok.update({r['id']: NAZOV_SKUPINY[sk] for r in riadky if r['id'].isdigit()})
+    for polozka in register.REG_ITEMS:
+        vysledok.update({i: NAZOV_SKUPINY[polozka['bucket']] for i in polozka['ids']})
+    return vysledok
+
+
+def _fronta(d, m):
+    """Zapíše podčasť časti 2 „Poradie prác pre kolegu“: dávka, skupina, poradie, prečo je nález v dávke a jeho stav (nič, ak je fronta prázdna)."""
+    if not fronta.FRONTA:
         return
-    d.w('### Poradie prác pre kolegu po nasadení (dávky a stav)')
+    d.w('### Poradie prác pre kolegu (dávky a stav)')
     d.w()
-    d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nekolidujú s prácou pred nasadením a nemenia súbory nad '
-        '500 riadkov); schvaľuje majiteľ. ' + fronta.SCHVALENE + ' Pred opravou treba overiť, že nález ešte platí. '
-        'Úplný popis každého nálezu je v tabuľkách nižšie. '
-        'Hotový nález sa z poradia odstráni a presunie do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, '
-        'striedavo s agentom). Stav riešenia sa nesleduje: zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že '
-        'nález je voľný.')
+    d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nemenia súbory nad 500 riadkov); schvaľuje majiteľ. '
+        + fronta.SCHVALENE + ' Nálezy zo skupín HNEĎ a PRED NASADENÍM majú prednosť pred nálezmi PO NASADENÍ. Pred opravou treba overiť, '
+        'že nález ešte platí. Úplný popis každého nálezu je v tabuľkách v častiach 3 až 5. Hotový nález sa z poradia odstráni a presunie '
+        'do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, striedavo s agentom). Stav riešenia sa nesleduje: '
+        'zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že nález je voľný.')
     d.w()
-    d.tabulka(['Poradie', 'Dávka', 'Č.', 'Čo', 'Prečo v tejto dávke', 'Stav'],
-              [[i, z.get('davka', ''), z['n'], z['co'], z['preco'], _stav_fronty(z)]
-               for i, z in enumerate(fronta.FRONTA_PO_NASADENI, 1)])
+    skupina = _skupiny_nalezov(m)
+    d.tabulka(['Poradie', 'Dávka', 'Č.', 'Skupina', 'Čo', 'Prečo v tejto dávke', 'Stav'],
+              [[i, z.get('davka', ''), z['n'], skupina.get(z['n'], ''), z['co'], z['preco'], _stav_fronty(z)]
+               for i, z in enumerate(fronta.FRONTA, 1)])
 
 
 def _uvod(d, m):
@@ -186,7 +197,7 @@ def _v_skratke(d, m):
     d.w(f'- **Pred nasadením** (časť 4): {p.nalezy[P]} nálezov, {p.registrove[P]} ID z registra a {p.uloh[P]} úloh na prípravu nasadenia. '
         'Odporúčané poradie je v časti 2.')
     d.w(f'- **Po nasadení** (časť 5): {p.nalezy[A]} nálezov a {p.registrove[A]} ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).')
-    if fronta.FRONTA_PO_NASADENI:
+    if fronta.FRONTA:
         d.w(_fronta_v_skratke())
     d.w(f'- **Rozhodnutia** (časť 6): čaká {len(cakajuce)} z {len(stav.DECISIONS)}; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.')
     if hosting.get('odpoved'):
@@ -252,11 +263,12 @@ def _prehlad(d, m):
     ])
 
 
-def _poradie(d):
-    """Zapíše časť 2: odporúčané poradie práce (vlny z `stav.PORADIE`)."""
+def _poradie(d, m):
+    """Zapíše časť 2: odporúčané poradie práce (vlny z `stav.PORADIE`) a poradie prác pre kolegu (`fronta.FRONTA`)."""
     d.w('## ' + TITULY['2'])
     d.w()
     d.tabulka(['Vlna', 'Čo', 'Prečo v tomto poradí'], [[f'**{v["vlna"]}**', v['co'], v['preco']] for v in stav.PORADIE])
+    _fronta(d, m)
 
 
 def _skupiny(d, m):
@@ -278,7 +290,6 @@ def _skupiny(d, m):
     d.w()
     d.w(f'{_riadkov(p.riadkov[A])} v {len(m.skupiny[A])} skupinách. Dopad je všade nízky okrem uvedených výnimiek; poradie podľa potreby po štarte.')
     d.w()
-    _fronta(d)
     _skupina_balikov(d, m.skupiny[A])
 
 
@@ -376,15 +387,18 @@ def _udrzba(d, m):
         'sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.')
     d.w('- **Zatvorenie rozhodnutím:** nález, ktorý sa neopravuje (kozmetika, zámer majiteľa), odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do '
         '`CLOSED_SINCE` v `zatvorene_dalsie.py` (číslo, rozhodnutie s odpoveďou, dátum, text); zobrazí sa v časti 8.')
-    d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (alebo v `rozhodnutia_nastenka.py` pri R13 až R22).')
-    d.w('- **Poradie po nasadení:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE_DALSIE` (polia `kto`, '
-        '`stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na nález, '
-        'ktorý už nie je otvorený alebo nie je zo skupiny PO NASADENÍ.')
+    d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (alebo v `rozhodnutia_nastenka.py` pri R13 až R24).')
+    d.w('- **Poradie prác pre kolegu:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE_DALSIE` (polia '
+        '`kto`, `stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na '
+        'nález, ktorý už nie je otvorený (je hotový, zatvorený alebo neexistuje); nález môže byť z ktorejkoľvek skupiny (HNEĎ, PRED '
+        'aj PO NASADENÍ).')
     d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '
-        'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 1:1, kým majiteľ dohodu nezmení (výnimka z 6. 11. 2026: dve dávky '
-        'za sebou, K4 a K5, potom vetva agenta 166 len so zoznamom; majiteľ schválil poradie kolega K6, agent 167, kolega K7 a ďalej 1:1). '
-        'Po každej práci kolegu majiteľ '
-        'pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` (časť „Postup s kolegom“).')
+        'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 2 : 1 (dve dávky kolegu, potom jedna vetva agenta), kým '
+        'majiteľ dohodu nezmení; kolega smie robiť aj nálezy PRED NASADENÍM a HNEĎ a majiteľ môže pomer dočasne zmeniť (napr. na 1 : 1). '
+        'K6 a K7 sú hotové a vetva agenta 167 je len zoznam (majiteľ 7. 11. 2026). Nálezy, ktoré majiteľ odovzdá kolegovi na zmapovanie '
+        '(274, 275, 276), agent nemapuje. Výnimky z pravidla 500 riadkov schvaľuje len majiteľ a zapisujú sa ako rozhodnutia (R24). '
+        'Po každej práci kolegu majiteľ pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` '
+        '(časť „Postup s kolegom“).')
     d.w('- **Príloha D** (zoznam majiteľa z 6. 11. 2026) je mapovanie jeho položiek na tento zoznam v `priloha_nastenka.py`; generátor '
         'overí, že každý odkaz v nej mieri na existujúci nález, ID z registra, úlohu N alebo rozhodnutie.')
     d.w('- **Vždy:** posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.')
@@ -440,7 +454,7 @@ def zostav_dokument(m):
     _v_skratke(d, m)
     _ako_citat(d)
     _prehlad(d, m)
-    _poradie(d)
+    _poradie(d, m)
     _skupiny(d, m)
     _rozhodnutia(d)
     _hotove(d, m)
