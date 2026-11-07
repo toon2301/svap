@@ -1,7 +1,7 @@
 """Ponuky zručností a ich obrázky + dashboard search projekcia – z models.py."""
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from swaply.validators import validate_image_file
@@ -126,6 +126,21 @@ class OfferedSkill(models.Model):
     def __str__(self):
         """Identify a card by its owner and canonical category path."""
         return f"{self.user.display_name} - {self.category} → {self.subcategory}"
+
+    def delete(self, *args, **kwargs):
+        """Zamkni riadok ponuky a až potom ju zmaž, aby sa zoradila so súbežným zdieľaním (nález 246).
+
+        Zdieľanie ponuky vznikajúce súbežne si berie ten istý zámok (``FeedPost._lock_shared_source``), takže buď ho
+        zmazanie vidí a odpojí, alebo zdieľanie ponuku nenájde a dostane jasnú chybu. Bez zámku sa cudzí kľúč kontroluje
+        až pri COMMIT a jeden z requestov skončil chybou 500. Zámok drží celá transakcia zmazania, preto má vlastný
+        ``transaction.atomic``. Hromadné ``QuerySet.delete()`` túto metódu nevolá.
+        """
+        with transaction.atomic():
+            # Výsledok netreba, ide o zámok riadku (rovnaký idióm ako vo FeedPost.save()).
+            type(self).objects.select_for_update().filter(pk=self.pk).values_list(
+                "pk", flat=True
+            ).first()
+            return super().delete(*args, **kwargs)
 
 
 class DashboardSkillSearchProjection(models.Model):
