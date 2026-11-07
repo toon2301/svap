@@ -1,0 +1,54 @@
+name: Dependency audit
+
+# Týždenná kontrola zraniteľných závislostí (nález 194). Beží len podľa plánu alebo ručne, nie pri PR ani pri pushi:
+# nezastavuje PR a Railway naň nečaká ("Wait for CI" sa týka workflowov, ktoré bežia pri pushi). Nový záznam, ktorý nie je
+# v .github/dependency-audit-exceptions.json, skončí červeným behom (GitHub pošle e-mail tomu, kto naposledy zmenil
+# `cron`) a zhrnutím priamo v behu. Výnimky majú dôvod a podmienku odstránenia, aby sa nehromadili.
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Python 3.11 = verzia z backend/Dockerfile (rovnako ako v CI).
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    # Node 22 LTS = verzia z `engines` vo frontend/package.json (rovnako ako v CI).
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install pip-audit
+      run: python -m pip install pip-audit==2.10.1
+
+    # pip-audit končí kódom 1, keď nájde záznam; o výsledku rozhoduje až porovnanie s výnimkami nižšie.
+    - name: Audit Python dependencies
+      run: >
+        pip-audit -r backend/requirements.txt -r backend/requirements-test.txt
+        --progress-spinner off --format json -o pip-audit.json || true
+
+    # Len produkčné závislosti (vývojové nástroje do nasadenej aplikácie nepatria); prah závažnosti určuje skript.
+    - name: Audit production npm dependencies
+      working-directory: ./frontend
+      run: npm audit --omit=dev --json > ../npm-audit.json || true
+
+    - name: Compare with known exceptions
+      run: >
+        python .github/scripts/check_dependency_audit.py
+        --pip pip-audit.json --npm npm-audit.json
+        --exceptions .github/dependency-audit-exceptions.json --npm-level high

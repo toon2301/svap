@@ -1,0 +1,11 @@
+{
+  "pip": [
+    {
+      "id": "PYSEC-2026-1845",
+      "package": "pytest 8.3.2",
+      "reason": "Len testovacia závislosť (lokálny útok cez /tmp/pytest-of-<používateľ>); oprava je až v pytest 9.0.3 a prechod na ňu je samostatná úloha.",
+      "remove_when": "zatvorí nález 183 (pytest 9)"
+    }
+  ],
+  "npm": []
+}
