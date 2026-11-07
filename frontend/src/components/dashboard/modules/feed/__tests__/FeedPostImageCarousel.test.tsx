@@ -187,3 +187,29 @@ describe('FeedPostImageCarousel', () => {
     expect(currentSrc()).toContain('1-large');
   });
 });
+
+describe('FeedPostImageCarousel: adresy fotiek na doméne frontendu (nález 274)', () => {
+  const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  beforeEach(() => {
+    // Ako na Railway: frontend preposiela `/api` na backend, takže cookie ide s požiadavkou len na doménu frontendu.
+    process.env.NEXT_PUBLIC_API_URL = '/api';
+  });
+
+  afterEach(() => {
+    if (originalApiUrl === undefined) delete process.env.NEXT_PUBLIC_API_URL;
+    else process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
+  });
+
+  it('fotku z hostu backendu načíta cez doménu frontendu, aby s požiadavkou išlo prihlasovacie cookie', () => {
+    const image: FeedPostImage = {
+      id: 9,
+      thumbnail_url: 'https://backend.example.up.railway.app/api/auth/feed/posts/5/images/9/file/?variant=thumbnail',
+      large_url: 'https://backend.example.up.railway.app/api/auth/feed/posts/5/images/9/file/?variant=large',
+    };
+
+    render(<FeedPostImageCarousel images={[image]} alt="Fotka" />);
+
+    expect(currentSrc()).toBe('/api/auth/feed/posts/5/images/9/file/?variant=large');
+  });
+});

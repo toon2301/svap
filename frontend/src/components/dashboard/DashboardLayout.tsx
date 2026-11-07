@@ -147,7 +147,13 @@ export default function DashboardLayout({
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
   const isMobile = useIsMobile();
   // Nový `<main>` pri zmene modulu aj pri úprave profilu (mobil i desktop) – dôvod v useDashboardMainKey.ts.
-  const mainKey = useDashboardMainKey(isMobileEditMode ? 'profile-edit' : activeModule);
+  // Mobil: zoznam Nastavení (modul `settings`) je panel, ktorý sa vsúva ZĽAVA ponad obrazovku, z ktorej sa otvoril
+  // (profil), alebo na ktorú sa z neho vraciame (sekcia). Pod ním preto ostáva ONA, nie nový `<main>` so zástupnou
+  // stránkou, ktorá sa pri vsúvaní panela ukázala ako preblik (nález 276): kľúč sa podrží (obsah drží `ModuleRouter`).
+  const mainKey = useDashboardMainKey(
+    isMobileEditMode ? 'profile-edit' : activeModule,
+    isMobile && activeModule === 'settings',
+  );
   useDashboardWindowScrollReset(mainKey);
   const [isOfferWatchMobileOpen, setIsOfferWatchMobileOpen] = useState(false);
   const shouldUseDynamicMobileMessagesHeight = isMobile && isOpenMobileMessagesConversation;

@@ -32,6 +32,7 @@ import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedDialog } from './useFeedDialog';
 import { CAPTION_MAX_LENGTH } from './FeedPostComposerForm';
 import { translateFeedActionError } from './feedActionErrors';
+import { sameOriginFeedImageUrl } from './feedImageUrl';
 import { useFeedPostPhotoDraft } from './useFeedPostPhotoDraft';
 import { imagePickError, pickFeedImages } from './pickFeedImages';
 import {
@@ -54,6 +55,7 @@ type FeedPostEditModalProps = {
   onUpdated?: (updated: FeedPost) => void;
 };
 
+/** Okno úpravy vlastného príspevku: text, označenie fotiek na odobratie a pridanie nových, uložené jedným „Uložiť“. */
 export default function FeedPostEditModal({
   open,
   post,
@@ -325,7 +327,7 @@ export default function FeedPostEditModal({
                     {entry.image.thumbnail_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={entry.image.thumbnail_url}
+                        src={sameOriginFeedImageUrl(entry.image.thumbnail_url)}
                         alt={t('feed.imageAlt', 'Fotka príspevku')}
                         className="h-24 w-full object-cover"
                       />

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { User } from '../../types';
 import type { SearchUserResult } from './modules/search/types';
 import ProfileModule from './modules/ProfileModule';
@@ -103,7 +103,8 @@ interface ModuleRouterProps {
   onManageOfferWatches: () => void;
 }
 
-export default function ModuleRouter({
+/** Vykreslí obrazovku dashboardu podľa `activeModule` (a pravého panela); obal `ModuleRouter` rieši mobilný zoznam Nastavení. */
+function ModuleRouterContent({
   user,
   activeModule,
   activeRightItem,
@@ -428,3 +429,20 @@ export default function ModuleRouter({
   }
 }
 
+/**
+ * Obrazovky dashboardu podľa `activeModule`.
+ *
+ * Mobil: zoznam Nastavení (modul `settings`) je panel, ktorý sa vsúva ZĽAVA ponad obrazovku, z ktorej sa otvoril
+ * (profil), alebo na ktorú sa z neho vraciame (sekcia). Pod ním sa preto vykreslí tá istá obrazovka s vtedajšími
+ * vlastnosťami, nie zástupná stránka modulu `settings`, ktorá sa pri vsúvaní panela ukázala ako preblik (nález 276).
+ * Obrazovka sa tým ani nevykreslí znova (ostáva aj ten istý `<main>`, viď `DashboardLayout`).
+ */
+export default function ModuleRouter(props: ModuleRouterProps) {
+  const isMobile = useIsMobile();
+  const isSettingsListOverScreen = isMobile && props.activeModule === 'settings';
+  const propsBehindSettingsList = useRef(props);
+  useEffect(() => {
+    if (!isSettingsListOverScreen) propsBehindSettingsList.current = props;
+  });
+  return <ModuleRouterContent {...(isSettingsListOverScreen ? propsBehindSettingsList.current : props)} />;
+}
