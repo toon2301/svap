@@ -34,9 +34,13 @@ export default function BlurredContainImage({
   const { resolvedSrc, isError } = useProtectedImage(src);
   const imageProps = { src: resolvedSrc ?? '', loading, decoding };
 
-  // Najnovší `onError` bez toho, aby jeho nová identita pri každom vykreslení znovu spúšťala efekt nižšie.
+  // Najnovší `onError` bez toho, aby jeho nová identita pri každom vykreslení znovu spúšťala efekt nižšie. Zápis patrí do
+  // efektu, nie do tela komponentu (zápis počas renderu porušuje čistotu renderu). MUSÍ byť pred efektom, ktorý chybu
+  // hlási: efekty bežia v poradí deklarácie, takže ten nižšie vidí handler z toho istého vykreslenia.
   const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   // Chránený obrázok, ktorého stiahnutie zlyhalo, sa nevykreslí vôbec (nie je z čoho), takže zlyhanie hlási hook.
   useEffect(() => {
