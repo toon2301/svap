@@ -17,6 +17,8 @@ from pathlib import Path
 
 from django.core.files.base import ContentFile
 
+from .image_signature import open_allowed_image
+
 logger = logging.getLogger(__name__)
 
 _JPEG_SOURCE_FORMATS = {"JPEG", "MPO"}
@@ -74,12 +76,13 @@ def strip_image_metadata(
 
     _register_heif_support()
     try:
-        from PIL import Image, ImageOps
+        from PIL import ImageOps
 
         if hasattr(image, "seek"):
             image.seek(0)
 
-        with Image.open(image) as source:
+        # Len povolené formáty: iný (TIFF, BMP…) sa nedekóduje a výsledok je `None`, ako pri každom nepodporovanom.
+        with open_allowed_image(image) as source:
             source_format = (source.format or "").upper()
             if source_format == "GIF":
                 return None

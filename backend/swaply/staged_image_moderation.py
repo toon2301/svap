@@ -26,6 +26,8 @@ import logging
 import boto3
 from django.conf import settings
 
+from swaply.image_signature import open_allowed_image
+
 logger = logging.getLogger("swaply")
 
 IMAGE_MODERATION_REJECTED_CODE = "image_moderation_rejected"
@@ -84,7 +86,7 @@ def _download(s3_client, bucket: str, key: str) -> bytes:
 
 def _decode_to_webp(raw_bytes: bytes, s3_client, bucket: str, key: str) -> bytes:
     """Decode raw image bytes → normalized WebP. HEIC-compatible via pillow-heif."""
-    from PIL import Image, ImageOps
+    from PIL import ImageOps
 
     try:
         from pillow_heif import register_heif_opener
@@ -93,7 +95,8 @@ def _decode_to_webp(raw_bytes: bytes, s3_client, bucket: str, key: str) -> bytes
         pass
 
     try:
-        pil = Image.open(io.BytesIO(raw_bytes))
+        # Len povolené formáty; iný formát (TIFF, BMP…) sa odmietne nižšie ako nespracovateľný obrázok.
+        pil = open_allowed_image(io.BytesIO(raw_bytes))
         pil.load()
         try:
             pil = ImageOps.exif_transpose(pil)
