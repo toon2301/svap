@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
@@ -147,6 +147,10 @@ type FeedListProps = {
   onOpenComposerPage?: () => void;
 };
 
+/**
+ * Nástenka: kostry počas prvého načítania, chyba, prázdny stav alebo karty príspevkov. Karty prítomné pri prvom
+ * zobrazení zoznamu sa ukážu hneď, vyfadujú sa len tie, ktoré pribudnú neskôr (nález 276).
+ */
 export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
   const { t } = useLanguage();
   // Návrat z profilu/ponuky/portfólia. Snímka sa PREČÍTA hneď pri prvom rendri
@@ -238,6 +242,7 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
     }
   };
 
+  /** Telo zoznamu podľa stavu: kostry, chyba, prázdny stav alebo karty príspevkov. */
   const renderBody = () => {
     if (loading) {
       return (
@@ -273,10 +278,7 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
     }
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+      <div
         // Na mobile karty od kraja po kraj: `-mx-4` presne ruší vodorovný
         // padding obsahu z DashboardLayout (`px-4 sm:px-6 lg:px-8`), od `sm:`
         // vyššie ostáva rozloženie nezmenené. Zvislé rozostupy sú na mobile
@@ -286,28 +288,35 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
         className="-mx-4 space-y-3 sm:mx-0 sm:space-y-4"
         data-testid="feed-list"
       >
-        {posts.map((post) => (
-          // Animácia beží pri MOUNTE karty – existujúce karty si React podľa
-          // key zachová, takže „priplávajú" len tie čerstvo vložené na vrch.
-          <motion.div
-            key={post.id}
-            ref={(node: HTMLDivElement | null) => registerPostElement(post.id, node)}
-            // Po zdieľaní sa sem doscrolluje – karta sa označí, aby ju mal test
-            // (a prípadné budúce správanie) ako sa chytiť. Vizuálne nič navyše.
-            data-testid={
-              landedPostId === post.id ? 'feed-landed-post' : undefined
-            }
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25 }}
-          >
-            <FeedPostCard
-              post={post}
-              onShared={(created) => prependPosts([created])}
-              onDeleted={removePost}
-            />
-          </motion.div>
-        ))}
+        {/* Zoznam sa pri každom prepnutí obrazovky pripojí znova. Keby sa pri tom animovali všetky karty od
+            priehľadnosti 0, po kostrách by nasledovala prázdna plocha a približne 300 ms vyfadovanie (nález 276).
+            `initial={false}` preto vypne vstupnú animáciu kariet, ktoré tu sú pri prvom zobrazení zoznamu, vrátane
+            animácie článku vo `FeedPostCard` (riadi sa kontextom prítomnosti). Kartám, ktoré pribudnú neskôr,
+            ostáva. */}
+        <AnimatePresence initial={false}>
+          {posts.map((post) => (
+            // Animácia beží pri MOUNTE karty – existujúce karty si React podľa
+            // key zachová, takže „priplávajú" len tie čerstvo vložené na vrch.
+            <motion.div
+              key={post.id}
+              ref={(node: HTMLDivElement | null) => registerPostElement(post.id, node)}
+              // Po zdieľaní sa sem doscrolluje – karta sa označí, aby ju mal test
+              // (a prípadné budúce správanie) ako sa chytiť. Vizuálne nič navyše.
+              data-testid={
+                landedPostId === post.id ? 'feed-landed-post' : undefined
+              }
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25 }}
+            >
+              <FeedPostCard
+                post={post}
+                onShared={(created) => prependPosts([created])}
+                onDeleted={removePost}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {loadingMore ? <FeedCardSkeleton /> : null}
 
@@ -328,7 +337,7 @@ export default function FeedList({ onOpenComposerPage }: FeedListProps = {}) {
             {t('feed.loadMoreError', 'Ďalšie príspevky sa nepodarilo načítať.')}
           </p>
         ) : null}
-      </motion.div>
+      </div>
     );
   };
 
