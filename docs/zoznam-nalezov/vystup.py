@@ -387,7 +387,7 @@ def _udrzba(d, m):
         'sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.')
     d.w('- **Zatvorenie rozhodnutím:** nález, ktorý sa neopravuje (kozmetika, zámer majiteľa), odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do '
         '`CLOSED_SINCE` v `zatvorene_dalsie.py` (číslo, rozhodnutie s odpoveďou, dátum, text); zobrazí sa v časti 8.')
-    d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (alebo v `rozhodnutia_nastenka.py` pri R13 až R24).')
+    d.w('- **Rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (alebo v `rozhodnutia_nastenka.py` pri R13 až R28).')
     d.w('- **Poradie prác pre kolegu:** po dokončení nálezu záznam z `fronta.py` odstrániť a nález presunúť do `DONE_SINCE_DALSIE` (polia '
         '`kto`, `stav` a `od` sa pri práci kolegu nevyplňujú, lebo v kóde pracuje vždy len jeden). Kontrola zlyhá, ak záznam odkazuje na '
         'nález, ktorý už nie je otvorený (je hotový, zatvorený alebo neexistuje); nález môže byť z ktorejkoľvek skupiny (HNEĎ, PRED '
@@ -395,8 +395,9 @@ def _udrzba(d, m):
     d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '
         'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 2 : 1 (dve dávky kolegu, potom jedna vetva agenta), kým '
         'majiteľ dohodu nezmení; kolega smie robiť aj nálezy PRED NASADENÍM a HNEĎ a majiteľ môže pomer dočasne zmeniť (napr. na 1 : 1). '
-        'K6 a K7 sú hotové a vetva agenta 167 je len zoznam (majiteľ 7. 11. 2026). Nálezy, ktoré majiteľ odovzdá kolegovi na zmapovanie '
-        '(274, 275, 276), agent nemapuje. Výnimky z pravidla 500 riadkov schvaľuje len majiteľ a zapisujú sa ako rozhodnutia (R24). '
+        'K6 až K10 sú hotové a vetvy agenta 167 a 168 sú len zoznam (majiteľ 7. 11. 2026). Nálezy, ktoré majiteľ odovzdá kolegovi na '
+        'zmapovanie (naposledy 274, 275, 276), agent nemapuje. Výnimky z pravidla 500 riadkov schvaľuje len majiteľ a zapisujú sa ako '
+        'rozhodnutia (R24, R26). '
         'Po každej práci kolegu majiteľ pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` '
         '(časť „Postup s kolegom“).')
     d.w('- **Príloha D** (zoznam majiteľa z 6. 11. 2026) je mapovanie jeho položiek na tento zoznam v `priloha_nastenka.py`; generátor '

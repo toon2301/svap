@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R24: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
-(súbory nad 500 riadkov pri redizajne Nástenky) a R24 (výnimka z pravidla 500 riadkov pre nález 271).
+"""Rozhodnutia R13–R28: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+(súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
+súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
+pre testy?) a R28 (vstupné animácie modulov na mobile).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21 a R23 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026.
+(majú `odpoved`). R20, R21, R23, R27 a R28 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026 a R25 a R26
+7. 11. 2026.
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
 """
 
@@ -85,4 +88,40 @@ DECISIONS_NASTENKA = [
          odpoved='Majiteľ výnimku schválil tým, že K7 s touto opravou poslal kolegovi. Použitá je raz: +1 −0 v `useDashboardState.ts` (teraz '
                  '922 riadkov), commit `4f28c539` (PR #235). Pravidlo 500 riadkov platí ďalej; ďalšia výnimka potrebuje nové rozhodnutie.',
          datum='6. 11. 2026'),
+    dict(id='R25', tema='Účet B nevidí účet A: súkromný profil (275)',
+         otazka='Zatvoriť nález 275 (účet B nevidí účet A) ako zámer súkromného profilu, keď príčinou je `is_public = false` účtu A?',
+         odporucanie='Áno: je to zámerné správanie aplikácie (súkromný profil sa nevyhľadáva a neukazuje), nie chyba v dátach ani '
+                     'blokovanie. Samostatne zostáva nález 290 (text pri súkromnom profile pôsobí ako chyba).',
+         kedy='Rozhodnuté 7. 11. 2026.',
+         odpoved='Kolega v K8 (PR #237) zistil, že príčinou je súkromný profil účtu A (`is_public = false`); po prepnutí A na verejný ho B '
+                 'našiel (potvrdil majiteľ) a návrh „zatvoriť ako zámer“ majiteľ poslal do zápisu zoznamu. Nález 275 je zatvorený a skupina '
+                 'HNEĎ je prázdna. Účty A a B sú účty z E2E testov (`.env.e2e`).',
+         datum='7. 11. 2026'),
+    dict(id='R26', tema='Výnimky z pravidla 500 riadkov pre dva testové súbory (K8, K9)',
+         otazka='Smie sa jednorazovo zmeniť `FeedReturnState.test.tsx` (572 riadkov, nad limitom 500) kvôli K8 a `FeedPostEditPhotos.test.tsx` '
+                '(565 riadkov, nad limitom 500) kvôli K9? Codex to v oboch PR označil za porušenie `AGENTS.md` (P1).',
+         odporucanie='Len pre tieto dve malé zmeny: dva riadky v mocku `AnimatePresence` (K8) a jeden nový test (K9). Delenie testových '
+                     'súborov kvôli tomu nestojí za riziko; otázku, či pravidlo platí aj pre testy, rieši R27.',
+         kedy='Rozhodnuté 7. 11. 2026.',
+         odpoved='Majiteľ výnimky schválil odpoveďami na vláknach Codexu: v PR #237 „Výnimka od majiteľa bola udelená.“ a v PR #238 '
+                 '„Výnimka bola udelená majiteľom.“ (7. 11. 2026). Použité sú raz: `FeedReturnState.test.tsx` 572 → 574 riadkov (+2 riadky '
+                 'v mocku `AnimatePresence`, K8, commit `dc418ca8`) a `FeedPostEditPhotos.test.tsx` 565 → 588 riadkov (+1 test, K9). Pravidlo '
+                 '500 riadkov platí ďalej; ďalšia výnimka potrebuje nové rozhodnutie.',
+         datum='7. 11. 2026'),
+    dict(id='R27', tema='Pravidlo 500 riadkov a testové súbory',
+         otazka='Má pravidlo „súbory `.ts` a `.tsx` nad 500 riadkov sa nemenia“ platiť aj pre testové súbory? Kolega v K8 a K9 tvrdí, že '
+                'sa na testy nevzťahuje; `AGENTS.md` (riadok 9) a `.cursor/rules/svaply.mdc` (riadok 11) výnimku pre testy nemajú, '
+                'riadok 10 v `svaply.mdc` testy z limitu veľkosti vyníma, a zoznam vedie testový súbor nad limit ako TECH-11.',
+         odporucanie='Spresniť znenie: malé zmeny existujúcich testových súborov nad 500 riadkov (pridať test, upraviť mock) povoliť, nové '
+                     'testy dávať radšej do nového súboru, a TECH-11 prestať viesť ako „nemeniť“. Inak Codex pri každom takom PR hlási P1 '
+                     'a majiteľ musí výnimku udeľovať znova (R26). Produkčné súbory nad 500 riadkov ostávajú bez zmeny.',
+         kedy='Pred ďalšou zmenou testového súboru nad 500 riadkov; stačí upraviť `AGENTS.md` a `svaply.mdc`.'),
+    dict(id='R28', tema='Vstupné animácie modulov na mobile (287, 288)',
+         otazka='Zjednotiť vstupné animácie modulov tak, aby sa pri otvorení modulu nezačínalo od priehľadnosti 0 (a pri „Znížiť pohyb“ '
+                'sa neanimovala ani priehľadnosť), alebo ich nechať ako dnes?',
+         odporucanie='Zjednotiť, ale až po overení na iPhone: po K8 a K9 zostal preblik hlavne pri zapnutom „Znížiť pohyb“, kde sa '
+                     'animuje len priehľadnosť, takže vstupný fade z 0 môže byť práve ten preblik (hypotéza). Jeden pomocník pre vstup '
+                     'modulu (bez fadu z 0 pri návrate a pri „Znížiť pohyb“) je lacnejší než oprava po moduloch; `FeedPostCard.tsx` '
+                     '(1 033 riadkov) a profilové sekcie nad 500 riadkov by vyžadovali výnimku.',
+         kedy='Pred prácou na 287 a 288 (289 je samostatná oprava, rozhodnutie ju ovplyvní len čiastočne).'),
 ]

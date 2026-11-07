@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 251: položky zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka; 251 až 269) a nálezy,
-ktoré pribudli po ňom (270 až 281: kolega pri K6 a K7 a manuálny test majiteľa z 7. 11. 2026; 270, 271 a 273 sú už hotové, preto sú v
-`hotove_dalsie.py`).
+ktoré pribudli po ňom (270 až 295: kolega pri K6 až K10, manuálne testy majiteľa z 7. 11. 2026 a analýza Codexu; hotové nálezy
+(270, 271, 273, 274, 276, 277 a 281) sú v `hotove_dalsie.py` a 275 je zatvorený rozhodnutím R25 v `zatvorene_dalsie.py`).
 
 PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, preto sa každá položka porovnala s týmto zoznamom a s
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
@@ -216,54 +216,6 @@ NEW_ITEMS_NASTENKA = [
               'alebo výnimku od majiteľa. Návrh: spoločný pomocník v novom súbore (napr. nad `getProfileDisplayName` z '
               '`lib/profileDisplayName.ts`) a jedno volanie v každom z oboch súborov. Kolega ho označil ako nízky.',
          dec=None, src='K6 (kolega)'),
-    dict(n=274, bucket=P, imp=S_, eff=EM, pkg='Zdieľanie a obrázky',
-         kratko='fotky v príspevkoch na Nástenke sa na jednom testovacom účte nenačítajú (pokazený obrázok), na druhom sú v poriadku',
-         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): v príspevkoch na Nástenke sa fotky nezobrazujú správne, na mobile aj na '
-              'desktope rovnako. Na snímke obrazovky (príspevok z 5. 9. 2026 s dvoma fotkami, karusel „1/2“) je namiesto fotky ikona '
-              'pokazeného obrázka a alternatívny text „Fotka príspevku (1/2)“. Deje sa to len po prihlásení do jedného testovacieho účtu '
-              '(účet A, prvý z dvoch testovacích účtov majiteľa); po prihlásení do druhého testovacieho účtu (účet B) sa fotky zobrazujú správne na '
-              'mobile aj na počítači. Kvôli tomu sa nedal urobiť posledný manuálny test K7 (zdieľaná karta po zmazaní fotky, nález 91). Opis '
-              'nehovorí, či sa v účte A nenačítajú fotky všetkých príspevkov (aj cudzích), alebo len jeho vlastných; snímka ukazuje príspevok '
-              'samotného účtu A.',
-         note='Nezmapované (rozhodnutie majiteľa 7. 11. 2026: príčinu nájde kolega; agent ho nemapoval). Súvislosti bez dôkazu: účet B '
-              'nevidí príspevky účtu A (nález 275), takže rozdiel medzi účtami môže mať spoločnú príčinu; symptóm (pokazený obrázok bez '
-              'náhrady) zodpovedá tomu, že karusel príspevku (`feed/FeedPostImageCarousel.tsx`) používa `BlurredContainImage` bez '
-              '`onError` (nález 279), no `onError` by riešil len chýbajúcu náhradu, nie to, prečo sa obrázok nenačíta. Pri mapovaní z '
-              'výpisov len cesty bez ID a slugov, stav odpovede a časy (AGENTS.md).',
-         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
-    dict(n=275, bucket=H, imp=V, eff=EM, pkg='Viditeľnosť medzi účtami',
-         kratko='účet B nevidí účet A (hľadanie, ponuky, príspevky, profil), hoci medzi nimi nie je blokovanie; účet A vidí účet B normálne',
-         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): z účtu A (prvý z dvoch testovacích účtov majiteľa) sa normálne nájde účet B '
-              '(druhý testovací účet) aj jeho ponuky a vidno jeho príspevky. Po prihlásení do účtu B je to naopak a nefunguje nič z toho: (1) účet A sa nedá '
-              'vôbec vyhľadať, nenájdu sa ani jeho ponuky; (2) jeho príspevky sa na Nástenke vôbec nezobrazujú; (3) v Správach sa '
-              'konverzácia s ním ukáže, no po otvorení jeho profilu z konverzácie sa zobrazí „Profil používateľa sa nepodarilo načítať.“. '
-              'Majiteľ skontroloval, že medzi účtami nie je žiadne aktívne blokovanie. Obáva sa, že ide o problém v databáze (v dátach), '
-              'a považuje nález za závažný.',
-         note='Nezmapované (rozhodnutie majiteľa 7. 11. 2026: príčinu nájde kolega; agent ho nemapoval). Zaradené HNEĎ: ide o '
-              'neviditeľnosť účtu v celej aplikácii (hľadanie, ponuky, Nástenka, profil) s možnou príčinou v dátach, takže zatiaľ nie je '
-              'jasné, či sa nedotkne aj skutočných používateľov; ak sa ukáže, že ide len o stav dát jedného testovacieho účtu, nález '
-              'presunúť. Neoverené, či sa to týka aj iných účtov (majiteľ testoval len tieto dva). Rovnaké dva testovacie účty sú aj v náleze 274 (fotky); '
-              'súvislosť nie je preukázaná. Otvorené: či sú tieto dva účty zároveň účty z E2E testov (`E2E_PEER_SLUG`); ak áno, môže to súvisieť s '
-              '209 (E2E padali na chýbajúcich dátach druhého účtu) a Codex má o tom vedieť. Pri mapovaní z výpisov '
-              'len cesty bez ID a slugov, názvy parametrov, počty a časy (AGENTS.md).',
-         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
-    dict(n=276, bucket=P, imp=S_, eff=EM, pkg='Navigácia a Späť',
-         kratko='mobil: pri prepínaní medzi hlavnými obrazovkami obsah krátko preblikne',
-         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): na mobile pri preskakovaní medzi oknami (napr. z profilu na Nástenku, z '
-              'Nástenky do Správ a podobne) obsah krátko preblikne. Nevyzerá to na opätovné načítanie stránky, ale na jemný rýchly preblik; '
-              'podľa majiteľa sa to nedá prehliadnuť. Zariadenie a prehliadač majiteľ neuviedol.',
-         note='Nezmapované (rozhodnutie majiteľa 7. 11. 2026: príčinu nájde kolega; agent ho nemapoval). Možná súvislosť bez dôkazu: pri '
-              'zmene modulu sa od opravy scrollu (commit `3356bc1b` z 29. 9. 2026) vytvára nový `<main>` (`useDashboardMainKey`), čo môže '
-              'pri prepnutí obnoviť obsah; z opisu nie je jasné, či preblik vznikol až po ňom. Vzhľadová vec, preto PRED NASADENÍM '
-              '(rozhodnutie majiteľa 6. 11. 2026).',
-         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
-    dict(n=277, bucket=A, imp=N, eff=ES, pkg='Prístupnosť',
-         kratko='pruh o stave pripojenia nemá `role` ani `aria-live`, čítač obrazovky zmenu neoznámi',
-         what='Kolega pri K7: `OfflineIndicator.tsx` nemá na pruhu o strate a obnovení pripojenia `role` ani `aria-live`, takže čítač '
-              'obrazovky zmenu pripojenia neoznámi. Agent potvrdil čítaním kódu (v súbore nie je ani jedno).',
-         note='Návrh: `role="status"` s `aria-live="polite"` (pri výpadku môže byť `role="alert"`) a test. Pruh je od K7 po obnovení '
-              'pripojenia viditeľný 3 s (nález 270), takže oznam má zmysel.',
-         dec=None, src='K7 (kolega)'),
     dict(n=278, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
          kratko='`handleUserUpdate` má prázdny (no-op) updater `setActiveRightItem`',
          what='Kolega pri K7: `handleUserUpdate` v `hooks/useDashboardState.ts` volá `setActiveRightItem((prev) => …)`, ktorého updater vo '
@@ -274,18 +226,24 @@ NEW_ITEMS_NASTENKA = [
               '`handleUserUpdate`, ktorá po oprave 271 platí už len pre moduly, ktoré nie sú sekciou Nastavení.',
          dec=None, src='K7 (kolega)'),
     dict(n=279, bucket=P, imp=N, eff=ES, pkg='Zdieľanie a obrázky',
-         kratko='`BlurredContainImage` bez `onError` na ďalších šiestich miestach: po zmazanej fotke môže vzniknúť pokazený obrázok',
-         what='Po K7 (nález 91) hlási zlyhanie načítania obrázka cez `onError` len zdieľaná karta (`SharedContentPreviewCard.tsx`). '
-              '`BlurredContainImage` sa používa bez `onError` aj v `feed/FeedPostImageCarousel.tsx` (fotky príspevku), '
-              '`shared/OfferImageCarousel.tsx`, `profile/PortfolioCard.tsx`, `profile/PortfolioDetailHero.tsx`, '
-              '`profile/PortfolioGalleryImageTile.tsx` a `FavoritesModule.tsx`, takže tam po zmazaní fotky (alebo pri nedostupnom súbore) '
-              'môže vzniknúť ten istý pokazený obrázok. Hlásil kolega; agent počet miest overil vyhľadávaním (šesť súborov), správanie na '
-              'jednotlivých miestach nikto netestoval.',
-         note='Chránené obrázky (cez `useProtectedImage`) pri chybe nechajú neutrálne pozadie, verejné adresy ukážu pokazený obrázok. '
-              'Súvisí s 91 a so snímkou majiteľa v nálezu 274 (pokazená fotka v karuseli príspevku): ten nález by `onError` sám '
-              'nevyriešil, ide len o náhradu. Návrh: rovnaká náhrada ako pri 91, miesto po mieste; karusel príspevku má vlastný layout, '
-              'treba rozhodnúť, čo ukázať, keď zlyhá jedna fotka z viacerých. Všetkých šesť súborov má najviac 335 riadkov.',
-         dec=None, src='K7 (kolega)'),
+         kratko='zlyhaná fotka ukáže prázdnu (v tmavom režime čiernu) plochu bez ikony a textu; ručný test po K10 neprešiel',
+         what='ČIASTOČNE HOTOVÉ: K10 (PR #239, zlúčené 7. 11. 2026, commity `0025c124` a `a6513c0d`) doplnil `onError` na všetkých šiestich '
+              'miestach, kde ho `BlurredContainImage` nemal. Karusel príspevku (`feed/FeedPostImageCarousel.tsx`) ukáže neutrálnu plochu '
+              'rovnakého rozmeru (nový `shared/ImageLoadFailed.tsx`) a počítadlo sa nemení; karusel ponúk (`shared/OfferImageCarousel.tsx`, '
+              'oba varianty, aj cover) zlyhanú fotku preskočí a „Bez fotografie“ ukáže až pri zlyhaní všetkých; portfólio: karta a detail '
+              'ukážu „Bez titulnej fotky“, dlaždica galérie neutrálnu plochu a jej tlačidlá ostávajú; Obľúbené ukážu iniciály (nový '
+              '`FavoriteAvatar`). Oprava podľa CodeRabbitu (`a6513c0d`): referencia s počtom fotiek v karuseli ponúk sa aktualizuje v '
+              'efekte, nie počas renderu. Overenie podľa kolegu: 21 nových testov a 13 mutácií zachytili testy. OSTÁVA: ručný test '
+              'majiteľa 7. 11. 2026 po K10 NEPREŠIEL. V Chrome DevTools zablokoval požiadavku na fotku príspevku '
+              '(`/api/auth/feed/posts/<id>/images/<id>/file/?variant=large`, stav `blocked`), po obnovení Nástenky sa fotka nenačítala a '
+              'namiesto neutrálnej náhrady sa ukázala veľká prázdna čierna plocha (snímka majiteľa). Zodpovedá to kódu: `ImageLoadFailed` je '
+              'len obdĺžnik s pozadím `bg-gray-100` (v tmavom režime `bg-[#0e0e0f]`), bez ikony a textu. Majiteľ očakáva viditeľný '
+              'neutrálny placeholder (nie prázdnu čiernu plochu) a správne počítadlo fotiek, ak je relevantné.',
+         note='Návrh: náhrada na mieste zlyhanej fotky musí byť viditeľná: ikona a krátky text (napr. „Fotku sa nepodarilo načítať“; nový '
+              'preklad vo všetkých šiestich jazykoch) v `shared/ImageLoadFailed.tsx`, ktorý používa karusel príspevku aj dlaždica galérie '
+              'portfólia; rozloženie a počítadlo ostávajú, v tmavom aj svetlom režime. Test: zlyhanie načítania ukáže text náhrady. '
+              'Súvisí s 91, 291 (lightboxy) a 292 (zápis do `ref` v `BlurredContainImage`).',
+         dec=None, src='K7 (kolega), čiastočne K10 a manuálny test majiteľa, 7. 11. 2026'),
     dict(n=280, bucket=A, imp=N, eff=ES, pkg='Navigácia – drobnosti',
          kratko='mobil: priamy vstup na adresu sekcie Nastavení nastaví `isRightSidebarOpen = true`, vstup zo zoznamu nie',
          what='Kolega pri K7: na mobile priamy vstup na adresu sekcie Nastavení nastaví `isRightSidebarOpen = true`, kým vstup zo zoznamu '
@@ -293,13 +251,141 @@ NEW_ITEMS_NASTENKA = [
          note='Súvisí s 271: v stave „profil + otvorený pravý panel“ sa skrýva spodný panel. Treba overiť na mobile priamy vstup na adresy '
               'sekcií Nastavení (nová karta, odkaz): či sa spodný panel a Späť správajú rovnako ako po vstupe zo zoznamu.',
          dec=None, src='K7 (kolega)'),
-    dict(n=281, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
-         kratko='Obľúbené: šesť záložných textov bez diakritiky (ukážu sa len pri chýbajúcom preklade)',
-         what='Kolega pri K7: vo `FavoritesModule.tsx` majú záložné texty `favorites.loading`, `favorites.emptyTitle`, `favorites.emptyHint`, '
-              '`favorites.unknownUser`, `skills.message` a `favorites.removeAction` slovenčinu bez diakritiky (napr. „Nacitavam oblubenych '
-              'pouzivatelov...“, „Pouzivatel“, „Sprava“, „Odobrat“). Agent potvrdil čítaním kódu. Preklady existujú, takže sa záložný text '
-              'ukáže len pri chýbajúcom preklade. K7 opravil len dva pomenované texty (`favorites.loadError`, `favorites.removeError`).',
-         note='Návrh: doplniť diakritiku v záložných textoch (jedna malá úprava vo `FavoritesModule.tsx`, 236 riadkov). Súvisí s 175 '
-              '(časť Obľúbené je hotová) a 204 (kontrola použitých kľúčov).',
-         dec=None, src='K7 (kolega)'),
+    dict(n=282, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='starý multipart endpoint ponúk ukladá originál aj s polohou GPS',
+         what='Kolega pri K10 (sonda, 7. 11. 2026): starý multipart endpoint `POST /api/auth/skills/<id>/images/` v `accounts/views/skills.py` '
+              '(450 riadkov) ukladá originál obrázka aj s polohou GPS. Sonda: JPEG s GPS dostal HTTP 201, stav schválený a GPS bola v '
+              'uloženom súbore. Endpoint po `validate_image_file` uloží súbor priamo do `OfferedSkillImage`, bez `strip_image_metadata`, ktorý '
+              'používajú avatary (`accounts/avatar_images.py`) a správy (`messaging/services/messages.py`). Frontend ho volá len ako '
+              'vývojovú zálohu pri nenakonfigurovanom úložisku (`lib/offerImageUpload.ts`), no server je dostupný aj priamym volaním.',
+         note='Dopad: poloha používateľa zostane v súbore fotky ponuky (EXIF); vyžaduje priame volanie API prihláseným používateľom. '
+              'Návrh: prejsť cez `strip_image_metadata` ako avatary a správy (vývojová záloha ostane funkčná), alebo endpoint zrušiť '
+              '(vtedy treba upraviť aj vývojovú zálohu vo `lib/offerImageUpload.ts`). Test: JPEG s GPS sa uloží bez GPS. Neoverené: či '
+              'rovnaké platí pre lokálne nahrávanie portfólia (`portfolio/local_upload_views.py`). Súvisí s 193 (K10 uzavrel GPS pri '
+              'správach).',
+         dec=None, src='K10 (kolega)'),
+    dict(n=283, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
+         kratko='prázdny stav ponúk v profile bliká jednu snímku pri každom pripojení',
+         what='Kolega pri K8 a K9: prázdny stav ponúk v profile bliká jednu snímku pri každom pripojení komponentu. Príčina: počiatočné '
+              '`isLoading=false` v `profile/ProfileOffersMobileSection.tsx` (945 riadkov) a `profile/ProfileOffersSection.tsx` (1 108 '
+              'riadkov).',
+         note='Zvyšok po 276. Oba súbory sú nad 500 riadkov (TECH-06, TECH-07), takže zmena vyžaduje jednorazovú výnimku od majiteľa '
+              'alebo delenie súborov. Odhad kolegu: nízky · M. Vzhľadová vec, preto PRED NASADENÍM (rozhodnutie majiteľa 6. 11. 2026).',
+         dec=None, src='K8 a K9 (kolega)'),
+    dict(n=284, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
+         kratko='kostra Správ nemá záložky ani vyhľadávanie, rozloženie po načítaní skočí',
+         what='Kolega pri K8: kostra obrazovky Správ nemá záložky ani vyhľadávanie, takže rozloženie po načítaní zoznamu skočí. Týka sa '
+              '`messages/ConversationsList.tsx` (864 riadkov).',
+         note='Zvyšok po 276. Súbor je nad 500 riadkov (nový súbor alebo výnimka od majiteľa). Návrh: kostra s rovnakými záložkami a '
+              'poľom vyhľadávania ako hotový zoznam. Odhad kolegu: nízky · M.',
+         dec=None, src='K8 (kolega)'),
+    dict(n=285, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
+         kratko='po „Zatvoriť“ zoznamu Nastavení sa profil vykreslí dvakrát',
+         what='Kolega pri K9: po „Zatvoriť“ zoznamu Nastavení sa profil vykreslí dvakrát. Krok späť najprv nastaví modul `user-profile` a '
+              'efekt v `hooks/useDashboardUserProfile.tsx` (490 riadkov, okolo riadka 158) ho prepne na `profile`.',
+         note='Zvyšok po 276. Súbor má 490 riadkov, takže už niekoľko pridaných riadkov ho dostane nad limit 500. Odhad kolegu: nízky · M.',
+         dec=None, src='K9 (kolega)'),
+    dict(n=286, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
+         kratko='sekcie Nastavení ukážu pri vstupe prechodný stav (kostra, prázdny stav, „Načítavam…“)',
+         what='Kolega pri K9 (a nahrávka majiteľa z iPhonu): sekcie Nastavení ukážu pri vstupe prechodný stav. Blokované a Sledovanie ukážu '
+              'krátku kostru a potom prázdny stav; Súkromie chvíľu nič; Upozornenia ukážu 3 snímky „Načítavam…“ a potom skok rozloženia. '
+              'Sledovanie sa zatvára naraz, lebo je to samostatné okno (`offer-watch/mobile/OfferWatchSettingsMobileHost.tsx`, 343 '
+              'riadkov).',
+         note='Zvyšok po 276. Odhad kolegu: nízky · S po sekciách; riešiť po jednej sekcii v samostatných commitoch.',
+         dec=None, src='K9 (kolega a nahrávka majiteľa)'),
+    dict(n=287, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
+         kratko='vstupný fade z 0 pri každom otvorení modulu (Obľúbené zmerané ~270 ms)',
+         what='Kolega pri K8: moduly sa pri každom otvorení vyfadujú z priehľadnosti 0. Pri Obľúbených je to zmerané (~270 ms), pri '
+              'Štatistikách (`StatisticsModule.tsx`, 296 riadkov) a detaile príspevku len z kódu. Zoznam príspevkov Nástenky to po K8 nemá '
+              '(`initial={false}`).',
+         note='Treba rozhodnúť, či vstupné animácie zjednotiť (R28). Pri zapnutom „Znížiť pohyb“ (134) sa posun a mierka vykonajú '
+              'okamžite a ďalej sa animuje len priehľadnosť, takže práve vstupný fade z 0 môže byť to, čo majiteľ na iPhone vidí ako preblik '
+              '(hypotéza, neoverené). Odhad kolegu: nízky · S.',
+         dec='ROZHODNUTIE R28', src='K8 (kolega)'),
+    dict(n=288, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
+         kratko='`FeedPostCard.tsx` má vlastnú vstupnú animáciu navyše k obalu zoznamu',
+         what='Kolega pri K8: `feed/FeedPostCard.tsx` (1 033 riadkov) má vlastnú vstupnú animáciu navyše k obalu zoznamu. K8 ju neutralizuje '
+              'zvonka (nad kartami); čisté riešenie je jeden riadok priamo v karte.',
+         note='Čisté riešenie vyžaduje jednorazovú výnimku z pravidla 500 riadkov (TECH-01…11) alebo delenie súboru. Odhad kolegu: nízky · '
+              'S. Súvisí s 287 a s redizajnom Nástenky (261, R23).',
+         dec=None, src='K8 (kolega)'),
+    dict(n=289, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
+         kratko='„Znížiť pohyb“ a zoznam Nastavení: tmavé pozadie sa ďalej vyfaduje a nová obrazovka sa rozjasňuje',
+         what='Kolega pri K9 (nahrávka majiteľa z iPhonu): pri zapnutom „Znížiť pohyb“ (nález 134) sa panel zoznamu Nastavení prestrihne, no '
+              'tmavé pozadie za ním (`Sidebar.tsx`, 472 riadkov) sa ďalej vyfaduje cez novú obrazovku: nová obrazovka sa asi 0,2 s ukáže na '
+              '65 až 80 % jasu a rozjasní. Navyše 0,2 až 0,3 s po zatvorení príde jednosnímkový záblesk (celá stránka na asi 50 % jasu; v '
+              'nahrávke dvakrát). Príčina záblesku je hypotéza (koniec výstupnej animácie pozadia), v Chromiu sa nereprodukovala; majiteľ '
+              'povedal zatiaľ nechať.',
+         note='Doplnok k 134 (K5). Návrh kolegu: bez animácie pozadia pri `useReducedMotion()`; záblesk riešiť až po overení príčiny. '
+              'Odhad kolegu: nízky · S. Súvisí s 287 (priehľadnosť sa pri „Znížiť pohyb“ animuje ďalej).',
+         dec=None, src='K9 (kolega a nahrávka majiteľa)'),
+    dict(n=290, bucket=A, imp=N, eff=ES, pkg='Profil a identita',
+         kratko='text „Profil používateľa sa nepodarilo načítať.“ pri súkromnom profile pôsobí ako chyba',
+         what='Kolega pri K8: pri súkromnom profile (zámerne sa neprezrádza, že je profil súkromný; nález 275, R25) sa zobrazí text „Profil '
+              'používateľa sa nepodarilo načítať.“, ktorý pôsobí ako chyba aplikácie. Text je kľúč `search.userProfileNotFound` (pri odpovedi '
+              '404; `search/ViewedUserProfileGate.tsx:50` a `search/foreignProfileHelpers.ts:72`).',
+         note='Voliteľné. Nezverejňovať, že je profil súkromný, je zámer; text však môže byť neutrálnejší (napr. „Profil nie je dostupný.“; '
+              'nový preklad vo všetkých šiestich jazykoch). Skutočná chyba načítania má vlastný kľúč `search.userProfileLoadError` '
+              '(„Nepodarilo sa načítať profil používateľa.“ s tlačidlom „Skúsiť znova“), takže zmena textu pre 404 sa s ňou nezrazí. '
+              'Odhad kolegu: nízky · S.',
+         dec=None, src='K8 (kolega)'),
+    dict(n=291, bucket=P, imp=N, eff=EM, pkg='Zdieľanie a obrázky',
+         kratko='lightboxy bez `onError`; asi 34 zo 44 súborov s `<img>` nemá `onError` (hrubý počet)',
+         what='Kolega pri K10: `shared/ImageLightbox.tsx` (342 riadkov) a `shared/OfferImageGalleryLightbox.tsx` (345 riadkov) nemajú '
+              '`onError`, takže zlyhaná fotka na celú obrazovku ukáže pokazený obrázok. Hrubé počítanie agenta (netriedené, bez testov): '
+              '34 zo 44 súborov s `<img>` v `frontend/src` nemá `onError` (kolega uvádza asi 35), vrátane avatarov a ikon, kde to nemusí '
+              'vadiť.',
+         note='Dokončenie 279 pre fotku na celú obrazovku. Návrh: lightboxy dostanú rovnakú viditeľnú náhradu ako po oprave 279; ostatné '
+              'súbory najprv roztriediť (avatary a ikony zlyhanie zvyčajne nepotrebujú). Odhad kolegu: nízky · M. Časť 36 (drobnosti '
+              'lightboxov, riešia sa s 92) je samostatná.',
+         dec=None, src='K10 (kolega)'),
+    dict(n=292, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='zápis do `ref.current` počas renderu v `BlurredContainImage.tsx:39`',
+         what='Kolega pri K10: `shared/BlurredContainImage.tsx` (70 riadkov) zapisuje `onErrorRef.current = onError;` počas renderu (riadok '
+              '39). Je to rovnaký vzor, ktorý CodeRabbit s React Doctorom (`no-ref-current-in-render`) hlásil v karuseli ponúk (PR #239, '
+              'opravené v `a6513c0d`). Pochádza z K7 (nález 91), takže je mimo diffu K10 a CodeRabbit ho nehlásil.',
+         note='Oprava je rovnaká ako v karuseli ponúk: zápis presunúť do efektu. Odhad kolegu: nízky · S.',
+         dec=None, src='K10 (kolega)'),
+    dict(n=293, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky',
+         kratko='chyba nahrávania fotky ponuky ukáže natívne `alert()` namiesto toastu; v rade portfólia chýba toast pri neplatnom type',
+         what='Majiteľ pri manuálnom teste po K10 (7. 11. 2026): pri pridaní fotky v nesprávnom formáte sa ukázala len chyba a mal sa '
+              'ukázať toast. Snímka majiteľa je natívne okno prehliadača „Chyba pri nahrávaní obrázka 1: Neplatný typ súboru.“ nad '
+              'formulárom ponuky (majiteľ písal o portfóliu; snímka je z okna ponúk). Agent v kóde overil dve miesta: (1) ponuky: '
+              '`uploadImagesIfNeeded` v `dashboard/DashboardModals.tsx` (481 riadkov, riadok 113) volá `alert(...)` s doslovným slovenským '
+              'textom bez prekladu, kým rovnaká logika v `hooks/useSkillSaveHandler.ts` (riadky 246 a 302; mobilná celoobrazovková '
+              'úprava ponuky) používa `toast.error` s prekladom; ukladanie ponuky tak existuje v dvoch kópiách s rôznym správaním. Rozdiel je '
+              'aj vo význame: v `DashboardModals.tsx` `uploadImagesIfNeeded` po `alert(...)` chybu hodí ďalej a vonkajší `catch` ukáže '
+              'ešte toast „Ponuku sa nepodarilo uložiť. Skús to znova.“, hoci ponuka je v tej chvíli už uložená (PATCH alebo POST '
+              'predchádza nahrávaniu fotiek) a zlyhala len fotka; mobilná cesta chybu fotky len zahlási toastom a ponuku uloží (komentár '
+              'v `useSkillSaveHandler.ts`: zlyhanie pomocných krokov sa nesmie hlásiť ako neúspešné uloženie, inak by používateľ ponuku '
+              'vytváral znova a narazil na `duplicate_offer`); '
+              '(2) portfólio: výber pri vytváraní položky (`profile/PortfolioCreatePhotoPicker.tsx`) ukáže pri neplatnom type toast, no '
+              'pridávanie fotiek do existujúcej položky (`profile/usePortfolioImageUploadQueue.ts`, 369 riadkov) ukáže len chybový riadok v '
+              'rade: súbory s neplatným typom alebo veľkosťou sa nedostanú medzi nahrávané, takže pre ne toast nevznikne.',
+         note='Návrh: v `DashboardModals.tsx` rovnaké správanie ako v `useSkillSaveHandler.ts`: chybu každej fotky zahlásiť toastom (pre '
+              'moderáciu rovnaká hláška ako tam; `toast` je v súbore už importovaný), nehádzať ju ďalej a ponuku dokončiť; a toast s '
+              'textom `portfolio.invalidPhotoType` aj v rade nahrávania portfólia. Natívne `alert(...)` je v zdrojoch na 15 miestach v 6 súboroch (bez testov): `DashboardModals.tsx` 3 '
+              '(riadky 113, 364 a 384), `useSkillsModals.ts` 3 (337 riadkov), `TagsSection.tsx` 1 (228 riadkov), `SkillsModuleRouter.tsx` 4 '
+              '(583 riadkov), `OfferReviewsView.tsx` 3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov); posledné tri '
+              'súbory sú nad 500 riadkov. Fotky sa týkajú len prvého; výmena ostatných je samostatné rozhodnutie.',
+         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
+    dict(n=294, bucket=P, imp=N, eff=ES, pkg='iPhone overenia',
+         kratko='ručný test pruhu pripojenia s VoiceOverom na iPhone (277)',
+         what='K10 (nález 277): pruh pripojenia má `role="alert"` (výpadok) a `role="status"` s `aria-atomic="true"` (obnovenie) v stále '
+              'prítomných obaloch; v Chromiu ich strom prístupnosti vystavuje ako assertive a polite. Ručný test s čítačom obrazovky '
+              'chýba.',
+         note='Návrh manuálneho testu: iPhone s VoiceOverom, zapnúť a vypnúť letecký režim; čítač musí oznámiť výpadok aj obnovenie '
+              'pripojenia. Ak neoznámi, vrátiť sa k 277.',
+         dec=None, src='K10 (kolega)'),
+    dict(n=295, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
+         kratko='E2E nepokrýva fotky: nahrávanie, odmietnutie BMP a TIFF, fotky súkromného autora a zlyhanú fotku',
+         what='Z K8 a K10 a z analýzy Codexu (7. 11. 2026): E2E nepokrýva fotky na Nástenke, v portfóliu ani v ponukách. Žiadny spec '
+              'nenahráva obrázky (K10), fotky Nástenky E2E nepokrývajú (K8) a sieťová diagnostika obrázkové požiadavky nezachytáva (Codex), '
+              'takže pád načítania fotiek z nálezu 274 sa v E2E nedal preukázať a bez pokrytia ostáva aj ručný test majiteľa k 193 a 279.',
+         note='Návrh pre Codexa (E2E vlastní Codex; agent len eviduje): (1) nahranie bežnej fotky do príspevku, portfólia a ponuky s '
+              'upratovaním po sebe; (2) odmietnutie BMP a TIFF (aj s príponou `.jpg`) na týchto miestach a v správach; (3) fotka príspevku '
+              'sa úspešne načíta aj v účte súkromného autora (274); (4) zablokovaná alebo zmazaná fotka ukáže viditeľnú náhradu a '
+              'počítadlo ostane (279). Kým E2E používa jeden prihlásený účet, opačný smer medzi dvomi účtami nie je pokrytý (209). Platí '
+              'pravidlo z `AGENTS.md`: test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať.',
+         dec=None, src='K8, K10 (kolega) a Codex, 7. 11. 2026'),
 ]

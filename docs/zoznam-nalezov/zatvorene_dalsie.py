@@ -22,4 +22,12 @@ CLOSED_SINCE = [
               'Nastavenia, záložka Účet, `VerifyEmailSection`) a ukazuje sa pri avatare profilu, vo vyhľadávaní a v zozname konverzácií '
               '(`User.is_verified`). Príznak `can_use_verified_badge` pre prémiovú úroveň v `accounts/services/entitlements.py` sa nikde '
               'nepoužíva a ostáva na prípadnú budúcu funkciu.'),
+    dict(n=275, rozhodnutie='R25', datum='7. 11. 2026',
+         text='ZATVORENÉ rozhodnutím R25 (7. 11. 2026; nález majiteľa z manuálneho testu po K7, príčinu našiel kolega v K8, PR #237, bez '
+              'zmeny kódu): účet B nevidel účet A (hľadanie, ponuky, príspevky na Nástenke, profil z konverzácie „Profil používateľa sa '
+              'nepodarilo načítať.“), lebo účet A má súkromný profil (`is_public = false`), čo je zámerné správanie aplikácie. Po '
+              'prepnutí A na verejný ho B našiel (potvrdil majiteľ). Nešlo o chybu v databáze ani o blokovanie. Tá istá príčina '
+              'spôsobila nenačítané fotky účtu A (nález 274, oprava v K9). Účty A a B sú účty z E2E testov (`.env.e2e`; majiteľ '
+              '7. 11. 2026): E2E, ktoré hľadajú A z B, ho pri súkromnom A nenájdu (stav dát), čo sa môže týkať nálezu 209. Text pri '
+              'súkromnom profile pôsobí ako chyba: nález 290. Skupina HNEĎ je tým prázdna.'),
 ]

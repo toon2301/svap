@@ -135,19 +135,30 @@ NEW_ITEMS = [
          note='Zmerané 26. 10. v Chromiu na produkčnom builde. Dotýka sa len starých odkazov s číselným ID (route ich podporuje kvôli '
               'spätnej kompatibilite). Nízka priorita; vyplynulo z nálezu 189.',
          dec=None, src='vetva 141'),
-    dict(n=193, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='obrázky sa dekódujú bez `formats=`',
-         what='Obrázky sa dekódujú cez `Image.open(...)` bez parametra `formats=` na piatich miestach produkčného kódu '
-              '(`staged_image_moderation.py:96`, `tasks/offer_images.py:88`, `image_metadata.py:82`, `portfolio/image_processing.py:81`, '
-              '`messaging/services/image_thumbnails.py:50`), takže Pillow skúsi ľubovoľný formát, ktorý pozná (TIFF, BMP, EPS, PSD, JPEG 2000 …), '
-              'nielen JPEG, PNG, WebP, GIF a HEIC, ktoré aplikácia prijíma. Cesta cez staged S3 (`moderate_staged_s3_image`; volá ju portfólio, '
-              'ponuky aj príspevky) dekóduje bajty priamo zo S3 bez predchádzajúcej kontroly podpisu súboru (`sniff_image_format` sa volá len v '
-              'validátore `ImageField` a pri avatare).',
-         note='Zistené pri mapovaní 183a: Pillow 12.3.0 mal 37 známych chýb, časť z nich v dekóderoch formátov, ktoré aplikácia neprijíma '
-              '(TIFF, BMP, MIC, SPIDER, MSP, XBM, EPS); Pillow 13.0.0 ich nemá žiadnu, no obmedzenie formátov je lacná poistka proti budúcim. '
-              'Overené 27. 10. na kópii: `_decode_to_webp`, `build_message_thumbnail` aj varianty portfólia dekódujú súbor TIFF aj BMP bez odmietnutia. '
-              'Návrh: spoločná konštanta povolených formátov a `formats=` na všetkých piatich miestach + test, že TIFF/BMP súbor sa odmietne. '
-              'Pozor na HEIC: pillow-heif sa v Pillow hlási ako `HEIF`; overiť na skutočných fotkách z iPhonu (aj kvôli `MPO` pri JPEG z fotoaparátu).',
-         dec=None, src='vetva 143'),
+    dict(n=193, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='kód hotový v K10; ručný test po K10: BMP prijaté v portfóliu a na Nástenke (nevysvetlené)',
+         what='ČIASTOČNE HOTOVÉ: kód je hotový v K10 (PR #239, zlúčené 7. 11. 2026, commit `bc105f53`). Spoločný zoznam povolených formátov '
+              'a pomocník `open_allowed_image` v `swaply/image_signature.py` používa všetkých päť miest (`staged_image_moderation.py`, '
+              '`tasks/offer_images.py`, `image_metadata.py`, `portfolio/image_processing.py`, `messaging/services/image_thumbnails.py`): '
+              'JPEG, PNG, WebP, GIF a HEIC (HEIF len keď je `pillow-heif` zaregistrovaný); MPO z mobilov ide cez JPEG (MPO do `formats=` '
+              'nepatrí: Pillow ho nemá ako samostatný opener a pri nezhodnom vstupe by vyhodil `KeyError`). Validátor `validate_image_file` '
+              'už nepustí BMP a TIFF podľa obsahu súboru; TIFF pomenovaný `.jpg` predtým prešiel nahrávaním správy a uložil sa originál aj '
+              's polohou GPS. Odmietnutie ostalo na každom mieste také, aké už malo (zamietnutý záznam, `ModerationRejectedError` s HTTP '
+              '400, `None`) a platí so SafeSearch aj bez neho. Overenie podľa kolegu: 118 nových testov, 13 mutácií zachytili testy, '
+              'backend 2 161 prešlo; CI prešlo (`checks` aj `backend-postgres`). OSTÁVA: ručný test majiteľa 7. 11. 2026 po K10 vyšiel '
+              'podozrivo. Súbor BMP s názvom `….png.bmp` sa podarilo nahrať do portfólia aj na Nástenku a po obnovení stránky sa fotka '
+              'zobrazovala (či ho aplikácia prekódovala, alebo server prijal nepovolený formát, nie je známe). Podľa kódu to nemalo '
+              'prejsť: klient (`PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS`, `FEED_IMAGE_EXTENSIONS`) aj server (`upload-init` a `upload-complete` '
+              'pre portfólio aj príspevky) odmietajú príponu `.bmp` a v aplikácii nie je žiadne prekódovanie obrázka v prehliadači (žiadny '
+              '`canvas` ani `toBlob`). V ponukách server odmietol nepovolený typ súboru (snímka majiteľa: „Neplatný typ súboru.“; nález 293).',
+         note='Možné vysvetlenia (neoverené): súbor mal pri nahrávaní inú príponu než `.bmp` (obsah BMP s príponou `.png` prešiel pred K10, '
+              'teraz ho odmietne kontrola obsahu), test bežal pred nasadením K10, alebo je na Railway nastavená `ALLOWED_IMAGE_EXTENSIONS` '
+              '(podľa majiteľa nie je; `SAFESEARCH_ENABLED` nie je potvrdené). Prvý krok je zopakovať test s dôkazom: sieťový panel '
+              'prehliadača (názov súboru, odpoveď `upload-init` a `upload-complete`) a skutočná prípona súboru, alebo E2E test z nálezu '
+              '295. Django `ImageField` pri validácii otvára obrázok tiež bez `formats` (len hlavičky); nemení sa. Pôvodné zistenie '
+              '(mapovanie 183a): Pillow 12.3.0 mal 37 známych chýb v dekóderoch formátov, ktoré aplikácia neprijíma; Pillow 13.0.0 ich '
+              'nemá, obmedzenie formátov je lacná poistka proti budúcim.',
+         dec=None, src='vetva 143, čiastočne K10 a manuálny test majiteľa'),
     dict(n=194, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='CI nekontroluje zraniteľné závislosti',
          what='Ani CI (`.github/workflows/deploy.yml`), ani iný plánovaný workflow nekontroluje zraniteľné závislosti: nebeží `pip-audit` ani '
               '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
@@ -185,10 +196,11 @@ NEW_ITEMS = [
               'kľúče zo skriptu sú hotové v K6 (nález 120, PR #234, zlúčené 6. 11. 2026, commit `6fe2c8ea`): '
               '`npm run check:used-translation-keys` teraz končí s 0 chýbajúcimi kľúčmi. OSTÁVA: `profile.photoRemovedError` je preložený '
               'vo všetkých jazykoch, no kód ho nepoužíva a ukazuje doslovný text „Nepodarilo sa odstrániť fotku. Skúste znova.“ v '
-              '`ProfileModule.tsx:468` (563 riadkov, nad limitom); ten istý text je aj v `ProfileEditForm.tsx:250` (432 riadkov).',
-         note='`ProfileEditForm.tsx` sa dá opraviť samostatne (použiť `t("profile.photoRemovedError", …)`), `ProfileModule.tsx` vyžaduje '
-              'delenie súboru alebo výnimku od majiteľa. Skript je po K6 čistý, preto ho možno pridať do CI (dnes nie je súčasťou CI), aby '
-              'sa chýbajúce kľúče nevracali.',
+              '`ProfileModule.tsx:468` (563 riadkov, nad limitom). Ten istý text je aj v `ProfileEditForm.tsx:250` (432 riadkov), no ten '
+              'komponent je nepoužitý (nález 239), takže sa neopravuje: zmizne so zmazaním komponentu.',
+         note='`ProfileModule.tsx` vyžaduje delenie súboru alebo výnimku od majiteľa (oprava: `t("profile.photoRemovedError", …)`). '
+              'Skript `check:used-translation-keys` je po K6 čistý (0 chýbajúcich kľúčov), preto ho možno pridať do CI (dnes nie je '
+              'súčasťou CI; navrhnuté v dávke K12), aby sa chýbajúce kľúče nevracali.',
          dec=None, src='vetva 144, čiastočne K6'),
     dict(n=205, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='päť lenivých registrácií HEIC je po nálezu 200 nadbytočných',
          what='`register_heif_opener()` sa volá lenivo v piatich moduloch spracovania obrázkov: `swaply/image_metadata.py`, '
@@ -210,7 +222,10 @@ NEW_ITEMS = [
               'pred `return`, potom rozhodnúť, či lint dať do CI, a upratať zvyšok po balíkoch (najprv produkčné súbory). '
               'Doplnok z K7 (7. 11. 2026): jeden z 213 `no-explicit-any` je v `frontend/src/components/dashboard/__tests__/FavoritesModule.test.tsx` '
               'na riadku 13 (mock `framer-motion`: `({ children, ...props }: any)`); kolega ho v K7 nechal, lebo je mimo zadania (podľa neho '
-              'je z PR #171; agent to pre skrátenú históriu klonu nevie overiť), rovnaká chyba je na `main` aj pred K7 a CI ESLint nespúšťa.',
+              'je z PR #171; agent to pre skrátenú históriu klonu nevie overiť), rovnaká chyba je na `main` aj pred K7 a CI ESLint nespúšťa. '
+              'Doplnok z K10 (7. 11. 2026): rovnaký mock `framer-motion` s `any` je aj v druhom teste Obľúbených, '
+              '`frontend/src/components/dashboard/modules/__tests__/FavoritesModule.test.tsx:10`; kolega ho pri K10 nahlásil ako nové '
+              'miesto (nízky · S).',
          dec=None, src='vetva 147'),
     dict(n=207, bucket=P, imp=N, eff=EM, pkg='Zdieľanie a obrázky', kratko='odoslanie fotky v správach trvá dlhšie',
          what='Po oprave 197 sa fotky z iPhonu v správach odosielajú, no podľa manuálneho testu (28. 10.) odoslanie trvá dlhšie, než by používateľ '
@@ -237,10 +252,23 @@ NEW_ITEMS = [
               'medzi najnovšími konverzáciami v Správach (prvá stránka zoznamu) nie je prijatá priama konverzácia s účtom z `E2E_PEER_SLUG` '
               'alebo ten účet nemá zobrazované meno; (c) `profile-entry-scroll.spec.ts:218` a `:237` (2×, webkit-mobile): na prvých piatich '
               'stranách Nástenky nie je zdieľaná vlastná ponuka hlavného testovacieho účtu.',
-         note='Nie je to chyba aplikácie ani testov: testy zámerne zlyhajú s hláškou „Príprava:“ (nepreskočia), aby chýbajúce údaje nevyzerali ako '
+         note='Pôvodné vysvetlenie (29. 10. 2026; po analýze Codexu z 7. 11. 2026 nepreukázané, pozri doplnok nižšie): nie je to chyba '
+              'aplikácie ani testov, testy zámerne zlyhajú s hláškou „Príprava:“ (nepreskočia), aby chýbajúce údaje nevyzerali ako '
               'úspešný beh. Údaje pripravuje používateľ na Railway (jedna ponuka druhého účtu, prijatá konverzácia medzi oboma účtami medzi '
               'najnovšími a jedna zdieľaná ponuka hlavného účtu na Nástenke); potom sa zopakuje celý beh. Pri stagingu (N4) treba tieto tri '
-              'položky pripraviť v testovacích dátach od začiatku.',
+              'položky pripraviť v testovacích dátach od začiatku. '
+              'Doplnok (Codex po K8, 7. 11. 2026): vysvetlenie „iba chýbajúce dáta“ sa nepovažuje za preukázané a súvisiace pády nie sú '
+              'nestabilita prostredia. (a) `offer-reviews-back.spec.ts:185`, všetky tri projekty (3 z 3 variantov v zachovanom behu z '
+              '28. 10., jeden pokus na projekt): tlačidlo „Pridať recenziu“ sa nezobrazilo; test nerozlíšil neprítomnú ponuku od '
+              'problému načítania alebo viditeľnosti profilu. (b) `messages-peer-profile.spec.ts:139` a `:157` (webkit-mobile, 2 z 2 '
+              'scenárov): príprava nenašla vyhovujúcu konverzáciu, k otvoreniu profilu nedošlo; podozrivé miesto je '
+              '`requirePeerConversation` (filtruje podľa slugu, príznaku odstránenia a mena; dôkaz neurčuje, ktorá podmienka neprešla). '
+              '(c) `profile-entry-scroll.spec.ts:218` a `:237` (2 z 2 mobilných scenárov): nenašli vlastnú zdieľanú ponuku (vlastný '
+              'obsah, nie priamo neviditeľnosť druhého účtu). Pri týchto pádoch `[E2E-EVIDENCE]` nevznikol. V poslednom uloženom celom '
+              'behu z 1. 11. všetkých sedem scenárov prešlo; E2E však používa jeden prihlásený účet, opačný smer nebol overený. Po K8 '
+              'a K9: účty A a B z manuálneho testu sú účty z E2E testov (`.env.e2e`; majiteľ 7. 11.) a účet A má súkromný profil (275, '
+              'R25), takže ak je A druhý účet (`E2E_PEER_SLUG`), prípady (a) a (b) môže vysvetľovať práve to, že ho hlavný účet nevidí '
+              '(stav dát). Otvorené: ktorý z účtov A a B je hlavný E2E účet a ktorý `E2E_PEER_SLUG`, a od kedy je A súkromný.',
          dec=None, src='vetva 151'),
     dict(n=211, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='tri rôzne záložné texty pre názov otváracích hodín',
          what='Kľúč `skills.openingHours.title` má v kóde tri rôzne záložné texty: „Otváracia doba“ (`OpeningHoursModal.tsx`, '
