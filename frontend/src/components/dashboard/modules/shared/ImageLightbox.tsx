@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
-
 /**
  * Fullscreen prehliadač fotiek – spoločné jadro pre portfólio aj nástenku.
  *
@@ -26,8 +24,8 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useModalFocusTrap } from '../profile/useModalFocusTrap';
+import LightboxPhoto from './LightboxPhoto';
 import { isTopOverlayLayer, pushOverlayLayer } from './overlayLayers';
-import { useProtectedImage } from './useProtectedImage';
 
 export type ImageLightboxLabels = {
   /** Názov dialógu pre čítačky obrazovky. */
@@ -111,9 +109,6 @@ export function ImageLightbox({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const activeSrc = sources[clampIndex(activeIndex, sources.length)];
   const hasMultiple = sources.length > 1;
-  // Chránený obrázok načítame cez axios (blob); verejný prejde priamo.
-  // Sťahujeme len keď je otvorený – zatvorený nič nefetchuje.
-  const { resolvedSrc } = useProtectedImage(open ? activeSrc ?? null : null);
 
   // Uloženie a obnova fokusu + Tab trap – ten istý hook, aký používajú
   // ostatné dialógy appky, takže sa klávesnica po zatvorení vráti na fotku,
@@ -291,24 +286,15 @@ export function ImageLightbox({
           }
         }}
       >
-        {resolvedSrc ? (
-          <img
-            src={resolvedSrc}
-            alt={alt}
-            data-testid={`${testId}-image`}
-            className={
-              fixedFrame
-                ? 'h-full w-full object-contain'
-                : 'max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl'
-            }
-          />
-        ) : (
-          // Neutrálny placeholder počas načítania/chyby (žiadna broken-image ikona).
-          <div
-            aria-hidden="true"
-            className="h-[70vh] max-h-[calc(100vh-2rem)] w-[70vw] max-w-full rounded-2xl bg-white/5"
-          />
-        )}
+        {/* Chránený obrázok sa sťahuje cez axios (blob), verejný ide priamo; zatvorený prehliadač nič nesťahuje, lebo
+            sa fotka nevykresľuje. `key` = adresa: každá fotka má vlastný stav načítania a zlyhania. */}
+        <LightboxPhoto
+          key={activeSrc}
+          src={activeSrc}
+          alt={alt}
+          testId={testId}
+          fixedFrame={fixedFrame}
+        />
       </div>
 
       {hasMultiple && (

@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -11,6 +9,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import LightboxPhoto from './LightboxPhoto';
 import { ReportPhotoModal, type ReportPhotoTarget } from './ReportPhotoModal';
 
 type OfferGalleryImage = {
@@ -320,10 +319,12 @@ export default function OfferImageGalleryLightbox({
         className="flex max-h-full max-w-full items-center justify-center"
         onClick={(event) => event.stopPropagation()}
       >
-        <img
+        {/* `key` = adresa: každá fotka má vlastný stav zlyhania načítania (nález 291). */}
+        <LightboxPhoto
+          key={activeImage.src}
           src={activeImage.src}
           alt={alt}
-          className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
+          testId="offer-image-gallery-lightbox"
         />
       </div>
 
