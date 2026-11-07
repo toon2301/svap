@@ -41,10 +41,11 @@ FRONTA = [
                'a krátkym textom v šiestich jazykoch + test; rozloženie a počítadlo fotiek ostávajú.'),
     dict(n='292', davka='K11', co='Zápis do `ref.current` počas renderu v `BlurredContainImage.tsx:39`.',
          preco='Ten istý súbor (70 riadkov) ako 279; oprava je presun zápisu do efektu, rovnako ako v karuseli ponúk (PR #239).'),
-    dict(n='293', davka='K11', co='Chyba nahrávania fotky ponuky ukáže natívne `alert()` namiesto toastu (`DashboardModals.tsx:113`); v rade '
-                                'nahrávania portfólia chýba toast pri neplatnom type súboru.',
-         preco='Majiteľ 7. 11. 2026: má sa ukázať toast. `DashboardModals.tsx` má 481 riadkov, takže sa len nahradia volania (bez nových '
-               'blokov); toast a texty ako v `useSkillSaveHandler.ts`.'),
+    dict(n='293', davka='K11', co='Chyba nahrávania fotky ponuky ukáže natívne `alert()` (`DashboardModals.tsx:113`) a potom ešte toast '
+                                '„Ponuku sa nepodarilo uložiť“, hoci ponuka je uložená; v rade nahrávania portfólia chýba toast pri '
+                                'neplatnom type súboru.',
+         preco='Majiteľ 7. 11. 2026: má sa ukázať toast. `DashboardModals.tsx` má 481 riadkov, takže len náhrada volaní bez nových '
+               'blokov; správanie ako v `useSkillSaveHandler.ts` (toast pri chybe fotky, ponuka sa dokončí).'),
     dict(n='291', davka='K11', co='Lightboxy (`ImageLightbox.tsx`, `OfferImageGalleryLightbox.tsx`) nemajú `onError`: zlyhaná fotka na celú '
                                 'obrazovku ukáže pokazený obrázok.',
          preco='Dokončenie 279 pre fotku na celú obrazovku; oba súbory majú okolo 340 riadkov; rovnaká viditeľná náhrada ako v 279.'),
