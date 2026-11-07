@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from accounts.models import OfferedSkillImage
 from swaply.image_moderation import check_image_safety
+from swaply.image_signature import open_allowed_image
 from swaply.staged_image_moderation import IMAGE_MODERATION_REJECTED_CODE
 
 
@@ -74,7 +75,7 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
     raw_bytes = obj["Body"].read()
 
     # Decode/convert with Pillow (HEIC support via pillow-heif if installed)
-    from PIL import Image, ImageOps
+    from PIL import ImageOps
 
     try:
         from pillow_heif import register_heif_opener
@@ -85,7 +86,8 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
         pass
 
     try:
-        pil = Image.open(io.BytesIO(raw_bytes))
+        # Len povolené formáty (JPEG, PNG, WebP, GIF, HEIC); iný formát (TIFF, BMP…) skončí v zamietnutí nižšie.
+        pil = open_allowed_image(io.BytesIO(raw_bytes))
         pil.load()
 
         # Normalize orientation based on EXIF before any resizing/conversion.

@@ -2,7 +2,7 @@
  * Galéria fotiek príspevku: jedna fotka bez ovládania, 2–5 s karuselom.
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import FeedPostImageCarousel from '../FeedPostImageCarousel';
@@ -211,5 +211,67 @@ describe('FeedPostImageCarousel: adresy fotiek na doméne frontendu (nález 274)
     render(<FeedPostImageCarousel images={[image]} alt="Fotka" />);
 
     expect(currentSrc()).toBe('/api/auth/feed/posts/5/images/9/file/?variant=large');
+  });
+});
+
+describe('FeedPostImageCarousel: fotka, ktorá sa nenačíta (nález 279)', () => {
+  /** Hlavný obrázok aktuálnej fotky (nie jej rozmazané pozadie). */
+  function mainImage(): HTMLElement {
+    return screen.getByTestId('feed-post-image').querySelector('img.object-contain') as HTMLElement;
+  }
+
+  it('namiesto pokazeného obrázka ukáže neutrálnu plochu', () => {
+    render(<FeedPostImageCarousel images={[approved(1)]} alt="Fotka" />);
+
+    fireEvent.error(mainImage());
+
+    expect(screen.getByTestId('image-load-failed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-image').querySelector('img')).toBeNull();
+  });
+
+  it('rozloženie aj počítadlo ostanú a ďalšia fotka sa načíta normálne', async () => {
+    render(<FeedPostImageCarousel images={[approved(1), approved(2)]} alt="Fotka" />);
+
+    fireEvent.error(mainImage());
+
+    expect(screen.getByTestId('feed-post-image')).toHaveTextContent('1/2');
+    expect(screen.getByTestId('image-load-failed')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('feed-image-next'));
+    expect(currentSrc()).toContain('2-large');
+    expect(screen.queryByTestId('image-load-failed')).not.toBeInTheDocument();
+
+    // Zlyhaná fotka sa pri návrate neskúša načítať znova.
+    await userEvent.click(screen.getByTestId('feed-image-prev'));
+    expect(screen.getByTestId('image-load-failed')).toBeInTheDocument();
+  });
+
+  it('zlyhanú fotku nejde otvoriť na celú obrazovku, no tá ďalšia sa otvorí', async () => {
+    render(<FeedPostImageCarousel images={[approved(1), approved(2)]} alt="Fotka" />);
+    expect(screen.getByTestId('feed-image-open-1')).toBeInTheDocument();
+
+    fireEvent.error(mainImage());
+
+    expect(screen.queryByTestId('feed-image-open-1')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('feed-image-next'));
+    expect(screen.getByTestId('feed-image-open-2')).toBeInTheDocument();
+  });
+
+  it('klik vedúci do detailu príspevku ostáva aj na zlyhanej fotke', async () => {
+    const onPhotoClick = jest.fn();
+    render(
+      <FeedPostImageCarousel
+        images={[approved(1)]}
+        alt="Fotka"
+        onPhotoClick={onPhotoClick}
+        photoOpensPostDetail
+      />,
+    );
+
+    fireEvent.error(mainImage());
+    await userEvent.click(screen.getByTestId('feed-image-open-1'));
+
+    expect(onPhotoClick).toHaveBeenCalledWith(0);
+    expect(screen.getByTestId('image-load-failed')).toBeInTheDocument();
   });
 });

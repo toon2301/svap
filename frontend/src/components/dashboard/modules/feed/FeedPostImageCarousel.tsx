@@ -19,6 +19,9 @@
  * `object-contain` s rozmazaným pozadím – `BlurredContainImage` je ten istý
  * komponent, aký na letterbox používa portfólio/ponuky.
  *
+ * Fotka, ktorú sa nepodarilo načítať (zmazaný alebo nedostupný súbor), sa nahradí
+ * neutrálnou plochou rovnakého rozmeru; počítadlo a ovládanie sa nemenia.
+ *
  * Klik na fotku otvára `ImageLightbox` – to isté jadro, aké má fullscreen
  * prehliadač portfólia, takže ovládanie (X, Escape, šípky, swipe) je zhodné.
  * Do prehliadača idú LEN fotky, ktoré sa dajú zobraziť: zamietnuté sú
@@ -29,6 +32,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
+import ImageLoadFailed from '../shared/ImageLoadFailed';
 import { ImageLightbox } from '../shared/ImageLightbox';
 import { translateImageRejection } from './feedImageRejection';
 import {
@@ -113,9 +117,17 @@ function Slide({
 }) {
   const { t } = useLanguage();
   const src = feedImageSrc(image);
+  // Adresa, ktorej načítanie zlyhalo. Ďalšia fotka má inú adresu, takže sa stav neprenáša na ňu.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   if (!src) return <ProcessingSlide />;
-  const media = <BlurredContainImage src={src} alt={alt} loading="lazy" />;
-  if (!onOpen) return media;
+  const failed = failedSrc === src;
+  const media = failed ? (
+    <ImageLoadFailed />
+  ) : (
+    <BlurredContainImage src={src} alt={alt} loading="lazy" onError={() => setFailedSrc(src)} />
+  );
+  // Zlyhanú fotku nemá zmysel otvárať na celú obrazovku; klik vedúci do detailu príspevku ostáva.
+  if (!onOpen || (failed && !opensPostDetail)) return media;
   return (
     <button
       type="button"
