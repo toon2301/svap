@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K7, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K10, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -175,4 +175,47 @@ DONE_SINCE_DALSIE = [
               'odstránené z oboch zjednotení `user_type` v `frontend/src/types/index.ts` (riadky 70 a 124). Backend (`UserType` v '
               '`accounts/models/enums.py`) pozná len `individual` a `company` a v kóde sa `"school"` nikde inde nepoužíva. Typová kontrola '
               'je čistá a podľa kolegu negatívna kontrola potvrdila, že sa typ zúžil. Overenie: ako pri nálezu 271. Dopad na E2E: žiadny.'),
+    dict(n=274, vetva='K9', pr='#238', zlucene=True,
+         text='HOTOVÉ (K9, zlúčené v PR #238 dňa 7. 11. 2026, commit `01739dac`; príčinu zmapoval kolega v K8, PR #237, bez zmeny kódu; '
+              'nález majiteľa z manuálneho testu po K7): fotky v príspevkoch na Nástenke sa na účte A (súkromný profil, `is_public = false`; '
+              'rovnaká príčina ako pri nálezu 275) nenačítali. Príčina: fotky príspevkov sa servírovali adresou na doméne backendu, takže '
+              '`<img>` bol cross-site a bez prihlasovacieho cookie; súkromný autor dostal na vlastné fotky HTTP 404. Oprava: fotky '
+              'príspevkov idú teraz cez doménu frontendu (`/api/auth/feed/...`; nový `feedImageUrl.ts` s funkciou `sameOriginFeedImageUrl`), '
+              'zapojené v karuseli s prehliadačom fotiek, v náhľade zdieľaného príspevku, v okne úpravy a v okne zdieľania; adresy úložiska, '
+              'portfólia a avatarov a backend sa nemenia. Overenie podľa kolegu: v Chromiu 10 z 10 požiadaviek HTTP 200 (predtým 404), 11 '
+              'mutácií zachytili testy; majiteľ po nasadení potvrdil, že fotky fungujú. Vedľajší účinok: požiadavka na fotku teraz nesie '
+              'cookie, takže z kódu `visible_feed_posts` platí aj blokovanie (netestované). Účty A a B sú účty z E2E testov (`.env.e2e`; '
+              'majiteľ 7. 11. 2026); fotky Nástenky E2E nepokrýva (nález 295). Overenie: CI prešlo (`checks` aj `backend-postgres`), kontrola '
+              'CodeRabbit prešla. Dopad na E2E: žiadny.'),
+    dict(n=276, vetva='K8, K9', pr='#237, #238', zlucene=True,
+         text='HOTOVÉ (K8 a K9: PR #237 zlúčené 7. 11. 2026, commit `dc418ca8`, a PR #238 zlúčené 7. 11. 2026, commit `bf05d175`; nález '
+              'majiteľa z manuálneho testu po K7, príčiny našiel kolega): preblik obsahu na mobile pri prepínaní obrazoviek. Nástenka (K8): '
+              'karty sú v `AnimatePresence` s `initial={false}`, takže sa po návrate zoznam neukáže vyfadovaním z prázdna; nové príspevky '
+              'sa vyfadujú ako predtým (majiteľ potvrdil). Zoznam Nastavení (K9): pod vsúvajúcim sa panelom stála zástupná stránka modulu '
+              '`settings` (~400 ms sivá); `ModuleRouter` teraz drží pod panelom obrazovku spred otvorenia a `DashboardLayout` drží kľúč '
+              '`<main>` (`useDashboardMainKey(screen, hold)`), len na mobile a len kým je zoznam otvorený; overené v Chromiu na všetkých 7 '
+              'sekciách, na iPhone sa overiť nedalo. Zvyšok preblikov na iPhone je podľa majiteľa nastavenie telefónu (nahrávka sedí na '
+              'zapnuté „Znížiť pohyb“; presné nastavenie neuviedol); zostávajúce prechody sú nové nálezy 283 až 289 (balík „Plynulosť '
+              'prechodov (mobil)“). Poučenie: pri mapovaní preblikov najprv zistiť zariadenie, Safari alebo PWA a prístupnostné nastavenia '
+              '(Znížiť pohyb), lebo menia, čo používateľ vidí. Overenie: CI prešlo (`checks` aj `backend-postgres`), kontrola CodeRabbit '
+              'prešla. Dopad na E2E: pri najbližšom behu stojí za pozornosť `mobile-settings-navigation.spec.ts` a '
+              '`mobile-settings-offer-watch-motion.spec.ts` (webkit-mobile); `dashboard-main-identity.spec.ts` testuje len prechody spodnej '
+              'navigácie, takže ho zmena nezasiahla.'),
+    dict(n=277, vetva='K10', pr='#239', zlucene=True,
+         text='HOTOVÉ (K10, zlúčené v PR #239 dňa 7. 11. 2026, commit `facc740c`; nález kolegu z K7): pruh o stave pripojenia v '
+              '`OfflineIndicator.tsx` má `role` a `aria-live`. Oprava: dva stále prítomné prázdne obaly, `role="alert"` pre výpadok a '
+              '`role="status"` s `aria-atomic="true"` pre obnovenie; pruh sa vkladá ako ich obsah, rola sa neprepína a emoji je '
+              '`aria-hidden` (čítače obrazovky oznámia zmenu spoľahlivo len v obale, ktorý už v stránke je). Overenie podľa kolegu: v '
+              'Chromiu zostávajú uzly rovnaké a strom prístupnosti ich vystavuje ako assertive a polite; 8 nových testov a 7 mutácií '
+              'zachytili testy. Chýba ručný test s VoiceOverom na iPhone (nález 294). Overenie: CI prešlo (`checks` aj `backend-postgres`); '
+              'kontrola CodeRabbit na poslednom commite PR #239 preskočila, skoršia pripomienka (zápis do `ref` počas renderu v karuseli '
+              'ponúk) je opravená v `a6513c0d`. Dopad na E2E: žiadny (nové prázdne obaly sú v koreni stránky a všetky dnešné '
+              '`getByRole("alert"/"status")` v `e2e/` sú obmedzené na podstrom).'),
+    dict(n=281, vetva='K10', pr='#239', zlucene=True,
+         text='HOTOVÉ (K10, zlúčené v PR #239 dňa 7. 11. 2026, commit `a7472c2f`; nález kolegu z K7): šesť záložných textov vo '
+              '`FavoritesModule.tsx` (`favorites.loading`, `favorites.emptyTitle`, `favorites.emptyHint`, `favorites.unknownUser`, '
+              '`skills.message` a `favorites.removeAction`) má diakritiku presne podľa `messages/sk.json`. Upravené sú testy v oboch '
+              'súboroch `FavoritesModule.test.tsx` (`dashboard/__tests__/` aj `dashboard/modules/__tests__/`; čakali texty bez diakritiky) '
+              'a nový test porovná všetkých šesť záložných textov so `sk.json`; 6 mutácií zo 6 zachytili testy. Overenie: ako pri nálezu '
+              '277. Dopad na E2E: žiadny.'),
 ]

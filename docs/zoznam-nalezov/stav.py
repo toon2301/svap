@@ -7,12 +7,32 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='7. 11. 2026',
-    kod='`main` `cbbee6e1` (po PR #235)',
+    kod='`main` `4e57b990` (po PR #239)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('7. 11. 2026',
+     'Vetva 168 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `4e57b990`, teda po PR #239; čaká na PR). (1) Zápis ôsmej až '
+     'desiatej práce kolegu: K8 sa robila na dva razy (PR #237 a #238; druhé kolo sa volalo K9) a dávka drobných opráv išla ako K10 '
+     '(PR #239); všetky tri sú zlúčené a CI (`checks` aj `backend-postgres`) prešlo; kontrola CodeRabbit prešla pri #237 a #238, pri #239 '
+     'na poslednom commite preskočila a jej skoršia pripomienka (zápis do `ref` počas renderu v karuseli ponúk) je opravená. Hotové sú '
+     '274 (fotky súkromného autora idú cez doménu frontendu), 276 (preblik na mobile: Nástenka a zoznam Nastavení), 277 (`role` a '
+     '`aria-live` na pruhu pripojenia) a 281 (diakritika záložných textov Obľúbených). 275 sa zatvára rozhodnutím R25: účet A má súkromný '
+     'profil, čo je zámer; skupina HNEĎ je prázdna. 193 a 279 ostávajú otvorené: kód z K10 je zlúčený, no ručný test majiteľa k 279 '
+     'neprešiel (zlyhaná fotka je prázdna čierna plocha bez ikony a textu) a pri 193 majiteľ pozoroval prijatie súboru BMP v portfóliu a '
+     'na Nástenke, čo sa podľa kódu nemalo stať (klient aj server odmietajú príponu `.bmp`, prekódovanie v prehliadači nie je). '
+     '(2) Nové nálezy 282 až 295: z K8 až K10 282 (starý endpoint ponúk ukladá polohu GPS), 283 až 289 (zvyšky preblikov na mobile, nový '
+     'balík „Plynulosť prechodov (mobil)“), 290 (text pri súkromnom profile), 291 (lightboxy bez `onError`) a 292 (zápis do `ref` počas '
+     'renderu); z ručných testov majiteľa 293 (natívne `alert()` namiesto toastu pri chybe nahrávania fotky, v rade portfólia chýba '
+     'toast) a 294 (ručný test VoiceOverom pre 277); z analýzy Codexu a správ kolegu 295 (E2E nepokrýva fotky). (3) Doplnky: 209 (Codex: '
+     'vysvetlenie „iba chýbajúce dáta“ nie je preukázané; účty A a B sú E2E účty), 204 (oprava poznámky: `ProfileEditForm.tsx` je '
+     'nepoužitý, nález 239), 206 (druhé miesto s `no-explicit-any`) a 91 (manuálny test sa po oprave 274 dá urobiť). (4) Rozhodnutia: '
+     'R25 (275 je zámer), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9, schválené majiteľom na vláknach '
+     'Codexu), nové čakajúce R27 (platí pravidlo 500 riadkov aj pre testy?) a R28 (zjednotiť vstupné animácie modulov?). (5) Poradie '
+     'prác pre kolegu: nové dávky K11 (fotky na frontende: 279, 292, 293, 291) a K12 (súkromie a CI: 282, 246, 194 a časť 204 s CI); '
+     'staršie dávky 24, 22, 23, 26 a 247, 248, 250, 256 sa z K9 a K10 premenovali na K13 a K14. Vlna HNEĎ zmizla z časti 2.'),
     ('7. 11. 2026',
      'Vetva 167 (len zoznam podľa pokynu majiteľa z 7. 11.: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť; vychádza z `main` '
      '`cbbee6e1`, teda po PR #235; čaká na PR). (1) Zápis šiestej a siedmej práce kolegu: obe sú zlúčené, nasadené na Railway, CI (`checks` aj '
@@ -325,13 +345,6 @@ from hotove import DONE_PR_TABLE, DONE_SINCE, SERIA_UPOZORNENIA  # noqa: F401
 # Odporúčané poradie práce (vlny). `polozky` sú ID, ktoré text vlny spomína: kontrola v `model.py` zlyhá, ak nejaké z nich
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
-    dict(vlna='HNEĎ – najprv zistiť príčinu',
-         co='275: účet B nevidí účet A (hľadanie, ponuky, príspevky, profil), hoci medzi nimi nie je blokovanie; na tých istých testovacích '
-            'účtoch sa deje aj 274 (fotky v príspevkoch sa nenačítajú), súvislosť nie je preukázaná. Príčinu hľadá kolega (majiteľ 7. 11. '
-            '2026), agent ich nemapuje',
-         preco='Neviditeľnosť účtu v celej aplikácii je závažná a príčina môže byť v dátach: kým nie je známa, nie je jasné, či sa '
-               'nedotkne aj skutočných používateľov.',
-         polozky=['275', '274']),
     dict(vlna='0 – najprv',
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
             'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
@@ -342,18 +355,20 @@ PORADIE = [
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
-            'zlúčené vo vetve 165, PR #230; ostáva 245 a 246); ďalej 185, OW-07, overenie súkromia obrázkov správ (266) a balík '
-            '„Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225; 212 je hotová vo vetve 157, 228 v K6)',
+            'zlúčené vo vetve 165, PR #230; ostáva 245 a 246); ďalej 185, OW-07, overenie súkromia obrázkov správ (266), 282 (poloha GPS '
+            'v starom endpointe ponúk) a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 295; 212 je hotová vo vetve '
+            '157, 228 v K6)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '245', '246', 'OW-07', '266', '31', '189', '209', '223', '225']),
+         polozky=['185', '245', '246', 'OW-07', '266', '282', '31', '189', '209', '223', '225', '295']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
-         co='Navigácia a Späť (13, 14, 174, 276 preblik pri prepínaní obrazoviek), Profil a identita (81, 272), Zdieľanie a obrázky (92, 207, '
-            '274 a 279 pokazené fotky), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
+         co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 289: zvyšky po 276; 287 a 288 čakajú na rozhodnutie '
+            'R28), Profil a identita (81, 272), Zdieľanie a obrázky (92, 207, 279 viditeľná náhrada zlyhanej fotky, 291 lightboxy), '
+            'chyby nahrávania fotiek (293 toast namiesto okna prehliadača), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
-            'overenie N16 a RET-01..03',
-         preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '276', '81', '272', '92', '207', '274', '279', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+            'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
+         preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
+         polozky=['13', '14', '174', '283', '284', '285', '286', '287', '288', '289', '81', '272', '92', '207', '279', '291', '293', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
@@ -444,7 +459,7 @@ DECISIONS = [
          kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]
 
-# Rozhodnutia R13–R24 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+# Rozhodnutia R13–R28 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
 from rozhodnutia_nastenka import DECISIONS_NASTENKA  # noqa: E402
 
 DECISIONS.extend(DECISIONS_NASTENKA)

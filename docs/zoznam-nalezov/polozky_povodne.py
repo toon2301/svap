@@ -36,7 +36,8 @@ ORIG_OPEN = {
          'nedosiahnuteľná, mŕtvy kód). Testy: 5 nových v `shared/BlurredContainImage.test.tsx` (blok `onError`) a 6 v '
          '`feed/__tests__/SharedContentPreviewCard.imageError.test.tsx`. OSTÁVA: obnova zastaraného snímku na backende (väčšia vec, od '
          'začiatku určená na neskôr, preto sa nález presúva do PO NASADENÍ) a manuálny test majiteľa (zdieľaná ponuka, ktorej sa potom '
-         'zmaže fotka), ktorý sa 7. 11. 2026 nedal urobiť kvôli nálezu 274. Rovnaké chýbajúce `onError` majú ďalšie miesta (nález 279).', None),
+         'zmaže fotka), ktorý sa 7. 11. 2026 nedal urobiť kvôli nálezu 274 (ten je opravený v K9, PR #238, takže sa test už dá urobiť). '
+         'Rovnaké chýbajúce `onError` mali ďalšie miesta (nález 279; K10 ich doplnil, ostáva viditeľná náhrada a lightboxy v 291).', None),
     92: (P, S_, EM, 'Zdieľanie a obrázky',
          'iPhone: okná zdieľania sa otvárajú orezané hore (hypotéza `90vh` vs `dvh`, neoverené). Je to prvé, '
          'čo používateľ vidí pri zdieľaní; treba overiť na zariadení. Rovnaký vzor je v 36 (lightboxy).', None),
