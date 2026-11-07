@@ -221,7 +221,7 @@ NEW_ITEMS_NASTENKA = [
          what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): v príspevkoch na Nástenke sa fotky nezobrazujú správne, na mobile aj na '
               'desktope rovnako. Na snímke obrazovky (príspevok z 5. 9. 2026 s dvoma fotkami, karusel „1/2“) je namiesto fotky ikona '
               'pokazeného obrázka a alternatívny text „Fotka príspevku (1/2)“. Deje sa to len po prihlásení do jedného testovacieho účtu '
-              '(účet A, hlavný testovací účet majiteľa); po prihlásení do druhého testovacieho účtu (účet B) sa fotky zobrazujú správne na '
+              '(účet A, prvý z dvoch testovacích účtov majiteľa); po prihlásení do druhého testovacieho účtu (účet B) sa fotky zobrazujú správne na '
               'mobile aj na počítači. Kvôli tomu sa nedal urobiť posledný manuálny test K7 (zdieľaná karta po zmazaní fotky, nález 91). Opis '
               'nehovorí, či sa v účte A nenačítajú fotky všetkých príspevkov (aj cudzích), alebo len jeho vlastných; snímka ukazuje príspevok '
               'samotného účtu A.',
@@ -233,8 +233,8 @@ NEW_ITEMS_NASTENKA = [
          dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
     dict(n=275, bucket=H, imp=V, eff=EM, pkg='Viditeľnosť medzi účtami',
          kratko='účet B nevidí účet A (hľadanie, ponuky, príspevky, profil), hoci medzi nimi nie je blokovanie; účet A vidí účet B normálne',
-         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): z účtu A (hlavný testovací účet) sa normálne nájde účet B (druhý testovací '
-              'účet) aj jeho ponuky a vidno jeho príspevky. Po prihlásení do účtu B je to naopak a nefunguje nič z toho: (1) účet A sa nedá '
+         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): z účtu A (prvý z dvoch testovacích účtov majiteľa) sa normálne nájde účet B '
+              '(druhý testovací účet) aj jeho ponuky a vidno jeho príspevky. Po prihlásení do účtu B je to naopak a nefunguje nič z toho: (1) účet A sa nedá '
               'vôbec vyhľadať, nenájdu sa ani jeho ponuky; (2) jeho príspevky sa na Nástenke vôbec nezobrazujú; (3) v Správach sa '
               'konverzácia s ním ukáže, no po otvorení jeho profilu z konverzácie sa zobrazí „Profil používateľa sa nepodarilo načítať.“. '
               'Majiteľ skontroloval, že medzi účtami nie je žiadne aktívne blokovanie. Obáva sa, že ide o problém v databáze (v dátach), '
@@ -243,7 +243,8 @@ NEW_ITEMS_NASTENKA = [
               'neviditeľnosť účtu v celej aplikácii (hľadanie, ponuky, Nástenka, profil) s možnou príčinou v dátach, takže zatiaľ nie je '
               'jasné, či sa nedotkne aj skutočných používateľov; ak sa ukáže, že ide len o stav dát jedného testovacieho účtu, nález '
               'presunúť. Neoverené, či sa to týka aj iných účtov (majiteľ testoval len tieto dva). Rovnaké dva testovacie účty sú aj v náleze 274 (fotky); '
-              'súvislosť nie je preukázaná. Pri mapovaní z výpisov '
+              'súvislosť nie je preukázaná. Otvorené: či sú tieto dva účty zároveň účty z E2E testov (`E2E_PEER_SLUG`); ak áno, môže to súvisieť s '
+              '209 (E2E padali na chýbajúcich dátach druhého účtu) a Codex má o tom vedieť. Pri mapovaní z výpisov '
               'len cesty bez ID a slugov, názvy parametrov, počty a časy (AGENTS.md).',
          dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
     dict(n=276, bucket=P, imp=S_, eff=EM, pkg='Navigácia a Späť',
