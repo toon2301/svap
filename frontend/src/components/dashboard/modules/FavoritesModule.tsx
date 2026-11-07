@@ -11,28 +11,14 @@ import type { DashboardFavoriteUser } from './favoritesApi';
 import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
 import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
+import { profileActionErrorMessage, type SearchProfileApiError } from './search/foreignProfileHelpers';
 import BlurredContainImage from './shared/BlurredContainImage';
 import { clearFeedReturn } from './feed/feedReturnState';
-
-type ApiErrorLike = {
-  response?: {
-    data?: {
-      error?: string;
-      detail?: string;
-    };
-  };
-  message?: string;
-};
 
 function favoriteProfileIdentifier(
   user: Pick<DashboardFavoriteUser, 'id' | 'slug'>,
 ): string {
   return user.slug && user.slug.trim() ? user.slug.trim() : String(user.id);
-}
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  const apiError = error as ApiErrorLike;
-  return apiError.response?.data?.error || apiError.response?.data?.detail || apiError.message || fallback;
 }
 
 function initialsFromName(name: string): string {
@@ -46,6 +32,10 @@ function initialsFromName(name: string): string {
   return `${first}${second}`.toUpperCase() || 'U';
 }
 
+/**
+ * Zoznam obľúbených používateľov: otvorenie profilu, správy a odobratie z obľúbených. Chyby ukazuje v jazyku
+ * aplikácie (text zo servera, inak hláška o sieti, inak záložný text akcie), nikdy surovú správu knižnice axios.
+ */
 export default function FavoritesModule() {
   const router = useRouter();
 
@@ -91,9 +81,10 @@ export default function FavoritesModule() {
         }
       } catch (loadError: unknown) {
         if (cancelled) return;
-        const message = getErrorMessage(
-          loadError,
-          t('favorites.loadError', 'Nepodarilo sa nacitat oblubenych pouzivatelov.'),
+        const message = profileActionErrorMessage(
+          loadError as SearchProfileApiError,
+          t('favorites.loadError', 'Nepodarilo sa načítať obľúbených používateľov.'),
+          t,
         );
         setError(message);
       } finally {
@@ -122,9 +113,10 @@ export default function FavoritesModule() {
       setFavoriteUsers((current) => current.filter((item) => item.id !== favoriteUser.id));
       patchUserProfileInCache(favoriteUser.id, { is_favorited: false });
     } catch (removeError: unknown) {
-      const message = getErrorMessage(
-        removeError,
-        t('favorites.removeError', 'Nepodarilo sa odobrat pouzivatela z oblubenych.'),
+      const message = profileActionErrorMessage(
+        removeError as SearchProfileApiError,
+        t('favorites.removeError', 'Nepodarilo sa odobrať používateľa z obľúbených.'),
+        t,
       );
       toast.error(message);
     } finally {

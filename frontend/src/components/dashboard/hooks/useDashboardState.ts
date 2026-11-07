@@ -707,6 +707,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
           // Necháme aktuálny stav - edit mód zostane otvorený
           return 'profile';
         }
+        if (isSettingsSectionModule(prevModule)) return prevModule;
         
         // Ak sme v inom móde, prepnúť na profile s edit módom
         if (typeof window !== 'undefined') {
