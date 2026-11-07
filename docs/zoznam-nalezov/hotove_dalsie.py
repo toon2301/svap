@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3, K4 a K5, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K7, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -108,4 +108,71 @@ DONE_SINCE_DALSIE = [
               'súborov a 8 112 testov (základ 523 a 8 108, teda +1 súbor a +4 testy), preklady bez zmeny (6 známych kľúčov = nález 204), '
               'ESLint na zmenených súboroch čistý (`jest.setup.js` má 3 staré chyby `require()`, rovnaké ako pred zmenou). Overenie: '
               'ako pri nálezu 153. Dopad na E2E: žiadny (Playwright nenastavuje `reducedMotion`).'),
+    dict(n=120, vetva='K6', pr='#234', zlucene=True,
+         text='HOTOVÉ (šiesta práca kolegu, K6, zlúčené v PR #234 dňa 6. 11. 2026, commit `6fe2c8ea`; spolu s časťou nálezu 204 s tromi '
+              'kľúčmi: je to ten istý problém, v registri APP-01): `feed.captionPlaceholder`, `feed.commentsClose` a `feed.openProfile` sú '
+              'vo všetkých šiestich súboroch `frontend/messages/*.json` (3 riadky v každom jazyku, spolu 18, nič iné sa v JSON nezmenilo; '
+              'slovenčina je presne text z kódu, ostatné jazyky sú doplnené ručne; diakritika je overená aj bajtovo). Skript '
+              '`npm run check:used-translation-keys` už nekontroluje testové súbory (predtým z nich hlásil tri falošné kľúče `common`, '
+              '`common.save.unavailable` a `missing.path`): pred opravou končil so 6 chýbajúcimi kľúčmi (exit 1), teraz s 0 (exit 0, 745 '
+              'súborov). Po odstránení `feed.openProfile` z kópie `sk.json` skončí znova s exit 1 a kľúč nahlási, takže vylúčenie testov '
+              'skutočné chyby neskrýva; `check:missing-translations` ostáva na 0. Nový test `feedTranslations.test.ts` (33 testov) bol pred '
+              'opravou celý červený a teraz prechádza; slovenský text vrátený do `cs.json` zhodí 2 testy. Agent po zlúčení overil na `main`: '
+              'skript hlási 0 chýbajúcich kľúčov z 1 395 použitých a všetkých 5 kľúčov z K6 (`feed.*` a `common.*`) je v šiestich jazykoch. '
+              'Zostáva zvyšok nálezu 204 (`profile.photoRemovedError`). Celý K6 podľa kolegu: plná sada Jest 526 súborov a 8 165 testov '
+              '(základ 524 a 8 112, teda +2 a +53), typová kontrola čistá, ESLint na zmenených súboroch čistý, build prešiel s rovnakou '
+              'tabuľkou trás ako po K5. Overenie: CI prešlo (`checks` aj `backend-postgres`), kontrola CodeRabbit prešla (jedna pripomienka '
+              'k JSDoc pri `collectSourceFiles`, doplnená v `ecbe28e5`), nasadenie na Railway je v poriadku a manuálne testy majiteľa '
+              'prešli. Dopad na E2E: žiadny (žiadny E2E test nehľadá tieto texty).'),
+    dict(n=177, vetva='K6', pr='#234', zlucene=True,
+         text='HOTOVÉ (K6, zlúčené v PR #234 dňa 6. 11. 2026, commit `24947b0a`): `OfflineIndicator.tsx` berie oba texty cez `useLanguage()` '
+              '(`common.offlineBanner` a `common.backOnlineBanner`); slovenčina je presne pôvodný text, ostatné jazyky sú doplnené ručne. '
+              'Nový test `OfflineIndicator.locales.test.tsx` (12 testov: 6 jazykov × pruh pri výpadku aj po návrate online): pred zmenou '
+              'zlyhalo 10 z 12, po nej prechádza všetkých 12; premenovaný kľúč v `de.json` zhodí test nemčiny. Pôvodný '
+              '`OfflineIndicator.test.tsx` ostal bez zmeny a prechádza. Podľa kolegu je v skutočnom Chromiu na produkčnom builde pruh správny '
+              'vo všetkých 6 jazykoch, offline aj po návrate online. Že zelený pruh po obnovení pripojenia nie je prakticky vidieť, riešil '
+              'nález 270 (K7). Overenie: ako pri nálezu 120. Dopad na E2E: žiadny.'),
+    dict(n=119, vetva='K6', pr='#234', zlucene=True,
+         text='HOTOVÉ (K6, zlúčené v PR #234 dňa 6. 11. 2026, commit `d3b3a97b`): `mobileAccountName` v '
+              '`frontend/src/components/dashboard/components/dashboardRenderValues.ts` má pre firemný účet (`user_type === "company"`) poradie '
+              'názov firmy → meno a priezvisko → používateľské meno → „Profil“; ostatné typy účtov majú doterajšie poradie, takže existujúce '
+              'testy ostali platné. Firemný účet, ktorý bol pôvodne osobný, tak ukáže v hornej lište mobilu názov firmy. Šesť nových testov '
+              'v `dashboardRenderValues.test.ts`: na starom kóde zlyhali 2 (firma s názvom aj s osobným menom), zvyšné pinujú nezmenené '
+              'správanie; keď sa názov firmy použije prednostne pre všetky typy účtov, zlyhá test osobného účtu. Rovnakú chybu má meno '
+              'recenzenta v okne „Pridať recenziu“, pozri nález 272. Overenie: ako pri nálezu 120. Dopad na E2E: žiadny.'),
+    dict(n=228, vetva='K6', pr='#234', zlucene=True,
+         text='HOTOVÉ (K6, zlúčené v PR #234 dňa 6. 11. 2026, commit `4539d0ac`): nový test v `useGoogleLogin.probeFailure.test.tsx` s dvoma '
+              'prípadmi (odpojenie komponentu a explicitné zrušenie počas čakania po odpovedi 401): po nich nezostane žiadny časovač. Podľa '
+              'kolegu bez mutácie prechádza všetkých 81 testov `useGoogleLogin*` (bolo 79) a po odstránení `clearTimeout(delayTimer)` (riadok '
+              '111) zlyhajú práve 2 nové testy s `Expected: 0, Received: 1`. Kód sa nemenil: riadok je správne upratanie a test ho teraz '
+              'stráži. Overenie: ako pri nálezu 120. Dopad na E2E: žiadny.'),
+    dict(n=271, vetva='K7', pr='#235', zlucene=True,
+         text='HOTOVÉ (siedma práca kolegu, K7, zlúčené v PR #235 dňa 7. 11. 2026, commit `4f28c539`; nález majiteľa z manuálneho testu po K6, '
+              'číslo pridelil agent): po zmene typu účtu (osobný ↔ firemný) na mobile aplikácia automaticky preskočila na profil a zmizol '
+              'hlavný spodný navigačný panel; chyba sa zopakovala pri každej ďalšej zmene a pomohlo len obnovenie aplikácie. Príčinu agent '
+              'overil skúšobným testom (dočasný, nie je v repozitári): `handleUserUpdate` v `hooks/useDashboardState.ts` ošetroval v '
+              '`setActiveModule` len `settings`, `privacy` a `profile`; mobilné sekcie Nastavení (Typ účtu, Jazyk, Účet, Blokovaní, '
+              'Upozornenia) sú moduly a padli do poslednej vetvy „prepnúť na profil s edit módom“: modul sa prepol na `profile`, '
+              '`isRightSidebarOpen` ostal `true` s prázdnou položkou a adresa ostala stará, a `DashboardLayout.tsx` pri '
+              '`isRightSidebarOpen && activeModule === "profile"` skrýva spodný panel (je to určené pre úpravu profilu). Oprava je jeden '
+              'riadok `if (isSettingsSectionModule(prevModule)) return prevModule;` (+1 −0): jediná použitá výnimka z pravidla 500 riadkov '
+              '(R24; súbor má teraz 922 riadkov). Po zmene typu účtu používateľ ostane na obrazovke Typ účtu s novým zaškrtnutím, ako na '
+              'desktope (už nie na profile). Nový test `settingsSectionUserUpdate.test.tsx` (8 prípadov): pred opravou zlyhalo 5 z 8 '
+              '(preskočilo 5 zo 6 sekcií: otvoril sa pravý panel, `localStorage` sa prepísal na `profile` a adresa ostala stará), po oprave '
+              'prechádza 8 z 8 a po zmazaní riadku test padá. Overenie: CI prešlo (`checks`, `backend-postgres`, CodeRabbit), nasadenie na '
+              'Railway je v poriadku a manuálny test majiteľa po nasadení prešiel. Dopad na E2E: žiadny (E2E nemá nič o zmene typu účtu).'),
+    dict(n=270, vetva='K7', pr='#235', zlucene=True,
+         text='HOTOVÉ (K7, zlúčené v PR #235 dňa 7. 11. 2026, commit `b6373409`; nález kolegu z K6, agent ho v kóde potvrdil, číslo pridelil '
+              'agent): zelený pruh „Pripojenie obnovené“ v `OfflineIndicator.tsx` mal v online stave triedu `-translate-y-full`, takže bol '
+              'mimo obrazovky: viditeľný asi 0,3 s pri zasúvaní (potvrdené v Chromiu) a potom 3 s skrytý, takže používateľ text prakticky '
+              'nevidel. Teraz je po obnovení pripojenia 3 s na obrazovke a potom sa schová. Časovač skrývania sa ruší pri novej udalosti '
+              'pripojenia aj pri odpojení komponentu (predtým po odchode zostal a pri rýchlom striedaní výpadku a obnovy mohol pruh schovať '
+              'predčasne). Štyri nové testy; podľa kolegu je v Chromiu na produkčnom builde pruh viditeľný 0 až asi 3 s a rýchle striedanie '
+              'funguje správne. Overenie: ako pri nálezu 271; manuálny test majiteľa prešiel. Pruh ešte nemá `role` ani `aria-live`, pozri '
+              'nález 277. Dopad na E2E: žiadny.'),
+    dict(n=273, vetva='K7', pr='#235', zlucene=True,
+         text='HOTOVÉ (K7, zlúčené v PR #235 dňa 7. 11. 2026, commit `612f32e1`; nález kolegu z K6, číslo pridelil agent): `"school"` je '
+              'odstránené z oboch zjednotení `user_type` v `frontend/src/types/index.ts` (riadky 70 a 124). Backend (`UserType` v '
+              '`accounts/models/enums.py`) pozná len `individual` a `company` a v kóde sa `"school"` nikde inde nepoužíva. Typová kontrola '
+              'je čistá a podľa kolegu negatívna kontrola potvrdila, že sa typ zúžil. Overenie: ako pri nálezu 271. Dopad na E2E: žiadny.'),
 ]

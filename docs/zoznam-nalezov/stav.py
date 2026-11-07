@@ -6,13 +6,33 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='6. 11. 2026',
-    kod='`main` `ea9fb101` (po PR #232)',
+    datum='7. 11. 2026',
+    kod='`main` `cbbee6e1` (po PR #235)',
     register='21. 10. 2026 + PR #193',
 )
 
 # Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo).
 ZMENY = [
+    ('7. 11. 2026',
+     'Vetva 167 (len zoznam podľa pokynu majiteľa z 7. 11.: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť; vychádza z `main` '
+     '`cbbee6e1`, teda po PR #235; čaká na PR). (1) Zápis šiestej a siedmej práce kolegu: obe sú zlúčené, nasadené na Railway, CI (`checks` aj '
+     '`backend-postgres`) prešlo a kontrola CodeRabbit prešla. K6 (PR #234, zlúčené 6. 11. 2026): nálezy 120, 177, 119 a 228 sú hotové, 204 '
+     'čiastočne (tri kľúče a skript sú hotové, ostáva `profile.photoRemovedError`) a APP-01 z registra je zatvorené. K7 (PR #235, zlúčené 7. 11. '
+     '2026): nálezy 271, 270 a 273 (vznikli pri K6 a opravené sú v K7) sú hotové; 91 a 175 čiastočne (91: frontend hotový, backendový zvyšok '
+     'sa presúva do PO NASADENÍ; 175: hotová časť Obľúbené, ostávajú Spolupráce). Manuálne testy majiteľa prešli okrem testu zdieľanej karty po '
+     'zmazaní fotky, ktorý sa nedal urobiť kvôli nálezu 274. (2) Nové nálezy majiteľa z manuálneho testu 7. 11. 2026, zapísané presne podľa '
+     'jeho opisu a nezmapované (majiteľ: príčinu nájde kolega): 274 (fotky v príspevkoch sa na jednom testovacom účte nenačítajú, na druhom sú '
+     'v poriadku), 275 (účet B nevidí účet A: hľadanie, ponuky, Nástenka aj profil, bez blokovania; HNEĎ, nový balík „Viditeľnosť medzi účtami“) a '
+     '276 (mobil: pri prepínaní obrazoviek obsah krátko preblikne). (3) Nové nálezy kolegu: z K6 272 (meno recenzenta v okne „Pridať recenziu“), '
+     'z K7 277 (pruh pripojenia bez `role` a `aria-live`), 278 (prázdny updater v `handleUserUpdate`), 279 (`BlurredContainImage` bez `onError` na '
+     'ďalších šiestich miestach), 280 (priamy vstup do sekcie Nastavení nastaví `isRightSidebarOpen`) a 281 (šesť záložných textov Obľúbených bez '
+     'diakritiky). Doplnky: 176 a R2 (meranie hodnôt zhodných so slovenčinou: cs 247, pl 49, de 3, hu 1), 206 (jeden `no-explicit-any` v '
+     '`FavoritesModule.test.tsx`) a 224 (počet riadkov `useDashboardState.ts`). (4) Nové rozhodnutie R24: jednorazová výnimka z pravidla 500 '
+     'riadkov pre nález 271 (jeden riadok v `useDashboardState.ts`, ktorý má teraz 922 riadkov); majiteľ ju schválil odovzdaním K7. (5) Pravidlá '
+     'práce: striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED NASADENÍM a HNEĎ; majiteľ môže pomer '
+     'dočasne zmeniť). Fronta prác pre kolegu je teraz všeobecná, je v časti 2 a jej prvá dávka K8 je mapovanie nálezov 275, 274 a 276 '
+     'kolegom (rozhodnutie majiteľa 7. 11.); dávky z fronty, ktoré sa pôvodne volali K6 a K7 (24, 22, 23, 26 a 247, 248, 250, 256), sa nerobili '
+     'a sú teraz K9 a K10.'),
     ('6. 11. 2026',
      'Vetva 166, tretie kolo (PR #233): majiteľ rozhodol, že všetky vzhľadové veci aplikácie sú pred nasadením. Z PO NASADENÍ do PRED '
      'NASADENÍM sa presunuli 261 (redizajn komentárov, mobilné úpravy a redizajn tagov), 259 (portfólio bez fotky) a 36 (drobnosti '
@@ -305,6 +325,13 @@ from hotove import DONE_PR_TABLE, DONE_SINCE, SERIA_UPOZORNENIA  # noqa: F401
 # Odporúčané poradie práce (vlny). `polozky` sú ID, ktoré text vlny spomína: kontrola v `model.py` zlyhá, ak nejaké z nich
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
+    dict(vlna='HNEĎ – najprv zistiť príčinu',
+         co='275: účet B nevidí účet A (hľadanie, ponuky, príspevky, profil), hoci medzi nimi nie je blokovanie; na tých istých testovacích '
+            'účtoch sa deje aj 274 (fotky v príspevkoch sa nenačítajú), súvislosť nie je preukázaná. Príčinu hľadá kolega (majiteľ 7. 11. '
+            '2026), agent ich nemapuje',
+         preco='Neviditeľnosť účtu v celej aplikácii je závažná a príčina môže byť v dátach: kým nie je známa, nie je jasné, či sa '
+               'nedotkne aj skutočných používateľov.',
+         polozky=['275', '274']),
     dict(vlna='0 – najprv',
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
             'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
@@ -316,20 +343,21 @@ PORADIE = [
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
             'zlúčené vo vetve 165, PR #230; ostáva 245 a 246); ďalej 185, OW-07, overenie súkromia obrázkov správ (266) a balík '
-            '„Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 228; 212 je hotová vo vetve 157)',
+            '„Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225; 212 je hotová vo vetve 157, 228 v K6)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '245', '246', 'OW-07', '266', '31', '189', '209', '223', '225', '228']),
+         polozky=['185', '245', '246', 'OW-07', '266', '31', '189', '209', '223', '225']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
-         co='Navigácia a Späť (13, 14, 174), Profil a identita (81, 119), Zdieľanie (91, 92, 207), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
+         co='Navigácia a Späť (13, 14, 174, 276 preblik pri prepínaní obrazoviek), Profil a identita (81, 272), Zdieľanie a obrázky (92, 207, '
+            '274 a 279 pokazené fotky), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
             'overenie N16 a RET-01..03',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '81', '119', '91', '92', '207', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '276', '81', '272', '92', '207', '274', '279', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='120, 175, 176, 177, 204, APP-03, 186 (a podľa R2 poradie jazykov)',
+         co='175, 176, 204, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
-         polozky=['120', '175', '176', '177', '204', 'APP-03', '186']),
+         polozky=['175', '176', '204', 'APP-03', '186']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',
@@ -348,11 +376,13 @@ DECISIONS = [
          odporucanie='Hetzner Cloud (EÚ) + Coolify + Cloudflare + R2 (príloha C). Pre čo najmenej starostí so serverom, ak to rozpočet unesie: '
                      'Render (Frankfurt) alebo Scalingo.',
          kedy='Až keď bude aplikácia hotová. Teraz netreba.'),
-    dict(id='R2', tema='Jazyky pri štarte (176, 120, 175, 177, APP-03)',
+    dict(id='R2', tema='Jazyky pri štarte (176, 175, APP-03)',
          otazka='Ktoré jazyky majú byť pri štarte plne preložené?',
          odporucanie='Podľa cieľového trhu. V profile a vyhľadávaní chýbajú preklady hlavne v češtine (~30) a poľštine (~14), v nemčine jeden; '
-                     'v celej aplikácii má čeština asi 210 a poľština asi 90 slovenských kópií (176). Ak štart cieli len na Slovensko, 176 môže ísť po '
-                     'nasadení; ak aj na Česko a Poľsko, patrí pred štart. Malé veci 120, 175 a 177 idú pred štart v každom prípade.',
+                     'v celej aplikácii má čeština asi 210 a poľština asi 90 slovenských kópií (176). Meranie kolegu z 6. 11. 2026 (hodnoty zhodné so '
+                     'slovenčinou) ukázalo viac: v `cs.json` 247 (aspoň 29 určite slovenských), v `pl.json` 49, v `de.json` 3 a v `hu.json` 1, '
+                     'takže rozsah 176 je väčší, než sa čakalo. Ak štart cieli len na Slovensko, 176 môže ísť po nasadení; ak aj na Česko a '
+                     'Poľsko, patrí pred štart. Malé veci (120 a 177 sú hotové v K6, ostáva zvyšok 175) idú pred štart v každom prípade.',
          kedy='Pred prácou na 176 (určuje poradie prekladov), najneskôr pred štartom.'),
     dict(id='R3', tema='Číselné slugy (81)',
          otazka='Zakázať slug zložený len z číslic, alebo ho vo frontende uprednostniť pred ID?',
@@ -414,7 +444,7 @@ DECISIONS = [
          kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]
 
-# Rozhodnutia R13–R22 zo zoznamu majiteľa (príloha D) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+# Rozhodnutia R13–R24 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
 from rozhodnutia_nastenka import DECISIONS_NASTENKA  # noqa: E402
 
 DECISIONS.extend(DECISIONS_NASTENKA)

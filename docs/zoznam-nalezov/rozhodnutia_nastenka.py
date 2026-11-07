@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026).
+"""Rozhodnutia R13–R24: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+(súbory nad 500 riadkov pri redizajne Nástenky) a R24 (výnimka z pravidla 500 riadkov pre nález 271).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20 a R21 sú otázky, ktoré zoznam majiteľa vedie ako nerozhodnuté (čakajú na odpoveď); R22 majiteľ rozhodol 6. 11. 2026.
+(majú `odpoved`). R20, R21 a R23 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026.
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
 """
 
@@ -74,4 +75,14 @@ DECISIONS_NASTENKA = [
                      'prebehne nad menšími súbormi s menším rizikom regresie. Výnimka je rýchlejšia, no mení veľký súbor naraz. '
                      'Ak vizuálnu stránku Nástenky upraví majiteľ sám, treba dohodnúť, či sa súbory delia pred jeho úpravami alebo po nich.',
          kedy='Pred prácou na 261 (vzhľadové veci sú pred nasadením).'),
+    dict(id='R24', tema='Výnimka z pravidla 500 riadkov pre nález 271',
+         otazka='Smie sa jednorazovo zmeniť jeden riadok v `hooks/useDashboardState.ts` (921 riadkov, nad limitom 500), aby sa opravil nález '
+                '271 (po zmene typu účtu zmizne na mobile spodný panel)?',
+         odporucanie='Áno, len pre ten jeden riadok a s novým testom. Bez výnimky šla len obchádzka v `DashboardLayout.tsx`, ktorá by panel '
+                     'vrátila, ale aplikácia by ostala na profile s adresou „Typ účtu“ a príčina (prepnutie na profil s otvoreným pravým '
+                     'panelom) by ostala.',
+         kedy='Pred prácou na 271.',
+         odpoved='Majiteľ výnimku schválil tým, že K7 s touto opravou poslal kolegovi. Použitá je raz: +1 −0 v `useDashboardState.ts` (teraz '
+                 '922 riadkov), commit `4f28c539` (PR #235). Pravidlo 500 riadkov platí ďalej; ďalšia výnimka potrebuje nové rozhodnutie.',
+         datum='6. 11. 2026'),
 ]

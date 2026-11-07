@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 251: položky zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka).
+"""Nové nálezy od čísla 251: položky zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka; 251 až 269) a nálezy,
+ktoré pribudli po ňom (270 až 281: kolega pri K6 a K7 a manuálny test majiteľa z 7. 11. 2026; 270, 271 a 273 sú už hotové, preto sú v
+`hotove_dalsie.py`).
 
 PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, preto sa každá položka porovnala s týmto zoznamom a s
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
@@ -204,4 +206,99 @@ NEW_ITEMS_NASTENKA = [
          note='Návrh: nové pole `rejected_code` na backende (model obrázka príspevku, serializér, migrácia) so stabilnými kódmi; po prechode '
               'zmazať aliasy. Dovtedy je dobré mať test súladu textov backendu s aliasmi.',
          dec=None, src=ZDROJ),
+    dict(n=272, bucket=P, imp=N, eff=ES, pkg='Profil a identita',
+         kratko='meno recenzenta v okne „Pridať recenziu“ berie len osobné meno alebo e-mail (firma dostane e-mail)',
+         what='Kolega pri K6: meno recenzenta v okne „Pridať recenziu“ (`RequestsDesktop.tsx:74–78`, `RequestsMobile.tsx:92–96`) berie len '
+              'osobné meno (meno a priezvisko), a keď chýba, e-mail. Agent to potvrdil čítaním kódu: `company_name` ani používateľské meno sa '
+              'nepoužijú, takže účet bez osobného mena (napr. firemný) ukáže v okne e-mail. Je to ten istý druh chyby ako nález 119 (opravený '
+              'len pre hornú lištu mobilu).',
+         note='Oba súbory majú nad 500 riadkov (`RequestsDesktop.tsx` 646, `RequestsMobile.tsx` 706), takže zmena vyžaduje delenie súboru '
+              'alebo výnimku od majiteľa. Návrh: spoločný pomocník v novom súbore (napr. nad `getProfileDisplayName` z '
+              '`lib/profileDisplayName.ts`) a jedno volanie v každom z oboch súborov. Kolega ho označil ako nízky.',
+         dec=None, src='K6 (kolega)'),
+    dict(n=274, bucket=P, imp=S_, eff=EM, pkg='Zdieľanie a obrázky',
+         kratko='fotky v príspevkoch na Nástenke sa na jednom testovacom účte nenačítajú (pokazený obrázok), na druhom sú v poriadku',
+         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): v príspevkoch na Nástenke sa fotky nezobrazujú správne, na mobile aj na '
+              'desktope rovnako. Na snímke obrazovky (príspevok z 5. 9. 2026 s dvoma fotkami, karusel „1/2“) je namiesto fotky ikona '
+              'pokazeného obrázka a alternatívny text „Fotka príspevku (1/2)“. Deje sa to len po prihlásení do jedného testovacieho účtu '
+              '(účet A, hlavný testovací účet majiteľa); po prihlásení do druhého testovacieho účtu (účet B) sa fotky zobrazujú správne na '
+              'mobile aj na počítači. Kvôli tomu sa nedal urobiť posledný manuálny test K7 (zdieľaná karta po zmazaní fotky, nález 91). Opis '
+              'nehovorí, či sa v účte A nenačítajú fotky všetkých príspevkov (aj cudzích), alebo len jeho vlastných; snímka ukazuje príspevok '
+              'samotného účtu A.',
+         note='Nezmapované (rozhodnutie majiteľa 7. 11. 2026: príčinu nájde kolega; agent ho nemapoval). Súvislosti bez dôkazu: účet B '
+              'nevidí príspevky účtu A (nález 275), takže rozdiel medzi účtami môže mať spoločnú príčinu; symptóm (pokazený obrázok bez '
+              'náhrady) zodpovedá tomu, že karusel príspevku (`feed/FeedPostImageCarousel.tsx`) používa `BlurredContainImage` bez '
+              '`onError` (nález 279), no `onError` by riešil len chýbajúcu náhradu, nie to, prečo sa obrázok nenačíta. Pri mapovaní z '
+              'výpisov len cesty bez ID a slugov, stav odpovede a časy (AGENTS.md).',
+         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
+    dict(n=275, bucket=H, imp=V, eff=EM, pkg='Viditeľnosť medzi účtami',
+         kratko='účet B nevidí účet A (hľadanie, ponuky, príspevky, profil), hoci medzi nimi nie je blokovanie; účet A vidí účet B normálne',
+         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): z účtu A (hlavný testovací účet) sa normálne nájde účet B (druhý testovací '
+              'účet) aj jeho ponuky a vidno jeho príspevky. Po prihlásení do účtu B je to naopak a nefunguje nič z toho: (1) účet A sa nedá '
+              'vôbec vyhľadať, nenájdu sa ani jeho ponuky; (2) jeho príspevky sa na Nástenke vôbec nezobrazujú; (3) v Správach sa '
+              'konverzácia s ním ukáže, no po otvorení jeho profilu z konverzácie sa zobrazí „Profil používateľa sa nepodarilo načítať.“. '
+              'Majiteľ skontroloval, že medzi účtami nie je žiadne aktívne blokovanie. Obáva sa, že ide o problém v databáze (v dátach), '
+              'a považuje nález za závažný.',
+         note='Nezmapované (rozhodnutie majiteľa 7. 11. 2026: príčinu nájde kolega; agent ho nemapoval). Zaradené HNEĎ: ide o '
+              'neviditeľnosť účtu v celej aplikácii (hľadanie, ponuky, Nástenka, profil) s možnou príčinou v dátach, takže zatiaľ nie je '
+              'jasné, či sa nedotkne aj skutočných používateľov; ak sa ukáže, že ide len o stav dát jedného testovacieho účtu, nález '
+              'presunúť. Neoverené, či sa to týka aj iných účtov (majiteľ testoval len tieto dva). Rovnaké dva testovacie účty sú aj v náleze 274 (fotky); '
+              'súvislosť nie je preukázaná. Pri mapovaní z výpisov '
+              'len cesty bez ID a slugov, názvy parametrov, počty a časy (AGENTS.md).',
+         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
+    dict(n=276, bucket=P, imp=S_, eff=EM, pkg='Navigácia a Späť',
+         kratko='mobil: pri prepínaní medzi hlavnými obrazovkami obsah krátko preblikne',
+         what='Majiteľ pri manuálnom teste po K7 (7. 11. 2026): na mobile pri preskakovaní medzi oknami (napr. z profilu na Nástenku, z '
+              'Nástenky do Správ a podobne) obsah krátko preblikne. Nevyzerá to na opätovné načítanie stránky, ale na jemný rýchly preblik; '
+              'podľa majiteľa sa to nedá prehliadnuť. Zariadenie a prehliadač majiteľ neuviedol.',
+         note='Nezmapované (rozhodnutie majiteľa 7. 11. 2026: príčinu nájde kolega; agent ho nemapoval). Možná súvislosť bez dôkazu: pri '
+              'zmene modulu sa od opravy scrollu (commit `3356bc1b` z 29. 9. 2026) vytvára nový `<main>` (`useDashboardMainKey`), čo môže '
+              'pri prepnutí obnoviť obsah; z opisu nie je jasné, či preblik vznikol až po ňom. Vzhľadová vec, preto PRED NASADENÍM '
+              '(rozhodnutie majiteľa 6. 11. 2026).',
+         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
+    dict(n=277, bucket=A, imp=N, eff=ES, pkg='Prístupnosť',
+         kratko='pruh o stave pripojenia nemá `role` ani `aria-live`, čítač obrazovky zmenu neoznámi',
+         what='Kolega pri K7: `OfflineIndicator.tsx` nemá na pruhu o strate a obnovení pripojenia `role` ani `aria-live`, takže čítač '
+              'obrazovky zmenu pripojenia neoznámi. Agent potvrdil čítaním kódu (v súbore nie je ani jedno).',
+         note='Návrh: `role="status"` s `aria-live="polite"` (pri výpadku môže byť `role="alert"`) a test. Pruh je od K7 po obnovení '
+              'pripojenia viditeľný 3 s (nález 270), takže oznam má zmysel.',
+         dec=None, src='K7 (kolega)'),
+    dict(n=278, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='`handleUserUpdate` má prázdny (no-op) updater `setActiveRightItem`',
+         what='Kolega pri K7: `handleUserUpdate` v `hooks/useDashboardState.ts` volá `setActiveRightItem((prev) => …)`, ktorého updater vo '
+              'všetkých vetvách vráti `prev`, takže nič nemení (komentáre v ňom opisujú „zachovať“ aj „inak nastaviť edit-profile“, no aj '
+              'posledná vetva vráti `prev`). Agent potvrdil čítaním kódu.',
+         note='Len nahlásené: súbor má 922 riadkov (nad limitom 500; jedinú výnimku z pravidla má nález 271, R24), takže sa nemení. '
+              'Odstrániť pri delení súboru (TECH-01…11), spolu so zvyškom starej vetvy „prepnúť na profil s edit módom“ vo '
+              '`handleUserUpdate`, ktorá po oprave 271 platí už len pre moduly, ktoré nie sú sekciou Nastavení.',
+         dec=None, src='K7 (kolega)'),
+    dict(n=279, bucket=P, imp=N, eff=ES, pkg='Zdieľanie a obrázky',
+         kratko='`BlurredContainImage` bez `onError` na ďalších šiestich miestach: po zmazanej fotke môže vzniknúť pokazený obrázok',
+         what='Po K7 (nález 91) hlási zlyhanie načítania obrázka cez `onError` len zdieľaná karta (`SharedContentPreviewCard.tsx`). '
+              '`BlurredContainImage` sa používa bez `onError` aj v `feed/FeedPostImageCarousel.tsx` (fotky príspevku), '
+              '`shared/OfferImageCarousel.tsx`, `profile/PortfolioCard.tsx`, `profile/PortfolioDetailHero.tsx`, '
+              '`profile/PortfolioGalleryImageTile.tsx` a `FavoritesModule.tsx`, takže tam po zmazaní fotky (alebo pri nedostupnom súbore) '
+              'môže vzniknúť ten istý pokazený obrázok. Hlásil kolega; agent počet miest overil vyhľadávaním (šesť súborov), správanie na '
+              'jednotlivých miestach nikto netestoval.',
+         note='Chránené obrázky (cez `useProtectedImage`) pri chybe nechajú neutrálne pozadie, verejné adresy ukážu pokazený obrázok. '
+              'Súvisí s 91 a so snímkou majiteľa v nálezu 274 (pokazená fotka v karuseli príspevku): ten nález by `onError` sám '
+              'nevyriešil, ide len o náhradu. Návrh: rovnaká náhrada ako pri 91, miesto po mieste; karusel príspevku má vlastný layout, '
+              'treba rozhodnúť, čo ukázať, keď zlyhá jedna fotka z viacerých. Všetkých šesť súborov má najviac 335 riadkov.',
+         dec=None, src='K7 (kolega)'),
+    dict(n=280, bucket=A, imp=N, eff=ES, pkg='Navigácia – drobnosti',
+         kratko='mobil: priamy vstup na adresu sekcie Nastavení nastaví `isRightSidebarOpen = true`, vstup zo zoznamu nie',
+         what='Kolega pri K7: na mobile priamy vstup na adresu sekcie Nastavení nastaví `isRightSidebarOpen = true`, kým vstup zo zoznamu '
+              'Nastavení otvorí sekciu ako samostatnú obrazovku bez otvoreného pravého panela. Dopad je neoverený; agent to nepotvrdzoval.',
+         note='Súvisí s 271: v stave „profil + otvorený pravý panel“ sa skrýva spodný panel. Treba overiť na mobile priamy vstup na adresy '
+              'sekcií Nastavení (nová karta, odkaz): či sa spodný panel a Späť správajú rovnako ako po vstupe zo zoznamu.',
+         dec=None, src='K7 (kolega)'),
+    dict(n=281, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='Obľúbené: šesť záložných textov bez diakritiky (ukážu sa len pri chýbajúcom preklade)',
+         what='Kolega pri K7: vo `FavoritesModule.tsx` majú záložné texty `favorites.loading`, `favorites.emptyTitle`, `favorites.emptyHint`, '
+              '`favorites.unknownUser`, `skills.message` a `favorites.removeAction` slovenčinu bez diakritiky (napr. „Nacitavam oblubenych '
+              'pouzivatelov...“, „Pouzivatel“, „Sprava“, „Odobrat“). Agent potvrdil čítaním kódu. Preklady existujú, takže sa záložný text '
+              'ukáže len pri chýbajúcom preklade. K7 opravil len dva pomenované texty (`favorites.loadError`, `favorites.removeError`).',
+         note='Návrh: doplniť diakritiku v záložných textoch (jedna malá úprava vo `FavoritesModule.tsx`, 236 riadkov). Súvisí s 175 '
+              '(časť Obľúbené je hotová) a 204 (kontrola použitých kľúčov).',
+         dec=None, src='K7 (kolega)'),
 ]

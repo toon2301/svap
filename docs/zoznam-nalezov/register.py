@@ -45,7 +45,8 @@ REG_ITEMS = [
               '26. 10.). Pri nálezoch v správach to znamená, že nová logika ide do nového súboru a do `ConversationDetail` ani '
               '`useConversationThreadController` sa nezasahuje (nález 218). Podľa zoznamu majiteľa (príloha D) sa veľké súbory '
               '(`DashboardContent`, `ProfileOffersSection`, `RequestsNotificationsContext`, `lib/api.ts`, `FeedPostCard`, `FeedPostComments`) '
-              'majú deliť po jednom a po každom delení má nasledovať manuálny test, lebo riziko regresie je vysoké.', dec=None),
+              'majú deliť po jednom a po každom delení má nasledovať manuálny test, lebo riziko regresie je vysoké. Od 7. 11. 2026 má '
+              '`useDashboardState` 922 riadkov: jedna schválená výnimka z pravidla, jeden pridaný riadok pri oprave nálezu 271 (R24).', dec=None),
     dict(id='TOOL-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='`next lint` vyžaduje interaktívnu konfiguráciu; CI lint nespúšťa.', note='Pridať neinteraktívny lint do CI až po vyčistení chýb (206; 178 je hotový len pre jediný súbor).', dec=None),
     dict(id='TOOL-02', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Windows WebKit natívne nejde (Code Integrity); funguje cez Docker kontajner.', note='Obmedzenie prostredia.', dec=None),
 ]
@@ -80,6 +81,6 @@ REG_AWAIT_LIVE = {
     'TEST-01': 'k OW-02 (PR #168)', 'TEST-02': 'k OW-10 (PR #172)',
 }
 REG_MAPPED = {
-    'APP-01': 'rovnaké ako nález 120 (otvorené)',
+    'APP-01': 'rovnaké ako nález 120 (hotové v K6, PR #234, 6. 11. 2026)',
     'APP-02': '5 hodnôt opravených; zvyšok je súčasťou nálezu 176',
 }
