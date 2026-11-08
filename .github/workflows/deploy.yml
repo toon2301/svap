@@ -61,12 +61,25 @@ jobs:
         cache-dependency-path: |
           backend/requirements.txt
           backend/requirements-test.txt
+          backend/constraints.txt
 
     - name: Install backend dependencies
       working-directory: ./backend
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt -r requirements-test.txt
+
+    # Zámok závislostí (nález 244): po inštalácii musí byť v prostredí presne to, čo je v backend/constraints.txt, a
+    # requirements*.txt naň musia odkazovať. Ak niekto zmení requirements.txt a zámok neobnoví, balík zostane bez pinu
+    # (build sa potom môže ticho zmeniť ako pri incidente z nálezu 240) a tento krok zlyhá. Druhý job inštaluje to isté,
+    # preto stačí kontrola raz.
+    - name: Check dependency lock
+      working-directory: ./backend
+      run: >
+        python ../.github/scripts/check_dependency_lock.py
+        --lock constraints.txt
+        --requirements requirements.txt requirements-test.txt
+        --installed
 
     - name: Run Django system checks
       working-directory: ./backend
@@ -123,6 +136,7 @@ jobs:
         cache-dependency-path: |
           backend/requirements.txt
           backend/requirements-test.txt
+          backend/constraints.txt
 
     - name: Install backend dependencies
       working-directory: ./backend

@@ -14,8 +14,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
+# Copy requirements and install Python dependencies. requirements.txt načíta zámok verzií constraints.txt (`-c`, nález 244),
+# preto sa kopíruje spolu s ním; bez neho inštalácia hneď skončí chybou, nie tichým nepripnutím.
+COPY requirements.txt constraints.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
