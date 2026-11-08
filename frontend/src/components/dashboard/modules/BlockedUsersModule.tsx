@@ -7,6 +7,7 @@ import { NoSymbolIcon, UserIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getApiErrorMessage } from '@/lib/apiError';
+import DelayedSkeleton from './settings/DelayedSkeleton';
 import SettingsDetailHeader from './settings/SettingsDetailHeader';
 import {
   fetchBlockedUsers,
@@ -29,12 +30,25 @@ function initialsFromName(name: string): string {
     .toUpperCase() || 'U';
 }
 
+/**
+ * Rozloženie zoznamu a jeho riadku. Kostra používa tie isté triedy ako skutočný zoznam, aby mala rovnaké rozmery ako
+ * výsledok a pri príchode údajov sa nič neposunulo (nález 286).
+ */
+const LIST_CLASS =
+  'divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-800 dark:border-gray-800';
+const ROW_CLASS = 'flex min-w-0 items-center gap-3 py-4';
+
 function mergeUniqueUsers(current: BlockedUser[], incoming: BlockedUser[]): BlockedUser[] {
   const usersById = new Map(current.map((user) => [user.id, user]));
   incoming.forEach((user) => usersById.set(user.id, user));
   return Array.from(usersById.values());
 }
 
+/**
+ * Riadok jedného zablokovaného používateľa: avatar (fotka, iniciály alebo ikona), meno, @používateľské meno
+ * a tlačidlo „Odblokovať“. Nedostupný účet (`is_available: false`) neprezradí ani meno, ani používateľské meno,
+ * ani fotku: ukáže len všeobecný text a ikonu.
+ */
 function BlockedUserRow({
   user,
   disabled,
@@ -51,7 +65,7 @@ function BlockedUserRow({
   const username = user.is_available && user.username ? '@' + user.username : null;
 
   return (
-    <div className='flex min-w-0 items-center gap-3 py-4'>
+    <div className={ROW_CLASS}>
       <div className='flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-purple-100 text-sm font-bold text-purple-700 dark:bg-purple-950/50 dark:text-purple-200'>
         {user.is_available && user.avatar_url ? (
           <img src={user.avatar_url} alt='' className='h-full w-full object-cover' loading='lazy' />
@@ -81,6 +95,30 @@ function BlockedUserRow({
   );
 }
 
+/** Kostra zoznamu blokovaných: tri riadky s rozložením a rozmermi riadku `BlockedUserRow` (avatar 48 px, dva riadky textu, tlačidlo). */
+function BlockedUsersSkeleton() {
+  return (
+    <div className={LIST_CLASS} data-testid='blocked-users-skeleton'>
+      {[0, 1, 2].map((item) => (
+        <div key={item} className={ROW_CLASS}>
+          <div className='h-12 w-12 shrink-0 rounded-full bg-gray-200 dark:bg-gray-800' />
+          <div className='min-w-0 flex-1 space-y-2'>
+            <div className='h-4 w-36 rounded bg-gray-200 dark:bg-gray-800' />
+            <div className='h-3 w-24 rounded bg-gray-100 dark:bg-gray-900' />
+          </div>
+          <div className='h-9 w-24 shrink-0 rounded-lg bg-gray-200 dark:bg-gray-800' />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Sekcia Nastavení „Blokovaní používatelia“. Načíta prvú stranu zoznamu (kostra sa ukáže až po 200 ms a výsledok sa
+ * vyfaduje, nález 286), pri chybe ponúkne „Skúsiť znova“, ďalšie strany dopĺňa kurzorom bez duplicít a odblokovanie
+ * robí cez potvrdzovací dialóg. Odblokovaný používateľ sa po úspechu hneď odstráni zo zoznamu a pri dotiahnutí
+ * ďalšej strany sa nevráti.
+ */
 export default function BlockedUsersModule({ onBack }: BlockedUsersModuleProps) {
   const { t } = useLanguage();
   const [users, setUsers] = useState<BlockedUser[]>([]);
@@ -176,20 +214,11 @@ export default function BlockedUsersModule({ onBack }: BlockedUsersModuleProps) 
       </div>
 
       {isLoading ? (
-        <div className='space-y-3' aria-label={t('blockedUsers.loading')}>
-          {[0, 1, 2].map((item) => (
-            <div key={item} className='flex animate-pulse items-center gap-3 border-b border-gray-200 py-4 dark:border-gray-800'>
-              <div className='h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-800' />
-              <div className='flex-1 space-y-2'>
-                <div className='h-4 w-36 rounded bg-gray-200 dark:bg-gray-800' />
-                <div className='h-3 w-24 rounded bg-gray-100 dark:bg-gray-900' />
-              </div>
-              <div className='h-9 w-24 rounded-lg bg-gray-200 dark:bg-gray-800' />
-            </div>
-          ))}
-        </div>
+        <DelayedSkeleton isLoading label={t('blockedUsers.loading')} testId='blocked-users-loading'>
+          <BlockedUsersSkeleton />
+        </DelayedSkeleton>
       ) : loadError ? (
-        <div className='py-16 text-center'>
+        <div className='animate-content-in py-16 text-center'>
           <NoSymbolIcon className='mx-auto h-11 w-11 text-gray-400' aria-hidden='true' />
           <p className='mt-3 text-sm text-gray-600 dark:text-gray-300'>{loadError}</p>
           <button
@@ -201,7 +230,7 @@ export default function BlockedUsersModule({ onBack }: BlockedUsersModuleProps) 
           </button>
         </div>
       ) : users.length === 0 ? (
-        <div className='py-16 text-center'>
+        <div className='animate-content-in py-16 text-center'>
           <NoSymbolIcon className='mx-auto h-12 w-12 text-gray-400 dark:text-gray-500' aria-hidden='true' />
           <h2 className='mt-3 text-base font-semibold text-gray-900 dark:text-white'>
             {t('blockedUsers.emptyTitle')}
@@ -211,8 +240,8 @@ export default function BlockedUsersModule({ onBack }: BlockedUsersModuleProps) 
           </p>
         </div>
       ) : (
-        <div>
-          <div className='divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-800 dark:border-gray-800'>
+        <div className='animate-content-in'>
+          <div className={LIST_CLASS} data-testid='blocked-users-list'>
             {users.map((user) => (
               <BlockedUserRow
                 key={user.id}

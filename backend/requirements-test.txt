@@ -1,5 +1,7 @@
 # Test dependencies (produkčné závislosti sú v requirements.txt — inštaluj oba:
 # pip install -r requirements.txt -r requirements-test.txt)
+# Verzie určuje zámok constraints.txt (nález 244), rovnako ako v requirements.txt.
+-c constraints.txt
 pytest==8.3.2
 pytest-django==4.9.0
 pytest-cov==5.0.0

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowPathIcon,
   EyeIcon,
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import DelayedSkeleton from '../../settings/DelayedSkeleton';
 import { MAX_OFFER_WATCHES, type OfferWatch } from '../types';
 import type { UseOfferWatchesResult } from '../useOfferWatches';
 import OfferWatchSavedList, {
@@ -26,6 +27,11 @@ type OfferWatchMobileListScreenProps = {
   onRetry: () => void;
 };
 
+/**
+ * Mobilná obrazovka zoznamu sledovaní: tlačidlo „Vytvoriť sledovanie“ (pri limite skryté), odznak s počtom a zoznam,
+ * prázdny stav alebo chyba s „Skúsiť znova“. Kostra pri načítavaní sa ukáže až po 200 ms a obsah, ktorý príde po
+ * načítavaní, sa vyfaduje (nález 286); návrat z formulára zoznam znova nevyfaduje.
+ */
 export default function OfferWatchMobileListScreen({
   watches,
   isLoading,
@@ -40,6 +46,14 @@ export default function OfferWatchMobileListScreen({
   const { t } = useLanguage();
   const backButtonRef = useRef<HTMLButtonElement>(null);
   const atLimit = watches.length >= MAX_OFFER_WATCHES;
+  // Krátky prechod dostane len obsah, ktorý príde po načítavaní (nález 286): príznak sa zapne, keď sa načítavanie
+  // zaznamená. Návrat z formulára, keď údaje už sú, zoznam znova nevyfaduje.
+  const [fadeIn, setFadeIn] = useState(false);
+  const fadeClass = fadeIn ? 'animate-content-in ' : '';
+
+  useEffect(() => {
+    if (isLoading) setFadeIn(true);
+  }, [isLoading]);
 
   useEffect(() => {
     requestAnimationFrame(() => backButtonRef.current?.focus());
@@ -85,7 +99,7 @@ export default function OfferWatchMobileListScreen({
           </div>
 
           {hasLoadError ? (
-            <div className='rounded-2xl border border-red-200 bg-red-50 px-5 py-7 text-center dark:border-red-900/60 dark:bg-red-950/20' role='alert'>
+            <div className={`${fadeClass}rounded-2xl border border-red-200 bg-red-50 px-5 py-7 text-center dark:border-red-900/60 dark:bg-red-950/20`} role='alert'>
               <p className='text-sm font-medium text-red-800 dark:text-red-200'>
                 {t('offerWatch.loadFailed', 'Sledovania sa nepodarilo načítať.')}
               </p>
@@ -99,9 +113,17 @@ export default function OfferWatchMobileListScreen({
               </button>
             </div>
           ) : isLoading ? (
-            <OfferWatchListSkeleton />
+            // Kostra sa ukáže až po 200 ms (rýchla odpoveď ju neukáže vôbec, nález 286). Karty kostry pulzujú samy.
+            <DelayedSkeleton
+              isLoading
+              label={t('offerWatchResults.loading', 'Načítavam sledovania...')}
+              pulse={false}
+              testId='offer-watch-list-loading'
+            >
+              <OfferWatchListSkeleton />
+            </DelayedSkeleton>
           ) : watches.length === 0 ? (
-            <div className='rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center dark:border-gray-700 dark:bg-[#0d0d0e]'>
+            <div className={`${fadeClass}rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center dark:border-gray-700 dark:bg-[#0d0d0e]`}>
               <div className='mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'>
                 <EyeIcon className='h-6 w-6' aria-hidden='true' />
               </div>
@@ -113,12 +135,14 @@ export default function OfferWatchMobileListScreen({
               </p>
             </div>
           ) : (
-            <OfferWatchSavedList
-              watches={watches}
-              mutation={mutation}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
+            <div className={fadeIn ? 'animate-content-in' : undefined}>
+              <OfferWatchSavedList
+                watches={watches}
+                mutation={mutation}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            </div>
           )}
         </section>
       </div>

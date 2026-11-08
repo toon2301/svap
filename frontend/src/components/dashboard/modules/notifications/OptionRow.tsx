@@ -12,6 +12,19 @@ interface OptionRowProps {
   rightDot?: boolean; // show right-side dot when selected (mobile "Zapnuté")
 }
 
+/**
+ * Odsadenie riadku voľby. Preberá ho aj kostra (`OptionRowsSkeleton`), takže má rovnakú výšku ako skutočné riadky a pri
+ * príchode údajov sa nič neposunie (nález 286).
+ */
+export function optionRowPadding(dense?: boolean): string {
+  return dense ? 'p-2' : 'p-4';
+}
+
+/**
+ * Jeden riadok voľby (kruh a text), napr. „Vypnuté“ alebo „Zapnuté“. Výber sa potvrdí už pri stlačení
+ * (`onPointerDown`), nielen pri kliknutí; ktorú hodnotu riadok znamená, určuje rodič v `onSelect`. `dense` zmenší
+ * odsadenie (desktop) a `rightDot` pridá bodku vpravo pri vybranej voľbe (mobilné „Zapnuté“).
+ */
 export default function OptionRow({ label, selected, disabled, onSelect, dense, rightDot }: OptionRowProps) {
   return (
     <button
@@ -22,7 +35,7 @@ export default function OptionRow({ label, selected, disabled, onSelect, dense, 
         onSelect(true);
       }}
       disabled={disabled}
-      className={`w-full flex ${rightDot ? 'items-center justify-between' : 'items-center'} ${dense ? 'p-2' : 'p-4'} rounded ${
+      className={`w-full flex ${rightDot ? 'items-center justify-between' : 'items-center'} ${optionRowPadding(dense)} rounded ${
         dense ? '' : 'rounded-xl'
       } transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 ring-0`}
       tabIndex={-1}

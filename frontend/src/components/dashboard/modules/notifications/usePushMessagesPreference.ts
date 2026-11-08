@@ -33,6 +33,12 @@ function buildPermissionMessage(permission: PushPermissionState): string {
   return 'Push notifikacie neboli povolene.';
 }
 
+/**
+ * Voľba push upozornení na správy. Načíta uloženú voľbu, zisťuje stav prehliadača (podpora, povolenie, existujúci
+ * odber) a zapína alebo vypína push vrátane registrácie a zrušenia odberu tohto prehliadača. `loading` pokrýva aj
+ * kontrolu prehliadača a ukladanie, `initialLoading` len úvodné načítanie uloženej voľby (nález 286): kontrola
+ * prehliadača ho nedrží, aby voľba nezostala navždy v kostre, ak sa service worker neozve.
+ */
 export function usePushMessagesPreference() {
   const {
     preferences,
@@ -264,6 +270,9 @@ export function usePushMessagesPreference() {
       loadingPreferences ||
       subscriptionStatus === 'checking' ||
       busyAction !== null,
+    // Len úvodné načítanie uloženej voľby (nález 286). Kontrola prehliadača sem schválne nepatrí: keby sa service worker
+    // nikdy neozval, voľba by zostala navždy len ako kostra.
+    initialLoading: loadingPreferences,
     error: preferenceError || browserError,
     permission,
     supported: supportState.supported,

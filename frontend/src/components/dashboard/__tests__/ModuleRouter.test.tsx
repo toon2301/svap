@@ -52,15 +52,33 @@ jest.mock('../modules/offer-watch/results/OfferWatchResultsDesktop', () => ({
 }));
 jest.mock('../modules/PrivacySettingsModule', () => ({
   __esModule: true,
-  default: ({ onBack }: { onBack?: () => void }) => (
-    <button type="button" data-testid="privacy-panel-variant" onClick={onBack}>
+  default: ({
+    user,
+    onBack,
+    onUserUpdate,
+  }: {
+    user: { id: number };
+    onBack?: () => void;
+    onUserUpdate: unknown;
+  }) => (
+    <button
+      type="button"
+      data-testid="privacy-panel-variant"
+      data-user-id={user.id}
+      data-update={typeof onUserUpdate}
+      onClick={onBack}
+    >
       PrivacySettingsModule
     </button>
   ),
 }));
 jest.mock('../modules/PrivacySettingsMobileSection', () => ({
   __esModule: true,
-  default: () => <div data-testid="privacy-mobile-variant">PrivacySettingsMobileSection</div>,
+  default: ({ user, onUserUpdate }: { user: { id: number }; onUserUpdate: unknown }) => (
+    <div data-testid="privacy-mobile-variant" data-user-id={user.id} data-update={typeof onUserUpdate}>
+      PrivacySettingsMobileSection
+    </div>
+  ),
 }));
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }),
@@ -234,43 +252,33 @@ describe('ModuleRouter – home', () => {
   });
 });
 
-describe('ModuleRouter – privacy follows the viewport, not the panel state', () => {
+/**
+ * Súkromie sa vykresľuje v oboch rozloženiach naraz a o tom, ktoré je vidno, rozhoduje CSS (nález 286). Prepínanie
+ * podľa príznaka `useIsMobile` sa vzdalo: príznak je v prvom vykreslení vždy „desktop“, takže sa na telefóne na
+ * snímok ukázala skrytá (prázdna) desktopová obrazovka.
+ */
+describe('ModuleRouter – privacy is laid out by CSS, not by the viewport flag', () => {
   beforeEach(() => {
     mockIsMobile = false;
   });
 
-  it('shows the desktop privacy screen on the privacy route when the right panel is closed', () => {
+  it.each([
+    ['desktop', false],
+    ['mobile', true],
+  ])('renders both privacy screens on the privacy route with the right panel closed (%s viewport)', (_name, mobile) => {
+    mockIsMobile = mobile;
+
     render(<ModuleRouter {...baseProps()} activeModule="privacy" />);
 
     expect(screen.getByTestId('privacy-panel-variant')).toBeInTheDocument();
-    expect(screen.queryByTestId('privacy-mobile-variant')).not.toBeInTheDocument();
-  });
-
-  it('shows the mobile privacy page on the privacy route when the right panel is closed', () => {
-    mockIsMobile = true;
-
-    render(<ModuleRouter {...baseProps()} activeModule="privacy" />);
-
     expect(screen.getByTestId('privacy-mobile-variant')).toBeInTheDocument();
-    expect(screen.queryByTestId('privacy-panel-variant')).not.toBeInTheDocument();
   });
 
-  it('shows the desktop privacy screen for the open right panel', () => {
-    render(
-      <ModuleRouter
-        {...baseProps()}
-        activeModule="profile"
-        activeRightItem="privacy"
-        isRightSidebarOpen
-      />,
-    );
-
-    expect(screen.getByTestId('privacy-panel-variant')).toBeInTheDocument();
-    expect(screen.queryByTestId('privacy-mobile-variant')).not.toBeInTheDocument();
-  });
-
-  it('shows the mobile privacy page when an open right panel meets a mobile viewport', () => {
-    mockIsMobile = true;
+  it.each([
+    ['desktop', false],
+    ['mobile', true],
+  ])('renders both privacy screens for the open right panel (%s viewport)', (_name, mobile) => {
+    mockIsMobile = mobile;
 
     render(
       <ModuleRouter
@@ -281,14 +289,56 @@ describe('ModuleRouter – privacy follows the viewport, not the panel state', (
       />,
     );
 
+    expect(screen.getByTestId('privacy-panel-variant')).toBeInTheDocument();
     expect(screen.getByTestId('privacy-mobile-variant')).toBeInTheDocument();
-    expect(screen.queryByTestId('privacy-panel-variant')).not.toBeInTheDocument();
+  });
+
+  it('renders the same privacy markup whatever the viewport flag says', () => {
+    const first = render(<ModuleRouter {...baseProps()} activeModule="privacy" />);
+    const desktopHtml = first.container.innerHTML;
+    first.unmount();
+
+    mockIsMobile = true;
+    const second = render(<ModuleRouter {...baseProps()} activeModule="privacy" />);
+
+    expect(second.container.innerHTML).toBe(desktopHtml);
+  });
+
+  it.each([
+    ['the privacy route', { activeModule: 'privacy' }],
+    [
+      'the open right panel',
+      { activeModule: 'profile', activeRightItem: 'privacy', isRightSidebarOpen: true },
+    ],
+  ])('hands the user and the update handler to both privacy screens on %s', (_name, extra) => {
+    render(<ModuleRouter {...baseProps()} {...extra} />);
+
+    ['privacy-panel-variant', 'privacy-mobile-variant'].forEach((testId) => {
+      expect(screen.getByTestId(testId)).toHaveAttribute('data-user-id', '42');
+      expect(screen.getByTestId(testId)).toHaveAttribute('data-update', 'function');
+    });
   });
 
   it('gives the desktop privacy screen the arrow handler on the privacy route too', () => {
     const props = baseProps();
 
     render(<ModuleRouter {...props} activeModule="privacy" />);
+    fireEvent.click(screen.getByTestId('privacy-panel-variant'));
+
+    expect(props.closeOwnProfileEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives the desktop privacy screen the arrow handler for the open right panel too', () => {
+    const props = baseProps();
+
+    render(
+      <ModuleRouter
+        {...props}
+        activeModule="profile"
+        activeRightItem="privacy"
+        isRightSidebarOpen
+      />,
+    );
     fireEvent.click(screen.getByTestId('privacy-panel-variant'));
 
     expect(props.closeOwnProfileEdit).toHaveBeenCalledTimes(1);
