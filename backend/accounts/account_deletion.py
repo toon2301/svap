@@ -65,6 +65,12 @@ def _delete_owned_content(user) -> None:
     OfferedSkill/PortfolioItem mažú svoje obrázky cez CASCADE + post_delete
     signály (S3 cleanup). Recenzie sa mažú obojsmerne – napísané (reviewer)
     aj prijaté (reviewed_user) používateľom (rozhodnutie B).
+
+    Ponuky a položky portfólia sa mažú po jednom cez ``delete()`` modelu, ktorý berie zámok riadku (nález 246), a
+    príspevky autora sa pred hromadným zmazaním zamknú (zámok z nálezu 232 je inak len vo view zmazania príspevku).
+    Hromadné ``QuerySet.delete()`` zámky z modelov nevolá, takže súbežné zdieľanie obsahu mazaného účtu skončilo
+    chybou 500 (nález 296). Volá sa len z ``anonymize_user`` v jednej transakcii po zámku používateľa, takže zámky
+    držia do konca; poradie používateľ a potom obsah je zámerné (spolieha na ňu aj ``feed_tagging``).
     """
     from portfolio.models import PortfolioItem, PortfolioItemLike
 
@@ -85,9 +91,21 @@ def _delete_owned_content(user) -> None:
         ReviewLike,
     )
 
-    # Ponuky + portfólio (S3 obrázky rieši post_delete signál na *Image modeloch).
-    OfferedSkill.objects.filter(user=user).delete()
-    PortfolioItem.objects.filter(owner=user).delete()
+    # Ponuky + portfólio (S3 obrázky rieši post_delete signál na *Image modeloch). Po jednom cez `delete()` modelu
+    # (zámok z nálezu 246) a v poradí primárneho kľúča, aby si súbežné mazania neprekážali.
+    for skill in OfferedSkill.objects.filter(user=user).order_by("pk"):
+        skill.delete()
+    for item in PortfolioItem.objects.filter(owner=user).order_by("pk"):
+        item.delete()
+
+    # Zámok príspevkov autora pred hromadným zmazaním: zdieľanie príspevku vznikajúce súbežne si berie ten istý zámok,
+    # takže sa zoradí s týmto mazaním (nález 296; vo view zmazania príspevku je rovnaký zámok z nálezu 232).
+    list(
+        FeedPost.objects.select_for_update()
+        .filter(author=user)
+        .order_by("pk")
+        .values_list("pk", flat=True)
+    )
 
     # Feed príspevky autora (fotku v S3 upratuje post_delete signál na FeedPost;
     # lajky/komentáre/nahlásenia NA týchto príspevkoch zaniknú cez CASCADE).
@@ -273,6 +291,7 @@ def _scrub_user_pii(user) -> None:
 
 
 def _scrub_user_profile(user) -> None:
+    """Vypne MFA v profile používateľa a zmaže jeho tajomstvo; používateľ bez profilu sa preskočí."""
     profile = getattr(user, "profile", None)
     if profile is None:
         return
@@ -289,9 +308,15 @@ def anonymize_user(user) -> None:
     Atomická operácia – pri čiastočnom zlyhaní sa nič nezapíše (žiadny
     polovičný stav). Idempotentná v rozumnej miere (opätovné spustenie na už
     anonymizovanom účte nič nepokazí).
+
+    Poradie zámkov: najprv riadok používateľa, potom jeho obsah (ponuky, portfólio, príspevky). Riadok používateľa sa
+    zamyká ako ``FOR NO KEY UPDATE``: súbežné zdieľanie jeho obsahu drží zámok zdroja a pri COMMIT potrebuje
+    ``KEY SHARE`` na tomto riadku (``FeedPost.shared_owner``). ``FOR UPDATE`` by ho blokoval, kým táto transakcia čaká
+    na zámok zdroja, a PostgreSQL by to ukončil deadlockom (nález 296). ``lock_users_for_update`` (``FOR UPDATE``)
+    sa s týmto zámkom stále vylučuje, takže tagovanie a blokovanie ostávajú zoradené s anonymizáciou.
     """
     # Lock riadku, aby súbežné požiadavky (dvojklik) nebežali paralelne.
-    locked = User.objects.select_for_update().get(pk=user.pk)
+    locked = User.objects.select_for_update(no_key=True).get(pk=user.pk)
 
     # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None. Avatar je na
     # default_storage (nemá vlastný storage=), takže ho mažeme cez default.
