@@ -132,9 +132,29 @@ jobs:
 
     # Celá backend suita proti PostgreSQL (DATABASE_URL); Django si pre testy vytvorí databázu `test_svaply`.
     # Coverage je vypnutá z rovnakého dôvodu ako v jobe `checks`.
+    # Poistka pred suitou: pri chýbajúcom alebo nerozpoznanom DATABASE_URL Django ticho použije SQLite
+    # (backend/swaply/settings_split/database.py). Celá suita by prešla zelená a testy so zámkami riadkov
+    # (nálezy 232, 246, 296), kvôli ktorým tento job existuje a ktoré sa na SQLite preskakujú, by sa nevykonali.
+    # Poistka beží v tom istom kroku ako suita, aby čítala presne tú istú `env`.
     - name: Run backend tests on PostgreSQL
       working-directory: ./backend
-      run: python -m pytest --no-cov
+      run: |
+        python - <<'PY'
+        import os
+
+        import django
+
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "swaply.settings")
+        django.setup()
+        from django.db import connection
+
+        if connection.vendor != "postgresql":
+            raise SystemExit(
+                f"Beh backend-postgres používa databázu {connection.vendor}, nie PostgreSQL. "
+                "Skontroluj DATABASE_URL (chýba alebo má nerozpoznanú schému)."
+            )
+        PY
+        python -m pytest --no-cov
       env:
         DEBUG: 'True'
         SECRET_KEY: ci-check-secret
