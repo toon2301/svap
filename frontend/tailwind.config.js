@@ -19,6 +19,18 @@ module.exports = {
           light: 'var(--primary-light)',
         },
       },
+      // Obsah sekcie Nastavení sa po načítaní nevloží skokom, ale krátko sa vyfaduje (nález 286). Len priehľadnosť, bez
+      // posunu; pri „Znížiť pohyb“ ju skracuje globálny blok `prefers-reduced-motion` v globals.css. Existujúca
+      // `.animate-fade-in` sa nepoužíva: v globals.css je definovaná dvakrát a posledná posúva obsah o 20 px za 0,6 s.
+      keyframes: {
+        'content-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+      },
+      animation: {
+        'content-in': 'content-in 150ms ease-out both',
+      },
       screens: {
         // Zmenšenie UI už od 1440px nadol
         hd: '1440px',
