@@ -150,7 +150,9 @@ def _fronta(d, m):
         + fronta.SCHVALENE + ' Nálezy zo skupín HNEĎ a PRED NASADENÍM majú prednosť pred nálezmi PO NASADENÍ. Pred opravou treba overiť, '
         'že nález ešte platí. Úplný popis každého nálezu je v tabuľkách v častiach 3 až 5. Hotový nález sa z poradia odstráni a presunie '
         'do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, striedavo s agentom). Stav riešenia sa nesleduje: '
-        'zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že nález je voľný.')
+        'zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že nález je voľný. Značka na začiatku stĺpca „Prečo v tejto '
+        'dávke“: JASNÉ = kolega len overí, že nález platí, a opraví; NEJASNÉ = kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ '
+        'nepovie (postup od K15 je v `README.md`).')
     d.w()
     skupina = _skupiny_nalezov(m)
     d.tabulka(['Poradie', 'Dávka', 'Č.', 'Skupina', 'Čo', 'Prečo v tejto dávke', 'Stav'],
@@ -400,6 +402,10 @@ def _udrzba(d, m):
         'rozhodnutia (R24, R26). '
         'Po každej práci kolegu majiteľ pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` '
         '(časť „Postup s kolegom“).')
+    d.w('- **Postup od K15 (skúška od 8. 11. 2026):** karta dávky s označením JASNÉ alebo NEJASNÉ pri každom nálezi, výsledok dávky kolegu '
+        'na jednu stranu, kontrola výsledku agentom pred zlúčením, dymový test majiteľa po každom nasadení (ďalšia dávka sa nezlučuje, kým '
+        'neprejde), filter nových nálezov (číslo len s dôkazom a dopadom, najviac 5 na dávku) a zastavenie radu pri chybe HNEĎ. '
+        'Šablóny sú v `sablony/`, neočíslované pripomienky v `poznamky.md`, podrobnosti v `README.md`.')
     d.w('- **Príloha D** (zoznam majiteľa z 6. 11. 2026) je mapovanie jeho položiek na tento zoznam v `priloha_nastenka.py`; generátor '
         'overí, že každý odkaz v nej mieri na existujúci nález, ID z registra, úlohu N alebo rozhodnutie.')
     d.w('- **Vždy:** posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.')
