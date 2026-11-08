@@ -27,6 +27,11 @@ type OfferWatchMobileListScreenProps = {
   onRetry: () => void;
 };
 
+/**
+ * Mobilná obrazovka zoznamu sledovaní: tlačidlo „Vytvoriť sledovanie“ (pri limite skryté), odznak s počtom a zoznam,
+ * prázdny stav alebo chyba s „Skúsiť znova“. Kostra pri načítavaní sa ukáže až po 200 ms a obsah, ktorý príde po
+ * načítavaní, sa vyfaduje (nález 286); návrat z formulára zoznam znova nevyfaduje.
+ */
 export default function OfferWatchMobileListScreen({
   watches,
   isLoading,

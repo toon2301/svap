@@ -20,6 +20,11 @@ export function optionRowPadding(dense?: boolean): string {
   return dense ? 'p-2' : 'p-4';
 }
 
+/**
+ * Jeden riadok voľby (kruh a text), napr. „Vypnuté“ alebo „Zapnuté“. Výber sa potvrdí už pri stlačení
+ * (`onPointerDown`), nielen pri kliknutí; ktorú hodnotu riadok znamená, určuje rodič v `onSelect`. `dense` zmenší
+ * odsadenie (desktop) a `rightDot` pridá bodku vpravo pri vybranej voľbe (mobilné „Zapnuté“).
+ */
 export default function OptionRow({ label, selected, disabled, onSelect, dense, rightDot }: OptionRowProps) {
   return (
     <button

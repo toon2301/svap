@@ -20,6 +20,11 @@ interface SectionProps {
   loadingLabel?: string;
 }
 
+/**
+ * Sekcia Upozornení s nadpisom, popisom, ikonou a dvojicou riadkov „Vypnuté / Zapnuté“. S `loading` namiesto riadkov
+ * ukáže kostru rovnakej výšky (nález 286), takže sa po načítaní uloženej voľby nič neposunie. Bez `loading` sa sekcia
+ * správa ako doteraz.
+ */
 export default function Section({ title, description, value, setValue, disabled, icon, desktop, offLabel = 'Vypnuté', onLabel = 'Zapnuté', loading = false, loadingLabel = 'Načítavam...' }: SectionProps) {
   return (
     <div className="rounded-lg bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">

@@ -44,6 +44,11 @@ function mergeUniqueUsers(current: BlockedUser[], incoming: BlockedUser[]): Bloc
   return Array.from(usersById.values());
 }
 
+/**
+ * Riadok jedného zablokovaného používateľa: avatar (fotka, iniciály alebo ikona), meno, @používateľské meno
+ * a tlačidlo „Odblokovať“. Nedostupný účet (`is_available: false`) neprezradí ani meno, ani používateľské meno,
+ * ani fotku: ukáže len všeobecný text a ikonu.
+ */
 function BlockedUserRow({
   user,
   disabled,
@@ -108,6 +113,12 @@ function BlockedUsersSkeleton() {
   );
 }
 
+/**
+ * Sekcia Nastavení „Blokovaní používatelia“. Načíta prvú stranu zoznamu (kostra sa ukáže až po 200 ms a výsledok sa
+ * vyfaduje, nález 286), pri chybe ponúkne „Skúsiť znova“, ďalšie strany dopĺňa kurzorom bez duplicít a odblokovanie
+ * robí cez potvrdzovací dialóg. Odblokovaný používateľ sa po úspechu hneď odstráni zo zoznamu a pri dotiahnutí
+ * ďalšej strany sa nevráti.
+ */
 export default function BlockedUsersModule({ onBack }: BlockedUsersModuleProps) {
   const { t } = useLanguage();
   const [users, setUsers] = useState<BlockedUser[]>([]);

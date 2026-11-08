@@ -63,6 +63,11 @@ interface MobileProps {
   pushMessages: PushMessagesProps;
 }
 
+/**
+ * Mobilné rozloženie Upozornení (pod lg): hlavný vypínač „Vypnúť všetko“, voľba Správy (push) a ostatné voľby
+ * „Vypnuté / Zapnuté“. Kým sa uložená voľba Správ načíta, namiesto jej riadkov je kostra a stavový riadok pod ňou
+ * drží výšku, aby sa nič neposúvalo (nález 286). Obal `notifications-push-messages-mobile` je v DOM od prvého snímku.
+ */
 export default function Mobile({
   labels,
   state,
