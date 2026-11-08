@@ -58,7 +58,7 @@ FRONTA = [
     dict(n='319', davka='K15',
          co='Upozornenia: pri vypnutom internete sa prepínač Správ prepne bez chybovej hlášky a stav ostane po pripojení.',
          preco='Najprv mapovanie (ktorý prepínač: Správy majú vrátenie späť aj chybu, ostatné sú len lokálne, nález 321); texty chýb v '
-               '`useNotificationPreferences.ts` (140 riadkov) a `usePushMessagesPreference.ts` (288 riadkov) sú bez diakritiky a bez '
+               '`useNotificationPreferences.ts` (123 riadkov) a `usePushMessagesPreference.ts` (288 riadkov) sú bez diakritiky a bez '
                'prekladu.'),
     dict(n='308', davka='K16',
          co='Upozornenia: varovanie pri uloženom „Zapnuté“ a blokovanom push po načítaní posunie obsah (28 px desktop, 68 px '
