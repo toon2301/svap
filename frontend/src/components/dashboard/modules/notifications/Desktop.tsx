@@ -4,6 +4,7 @@ import React from 'react';
 
 import SettingsDetailHeader from '../settings/SettingsDetailHeader';
 import MasterToggle from './MasterToggle';
+import PushMessagesStatus from './PushMessagesStatus';
 import Section from './Section';
 
 interface NotificationsLabels {
@@ -47,6 +48,7 @@ interface PushMessagesProps {
   value: boolean;
   disabled: boolean;
   loading: boolean;
+  initialLoading?: boolean;
   error: string | null;
   onChange: (value: boolean) => void;
 }
@@ -241,6 +243,8 @@ export default function Desktop({
             desktop
             offLabel={labelsCommon.off}
             onLabel={labelsCommon.on}
+            loading={pushMessages.initialLoading}
+            loadingLabel={labels.loadingPreferences}
             icon={
               <svg
                 className="w-16 h-16 text-gray-500 dark:text-gray-400 self-center flex-shrink-0"
@@ -257,16 +261,12 @@ export default function Desktop({
               </svg>
             }
           />
-          {pushMessages.loading && (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {labels.loadingPreferences}
-            </p>
-          )}
-          {pushMessages.error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {pushMessages.error}
-            </p>
-          )}
+          <PushMessagesStatus
+            loading={pushMessages.loading}
+            initialLoading={pushMessages.initialLoading}
+            loadingLabel={labels.loadingPreferences}
+            error={pushMessages.error}
+          />
         </div>
 
         {sectionCards.map((section) => (

@@ -4,6 +4,8 @@ import React from 'react';
 
 import MasterToggle from './MasterToggle';
 import OptionRow from './OptionRow';
+import OptionRowsSkeleton from './OptionRowsSkeleton';
+import PushMessagesStatus from './PushMessagesStatus';
 
 interface NotificationsLabels {
   turnOffAll: string;
@@ -45,6 +47,7 @@ interface PushMessagesProps {
   value: boolean;
   disabled: boolean;
   loading: boolean;
+  initialLoading?: boolean;
   error: string | null;
   onChange: (value: boolean) => void;
 }
@@ -143,32 +146,35 @@ export default function Mobile({
               {labels.messagesPushDesc}
             </p>
           </div>
-          <div className="space-y-0">
-            <OptionRow
-              label={labelsCommon.off}
-              selected={!pushMessages.value}
-              disabled={pushMessages.disabled}
-              onSelect={() => pushMessages.onChange(false)}
+          {pushMessages.initialLoading ? (
+            <OptionRowsSkeleton
+              label={labels.loadingPreferences}
+              testId="notifications-push-skeleton-mobile"
             />
-            <div className="-mt-1" />
-            <OptionRow
-              label={labelsCommon.on}
-              selected={pushMessages.value}
-              disabled={pushMessages.disabled}
-              onSelect={() => pushMessages.onChange(true)}
-              rightDot
-            />
-          </div>
-          {pushMessages.loading && (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {labels.loadingPreferences}
-            </p>
+          ) : (
+            <div className="space-y-0">
+              <OptionRow
+                label={labelsCommon.off}
+                selected={!pushMessages.value}
+                disabled={pushMessages.disabled}
+                onSelect={() => pushMessages.onChange(false)}
+              />
+              <div className="-mt-1" />
+              <OptionRow
+                label={labelsCommon.on}
+                selected={pushMessages.value}
+                disabled={pushMessages.disabled}
+                onSelect={() => pushMessages.onChange(true)}
+                rightDot
+              />
+            </div>
           )}
-          {pushMessages.error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {pushMessages.error}
-            </p>
-          )}
+          <PushMessagesStatus
+            loading={pushMessages.loading}
+            initialLoading={pushMessages.initialLoading}
+            loadingLabel={labels.loadingPreferences}
+            error={pushMessages.error}
+          />
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700" />
 

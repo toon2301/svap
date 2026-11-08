@@ -264,6 +264,9 @@ export function usePushMessagesPreference() {
       loadingPreferences ||
       subscriptionStatus === 'checking' ||
       busyAction !== null,
+    // Len úvodné načítanie uloženej voľby (nález 286). Kontrola prehliadača sem schválne nepatrí: keby sa service worker
+    // nikdy neozval, voľba by zostala navždy len ako kostra.
+    initialLoading: loadingPreferences,
     error: preferenceError || browserError,
     permission,
     supported: supportState.supported,
