@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K10, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K12, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -218,4 +218,83 @@ DONE_SINCE_DALSIE = [
               'súboroch `FavoritesModule.test.tsx` (`dashboard/__tests__/` aj `dashboard/modules/__tests__/`; čakali texty bez diakritiky) '
               'a nový test porovná všetkých šesť záložných textov so `sk.json`; 6 mutácií zo 6 zachytili testy. Overenie: ako pri nálezu '
               '277. Dopad na E2E: žiadny.'),
+    dict(n=279, vetva='K10, K11', pr='#239, #241', zlucene=True,
+         text='HOTOVÉ (K10: PR #239, zlúčené 7. 11. 2026, commity `0025c124` a `a6513c0d`, `onError` na všetkých šiestich miestach s '
+              '`BlurredContainImage`; K11: PR #241, zlúčené 7. 11. 2026, commit `a67fff5d`, viditeľná náhrada po neúspešnom ručnom teste majiteľa; '
+              'nález kolegu z K7): po K10 ukázal karusel príspevku pri zlyhanej fotke len prázdny obdĺžnik (v tmavom režime `#0e0e0f`, teda '
+              'veľkú čiernu plochu bez ikony a textu), preto ručný test majiteľa 7. 11. 2026 neprešiel. K11: `shared/ImageLoadFailed.tsx` má tri '
+              'varianty: `default` (ikona a text na neutrálnej ploche, karusel príspevku), `compact` (len ikona s `aria-label`, malá dlaždica '
+              'galérie portfólia) a `onDark` (svetlé farby pre fullscreen prehliadač). Nový preklad `common.imageLoadFailed` je vo všetkých '
+              'šiestich jazykoch (sk „Fotku sa nepodarilo načítať“), kontrast textu 6,87 : 1 a 7,6 : 1; rozloženie a počítadlo fotiek ostávajú. '
+              'Overenie podľa kolegu: mutácie 11 z 12 (prežila ekvivalentná). Po pripomienke CodeRabbitu k PR #241 je dôvod zlyhania v dlaždici '
+              'galérie v názve tlačidla (`78b3b3ef`: hook `useImageLoadFailedLabel`, test cez `toHaveAccessibleName`, mutácie 7 zo 7), lebo text '
+              'vnorený v `<button aria-label>` čítačka obrazovky neoznámi; JSDoc k zmeneným funkciám je v `290b3c7c`. K10 pritom doplnil aj '
+              'ďalšie miesta: karusel ponúk preskočí zlyhanú fotku, portfólio ukáže „Bez titulnej fotky“ a Obľúbené iniciály (`FavoriteAvatar`). '
+              'Opakovaný ručný test majiteľa po K11 (zablokovanie fotky v DevTools) zatiaľ nie je zapísaný. Overenie: CI prešlo (`checks` aj '
+              '`backend-postgres`). Dopad na E2E: žiadny (v `frontend/e2e` nič nehľadá túto náhradu).'),
+    dict(n=291, vetva='K11', pr='#241', zlucene=True,
+         text='HOTOVÉ (K11, zlúčené v PR #241 dňa 7. 11. 2026, commit `f04876c2`; nález kolegu z K10): `ImageLightbox.tsx` a '
+              '`OfferImageGalleryLightbox.tsx` (fullscreen prehliadače fotiek) nemali `onError`, takže zlyhaná fotka ukázala pokazený obrázok '
+              'alebo prázdny rámik. Nový `shared/LightboxPhoto.tsx` rieši načítanie chránenej adresy aj zlyhanie a pri zlyhaní ukáže '
+              '`ImageLoadFailed` (variant `onDark`). Oba prehliadače ho vykresľujú s `key` = adresa fotky, takže zlyhanie neprejde na ďalšiu '
+              'fotku; ovládanie sa nemení. Overenie podľa kolegu: 8 z 11 nových testov zlyhalo na pôvodnom kóde, mutácie 13 z 13. Ostatné '
+              'súbory s `<img>` bez `onError` (32 zo 43, netriedené) sú nález 303; fotka v správach (`MessageImageLightbox.tsx`) tam patrí '
+              'tiež. Triedy `max-h-[calc(100vh-2rem)]` fotky sú teraz v `LightboxPhoto.tsx` (nálezy 36 a 92). Overenie: ako pri nálezu 279. '
+              'Dopad na E2E: žiadny.'),
+    dict(n=292, vetva='K11', pr='#241', zlucene=True,
+         text='HOTOVÉ (K11, zlúčené v PR #241 dňa 7. 11. 2026, commit `1ee82c1a`; nález kolegu z K10; PO NASADENÍ, no v K11 na pokyn '
+              'majiteľa 7. 11. 2026): `shared/BlurredContainImage.tsx` zapisoval `onErrorRef.current` počas renderu; zápis je teraz v `useEffect` '
+              'pred efektom, ktorý hlási chybu, správanie sa nemení. Overenie podľa kolegu: test stráži poradie efektov, mutácie 5 z 5. '
+              'Overenie: ako pri nálezu 279. Dopad na E2E: žiadny.'),
+    dict(n=293, vetva='K11', pr='#241', zlucene=True,
+         text='HOTOVÉ (K11, zlúčené v PR #241 dňa 7. 11. 2026, commit `da6c2324`; nález majiteľa z manuálneho testu po K10): okno ponúk '
+              '(`DashboardModals.tsx`) ukázalo pri chybe nahrávania fotky natívne `alert()` s textom bez prekladu a chybu hodilo ďalej, takže '
+              'vonkajší `catch` ukázal ešte „Ponuku sa nepodarilo uložiť“, hoci ponuka už bola uložená; pri vytváraní ostal koncept bez `id` a '
+              'ďalšie uloženie spravilo druhý POST a skončilo na `duplicate_offer`. V rade nahrávania portfólia chýbal toast pri zamietnutých '
+              'súboroch. Oprava: nový pomocník `getOfferImageUploadErrorMessage` (`modules/skills/offerSaveErrors.ts`); `uploadImagesIfNeeded` '
+              'nevolá `alert()` ani nehádže chybu, ukáže toast za každú fotku, nahrá ostatné a ponuku dokončí; mobilná úprava '
+              '(`useSkillSaveHandler.ts`) používa ten istý pomocník; rada portfólia (`usePortfolioImageUploadQueue.ts`) dáva jeden toast na '
+              'dôvod a dávku. Overenie podľa kolegu: mutácie 16 zo 16, na pôvodnom kóde zlyhávalo okno ponúk aj rada. `DashboardModals.tsx` má '
+              'teraz 485 riadkov. Natívne `alert()` ostáva na 14 miestach v 6 súboroch (nález 302). Overenie: ako pri nálezu 279; ručný test '
+              'majiteľa po K11 (zlý formát v okne ponúk a v rade portfólia) zatiaľ nie je zapísaný. Dopad na E2E: žiadny.'),
+    dict(n=282, vetva='K12', pr='#242', zlucene=True,
+         text='HOTOVÉ (K12, zlúčené v PR #242 dňa 8. 11. 2026, commity `74d66e89` a `331e06ef`; nález kolegu z K10): starý multipart endpoint '
+              '`POST /api/auth/skills/<id>/images/` ukladal originál fotky aj s polohou GPS a s pôvodným názvom súboru, ktorý sa stával súčasťou '
+              'verejnej adresy. Nová `prepare_offer_image_upload` (`accounts/offer_image_upload.py`) odstráni EXIF (orientáciu pred tým zapečie '
+              'do pixelov), HEIC a MPO vyjdú ako JPEG a názov je náhodný (`uuid`); čo sa očistiť nedá, dostane HTTP 400 a originál sa neuloží; GIF '
+              'ostane nezmenený, len keď prípona aj obsah sú GIF. Po pripomienke Codexu (PR #242, P2) sa animovaný WebP a APNG nesplošťujú na '
+              'prvú snímku: nový `swaply/animated_image_metadata.py` neprekódúva, ale prejde kontajner a skopíruje len chunky potrebné na '
+              'zobrazenie, takže snímky a ich časovanie ostanú bajt po bajte rovnaké (EXIF a GPS, XMP, textové chunky, neznáme chunky a údaje '
+              'za koncom zmiznú; výsledok sa overí a inak sa použije bežné prekódovanie; orientácia z EXIF sa pri animáciách nezapeká). Zdieľané '
+              '`strip_image_metadata` sa nemení, takže avatary a správy sú bez zmeny (animované PNG a WebP tam ostávajú sploštené, nález 298). '
+              'Overenie podľa kolegu: 23 testov v `test_offer_image_upload.py` (9 z 12 testov endpointu zlyhalo pred opravou), mutácie 10 z 10; '
+              'k animácii 36 testov (4 zlyhali na starom kóde), mutácie 30 z 30; SQLite 2 270 testov a PostgreSQL 16 2 286 testov prešlo, CI '
+              'prešlo (`checks` aj `backend-postgres`). Na Railway sa endpoint z UI nevolá (tam ide S3), takže ho možno overiť len priamym '
+              'volaním: ručný test majiteľa po K12 potvrdil anonymný názov súboru, no fotka bola neprístupná (nález 301), preto sa odstránenie '
+              'GPS ručne neoverilo. Dopad na E2E: žiadny.'),
+    dict(n=246, vetva='K12', pr='#242', zlucene=True,
+         text='HOTOVÉ (K12, zlúčené v PR #242 dňa 8. 11. 2026, commit `85dbd5fd`; sonda agenta z vetvy 165): súbeh zdieľania a zmazania ponuky '
+              'alebo položky portfólia dával na PostgreSQL HTTP 500 (cudzí kľúč sa kontroluje až pri COMMIT; rovnaký mechanizmus ako pri nálezu '
+              '232). Nová `FeedPost._lock_shared_source` (`accounts/models/feed_posts/sharing.py`; predtým `_lock_shared_feed_post_source`) '
+              'zamkne zdroj (príspevok, ponuku alebo položku portfólia; `select_for_update`) v tej istej transakcii ako INSERT zdieľania; zdroj '
+              'zmazaný medzitým dá HTTP 400 namiesto 500. `OfferedSkill.delete()` a `PortfolioItem.delete()` zamykajú riadok pred zmazaním. '
+              '`portfolio/views.py` (507 riadkov) sa nemenil. Overenie podľa kolegu: 15 testov so súbehom dvoch vlákien '
+              '(`test_feed_share_source_delete_race.py`, len PostgreSQL; na SQLite sa preskočia a pokrýva ich job `backend-postgres`), pred '
+              'opravou 11 zlyhaní a 2 chyby, mutácie 12 z 12, osemkrát opakované bez nestabilného pádu. Zámky platia pre zdieľanie a model '
+              '`delete()`, nie pre hromadné `QuerySet.delete()` (nález 296). Overenie: ako pri nálezu 282. Dopad na E2E: žiadny.'),
+    dict(n=194, vetva='K12', pr='#242', zlucene=True,
+         text='HOTOVÉ (K12, zlúčené v PR #242 dňa 8. 11. 2026, commit `73928b7d`): týždenný workflow `.github/workflows/dependency-audit.yml` '
+              '(pondelok 05:23 UTC a ručne, nie pri PR ani pushi; nezastavuje PR a Railway naň nečaká) spustí `pip-audit` '
+              '(`requirements.txt` a `requirements-test.txt`) a `npm audit --omit=dev` a skript `.github/scripts/check_dependency_audit.py` '
+              'porovná výsledok (prah `high` pre npm) so zoznamom výnimiek `.github/dependency-audit-exceptions.json` (každá má `id`, `reason` '
+              'a `remove_when`); kód 0 je čisté, 1 nový záznam, 2 chýbajúci alebo poškodený vstup (audit sa nevykonal, napr. výpadok registra). '
+              'Dnes je vo výnimkách jediný záznam: `PYSEC-2026-1845` (pytest 8.3.2; čaká na pytest 9, nález 183). Overenie podľa kolegu: 35 '
+              'testov (`backend/tests/test_dependency_audit_script.py`), mutácie 30 z 30; na GitHube je beh 1 na `main` zelený a skúšobný beh 2 '
+              'na vetve `test-audit` (upravený zoznam výnimiek) červený presne v kroku „Compare with known exceptions“, so zhrnutím nového '
+              'záznamu aj zastaranej výnimky. Prvý plánovaný beh je v pondelok 9. 11. 2026 okolo 06:23 (05:23 UTC). Audit pokrýva len '
+              '`requirements*.txt` a produkčné npm balíky. E-mail o červenom plánovanom behu dostane ten, kto naposledy zmenil riadok `cron`; '
+              'commit je od autora „Claude“ (noreply@anthropic.com), nie z účtu majiteľa, takže e-mail nemusí prísť majiteľovi: kým majiteľ '
+              'riadok `cron` sám nezmení, treba v pondelok skontrolovať záložku Actions ručne. Doplnky: nové akcie `checkout@v4`, `setup-node@v4` '
+              'a `setup-python@v5` hlásia „Node.js 20 is deprecated“ (nález 196); `glob` a `minimatch` (moderate, nález 229) pri prahu `high` '
+              'audit nehlási. Dopad na E2E: žiadny.'),
 ]

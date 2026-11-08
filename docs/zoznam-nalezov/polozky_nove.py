@@ -91,7 +91,9 @@ NEW_ITEMS = [
               '10/2027 (Google knižnice na to už upozorňujú), prechod na 3.12+ spolu s povýšením `psycopg2-binary` preto patrí do plánu. Overené na vetve 143: celá backend sada '
               '(1955 testov, aj v CI na PR #203), porovnanie skutočných obrazových funkcií so starým Pillow (146 prípadov, rovnaké výsledky aj pixely), migrácie '
               '(nové sú len `token_blacklist.0013` a `authtoken.0004`, obe bez zmeny schémy), tokeny platia v oboch smeroch (nasadenie aj rollback). '
-              'Spustené 26. 10. 2026, časť 183a 27. 10. 2026, časť 183b (vetva 154) 30. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb.',
+              'Spustené 26. 10. 2026, časť 183a 27. 10. 2026, časť 183b (vetva 154) 30. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb. Doplnok z K12 (8. 11. 2026): výnimka `PYSEC-2026-1845` (pytest '
+              '8.3.2) je v `.github/dependency-audit-exceptions.json` s podmienkou „zatvorí nález 183 (pytest 9)“; po povýšení na pytest 9 '
+              'ju týždenný audit ohlási ako zastaranú a treba ju odstrániť.',
          dec='ROZHODNUTIE R8', src='kontrola 26. 10. 2026'),
     dict(n=185, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
          what='`SECURITY_AUDIT_REPORT.md` v koreni repozitára je z roku 2024 (názov Swaply) a vedie R1–R7 ako „neriešené“, '
@@ -159,18 +161,6 @@ NEW_ITEMS = [
               '(mapovanie 183a): Pillow 12.3.0 mal 37 známych chýb v dekóderoch formátov, ktoré aplikácia neprijíma; Pillow 13.0.0 ich '
               'nemá, obmedzenie formátov je lacná poistka proti budúcim.',
          dec=None, src='vetva 143, čiastočne K10 a manuálny test majiteľa'),
-    dict(n=194, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť', kratko='CI nekontroluje zraniteľné závislosti',
-         what='Ani CI (`.github/workflows/deploy.yml`), ani iný plánovaný workflow nekontroluje zraniteľné závislosti: nebeží `pip-audit` ani '
-              '`npm audit` a v repozitári nie je Dependabot. Zoznam zraniteľných balíkov (191 záznamov backendu, 19 balíkov frontendu) preto narástol '
-              'nepozorovane a odhalila ho až jednorazová kontrola 26. 10.',
-         note='Návrh: plánovaný týždenný workflow (`schedule` + `workflow_dispatch`) s `pip-audit -r backend/requirements.txt -r backend/requirements-test.txt` '
-              '(rovnaké súbory, aké inštaluje CI; `pytest` je len v druhom) a `npm audit --omit=dev`, ktorý len hlási (nezastavuje PR), alebo Dependabot pre `pip` a `npm`. Pozor: kým nie sú hotové `pytest` z 183 '
-              'a build nástroj Sentry z 229, audit hlási známe zraniteľnosti (backend 2 záznamy vývojového `pytest`; frontend 5 stredných v build nástroji Sentry) pri každom '
-              'behu, takže opakované hlásenie samo o sebe neznamená novú zraniteľnosť. Workflow preto musí porovnávať výsledok so zoznamom známych '
-              'výnimiek: ID záznamov vedené v repozitári (pri `pip-audit` priamo cez `--ignore-vuln <ID>`, pri `npm audit` porovnaním s uloženým '
-              'zoznamom), každé s dôvodom a podmienkou odstránenia (napr. „zatvorí 229“); upozorniť má len záznam, ktorý v zozname nie je. '
-              'Pozor na hluk: `npm audit` hlási aj tranzitívne balíky, preto začať s prahom `high`.',
-         dec=None, src='vetva 143'),
     dict(n=195, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          what='`backend/.coveragerc`: prah `fail_under = 94.8` sa líši od `--cov-fail-under=85` v `pytest.ini` a riadok `accounts/views/*` '
               'v zozname `omit` vynecháva z merania pokrytia všetky views. Päť neexistujúcich súborov v `omit` (`swaply/settings_clean.py`, '
@@ -189,18 +179,22 @@ NEW_ITEMS = [
          note='Overené v `action.yml` jednotlivých tagov: `setup-python@v5` deklaruje `node20` (varovanie by zostalo), až `setup-python@v6` `node24`; '
               '`checkout@v5` a `setup-node@v5` už `node24`. CodeRabbit (PR #203) navrhol len `setup-python@v5` s tvrdením, že krok môže zlyhať; beh CI '
               'to nepotvrdil a samotné v5 by varovanie neodstránilo. Oprava: povýšiť všetky tri akcie naraz na verzie pre Node 24 a overiť behom CI; '
-              'robiť spolu s nálezom 194 (úprava workflow).',
+              'robiť spolu s nálezom 194 (úprava workflow). Doplnok z K12 (8. 11. 2026): nový workflow '
+              '`.github/workflows/dependency-audit.yml` používa `actions/checkout@v4`, `actions/setup-node@v4` a '
+              '`actions/setup-python@v5` a v logu behu je hneď varovanie „Node.js 20 is deprecated“; treba ho zahrnúť do tohto nálezu a '
+              'povýšiť spolu s `deploy.yml`.',
          dec=None, src='vetva 143'),
     dict(n=204, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='nepoužitý kľúč `profile.photoRemovedError` (zvyšok po K6)',
          what='ČIASTOČNE HOTOVÉ: tri chýbajúce kľúče (`feed.captionPlaceholder`, `feed.commentsClose`, `feed.openProfile`) aj tri falošné '
               'kľúče zo skriptu sú hotové v K6 (nález 120, PR #234, zlúčené 6. 11. 2026, commit `6fe2c8ea`): '
-              '`npm run check:used-translation-keys` teraz končí s 0 chýbajúcimi kľúčmi. OSTÁVA: `profile.photoRemovedError` je preložený '
+              '`npm run check:used-translation-keys` teraz končí s 0 chýbajúcimi kľúčmi. Časť CI je hotová v K12 (PR #242, zlúčené 8. 11. 2026, '
+              'commit `3eff7772`): v jobe `checks` v `deploy.yml` beží po `npm ci` krok `check:used-translation-keys` (v CI je zelený). '
+              'OSTÁVA: `profile.photoRemovedError` je preložený '
               'vo všetkých jazykoch, no kód ho nepoužíva a ukazuje doslovný text „Nepodarilo sa odstrániť fotku. Skúste znova.“ v '
               '`ProfileModule.tsx:468` (563 riadkov, nad limitom). Ten istý text je aj v `ProfileEditForm.tsx:250` (432 riadkov), no ten '
               'komponent je nepoužitý (nález 239), takže sa neopravuje: zmizne so zmazaním komponentu.',
          note='`ProfileModule.tsx` vyžaduje delenie súboru alebo výnimku od majiteľa (oprava: `t("profile.photoRemovedError", …)`). '
-              'Skript `check:used-translation-keys` je po K6 čistý (0 chýbajúcich kľúčov), preto ho možno pridať do CI (dnes nie je '
-              'súčasťou CI; navrhnuté v dávke K12), aby sa chýbajúce kľúče nevracali.',
+              'Druhý skript `check:missing-translations` (úplnosť ostatných jazykov) v CI zatiaľ nie je: nález 297.',
          dec=None, src='vetva 144, čiastočne K6'),
     dict(n=205, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='päť lenivých registrácií HEIC je po nálezu 200 nadbytočných',
          what='`register_heif_opener()` sa volá lenivo v piatich moduloch spracovania obrázkov: `swaply/image_metadata.py`, '
@@ -268,7 +262,17 @@ NEW_ITEMS = [
               'behu z 1. 11. všetkých sedem scenárov prešlo; E2E však používa jeden prihlásený účet, opačný smer nebol overený. Po K8 '
               'a K9: účty A a B z manuálneho testu sú účty z E2E testov (`.env.e2e`; majiteľ 7. 11.) a účet A má súkromný profil (275, '
               'R25), takže ak je A druhý účet (`E2E_PEER_SLUG`), prípady (a) a (b) môže vysvetľovať práve to, že ho hlavný účet nevidí '
-              '(stav dát). Otvorené: ktorý z účtov A a B je hlavný E2E účet a ktorý `E2E_PEER_SLUG`, a od kedy je A súkromný.',
+              '(stav dát). Otvorené: ktorý z účtov A a B je hlavný E2E účet a ktorý `E2E_PEER_SLUG`, a od kedy je A súkromný. Re-check Codexu '
+              '(po K8 až K12, 8. 11. 2026): (a) `offer-reviews-back.spec.ts:185`: súkromný `E2E_PEER_SLUG` môže pád vysvetliť (test '
+              'očakáva dostupný cudzí profil), historické nastavenie však nie je potvrdené; (b) `messages-peer-profile.spec.ts:139` a '
+              '`:157`: samotné súkromie pôvodný pád nevysvetľuje (existujúca konverzácia môže ostať dostupná aj so súkromným účtom a '
+              'príprava zlyhala ešte pred otvorením profilu), takže (b) ostáva nevysvetlené; (c) `profile-entry-scroll.spec.ts:218` a '
+              '`:237`: súkromie môže výsledok ovplyvniť, lebo test kontroluje vlastníka ponuky, nie autora príspevku, a ak ju zdieľal '
+              'súkromný druhý účet, príspevok môže byť správne skrytý (historické dôkazy autora neurčujú). Pády sa neoznačujú za '
+              'nestabilitu prostredia a automaticky sa neuzatvárajú. Návrh Codexa: celý beh po potvrdení nasadenia v okne bez zmien '
+              '(osobitne sledovať `mobile-settings-navigation.spec.ts` a `mobile-settings-offer-watch-motion.spec.ts`). Návrh agenta: '
+              'doplniť do `requirePeerConversation` diagnostiku (koľko konverzácií na prvej stránke prešlo každou podmienkou, len '
+              'počty) a bez zmeny testov zistiť (áno alebo nie), či hlavný E2E účet vidí profil `E2E_PEER_SLUG`.',
          dec=None, src='vetva 151'),
     dict(n=211, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='tri rôzne záložné texty pre názov otváracích hodín',
          what='Kľúč `skills.openingHours.title` má v kóde tri rôzne záložné texty: „Otváracia doba“ (`OpeningHoursModal.tsx`, '
@@ -436,7 +440,9 @@ NEW_ITEMS = [
          note='Návrh: najprv vyčistiť `no-unused-vars` a `no-explicit-any`, potom zapínať vypnuté pravidlá po jednom (najprv `purity`, '
               '`immutability`) a lint zapojiť do CI s prahom chýb. `npm ci` hlási, že `eslint@9.39.5` už nie je podporovaný; '
               '`eslint-config-next` 16 vyžaduje `eslint >=9.0.0`, takže povýšenie na novšiu hlavnú verziu je samostatný malý krok. Kolega ho nahlásil znova (5. 11. 2026); ostatné '
-              'zastarané balíky v `package-lock.json` sú v nálezu 238.',
+              'zastarané balíky v `package-lock.json` sú v nálezu 238. Doplnok z K12 (8. 11. 2026): AST sken kolegu našiel 37 zápisov '
+              '`ref.current` počas renderu v 27 súboroch (36 priamych); pravidlo `react-hooks/refs` je vypnuté v `eslint.config.mjs` '
+              '(riadok 13). Nález 292 opravil jedno takéto miesto (K11).',
          dec=None, src='vetva 159'),
     dict(n=229, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          kratko='5 stredných zraniteľností v build nástroji Sentry (frontend)',
@@ -448,7 +454,10 @@ NEW_ITEMS = [
               'to nie je oprava. Čakať na novšiu verziu `@sentry/nextjs`, ktorá bundler plugin aktualizuje, a medzitým ich viesť ako známu '
               'výnimku v kontrole z nálezu 194. Doplnené 5. 11. 2026: v produkčnom strome je aj `@opentelemetry/sdk-trace-base` 2.12.0 '
               '(cez `@sentry/node`, `@sentry/node-core` a `@sentry/opentelemetry`), ktorý je v `package-lock.json` označený ako '
-              'zastaraný; vymení ho tá istá aktualizácia `@sentry/nextjs`, viď nález 238.',
+              'zastaraný; vymení ho tá istá aktualizácia `@sentry/nextjs`, viď nález 238. Doplnok z K12 (8. 11. 2026): `glob` a `minimatch` sú '
+              'moderate, takže pri prahu `high` (`--npm-level high` v `dependency-audit.yml`) ich týždenný audit nehlási a vo výnimkách '
+              'nie sú; ak sa prah zníži na `moderate`, treba ich pridať do `.github/dependency-audit-exceptions.json` s podmienkou '
+              '„zatvorí nález 229“.',
          dec=None, src='vetva 159'),
     dict(n=230, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
          kratko='prechod z webpacku na Turbopack (Next 16)',
