@@ -19,6 +19,7 @@ type PushMessagesStatusProps = {
  * stránky poskočil). Text sa ukáže až vtedy, keď kontrola prehliadača alebo ukladanie trvá aspoň 200 ms, takže rýchla
  * kontrola nepreblikne. Úvodné načítanie sem nepatrí, ukazuje ho kostra voľby. Chyba je samostatný riadok pod ním;
  * je to skutočný obsah, ktorého výšku vopred nepoznáme, takže ju nemožno vyhradiť, no vloží sa s krátkym prechodom.
+ * Pridáva sa do stránky až po zlyhaní, preto má `role="alert"`: obyčajný odsek by čítač obrazovky neoznámil.
  */
 export default function PushMessagesStatus({
   loading,
@@ -38,7 +39,9 @@ export default function PushMessagesStatus({
         {showLoading ? loadingLabel : null}
       </p>
       {error && (
-        <p className="animate-content-in mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p role="alert" className="animate-content-in mt-2 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
       )}
     </>
   );

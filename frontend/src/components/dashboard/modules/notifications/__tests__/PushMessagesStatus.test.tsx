@@ -111,6 +111,22 @@ describe('PushMessagesStatus', () => {
     expect(statusLine().nextElementSibling).toBe(error);
   });
 
+  it('chyba sa pridá do stránky až po zlyhaní, preto je to upozornenie, ktoré čítač obrazovky oznámi', () => {
+    const { rerender } = render(
+      <PushMessagesStatus loading={false} loadingLabel="Načítavam..." error={null} />,
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    rerender(
+      <PushMessagesStatus loading={false} loadingLabel="Načítavam..." error="Push je zablokovaný." />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Push je zablokovaný.');
+    // Stavový riadok „Načítavam…“ ostáva zdvorilý stavový región, nie upozornenie.
+    expect(statusLine()).toHaveAttribute('role', 'status');
+    expect(statusLine()).not.toHaveAttribute('role', 'alert');
+  });
+
   it('chyba sa vloží s krátkym prechodom, nie skokom', () => {
     render(
       <PushMessagesStatus loading={false} loadingLabel="Načítavam..." error="Push je zablokovaný." />,

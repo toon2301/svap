@@ -259,6 +259,8 @@ describe('NotificationSettingsModule: úvodné načítanie (nález 286)', () => 
       expect(within(box).queryByTestId('notifications-push-skeleton-mobile')).not.toBeInTheDocument();
       expect(within(box).getAllByRole('button')).toHaveLength(2);
       expect(within(box).getByText('Nepodarilo sa nacitat nastavenia upozorneni.')).toBeInTheDocument();
+      // Chyba sa pridá do stránky až po zlyhaní, preto musí byť upozornením, ktoré čítač obrazovky oznámi.
+      expect(within(box).getByRole('alert')).toHaveTextContent('Nepodarilo sa nacitat nastavenia upozorneni.');
     });
     consoleError.mockRestore();
   });
