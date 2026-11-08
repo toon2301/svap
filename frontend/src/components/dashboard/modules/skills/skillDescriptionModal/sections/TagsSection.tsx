@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Hook na detekciu mobilnej verzie
@@ -72,6 +73,10 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
     !localTags.some((tag) => tag.toLowerCase() === candidate.toLowerCase()) &&
     localTags.length < 5;
 
+  /**
+   * Pridá zadaný tag, ak je platný, a vráti nový zoznam. Neplatný tag (dlhý, duplicitný) ukáže ako chybu pod poľom,
+   * pri limite piatich tagov ukáže toast; v oboch prípadoch tag nepridá a vráti `null`.
+   */
   const addTag = (): string[] | null => {
     const c = normalizeTag(tagInput);
     if (!c) return localTags;
@@ -84,7 +89,7 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
       return null;
     }
     if (localTags.length >= 5) {
-      alert(t('skills.maxTagsAlert', 'Môžeš pridať maximálne 5 tagov.'));
+      toast.error(t('skills.maxTagsAlert', 'Môžeš pridať maximálne 5 tagov.'));
       return null;
     }
     const nextTags = [...localTags, c];

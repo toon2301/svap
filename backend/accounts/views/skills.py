@@ -4,6 +4,7 @@ Skills views pre Swaply
 
 import os
 from time import perf_counter
+from django.conf import settings as django_settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -74,6 +75,16 @@ def _has_reached_card_limit(*, user, is_seeking, exclude_id=None) -> bool:
     if exclude_id is not None:
         queryset = queryset.exclude(id=exclude_id)
     return queryset.count() >= MAX_SKILLS_PER_TYPE
+
+
+def _offer_images_use_storage_upload() -> bool:
+    """Idú fotky ponúk cez úložisko (S3: `upload-init` a `upload-complete`), nie cez starý multipart endpoint?
+
+    Rozhoduje nastavený bucket, rovnako ako v `skills_upload.py`. Bez bucketu (lokálny vývoj, testy) ostáva starý
+    endpoint vývojovou zálohou. Je to samostatná funkcia, lebo `skill_images_view` má lokálne importy `settings`
+    a čítanie `settings` skôr než sa vykonajú by spadlo na `UnboundLocalError`.
+    """
+    return bool(getattr(django_settings, "AWS_STORAGE_BUCKET_NAME", None))
 
 
 @api_view(["GET", "POST"])
@@ -319,7 +330,8 @@ def skills_detail_view(request, skill_id):
 def skill_images_view(request, skill_id):
     """
     GET: Zoznam obrázkov pre zručnosť používateľa
-    POST: Upload nového obrázka (multipart/form-data, pole: image)
+    POST: Upload nového obrázka (multipart/form-data, pole: image); len vývojová záloha bez úložiska.
+    Keď je nastavený bucket, vráti 400 a nič neuloží (nález 301).
     """
     try:
         skill = OfferedSkill.objects.get(id=skill_id, user=request.user)
@@ -336,6 +348,17 @@ def skill_images_view(request, skill_id):
         )
 
     # POST upload
+    # S nastaveným bucketom (produkcia) by sa súbor uložil mimo prefixu `media/`, ktorý je verejný, takže by bol
+    # neprístupný (S3 AccessDenied), hoci server vráti 201. Fotky ponúk tam idú cez úložisko (nález 301).
+    if _offer_images_use_storage_upload():
+        return Response(
+            {
+                "error": "Fotky ponúk sa nahrávajú cez úložisko (upload-init a upload-complete). "
+                "Tento endpoint je len vývojová záloha bez úložiska."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     # Log pre debugging (len v development)
     import logging
 

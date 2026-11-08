@@ -1243,6 +1243,7 @@
     "modalTitle": "Prajete si prepnúť účet?",
     "change": "Zmeniť",
     "cancel": "Zrušiť",
+    "changeFailed": "Nepodarilo sa zmeniť typ účtu. Skús to znova.",
     "personalDescription": "Osobný účet je určený pre bežných používateľov, ktorí nepodnikajú. Prepnutím z firemného účtu prídete o jeho rozšírené možnosti.",
     "businessDescription": "Firemný účet je ideálny pre podnikateľov, spoločnosti a umelecké školy na prezentáciu aktivít, propagáciu služieb a komunikáciu s klientmi alebo študentmi.",
     "selectAccountType": "Zvoľte typ účtu",

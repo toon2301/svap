@@ -348,6 +348,13 @@ export default function DashboardModals({
     }
   };
 
+  /** Toast s dôvodom, prečo sa nepodarilo zmeniť typ účtu: text zo servera, inak preložený záložný text. */
+  const showAccountTypeChangeError = (error: unknown) => {
+    toast.error(
+      getApiErrorMessage(error, t('accountType.changeFailed', 'Nepodarilo sa zmeniť typ účtu. Skús to znova.')),
+    );
+  };
+
   return (
     <>
       <AccountTypeModal
@@ -365,7 +372,7 @@ export default function DashboardModals({
             setAccountType('business');
           } catch (error: unknown) {
             console.error('Error changing account type to business:', error);
-            alert(getApiErrorMessage(error, 'Nepodarilo sa zmeniť typ účtu. Skús to znova.'));
+            showAccountTypeChangeError(error);
           }
         }}
       />
@@ -385,7 +392,7 @@ export default function DashboardModals({
             setAccountType('personal');
           } catch (error: unknown) {
             console.error('Error changing account type to personal:', error);
-            alert(getApiErrorMessage(error, 'Nepodarilo sa zmeniť typ účtu. Skús to znova.'));
+            showAccountTypeChangeError(error);
           }
         }}
       />

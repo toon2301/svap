@@ -236,3 +236,59 @@ class TestSkillImageUploadContent(APITestCase):
         assert response.data["image_url"].endswith(
             OfferedSkillImage.objects.get().image.name
         )
+
+    @override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
+    def test_the_endpoint_is_disabled_when_the_storage_bucket_is_configured(self):
+        """S nastaveným bucketom (produkcia) ide nahrávanie cez úložisko; starý endpoint fotku neuloží (nález 301)."""
+        response = self._upload(_real_jpeg())
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "úložisko" in response.data["error"]
+        assert OfferedSkillImage.objects.count() == 0
+        assert not (Path(django_settings.MEDIA_ROOT) / "offers").exists()
+
+    @override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
+    def test_the_storage_message_comes_before_the_missing_image_field(self):
+        """Odmietnutie príde skôr než kontrola poľa `image`, takže klient dostane vysvetlenie, nie „pole je povinné“."""
+        response = self.client.post(self.url, {}, format="multipart")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "úložisko" in response.data["error"]
+
+    @override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
+    def test_listing_images_still_works_when_the_storage_bucket_is_configured(self):
+        """Vypnutá je len vetva POST: GET so zoznamom fotiek ponuky funguje ďalej."""
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {"images": []}
+
+    @override_settings(AWS_STORAGE_BUCKET_NAME="test-bucket")
+    def test_a_foreign_offer_is_still_not_found_when_the_storage_bucket_is_configured(
+        self,
+    ):
+        """Poradie kontrol sa nezmenilo: cudzia ponuka dostane 404 skôr než vysvetlenie o úložisku."""
+        other = User.objects.create_user(username="other", email="other@example.com")
+        foreign = OfferedSkill.objects.create(
+            user=other, category="IT", subcategory="Web"
+        )
+
+        response = self.client.post(
+            reverse("accounts:skill_images", args=[foreign.id]),
+            {"image": _real_jpeg()},
+            format="multipart",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert OfferedSkillImage.objects.count() == 0
+
+
+@pytest.mark.parametrize(
+    ("bucket", "expected"), [(None, False), ("", False), ("test-bucket", True)]
+)
+def test_the_upload_route_is_chosen_by_the_configured_bucket(bucket, expected):
+    """Starý endpoint sa vypína podľa nastaveného bucketu, rovnako ako to robí `skill_images_upload_init_view`."""
+    from accounts.views.skills import _offer_images_use_storage_upload
+
+    with override_settings(AWS_STORAGE_BUCKET_NAME=bucket):
+        assert _offer_images_use_storage_upload() is expected

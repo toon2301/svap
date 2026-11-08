@@ -1,12 +1,21 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import toast from 'react-hot-toast';
 
 import TagsSection, { type TagsSectionRef } from '../skillDescriptionModal/sections/TagsSection';
 
+/** Preklady, ktoré test dosadí: kľúč, ktorý tu nie je, vráti záložný text z kódu. */
+let mockTranslations: Record<string, string> = {};
+
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
-    t: (_key: string, defaultValue: string) => defaultValue,
+    t: (key: string, defaultValue: string) => mockTranslations[key] ?? defaultValue,
   }),
+}));
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: { error: jest.fn() },
 }));
 
 // Pomocná funkcia – nasimulovanie šírky okna pred renderom
@@ -24,6 +33,11 @@ function renderDesktop(tags: string[] = [], onChange = jest.fn()) {
   setInnerWidth(1280);
   return { result: render(<TagsSection tags={tags} onTagsChange={onChange} isOpen />), onChange };
 }
+
+beforeEach(() => {
+  (toast.error as jest.Mock).mockClear();
+  mockTranslations = {};
+});
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -83,7 +97,6 @@ describe('TagsSection – mobile', () => {
   });
 
   it('blokuje pridanie piateho+ tagu (max 5)', () => {
-    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
     const existingTags = ['a', 'b', 'c', 'd', 'e'];
     const { onChange } = renderMobile(existingTags);
 
@@ -91,7 +104,6 @@ describe('TagsSection – mobile', () => {
     // canAdd je false (tags.length >= 5) → tlačidlo disabled → klik nemá efekt
     expect(screen.getByLabelText('Pridať tag')).toBeDisabled();
     expect(onChange).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
   });
 
   it('normalizuje tag s trailing čiarkou (tag, → tag)', () => {
@@ -272,5 +284,72 @@ describe('TagsSection – synchronizácia s hodnotou od rodiča', () => {
     rerender(<TagsSection tags={['alfa']} onTagsChange={jest.fn()} isOpen />);
 
     expect(screen.getByText(/#gama/)).toBeInTheDocument();
+  });
+});
+
+// ──────────────────────────────────────────────
+// Limit piatich tagov (nález 302: toast namiesto natívneho okna)
+// ──────────────────────────────────────────────
+describe('TagsSection – limit piatich tagov', () => {
+  const FIVE_TAGS = ['a', 'b', 'c', 'd', 'e'];
+
+  it('Enter pri piatich tagoch ukáže toast, nie natívne okno, a tag nepridá', () => {
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+    const { onChange } = renderDesktop(FIVE_TAGS);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'f' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: 'Enter' });
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Môžeš pridať maximálne 5 tagov.');
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('`addTag()` cez ref vráti `null` a ukáže ten istý toast (mobilná cesta)', () => {
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+    setInnerWidth(375);
+    const ref = React.createRef<TagsSectionRef>();
+    const onChange = jest.fn();
+    render(<TagsSection ref={ref} tags={FIVE_TAGS} onTagsChange={onChange} isOpen />);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'f' } });
+
+    expect(ref.current?.addTag()).toBeNull();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Môžeš pridať maximálne 5 tagov.');
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('pri menej než piatich tagoch sa tag pridá a toast sa neukáže', () => {
+    const { onChange } = renderDesktop(['a', 'b', 'c', 'd']);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'e' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith(['a', 'b', 'c', 'd', 'e']);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('text toastu berie z prekladu `skills.maxTagsAlert`', () => {
+    mockTranslations = { 'skills.maxTagsAlert': 'Preklad zo súboru prekladov' };
+    renderDesktop(FIVE_TAGS);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'f' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: 'Enter' });
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Preklad zo súboru prekladov');
+  });
+
+  it('čiarka pri piatich tagoch ukáže ten istý toast a tag nepridá', () => {
+    const { onChange } = renderDesktop(FIVE_TAGS);
+
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'f' } });
+    fireEvent.keyDown(screen.getByLabelText('Vstup pre tagy'), { key: ',' });
+
+    expect(toast.error).toHaveBeenCalledWith('Môžeš pridať maximálne 5 tagov.');
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
