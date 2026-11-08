@@ -81,45 +81,33 @@ NEW_ITEMS_DALSIE = [
               'alebo to nechať ako pravidlo kontroly zmenených funkcií v PR a cieľ 80 % nepovažovať za pokrytie celého kódu. Súvisí s '
               'položkou DOC-03 v `docs/testing/findings-register.md`. Nahlásil kolega pri K2.',
          dec=None, src='kolega pri vetve K2'),
-    dict(n=244, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
-         kratko='nepripnuté závislosti backendu: build na Railway sa môže zmeniť bez zmeny kódu',
-         what='Incident z 5. 11. 2026 (nález 240) vznikol, lebo `backend/requirements.txt` pripína presné verzie len časti balíkov. '
-              'Rozsah alebo nič majú: `celery[redis]>=5.4,<6` (a cez neho `kombu`, `billiard`, `amqp`, `vine`), `sentry-sdk[django]>=2,<3` '
-              '(hranica pribudla vo vetve 165, nález 214; predtým bez verzie), `cryptography>=42.0.0`, `pywebpush>=2.0,<3`, `pillow-heif>=1.3,<2` a `django-anymail[resend]>=10.3,<16`, '
-              'plus všetky tranzitívne balíky. Každý nový build (Railway aj CI) môže nainštalovať inú verziu, takže sa produkcia môže '
-              'pokaziť bez zmeny kódu; CI to nezachytí, ak testy danú cestu nepoužijú.',
-         note='Návrh: zámok závislostí (napr. `pip-compile` z `requirements.in`, alebo súbor `constraints.txt` vytvorený z overeného '
-              'prostredia), ktorý používa Railway aj CI, a pravidelná (týždenná) aktualizácia zámku s celým behom testov; hodí sa k '
-              'pravidelnej kontrole zraniteľností z nálezu 194. Dočasne pomáha `celery[redis]` s pripnutým `redis` (nález 240) a nový '
-              'test `test_celery_redis_compat.py`.',
-         dec=None, src='vetva 164 (incident z nálezu 240)'),
     dict(n=245, bucket=P, imp=S_, eff=EM, pkg='Produkčná odolnosť aplikácie',
-         kratko='obnova prihlásenia v prehliadači: pri chýbajúcom CSRF cookie skončí 403, bez časového limitu a bez opakovania',
-         what='Kontrola logov Railway (majiteľ, 6. 11. 2026, pády E2E z 5. 11.) ukázala, že dvakrát skončila obnova prihlásenia '
-              '(`POST /api/token/refresh/`) kódom 403 pre chýbajúce CSRF cookie, a objavili sa aj 401. Rozbor kódu (agent, 6. 11. 2026): '
-              '(1) Server najprv overí, či neprišlo nič (hlavička ani cookie; vtedy odpovie „CSRF token missing“), a až potom Django '
-              'vyžaduje cookie `csrftoken` (`EnforceCSRFMiddleware` v `swaply/middleware.py`); hlásenie o chýbajúcom cookie teda znamená, '
-              'že hlavička `X-CSRFToken` prišla a cookie nie. (2) Prehliadač drží CSRF token aj v pamäti stránky (`csrfTokenFromResponse` '
-              'v `frontend/src/utils/csrf.ts`, 43 riadkov) a `getCsrfToken()` ho uprednostňuje pred cookie. Keď cookie zmizne alebo sa '
-              'neuloží (napr. odhlásenie posiela `Clear-Site-Data: "cookies"`, ktoré zmaže všetky cookies), obnova '
-              '(`ensureSessionRefreshed` vo `frontend/src/lib/api.ts`, 912 riadkov) token znova nenačíta a pošle hlavičku bez cookie. '
-              '(3) Ostatné zapisujúce požiadavky cez `api` dostanú po CSRF 403 jedno opakovanie s novým tokenom '
-              '(`shouldRetryWithFreshCsrf`), obnova nie: používa holý `axios` a 403 skončí ako `transient_failure`. (4) Načítanie '
-              'tokenu, samotná obnova aj kontrolná požiadavka po 401 používajú holý `axios` bez časového limitu (inštancia `api` má '
-              '30 s) a `fetchCsrfToken` zlyhanie potichu zachytí.',
-         note='Súvislosť s nálezom 223: zastavenia požiadaviek (10 až 26 s) to nevysvetľuje a nie je preukázané, že za pády E2E môže '
-              'práve toto. V zázname Codexa (29. 10. až 5. 11. 2026) sa však 401 a 403 pri obnove vyskytujú len vo WebKite (13 zo 83 '
-              'neúspešných pokusov; v Chromiu 0), pričom WebKit je engine Safari na iPhone. Ďalší krok: dôkazy z PR #229 (názvy cookies a '
-              'prítomnosť `X-CSRFToken` pri 401 a 403 na obnove) pri najbližšom behu Codexa. Ak sa potvrdí, že pri odoslanej hlavičke '
-              'cookie chýba, návrh opravy: v `csrf.ts` brať pri same-origin cookie ako zdroj pravdy (token načítať znova, keď cookie '
-              'chýba) a pridať časový limit k `fetchCsrfToken`; v `api.ts` jedno opakovanie obnovy po CSRF 403. `api.ts` má 912 '
-              'riadkov (limit 500), takže jeho zmena vyžaduje výnimku od majiteľa alebo rozdelenie súboru; oprava `csrf.ts` je možná '
-              'samostatne a testovateľná Jestom (`frontend/src/utils/__tests__/csrf.test.ts`). Zoznam majiteľa (príloha D, 6. 11. 2026) '
-              'dopĺňa: scenár „cudzí profil, približne minúta“ koreloval s reálnym produkčným výpadkom a obnova (`/api/token/refresh/`) '
-              'mohla pri výpadku alebo preťažení visieť dlho; zhoršovalo to, že „minišatúry“ (v zozname majiteľa; čítam ako miniatúry '
-              'obrázkov) idú cez Django namiesto CDN (N9). Je to hypotéza z korelácie, nie z logov, a zhoduje sa s návrhom pridať '
-              'časový limit k obnove.',
-         dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom a tabuľka Codexa (pri nálezu 223)'),
+         kratko='obnova prihlásenia: reprodukovaný defekt je opravený v K14, ostáva overenie v logoch Railway a prípadný `api.ts`',
+         what='ČIASTOČNE HOTOVÉ: oprava v `frontend/src/utils/csrf.ts` je hotová v K14 (PR #245, zlúčené 8. 11. 2026, commit '
+               '`c8b3ff3e`); `lib/api.ts` (912 riadkov) sa nemenil. Pôvodný nález: kontrola logov Railway (majiteľ, 6. 11. 2026, pády '
+               'E2E z 5. 11.) ukázala dvakrát `POST /api/token/refresh/` s kódom 403 pre chýbajúce CSRF cookie a aj 401. Rozbor kódu '
+               '(agent, 6. 11. 2026): server najprv overí, či neprišlo nič, a až potom vyžaduje cookie `csrftoken` '
+               '(`EnforceCSRFMiddleware` v `swaply/middleware.py`), takže hlásenie o chýbajúcom cookie znamená, že hlavička '
+               '`X-CSRFToken` prišla a cookie nie; prehliadač držal token aj v pamäti a `getCsrfToken()` ho uprednostňoval pred '
+               'cookie, takže keď cookie zmizla (napr. `Clear-Site-Data: "cookies"` pri odhlásení), obnova poslala hlavičku bez '
+               'cookie; `fetchCsrfToken` nemal časový limit. Oprava v K14: pri same-origin API je zdrojom pravdy cookie, ak sa v '
+               'relácii dala aspoň raz prečítať; token z pamäte bez cookie sa nepošle (`getCsrfToken()` vráti `undefined`) a obnova v '
+               '`api.ts` si vyžiada nový; cross-origin a HttpOnly cookie sa nemenia; `fetchCsrfToken` má limit 15 s (zvolený podľa '
+               'zastavení 10 až 26 s z nálezu 223). `csrf.ts` má teraz 84 riadkov. Overenie podľa kolegu: 15 nových testov (4 so '
+               'skutočným `api.ts`), mutácie 16 z 16; CI prešlo. OSTÁVA: (1) Príčina 403 vo WebKite nie je preukázaná: opravený je '
+               'reprodukovaný defekt, no že práve on spôsobuje 403 na iPhone, sa nepotvrdilo; dôkazy z diagnostiky v PR #229 (názvy '
+               'cookies a prítomnosť `X-CSRFToken` pri 401 a 403 na obnove) stále chýbajú. (2) Po nasadení spočítať v logoch Railway '
+               '`POST /api/token/refresh/` so stavom 403 za 24 až 48 h (predtým 13 zo 83 pokusov vo WebKite, teraz sa čaká okolo '
+               'nuly); ak ostanú, treba blok `[E2E-EVIDENCE]` od Codexa. (3) Do `api.ts` by patril časový limit obnovy a kontroly '
+               '`/auth/me/` po 401 a jedno opakovanie po CSRF 403; súbor má 912 riadkov (limit 500), preto to vyžaduje výnimku '
+               'majiteľa alebo rozdelenie súboru a zatiaľ sa nerobí.',
+         note='Súvislosť s nálezom 223: zastavenia požiadaviek (10 až 26 s) to nevysvetľujú a nie je preukázané, že za pády E2E môže '
+               'práve toto. V zázname Codexa (29. 10. až 5. 11. 2026) sa však 401 a 403 pri obnove vyskytujú len vo WebKite (13 zo 83 '
+               'neúspešných pokusov; v Chromiu 0), pričom WebKit je engine Safari na iPhone. Zoznam majiteľa (príloha D, 6. 11. 2026) '
+               'dopĺňa: scenár „cudzí profil, približne minúta“ koreloval s reálnym produkčným výpadkom a obnova mohla pri výpadku '
+               'alebo preťažení visieť dlho; zhoršovalo to, že „minišatúry“ (čítam ako miniatúry obrázkov) idú cez Django namiesto CDN '
+               '(N9); je to hypotéza z korelácie, nie z logov. Návrh kolegu: nález zatvoriť až po overení v logoch Railway (bod 2).',
+         dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom, tabuľka Codexa (pri nálezu 223) a K14'),
     dict(n=247, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
          kratko='klik na položku histórie sa pri písaní ruší až po odoslaní hľadania (debounce), nie hneď',
          what='Zvyšok po oprave APP-05 (K4, PR #231), nahlásil kolega: klik na položku histórie ruší predchádzajúce hľadanie aj klik cez '
