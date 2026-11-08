@@ -1243,6 +1243,7 @@
     "modalTitle": "Szeretné átváltani a fiókot?",
     "change": "Módosítás",
     "cancel": "Mégse",
+    "changeFailed": "A fiók típusát nem sikerült módosítani. Kérjük, próbálja újra.",
     "personalDescription": "A személyes fiók a nem vállalkozó, hétköznapi felhasználóknak készült. Ha átváltasz a céges fiókról, elveszíted annak bővített lehetőségeit.",
     "businessDescription": "A céges fiók ideális vállalkozóknak, cégeknek és művészeti iskoláknak a tevékenységek bemutatására, a szolgáltatások népszerűsítésére és az ügyfelekkel vagy diákokkal való kapcsolattartásra.",
     "selectAccountType": "Válasszon fióktípust",

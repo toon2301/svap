@@ -1243,6 +1243,7 @@
     "modalTitle": "Czy chcesz przełączyć konto?",
     "change": "Zmień",
     "cancel": "Anuluj",
+    "changeFailed": "Nie udało się zmienić typu konta. Spróbuj ponownie.",
     "personalDescription": "Konto osobiste jest przeznaczone dla zwykłych użytkowników, którzy nie prowadzą działalności. Przełączenie z konta firmowego spowoduje utratę jego rozszerzonych możliwości.",
     "businessDescription": "Konto firmowe jest idealne dla przedsiębiorców, firm i szkół artystycznych, aby prezentować działalność, promować usługi i komunikować się z klientami lub uczniami.",
     "selectAccountType": "Wybierz typ konta",

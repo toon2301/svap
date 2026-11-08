@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '../../../lib/api';
 import { resolveNewOfferDraftCountry } from '@/shared/offerCountryPreference';
@@ -249,6 +250,10 @@ export function useSkillsModals(): UseSkillsModalsResult {
     [toLocalSkill]
   );
 
+  /**
+   * Zmaže fotku ponuky na serveri a vráti obnovený zoznam jej fotiek. Pri chybe ukáže toast (text zo servera, inak
+   * preklad `skills.imageDeleteFailed`) a chybu hodí ďalej, lebo podľa nej volajúci pozná, že zmazanie neprešlo.
+   */
   const handleRemoveSkillImage = useCallback(
     async (skillId: number, imageId: number) => {
       try {
@@ -262,14 +267,18 @@ export function useSkillsModals(): UseSkillsModalsResult {
         }
         return refreshed.images ?? [];
       } catch (error: any) {
-        const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Odstránenie obrázka zlyhalo';
-        alert(msg);
+        const msg =
+          error?.response?.data?.error ||
+          error?.response?.data?.detail ||
+          t('skills.imageDeleteFailed', 'Odstránenie obrázka zlyhalo.');
+        toast.error(msg);
         throw error;
       }
     },
-    [fetchSkillDetail, setSelectedSkillsCategory]
+    [fetchSkillDetail, setSelectedSkillsCategory, t]
   );
 
+  /** Zmaže štandardnú kartu na serveri aj zo zoznamu; pri chybe ukáže toast a zoznam nechá, chybu nehádže. */
   const removeStandardCategory = useCallback(
     async (index: number) => {
       const item = standardCategories[index];
@@ -283,12 +292,13 @@ export function useSkillsModals(): UseSkillsModalsResult {
           error?.response?.data?.error ||
           error?.response?.data?.detail ||
           t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.');
-        alert(msg);
+        toast.error(msg);
       }
     },
     [standardCategories, t]
   );
 
+  /** Zmaže vlastnú kartu na serveri aj zo zoznamu; pri chybe ukáže toast a zoznam nechá, chybu nehádže. */
   const removeCustomCategory = useCallback(
     async (index: number) => {
       const skill = customCategories[index];
@@ -302,7 +312,7 @@ export function useSkillsModals(): UseSkillsModalsResult {
           error?.response?.data?.error ||
           error?.response?.data?.detail ||
           t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.');
-        alert(msg);
+        toast.error(msg);
       }
     },
     [customCategories, t]

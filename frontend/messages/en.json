@@ -1243,6 +1243,7 @@
     "modalTitle": "Do you want to switch account?",
     "change": "Change",
     "cancel": "Cancel",
+    "changeFailed": "Failed to change the account type. Please try again.",
     "personalDescription": "A personal account is intended for regular users who are not conducting business. Switching from a business account will remove its advanced features.",
     "businessDescription": "A business account is ideal for entrepreneurs, companies, and art schools to showcase their activities, promote services, and communicate with clients or students.",
     "selectAccountType": "Select account type",
