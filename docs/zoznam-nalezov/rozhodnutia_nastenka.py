@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R28: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R30: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
-pre testy?) a R28 (vstupné animácie modulov na mobile).
+pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky) a R30 (starý multipart endpoint ponúk).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27 a R28 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026 a R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R30 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026 a R25 a R26
 7. 11. 2026.
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
 """
@@ -124,4 +124,21 @@ DECISIONS_NASTENKA = [
                      'modulu (bez fadu z 0 pri návrate a pri „Znížiť pohyb“) je lacnejší než oprava po moduloch; `FeedPostCard.tsx` '
                      '(1 033 riadkov) a profilové sekcie nad 500 riadkov by vyžadovali výnimku.',
          kedy='Pred prácou na 287 a 288 (289 je samostatná oprava, rozhodnutie ju ovplyvní len čiastočne).'),
+    dict(id='R29', tema='Animované obrázky (298, 299)',
+         otazka='Majú ponuky, avatary a správy podporovať animované obrázky (animovaný WebP, APNG, GIF), alebo sa má všade ukladať statická '
+                'snímka?',
+         odporucanie='Pri štarte nie: ponuky, avatary aj správy ostanú so statickou prvou snímkou (dnešné správanie hlavnej cesty cez S3 aj '
+                     'zdieľanej funkcie `strip_image_metadata`). Je to jednotné a jednoduché; animácie majú zmysel skôr v správach a to až '
+                     'podľa spätnej väzby. Nálezy 298 a 299 sa potom zatvoria ako zámer a kód z K12 pre animované obrázky starého endpointu '
+                     'ostane len, ak ostane endpoint (R30).',
+         kedy='Pred prácou na 298 a 299.'),
+    dict(id='R30', tema='Starý multipart endpoint ponúk (301, 300)',
+         otazka='Čo s endpointom `POST /api/auth/skills/<id>/images/`, ktorý UI na produkcii nevolá (tam ide S3) a ktorého fotky sú na '
+                'produkcii neprístupné (nález 301)? (a) v produkcii ho vypnúť, keď je S3 nakonfigurované, a ponechať ako vývojovú zálohu; '
+                '(b) zrušiť ho aj s vývojovou zálohou vo frontende a kódom z K12; (c) opraviť ukladanie do verejného prefixu `media/`.',
+         odporucanie='(a): najmenšia zmena a odstráni plochu, cez ktorú sa priamym volaním dajú vytvárať neprístupné „schválené“ fotky a osirelé '
+                     'objekty v S3; vývojová záloha pre lokálny beh bez S3 ostane, rovnako ako úpravy z K12 (EXIF, názov, animácia). (b) je '
+                     'čistejšie, no vyžaduje lokálnu náhradu nahrávania pri vývoji (ako má portfólio). (c) sa neodporúča: obchádza '
+                     'spracovanie cez S3 (WebP, stavy pending a approved).',
+         kedy='Pred prácou na 301 (K13).'),
 ]

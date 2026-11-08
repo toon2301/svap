@@ -120,19 +120,6 @@ NEW_ITEMS_DALSIE = [
               'obrázkov) idú cez Django namiesto CDN (N9). Je to hypotéza z korelácie, nie z logov, a zhoduje sa s návrhom pridať '
               'časový limit k obnove.',
          dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom a tabuľka Codexa (pri nálezu 223)'),
-    dict(n=246, bucket=P, imp=N, eff=EM, pkg='Produkčná odolnosť aplikácie',
-         kratko='rovnaký súbeh zdieľania a zmazania aj pri ponuke a položke portfólia (zmazanie skončí chybou)',
-         what='Sonda na PostgreSQL 16 (agent, 6. 11. 2026; dočasný test, nie je v repozitári): keď sa počas zmazania ponuky '
-              '(`OfferedSkill`) alebo položky portfólia (`PortfolioItem`) potvrdí zdieľanie tohto obsahu (`FeedPost.shared_offer` a '
-              '`shared_portfolio_item`, obe `SET_NULL`), zdieľanie dopadne 201 a zmazanie padne na `IntegrityError` (porušenie cudzieho '
-              'kľúča pri COMMIT), teda v API na HTTP 500. Je to ten istý mechanizmus ako pri nálezu 232, ktorý je opravený len pre '
-              'zdieľanie príspevku. Zmazanie ponuky je v `accounts/views/skills.py` (`skill.delete()`), zmazanie položky portfólia v '
-              '`portfolio/views.py` (`item.delete()`); sonda volala `delete()` priamo cez ORM, takže cestu cez API nemerala.',
-         note='Dopad je malý (musia sa prekryť dve akcie dvoch používateľov), no 500 je nesprávna odpoveď. Návrh: rovnaký zámok ako '
-              'pri nálezu 232. `FeedPost.save()` nech pri vzniku zdieľania zamkne (`select_for_update`) aj ponuku alebo položku '
-              'portfólia, na ktorú kľúč ukazuje, obe zmazania nech zamknú riadok pred `delete()` a pribudne test súbehu s dvoma '
-              'vláknami na PostgreSQL pre každý druh (rovnaký postup ako `accounts/test/test_feed_share_delete_race.py`).',
-         dec=None, src='vetva 165 (sonda pri nálezu 232)'),
     dict(n=247, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
          kratko='klik na položku histórie sa pri písaní ruší až po odoslaní hľadania (debounce), nie hneď',
          what='Zvyšok po oprave APP-05 (K4, PR #231), nahlásil kolega: klik na položku histórie ruší predchádzajúce hľadanie aj klik cez '

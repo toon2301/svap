@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 251: položky zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka; 251 až 269) a nálezy,
-ktoré pribudli po ňom (270 až 295: kolega pri K6 až K10, manuálne testy majiteľa z 7. 11. 2026 a analýza Codexu; hotové nálezy
-(270, 271, 273, 274, 276, 277 a 281) sú v `hotove_dalsie.py` a 275 je zatvorený rozhodnutím R25 v `zatvorene_dalsie.py`).
+ktoré pribudli po ňom (270 až 304: kolega pri K6 až K12, manuálne testy majiteľa zo 7. a 8. 11. 2026 a analýza Codexu; hotové
+nálezy (270, 271, 273, 274, 276, 277, 279, 281, 282, 291, 292 a 293) sú v `hotove_dalsie.py` a 275 je zatvorený rozhodnutím R25 v
+`zatvorene_dalsie.py`).
 
 PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, preto sa každá položka porovnala s týmto zoznamom a s
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
@@ -225,25 +226,6 @@ NEW_ITEMS_NASTENKA = [
               'Odstrániť pri delení súboru (TECH-01…11), spolu so zvyškom starej vetvy „prepnúť na profil s edit módom“ vo '
               '`handleUserUpdate`, ktorá po oprave 271 platí už len pre moduly, ktoré nie sú sekciou Nastavení.',
          dec=None, src='K7 (kolega)'),
-    dict(n=279, bucket=P, imp=N, eff=ES, pkg='Zdieľanie a obrázky',
-         kratko='zlyhaná fotka ukáže prázdnu (v tmavom režime čiernu) plochu bez ikony a textu; ručný test po K10 neprešiel',
-         what='ČIASTOČNE HOTOVÉ: K10 (PR #239, zlúčené 7. 11. 2026, commity `0025c124` a `a6513c0d`) doplnil `onError` na všetkých šiestich '
-              'miestach, kde ho `BlurredContainImage` nemal. Karusel príspevku (`feed/FeedPostImageCarousel.tsx`) ukáže neutrálnu plochu '
-              'rovnakého rozmeru (nový `shared/ImageLoadFailed.tsx`) a počítadlo sa nemení; karusel ponúk (`shared/OfferImageCarousel.tsx`, '
-              'oba varianty, aj cover) zlyhanú fotku preskočí a „Bez fotografie“ ukáže až pri zlyhaní všetkých; portfólio: karta a detail '
-              'ukážu „Bez titulnej fotky“, dlaždica galérie neutrálnu plochu a jej tlačidlá ostávajú; Obľúbené ukážu iniciály (nový '
-              '`FavoriteAvatar`). Oprava podľa CodeRabbitu (`a6513c0d`): referencia s počtom fotiek v karuseli ponúk sa aktualizuje v '
-              'efekte, nie počas renderu. Overenie podľa kolegu: 21 nových testov a 13 mutácií zachytili testy. OSTÁVA: ručný test '
-              'majiteľa 7. 11. 2026 po K10 NEPREŠIEL. V Chrome DevTools zablokoval požiadavku na fotku príspevku '
-              '(`/api/auth/feed/posts/<id>/images/<id>/file/?variant=large`, stav `blocked`), po obnovení Nástenky sa fotka nenačítala a '
-              'namiesto neutrálnej náhrady sa ukázala veľká prázdna čierna plocha (snímka majiteľa). Zodpovedá to kódu: `ImageLoadFailed` je '
-              'len obdĺžnik s pozadím `bg-gray-100` (v tmavom režime `bg-[#0e0e0f]`), bez ikony a textu. Majiteľ očakáva viditeľný '
-              'neutrálny placeholder (nie prázdnu čiernu plochu) a správne počítadlo fotiek, ak je relevantné.',
-         note='Návrh: náhrada na mieste zlyhanej fotky musí byť viditeľná: ikona a krátky text (napr. „Fotku sa nepodarilo načítať“; nový '
-              'preklad vo všetkých šiestich jazykoch) v `shared/ImageLoadFailed.tsx`, ktorý používa karusel príspevku aj dlaždica galérie '
-              'portfólia; rozloženie a počítadlo ostávajú, v tmavom aj svetlom režime. Test: zlyhanie načítania ukáže text náhrady. '
-              'Súvisí s 91, 291 (lightboxy) a 292 (zápis do `ref` v `BlurredContainImage`).',
-         dec=None, src='K7 (kolega), čiastočne K10 a manuálny test majiteľa, 7. 11. 2026'),
     dict(n=280, bucket=A, imp=N, eff=ES, pkg='Navigácia – drobnosti',
          kratko='mobil: priamy vstup na adresu sekcie Nastavení nastaví `isRightSidebarOpen = true`, vstup zo zoznamu nie',
          what='Kolega pri K7: na mobile priamy vstup na adresu sekcie Nastavení nastaví `isRightSidebarOpen = true`, kým vstup zo zoznamu '
@@ -251,19 +233,6 @@ NEW_ITEMS_NASTENKA = [
          note='Súvisí s 271: v stave „profil + otvorený pravý panel“ sa skrýva spodný panel. Treba overiť na mobile priamy vstup na adresy '
               'sekcií Nastavení (nová karta, odkaz): či sa spodný panel a Späť správajú rovnako ako po vstupe zo zoznamu.',
          dec=None, src='K7 (kolega)'),
-    dict(n=282, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
-         kratko='starý multipart endpoint ponúk ukladá originál aj s polohou GPS',
-         what='Kolega pri K10 (sonda, 7. 11. 2026): starý multipart endpoint `POST /api/auth/skills/<id>/images/` v `accounts/views/skills.py` '
-              '(450 riadkov) ukladá originál obrázka aj s polohou GPS. Sonda: JPEG s GPS dostal HTTP 201, stav schválený a GPS bola v '
-              'uloženom súbore. Endpoint po `validate_image_file` uloží súbor priamo do `OfferedSkillImage`, bez `strip_image_metadata`, ktorý '
-              'používajú avatary (`accounts/avatar_images.py`) a správy (`messaging/services/messages.py`). Frontend ho volá len ako '
-              'vývojovú zálohu pri nenakonfigurovanom úložisku (`lib/offerImageUpload.ts`), no server je dostupný aj priamym volaním.',
-         note='Dopad: poloha používateľa zostane v súbore fotky ponuky (EXIF); vyžaduje priame volanie API prihláseným používateľom. '
-              'Návrh: prejsť cez `strip_image_metadata` ako avatary a správy (vývojová záloha ostane funkčná), alebo endpoint zrušiť '
-              '(vtedy treba upraviť aj vývojovú zálohu vo `lib/offerImageUpload.ts`). Test: JPEG s GPS sa uloží bez GPS. Neoverené: či '
-              'rovnaké platí pre lokálne nahrávanie portfólia (`portfolio/local_upload_views.py`). Súvisí s 193 (K10 uzavrel GPS pri '
-              'správach).',
-         dec=None, src='K10 (kolega)'),
     dict(n=283, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
          kratko='prázdny stav ponúk v profile bliká jednu snímku pri každom pripojení',
          what='Kolega pri K8 a K9: prázdny stav ponúk v profile bliká jednu snímku pri každom pripojení komponentu. Príčina: počiatočné '
@@ -329,46 +298,6 @@ NEW_ITEMS_NASTENKA = [
               '(„Nepodarilo sa načítať profil používateľa.“ s tlačidlom „Skúsiť znova“), takže zmena textu pre 404 sa s ňou nezrazí. '
               'Odhad kolegu: nízky · S.',
          dec=None, src='K8 (kolega)'),
-    dict(n=291, bucket=P, imp=N, eff=EM, pkg='Zdieľanie a obrázky',
-         kratko='lightboxy bez `onError`; asi 34 zo 44 súborov s `<img>` nemá `onError` (hrubý počet)',
-         what='Kolega pri K10: `shared/ImageLightbox.tsx` (342 riadkov) a `shared/OfferImageGalleryLightbox.tsx` (345 riadkov) nemajú '
-              '`onError`, takže zlyhaná fotka na celú obrazovku ukáže pokazený obrázok. Hrubé počítanie agenta (netriedené, bez testov): '
-              '34 zo 44 súborov s `<img>` v `frontend/src` nemá `onError` (kolega uvádza asi 35), vrátane avatarov a ikon, kde to nemusí '
-              'vadiť.',
-         note='Dokončenie 279 pre fotku na celú obrazovku. Návrh: lightboxy dostanú rovnakú viditeľnú náhradu ako po oprave 279; ostatné '
-              'súbory najprv roztriediť (avatary a ikony zlyhanie zvyčajne nepotrebujú). Odhad kolegu: nízky · M. Časť 36 (drobnosti '
-              'lightboxov, riešia sa s 92) je samostatná.',
-         dec=None, src='K10 (kolega)'),
-    dict(n=292, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
-         kratko='zápis do `ref.current` počas renderu v `BlurredContainImage.tsx:39`',
-         what='Kolega pri K10: `shared/BlurredContainImage.tsx` (70 riadkov) zapisuje `onErrorRef.current = onError;` počas renderu (riadok '
-              '39). Je to rovnaký vzor, ktorý CodeRabbit s React Doctorom (`no-ref-current-in-render`) hlásil v karuseli ponúk (PR #239, '
-              'opravené v `a6513c0d`). Pochádza z K7 (nález 91), takže je mimo diffu K10 a CodeRabbit ho nehlásil.',
-         note='Oprava je rovnaká ako v karuseli ponúk: zápis presunúť do efektu. Odhad kolegu: nízky · S.',
-         dec=None, src='K10 (kolega)'),
-    dict(n=293, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky',
-         kratko='chyba nahrávania fotky ponuky ukáže natívne `alert()` namiesto toastu; v rade portfólia chýba toast pri neplatnom type',
-         what='Majiteľ pri manuálnom teste po K10 (7. 11. 2026): pri pridaní fotky v nesprávnom formáte sa ukázala len chyba a mal sa '
-              'ukázať toast. Snímka majiteľa je natívne okno prehliadača „Chyba pri nahrávaní obrázka 1: Neplatný typ súboru.“ nad '
-              'formulárom ponuky (majiteľ písal o portfóliu; snímka je z okna ponúk). Agent v kóde overil dve miesta: (1) ponuky: '
-              '`uploadImagesIfNeeded` v `dashboard/DashboardModals.tsx` (481 riadkov, riadok 113) volá `alert(...)` s doslovným slovenským '
-              'textom bez prekladu, kým rovnaká logika v `hooks/useSkillSaveHandler.ts` (riadky 246 a 302; mobilná celoobrazovková '
-              'úprava ponuky) používa `toast.error` s prekladom; ukladanie ponuky tak existuje v dvoch kópiách s rôznym správaním. Rozdiel je '
-              'aj vo význame: v `DashboardModals.tsx` `uploadImagesIfNeeded` po `alert(...)` chybu hodí ďalej a vonkajší `catch` ukáže '
-              'ešte toast „Ponuku sa nepodarilo uložiť. Skús to znova.“, hoci ponuka je v tej chvíli už uložená (PATCH alebo POST '
-              'predchádza nahrávaniu fotiek) a zlyhala len fotka; mobilná cesta chybu fotky len zahlási toastom a ponuku uloží (komentár '
-              'v `useSkillSaveHandler.ts`: zlyhanie pomocných krokov sa nesmie hlásiť ako neúspešné uloženie, inak by používateľ ponuku '
-              'vytváral znova a narazil na `duplicate_offer`); '
-              '(2) portfólio: výber pri vytváraní položky (`profile/PortfolioCreatePhotoPicker.tsx`) ukáže pri neplatnom type toast, no '
-              'pridávanie fotiek do existujúcej položky (`profile/usePortfolioImageUploadQueue.ts`, 369 riadkov) ukáže len chybový riadok v '
-              'rade: súbory s neplatným typom alebo veľkosťou sa nedostanú medzi nahrávané, takže pre ne toast nevznikne.',
-         note='Návrh: v `DashboardModals.tsx` rovnaké správanie ako v `useSkillSaveHandler.ts`: chybu každej fotky zahlásiť toastom (pre '
-              'moderáciu rovnaká hláška ako tam; `toast` je v súbore už importovaný), nehádzať ju ďalej a ponuku dokončiť; a toast s '
-              'textom `portfolio.invalidPhotoType` aj v rade nahrávania portfólia. Natívne `alert(...)` je v zdrojoch na 15 miestach v 6 súboroch (bez testov): `DashboardModals.tsx` 3 '
-              '(riadky 113, 364 a 384), `useSkillsModals.ts` 3 (337 riadkov), `TagsSection.tsx` 1 (228 riadkov), `SkillsModuleRouter.tsx` 4 '
-              '(583 riadkov), `OfferReviewsView.tsx` 3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov); posledné tri '
-              'súbory sú nad 500 riadkov. Fotky sa týkajú len prvého; výmena ostatných je samostatné rozhodnutie.',
-         dec=None, src='manuálny test majiteľa, 7. 11. 2026'),
     dict(n=294, bucket=P, imp=N, eff=ES, pkg='iPhone overenia',
          kratko='ručný test pruhu pripojenia s VoiceOverom na iPhone (277)',
          what='K10 (nález 277): pruh pripojenia má `role="alert"` (výpadok) a `role="status"` s `aria-atomic="true"` (obnovenie) v stále '
@@ -386,6 +315,102 @@ NEW_ITEMS_NASTENKA = [
               'upratovaním po sebe; (2) odmietnutie BMP a TIFF (aj s príponou `.jpg`) na týchto miestach a v správach; (3) fotka príspevku '
               'sa úspešne načíta aj v účte súkromného autora (274); (4) zablokovaná alebo zmazaná fotka ukáže viditeľnú náhradu a '
               'počítadlo ostane (279). Kým E2E používa jeden prihlásený účet, opačný smer medzi dvomi účtami nie je pokrytý (209). Platí '
-              'pravidlo z `AGENTS.md`: test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať.',
+              'pravidlo z `AGENTS.md`: test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Plán Codexa '
+              '(8. 11. 2026): po celom behu najprv odmietnutie skutočných BMP a TIFF vrátane prezlečenia za `.jpg`, potom úspešné '
+              'nahrávanie s uprataním a načítanie fotiek súkromného autora a náhrady pri chybe; správy bez nepovoleného odosielania do '
+              'produkcie.',
          dec=None, src='K8, K10 (kolega) a Codex, 7. 11. 2026'),
+    dict(n=296, bucket=P, imp=N, eff=ES, pkg='Produkčná odolnosť aplikácie',
+         kratko='hromadné `QuerySet.delete()` pri zmazaní účtu obchádza zámky z 246',
+         what='Kolega pri K12: zámky z nálezu 246 platia pre zdieľanie a pre model `delete()` (`OfferedSkill`, `PortfolioItem`), no hromadné '
+              '`QuerySet.delete()` ich obchádza. Týka sa `accounts/account_deletion.py:89–90` (`OfferedSkill.objects.filter(user=user).delete()` a '
+              '`PortfolioItem.objects.filter(owner=user).delete()` pri zmazaní účtu) a podľa kolegu aj mazania cez administráciu. Ak sa obsah '
+              'mazaného účtu v tej istej chvíli zdieľa, súbeh môže skončiť HTTP 500 (rovnaký mechanizmus ako pri 232 a 246).',
+         note='Návrh kolegu: pred hromadným mazaním zamknúť riadky (`select_for_update()`) v tej istej transakcii a pridať test súbehu '
+              '(vzor `accounts/test/test_feed_share_source_delete_race.py`, len PostgreSQL). Odhad kolegu: nízky · S. `account_deletion.py` má '
+              '328 riadkov. Súbeh je veľmi zriedkavý (zmazanie účtu pri súčasnom zdieľaní jeho obsahu); zaradené PRED NASADENÍM len preto, že '
+              'ide o dokončenie 246 v tej istej oblasti.',
+         dec=None, src='K12 (kolega)'),
+    dict(n=297, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky',
+         kratko='`check:missing-translations` nie je v CI',
+         what='Kolega pri K12: `npm run check:missing-translations` (porovná kľúče v `en`, `de`, `cs`, `hu` a `pl` so `sk.json`) nie je v CI; '
+              'v `deploy.yml` beží od K12 len `check:used-translation-keys`. Dnes je skript čistý (0 chýbajúcich a 0 navyše v piatich jazykoch).',
+         note='Návrh kolegu: pridať ako druhý krok vedľa `check:used-translation-keys` v jobe `checks` (po `npm ci`); komentár v `deploy.yml`, '
+              'že tento skript sem nepatrí, treba upraviť. Skript kontroluje len prítomnosť kľúčov, nie to, či text nie je slovenská kópia '
+              '(to je nález 176). Odhad kolegu: nízky · S.',
+         dec=None, src='K12 (kolega)'),
+    dict(n=298, bucket=A, imp=N, eff=ES, pkg='Funkcie – väčšie balíky',
+         kratko='avatary a správy sploštia animovaný PNG a WebP na prvú snímku',
+         what='Kolega pri K12: zdieľané `strip_image_metadata` (`swaply/image_metadata.py`) ukladá PNG a WebP bez `save_all`, takže animovaný PNG '
+              'a WebP sa v avataroch (`accounts/avatar_images.py`) a v správach (`messaging/services/messages.py`) uložia len ako prvá snímka. '
+              'Reprodukované na vzorke s 3 snímkami (K12). Starý endpoint ponúk animáciu od K12 zachováva (`swaply/animated_image_metadata.py`).',
+         note='Návrh kolegu: rozhodnúť, či je to zámer (R29); ak nie, použiť `strip_animated_image_metadata` aj tam. Odhad kolegu: nízky · S. '
+              'Avatary a správy sú dnes konzistentné s hlavnou cestou ponúk cez S3 (nález 299), ktorá tiež ukladá statickú snímku.',
+         dec='ROZHODNUTIE R29', src='K12 (kolega)'),
+    dict(n=299, bucket=A, imp=N, eff=EM, pkg='Funkcie – väčšie balíky',
+         kratko='hlavná cesta ponúk cez S3 ukladá z GIF, WebP a APNG len prvú snímku',
+         what='Kolega pri K12: hlavná cesta cez S3 (`process_offered_skill_image` v `swaply/tasks/offer_images.py`) ukladá z GIF, WebP a APNG vždy len '
+              'prvú snímku ako statický WebP (priehľadnosť ostáva). Starý endpoint animáciu po K12 zachová, takže správanie ponúk nie je '
+              'jednotné: cez S3 (to, čo používa UI) animácia zmizne.',
+         note='Produktové rozhodnutie (R29): majú ponuky podporovať animované fotky? Odhad kolegu: nízky · M. Ak nie, zodpovedá to dnešnému '
+              'správaniu UI a netreba nič meniť (kód z K12 pre animované obrázky starého endpointu potom slúži len vývojovej zálohe, R30).',
+         dec='ROZHODNUTIE R29', src='K12 (kolega)'),
+    dict(n=300, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='telo chyby starého endpointu ponúk je Python zoznam',
+         what='Kolega pri K12: starý multipart endpoint ponúk vracia pri chybe validácie `str(ValidationError)`, takže telo odpovede je text '
+              'Python zoznamu (hranaté zátvorky a apostrofy okolo hlášky) namiesto samotnej hlášky.',
+         note='Kozmetika vývojovej zálohy; bezpredmetné, ak sa endpoint zruší alebo vypne (R30). Odhad kolegu: nízky · S.',
+         dec='ROZHODNUTIE R30', src='K12 (kolega)'),
+    dict(n=301, bucket=P, imp=N, eff=ES, pkg='Zdieľanie a obrázky',
+         kratko='fotka nahraná starým endpointom ponúk je na produkcii neprístupná (S3 `AccessDenied`)',
+         what='Majiteľ pri manuálnom teste po K12 (produkcia, Railway): fotka nahraná priamym volaním starého endpointu '
+              '`POST /api/auth/skills/<id>/images/` (súbor s osobným názvom) sa uloží podľa odpovede servera (HTTP 201, stav `approved`, '
+              '`image_url` na S3 s náhodným názvom `offers/<náhodný názov>.jpg`), no otvorenie `image_url` vráti od Amazon S3 chybu '
+              '`AccessDenied` a po obnovení testovacej ponuky sa fotka nezobrazuje. Anonymný názov súboru funguje správne; odstránenie GPS '
+              'sa ručne neoverilo, lebo výsledný súbor nie je prístupný. Bežné nahrávanie cez UI (S3) funguje a fotka sa zobrazuje.',
+         note='Agent v kóde (8. 11. 2026, nezmapované do hĺbky): endpoint ukladá do poľa `OfferedSkillImage.image` (`upload_to="offers/"`, '
+              'produkčné úložisko `S3Boto3Storage` bez ACL a s nepodpísanými adresami: `AWS_DEFAULT_ACL = None`, `AWS_QUERYSTRING_AUTH = False`), '
+              'kým S3 pipeline ukladá schválené fotky do `media/offers/<id ponuky>/…` bez ACL a serializér ich skladá ako `MEDIA_URL` + '
+              '`approved_key`. Verejné čítanie teda zrejme platí len pre prefix `media/` (nastavenie bucketu), nie pre `offers/`. Pravdepodobne to '
+              'nie je regresia K12: endpoint na produkčnom S3 zrejme nikdy nevytvoril prístupnú fotku (K12 zmenil len názov a metadáta). '
+              'Neoverené: S3 vráti `AccessDenied` aj pre neexistujúci objekt, ak chýba právo na výpis bucketu; overenie majiteľom v AWS konzole: '
+              'či objekt `offers/…` existuje a na ktoré prefixy povoľuje politika bucketu verejné čítanie. UI endpoint na produkcii nevolá '
+              '(vývojová záloha v `frontend/src/lib/offerImageUpload.ts`), takže dopad majú len priame volania. Návrh: R30 (v produkcii endpoint '
+              'vypnúť, keď je S3 nakonfigurované). Súvisí s nálezom 304 (README vs. skutočná politika bucketu). Odhad: nízky · S.',
+         dec='ROZHODNUTIE R30', src='manuálny test majiteľa po K12'),
+    dict(n=302, bucket=P, imp=N, eff=EM, pkg='Preklady a hlášky',
+         kratko='natívne `alert()` ostáva na 14 miestach v 6 súboroch (okno prehliadača namiesto toastu)',
+         what='Po K11 (nález 293) ostáva v zdrojoch 14 volaní natívneho `alert(...)` v 6 súboroch (bez testov): `useSkillsModals.ts` 3 (337 '
+              'riadkov), `DashboardModals.tsx` 2 (485 riadkov; zmena typu účtu), `TagsSection.tsx` 1 (228 riadkov), `SkillsModuleRouter.tsx` 4 '
+              '(583 riadkov), `OfferReviewsView.tsx` 3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov). Posledné tri '
+              'súbory sú nad 500 riadkov. Natívne okno prehliadača je rušivé (blokuje stránku) a texty v nich sú čiastočne bez prekladu.',
+         note='Návrh: `toast.error` namiesto `alert` s prekladmi vo všetkých šiestich jazykoch. Dá sa hneď pre šesť volaní v súboroch do 500 '
+              'riadkov (`useSkillsModals.ts`, `DashboardModals.tsx`, `TagsSection.tsx`); osem volaní v troch súboroch nad 500 riadkov '
+              'vyžaduje jednorazovú výnimku od majiteľa alebo delenie súborov (TECH-…). Odhad: nízky · M. Vzhľadová vec, preto PRED NASADENÍM.',
+         dec=None, src='K11 (kolega) a manuálny test majiteľa, 7. 11. 2026'),
+    dict(n=303, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
+         kratko='32 zo 43 súborov s `<img>` nemá `onError` (netriedené)',
+         what='Po K11 (nález 291) má `onError` len časť miest s fotkami. Hrubé počítanie agenta (8. 11. 2026, bez testov): 32 zo 43 súborov '
+              'v `frontend/src` s `<img>` nemá `onError`: avatary a ikony (napr. `MobileTopBar.tsx`, `GroupConversationAvatar.tsx`), fotky v '
+              'správach (`ConversationMessageRow.tsx`, `MessageImageLightbox.tsx`, `MessageComposerImagePreview.tsx`), karty a výsledky '
+              '(`SearchResults.tsx`, `ReviewCard.tsx`, `OfferShareMessageCard.tsx`, `ProfileShareMessageCard.tsx`) a formuláre fotiek '
+              '(`ImagesSection.tsx`, `PortfolioImageUploadItem.tsx`, `ImageWithStatusOverlay.tsx`).',
+         note='Roztriediť: avatary a ikony zlyhanie zvyčajne nepotrebujú (stačí iniciálka alebo ikona), miesta s fotkami používateľov (správy, '
+              'vyhľadávanie, recenzie) áno, a tie by sa potom zaradili PRED NASADENÍM. `MessageImageLightbox.tsx` má vlastnú triedu '
+              '`max-h-[calc(100vh-2rem)]` a je v rovnakej rodine ako 291 (K11 ho nezahrnul). Odhad: nízky · M. Pozor na súbory nad 500 '
+              'riadkov.',
+         dec=None, src='K11 (kolega) a agent, 8. 11. 2026'),
+    dict(n=304, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='README radí sprístupniť na čítanie celý S3 bucket, kým kód počíta s tým, že priame adresy fotiek sú zablokované',
+         what='Agent pri mapovaní nálezu 301 (8. 11. 2026): `README.md` (časť „S3 bucket – verejné čítanie“) radí pridať do politiky '
+              'bucketu `s3:GetObject` pre `Principal: "*"` na `arn:aws:s3:::TvojBucket/*`, teda na celý bucket (text hovorí o bucketi alebo '
+              'prefixe pre avatary, no vzor prefix neukazuje). Kód pritom na viacerých miestach predpokladá opak: `accounts/views/'
+              'feed_image_files.py`, `accounts/feed_serializers.py` a `portfolio/image_file_views.py` uvádzajú, že priama adresa S3 je '
+              'zablokovaná politikou bucketu a fotky idú cez Django. Kto by README dodržal doslovne (napríklad pri príprave nového servera, '
+              'úlohy N), sprístupní verejne aj súkromné fotky.',
+         note='Skutočná politika produkčného bucketu v repozitári nie je. Nález 301 (`offers/…` je neprístupné) naznačuje, že produkcia '
+              'README nenasleduje a verejné je len niečo (zrejme `media/` a avatary), ale to je z kódu len odhad. Návrh: majiteľ pošle '
+              'skutočnú politiku (JSON bez názvu bucketu a čísla účtu); README sa prepíše na politiku po prefixoch s tabuľkou, ktorý prefix je '
+              'verejný a ktorý nie, a odkáže sa naň z prípravy nasadenia (úlohy N) a z overenia súkromia obrázkov (266). Odhad: stredný · S.',
+         dec=None, src='agent pri mapovaní nálezu 301'),
 ]
