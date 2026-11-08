@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 251: položky zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka; 251 až 269) a nálezy,
-ktoré pribudli po ňom (270 až 303: kolega pri K6 až K12, manuálne testy majiteľa zo 7. a 8. 11. 2026 a analýza Codexu; hotové
+ktoré pribudli po ňom (270 až 304: kolega pri K6 až K12, manuálne testy majiteľa zo 7. a 8. 11. 2026 a analýza Codexu; hotové
 nálezy (270, 271, 273, 274, 276, 277, 279, 281, 282, 291, 292 a 293) sú v `hotove_dalsie.py` a 275 je zatvorený rozhodnutím R25 v
 `zatvorene_dalsie.py`).
 
@@ -376,7 +376,7 @@ NEW_ITEMS_NASTENKA = [
               'Neoverené: S3 vráti `AccessDenied` aj pre neexistujúci objekt, ak chýba právo na výpis bucketu; overenie majiteľom v AWS konzole: '
               'či objekt `offers/…` existuje a na ktoré prefixy povoľuje politika bucketu verejné čítanie. UI endpoint na produkcii nevolá '
               '(vývojová záloha v `frontend/src/lib/offerImageUpload.ts`), takže dopad majú len priame volania. Návrh: R30 (v produkcii endpoint '
-              'vypnúť, keď je S3 nakonfigurované). Odhad: nízky · S.',
+              'vypnúť, keď je S3 nakonfigurované). Súvisí s nálezom 304 (README vs. skutočná politika bucketu). Odhad: nízky · S.',
          dec='ROZHODNUTIE R30', src='manuálny test majiteľa po K12'),
     dict(n=302, bucket=P, imp=N, eff=EM, pkg='Preklady a hlášky',
          kratko='natívne `alert()` ostáva na 14 miestach v 6 súboroch (okno prehliadača namiesto toastu)',
@@ -400,4 +400,17 @@ NEW_ITEMS_NASTENKA = [
               '`max-h-[calc(100vh-2rem)]` a je v rovnakej rodine ako 291 (K11 ho nezahrnul). Odhad: nízky · M. Pozor na súbory nad 500 '
               'riadkov.',
          dec=None, src='K11 (kolega) a agent, 8. 11. 2026'),
+    dict(n=304, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='README radí sprístupniť na čítanie celý S3 bucket, kým kód počíta s tým, že priame adresy fotiek sú zablokované',
+         what='Agent pri mapovaní nálezu 301 (8. 11. 2026): `README.md` (časť „S3 bucket – verejné čítanie“) radí pridať do politiky '
+              'bucketu `s3:GetObject` pre `Principal: "*"` na `arn:aws:s3:::TvojBucket/*`, teda na celý bucket (text hovorí o bucketi alebo '
+              'prefixe pre avatary, no vzor prefix neukazuje). Kód pritom na viacerých miestach predpokladá opak: `accounts/views/'
+              'feed_image_files.py`, `accounts/feed_serializers.py` a `portfolio/image_file_views.py` uvádzajú, že priama adresa S3 je '
+              'zablokovaná politikou bucketu a fotky idú cez Django. Kto by README dodržal doslovne (napríklad pri príprave nového servera, '
+              'úlohy N), sprístupní verejne aj súkromné fotky.',
+         note='Skutočná politika produkčného bucketu v repozitári nie je. Nález 301 (`offers/…` je neprístupné) naznačuje, že produkcia '
+              'README nenasleduje a verejné je len niečo (zrejme `media/` a avatary), ale to je z kódu len odhad. Návrh: majiteľ pošle '
+              'skutočnú politiku (JSON bez názvu bucketu a čísla účtu); README sa prepíše na politiku po prefixoch s tabuľkou, ktorý prefix je '
+              'verejný a ktorý nie, a odkáže sa naň z prípravy nasadenia (úlohy N) a z overenia súkromia obrázkov (266). Odhad: stredný · S.',
+         dec=None, src='agent pri mapovaní nálezu 301'),
 ]

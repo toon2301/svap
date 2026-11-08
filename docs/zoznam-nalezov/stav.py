@@ -24,10 +24,12 @@ ZMENY = [
      'v K11 na pokyn majiteľa), 293, 282, 246 a 194; 204 je hotová v časti CI, ostáva len `ProfileModule.tsx:468`. (2) Ručný test majiteľa '
      'po K12: fotka z priamo volaného starého endpointu ponúk je na produkcii neprístupná (S3 `AccessDenied`) a v ponuke sa nezobrazí: nový '
      'nález 301; podľa kódu to zrejme nie je regresia K12 (endpoint ukladá do `offers/`, kým verejné sú schválené fotky z `media/`). '
-     '(3) Nové nálezy 296 až 303: z K12 296 (hromadné `QuerySet.delete()` obchádza zámky z 246), 297 (`check:missing-translations` nie je v '
+     '(3) Nové nálezy 296 až 304: z K12 296 (hromadné `QuerySet.delete()` obchádza zámky z 246), 297 (`check:missing-translations` nie je v '
      'CI), 298 a 299 (animované obrázky: avatary, správy a hlavná cesta cez S3 ukladajú len prvú snímku), 300 (telo chyby starého endpointu '
      'je Python zoznam); z K11 302 (14 natívnych `alert()` ostáva v 6 súboroch) a 303 (32 zo 43 súborov s `<img>` nemá `onError`, '
-     'netriedené). (4) Doplnky: 196 (nový workflow používa staršie akcie), 229 (`glob` a `minimatch` pri prahu `high` audit nehlási), 183 '
+     'netriedené); z mapovania nálezu 301 ešte 304 (`README.md` radí sprístupniť na čítanie celý S3 bucket, kým kód počíta s tým, že '
+     'priame adresy fotiek sú zablokované). (4) Doplnky: 196 (nový workflow používa staršie akcie), 229 (`glob` a `minimatch` pri prahu '
+     '`high` audit nehlási), 183 '
      '(výnimka pre pytest sa po pytest 9 ohlási ako zastaraná), 227 (37 zápisov `ref.current` počas renderu v 27 súboroch), 36 (trieda '
      '`max-h-[calc(100vh-2rem)]` fotky je v `LightboxPhoto.tsx`), 209 (re-check Codexu: súkromie môže vysvetliť (a), čiastočne (c), nie '
      '(b)) a 295 (plán Codexa). (5) Nové rozhodnutia R29 (animované obrázky) a R30 (starý endpoint ponúk). (6) Poradie prác pre kolegu: K11 '
@@ -96,10 +98,11 @@ PORADIE = [
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
             'zlúčené vo vetve 165, PR #230; 246 v K12, PR #242; ostáva 245 a 296); ďalej 185, OW-07, 244 (zámok závislostí backendu), '
-            'overenie súkromia obrázkov správ (266) a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, 225, 295; 212 je '
+            'overenie súkromia obrázkov správ (266), politika S3 bucketu v README (304) a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, '
+            '225, 295; 212 je '
             'hotová vo vetve 157, 228 v K6, 194 a časť 204 v K12)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '245', '296', 'OW-07', '244', '266', '31', '189', '209', '223', '225', '295']),
+         polozky=['185', '245', '296', 'OW-07', '244', '266', '304', '31', '189', '209', '223', '225', '295']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 289: zvyšky po 276; 287 a 288 čakajú na rozhodnutie '
             'R28), Profil a identita (81, 272), Zdieľanie a obrázky (92, 207, 301 neprístupná fotka starého endpointu ponúk), natívne '
