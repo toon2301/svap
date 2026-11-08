@@ -97,7 +97,6 @@ describe('TagsSection – mobile', () => {
   });
 
   it('blokuje pridanie piateho+ tagu (max 5)', () => {
-    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
     const existingTags = ['a', 'b', 'c', 'd', 'e'];
     const { onChange } = renderMobile(existingTags);
 
@@ -105,7 +104,6 @@ describe('TagsSection – mobile', () => {
     // canAdd je false (tags.length >= 5) → tlačidlo disabled → klik nemá efekt
     expect(screen.getByLabelText('Pridať tag')).toBeDisabled();
     expect(onChange).not.toHaveBeenCalled();
-    alertSpy.mockRestore();
   });
 
   it('normalizuje tag s trailing čiarkou (tag, → tag)', () => {
@@ -335,7 +333,6 @@ describe('TagsSection – limit piatich tagov', () => {
   });
 
   it('text toastu berie z prekladu `skills.maxTagsAlert`', () => {
-    jest.spyOn(window, 'alert').mockImplementation(() => {});
     mockTranslations = { 'skills.maxTagsAlert': 'Preklad zo súboru prekladov' };
     renderDesktop(FIVE_TAGS);
 
@@ -347,7 +344,6 @@ describe('TagsSection – limit piatich tagov', () => {
   });
 
   it('čiarka pri piatich tagoch ukáže ten istý toast a tag nepridá', () => {
-    jest.spyOn(window, 'alert').mockImplementation(() => {});
     const { onChange } = renderDesktop(FIVE_TAGS);
 
     fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'f' } });
