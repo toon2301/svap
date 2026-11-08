@@ -12,8 +12,7 @@ import NotificationSettingsModule from './modules/NotificationSettingsModule';
 import LanguageModule from './modules/LanguageModule';
 import AccountTypeModule from './modules/AccountTypeModule';
 import AccountSettingsModule, { type AccountSettingsMobileView } from './modules/AccountSettingsModule';
-import PrivacySettingsModule from './modules/PrivacySettingsModule';
-import PrivacySettingsMobileSection from './modules/PrivacySettingsMobileSection';
+import PrivacySettings from './modules/PrivacySettings';
 import BlockedUsersModule from './modules/BlockedUsersModule';
 import SkillsModuleRouter from './modules/skills/SkillsModuleRouter';
 import SearchModule from './modules/SearchModule';
@@ -219,11 +218,7 @@ function ModuleRouterContent({
   }
 
   if (isRightSidebarOpen && activeRightItem === 'privacy') {
-    return isMobile ? (
-      <PrivacySettingsMobileSection user={user} onUserUpdate={onUserUpdate} />
-    ) : (
-      <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />
-    );
+    return <PrivacySettings user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />;
   }
 
   if (isRightSidebarOpen && activeRightItem === 'account-settings') {
@@ -410,11 +405,7 @@ function ModuleRouterContent({
         />
       );
     case 'privacy':
-      return isMobile ? (
-        <PrivacySettingsMobileSection user={user} onUserUpdate={onUserUpdate} />
-      ) : (
-        <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />
-      );
+      return <PrivacySettings user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />;
     default:
       return (
         <div className="text-center py-20">
