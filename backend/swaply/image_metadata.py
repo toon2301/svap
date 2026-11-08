@@ -66,7 +66,9 @@ def strip_image_metadata(
     Vracia `ContentFile` pripravený na priradenie do `ImageField`, alebo `None`
     ak strip nie je možný/potrebný; volajúci potom rozhodne o odmietnutí alebo
     bezpečnom fallbacku. GIF sa preskakuje (nepodporuje EXIF, re-enkódovanie
-    by zničilo animáciu).
+    by zničilo animáciu). Animovaný PNG a WebP sa uložia len ako prvá snímka;
+    ak sa majú zachovať všetky snímky, volajúci použije
+    `strip_animated_image_metadata` (modul `animated_image_metadata`).
 
     `filename` (voliteľné) určuje stem výsledného názvu; default sa odvodí z
     `image.name`. Prípona sa odvíja od výstupného formátu.

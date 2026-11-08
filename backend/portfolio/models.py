@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import OfferedSkill
@@ -40,6 +40,8 @@ class PortfolioItem(models.Model):
     updated_at = models.DateTimeField(_("Aktualizovane"), auto_now=True)
 
     class Meta:
+        """Poradie položiek podľa `sort_order` a index na zoznam položiek vlastníka."""
+
         verbose_name = _("Polozka portfolia")
         verbose_name_plural = _("Polozky portfolia")
         ordering = ["sort_order", "id"]
@@ -51,9 +53,15 @@ class PortfolioItem(models.Model):
         ]
 
     def __str__(self):
+        """Názov položky s ID vlastníka."""
         return f"{self.title} ({self.owner_id})"
 
     def save(self, *args, **kwargs):
+        """Skontroluj položku pred uložením: celý zápis cez `full_clean`, `update_fields` len menené polia.
+
+        Pri čiastočnom zápise sa `clean()` (vzťahy na ponuku a titulnú fotku) spustí len vtedy, keď sa mení vlastník,
+        súvisiaca ponuka alebo titulná fotka.
+        """
         update_fields = kwargs.get("update_fields")
         if update_fields is None:
             self.full_clean()
@@ -70,6 +78,7 @@ class PortfolioItem(models.Model):
         return super().save(*args, **kwargs)
 
     def clean(self):
+        """Súvisiaca ponuka musí patriť vlastníkovi portfólia a titulná fotka musí patriť k tejto položke."""
         super().clean()
         if self.related_offer_id and self.owner_id:
             offer = self._state.fields_cache.get("related_offer")
@@ -107,7 +116,24 @@ class PortfolioItem(models.Model):
                     }
                 )
 
+    def delete(self, *args, **kwargs):
+        """Zamkni riadok položky a až potom ju zmaž, aby sa zoradila so súbežným zdieľaním (nález 246).
+
+        Zdieľanie položky vznikajúce súbežne si berie ten istý zámok (``FeedPost._lock_shared_source``), takže buď ho
+        zmazanie vidí a odpojí, alebo zdieľanie položku nenájde a dostane jasnú chybu. Bez zámku sa cudzí kľúč
+        kontroluje až pri COMMIT a jeden z requestov skončil chybou 500. View zmazania položku zamyká aj samo; zámok
+        tu platí pre každé volanie ``delete()``. Zámok drží celá transakcia zmazania, preto má vlastný
+        ``transaction.atomic``. Hromadné ``QuerySet.delete()`` túto metódu nevolá.
+        """
+        with transaction.atomic():
+            # Výsledok netreba, ide o zámok riadku (rovnaký idióm ako vo FeedPost.save()).
+            type(self).objects.select_for_update().filter(pk=self.pk).values_list(
+                "pk", flat=True
+            ).first()
+            return super().delete(*args, **kwargs)
+
     def _model_field_names(self, update_fields):
+        """Premení `update_fields` (názvy polí alebo `*_id` atribútov) na množinu názvov polí modelu; neznáme preskočí."""
         field_names = set()
         for update_field in update_fields or ():
             update_field = str(update_field)
@@ -126,6 +152,8 @@ class PortfolioImage(models.Model):
     """
 
     class Status(models.TextChoices):
+        """Stavy asynchrónneho spracovania fotky portfólia."""
+
         PENDING = "pending", _("Caka na spracovanie")
         APPROVED = "approved", _("Schvalene")
         REJECTED = "rejected", _("Zamietnute")
@@ -182,6 +210,8 @@ class PortfolioImage(models.Model):
     created_at = models.DateTimeField(_("Vytvorene"), auto_now_add=True)
 
     class Meta:
+        """Poradie fotiek v položke a index na ich filtrovanie podľa stavu."""
+
         verbose_name = _("Obrazok portfolia")
         verbose_name_plural = _("Obrazky portfolia")
         ordering = ["order", "id"]
@@ -193,6 +223,7 @@ class PortfolioImage(models.Model):
         ]
 
     def __str__(self):
+        """Fotka s ID a ID položky, ku ktorej patrí."""
         return f"Obrazok #{self.id} pre portfolio item #{self.item_id}"
 
 
@@ -214,6 +245,8 @@ class PortfolioItemLike(models.Model):
     created_at = models.DateTimeField(_("Vytvorene"), auto_now_add=True)
 
     class Meta:
+        """Jeden lajk na používateľa a položku, poradie od najnovšieho a indexy na počty a zoznamy."""
+
         verbose_name = _("Paci sa mi portfolio")
         verbose_name_plural = _("Paci sa mi portfolia")
         ordering = ["-created_at", "-id"]
@@ -235,4 +268,5 @@ class PortfolioItemLike(models.Model):
         ]
 
     def __str__(self):
+        """Lajk položky portfólia s ID používateľa."""
         return f"Like portfolia #{self.item_id} od pouzivatela {self.user_id}"
