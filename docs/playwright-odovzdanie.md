@@ -1,6 +1,14 @@
-# Playwright: odovzdanie (stav k 6. 11. 2026)
+# Playwright: odovzdanie (stav k 9. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
+
+## Aktuálny prehľad — 9. 11. 2026
+
+Zjednotené odovzdanie: celý beh na `5bf32b26` **383 PASS / 22 FAIL / 351 SKIP**,
+tri diagnostické opakovania každého nového pádu, nové dôkazy 223, doplnenie
+ku K14, návrh sedem- až osemsúborového dymu s príkazmi a podmienený test 320.
+Prijatý základ ostáva **427 / 2 / 303**; nový beh nie je prijatý. Výsledky nie
+sú opravou aplikácie a plánované testy nie sú označené za hotové.
 
 ## Ako sa beh spúšťa
 
@@ -599,6 +607,261 @@ Oprava 320 je v tomto main stále otvorená; nový test zatiaľ nie je hotový
 ani spustený. Vetva 170 nemá priamy dopad na E2E. Overenie push 318 na
 reálnom iPhone, AWS prefixov 301/304, nastavení Railway 315, rozhodnutí a
 ručných testov 279/293 nie je týmto behom vykonané ani uzavreté.
+
+### Presný zoznam 22 nových pádov a tri opakovania
+
+P = prešlo, F = padlo, S = preskočené. Všetky riadky sú **nové podľa
+presného kľúča špec/názov/projekt**, nie známe pády č. 1–4. Čísla v tabuľke
+sú iba poradie správy, nie čísla nálezov. Pôvodný celý beh má pri každom FAIL;
+opakovania ho neprepisujú. Tri SKIP nie sú tri PASS.
+
+| # | Špec | Presný názov testu | Projekt | Opakovania 1 / 2 / 3 |
+| ---: | --- | --- | --- | --- |
+| 1 | `e2e/search-mobile-cards.spec.ts` | Search mobile-card parity – light › mobile: all author returns to the exact search URL | `webkit-mobile` | P / P / P |
+| 2 | `e2e/search-mobile-cards.spec.ts` | Search mobile-card parity – light › mobile: all detail closes via backdrop and downward pointer drag | `webkit-mobile` | P / P / P |
+| 3 | `e2e/search-mobile-cards.spec.ts` | Search mobile-card parity – dark › mobile: all author returns to the exact search URL | `webkit-mobile` | P / P / P |
+| 4 | `e2e/search-mobile-cards.spec.ts` | Search mobile-card parity – dark › mobile: an existing business offer opens hours and returns to its detail | `webkit-mobile` | S / S / F |
+| 5 | `e2e/offer-watch-results-handoff.spec.ts` | Offer Watch results responsive handoff – light › mobile → desktop app Back returns directly to the exact results URL | `webkit-mobile` | P / F / P |
+| 6 | `e2e/offer-watch-results-handoff.spec.ts` | Offer Watch results responsive handoff – light › edit country picker → desktop → mobile list Back leaves the nested session without saving | `webkit-mobile` | P / P / P |
+| 7 | `e2e/offer-watch-results-handoff.spec.ts` | Offer Watch results responsive handoff – dark › mobile → desktop app Back returns directly to the exact results URL | `webkit-mobile` | P / P / P |
+| 8 | `e2e/mobile-language-header.spec.ts` | Language header – pl / light › mobile: profile-section has one centered title, no profile shortcut, and six choices | `webkit-mobile` | P / P / P |
+| 9 | `e2e/mobile-language-header.spec.ts` | Language header – pl / dark › mobile: standalone has one centered title, no profile shortcut, and six choices | `webkit-mobile` | P / P / P |
+| 10 | `e2e/search-panel-fixture.spec.ts` | Search return harness fixture geometry › offers: short real geometry is rejected before navigation; normal geometry permits deep profile entry | `webkit-mobile` | P / F / P |
+| 11 | `e2e/search-panel-fixture.spec.ts` | Search return harness fixture geometry › users: short real geometry is rejected before navigation; normal geometry permits deep profile entry | `webkit-mobile` | P / P / F |
+| 12 | `e2e/mobile-settings-offer-watch-motion.spec.ts` | the Jazyk row slides the Settings list away to the left and brings it back from the left on Back | `webkit-mobile` | P / P / P |
+| 13 | `e2e/offer-card-review-translations.spec.ts` | Offer-card review translations – pl / light › mobile: the existing offer bottom detail translates ratings without adding a review link | `webkit-mobile` | F / P / P |
+| 14 | `e2e/offer-card-translations.spec.ts` | OW-04 profile Like translation – pl / light › existing profile card exposes the translated Like control; desktop back uses the same text | `webkit-desktop` | S / S / S |
+| 15 | `e2e/offer-reviews-back.spec.ts` | cudzí profil po F5 › after a reload the arrow returns to the plain profile without a highlighted or flipped card | `webkit-desktop` | P / P / F |
+| 16 | `e2e/offer-watch-pagination-errors.spec.ts` | Offer Watch pagination errors – dark › desktop: first-page failure retries the first page without showing a false empty state | `webkit-desktop` | S / S / S |
+| 17 | `e2e/profile-block-back-home.spec.ts` | blocking from a profile opened from Favorites shows the feed, and Back or Forward right after it never show the blocked profile | `webkit-desktop` | P / P / P |
+| 18 | `e2e/search-cache-revalidation.spec.ts` | OW-20 real search cache revalidation › an identical repeat sends real HTTP while retaining the existing preview and exposing revalidation | `webkit-mobile` | P / P / P |
+| 19 | `e2e/search-country-scroll.spec.ts` | OW-18 independent search country and OW-19 result return position › typing alone automatically searches, without Enter, and uses the independent IP country | `webkit-desktop` | P / F / P |
+| 20 | `e2e/search-panel-return.spec.ts` | Search panel visibility and prompt profile returns › all: browser Back restores deep results promptly without opening the desktop panel | `webkit-desktop` | P / P / P |
+| 21 | `e2e/search-preview-tab-top.spec.ts` | Search preview Show More starts the selected tab at the top › users: Show More resets nested scroll immediately but profile Back/Forward retains deep position | `webkit-mobile` | P / P / P |
+| 22 | `e2e/search-to-offer-watches.spec.ts` | Search → Offer Watch navigation – dark › mobile: hidden desktop navigation; results guidance still opens management and returns | `webkit-mobile` | P / P / F |
+
+### Priamo priložené bezpečné dôkazy 223
+
+Oba bloky sú z diagnostických opakovaní na WK desktop. Prvý patrí k
+`offer-reviews-back` (tretie opakovanie), druhý k `search-country-scroll`
+(druhé opakovanie). Neobsahujú telá odpovedí, texty používateľov ani hodnoty
+cookies/tokenov. Príčina nezistenej prítomnosti cookies nie je preukázaná.
+
+```text
+[E2E-EVIDENCE] cudzí profil po F5 › after a reload the arrow returns to the plain profile without a highlighted or flipped card | webkit-desktop | 25.0 s
+url: /dashboard/users/:id [tab]
+page state: readyState=complete viewerReady=true loadingMarkers=0 panelAriaHidden=n/a
+document timing (ms since navigation start): domContentLoaded=247 load=537
+scroll root: scrollTop=0 scrollHeight=785 clientHeight=720
+active element: [omitted]
+requests (ms since test start):
+23  GET  /dashboard/users/:id  200  130 ms
+505  GET  /api/auth/me/  200  107 ms
+519  GET  /api/auth/dashboard/users/:id/:id/profile/  200  114 ms
+678  GET  /api/auth/dashboard/users/:id/profile/  200  93 ms
+679  GET  /api/auth/dashboard/users/:id/skills/  200  87 ms
+679  GET  /api/auth/messaging/conversations/unread-summary/  200  64 ms
+679  GET  /api/auth/notifications/unread-count/ [type]  200  65 ms
+806  GET  /api/auth/skill-requests/:other/ [:param]  200  62 ms
+868  GET  /api/auth/skill-requests/:other/ [:param]  200  65 ms
+1157  GET  /dashboard/offers/:n/reviews [_rsc,returnTo]  FAILED(failed)  14037 ms
+20811  GET  /api/auth/skill-requests/:other/ [:param]  401  56 ms
+20866  POST /api/token/refresh/  403  111 ms
+X-App-Duration-Ms: 1
+refresh cookies: žiadne
+refresh X-CSRFToken: áno
+page errors: 0 | console errors: 7
+[E2E-CONTEXT] moment=first-observed at=1794222951901 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1794222951901 runStartedAt=1794222933460 generation=1 storedAt=1794222933460 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1794222933460 attempt=0 generation=1 status=n/a errorKind=n/a
+[E2E-CONTEXT] moment=failure-observed at=1794222976899 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1794222976899 runStartedAt=1794222933460 generation=1 storedAt=1794222933460 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1794222933460 attempt=0 generation=1 status=n/a errorKind=n/a
+```
+
+```text
+[E2E-EVIDENCE] OW-18 independent search country and OW-19 result return position › typing alone automatically searches, without Enter, and uses the independent IP country | webkit-desktop | 23.1 s
+url: /dashboard
+page state: readyState=complete viewerReady=true loadingMarkers=0 panelAriaHidden=n/a
+document timing (ms since navigation start): domContentLoaded=273 load=565
+scroll root: scrollTop=0 scrollHeight=10876 clientHeight=720
+active element: [omitted]
+requests (ms since test start):
+28  GET  /dashboard  200  167 ms
+570  GET  /api/auth/me/  200  122 ms
+800  GET  /api/auth/feed/posts/  200  117 ms
+804  GET  /api/auth/messaging/conversations/unread-summary/  200  81 ms
+809  GET  /api/auth/notifications/unread-count/ [type]  200  77 ms
+1576  GET  /api/auth/dashboard/search/recommendations/ [limit]  FAILED(failed)  20105 ms
+21728  GET  /api/auth/feed/posts/:n/  200  238 ms
+21729  GET  /api/auth/notifications/unread-count/ [type]  401  236 ms
+21731  GET  /api/auth/notifications/unread-count/ [type]  401  233 ms
+21733  GET  /api/auth/messaging/conversations/unread-summary/  401  231 ms
+21962  POST /api/token/refresh/  403  1124 ms
+X-App-Duration-Ms: 1
+refresh cookies: žiadne
+refresh X-CSRFToken: áno
+22758  GET  /api/auth/dashboard/search/ [country,location,offer_type,only_my_location,price_max,price_min,q(2)]  401  336 ms
+23093  POST /api/token/refresh/  pending  …
+page errors: 0 | console errors: 12
+[E2E-CONTEXT] moment=first-observed at=1794223059750 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1794223059750 runStartedAt=1794223050411 generation=1 storedAt=1794223050411 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1794223050411 attempt=0 generation=1 status=n/a errorKind=n/a
+[E2E-CONTEXT] moment=failure-observed at=1794223082838 relation=temporal-only
+[E2E-SESSION] snapshot=available observedAt=1794223082838 runStartedAt=1794223050411 generation=1 storedAt=1794223050411 relation=temporal-only
+[E2E-SESSION] kind=initial-storage at=1794223050411 attempt=0 generation=1 status=n/a errorKind=n/a
+```
+
+## Návrh malej dymovej sady po nasadení — od K15 (9. 11. 2026)
+
+**Stav: návrh, nie nová implementovaná sada ani nameraný päťminútový beh.**
+Podklad merania je `main 5bf32b26` a dokončený celý beh z 9. 11. Nižšie je
+príkaz na výber siedmich už existujúcich špecov a cieľ následného označenia
+`@smoke`. V tejto dokumentačnej úlohe sa značky, testy ani aplikácia nemenia.
+Predchádzajúca rozpracovaná diagnostika 209 ostáva v samostatnej vetve;
+oddelená vetva tohto návrhu je `e2e/dymova-sada`.
+
+### Základ: sedem existujúcich špecov
+
+| Špec v `frontend/e2e/` | Čo skutočne overí | Zápisy a upratanie |
+| --- | --- | --- |
+| `smoke.spec.ts` | Verejný vstup, úspešná HTML odpoveď a titulok Svaply. | Bez prihlásenej relácie a bez vytvárania obsahu. |
+| `auth-session.spec.ts` | Prihlásenie cez formulár, odhlásenie, ochrana dashboardu po Back/F5 a po vyčistení cookies. | Len relácie vyhradeného účtu, žiadna zmena hesla či nastavení. |
+| `messages-peer-profile.spec.ts` | Otvorenie existujúcej konverzácie s druhým testovacím účtom, hlavička, návrat a profil. | Neodosiela správy. Otvorenie môže označiť existujúcu správu za prečítanú a zapísať návštevu profilu; preto iba dohodnuté testovacie účty. |
+| `mobile-settings-navigation.spec.ts` | Mobil: Profil → Menu → Jazyk/Upozornenia → Späť → Zatvoriť → profil. | Bez prepínania a ukladania. Zatiaľ neoveruje Súkromie, Blokované ani Sledovanie. |
+| `dashboard-history-navigation.spec.ts` | Mobilné/desktopové menu, správna URL a obsah pri Späť/Dopredu. | Nezapisuje obsah; zachovať zákaz opakovaného kliknutia na aktívne Žiadosti. |
+| `html-cache-control.spec.ts` | Prvé otvorenie aj F5 na šiestich stránkach vracajú HTML `no-store`, vrátane dashboardu. | Len skutočné GET, nie podvrhnuté API; 18 variantov na troch projektoch. |
+| `sharing-from-feed.spec.ts` | Vytvorenie dočasného zdroja, reálne zdieľanie z UI, správne pristátie na Nástenke. | Dva vlastné dočasné príspevky na projekt. Existujúci `finally` maže najprv repost, potom zdroj; kontroluje výsledky upratania. **Nie je to test nahratia fotky.** |
+
+Na zdokumentovanom celom behu mali tieto špecy spolu **51 variantov:
+41 PASS / 0 FAIL / 10 projektových SKIP**. Súčet zaznamenaných trvaní samotných
+testov bol **90 821 ms**. Nie je to trvanie samostatného dymového procesu:
+treba prirátať Docker, global setup, prehliadače, kontexty a upratanie. Cieľ
+**približne 3–5 minút** je zatiaľ odhad; pred zavedením ho zmerať jedným
+samostatným behom. Odhad nie je záruka pri otvorenom probléme 223.
+
+Z `frontend`, po potvrdení nasadenia a okna bez zlučovania, nasadení a zmien
+testovacích účtov (bez `--project` sa použijú všetky tri projekty):
+
+```powershell
+npm run test:e2e:docker -- e2e/smoke.spec.ts e2e/auth-session.spec.ts e2e/messages-peer-profile.spec.ts e2e/mobile-settings-navigation.spec.ts e2e/dashboard-history-navigation.spec.ts e2e/html-cache-control.spec.ts e2e/sharing-from-feed.spec.ts --workers=1 --retries=0
+```
+
+Tento výber je technicky spustiteľný z existujúcich špecov. **Touto úlohou sa
+proti Railway nespúšťal a nepredstavuje súhlas s ďalším zápisovým behom bez
+dohodnutého okna.** Použiť pôvodnú konfiguráciu a lokálny `.env.e2e`; nikdy ho
+nevypisovať ani nekopírovať do iného worktree či prílohy.
+
+### Cieľ: najviac osem špecov so značkou `@smoke`
+
+Po schválení návrhu označiť iba konkrétne krátke produkčné scenáre, nie celé
+rozsiahle parametrizované skupiny. WebKit desktop aj mobil ostávajú povinné,
+Chromium je kontrolný tretí projekt. Bez zmeny asercií, tolerancií a timeoutov,
+bez automatických retry. Päťminútový cieľ sa nesmie dosiahnuť vypínaním pádov.
+
+Základ zostane sedem špecov vyššie. **Ôsmy navrhovaný špec**
+`feed-photo-smoke.spec.ts` vznikne až v dohodnutej implementácii 295: syntetická
+fotka bez osobných údajov/EXIF → skutočný UI upload a publikovanie vlastného
+príspevku → vykreslený obrázok má `naturalWidth > 0` → odstránenie iba vlastného
+príspevku tohto behu. Overí sa aktuálna upload cesta aj spracovanie a doručenie
+obrázka, nie iba HTTP 200 obrázkovej URL. Pred zaradením preveriť aj upratanie
+pri nedokončenom uploade alebo neúspešnom publikovaní. Netvrdiť, že samotná
+neprítomnosť príspevku dokazuje fyzické vymazanie objektu zo S3. Portfólio,
+ponuky, odmietnutie BMP/TIFF a fotky v správach patria do širšej 295, nie do
+päťminútového dymu.
+
+**Medzera Správ:** otvorenie konverzácie nie je dôkaz nového odoslania ani
+doručenia. `backend/messaging/services/messages.py::delete_message_for_all`
+aktuálne robí soft-delete: záznam ostáva a klient ho vidí ako odstránený.
+Automatické posielanie po každom nasadení by tak nechávalo históriu odstránených
+správ. Zatiaľ ho nenavrhujem potichu zapnúť. Majiteľ musí buď výslovne schváliť
+tieto zvyšky medzi dvoma vyhradenými účtami, alebo dohodnúť riadené prostredie
+a upratanie. Potom možno doplniť/vymeniť správový scenár v jednom špecu bez
+prekročenia ôsmich súborov. Test by kontroloval serverom potvrdenú správu v UI;
+príjem druhým klientom vyžaduje druhú povolenú reláciu. **Odoslanie správy aj
+push dovtedy ostávajú súčasťou ručného dymu.** Push na skutočnom iPhone ostáva
+ručne aj po prípadnom doplnení automatického odoslania.
+
+Pri budúcom rozšírení Nastavení do dymu otvoriť aj Súkromie, Blokované a
+Sledovanie bez zmeny preferencií. `PrivacySettings` má obe rozloženia v DOM;
+duplicitné DOM/textové selektory zúžiť na viditeľné prvky. Samotný dnešný
+PASS navigácie nie je dôkazom pokrytia týchto troch sekcií.
+
+Cieľový príkaz **až po implementácii a kontrole značiek**:
+
+```powershell
+npm run test:e2e:docker -- --grep '@smoke' --workers=1 --retries=0
+```
+
+Na tomto maine ešte výber `@smoke` nie je zavedený. Názov `smoke.spec.ts`
+automaticky nie je značka. Pred prvým produkčným použitím cez `--list` overiť
+presný neprázdny výber, projekty a počty. Nesprávny či prázdny výber nie je PASS.
+
+### Podmienky úspechu, súkromie a upratanie
+
+- Pred behom preveriť určené účty a existujúcu priamu konverzáciu na prvej
+  strane; nemení sa súkromie ani prístupové práva. Neočakávaný dátový SKIP =
+  **NEOVERENÉ**, nie zelený dym. Očakávané projektové SKIP sa uvádzajú osobitne.
+- Každý nový objekt označiť jedinečnou značkou behu a ID zaradiť na upratanie
+  pred aserciami. `finally` platí aj pri páde. Pri výpadku použiť iba presnú
+  identifikáciu vlastného obsahu tohto behu, nikdy hromadné mazanie či obsah
+  iných behov. Chyba/500 pri uprataní sa neschová opakovaným mazaním; nahlásiť
+  nezaručené upratanie spolu s pôvodným pádom.
+- Diagnostika len bezpečným `[E2E-EVIDENCE]`: časy, počty, anonymné cesty a
+  HTTP stavy, vrátane existujúcich polí 223. Žiadne účty, text správ, telá
+  odpovedí, hodnoty cookies/tokenov ani surové reporty do chatu/commitu.
+- Dym nenahrádza ručný test iPhonu/PWA ani celý regresný beh. Nový pád sa
+  neposunie na PASS len opakovaním; zápisový scenár sa bez preverenia
+  upratania automaticky neopakuje. Päťminútový odhad nie je nový testový limit.
+
+### Po oprave 320: WebKit regresia farieb formulára
+
+`320` je na `5bf32b26` stále otvorený; oba vstupy
+`reset-password/[uidb64]/[token]/ResetPasswordClient.tsx` zatiaľ nemajú vlastné
+pozadie. **Až po oprave aplikácie a potvrdení nasadenia** pridať samostatný
+`reset-password-colors.spec.ts` (navrhovaný názov), `colorScheme: 'dark'`, vo
+WebKite desktop aj mobil. Overiť obe polia, svetlé skutočné pozadie/účinnú
+svetlú schému ovládacích prvkov a čitateľný text; nestačí kontrola názvu CSS
+triedy. Bez vyžiadania e-mailu, skutočného reset tokenu, odoslania formulára
+alebo zmeny hesla. Pred implementáciou preveriť bezpečný vstup formulára bez
+platného odkazu. Je to samostatná podmienená regresia, **nie deviaty špec
+pridávaný automaticky do malej sady**. V tejto úlohe nevznikol ani nebežal.
+
+Lokálne overenie návrhu: presný sedemsúborový výber s `--list` dal
+`Total: 51 tests in 7 files` (exit 0), všetkých sedem ciest existuje a
+`git diff --check` prešiel. `--list` nevykonal testy ani prihlasovací setup;
+proti Railway sa nič nespustilo. Zmenená je iba táto dokumentácia.
+
+## Stav zmien pri zjednotení reportu — 9. 11. 2026
+
+Toto odovzdanie teraz zhromažďuje výsledok behu, všetkých 22 pádov a ich
+opakovania, dôkazy 223, doplnenie K14 a návrh dymovej sady vrátane podmienky
+320. Podrobný lokálny report `C:/Projects/svap-e2e-vysledok-20261109.md` má
+takisto doplnené K14 aj dymový návrh a zachováva všetkých 20 vzniknutých
+bezpečných blokov. Nejde o surový Playwright HTML report.
+
+| Vlastná vetva / pracovný priečinok | Stav pred schválením commitu |
+| --- | --- |
+| `e2e/dymova-sada` — `C:/Projects/svap-e2e-dymova-sada` | Iba toto zjednotené `docs/playwright-odovzdanie.md`. Žiadne zmeny aplikácie ani testov. |
+| `e2e/209-diagnostika` — `C:/Projects/svap-e2e-223-dokazy` | Skoršia diagnostika 209(b): upravený `messages-peer-profile.spec.ts`, nový pomocník `support/peer-conversation-diagnostics.ts` a štyri kontroly v `diagnostics-tests/` (peer-conversation.check.ts, peer-conversation-browser.check.ts, peer-conversation.playwright.config.ts, peer-conversation.scenario.ts). Spolu so staršou pracovnou verziou odovzdania je to 7 súborov. |
+
+Kód diagnostiky 209 sa týmto zjednotením **nekopíroval do dokumentačnej vetvy**
+a starší worktree ostal nedotknutý. Historické časti o 209 preto opisujú túto
+samostatnú rozpracovanú vetvu, nie kód už zlúčený do main. Nová kanonická
+dokumentácia je v `e2e/dymova-sada`; dve pracovné verzie toho istého
+odovzdania netreba neskôr slepo commitovať ako dve rôzne opravy.
+
+Pri zjednotení mali obe vetvy lokálne necommitnuté zmeny. Nie sú v hlavnom
+pracovnom priečinku `C:/Projects/svap`; doň sa nezasahovalo. Následne majiteľ
+9. 11. výslovne schválil commit a push oboch vetiev. Vybrať konkrétnu vlastnú
+vetvu a súbory, nebrať `git add .` v hlavnom projekte. Súbor s prihlásením,
+auth stav, JSON súhrny, surové reporty, prílohy a pomocné lokálne skripty
+zostávajú mimo commitu.
+
+Návrh dymu ešte nie je implementácia značiek `@smoke`; test 320 ešte nevznikol,
+lebo čaká na opravu aplikácie a potvrdenie nasadenia. Celý beh je ukončený,
+proti Railway sa pri zjednocovaní nič nespúšťalo. Register nálezov, AWS,
+nastavenia Railway a rozhodnutia sa nemenili.
 
 
 ## Predcommitové overenie — 9. 11. 2026
