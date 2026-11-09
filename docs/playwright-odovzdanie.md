@@ -4,6 +4,11 @@ Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá
 
 ## Aktuálny prehľad — 9. 11. 2026
 
+Aktuálna spoločná vetva je **`e2e/209-diagnostika`**: obsahuje kód diagnostiky
+aj zjednotené odovzdanie s návrhom dymovej sady. Pôvodná `e2e/dymova-sada`
+a PR #248 zostávajú iba predchádzajúcou revíziou na porovnanie. Súvisiace
+ďalšie opravy sa pridávajú ako commity do tej istej diagnostickej vetvy.
+
 Zjednotené odovzdanie: celý beh na `5bf32b26` **383 PASS / 22 FAIL / 351 SKIP**,
 tri diagnostické opakovania každého nového pádu, nové dôkazy 223, doplnenie
 ku K14, návrh sedem- až osemsúborového dymu s príkazmi a podmienený test 320.
@@ -342,6 +347,13 @@ automaticky chyba aplikácie či nestabilita prostredia; účet sa kvôli testu
 automaticky neprepína na verejný.
 
 Lokálne kontroly bez env, prihlásenia a siete Railway:
+
+**Podmienka:** nasledujúce dva príkazy vyžadujú kód z
+`e2e/209-diagnostika` (teraz spoločná vetva) alebo main až po jeho zlúčení.
+V pôvodnej samostatnej `e2e/dymova-sada` na `d8e2b566` tieto súbory neboli.
+Najprv treba získať správnu vetvu/revíziu a závislosti podľa zámku; až potom
+spustiť príkazy z jej `frontend`. Nie sú samostatne použiteľným návodom pre
+čistý checkout pôvodnej dokumentačnej vetvy.
 
 ```powershell
 node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/peer-conversation.check.ts
@@ -718,8 +730,9 @@ page errors: 0 | console errors: 12
 Podklad merania je `main 5bf32b26` a dokončený celý beh z 9. 11. Nižšie je
 príkaz na výber siedmich už existujúcich špecov a cieľ následného označenia
 `@smoke`. V tejto dokumentačnej úlohe sa značky, testy ani aplikácia nemenia.
-Predchádzajúca rozpracovaná diagnostika 209 ostáva v samostatnej vetve;
-oddelená vetva tohto návrhu je `e2e/dymova-sada`.
+Návrh pôvodne vznikol vo vetve `e2e/dymova-sada`. Po kontrole PR #248 sa
+presunul ku kódu do spoločnej `e2e/209-diagnostika`; ďalej sa aktualizuje iba
+v tejto jednej vetve.
 
 ### Základ: sedem existujúcich špecov
 
@@ -731,7 +744,7 @@ oddelená vetva tohto návrhu je `e2e/dymova-sada`.
 | `mobile-settings-navigation.spec.ts` | Mobil: Profil → Menu → Jazyk/Upozornenia → Späť → Zatvoriť → profil. | Bez prepínania a ukladania. Zatiaľ neoveruje Súkromie, Blokované ani Sledovanie. |
 | `dashboard-history-navigation.spec.ts` | Mobilné/desktopové menu, správna URL a obsah pri Späť/Dopredu. | Nezapisuje obsah; zachovať zákaz opakovaného kliknutia na aktívne Žiadosti. |
 | `html-cache-control.spec.ts` | Prvé otvorenie aj F5 na šiestich stránkach vracajú HTML `no-store`, vrátane dashboardu. | Len skutočné GET, nie podvrhnuté API; 18 variantov na troch projektoch. |
-| `sharing-from-feed.spec.ts` | Vytvorenie dočasného zdroja, reálne zdieľanie z UI, správne pristátie na Nástenke. | Dva vlastné dočasné príspevky na projekt. Existujúci `finally` maže najprv repost, potom zdroj; kontroluje výsledky upratania. **Nie je to test nahratia fotky.** |
+| `sharing-from-feed.spec.ts` | Vytvorenie dočasného zdroja, reálne zdieľanie z UI, správne pristátie na Nástenke. | Dva vlastné dočasné príspevky na projekt. Existujúci `finally` maže najprv repost, potom zdroj; kontroluje výsledky upratania. **Nie je to test nahratia fotky.**  **Obmedzenie:** ak ID nie je známe, náhradný GET v `cleanupFeedPosts` nekontroluje HTTP stav; jeho zlyhanie môže zostať bez hlásenia a príspevok bez upratania. |
 
 Na zdokumentovanom celom behu mali tieto špecy spolu **51 variantov:
 41 PASS / 0 FAIL / 10 projektových SKIP**. Súčet zaznamenaných trvaní samotných
@@ -742,6 +755,13 @@ samostatným behom. Odhad nie je záruka pri otvorenom probléme 223.
 
 Z `frontend`, po potvrdení nasadenia a okna bez zlučovania, nasadení a zmien
 testovacích účtov (bez `--project` sa použijú všetky tri projekty):
+
+**Podmienka zápisovej časti:** kým sa samostatne neopraví a neoverí
+náhradné vyhľadanie pri neznámom ID, `sharing-from-feed.spec.ts` nezaraďovať
+do pravidelného automatického dymu. Nižšie je iba sedemsúborový výber návrhu,
+nie bezvýhradné odporúčanie na jeho spúšťanie po každom nasadení. Historické
+úspešné kontroly známych ID túto medzeru nepotvrdzujú ako vyriešenú. Helper sa
+v tejto dokumentačnej oprave nemenil.
 
 ```powershell
 npm run test:e2e:docker -- e2e/smoke.spec.ts e2e/auth-session.spec.ts e2e/messages-peer-profile.spec.ts e2e/mobile-settings-navigation.spec.ts e2e/dashboard-history-navigation.spec.ts e2e/html-cache-control.spec.ts e2e/sharing-from-feed.spec.ts --workers=1 --retries=0
@@ -810,6 +830,14 @@ presný neprázdny výber, projekty a počty. Nesprávny či prázdny výber nie
 - Diagnostika len bezpečným `[E2E-EVIDENCE]`: časy, počty, anonymné cesty a
   HTTP stavy, vrátane existujúcich polí 223. Žiadne účty, text správ, telá
   odpovedí, hodnoty cookies/tokenov ani surové reporty do chatu/commitu.
+- Bezpečný blok dôkazov nie je to isté ako všetky lokálne artefakty. Globálny
+  `playwright.config.ts` má `screenshot: 'only-on-failure'`; nie všetky vybrané
+  špecy ho prepisujú. Snímky a surové reporty môžu obsahovať obsah stránky,
+  zostávajú súkromné a nepatria do chatu, commitu ani verejného CI artefaktu.
+  `messages-peer-profile.spec.ts` v aktuálnej diagnostickej vetve už používa
+  `diagnostic-test`, ktorý vypína screenshot, trace aj video. Tvrdenie o jeho
+  nevypnutých screenshotoch platilo pre pôvodnú samostatnú dokumentačnú vetvu,
+  nie pre tento aktuálny kód; netreba ho vypínať druhýkrát.
 - Dym nenahrádza ručný test iPhonu/PWA ani celý regresný beh. Nový pád sa
   neposunie na PASS len opakovaním; zápisový scenár sa bez preverenia
   upratania automaticky neopakuje. Päťminútový odhad nie je nový testový limit.
@@ -832,7 +860,7 @@ Lokálne overenie návrhu: presný sedemsúborový výber s `--list` dal
 `git diff --check` prešiel. `--list` nevykonal testy ani prihlasovací setup;
 proti Railway sa nič nespustilo. Zmenená je iba táto dokumentácia.
 
-## Stav zmien pri zjednotení reportu — 9. 11. 2026
+## Historický stav zmien pri prvom zjednotení reportu — 9. 11. 2026
 
 Toto odovzdanie teraz zhromažďuje výsledok behu, všetkých 22 pádov a ich
 opakovania, dôkazy 223, doplnenie K14 a návrh dymovej sady vrátane podmienky
@@ -847,9 +875,10 @@ bezpečných blokov. Nejde o surový Playwright HTML report.
 
 Kód diagnostiky 209 sa týmto zjednotením **nekopíroval do dokumentačnej vetvy**
 a starší worktree ostal nedotknutý. Historické časti o 209 preto opisujú túto
-samostatnú rozpracovanú vetvu, nie kód už zlúčený do main. Nová kanonická
-dokumentácia je v `e2e/dymova-sada`; dve pracovné verzie toho istého
-odovzdania netreba neskôr slepo commitovať ako dve rôzne opravy.
+samostatnú rozpracovanú vetvu, nie kód už zlúčený do main. Vtedy bola kanonická
+dokumentácia v `e2e/dymova-sada`; po kontrole PR #248 je spolu s kódom v
+`e2e/209-diagnostika`. Dve pôvodné verzie odovzdania sa preto nemajú zlučovať
+ako dve nezávislé opravy.
 
 Pri zjednotení mali obe vetvy lokálne necommitnuté zmeny. Nie sú v hlavnom
 pracovnom priečinku `C:/Projects/svap`; doň sa nezasahovalo. Následne majiteľ
@@ -883,3 +912,36 @@ nie prihlasovacie údaje, auth stav, JSON/HTML reporty alebo prílohy.
 
 Značky `@smoke` ani regresia 320 nie sú týmto commitom implementované.
 Otvorenie PR, zlúčenie do main a nasadenie zostávajú majiteľovi.
+
+## Overenie a oprava pripomienok PR #248 — 9. 11. 2026
+
+Najnovší overený main ostáva `352fc9eb`. Na výslovný pokyn majiteľa bol
+zjednotený dokument z `d8e2b566` prenesený do `e2e/209-diagnostika` ako
+samostatný commit; táto následná oprava je ďalší commit v rovnakej vetve.
+Pôvodná dymová vetva ani PR #248 sa neprepisujú a PR sa automaticky nezatvára.
+
+- **Platné v kontrolovanej revízii:** príkazy pre peer diagnostiku odkazovali
+  na súbory, ktoré v samostatnej dymovej vetve chýbali (overené Git stromom:
+  0 z 3 diagnostických súborov oproti 3 z 3 v cieľovej diagnostickej vetve).
+  Pred príkazmi je teraz uvedená požadovaná vetva/revízia a miesto spustenia.
+- **Platné:** náhradné vyhľadanie príspevkov v `cleanupFeedPosts` zahodí
+  HTTP stav GET. Lokálna syntetická sonda s prázdnym zoznamom známych ID a
+  odpoveďou 500 potvrdila 1 GET a 0 hlásených chýb upratania. Na Railway
+  nič nevolala. Opravený je opis a podmienka zaradenia zápisového kandidáta,
+  **nie samotný helper**; jeho kód a existujúce asercie ostali nedotknuté.
+- **Neaktuálne pre cieľový konverzačný špec:** poznámka o screenshote sa týka
+  starej dokumentačnej vetvy bez bezpečného fixture. V diagnostickej vetve
+  má tento špec screenshot/trace/video vypnuté. Všeobecné riziko lokálnych
+  artefaktov ostatných špecov je v pravidlách výslovne odlíšené.
+
+Dohoda do budúcna: súvisiaca práca, jej výsledky a opravy z review ostávajú
+ako viac commitov v jednej vlastnej E2E vetve; nezakladať kvôli nim ďalšiu
+dokumentačnú vetvu. Pred ďalšou úlohou naďalej overiť aktuálny main.
+Zoznam nálezov vlastní Claude; nemenil sa. Značky `@smoke`, test 320 ani
+oprava produkčnej aplikácie sa touto dokumentačnou opravou neimplementujú.
+
+Overenie po oprave opisu: 54/54 lokálnych Node kontrol diagnostiky a ochrany
+údajov, 3/3 syntetických browser projektov v Dockeri a statická kontrola
+podmienky pred príkazmi prešli. Lokálny `--list` znovu potvrdil 51 variantov
+v 7 súboroch; nespustil testy, setup ani Railway. Zmenená je iba dokumentácia,
+aplikácia a testová logika ostali rovnaké. `git diff --check` prešiel.
