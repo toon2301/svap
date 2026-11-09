@@ -23,7 +23,7 @@ nemôže ticho prestať sedieť.
 | `hotove_dalsie.py` | Nálezy opravené od 6. 11. 2026 (`DONE_SINCE_DALSIE`). Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |
 | `fronta.py` | Poradie prác pre kolegu (dávky K15, K16…, kľúč `davka`); smie obsahovať otvorené nálezy z ktorejkoľvek skupiny (HNEĎ, PRED aj PO NASADENÍ). Hotový nález sa odtiaľto odstráni. |
 | `zatvorene_dalsie.py` | Nálezy zatvorené rozhodnutím majiteľa po prvom vydaní (`CLOSED_SINCE`); zobrazujú sa v časti 8. |
-| `rozhodnutia_nastenka.py` | Rozhodnutia R13–R33: zo zoznamu majiteľa (R13–R19 a R22 rozhodnuté, R20 a R21 čakajú), R23 (čaká), R24 (výnimka z pravidla 500 riadkov pre nález 271, rozhodnuté), R25 (275 je zámer, rozhodnuté), R26 (dve výnimky pre testové súbory, rozhodnuté), R27 (pravidlo 500 riadkov a testy, čaká) a R28 (vstupné animácie modulov, čaká), R29 (animované obrázky, čaká) , R30 (starý endpoint ponúk, rozhodnuté (a)), R31 (výnimka pre osem `alert()`, rozhodnuté 9. 11.), R32 (kategórie upozornení, rozhodnuté (b) 9. 11.) a R33 (postupné zapínanie push na správy, čaká); `stav.py` ich pripája do `DECISIONS`. |
+| `rozhodnutia_nastenka.py` | Rozhodnutia R13–R33: zo zoznamu majiteľa (R13–R19 a R22 rozhodnuté, R20 a R21 čakajú), R23 (čaká), R24 (výnimka z pravidla 500 riadkov pre nález 271, rozhodnuté), R25 (275 je zámer, rozhodnuté), R26 (dve výnimky pre testové súbory, rozhodnuté), R27 (pravidlo 500 riadkov a testy, čaká) a R28 (vstupné animácie modulov, čaká), R29 (animované obrázky, čaká) , R30 (starý endpoint ponúk, rozhodnuté (a)), R31 (výnimka pre osem `alert()`, rozhodnuté 9. 11. s podmienkou maximálnej opatrnosti), R32 (kategórie upozornení, rozhodnuté (a) 9. 11.: dokončiť pred štartom) a R33 (postupné zapínanie push na správy, rozhodnuté (a) 9. 11.); `stav.py` ich pripája do `DECISIONS`. |
 | `priloha_nastenka.py` | Príloha D: mapovanie zoznamu majiteľa na tento zoznam (jeden riadok na jeho položku). Generátor overí odkazy v nej. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
 
@@ -63,13 +63,13 @@ Dohoda s majiteľom z 5. 11. 2026, upravená 6. a 7. 11. 2026; platí, kým ju m
   odkladajú, kým majiteľ nedá vedieť. K8 (mapovanie nálezov 274, 275 a 276) sa robila na dva razy (PR #237 a #238; druhé kolo sa volalo
   K9) a dávka drobných opráv išla ako K10 (PR #239); po nich bola vetva agenta 168 (len zoznam). K11 (PR #241) a K12 (PR #242) sú
   hotové a po nich bola vetva agenta 169 (len zoznam). K13 (PR #244) a K14 (PR #245) sú hotové a po nich boli vetvy agenta 170 a 171
-  (len zoznam). Ďalšie dávky kolegu sú K15 až K17 (poradie je v časti 2 zoznamu; K18 a K19 sú staršie návrhy z nálezov PO NASADENÍ).
+  (len zoznam). Ďalšie dávky kolegu sú K15 až K17 (poradie je v časti 2 zoznamu; dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi).
 - **Vetvy:** kolega K1, K2, K3…; agent číslované (163, 164…); Codex `e2e/<názov>`. S Codexom pracuje len agent.
 - **Čo dostane kolega:** opis nálezu a návrh najlepšej opravy (nálezy sú v častiach 3 až 5 zoznamu, poradie v časti 2). Nález overuje kolega pri
   práci. Od K15 agent pred zlúčením porovná výsledok kolegu s PR, CI a kódom (pozri „Postup od K15“). Nálezy, ktoré majiteľ určí na zmapovanie kolegovi (naposledy 274, 275, 276), agent nemapuje:
   zapíše ich presne podľa opisu a príčinu nájde kolega.
 - **Výnimky z pravidla 500 riadkov:** schvaľuje len majiteľ a každá sa zapíše ako rozhodnutie (R24: jeden riadok v `useDashboardState.ts` pre
-  nález 271; R26: dva testové súbory z K8 a K9; R31: osem výmen `alert()` v troch súboroch pre nález 302 v K17, 9. 11. 2026). Pravidlo platí ďalej; či sa vzťahuje aj na testy, čaká na R27.
+  nález 271; R26: dva testové súbory z K8 a K9; R31: osem výmen `alert()` v troch súboroch pre nález 302 v K17, 9. 11. 2026, s podmienkou maximálnej opatrnosti). Pravidlo platí ďalej; či sa vzťahuje aj na testy, čaká na R27.
 - **Po každej práci kolegu** majiteľ pošle agentovi výsledok dávky (jedna strana podľa `sablony/vysledok_davky.md`) a číslo PR. Agent zapíše
   hotové, nové nálezy podľa filtra a rozhodnutia.
 - **Zoznam:** agent ho aktualizuje v každej vetve a ak to nezvláda, hlási to. Hotový nález kolegu sa z `fronta.py` presunie do
@@ -121,5 +121,4 @@ typu nitpick) ide do `poznamky.md` bez čísla, alebo sa opraví v tej istej vet
 **Týždenne:** plný E2E beh v oznámenom okne bez zlučovania (Codex) a čistenie zoznamu: nálezy, ktoré sa nedajú reprodukovať, sa zatvoria rozhodnutím.
 Týždenný audit závislostí beží sám (pondelok).
 
-**Dymová sada v Playwrighte** (5 až 8 špecov, asi 5 minút, proti Railway) je v oblasti Codexa a zatiaľ ju nemáme; kým nie je, platí len ručný dymový test.
-Push sa v Playwrighte otestovať nedá, ostáva na ručnom teste.
+**Dymová sada v Playwrighte** (5 až 8 špecov, asi 5 minút, proti Railway) je v oblasti Codexa. Návrh Codexa z 9. 11. 2026: sedem existujúcich špecov (`smoke`, `auth-session`, `messages-peer-profile`, `mobile-settings-navigation`, `dashboard-history-navigation`, `html-cache-control`, `sharing-from-feed`; 51 variantov, súčet trvaní testov asi 91 s, trvanie celého procesu zatiaľ nezmerané) so značkou `@smoke` na krátkych scenároch a bez zmeny asercií, tolerancií, timeoutov a retry; zavedie sa v samostatnej vetve Codexa a pred prvým použitím sa zmeria jeden beh. Ôsmy špec s fotkou patrí do 295. Kým značky nie sú, platí len ručný dymový test. Odosielanie správ sa do dymu nedáva (zmazaná správa ostáva v databáze ako prázdny záznam) a push sa v Playwrighte otestovať nedá, takže ostávajú na ručnom teste.

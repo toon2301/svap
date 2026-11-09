@@ -310,8 +310,14 @@ NEW_ITEMS_NASTENKA = [
               'pravidlo z `AGENTS.md`: test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Plán Codexa '
               '(8. 11. 2026): po celom behu najprv odmietnutie skutočných BMP a TIFF vrátane prezlečenia za `.jpg`, potom úspešné '
               'nahrávanie s uprataním a načítanie fotiek súkromného autora a náhrady pri chybe; správy bez nepovoleného odosielania do '
-              'produkcie.',
-         dec=None, src='K8, K10 (kolega) a Codex, 7. 11. 2026'),
+              'produkcie.'
+              'Dodatok 9. 11. 2026 (Codex, návrh dymovej sady): ôsmy špec `feed-photo-smoke.spec.ts` (syntetická fotka bez EXIF, '
+              'nahranie cez UI, publikovanie vlastného príspevku, vykreslený obrázok má `naturalWidth` väčšie ako 0, odstránenie iba '
+              'vlastného príspevku) vznikne až v dohodnutej implementácii 295; portfólio, ponuky, odmietnutie BMP a TIFF a fotky v '
+              'správach patria do širšej 295, nie do päťminútového dymu. Agent overil v kóde: zmazanie príspevku maže súbory fotiek '
+              'cez signál `post_delete` modelu `FeedPostImage` (`accounts/signals.py`), no ako best-effort po commite (chyby sa '
+              'ignorujú), takže z UI sa fyzické zmazanie objektu v S3 nedokáže; test smie tvrdiť len zmiznutie príspevku.',
+         dec=None, src='K8, K10 (kolega) a Codex, 7. 11. a 9. 11. 2026'),
     dict(n=298, bucket=A, imp=N, eff=ES, pkg='Funkcie – väčšie balíky',
          kratko='avatary a správy sploštia animovaný PNG a WebP na prvú snímku',
          what='Kolega pri K12: zdieľané `strip_image_metadata` (`swaply/image_metadata.py`) ukladá PNG a WebP bez `save_all`, takže animovaný PNG '
@@ -345,10 +351,10 @@ NEW_ITEMS_NASTENKA = [
                'OSTÁVA osem volaní v troch súboroch nad 500 riadkov: `SkillsModuleRouter.tsx` 4 (583 riadkov), `OfferReviewsView.tsx` '
                '3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov); agent počty overil 8. 11. 2026. Natívne okno '
                'prehliadača je rušivé (blokuje stránku) a texty v nich sú čiastočne bez prekladu.',
-         note='Zvyšných osem volaní vyžaduje jednorazovú výnimku od majiteľa alebo delenie súborov (TECH-…): rozhodnutie R31. Návrh: '
-               'výnimka len na náhradu `alert` za `toast.error` s prekladmi vo všetkých šiestich jazykoch (súbory nerastú); pri každom '
-               'mieste skontrolovať, či chyba po `alert` letí ďalej a volajúci ukáže ešte jedno hlásenie. Odhad: nízky · M. Vzhľadová '
-               'vec, preto PRED NASADENÍM.',
+         note='Výnimka z pravidla 500 riadkov je udelená (R31, 9. 11. 2026; majiteľ: maximálna opatrnosť): len výmena osmich volaní '
+               '`alert` za `toast.error` s prekladmi vo všetkých šiestich jazykoch, súbory nerastú okrem importu; podmienky opatrnosti '
+               'sú v odpovedi na R31. Pri každom mieste skontrolovať, či chyba po `alert` letí ďalej a volajúci ukáže ešte jedno '
+               'hlásenie. Odhad: nízky · M. Vzhľadová vec, preto PRED NASADENÍM.',
          dec='ROZHODNUTIE R31', src='K11 (kolega) a manuálny test majiteľa, 7. 11. 2026; zvyšok po K13'),
     dict(n=303, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
          kratko='32 zo 43 súborov s `<img>` nemá `onError` (netriedené)',

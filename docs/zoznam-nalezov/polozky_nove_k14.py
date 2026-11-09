@@ -118,30 +118,6 @@ NEW_ITEMS_K14 = [
          note='Návrh kolegu: `pip-compile --generate-hashes` a `--require-hashes` ako dodatočné spevnenie; vyžaduje zmenu postupu '
                'obnovy a všetkých inštalácií. Odhad kolegu: nízky · M.',
          dec=None, src='K14 (kolega)'),
-    dict(n=318, bucket=H, imp=S_, eff=ES, pkg='Produkčná odolnosť aplikácie',
-         kratko='push upozornenia na správy neprichádzajú, lebo backend ich preskakuje pri nastavení rollout 5 % (príčina nájdená: '
-                'nastavenie v Railway, nie chyba kódu)',
-         what='Ručný test majiteľa po K14 (8. 11. 2026, produkcia, iPhone s nainštalovanou PWA): hlásenia pre Svaply sú v iPhone '
-               'povolené, upozornenia na správy vo Svaply zapnuté, telefón je zamknutý a z druhého testovacieho účtu sa pošle správa. '
-               'Správa sa doručí do konverzácie, no push nepríde. Majiteľ potvrdil, že pred nasadením K14 push fungoval. PRÍČINA '
-               'NÁJDENÁ (9. 11. 2026): logy Railway (worker) pri dvoch testovacích správach ukázali `recipient_count=1`, '
-               '`rollout_skipped_count=1`, `delivered_count=0` a `skipped_reason=rollout_5`, ostatné počty (`suppressed_count`, '
-               '`subscription_count`, `retry_count`, `gone_count`, `permanent_failure_count`) boli nulové. Backend teda obe doručenia '
-               'preskočil kvôli nastaveniu postupného zapínania (rollout) na 5 % a k odoslaniu službe Apple vôbec nedošlo.',
-         note='Mapovanie agenta: podľa `accounts/services/webpush_rollout.py` je príjemca v zapnutej skupine, len ak `ID účtu % 100` '
-               'je menšie ako nastavené percento, takže pri 5 % dostane push približne každý dvadsiaty účet. Kód má predvolenú hodnotu '
-               '100 (`swaply/settings_split/webpush.py`); hodnota 5 prichádza z premennej prostredia '
-               '`WEB_PUSH_MESSAGES_ROLLOUT_PERCENT` v Railway. Kto a kedy ju nastavil, z repozitára nevidno; že push pred K14 '
-               'fungoval, vysvetľuje buď neskoršia zmena premennej, alebo skorší test s účtom, ktorý v päťpercentnej skupine je (agent '
-               'to nerozlíši). Regresia K14 sa nepotvrdila: K14 zmenila `usePushMessagesPreference.ts` len pridaním `initialLoading`, '
-               'zámok závislostí (244) balíky pre push nepohol a šifrovanie s podpisom VAPID fungujú so zamknutými verziami (skúška '
-               'proti lokálnemu falošnému koncovému bodu: HTTP 201). Oprava je zmena nastavenia, nie kódu: v Railway tam, kde je '
-               'premenná nastavená (zrejme worker, prípadne aj ostatné služby backendu), nastaviť `WEB_PUSH_MESSAGES_ROLLOUT_PERCENT` '
-               'na 100 alebo ju odstrániť (spustí sa nové nasadenie, preto nie počas behu Playwrightu) a po nasadení zopakovať test: '
-               'telefón zamknúť a pred odoslaním správy počkať 40 s; v logu má byť `rollout_skipped_count=0`. Nález sa zatvorí, keď '
-               'majiteľ potvrdí, že push na iPhone prišiel. Úloha pre kolegu odpadá. Rozsah pri ostrom štarte rieši R33. Odhad: nízky '
-               '· S. Dopad na E2E: žiadny.',
-         dec='ROZHODNUTIE R33', src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026) a logy Railway od majiteľa (9. 11. 2026)'),
     dict(n=319, bucket=P, imp=N, eff=EM, pkg='Upozornenia a push',
          kratko='Upozornenia: pri vypnutom internete sa prepínač Správ prepne bez chybovej hlášky a stav ostane po pripojení (príčina '
                 'nejasná)',
@@ -160,8 +136,8 @@ NEW_ITEMS_K14 = [
                '`usePushMessagesPreference.ts` sú napevno v kóde bez diakritiky a bez prekladu („Nepodarilo sa ulozit nastavenia '
                'upozorneni.“ a ďalšie), takže aj správne zobrazená chyba by mala iné znenie, než majiteľ očakáva, a nepreložila by sa. '
                'Návrh: texty cez `t()` s diakritikou v šiestich jazykoch; pri `navigator.onLine` rovnom `false` prepínač neprepínať a '
-               'hneď ukázať chybu; súvisí s nálezom 306. Odhad: nízky · M. Po 324 ostane v Upozorneniach len prepínač Správ, takže otázka, '
-               'ktorý prepínač sa testoval, odpadne.',
+               'hneď ukázať chybu; súvisí s nálezom 306. Odhad: nízky · M. Otázka, ktorý prepínač sa testoval, ostáva, '
+               'kým 321 neprepojí aj ostatné kategórie.',
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=320, bucket=P, imp=S_, eff=ES, pkg='Profil a identita',
          kratko='Zmena hesla: na iPhone sú polia čierne na svetlej karte (príčina pravdepodobne `color-scheme`, na zariadení nepotvrdená)',
@@ -178,11 +154,15 @@ NEW_ITEMS_K14 = [
                'dark:bg-black text-gray-900 dark:text-white`). Pole e-mailu na `forgot-password/page.tsx` tiež nemá triedu pozadia; '
                'stránka používa tmavé varianty (`dark:`), takže rozpor tam môže vzniknúť, keď je téma aplikácie svetlá a systém tmavý '
                '(neoverené). Návrh: do oboch polí `bg-white text-gray-900` (alebo `[color-scheme:light]` na karte) a rovnaká kontrola '
-               'na `forgot-password`, `verify-email` a `delete-account`; test tried. Odhad: stredný · S.',
+               'na `forgot-password`, `verify-email` a `delete-account`; test tried. Odhad: stredný · S. Po oprave a nasadení doplní Codex '
+               'samostatný WebKit E2E (9. 11. 2026): stránka Zmena hesla pri tmavej systémovej schéme má obe polia svetlé a čitateľné. '
+               'Formulár sa zobrazí až po úspešnom `GET /auth/password-reset-verify/<uid>/<token>/`, preto test túto požiadavku '
+               'zachytí (`page.route`, `serviceWorkers: block`) a vráti `valid: true`; bez e-mailu, skutočného tokenu a odoslania '
+               'formulára.',
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
-    dict(n=321, bucket=A, imp=S_, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='Upozornenia: päť kategórií a hlavný vypínač nie sú napojené na server (nedokončená funkcia; dokončiť po štarte, '
-                'dovtedy ich skrýva 324)',
+    dict(n=321, bucket=P, imp=S_, eff=EL, pkg='Upozornenia a push',
+         kratko='Upozornenia: päť kategórií a hlavný vypínač nie sú napojené na server (nedokončená funkcia; dokončiť pred štartom, R32 '
+                'a)',
          what='Ručný test majiteľa po K14 (8. 11. 2026) a nález kolegu z K14: v Nastaveniach → Upozornenia je šesť kategórií: Správy, '
                'Páči sa mi to, Páči sa mi to a komentáre (reakcie a komentáre na fotkách, kde je používateľ označený), Komentáre, Páči '
                'sa mi to pre komentáre a Žiadosť o zručnosť. Podľa majiteľa je to nedokončená práca: kategórie neposkytujú funkčný '
@@ -191,10 +171,13 @@ NEW_ITEMS_K14 = [
                'a po novom otvorení sa vrátia na „Vypnuté“. Napojená je len voľba Správy (push): `useNotificationPreferences` načíta a '
                'ukladá dve nastavenia servera (`in_app_notifications`, `push_notifications`) a Správy používajú `push_notifications`.',
          note='Očakávané správanie (majiteľ): každá kategória sa dá zapnúť a vypnúť, nastavenie sa uloží a príslušné upozornenie sa '
-               'doručí alebo potlačí. Ide o väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii aj push '
-               'podľa nastavenia); odhad: stredný · L. Rozhodnuté R32 (b), 9. 11. 2026 (majiteľ nechal na odporúčanie agenta): '
-               'nefunkčné prepínače sa do dokončenia skryjú (nález 324, PRED NASADENÍM) a dokončenie ostáva po štarte. Ak sa majiteľ '
-               'rozhodne mať kategórie pred štartom, nález sa vráti do PRED NASADENÍM. Súvisí s nálezmi 319 a 308.',
+               'doručí alebo potlačí. Rozhodnuté R32 (a), 9. 11. 2026: majiteľ chce kategórie dokončiť pred štartom a nechce sa tej '
+               'práci vyhýbať (agent odporúčal (b), skryť prepínače a dokončiť po štarte; majiteľ to nezvolil, preto sa nález 324 o '
+               'skrytí zatvoril). Ide o väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii aj push podľa '
+               'nastavenia, testy a E2E; odhad: stredný · L), preto najprv mapovanie a plán po etapách (agent, len čítanie): ktoré '
+               'typy upozornení backend vytvára a kde, ako rozšíriť nastavenia servera o kategórie, kde sa nastavenie musí uplatniť '
+               '(upozornenie v aplikácii, push) a ako sa to preklopí do rozhrania. Až potom etapy pre kolegu (vstupia do fronty po '
+               'plánovaní). Súvisí s nálezmi 319 a 308.',
          dec='ROZHODNUTIE R32', src='ručný test majiteľa po K14 (8. 11. 2026) a kolega (K14)'),
     dict(n=322, bucket=P, imp=S_, eff=ES, pkg='Ponuky (úprava a tagy)',
          kratko='nová ponuka na mobile: tag pridaný okrúhlym tlačidlom sa nezobrazí (obrazovka Popis ponuky ho zmaže pri prekreslení '
@@ -235,18 +218,4 @@ NEW_ITEMS_K14 = [
                'vzor inde (efekt s `on…Change` v závislostiach, ktorý zapisuje do stavu rodiča); nájdené miesta len nahlásiť ako '
                'kandidátov. Odhad: stredný · S.',
          dec=None, src='mapovanie agenta pri nálezu 322 (9. 11. 2026)'),
-    dict(n=324, bucket=P, imp=S_, eff=ES, pkg='Upozornenia a push',
-         kratko='Nastavenia → Upozornenia: skryť hlavný vypínač a päť kategórií, ktoré nič neukladajú, a nechať len Správy (rozhodnutie '
-                'R32 (b))',
-         what='Rozhodnutie R32 (b) z 9. 11. 2026 (majiteľ nechal na odporúčanie agenta): kým nie je dokončená funkcia upozornení '
-               '(321), hlavný vypínač a päť kategórií (Páči sa mi to, Páči sa mi to a komentáre, Komentáre, Páči sa mi to pre '
-               'komentáre, Žiadosť o zručnosť), ktoré sú len lokálny stav bez volania servera, sa v Nastaveniach → Upozornenia '
-               'nezobrazujú. Ostáva voľba Správy (push) s uložením, vrátením späť a chybou. Prepínač, ktorý nič nerobí, pôsobí ako '
-               'chyba: používateľ si myslí, že upozornenia vypol. Mapovanie agenta (9. 11. 2026, podľa 321): '
-               '`NotificationSettingsModule.tsx` (150 riadkov) drží stav, vzhľad je v `notifications/Desktop.tsx` (293 riadkov) a '
-               '`notifications/Mobile.tsx` (220 riadkov); žiadny z nich nie je nad 500 riadkov.',
-         note='Návrh: skryť riadky piatich kategórií a hlavný vypínač (kód a preklady nemazať, ak sa 321 chystá čoskoro; stačí jedno '
-               'miesto, napr. konštanta, ktorú 321 prepne) a upraviť testy. Test: v Upozorneniach je len voľba Správy. Texty hlavného '
-               'vypínača a kategórií ostanú v prekladoch. E2E špec s týmito prepínačmi agent nenašiel. Odhad: nízky · S.',
-         dec='ROZHODNUTIE R32', src='rozhodnutie R32 (b) a mapovanie agenta (9. 11. 2026)'),
 ]

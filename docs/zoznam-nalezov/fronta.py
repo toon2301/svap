@@ -17,12 +17,13 @@ na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávk
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
 302) a K14 (PR #245) o zámku závislostí, obnove prihlásenia a prechodných stavoch Nastavení (244, 286 a časť 245). Dávky K15 až K17
 navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po K14 a podľa videa z 9. 11.: K15 sú viditeľné chyby (322 a 323 na
-obrazovke Popis ponuky na mobile, 320 a 306), K16 začína nálezom 324 (skryť nefunkčné prepínače, rozhodnutie R32 (b)) a pokračuje
-nálezom 319 a zvyškami po 286, K17 dopĺňa zvyšok nálezov PRED NASADENÍM a končí nálezom PO NASADENÍ 312. Nález HNEĎ 318 (push na iPhone) v poradí
-nie je: jeho príčina je nastavenie v Railway (rollout 5 %), nie kód, a rieši ho majiteľ (rozhodnutie R33). Dávky K18 a K19 sú pôvodne
-navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a
-K14, potom K15 a K16 a naposledy K17 a K18, no tie označenia sa použili na iné dávky. Zvyšok nálezu 245 (overenie v logoch Railway,
-prípadný `api.ts` s výnimkou) čaká na majiteľa, preto nie je v poradí. Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
+obrazovke Popis ponuky na mobile, 320 a 306), K16 začína nálezom 319 a pokračuje zvyškami
+po 286 (308 až 310) a K17 dopĺňa zvyšok nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končí nálezom PO NASADENÍ 312. Nález HNEĎ 318
+(push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Nález 321 (kategórie upozornení; R32 (a): pred
+štartom) a zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie sú: 321 čaká na mapovanie a plán po
+etapách, 245 na majiteľa. Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
+PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a K14, K15 a K16, K17 a K18, no tie označenia sa použili na iné dávky, preto
+dostanú číslo K až vtedy, keď pôjdu kolegovi (pred ne pribudnú etapy nálezu 321). Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
 určuje majiteľ (`SCHVALENE`). V poradí idú všetky nálezy HNEĎ a PRED NASADENÍM pred nálezmi PO NASADENÍ. Výnimku schvaľuje majiteľ a
 zapíše sa slovom „Výnimka“ do textu `preco` pri nálezu (naposledy 292 v K11 a 302 v K17).
 
@@ -37,7 +38,7 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K14 sú hotové; vetvy agenta 167, 168, 169, 170 a 171 '
              'sú len zoznam (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť). Dávky K15 až K17 navrhol '
              'agent 8. a 9. 11. 2026 (najprv viditeľné chyby z ručných testov majiteľa po K14 a z videa z 9. 11.) a čakajú na schválenie; '
-             'dávky K18 a K19 sú staršie návrhy z nálezov PO NASADENÍ.')
+             'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
 STAV_CAKA = 'čaká na zlúčenie'
@@ -67,14 +68,10 @@ FRONTA = [
          co='`getApiErrorMessage` ukáže surový „Network Error“ z axiosu skôr než preložený záložný text.',
          preco='JASNÉ. Malý súbor `lib/apiError.ts` (68 riadkov) s existujúcim testom; hlášky pri offline (319) idú až v K16 a na túto '
                'zmenu nadväzujú.'),
-    dict(n='324', davka='K16',
-         co='Nastavenia → Upozornenia: skryť hlavný vypínač a päť kategórií, ktoré nič neukladajú; nechať len Správy (push).',
-         preco='JASNÉ. Rozhodnutie R32 (b), 9. 11. 2026. Súbory majú 150 až 293 riadkov (`NotificationSettingsModule.tsx`, '
-               '`notifications/Desktop.tsx`, `notifications/Mobile.tsx`); dokončenie funkcie je 321 (PO NASADENÍ).'),
     dict(n='319', davka='K16',
          co='Upozornenia: pri vypnutom internete sa prepínač Správ prepne bez chybovej hlášky a stav ostane po pripojení.',
-         preco='NEJASNÉ (najprv mapovanie). Po 324 ostane v Upozorneniach len prepínač Správ (ten má vrátenie späť aj chybu), takže '
-               'otázka, ktorý prepínač sa testoval, odpadne; texty chýb v `useNotificationPreferences.ts` (123 riadkov) a '
+         preco='NEJASNÉ (najprv mapovanie). Ktorý prepínač sa testoval: Správy majú vrátenie späť aj chybu, ostatné sú len lokálne '
+               '(nález 321, ktorý sa dokončí pred štartom); texty chýb v `useNotificationPreferences.ts` (123 riadkov) a '
                '`usePushMessagesPreference.ts` (288 riadkov) sú bez diakritiky a bez prekladu.'),
     dict(n='308', davka='K16',
          co='Upozornenia: varovanie pri uloženom „Zapnuté“ a blokovanom push po načítaní posunie obsah (28 px desktop, 68 px '
@@ -84,15 +81,17 @@ FRONTA = [
     dict(n='309', davka='K16',
          co='Sledovanie na mobile: odznak „0 / 5“ počas načítavania a po načítaní nahradí tlačidlo hláška o limite (CLS 0,033).',
          preco='JASNÉ. Zvyšok po 286; `OfferWatchMobileListScreen.tsx` má 151 riadkov.'),
-    dict(n='310', davka='K17',
+    dict(n='310', davka='K16',
          co='Desktopové Sledovanie ukáže kostru hneď a tá problikne pred prázdnym stavom.',
          preco='JASNÉ. Zvyšok po 286: použiť `DelayedSkeleton` z K14, rovnako ako pri mobile (309).'),
     dict(n='302', davka='K17',
          co='Osem natívnych `alert()` v troch súboroch nad 500 riadkov (`SkillsModuleRouter.tsx` 4, `OfferReviewsView.tsx` 3, '
             '`useSkillsDescriptionScreenState.ts` 1) nahradiť toastom s prekladmi.',
-         preco='JASNÉ. Výnimka (R31, 9. 11. 2026, majiteľ nechal na odporúčanie agenta): jednorazová úprava týchto troch súborov len na '
-               'výmenu osmich volaní `alert()` za `toast.error` s prekladmi v šiestich jazykoch; súbory nesmú narásť okrem pridaného '
-               'importu a nahradených riadkov a iná zmena v nich je zakázaná. Pri každom mieste skontrolovať, či chyba letí ďalej a '
+         preco='JASNÉ. Výnimka (R31, 9. 11. 2026, udelená majiteľom s podmienkou maximálnej opatrnosti): jednorazová úprava týchto '
+               'troch súborov len na výmenu osmich volaní `alert()` za `toast.error` s prekladmi v šiestich jazykoch. Opatrnosť: každé '
+               'miesto vo vlastnom commite, pred výmenou test, ktorý bez zmeny padá, v diffe len pridaný import a nahradené riadky, '
+               'počet riadkov súborov pred a po vo výsledku dávky a diff týchto súborov porovná agent riadok po riadku pred zlúčením. '
+               'Súbory nesmú narásť okrem importu, iná zmena v nich je zakázaná. Pri každom mieste skontrolovať, či chyba letí ďalej a '
                'volajúci neukáže druhé hlásenie. Ide až po K15, lebo 322 a 323 menia vstupy obrazovky vo vedľajšom súbore.'),
     dict(n='311', davka='K17',
          co='`useIsMobile()` začína ako „desktop“; ďalšie vetvy `ModuleRouter` môžu mať prázdny prvý snímok.',
@@ -102,33 +101,33 @@ FRONTA = [
          co='Blokovaní používatelia: chyba načítania nemá `role=alert`.',
          preco='JASNÉ. PO NASADENÍ, no jeden riadok v `BlockedUsersModule.tsx` (279 riadkov), ktorý K14 práve upravovala; ide na '
                'koniec dávky za nálezy PRED NASADENÍM.'),
-    dict(n='24', davka='K18',
+    dict(n='24', davka='PO-A',
          co='`setHighlightedSkillId(null)` necháva hodnotu v `sessionStorage` (priame volania setteru namiesto '
             '`clearHighlighting()`).',
          preco='NEJASNÉ (najprv overiť, ktoré volania nulujú surový setter). Zoznam majiteľa ho vedie ako pravdepodobne reálnu chybu; '
                'hook `useDashboardHighlighting.tsx` má 346 riadkov. Najprv overiť, ktoré volania nulujú surový setter, a doplniť test.'),
-    dict(n='22', davka='K18',
+    dict(n='22', davka='PO-A',
          co='`useDashboardHighlighting` prijíma 0, −3 a 1,5 ako ID zvýraznenia; handler upozornení vyžaduje celé číslo od 1.',
          preco='JASNÉ. Malá validácia v tom istom hooku ako 24, jeden súbor a test.'),
-    dict(n='23', davka='K18',
+    dict(n='23', davka='PO-A',
          co='Nedosiahnuteľná vetva `null` v `parseRequestsTargetUrl`.',
          preco='JASNÉ. Odstránenie mŕtveho kódu v krátkom súbore `requestsRouting.ts` (56 riadkov); správanie stráži existujúci test.'),
-    dict(n='26', davka='K18',
+    dict(n='26', davka='PO-A',
          co='Nadbytočný alebo nedosiahnuteľný kód na viacerých miestach (napr. `setIsSearchOpen(false)`, zdvojené `?? null`, '
             'zbytočné `Number.isFinite`; konkrétne miesta si kolega overí).',
          preco='NEJASNÉ (kolega najprv vyberie konkrétne miesta). Upratanie malých miest v navigačných hookoch; každé miesto vo '
                'vlastnom commite, súbory nad 500 riadkov sa nemenia (`DashboardContent.tsx` má 711).'),
-    dict(n='247', davka='K19',
+    dict(n='247', davka='PO-B',
          co='Klik na položku histórie sa pri písaní ruší až po odoslaní hľadania, nie hneď.',
          preco='JASNÉ. Dohrávka po APP-05 (K4): zrušiť rozbehnutý klik hneď pri zmene textu, test do '
                '`useRecentSearches.race.test.tsx`.'),
-    dict(n='248', davka='K19',
+    dict(n='248', davka='PO-B',
          co='Zrušené textové hľadanie nezresetuje `isRevalidating` (v UI nedosiahnuteľné).',
          preco='JASNÉ. Ten istý súbor `useSearchApi.tsx` (223 riadkov) ako 247; riešiť spolu.'),
-    dict(n='250', davka='K19',
+    dict(n='250', davka='PO-B',
          co='Chýba test resetu súhrnu profilu pri otvorení profilu z vyhľadávania (`useDashboardNavigation.tsx:289`).',
          preco='JASNÉ. Len test; `useDashboardNavigation.tsx` má 514 riadkov, takže sa súbor nemení.'),
-    dict(n='256', davka='K19',
+    dict(n='256', davka='PO-B',
          co='`FeedLikersDialog.tsx` otvára profil vlastným eventom namiesto spoločného `openUserProfile()`.',
          preco='JASNÉ. Jeden malý súbor (209 riadkov), vzor je v `feedProfileNavigation.ts`; doplniť test rovnako ako pri ostatných '
                'miestach.'),
