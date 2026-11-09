@@ -22,7 +22,7 @@ Beh 29. 10. 2026 po zlúčení vetvy 151 (backend Django 4.2.30), `--workers=1 -
 | padlo | 2 |
 | preskočené | 303 |
 
-Rovnaký súčet dali tri samostatné behy: `chromium-desktop` 130 / 0 / 114, `webkit-mobile` 168 / 1 / 75, `webkit-desktop` 129 / 1 / 114 (prešlo / padlo / preskočené). Preskočené sú väčšinou testy určené pre iný typ obrazovky; sedem čaká na testovacie údaje na Railway (nález 209).
+Rovnaký súčet dali tri samostatné behy: `chromium-desktop` 130 / 0 / 114, `webkit-mobile` 168 / 1 / 75, `webkit-desktop` 129 / 1 / 114 (prešlo / padlo / preskočené). Preskočené sú väčšinou testy určené pre iný typ obrazovky. Oprava poznámky po kontrole pôvodného výpisu 8. 11.: sedem scenárov 209 v tomto prijatom behu prešlo; historické chyby prípravy z 28. 10. sa s týmto výsledkom nesmú zamieňať.
 
 Od tohto behu sa zlúčila vetva 153 (len E2E úpravy: čakanie na ustálenú stránku `/search` a dôkazy pri páde). Prvý beh po jej nasadení je nový porovnávací stav, ak nemá nové pády.
 
@@ -62,7 +62,7 @@ Platí od 29. 10. 2026 a nahrádza pôvodné „tri čisté behy po sebe“, kto
 
 Podrobnosti sú v `docs/zoznam-nalezov/ZOZNAM.md`:
 
-- 209: sedem testov čaká na testovacie údaje na Railway (pripraví majiteľ).
+- 209: historické chyby prípravy siedmich scenárov; v prijatom výpise z 29. 10. všetky prešli. Po znovuvytvorení hlavného účtu sú 8. 11. testovacie dáta opäť neúplné (pozri nižšie). To neurčuje príčinu každého pôvodného pádu.
 - 216: stránka `/search` posiela hľadanie dvakrát (chyba aplikácie, rieši Claude).
 - 219: dôkazy pri páde bez časového limitu pre snímku stránky (`page.evaluate`) a text hlášky v `search-settled.ts`.
 - Register: položky v balíku „Nástroje a testy“ (napr. TEST-06, TEST-08).
@@ -304,3 +304,319 @@ Kontroly zahŕňajú chýbajúcu/neplatnú hlavičku, hranicu 5000/5001 ms, poma
 Dlhý ani prihlasovaný beh proti Railway sa v tejto úlohe nespúšťa. Pri 223 sa naďalej čaká na HTTP logy Railway.
 
 Lokálne overenie: 42/42 Node kontrol novej diagnostiky a existujúcich page/deadline/session poistiek, 52/52 existujúcich Jest kontrol formátu a service workerov, TypeScript aplikácie aj explicitne nových E2E súborov, cielený ESLint a `git diff --check` prešli. Nové dva pomocníky majú 97,98 % riadkov / 96,39 % vetiev / 100 % funkcií; nejde o pokrytie celej aplikácie. Izolovaná browser kontrola prešla 3/3 projektov. Existujúci self-test fixture navyše zachoval svoje riadené PASS/FAIL/SKIP a po jednom bezpečnom bloku pri úmyselnom páde prípravy. Kolekcia na tomto maine má 43 špecov / 756 variantov, po 252 na projekt; táto diagnostika nepridáva produkčné testy.
+
+## Počty prvej stránky konverzácií — 209(b), 8. 11. 2026
+
+`messages-peer-profile.spec.ts` zachováva pôvodný výber aj tvrdé chyby prípravy.
+`requirePeerConversation` nad jedinou pôvodnou odpoveďou API priloží a vypíše:
+
+```text
+[E2E-PEER] firstPage=4 slugMatches=1 deletedMatches=0 namedMatches=1 nameMatches=1
+```
+
+- `firstPage`: všetky konverzácie na prvej stránke, bez načítania ďalšej.
+- `slugMatches`: priame konverzácie so zhodou nakonfigurovaného slugu.
+- `deletedMatches`: koľko týchto zhôd má pravdivý príznak odstránenia.
+- `namedMatches`: koľko zhôd nie je odstránených a má neprázdne meno.
+- `nameMatches`: počet priamych aj skupinových riadkov s menom pôvodného prvého
+  aktívneho kandidáta (bez odstránených používateľov). Bez mena je 0.
+
+Do diagnostiky nikdy nejde ID, meno, slug, telo odpovede ani hodnoty cookies.
+Chybné diagnostické hodnoty majú iba pevný výstup `counts=unavailable`; chyba
+prílohy nemení pôvodný výsledok. Priloženie má samostatný rozpočet 1000 ms.
+Špec používa existujúci bezpečný evidence fixture vrátane prípravy; pri páde
+nevytvára screenshot, trace ani textový snímok stránky.
+
+Počty v Správach samy nepotvrdzujú dostupnosť verejného profilu. Odpoveď
+„vidí profil E2E_PEER_SLUG: áno/nie“ treba doložiť profilovým krokom alebo
+samostatne dohodnutým čítaním jeho prístupnosti. Súkromie je platný stav, nie
+automaticky chyba aplikácie či nestabilita prostredia; účet sa kvôli testu
+automaticky neprepína na verejný.
+
+Lokálne kontroly bez env, prihlásenia a siete Railway:
+
+```powershell
+node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/peer-conversation.check.ts
+node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/peer-conversation-browser.check.ts
+```
+
+Izolovaný browser pokus zachytáva všetky požiadavky na syntetickej `.invalid`
+a overuje aj serializáciu helpera cez `page.evaluate` vo všetkých troch
+projektoch. Nepridáva varianty do hlavného produkčného behu.
+
+### Pokus o celý beh na main `92fb1b7d`
+
+Majiteľ potvrdil nasadenie aj okno bez zmien. Pokus 8. 11. 2026 o
+19:12:50.929 UTC cez kanonický príkaz (`workers=1`, `retries=0`) skončil
+po 9 s v `global-setup.ts:44`, keď prihlasovací formulár oznámil chybu.
+Nespustil sa žiadny test ani projekt; toto nie je celý ani prijatý beh,
+nová chyba aplikácie alebo dôkaz nedostupnosti druhého účtu. Pôvodný
+porovnávací stav ostáva nezmenený.
+
+Bol len jeden prihlasovací pokus, bez automatického opakovania. Text
+formulára ani odpoveď servera sa nečítali; `E2E-EVIDENCE` pre globálnu
+prípravu nevznikol. Pred ďalším pokusom má majiteľ preveriť bežné
+prihlásenie hlavného E2E účtu; ďalšie nasadenie a okno bez zmien sa
+potvrdia pred pokračovaním. Dostupnosť `E2E_PEER_SLUG` zatiaľ nie je
+overená, nemožno ju poctivo označiť áno ani nie.
+
+Po výslovnej výzve majiteľa „skús teraz“ bol povolený jeden nový pokus.
+Main po novom fetchi ostal `92fb1b7d`. Spustenie 8. 11. 2026 o
+19:19:36.791 UTC skončilo po 6 s rovnakým výsledkom `alert` v globálnej
+príprave (nie timeout), opäť 0 spustených testov. Nejde o automatický retry
+predošlého behu ani nový výsledok kolekcie. Ďalšie prihlásenie sa nespúšťa,
+kým sa nepreverí jeho príčina; samotný `alert` nedokazuje nesprávne heslo.
+
+Pri nasledujúcom celom behu osobitne sledovať mobilné
+`mobile-settings-navigation.spec.ts` a `mobile-settings-offer-watch-motion.spec.ts`
+(zmenené Nastavenia v K9 a K14) a oba špecy zdieľania s kontrolou upratania
+(K12, zámky pri súbehu, nález 246). HTTP 500 nesmie byť maskované ďalším mazaním.
+
+Až potom samostatne dohodnúť vykonanie pokrytia 295: syntetické fotky do
+príspevku, portfólia a ponuky s uprataním; skutočné BMP/TIFF vrátane prezlečenia
+za `.jpg`; načítanie fotky prihláseného súkromného autora (274); viditeľná
+náhrada po zlyhaní (279, K11). Správy iba medzi dvoma dohodnutými testovacími
+účtami. Starý multipart endpoint ponúk (301) UI nevolá a týmto pokrytý nebude.
+Nastavenia súkromia sa bez dohody nemenia; dostupná konverzácia automaticky
+neznamená dostupný cudzí profil.
+
+### Prihlásenie prešlo, beh bol na pokyn majiteľa ukončený
+
+Tretí, znovu výslovne povolený pokus začal 8. 11. 2026 o 19:22:45.924 UTC
+na nezmenenom maine `92fb1b7d`. Prihlásenie tentoraz prešlo. Až počas behu
+majiteľ potvrdil, že hlavný E2E účet bol vymazaný a vytvorený znova, a rozhodol
+beh ukončiť a najprv obnoviť testovacie dáta. Pôvodná identita a jej dáta
+sa preto nesmú predpokladať ani pri zachovaní rovnakej prihlasovacej adresy.
+
+Prvý SIGINT adresovaný vlastnému kontajneru sa neprejavil zastavením testov;
+druhý bol poslaný priamo jedinému overenému Playwright CLI procesu v tomto
+kontajneri. Ten skončil so stavom 130 a uložil report. Iné kontajnery,
+aplikácia, testové podmienky ani súkromie účtov sa nemenili.
+
+| Projekt | Prešlo | Padlo | Skutočný SKIP | Prerušené | Nespustené |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| webkit-desktop | 88 | 14 | 150 | 0 | 0 |
+| webkit-mobile | 32 | 8 | 27 | 1 | 184 |
+| chromium-desktop | 0 | 0 | 0 | 0 | 252 |
+| **Spolu** | **120** | **22** | **177** | **1** | **436** |
+
+Proces trval 17 min 32 s; report 17 min 26,3 s. Desktopový WebKit 13 min
+1,3 s, mobilný 4 min 12,6 s; Chromium nezačal. Štandardný HTML súčet SKIP
+zahŕňa aj nevykonané a prerušené prípady; tabuľka ich odlišuje podľa
+skutočných výsledkov pokusov. Toto **nie je celý ani prijatý porovnávací
+beh**. Pôvodný stav 427 / 2 / 303 ostáva nezmenený. Nové pády sa na pokyn
+majiteľa zatiaľ neopakovali; nie všetky sú automaticky vysvetlené dátami.
+
+Potvrdené čiastočné výsledky:
+
+- Hlavný účet **vidí profil E2E_PEER_SLUG: áno** — priamy scenár cudzieho
+  profilu po F5 vrátane recenzií prešiel 1/1 v desktopovom WebKite. Opačný
+  smer ani ostatné projekty sa tým nepotvrdzujú.
+- Oba mobilné scenáre Správ skončili na príprave (2/2): zoznam konverzácií
+  vrátil HTTP 200, všetkých päť počtov bolo 0. Nešlo o chybu siete, 401 ani
+  403 v týchto dvoch konkrétnych pokusoch. Profilový krok sa ešte nevykonal.
+- `mobile-settings-navigation.spec.ts` 1/1 a
+  `mobile-settings-offer-watch-motion.spec.ts` 3/3 na mobile prešli.
+- Zdieľanie z Nástenky prešlo 2/2 (WebKit desktop/mobile); všetky štyri
+  známe vytvorené príspevky boli odstránené (4 kontroly HTTP 204). Zdieľanie
+  z profilu zlyhalo v oboch prípadoch na riadku 78 pred otvorením dialógu a
+  POST, teda nič nevytvorilo. Pri prerušení bežal nezápisový test prekladov.
+  Toto samo nepotvrdzuje samostatný súbehový scenár 246.
+
+Skutočný nový blok 209(b), zhodný v oboch pokusoch:
+
+```text
+[E2E-PEER] firstPage=0 slugMatches=0 deletedMatches=0 namedMatches=0 nameMatches=0
+```
+
+Následná inventúra o 19:43:12.339 UTC použila iba existujúcu reláciu
+Playwright API klienta a GET; bez nového prihlásenia alebo čítania `.env.e2e`.
+HTTP 200 potvrdil verejný hlavný účet, 0 ponúk/dopytov, 0 portfólií,
+0 sledovaní, 0 konverzácií a 0 vlastných/zdieľaných príspevkov na celej
+jedinej dostupnej stránke feedu. Obľúbené majú objektový formát; všeobecný
+čítač zoznamov ich počet nevyhodnotil, preto sa nesmie uvádzať 0.
+Neboli vytvorené nové testovacie dáta ani zmenené nastavenia.
+
+### Obnova dát pred ďalším celým behom — najprv dohoda s majiteľom
+
+Zo skutočných požiadaviek existujúcich špecov:
+
+1. Hlavný účet: vlastná ponuka aj dopyt; profil musí umožniť aspoň 30 px
+   posunu pre scenáre recenzií. Aspoň jedna vlastná položka portfólia.
+2. Vlastná zdieľaná živá ponuka na Nástenke na prvých piatich stranách,
+   ale hlbšie než 1000 px. Nesmie sa len odhadnúť jej poloha.
+3. Prijatá priama konverzácia medzi novým hlavným účtom a skutočným
+   druhým testovacím účtom, s aspoň jednou správou, na prvej stránke zoznamu
+   a s jedinečným zobrazovaným menom. Prijatie druhou stranou dohodnúť.
+4. Opakovane použiteľné sledovanie ponúk aj dopytov s živými výsledkami;
+   pre otvorenie autora musí mať výsledok dostupný verejný profil.
+   Ponechať voľný slot, ak majiteľ zapne voliteľné zápisové testy.
+5. Obľúbený dostupný cudzí profil s jedinečným menom pre príslušné scenáre.
+   Reálne vyhľadávanie musí mať dostupné karty oboch typov pre zvolené
+   dotazy a krajinu (špecy majú aj predvolený dotaz `te`).
+
+Základné dáta ešte nezaručia nulový dátový SKIP: stránkovanie Sledovaní
+potrebuje aspoň 11 živých zhôd a scenáre otváracích hodín firemný profil
+s hodinami. Také rozšírenie sa dohodne samostatne; nevytvárať ďalšie účty
+ani rozsiahly verejný obsah len na odstránenie SKIP. Žiadna príprava nesmie
+obísť autorizáciu, potichu meniť súkromie či používať účty mimo dohody.
+
+Diagnostika 209(b) má 12/12 nových Node kontrol, 42/42 existujúcich kontrol
+diagnostiky a izolované 3/3 browser projekty. TypeScript aplikácie aj
+explicitných E2E súborov, cielený lint a kontrola diffu prešli. Ide len
+o diagnostiku, nie opravu aplikácie alebo oslabenie testov.
+
+## Obnovené dáta a celý beh na `5bf32b26` — 9. 11. 2026
+
+Majiteľ potvrdil nasadenie a okno bez zlučovania, nasadení a zmien účtov.
+`origin/main` bol pred behom aj po ňom `5bf32b26` (PR #246, iba dokumentácia
+oproti K14 `92fb1b7d`). Vlastná vetva `e2e/209-diagnostika` ostala bez commitu
+a pushu. Aplikácia, závislosti, Jest, migrácie ani register nálezov sa nemenili.
+
+Predbežné GET overenie: verejný hlavný profil, 2 vlastné karty (ponuka/dopyt),
+1 obľúbený, 2 sledovania s jednou živou zhodou každé, priama konverzácia a
+dostupný profil druhého účtu (HTTP 200). Majiteľ doplnil portfólio; následný
+GET potvrdil 1 položku. WebKit mobil nameral pri existujúcej živej zdieľanej
+ponuke hĺbku 1428 px. Toto nepotvrdzuje všetky voliteľné dátové podmienky.
+
+Kanonický príkaz z `frontend`, všetky tri projekty, workers=1, retries=0:
+
+| Projekt | Prešlo | Padlo | Preskočené | Trvanie |
+| --- | ---: | ---: | ---: | --- |
+| webkit-desktop | 110 | 6 | 136 | 10 min 55,3 s |
+| webkit-mobile | 159 | 16 | 77 | 19 min 27,6 s |
+| chromium-desktop | 114 | 0 | 138 | 5 min 6,4 s |
+| **Spolu** | **383** | **22** | **351** | **35 min 39,8 s** |
+
+Proces 10:30:21–11:06:06 UTC, vrátane prípravy 35 min 45 s. Kolekcia má
+756 variantov v 43 špecoch, flaky=0. Oproti prijatému stavu 427 / 2 / 303 sa
+našlo všetkých pôvodných 732 variantov, žiadny nezmizol; pribudlo 24 (HTML18
+a numerická adresa6). Prechody: 21 PASS→FAIL, 1 SKIP→FAIL, 55 PASS→SKIP,
+10 SKIP→PASS, 2 FAIL→PASS. Oproti poslednému uloženému platnému celému behu
+z 1. 11. (427 / 4 / 307, 738 variantov) pribudlo iba HTML18; všetky vtedajšie
+4 pády teraz prešli. Neúplný beh z 8. 11. sa nepoužíva ako platný základ.
+
+Všetkých 22 pádov je podľa presného kľúča špec/názov/projekt nových; žiadny
+nie je známym pádom č. 1–4. Každý sa samostatne zopakoval 3× v rovnakom
+Dockeri: **66 pokusov = 50 PASS / 8 FAIL / 8 SKIP**, 12 min 53 s, bez
+automatického retry. Dvanásť testov malo 3× PASS; osem znovu padlo; dva
+mali iba SKIP. Pôvodný výsledok 383 / 22 / 351 sa tým nemení a **beh nie je
+prijatý**. Prijatý základ ostáva 427 / 2 / 303.
+
+Opakovaný FAIL (poradie P=prešlo, F=padlo, S=preskočené):
+
+- `search-mobile-cards`, tmavé firemné hodiny, WK mobil: S/S/F; FAIL pred
+  scenárom pri GET identity. Žiadny opakovaný PASS tohto scenára.
+- `offer-watch-results-handoff`, svetlý mobile→desktop app Back, WK mobil:
+  P/F/P; nový FAIL pri GET sledovaní, pôvodný pri navigácii pred Back.
+- `search-panel-fixture`, ponuky, WK mobil: P/F/P; po ťuku sa nepotvrdila
+  profilová URL. Ľudia: P/P/F; opakovaný FAIL bol na loading markeri, teda
+  v inom kroku než pôvodný. Vlastné bloky dôkazov nevznikli.
+- `offer-card-review-translations`, PL/svetlý mobil: F/P/P; GET vlastných
+  kariet zlyhal pred kontrolou prekladu. Vlastný blok dôkazov nevznikol.
+- `offer-reviews-back`, cudzí profil po F5, WK desktop: P/P/F. Pôvodne
+  neprišlo tlačidlo recenzií; pri opakovaní zlyhal vstup do recenzií pred F5
+  a nasledovali 401/403. Nezamieňať s opraveným scroll scenárom 231.
+- `search-country-scroll`, typing alone, WK desktop: P/F/P; zlyhanie GET
+  odporúčaní a následné 401/403. Nie je preukázaná chyba krajiny.
+- `search-to-offer-watches`, tmavý mobil: P/P/F; po HTML 200 sa neobjavilo
+  mobilné upozornenie, viewerReady=false. Príčina inicializácie nie je dokázaná.
+
+Iba SKIP pri opakovaní: PL/svetlý desktop `offer-card-translations` (3×
+priamo potvrdený `own_card_hint_not_completed`) a tmavé prvé chybné
+stránkovanie `offer-watch-pagination-errors` (3× `no_paginated_watch`,
+strážca vyžaduje 11 živých zhôd). Ich pôvodné pády boli pred týmito
+strážcami. SKIP nie je úspešný retest ani jednorazový pád s 3× PASS.
+
+Z 55 nových PASS→SKIP patrí 24 desktopovým prekladom recenzií, 7 desktopovým
+Like prekladom, 11 stránkovaniu, 12 upozorneniam a 1 firemným hodinám. Nie
+všetky konkrétne dôvody pôvodných SKIP ostali v bezpečnom súhrne; strážca
+zistený v kóde je možnosť, nie automaticky runtime dôkaz. Budúcu prípravu
+dát dohodnúť aj pre návody otáčania, existujúce prečítané upozornenia a
+históriu. Bez tichého dokončovania návodov či vytvárania verejného obsahu.
+
+Potvrdené: oba konverzačné testy 209(b) PASS, hlavný účet druhý profil vidí
+(áno). V oboch `[E2E-PEER] firstPage=1 slugMatches=1 deletedMatches=0
+namedMatches=1 nameMatches=1`. Oba feed návraty 209(c) PASS. Mobile Settings
+navigation PASS; motion Jazyk po prípravnom FAIL 3× PASS, ostatné motion2
+PASS. Konkrétny scroll scenár 231 PASS vo všetkých troch projektoch. HTML
+no-store 18/18 PASS, numerický vstup do Jazyk na mobile 2/2 PASS. Zdieľanie
+feed/profil 6/6 PASS a všetkých 9 kontrol odstránenia známeho vytvoreného
+obsahu úspešných; nejde o samostatný záťažový dôkaz súbehu 246.
+
+### Nové dôkazy k 223, nie preukázaná príčina
+
+WK desktop, `offer-reviews-back` opakovanie3: okno 11:15:51–11:16:17 UTC;
+RSC recenzií FAILED po 14037 ms, API 401, refresh 403 približne 11:16:12.
+`search-country-scroll` opakovanie2: 11:17:39–11:18:03 UTC; odporúčania FAILED
+po 20105 ms, API 401, refresh 403 približne 11:18:01. Obe odmietnuté obnovy
+majú `X-App-Duration-Ms: 1`, cookies kontextu `žiadne`, CSRF hlavičku `áno`.
+Časy požiadaviek sú približné z klienta. Zoznam cookies pri odpovedi nie
+je dôkazom ich prítomnosti v odoslanej Cookie hlavičke ani príčiny straty.
+Počas pôvodného celého behu strážca úspešne obnovil reláciu 7× bez chyby.
+401/403 priebeh je zachytený 1× zo 4 pokusov na každý z týchto dvoch testov,
+nie pri oboch ich pádoch. Majiteľovi poslať na porovnanie HTTP logov.
+
+Úplná lokálna bezpečná správa (presné názvy všetkých 22 nových pádov,
+opakovania, šablóny pre Claude a 20 vzniknutých blokov):
+`C:/Projects/svap-e2e-vysledok-20261109.md`. Podkladové bezpečné JSON súhrny
+majú prefix `C:/Projects/svap-e2e-full-5bf32b26-1794220214309` a prípony
+`-details.json`, `-comparison.json`, `-diagnostic.json`, `-extra-evidence.json`.
+Nie sú to surové reporty ani prílohy a nepatria do commitu.
+
+Poznámka k exportu: pôvodný bezpečný export celého behu nezachoval číselné
+X-App-Duration-Ms; ich neprítomnosť nie je dôkaz chýbajúcej hlavičky servera.
+Pri cielených blokoch 223 je zachované reálne číslo1 zo samostatného čítania.
+Lokálne Node kontroly diagnostiky 209(b) po behu znova 12/12 PASS.
+
+Ďalší krok: rozhodnutie majiteľa/Claude podľa dôkazov 223 a načítania
+mobilnej route; samostatne dohodnúť dátové medzery a prípadné rozšírenie
+anonymnej diagnostiky pádov bez bloku. Bez súhlasu sa testy nezmäkčujú ani
+opravujú. Pokrytie fotiek 295 zostáva ďalšia dohodnutá úloha, tu sa nerobilo.
+
+### Doplnok po upozornení na K14 a plán 320 — 9. 11. 2026
+
+Z dokončeného behu na rovnakom main `5bf32b26`: `auth-session.spec.ts`
+**9/9 PASS** (po tri v každom projekte). To nie je dôkaz opravy 223: dva
+odmietnuté refresh priebehy sa zachytili v iných špecoch pri opakovaniach.
+Pri ich ďalšom mapovaní patrí medzi miesta na preverenie aj zmenený
+`frontend/src/utils/csrf.ts`, bez tvrdenia o preukázanej príčine.
+
+`mobile-settings-navigation.spec.ts` na WK mobile PASS, motion Jazyk mal
+pôvodný FAIL na Menu pri príprave a potom 3× PASS; Sledovanie a scroll lock
+PASS. **Tieto špecy neotvárajú Súkromie** (navigation: Jazyk/Upozornenia;
+motion: Jazyk/Sledovanie), preto sa ich výsledok nesmie vydávať za overenie
+nového PrivacySettings. V hlavnej E2E kolekcii sa nenašiel priamy scenár
+Privacy/Súkromie. Kód PrivacySettings naozaj drží obe rozloženia v DOM a
+CSS ukazuje jedno; budúce duplicitné textové/DOM selektory treba zúžiť na
+viditeľný prvok, nie zmäkčiť asercie. Kvôli úspešnému behu sa teraz nič
+neprepisovalo a nemenilo sa súkromie účtov.
+
+Po potvrdenej oprave a nasadení **320** doplniť samostatný WebKit E2E:
+stránka Zmena hesla pri `colorScheme: 'dark'` má obe polia svetlé a čitateľné.
+Bez odoslania formulára a bez reálnej zmeny hesla či vyžiadania e-mailu.
+Oprava 320 je v tomto main stále otvorená; nový test zatiaľ nie je hotový
+ani spustený. Vetva 170 nemá priamy dopad na E2E. Overenie push 318 na
+reálnom iPhone, AWS prefixov 301/304, nastavení Railway 315, rozhodnutí a
+ručných testov 279/293 nie je týmto behom vykonané ani uzavreté.
+
+
+## Predcommitové overenie — 9. 11. 2026
+
+Majiteľ výslovne schválil commit a push oboch vlastných vetiev. Pred prípravou
+bol stiahnutý aktuálny main `352fc9eb` (PR #247, vetva 171, iba register a
+dokumentácia) a obe vetvy boli posunuté fast-forward z `5bf32b26` bez kolízie.
+Historický produkčný beh vyššie stále patrí nasadeniu `5bf32b26`; žiadny nový
+prihlasovaný beh proti Railway sa pri príprave commitov nespustil.
+
+Kontroly diagnostiky 209 na aktualizovanom základe: **54/54 Node kontrol**
+(12 nových + 42 existujúcich), **3/3 syntetických browser projektov**
+(WebKit desktop/mobil, Chromium) v Dockeri bez Railway a prihlasovania,
+úplný TypeScript aplikácie, samostatný striktný TypeScript šiestich dotknutých
+E2E súborov a cielený ESLint prešli. Nové/upravené TS súbory majú najviac
+171 riadkov. Pred zaradením súborov preveriť `git diff --check` aj presný
+staged zoznam. Do commitov patria iba vlastné E2E súbory a toto odovzdanie,
+nie prihlasovacie údaje, auth stav, JSON/HTML reporty alebo prílohy.
+
+Značky `@smoke` ani regresia 320 nie sú týmto commitom implementované.
+Otvorenie PR, zlúčenie do main a nasadenie zostávajú majiteľovi.
