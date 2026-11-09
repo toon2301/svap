@@ -28,10 +28,10 @@ BALIK_PRIPRAVA = 'Príprava ostrého nasadenia (až keď bude aplikácia hotová
 POSLEDNY_POVODNY = 172
 
 PORADIE_BALIKOV = {
-    H: ['Spoľahlivosť CI a testov', 'Bezpečnosť závislostí'],
+    H: ['Produkčná odolnosť aplikácie', 'Spoľahlivosť CI a testov', 'Bezpečnosť závislostí'],
     P: [
         'Bezpečnosť a produkčná odolnosť', 'Produkčná odolnosť aplikácie', 'Spoľahlivosť CI a testov', 'Navigácia a Späť',
-        'Plynulosť prechodov (mobil)', 'Profil a identita', 'Zdieľanie a obrázky', 'Vzhľad Nástenky', 'Upozornenia na zmazaný obsah', 'Žiadosti',
+        'Plynulosť prechodov (mobil)', 'Profil a identita', 'Zdieľanie a obrázky', 'Vzhľad Nástenky', 'Upozornenia na zmazaný obsah', 'Upozornenia a push', 'Žiadosti',
         'Vyhľadávanie a Sledovania',
         'Preklady a hlášky', 'Súkromie a krajina', 'iPhone a WebSocket', 'iPhone overenia', BALIK_PRIPRAVA,
     ],
@@ -202,6 +202,8 @@ def _chyby_fronty(id_otvorenych):
             chyby.append('fronta: %s nie je otvorený nález (je hotový, zatvorený alebo neexistuje); odstráň ho z fronta.py' % n)
         if not (z.get('co') and z.get('preco')):
             chyby.append('fronta: %s nemá vyplnené `co` a `preco`' % n)
+        elif not z['preco'].startswith(('JASNÉ', 'NEJASNÉ')):
+            chyby.append('fronta: %s: `preco` musí začínať slovom JASNÉ alebo NEJASNÉ (README, Postup od K15)' % n)
         vyplnene = [k for k in ('kto', 'stav', 'od') if z.get(k)]
         if vyplnene and len(vyplnene) != 3:
             chyby.append('fronta: %s má vyplnené len %s; stav sa vypĺňa celý (kto, stav, od)' % (n, ', '.join(vyplnene)))

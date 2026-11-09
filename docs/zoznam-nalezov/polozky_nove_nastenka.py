@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 251: položky zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka; 251 až 269) a nálezy,
 ktoré pribudli po ňom (270 až 304: kolega pri K6 až K12, manuálne testy majiteľa zo 7. a 8. 11. 2026 a analýza Codexu; hotové
-nálezy (270, 271, 273, 274, 276, 277, 279, 281, 282, 291, 292 a 293) sú v `hotove_dalsie.py` a 275 je zatvorený rozhodnutím R25 v
+nálezy (270, 271, 273, 274, 276, 277, 279, 281, 282, 286, 291, 292, 293, 296, 297 a 301) sú v `hotove_dalsie.py` a 275 je zatvorený rozhodnutím R25 v
 `zatvorene_dalsie.py`).
 
 PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, preto sa každá položka porovnala s týmto zoznamom a s
@@ -254,14 +254,6 @@ NEW_ITEMS_NASTENKA = [
               'efekt v `hooks/useDashboardUserProfile.tsx` (490 riadkov, okolo riadka 158) ho prepne na `profile`.',
          note='Zvyšok po 276. Súbor má 490 riadkov, takže už niekoľko pridaných riadkov ho dostane nad limit 500. Odhad kolegu: nízky · M.',
          dec=None, src='K9 (kolega)'),
-    dict(n=286, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
-         kratko='sekcie Nastavení ukážu pri vstupe prechodný stav (kostra, prázdny stav, „Načítavam…“)',
-         what='Kolega pri K9 (a nahrávka majiteľa z iPhonu): sekcie Nastavení ukážu pri vstupe prechodný stav. Blokované a Sledovanie ukážu '
-              'krátku kostru a potom prázdny stav; Súkromie chvíľu nič; Upozornenia ukážu 3 snímky „Načítavam…“ a potom skok rozloženia. '
-              'Sledovanie sa zatvára naraz, lebo je to samostatné okno (`offer-watch/mobile/OfferWatchSettingsMobileHost.tsx`, 343 '
-              'riadkov).',
-         note='Zvyšok po 276. Odhad kolegu: nízky · S po sekciách; riešiť po jednej sekcii v samostatných commitoch.',
-         dec=None, src='K9 (kolega a nahrávka majiteľa)'),
     dict(n=287, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
          kratko='vstupný fade z 0 pri každom otvorení modulu (Obľúbené zmerané ~270 ms)',
          what='Kolega pri K8: moduly sa pri každom otvorení vyfadujú z priehľadnosti 0. Pri Obľúbených je to zmerané (~270 ms), pri '
@@ -320,25 +312,6 @@ NEW_ITEMS_NASTENKA = [
               'nahrávanie s uprataním a načítanie fotiek súkromného autora a náhrady pri chybe; správy bez nepovoleného odosielania do '
               'produkcie.',
          dec=None, src='K8, K10 (kolega) a Codex, 7. 11. 2026'),
-    dict(n=296, bucket=P, imp=N, eff=ES, pkg='Produkčná odolnosť aplikácie',
-         kratko='hromadné `QuerySet.delete()` pri zmazaní účtu obchádza zámky z 246',
-         what='Kolega pri K12: zámky z nálezu 246 platia pre zdieľanie a pre model `delete()` (`OfferedSkill`, `PortfolioItem`), no hromadné '
-              '`QuerySet.delete()` ich obchádza. Týka sa `accounts/account_deletion.py:89–90` (`OfferedSkill.objects.filter(user=user).delete()` a '
-              '`PortfolioItem.objects.filter(owner=user).delete()` pri zmazaní účtu) a podľa kolegu aj mazania cez administráciu. Ak sa obsah '
-              'mazaného účtu v tej istej chvíli zdieľa, súbeh môže skončiť HTTP 500 (rovnaký mechanizmus ako pri 232 a 246).',
-         note='Návrh kolegu: pred hromadným mazaním zamknúť riadky (`select_for_update()`) v tej istej transakcii a pridať test súbehu '
-              '(vzor `accounts/test/test_feed_share_source_delete_race.py`, len PostgreSQL). Odhad kolegu: nízky · S. `account_deletion.py` má '
-              '328 riadkov. Súbeh je veľmi zriedkavý (zmazanie účtu pri súčasnom zdieľaní jeho obsahu); zaradené PRED NASADENÍM len preto, že '
-              'ide o dokončenie 246 v tej istej oblasti.',
-         dec=None, src='K12 (kolega)'),
-    dict(n=297, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky',
-         kratko='`check:missing-translations` nie je v CI',
-         what='Kolega pri K12: `npm run check:missing-translations` (porovná kľúče v `en`, `de`, `cs`, `hu` a `pl` so `sk.json`) nie je v CI; '
-              'v `deploy.yml` beží od K12 len `check:used-translation-keys`. Dnes je skript čistý (0 chýbajúcich a 0 navyše v piatich jazykoch).',
-         note='Návrh kolegu: pridať ako druhý krok vedľa `check:used-translation-keys` v jobe `checks` (po `npm ci`); komentár v `deploy.yml`, '
-              'že tento skript sem nepatrí, treba upraviť. Skript kontroluje len prítomnosť kľúčov, nie to, či text nie je slovenská kópia '
-              '(to je nález 176). Odhad kolegu: nízky · S.',
-         dec=None, src='K12 (kolega)'),
     dict(n=298, bucket=A, imp=N, eff=ES, pkg='Funkcie – väčšie balíky',
          kratko='avatary a správy sploštia animovaný PNG a WebP na prvú snímku',
          what='Kolega pri K12: zdieľané `strip_image_metadata` (`swaply/image_metadata.py`) ukladá PNG a WebP bez `save_all`, takže animovaný PNG '
@@ -359,35 +332,24 @@ NEW_ITEMS_NASTENKA = [
          kratko='telo chyby starého endpointu ponúk je Python zoznam',
          what='Kolega pri K12: starý multipart endpoint ponúk vracia pri chybe validácie `str(ValidationError)`, takže telo odpovede je text '
               'Python zoznamu (hranaté zátvorky a apostrofy okolo hlášky) namiesto samotnej hlášky.',
-         note='Kozmetika vývojovej zálohy; bezpredmetné, ak sa endpoint zruší alebo vypne (R30). Odhad kolegu: nízky · S.',
-         dec='ROZHODNUTIE R30', src='K12 (kolega)'),
-    dict(n=301, bucket=P, imp=N, eff=ES, pkg='Zdieľanie a obrázky',
-         kratko='fotka nahraná starým endpointom ponúk je na produkcii neprístupná (S3 `AccessDenied`)',
-         what='Majiteľ pri manuálnom teste po K12 (produkcia, Railway): fotka nahraná priamym volaním starého endpointu '
-              '`POST /api/auth/skills/<id>/images/` (súbor s osobným názvom) sa uloží podľa odpovede servera (HTTP 201, stav `approved`, '
-              '`image_url` na S3 s náhodným názvom `offers/<náhodný názov>.jpg`), no otvorenie `image_url` vráti od Amazon S3 chybu '
-              '`AccessDenied` a po obnovení testovacej ponuky sa fotka nezobrazuje. Anonymný názov súboru funguje správne; odstránenie GPS '
-              'sa ručne neoverilo, lebo výsledný súbor nie je prístupný. Bežné nahrávanie cez UI (S3) funguje a fotka sa zobrazuje.',
-         note='Agent v kóde (8. 11. 2026, nezmapované do hĺbky): endpoint ukladá do poľa `OfferedSkillImage.image` (`upload_to="offers/"`, '
-              'produkčné úložisko `S3Boto3Storage` bez ACL a s nepodpísanými adresami: `AWS_DEFAULT_ACL = None`, `AWS_QUERYSTRING_AUTH = False`), '
-              'kým S3 pipeline ukladá schválené fotky do `media/offers/<id ponuky>/…` bez ACL a serializér ich skladá ako `MEDIA_URL` + '
-              '`approved_key`. Verejné čítanie teda zrejme platí len pre prefix `media/` (nastavenie bucketu), nie pre `offers/`. Pravdepodobne to '
-              'nie je regresia K12: endpoint na produkčnom S3 zrejme nikdy nevytvoril prístupnú fotku (K12 zmenil len názov a metadáta). '
-              'Neoverené: S3 vráti `AccessDenied` aj pre neexistujúci objekt, ak chýba právo na výpis bucketu; overenie majiteľom v AWS konzole: '
-              'či objekt `offers/…` existuje a na ktoré prefixy povoľuje politika bucketu verejné čítanie. UI endpoint na produkcii nevolá '
-              '(vývojová záloha v `frontend/src/lib/offerImageUpload.ts`), takže dopad majú len priame volania. Návrh: R30 (v produkcii endpoint '
-              'vypnúť, keď je S3 nakonfigurované). Súvisí s nálezom 304 (README vs. skutočná politika bucketu). Odhad: nízky · S.',
-         dec='ROZHODNUTIE R30', src='manuálny test majiteľa po K12'),
+         note='Kozmetika vývojovej zálohy: po rozhodnutí R30 (a) a K13 endpoint v produkcii vracia 400 a ostáva len bez bucketu '
+              '(lokálny vývoj, testy), takže ide len o pohodlie pri vývoji. Odhad kolegu: nízky · S.',
+         dec=None, src='K12 (kolega)'),
     dict(n=302, bucket=P, imp=N, eff=EM, pkg='Preklady a hlášky',
-         kratko='natívne `alert()` ostáva na 14 miestach v 6 súboroch (okno prehliadača namiesto toastu)',
-         what='Po K11 (nález 293) ostáva v zdrojoch 14 volaní natívneho `alert(...)` v 6 súboroch (bez testov): `useSkillsModals.ts` 3 (337 '
-              'riadkov), `DashboardModals.tsx` 2 (485 riadkov; zmena typu účtu), `TagsSection.tsx` 1 (228 riadkov), `SkillsModuleRouter.tsx` 4 '
-              '(583 riadkov), `OfferReviewsView.tsx` 3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov). Posledné tri '
-              'súbory sú nad 500 riadkov. Natívne okno prehliadača je rušivé (blokuje stránku) a texty v nich sú čiastočne bez prekladu.',
-         note='Návrh: `toast.error` namiesto `alert` s prekladmi vo všetkých šiestich jazykoch. Dá sa hneď pre šesť volaní v súboroch do 500 '
-              'riadkov (`useSkillsModals.ts`, `DashboardModals.tsx`, `TagsSection.tsx`); osem volaní v troch súboroch nad 500 riadkov '
-              'vyžaduje jednorazovú výnimku od majiteľa alebo delenie súborov (TECH-…). Odhad: nízky · M. Vzhľadová vec, preto PRED NASADENÍM.',
-         dec=None, src='K11 (kolega) a manuálny test majiteľa, 7. 11. 2026'),
+         kratko='natívne `alert()` ostáva na 8 miestach v 3 súboroch nad 500 riadkov (zvyšok po K13)',
+         what='ČIASTOČNE HOTOVÉ: šesť `alert()` v súboroch do 500 riadkov je toast s prekladmi v K13 (PR #244, zlúčené 8. 11. 2026, '
+               'commit `e83100db`): `useSkillsModals.ts` 3, `DashboardModals.tsx` 2 (teraz 492 riadkov) a `TagsSection.tsx` 1; nový '
+               'preklad `accountType.changeFailed` v šiestich jazykoch. Overenie podľa kolegu: 25 testov (19 padalo pred opravou), '
+               'mutácie 20 z 20; z kontroly CodeRabbit sa odstránili tri spye na `window.alert` v `TagsSection.test.tsx` (`cff8e0ae`; '
+               'nález platil len sčasti: `restoreAllMocks` v súbore bol a dva zvyšné spye sú potrebné, bez nich mutácia prežije). '
+               'OSTÁVA osem volaní v troch súboroch nad 500 riadkov: `SkillsModuleRouter.tsx` 4 (583 riadkov), `OfferReviewsView.tsx` '
+               '3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov); agent počty overil 8. 11. 2026. Natívne okno '
+               'prehliadača je rušivé (blokuje stránku) a texty v nich sú čiastočne bez prekladu.',
+         note='Zvyšných osem volaní vyžaduje jednorazovú výnimku od majiteľa alebo delenie súborov (TECH-…): rozhodnutie R31. Návrh: '
+               'výnimka len na náhradu `alert` za `toast.error` s prekladmi vo všetkých šiestich jazykoch (súbory nerastú); pri každom '
+               'mieste skontrolovať, či chyba po `alert` letí ďalej a volajúci ukáže ešte jedno hlásenie. Odhad: nízky · M. Vzhľadová '
+               'vec, preto PRED NASADENÍM.',
+         dec='ROZHODNUTIE R31', src='K11 (kolega) a manuálny test majiteľa, 7. 11. 2026; zvyšok po K13'),
     dict(n=303, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
          kratko='32 zo 43 súborov s `<img>` nemá `onError` (netriedené)',
          what='Po K11 (nález 291) má `onError` len časť miest s fotkami. Hrubé počítanie agenta (8. 11. 2026, bez testov): 32 zo 43 súborov '

@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='8. 11. 2026',
-    kod='`main` `95fee208` (po PR #242)',
+    kod='`main` `92fb1b7d` (po PR #245)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,29 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('8. 11. 2026',
+     'Vetva 170 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `92fb1b7d`, teda po PR #245; čaká na PR). (1) '
+     'Zápis trinástej a štrnástej práce kolegu: K13 (PR #244, zlúčené 8. 11. 2026 o 15:20; 17 súborov, +839/−19; backend, '
+     'frontend a CI) a K14 (PR #245, zlúčené 8. 11. 2026 o 19:42; 39 súborov, +3 157/−123). Agent porovnal správu kolegu s '
+     'PR, s CI a s kódom na `main`: CI (`checks` aj `backend-postgres`) prešlo v oboch PR aj na `main` po oboch zlúčeniach; '
+     'CodeRabbit mal v každom PR dve pripomienky a výhradu k názvu PR (v #244 jedna platila len sčasti, v #245 obe platné; '
+     'všetky opravené), pri poslednom commite oboch PR preskočil (limit) a Codex nemal nálezy. Hotové sú 301, 296, 297, 244 '
+     'a 286 (všetky štyri sekcie); 302 a 245 sú hotové len sčasti. Návrh agenta pre 296 (mazať po jednej) sám nestačil: '
+     'kolega našiel deadlock a doplnil zámok riadku používateľa. Merania kolegu v prehliadači (px, ms, CLS) agent '
+     'nezopakoval. (2) Ručné testy majiteľa po K14: push na iPhone neprichádza (nález 318, HNEĎ; podozrenie na regresiu, '
+     'príčina nepotvrdená; agent mapoval kód a zámok závislostí), prepínač upozornení offline (319), zmena hesla s čiernymi '
+     'poľami (320, príčina `color-scheme` a polia bez pozadia) a nedokončené kategórie upozornení (321, spolu s kandidátom N '
+     'kolegu). (3) Nové nálezy 305 až 321: kandidáti kolegu A, C, D, E, F, G, H, I, J, K, M, O a P (305 až 317); kandidát B '
+     'je v 302, L v 206 a N v 321. (4) Doplnky: 183, 194, 196, 206 a 240 (príčina incidentu je odstránená v 244). (5) '
+     'Rozhodnutie R30 zapísané ako (a) (majiteľ poslal kolegovi text K13 s týmto variantom a PR zlúčil); nové čakajúce R31 '
+     '(výnimka pre osem `alert()`) a R32 (kategórie upozornení: dokončiť, alebo skryť). (6) Poradie prác pre kolegu: K13 a '
+     'K14 sú hotové; nová dávka K15 (318 diagnostika, 320, 306, 319) a K16 (308 až 311 a 312); staršie dávky 24, 22, 23, 26 '
+     'a 247, 248, 250, 256 sa premenovali z K15 a K16 na K17 a K18; 302 a 245 čakajú na rozhodnutie a dôkazy, preto nie sú v '
+     'poradí. (7) Nové balíky „Upozornenia a push“ (P) a „Produkčná odolnosť aplikácie“ (aj v skupine HNEĎ). (8) Od K15 skúška '
+     'nového postupu (odsúhlasil majiteľ 8. 11. 2026): karta dávky s označením JASNÉ alebo NEJASNÉ, výsledok dávky na jednu stranu, '
+     'kontrola výsledku agentom pred zlúčením, dymový test majiteľa po nasadení, filter nových nálezov (číslo len s dôkazom a '
+     'dopadom, najviac 5 na dávku; ostatné do `poznamky.md`) a zastavenie radu pri chybe HNEĎ; šablóny sú v `sablony/` a pravidlá '
+     'v `README.md`. Dopad na E2E tejto vetvy: žiadny.'),
     ('8. 11. 2026',
      'Vetva 169 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `95fee208`, teda po PR #242; čaká na PR). (1) Zápis '
      'jedenástej a dvanástej práce kolegu: K11 (PR #241, zlúčené 7. 11. 2026; frontend, 27 súborov) a K12 (PR #242, zlúčené 8. 11. 2026; '
@@ -97,25 +120,27 @@ PORADIE = [
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
-            'zlúčené vo vetve 165, PR #230; 246 v K12, PR #242; ostáva 245 a 296); ďalej 185, OW-07, 244 (zámok závislostí backendu), '
+            'zlúčené vo vetve 165, PR #230; 246 v K12, PR #242; 296 v K13, PR #244; ostáva 245: overenie v logoch Railway; nový nález HNEĎ '
+            '318: push na iPhone po K14, najprv diagnostika); ďalej 185, OW-07, '
             'overenie súkromia obrázkov správ (266), politika S3 bucketu v README (304) a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, '
             '225, 295; 212 je '
-            'hotová vo vetve 157, 228 v K6, 194 a časť 204 v K12)',
+            'hotová vo vetve 157, 228 v K6, 194 a časť 204 v K12, 244 v K14)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['185', '245', '296', 'OW-07', '244', '266', '304', '31', '189', '209', '223', '225', '295']),
+         polozky=['318', '245', '185', 'OW-07', '266', '304', '31', '189', '209', '223', '225', '295']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
-         co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 289: zvyšky po 276; 287 a 288 čakajú na rozhodnutie '
-            'R28), Profil a identita (81, 272), Zdieľanie a obrázky (92, 207, 301 neprístupná fotka starého endpointu ponúk), natívne '
-            'okná `alert()` namiesto toastov (302), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
+         co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14 a jej zvyšky sú 308 až 311; 287 a 288 '
+            'čakajú na rozhodnutie R28), Profil a identita (81, 272, 320 formulár zmeny hesla s čiernymi poľami), Zdieľanie a obrázky '
+            '(92, 207; 301 je hotová v K13), natívne okná `alert()` namiesto toastov (302: zostáva osem, rozhodnutie R31), Upozornenia a '
+            'push (319 prepínač offline, 321 nedokončené kategórie, rozhodnutie R32), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '286', '287', '288', '289', '81', '272', '92', '207', '301', '302', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '308', '309', '310', '311', '81', '272', '320', '92', '207', '302', '319', '321', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='175, 176, 204, 297, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6)',
+         co='175, 176, 204, 306 (surový „Network Error“ v toastoch), APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
-         polozky=['175', '176', '204', '297', 'APP-03', '186']),
+         polozky=['175', '176', '204', '306', 'APP-03', '186']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',

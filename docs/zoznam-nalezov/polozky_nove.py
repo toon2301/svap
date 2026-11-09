@@ -93,7 +93,8 @@ NEW_ITEMS = [
               '(nové sú len `token_blacklist.0013` a `authtoken.0004`, obe bez zmeny schémy), tokeny platia v oboch smeroch (nasadenie aj rollback). '
               'Spustené 26. 10. 2026, časť 183a 27. 10. 2026, časť 183b (vetva 154) 30. 10. 2026; počty sú záznamy nástroja, nie doslovný zoznam zneužiteľných chýb. Doplnok z K12 (8. 11. 2026): výnimka `PYSEC-2026-1845` (pytest '
               '8.3.2) je v `.github/dependency-audit-exceptions.json` s podmienkou „zatvorí nález 183 (pytest 9)“; po povýšení na pytest 9 '
-              'ju týždenný audit ohlási ako zastaranú a treba ju odstrániť.',
+              'ju týždenný audit ohlási ako zastaranú a treba ju odstrániť. Doplnok z K14 (8. 11. 2026): audit teraz číta `backend/constraints.txt`, '
+              'takže pri povýšení na pytest 9 treba obnoviť aj zámok (postup je v jeho hlavičke).',
          dec='ROZHODNUTIE R8', src='kontrola 26. 10. 2026'),
     dict(n=185, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
          what='`SECURITY_AUDIT_REPORT.md` v koreni repozitára je z roku 2024 (názov Swaply) a vedie R1–R7 ako „neriešené“, '
@@ -182,7 +183,8 @@ NEW_ITEMS = [
               'robiť spolu s nálezom 194 (úprava workflow). Doplnok z K12 (8. 11. 2026): nový workflow '
               '`.github/workflows/dependency-audit.yml` používa `actions/checkout@v4`, `actions/setup-node@v4` a '
               '`actions/setup-python@v5` a v logu behu je hneď varovanie „Node.js 20 is deprecated“; treba ho zahrnúť do tohto nálezu a '
-              'povýšiť spolu s `deploy.yml`.',
+              'povýšiť spolu s `deploy.yml`. Doplnok z K14 (8. 11. 2026): `actions/setup-python@v4` je v `deploy.yml` stále dvakrát (riadky 57 a '
+              '132) a podľa kolegu to `actionlint` hlási aj na `main`.',
          dec=None, src='vetva 143'),
     dict(n=204, bucket=P, imp=N, eff=ES, pkg='Preklady a hlášky', kratko='nepoužitý kľúč `profile.photoRemovedError` (zvyšok po K6)',
          what='ČIASTOČNE HOTOVÉ: tri chýbajúce kľúče (`feed.captionPlaceholder`, `feed.commentsClose`, `feed.openProfile`) aj tri falošné '
@@ -219,7 +221,9 @@ NEW_ITEMS = [
               'je z PR #171; agent to pre skrátenú históriu klonu nevie overiť), rovnaká chyba je na `main` aj pred K7 a CI ESLint nespúšťa. '
               'Doplnok z K10 (7. 11. 2026): rovnaký mock `framer-motion` s `any` je aj v druhom teste Obľúbených, '
               '`frontend/src/components/dashboard/modules/__tests__/FavoritesModule.test.tsx:10`; kolega ho pri K10 nahlásil ako nové '
-              'miesto (nízky · S).',
+              'miesto (nízky · S). '
+              'Doplnok z K14 (8. 11. 2026): `frontend/src/utils/__tests__/csrf.test.ts:28` používa `require(...)` (pravidlo '
+              '`no-require-imports`); podľa kolegu je to na `main` od júna a ESLint je na súboroch zmenených v K14 inak čistý.',
          dec=None, src='vetva 147'),
     dict(n=207, bucket=P, imp=N, eff=EM, pkg='Zdieľanie a obrázky', kratko='odoslanie fotky v správach trvá dlhšie',
          what='Po oprave 197 sa fotky z iPhonu v správach odosielajú, no podľa manuálneho testu (28. 10.) odoslanie trvá dlhšie, než by používateľ '
@@ -481,3 +485,8 @@ NEW_ITEMS.extend(NEW_ITEMS_DALSIE)
 from polozky_nove_nastenka import NEW_ITEMS_NASTENKA  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_NASTENKA)
+
+# Nálezy od 305 (kandidáti kolegu z K13 a K14 a ručné testy po K14) sú v `polozky_nove_k14.py`.
+from polozky_nove_k14 import NEW_ITEMS_K14  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_K14)

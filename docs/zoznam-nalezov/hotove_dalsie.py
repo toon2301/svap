@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K12, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K14, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -296,5 +296,77 @@ DONE_SINCE_DALSIE = [
               'commit je od autora „Claude“ (noreply@anthropic.com), nie z účtu majiteľa, takže e-mail nemusí prísť majiteľovi: kým majiteľ '
               'riadok `cron` sám nezmení, treba v pondelok skontrolovať záložku Actions ručne. Doplnky: nové akcie `checkout@v4`, `setup-node@v4` '
               'a `setup-python@v5` hlásia „Node.js 20 is deprecated“ (nález 196); `glob` a `minimatch` (moderate, nález 229) pri prahu `high` '
-              'audit nehlási. Dopad na E2E: žiadny.'),
+              'audit nehlási. Doplnok z K14 (PR #245, 8. 11. 2026): audit teraz číta `backend/constraints.txt` (aj tranzitívne balíky); '
+              'lokálny audit zámku ukázal podľa kolegu len `pytest` 8.3.2 (`PYSEC-2026-1845`), ktorý je vo výnimkách. Prvý plánovaný '
+              'beh (9. 11. 2026 05:23 UTC) teda prvýkrát audituje celý zámok; červený beh znamená nový záznam mimo výnimiek, nie '
+              'chybu K14. Dopad na E2E: žiadny.'),
+    dict(n=301, vetva='K13', pr='#244', zlucene=True,
+         text='HOTOVÉ (K13, zlúčené v PR #244 dňa 8. 11. 2026, commit `68e2a28b`; variant (a) z rozhodnutia R30): `skill_images_view` '
+              '(`accounts/views/skills.py`, teraz 482 riadkov) vráti pri nastavenom `AWS_STORAGE_BUCKET_NAME` HTTP 400 s textom, že '
+              'fotky ponúk idú cez úložisko (`upload-init` a `upload-complete`), a nič neuloží. Overenie vlastníka (404 pre cudziu '
+              'ponuku) ide pred touto kontrolou a GET ostáva. Bez bucketu (lokálny vývoj, testy) sa nič nemení; podmienka je v '
+              'samostatnej funkcii `_offer_images_use_storage_upload`, lebo `skill_images_view` má lokálne importy `settings`. '
+              'Overenie podľa kolegu: 7 testov (5 padalo pred opravou, ďalšie dva strážia poradie kontrol), mutácie 9 z 9; CI prešlo '
+              '(`checks` aj `backend-postgres`). Pozor: dôvod („súbor sa uloží mimo verejného prefixu `media/`“) je v komentári v '
+              'kóde napísaný ako fakt, no ide o odhad z kódu; skutočná politika bucketu v repozitári nie je (nález 304) a overenie v '
+              'AWS konzole čaká na majiteľa. Fotka z ručného testu ostáva v testovacej ponuke: zmazať ju treba v aplikácii. Zostáva '
+              'nález 300 (telo chyby vývojovej zálohy). Dopad na E2E: žiadny (špecy starý endpoint nevolajú).'),
+    dict(n=296, vetva='K13', pr='#244', zlucene=True,
+         text='HOTOVÉ (K13, zlúčené v PR #244 dňa 8. 11. 2026, commit `b43a40fb`): `anonymize_user` (`accounts/account_deletion.py`, '
+              'teraz 353 riadkov) mazal ponuky, portfólio a príspevky hromadným `QuerySet.delete()`, ktoré obchádza zámky z 246 a '
+              '232; pri súbežnom zdieľaní vznikala chyba 500 (na PostgreSQL 16 reprodukované, 6 súbehových testov padalo). Oprava: '
+              'riadok používateľa sa zamyká `FOR NO KEY UPDATE` (`select_for_update(no_key=True)`; zamykanie sa naďalej vylučuje s '
+              '`lock_users_for_update`), ponuky a položky portfólia sa mažú po jednej cez `delete()` modelu v poradí `pk` a príspevky '
+              'autora sa pred zmazaním zamknú tiež v poradí `pk`. Samotné mazanie po jednej (návrh z textu pre kolegu) skončilo v '
+              'jednom poradí deadlockom, potvrdeným v logu PostgreSQL; zámok používateľa ho odstránil. Overenie podľa kolegu: 10 '
+              'testov (9 padalo pred opravou), mutácie 9 z 9 (dve najprv prežili a pribudli testy), súbehové testy 5× po sebe bez '
+              'pádu. Z kontroly CodeRabbit (PR #244): job `backend-postgres` v `deploy.yml` teraz najprv overí, že Django používa '
+              'PostgreSQL, inak skončí chybou (commit `5158aeb0`, overené v piatich scenároch), lebo súbehové testy sa pri zlom alebo '
+              'chýbajúcom `DATABASE_URL` ticho preskakovali. Mazanie cez administráciu a príkaz `delete_all_users` ostáva mimo (nález '
+              '305). Dopad na E2E: žiadny.'),
+    dict(n=297, vetva='K13', pr='#244', zlucene=True,
+         text='HOTOVÉ (K13, zlúčené v PR #244 dňa 8. 11. 2026, commit `06e68e2e`): v jobe `checks` v `.github/workflows/deploy.yml` '
+              'beží krok „Check missing translations“ hneď za krokom „Check used translation keys“ (po `npm ci`, pred testami); '
+              'komentár nad ním vysvetľuje, že dopĺňa prvú kontrolu a že nehľadá slovenské kópie v iných jazykoch (nález 176). '
+              'Overenie: v CI zelený, 4 409 kľúčov, 0 chýbajúcich a 0 navyše v piatich jazykoch (agent 8. 11. 2026 lokálne rovnako). '
+              'Dopad na E2E: žiadny.'),
+    dict(n=244, vetva='K14', pr='#245', zlucene=True,
+         text='HOTOVÉ (K14, zlúčené v PR #245 dňa 8. 11. 2026, commit `1e4f35fd`): nový `backend/constraints.txt` pripína 115 balíkov '
+              'vrátane tranzitívnych z čistého prostredia Python 3.11 (postup obnovy je v jeho hlavičke). `-c constraints.txt` je '
+              'prvý riadok `requirements.txt` aj `requirements-test.txt`, takže zámok platí pri každej inštalácii vrátane ciest, '
+              'ktoré v Railway nevidno; chýbajúci súbor zhodí build. `backend/Dockerfile` kopíruje `constraints.txt` (`COPY '
+              'requirements.txt constraints.txt ./`) a týždenný `dependency-audit.yml` audituje presne zámok, teda aj tranzitívne '
+              'balíky. V CI pribudol krok „Check dependency lock“ (`.github/scripts/check_dependency_lock.py`): piny sú presné, '
+              '`requirements*.txt` ich spĺňajú a nainštalované balíky sa rovnajú zámku. `railway.json` sa nemení: kolega tvrdí, že ho '
+              'Railway nečíta a stavia z `backend/Dockerfile` (potvrdiť môže len majiteľ v nastaveniach Railway, nález 315). Príčina '
+              'incidentu z nálezu 240 je tým odstránená. Overenie podľa kolegu: 35 testov, mutácie 22 z 22, čisté prostredie s `-c`, '
+              '`pip check` a `manage.py check` čisté, SQLite 2 316 prešlo a 24 preskočených, PostgreSQL 2 338 prešlo a 2 preskočené; '
+              'CI prešlo vrátane nového kroku. Po zmene `requirements*.txt` treba zámok obnoviť, inak je krok červený a „Wait for CI“ '
+              'nasadenie zastaví. `pip`, `setuptools` a `wheel` v zámku nie sú (patria základnému obrazu). Prvé nasadenie nainštaluje '
+              'presne tieto verzie; podľa kolegu sa oproti jeho staršiemu prostrediu pohlo 5 zo 115 balíkov (napr. `celery` 5.6.3 → '
+              '5.7.0). Agent rekonštruoval rozlíšenie pôvodného `requirements.txt` k 5. až 6. 11. 2026 (nástroj `uv`, '
+              '`--exclude-newer`): proti zámku sa líšili len `cbor2` (6.2.0.post2 → 6.2.1) a `click` (8.5.0 → 8.5.1), takže produkčný '
+              'build zámok takmer nezmenil; je to odhad, skutočné verzie ukáže `pip freeze` z `backend-http`. Zostáva nález 317 '
+              '(zámok je bez hashov). Dopad na E2E: žiadny priamy.'),
+    dict(n=286, vetva='K14', pr='#245', zlucene=True,
+         text='HOTOVÉ (K14, zlúčené v PR #245 dňa 8. 11. 2026, commity `ef4fa87d` (základ a Blokované), `b1ed7146` (Upozornenia), '
+              '`53b9c7d3` (Súkromie) a `84438a5b` (Sledovanie na mobile)): spoločný základ je hook `useDelayedLoading` a obal '
+              '`DelayedSkeleton` (kostra je v DOM od prvého snímku, prvých 200 ms neviditeľná a drží miesto, potom pulzuje; '
+              '`role=status`, `aria-busy` a text pre čítače) a animácia `content-in` (150 ms, len priehľadnosť; existujúca '
+              '`animate-fade-in` je v `globals.css` dvakrát a posledná posúva obsah o 20 px). „Znížený pohyb“ rieši globálny blok '
+              '`prefers-reduced-motion`. Blokované: kostra aj zoznam 244 × 358 px, CLS 0 (predtým kostra 267 px a prázdny stav 236 '
+              'px). Upozornenia: pod voľbou Správ sa už nepridáva riadok „Načítavam nastavenia…“ (posun 24 px, pri uloženom „Zapnuté“ '
+              '44 px); `usePushMessagesPreference` vracia `initialLoading`, kostra `OptionRowsSkeleton` drží výšku a stavový riadok '
+              '`PushMessagesStatus` je v DOM vždy; blok Správ sa nehýbe (CLS 0). Súkromie: prázdny snímok (12 ms pri ťuknutí, 24 ms '
+              'pri priamom vstupe) vznikal v `ModuleRouter`, kde je `useIsMobile()` v prvom vykreslení vždy „desktop“; nový '
+              '`PrivacySettings.tsx` vykreslí obe rozloženia a vyberie CSS (pôvodné dva komponenty sa nemenia). Sledovanie na mobile: '
+              'kostra až po 200 ms a obsah sa po načítaní vyfaduje (okno Sledovania sa nemení). Čísla (px, ms, CLS) sú merania kolegu '
+              'v Chromiu, agent ich nezopakoval a iPhone sa neoveril. Overenie podľa kolegu: 24, 36, 14 a 7 testov, mutácie 25 z 25, '
+              '25 z 25, 14 z 14 a 11 z 11 (niektoré najprv prežili a pribudli testy). Z kontroly CodeRabbit (PR #245): chyba pod '
+              'voľbou Správ má `role=alert` (`e61d44f8`) a JSDoc k dotknutým funkciám (`29d4755e`; kontrola pokrytia hlásila 78,13 % '
+              'pri prahu 80 %). Obmedzenia podľa kolegu: kostra sa ukáže až po 200 ms bez minimálnej doby zobrazenia, takže pri '
+              'odpovedi za 0,2 až 0,25 s môže krátko bliknúť; `PrivacySettings` drží v DOM obe rozloženia (jedno je `display: none`), '
+              'preto treba selektory v testoch a E2E zužovať na viditeľné (dnes žiadny taký nie je). Zvyšky sú nálezy 308 až 311. '
+              'Dopad na E2E: žiadny podľa kolegu (`mobile-settings-navigation.spec.ts:41` stále vidí '
+              '`notifications-push-messages-mobile`).'),
 ]
