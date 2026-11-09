@@ -355,6 +355,14 @@ Najprv treba získať správnu vetvu/revíziu a závislosti podľa zámku; až p
 spustiť príkazy z jej `frontend`. Nie sú samostatne použiteľným návodom pre
 čistý checkout pôvodnej dokumentačnej vetvy.
 
+**Docker pre druhý príkaz:** musí byť spustený Docker engine a vopred lokálne
+stiahnutý image `mcr.microsoft.com/playwright:v<verzia>-noble`. `<verzia>` musí
+presne zodpovedať nainštalovanému `@playwright/test` z `node_modules` (zistí sa
+cez `node -p "require('@playwright/test/package.json').version"`), nie rozsahu
+verzií v `package.json`. Browser kontrola používa `docker run --pull=never`;
+chýbajúci image sama nestiahne. Ak chýba, treba ho pripraviť samostatne pred
+kontrolou. Prvý, čisto Node príkaz Docker nepotrebuje.
+
 ```powershell
 node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/peer-conversation.check.ts
 node node_modules/tsx/dist/cli.mjs --test --test-reporter=spec e2e/diagnostics-tests/peer-conversation-browser.check.ts
