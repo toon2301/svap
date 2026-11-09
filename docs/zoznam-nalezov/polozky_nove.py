@@ -276,7 +276,7 @@ NEW_ITEMS = [
               'nestabilitu prostredia a automaticky sa neuzatvárajú. Návrh Codexa: celý beh po potvrdení nasadenia v okne bez zmien '
               '(osobitne sledovať `mobile-settings-navigation.spec.ts` a `mobile-settings-offer-watch-motion.spec.ts`). Návrh agenta: '
               'doplniť do `requirePeerConversation` diagnostiku (koľko konverzácií na prvej stránke prešlo každou podmienkou, len '
-              'počty) a bez zmeny testov zistiť (áno alebo nie), či hlavný E2E účet vidí profil `E2E_PEER_SLUG`.'
+              'počty) a bez zmeny testov zistiť (áno alebo nie), či hlavný E2E účet vidí profil `E2E_PEER_SLUG`. '
               'Dodatok 9. 11. 2026 (Codex, `main` `5bf32b26`, po obnovení dát hlavného účtu majiteľom): oba konverzačné testy (b) '
               'prešli a `[E2E-PEER]` ukázal `firstPage=1 slugMatches=1 deletedMatches=0 namedMatches=1 nameMatches=1`; hlavný účet '
               'profil `E2E_PEER_SLUG` vidí (áno); oba návraty z Nástenky (c) prešli. K (a) Codex v tomto behu samostatný záver '

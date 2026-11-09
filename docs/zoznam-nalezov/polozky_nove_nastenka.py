@@ -310,7 +310,7 @@ NEW_ITEMS_NASTENKA = [
               'pravidlo z `AGENTS.md`: test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Plán Codexa '
               '(8. 11. 2026): po celom behu najprv odmietnutie skutočných BMP a TIFF vrátane prezlečenia za `.jpg`, potom úspešné '
               'nahrávanie s uprataním a načítanie fotiek súkromného autora a náhrady pri chybe; správy bez nepovoleného odosielania do '
-              'produkcie.'
+              'produkcie. '
               'Dodatok 9. 11. 2026 (Codex, návrh dymovej sady): ôsmy špec `feed-photo-smoke.spec.ts` (syntetická fotka bez EXIF, '
               'nahranie cez UI, publikovanie vlastného príspevku, vykreslený obrázok má `naturalWidth` väčšie ako 0, odstránenie iba '
               'vlastného príspevku) vznikne až v dohodnutej implementácii 295; portfólio, ponuky, odmietnutie BMP a TIFF a fotky v '

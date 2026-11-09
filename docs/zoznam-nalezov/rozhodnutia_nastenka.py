@@ -182,7 +182,7 @@ DECISIONS_NASTENKA = [
                   'najprv mapovanie a plán po etapách (agent, len čítanie), až potom dávky pre kolegu.',
          datum='9. 11. 2026'),
     dict(id='R33', tema='Postupné zapínanie push upozornení na správy (rollout) v Railway a pri štarte (318)',
-         otazka='Na akú hodnotu nastaviť `WEB_PUSH_MESSAGES_ROLLOUT_PERCENT`? Dnes je v Railway 5, takže push na správy dostane '
+         otazka='Na akú hodnotu nastaviť `WEB_PUSH_MESSAGES_ROLLOUT_PERCENT`? Do 9. 11. 2026 bolo v Railway 5, takže push na správy dostal '
                  'približne každý dvadsiaty účet (podľa čísla účtu). (a) Hneď 100 aj v Railway a pri ostrom štarte podľa potreby znížiť; '
                  '(b) v Railway 100 a pri ostrom štarte začať malým percentom a zvyšovať ho; (c) nechať 5.',
          odporucanie='(a) teraz a (b) pri štarte, ktorý sa rozhodne až pri príprave štartu (N14): Railway je testovacie prostredie a pri 5 % '

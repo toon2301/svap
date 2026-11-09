@@ -29,7 +29,7 @@ NTASKS = [
     dict(n='N5', bucket=P, eff=EM,
          what='Konfigurácia a tajomstvá: nové `SECRET_KEY`, `JWT_SIGNING_KEY`, `MFA_ENCRYPTION_KEY`, VAPID, '
               'OAuth redirect URI a reCAPTCHA pre novú doménu, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `FRONTEND_ORIGIN`, '
-              '`WEB_PUSH_MESSAGES_ENABLED` a `WEB_PUSH_MESSAGES_ROLLOUT_PERCENT` (postupné zapínanie push; v Railway je dnes 5 %).',
+              '`WEB_PUSH_MESSAGES_ENABLED` a `WEB_PUSH_MESSAGES_ROLLOUT_PERCENT` (postupné zapínanie push; v Railway nastavené na 100 % od 9. 11. 2026, hodnota pre ostrý štart sa rozhodne pri N14).',
          note='Zahŕňa OW-06 (produkčné CORS domény). Žiadne kľúče z Railway nepreberať; nastavenia ako rollout push sa prenášajú '
               'vedome (nález 318, rozhodnutie R33).'),
     dict(n='N6', bucket=P, eff=EM,
