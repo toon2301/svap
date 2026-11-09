@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from './support/diagnostic-test';
+import { readPeerConversationInBrowser, reportPeerConversationCounts } from './support/peer-conversation-diagnostics';
 
 import {
   bottomNav,
@@ -37,31 +38,10 @@ test.beforeEach(async ({ page }, testInfo) => {
 });
 
 /** Čisté čítanie zoznamu konverzácií – rovnaké volanie ako pri otvorení Správ, takže vidí presne tú prvú stránku, ktorú ukazuje aplikácia. Nič sa neotvára. */
-async function requirePeerConversation(page: Page): Promise<PeerConversation> {
-  const peer = await page.evaluate(async (slug) => {
-    type Item = {
-      id?: number;
-      is_group?: boolean;
-      name?: string | null;
-      other_user?: { slug?: string | null; display_name?: string; is_deleted?: boolean } | null;
-    };
-    const response = await fetch('/api/auth/messaging/conversations/', { credentials: 'include' });
-    if (!response.ok) throw new Error(`Príprava: zoznam konverzácií vrátil HTTP ${response.status}.`);
-    const data = await response.json().catch(() => null);
-    const items: Item[] = Array.isArray(data) ? data : (data?.results ?? []);
-
-    const match = items.find(
-      (item) => !item.is_group && !item.other_user?.is_deleted && item.other_user?.slug === slug,
-    );
-    const displayName = (match?.other_user?.display_name ?? '').trim();
-    if (!match || typeof match.id !== 'number' || !displayName) return null;
-    const sameTitle = items.filter((item) =>
-      item.is_group
-        ? (item.name ?? '').trim() === displayName
-        : !item.other_user?.is_deleted && (item.other_user?.display_name ?? '').trim() === displayName,
-    ).length;
-    return { id: match.id, displayName, sameTitle };
-  }, PEER_SLUG);
+async function requirePeerConversation(page: Page, testInfo: TestInfo): Promise<PeerConversation> {
+  const snapshot = await page.evaluate(readPeerConversationInBrowser, PEER_SLUG);
+  await reportPeerConversationCounts(snapshot.counts, testInfo);
+  const peer = snapshot.peer;
 
   if (!peer) {
     throw new Error(
@@ -138,8 +118,8 @@ function isPeerProfilePath(page: Page): boolean {
 
 test('opening a conversation shows the peer name in the top bar, Späť returns to the list, a cold load restores it', async ({
   page,
-}) => {
-  const peer = await requirePeerConversation(page);
+}, testInfo) => {
+  const peer = await requirePeerConversation(page, testInfo);
   await openPeerConversation(page, peer);
   await expectConversationOpen(page, peer, 'Otvorenie konverzácie');
 
@@ -156,8 +136,8 @@ test('opening a conversation shows the peer name in the top bar, Späť returns 
 
 test('the top bar of a conversation opens the peer profile, Späť and the browser Back return to the same conversation', async ({
   page,
-}) => {
-  const peer = await requirePeerConversation(page);
+}, testInfo) => {
+  const peer = await requirePeerConversation(page, testInfo);
   await openPeerConversation(page, peer);
   await expectConversationOpen(page, peer, 'Otvorenie konverzácie');
 
