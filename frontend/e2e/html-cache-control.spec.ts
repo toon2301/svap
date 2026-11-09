@@ -17,7 +17,7 @@ for (const route of routes) {
   test.describe(`Cache-Control HTML ${route.path}`, () => {
     if (route.anonymous) test.use({ storageState: { cookies: [], origins: [] } });
 
-    test('prvé otvorenie aj F5 vrátia dokument s no-store', async ({ page, baseURL }) => {
+    test('prvé otvorenie aj F5 vrátia dokument s no-store', { tag: '@smoke' }, async ({ page, baseURL }) => {
       if (baseURL !== 'https://stunning-inspiration-svap.up.railway.app') {
         throw new Error('Produkčná kontrola HTML je určená iba pre dohodnuté nasadenie Railway.');
       }

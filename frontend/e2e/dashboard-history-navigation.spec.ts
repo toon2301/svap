@@ -23,7 +23,7 @@ test.describe('mobil: spodné menu + Späť/Dopredu', () => {
     await gotoDashboardHome(page);
   });
 
-  test('every module change and every history step lands on the right page with a fresh <main>', async ({
+  test('every module change and every history step lands on the right page with a fresh <main>', { tag: '@smoke' }, async ({
     page,
   }) => {
     const search = {
@@ -62,7 +62,7 @@ test.describe('desktop: ľavé menu + Späť/Dopredu', () => {
     await gotoDashboardHome(page);
   });
 
-  test('every module change and every history step lands on the right page with a fresh <main>', async ({
+  test('every module change and every history step lands on the right page with a fresh <main>', { tag: '@smoke' }, async ({
     page,
   }) => {
     const messages = {
@@ -87,7 +87,7 @@ test.describe('desktop: ľavé menu + Späť/Dopredu', () => {
     await landOnHome(page, 'klik Nástenka', () => sideNav(page, 'Nástenka').click());
   });
 
-  test('the search panel opens without a route change, a history record or a new <main>', async ({ page }) => {
+  test('the search panel opens without a route change, a history record or a new <main>', { tag: '@smoke' }, async ({ page }) => {
     const main = await mainInstance(page);
     const length = await historyLength(page);
     const path = pathOf(page);

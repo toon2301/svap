@@ -1,6 +1,9 @@
 import { expect, test } from '../support/diagnostic-test';
 import { observePage } from '../support/page-activity';
 
+// Izolované overenie zapojenia sondy: bez skutočnej relácie alebo siete Railway.
+test.use({ cookieTimeline: true });
+
 // Tento súbor zbiera výhradne izolovaný config, nikdy bežný produkčný E2E beh.
 test.beforeEach(async ({ page }, testInfo) => {
   let blockedRequests = 0;

@@ -105,8 +105,19 @@ export async function cleanupFeedPosts(
   if (!/^https?:/.test(page.url())) return results;
   try {
     for (const id of cleanupIds) results.push({ id, status: await deleteFeedPost(page, id) });
-    const { data } = await callApi(page, 'GET', FEED_POSTS_API);
-    const posts = (Array.isArray(data) ? data : (data as { results?: unknown[] } | null)?.results ?? []) as {
+    const { status, data } = await callApi(page, 'GET', FEED_POSTS_API);
+    // Neznáme ID sa nedá potvrdiť ako upratané, ak zlyhal zoznam. Bez retry:
+    // HTTP 500 musí zostať viditeľné aj po úspešnom zmazaní známych ID.
+    if (status !== 200) {
+      results.push({ id: null, status });
+      return results;
+    }
+    const rows = Array.isArray(data) ? data : (data as { results?: unknown } | null)?.results;
+    if (!Array.isArray(rows)) {
+      results.push({ id: null, status: 0 });
+      return results;
+    }
+    const posts = rows as {
       id?: unknown;
       caption?: unknown;
     }[];

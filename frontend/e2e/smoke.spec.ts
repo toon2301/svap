@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 // Zámerne bez uloženého prihlásenia, inak by "/" presmerovala na dashboard.
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test('verejná úvodná stránka sa načíta so správnym titulkom', async ({ page }) => {
+test('verejná úvodná stránka sa načíta so správnym titulkom', { tag: '@smoke' }, async ({ page }) => {
   const response = await page.goto('/');
 
   expect(response?.ok()).toBe(true);

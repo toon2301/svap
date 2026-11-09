@@ -24,7 +24,7 @@ import {
 // vytvoriť ďalšie príspevky. Globálne retries v configu ostávajú.
 test.describe.configure({ retries: 0 });
 
-test('zdieľanie príspevku z Nástenky ostane na Nástenke bez zvýraznenia', async ({ page }, testInfo) => {
+test('zdieľanie príspevku z Nástenky ostane na Nástenke bez zvýraznenia', { tag: '@smoke' }, async ({ page }, testInfo) => {
   const marker = uniqueRunMarker(testInfo.project.name);
   const sourceCaption = `[e2e] zdroj na zdieľanie ${marker}`;
   const repostCaption = `[e2e] zdieľanie z Nástenky ${marker}`;
