@@ -171,7 +171,7 @@ NEW_ITEMS_K14 = [
                'a po novom otvorení sa vrátia na „Vypnuté“. Napojená je len voľba Správy (push): `useNotificationPreferences` načíta a '
                'ukladá dve nastavenia servera (`in_app_notifications`, `push_notifications`) a Správy používajú `push_notifications`.',
          note='Očakávané správanie (majiteľ): každá kategória sa dá zapnúť a vypnúť, nastavenie sa uloží a príslušné upozornenie sa '
-               'doručí alebo potlačí. Rozhodnuté R32 (a), 9. 11. 2026: majiteľ chce kategórie dokončiť pred štartom a nechce sa tej '
+               'doručí alebo potlačí. Rozhodnuté R32 (a), 9. 11. 2026: majiteľ chce kategórie dokončiť pred štartom a nechce sa tejto '
                'práci vyhýbať (agent odporúčal (b), skryť prepínače a dokončiť po štarte; majiteľ to nezvolil, preto sa nález 324 o '
                'skrytí zatvoril). Ide o väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii aj push podľa '
                'nastavenia, testy a E2E; odhad: stredný · L), preto najprv mapovanie a plán po etapách (agent, len čítanie): ktoré '

@@ -176,7 +176,7 @@ DECISIONS_NASTENKA = [
                         '(c) sa neodporúča.',
          kedy='Rozhodnuté 9. 11. 2026.',
          odpoved='(a): majiteľ 9. 11. 2026 rozhodol dokončiť všetky kategórie upozornení pred štartom, lebo je to práca, ktorú bude '
-                  'treba spraviť, a nechce sa jej vyhýbať (agent odporúčal (b), skryť nefunkčné prepínače a dokončiť po štarte; majiteľ '
+                  'treba spraviť, a majiteľ sa jej nechce vyhýbať (agent odporúčal (b), skryť nefunkčné prepínače a dokončiť po štarte; majiteľ '
                   'to nezvolil). Nález 321 sa vracia do PRED NASADENÍM a nález 324 (skrytie prepínačov) sa zatvoril ako nepotrebný. Ide o '
                   'väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii a push podľa nastavenia, testy), preto '
                   'najprv mapovanie a plán po etapách (agent, len čítanie), až potom dávky pre kolegu.',
