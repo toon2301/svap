@@ -269,14 +269,15 @@ export default function ResetPasswordClient() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Nové heslo
               </label>
+              {/* Výslovné farby polí: stránka je len svetlá a bez nich ich WebKit kreslí podľa systému (nález 320). */}
               <input
                 type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
                 }`}
                 placeholder="Zadajte nové heslo"
                 disabled={isLoading}
@@ -300,8 +301,8 @@ export default function ResetPasswordClient() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
                 }`}
                 placeholder="Potvrďte nové heslo"
                 disabled={isLoading}
