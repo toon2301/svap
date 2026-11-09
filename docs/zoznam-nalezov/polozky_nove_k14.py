@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 305: kandidáti kolegu z K13 a K14 a ručné testy majiteľa po K14 (8. 11. 2026).
+"""Nové nálezy od čísla 305: kandidáti kolegu z K13 a K14, ručné testy majiteľa po K14 (8. 11. 2026) a diagnostika a video majiteľa
+z 9. 11. 2026 (322 až 324).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_dalsie.DONE_SINCE_DALSIE`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
@@ -117,31 +118,6 @@ NEW_ITEMS_K14 = [
          note='Návrh kolegu: `pip-compile --generate-hashes` a `--require-hashes` ako dodatočné spevnenie; vyžaduje zmenu postupu '
                'obnovy a všetkých inštalácií. Odhad kolegu: nízky · M.',
          dec=None, src='K14 (kolega)'),
-    dict(n=318, bucket=H, imp=S_, eff=EM, pkg='Produkčná odolnosť aplikácie',
-         kratko='push upozornenia na správy na iPhone neprichádzajú po nasadení K14 (podozrenie na regresiu, príčina nepotvrdená)',
-         what='Ručný test majiteľa po K14 (8. 11. 2026, produkcia, iPhone s nainštalovanou PWA): hlásenia pre Svaply sú v iPhone '
-               'povolené, upozornenia na správy vo Svaply zapnuté, telefón je zamknutý a z druhého testovacieho účtu sa pošle správa. '
-               'Správa sa doručí do konverzácie, no push nepríde. Majiteľ potvrdil, že pred nasadením K14 push fungoval. Príčina nie '
-               'je potvrdená; ide o jeden test bez logov.',
-         note='Mapovanie agenta (8. 11. 2026, len čítanie a skúška v oddelenom prostredí). (1) K14 zmenila '
-               '`usePushMessagesPreference.ts` len pridaním `initialLoading`; logika zapnutia, registrácie a zrušenia odberu je '
-               'nezmenená, ostatné zmeny sú vzhľad sekcie Upozornenia. (2) Zámok závislostí (nález 244) balíky pre push zrejme '
-               'nepohol: agent rekonštruoval rozlíšenie pôvodného `requirements.txt` k 5. a 6. 11. 2026 a proti zámku sa líšili len '
-               '`cbor2` a `click`; `pywebpush` 2.5.0, `py-vapid` 1.9.6, `http_ece` 1.2.1, `cryptography` 50.0.2 a `celery` 5.7.0 sú '
-               'rovnaké (skutočné verzie na Railway ukáže `pip freeze` z `backend-http`). (3) Šifrovanie a podpis VAPID so zamknutými '
-               'verziami fungujú: skúška proti lokálnemu falošnému koncovému bodu dala HTTP 201 (`aes128gcm`, schéma `vapid`) pre kľúč '
-               'v oboch formátoch. (4) Doručenie je v `accounts/services/webpush_delivery.py` a každé volanie zapíše riadok '
-               '`message_push_delivery_summary` s počtami `recipient_count`, `rollout_skipped_count`, `suppressed_count`, '
-               '`subscription_count`, `delivered_count`, `retry_count`, `gone_count`, `permanent_failure_count` a prípadne '
-               '`skipped_reason`. Z neho sa dá určiť, kde push zanikol: vypnuté alebo rollout pod 100 %, potlačené prítomnosťou '
-               '(príjemca mal tú konverzáciu viditeľnú do 35 s od poslednej aktivity), žiadny aktívny odber, zrušený odber '
-               '(`gone_count`), trvalá chyba, alebo doručené službe Apple a problém je na zariadení. Odpoveď 404 alebo 410 odber '
-               'natrvalo deaktivuje, takže potom push nepríde, kým ho používateľ nevypne a nezapne. Ďalší krok: majiteľ z logov '
-               'Railway (worker a web) okolo času testu pošle len počty a `skipped_reason` z tohto riadku, bez ID. Ak riadok chýba, '
-               'úloha sa nespustila (pozrieť logy workera). Ak je `delivered_count` rovné 1, ide o zariadenie (nastavenia iPhonu, '
-               'režim Sústredenie, PWA pridaná na plochu). Za dokázanú regresiu K14 to nepovažovať, kým logy nepovedia inak. Dopad na '
-               'E2E: žiadny.',
-         dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=319, bucket=P, imp=N, eff=EM, pkg='Upozornenia a push',
          kratko='Upozornenia: pri vypnutom internete sa prepínač Správ prepne bez chybovej hlášky a stav ostane po pripojení (príčina '
                 'nejasná)',
@@ -160,10 +136,11 @@ NEW_ITEMS_K14 = [
                '`usePushMessagesPreference.ts` sú napevno v kóde bez diakritiky a bez prekladu („Nepodarilo sa ulozit nastavenia '
                'upozorneni.“ a ďalšie), takže aj správne zobrazená chyba by mala iné znenie, než majiteľ očakáva, a nepreložila by sa. '
                'Návrh: texty cez `t()` s diakritikou v šiestich jazykoch; pri `navigator.onLine` rovnom `false` prepínač neprepínať a '
-               'hneď ukázať chybu; súvisí s nálezom 306. Odhad: nízky · M.',
+               'hneď ukázať chybu; súvisí s nálezom 306. Odhad: nízky · M. Otázka, ktorý prepínač sa testoval, ostáva, '
+               'kým 321 neprepojí aj ostatné kategórie.',
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=320, bucket=P, imp=S_, eff=ES, pkg='Profil a identita',
-         kratko='Zmena hesla: na iPhone s tmavým systémom sú polia čierne na svetlej karte',
+         kratko='Zmena hesla: na iPhone sú polia čierne na svetlej karte (príčina pravdepodobne `color-scheme`, na zariadení nepotvrdená)',
          what='Ručný test majiteľa po K14 (8. 11. 2026, iPhone, odkaz z e-mailu otvorený v Safari, stránka „Zmena hesla“; screenshot '
                'dostal agent): obe polia („Nové heslo“ a „Potvrdenie hesla“) majú čierne pozadie, hoci zvyšok stránky je svetlý (biela '
                'karta, tmavý text, modré tlačidlo). Očakávané: polia v rovnakom vzhľade ako zvyšok formulára. Potvrdená vizuálna '
@@ -177,10 +154,15 @@ NEW_ITEMS_K14 = [
                'dark:bg-black text-gray-900 dark:text-white`). Pole e-mailu na `forgot-password/page.tsx` tiež nemá triedu pozadia; '
                'stránka používa tmavé varianty (`dark:`), takže rozpor tam môže vzniknúť, keď je téma aplikácie svetlá a systém tmavý '
                '(neoverené). Návrh: do oboch polí `bg-white text-gray-900` (alebo `[color-scheme:light]` na karte) a rovnaká kontrola '
-               'na `forgot-password`, `verify-email` a `delete-account`; test tried. Odhad: stredný · S.',
+               'na `forgot-password`, `verify-email` a `delete-account`; test tried. Odhad: stredný · S. Po oprave a nasadení doplní Codex '
+               'samostatný WebKit E2E (9. 11. 2026): stránka Zmena hesla pri tmavej systémovej schéme má obe polia svetlé a čitateľné. '
+               'Formulár sa zobrazí až po úspešnom `GET /auth/password-reset-verify/<uid>/<token>/`, preto test túto požiadavku '
+               'zachytí (`page.route`, `serviceWorkers: block`) a vráti `valid: true`; bez e-mailu, skutočného tokenu a odoslania '
+               'formulára.',
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=321, bucket=P, imp=S_, eff=EL, pkg='Upozornenia a push',
-         kratko='Upozornenia: päť kategórií a hlavný vypínač nie sú napojené na server (nedokončená funkcia)',
+         kratko='Upozornenia: päť kategórií a hlavný vypínač nie sú napojené na server (nedokončená funkcia; dokončiť pred štartom, R32 '
+                'a)',
          what='Ručný test majiteľa po K14 (8. 11. 2026) a nález kolegu z K14: v Nastaveniach → Upozornenia je šesť kategórií: Správy, '
                'Páči sa mi to, Páči sa mi to a komentáre (reakcie a komentáre na fotkách, kde je používateľ označený), Komentáre, Páči '
                'sa mi to pre komentáre a Žiadosť o zručnosť. Podľa majiteľa je to nedokončená práca: kategórie neposkytujú funkčný '
@@ -189,8 +171,51 @@ NEW_ITEMS_K14 = [
                'a po novom otvorení sa vrátia na „Vypnuté“. Napojená je len voľba Správy (push): `useNotificationPreferences` načíta a '
                'ukladá dve nastavenia servera (`in_app_notifications`, `push_notifications`) a Správy používajú `push_notifications`.',
          note='Očakávané správanie (majiteľ): každá kategória sa dá zapnúť a vypnúť, nastavenie sa uloží a príslušné upozornenie sa '
-               'doručí alebo potlačí. Ide o väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii aj push '
-               'podľa nastavenia); odhad: stredný · L. Pred štartom sa rozhoduje rozsah (R32): dokončiť, alebo nefunkčné prepínače '
-               'dovtedy skryť. Súvisí s nálezmi 319 a 308.',
+               'doručí alebo potlačí. Rozhodnuté R32 (a), 9. 11. 2026: majiteľ chce kategórie dokončiť pred štartom a nechce sa tejto '
+               'práci vyhýbať (agent odporúčal (b), skryť prepínače a dokončiť po štarte; majiteľ to nezvolil, preto sa nález 324 o '
+               'skrytí zatvoril). Ide o väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii aj push podľa '
+               'nastavenia, testy a E2E; odhad: stredný · L), preto najprv mapovanie a plán po etapách (agent, len čítanie): ktoré '
+               'typy upozornení backend vytvára a kde, ako rozšíriť nastavenia servera o kategórie, kde sa nastavenie musí uplatniť '
+               '(upozornenie v aplikácii, push) a ako sa to preklopí do rozhrania. Až potom etapy pre kolegu (vstupia do fronty po '
+               'plánovaní). Súvisí s nálezmi 319 a 308.',
          dec='ROZHODNUTIE R32', src='ručný test majiteľa po K14 (8. 11. 2026) a kolega (K14)'),
+    dict(n=322, bucket=P, imp=S_, eff=ES, pkg='Ponuky (úprava a tagy)',
+         kratko='nová ponuka na mobile: tag pridaný okrúhlym tlačidlom sa nezobrazí (obrazovka Popis ponuky ho zmaže pri prekreslení '
+                'rodiča)',
+         what='Ručný test majiteľa (9. 11. 2026, mobil, video): pri vytváraní novej ponuky (obrazovka Popis ponuky → Tagy) sa tag '
+               'napíše do poľa a potvrdí okrúhlym tlačidlom s fajkou. Očakávané: tag sa zobrazí nad poľom ako `#tag`. Skutočnosť: pole '
+               'sa vyprázdni, no tag sa nezobrazí (na snímkach videa nie je). Mapovanie agenta (9. 11. 2026) v dočasných testoch so '
+               'skutočným `SkillsModuleRouter` a obrazovkou (v repozitári nie sú): `SkillsModuleRouter.tsx` (583 riadkov, riadok 384) '
+               'odovzdáva obrazovke `initialTags={selectedSkillsCategory.tags || []}`, čo je pri novej ponuke bez tagov pri každom '
+               'prekreslení smerovača NOVÉ prázdne pole. `useSkillsDescriptionScreenState.ts` (638 riadkov, riadky 121 až 126) má '
+               'efekt so závislosťou `[initialTags]`, ktorý pri novej referencii porovná zoznam s aktuálnym stavom a vráti ho na '
+               'prázdny, takže zmaže tag pridaný používateľom. Test: tag pridaný okrúhlym tlačidlom bol viditeľný, no jedno vynútené '
+               'prekreslenie rodiča ho zmazalo (v aplikácii prekresľovanie spôsobuje 323). Vzor je z PR #127 (24. 9. 2026), nie z K13 '
+               'ani K14. `TagsSection.tsx` si pred nesúvisiacim prekreslením chráni vlastnú kópiu (komentár v kóde), stav v hooku nie.',
+         note='Návrh (vyskúšaný dočasným testom so skutočným smerovačom a obrazovkou): v `SkillsDescriptionScreen.tsx` (26 riadkov) '
+               'odovzdať hooku stabilné vstupy, a to `initialTags` podľa obsahu (rovnaká referencia, kým sa obsah nezmení) a obslužné '
+               'funkcie `on…` so stabilnou identitou (volajú vždy najnovšiu funkciu), cez nový malý hook v novom súbore; súbory nad '
+               '500 riadkov sa nemenia. S touto úpravou tag ostal viditeľný aj po prekreslení rodiča. Test: pridať tag okrúhlym '
+               'tlačidlom, vynútiť prekreslenie rodiča a overiť, že tag ostane (pred opravou padá). Oprava je rovnaká ako pri 323, '
+               'preto idú spolu. E2E špec s tagmi na mobile agent nenašiel. Odhad: stredný · S.',
+         dec=None, src='video majiteľa a mapovanie agenta (9. 11. 2026)'),
+    dict(n=323, bucket=P, imp=S_, eff=ES, pkg='Ponuky (úprava a tagy)',
+         kratko='obrazovka Popis ponuky sa neprestajne prekresľuje (slučka efektov medzi smerovačom a obrazovkou; nepotvrdené v '
+                'prehliadači)',
+         what='Agent pri mapovaní nálezu 322 (9. 11. 2026): v dočasnom teste so skutočným `SkillsModuleRouter` a obrazovkou '
+               '„skills-describe“ pre novú ponuku sa smerovač po pripojení prekreslil 76-krát a stav vybranej ponuky sa zapísal '
+               '152-krát, kým test nezastavila poistka; React hlási „Maximum update depth exceeded“. Príčina z kódu: '
+               '`useSkillsDescriptionScreenState.ts` (riadky 136 až 142) má efekty so závislosťami `[countryCode, '
+               'onCountryCodeChange]` a `[districtCode, onDistrictCodeChange]`, ktoré pri každom spustení zavolajú obslužnú funkciu '
+               'rodiča; smerovač ju vytvára priamo v zápise (nová funkcia pri každom prekreslení) a `updateSelectedSkill` vždy vytvorí '
+               'nový objekt stavu, takže sa efekt spustí znova a slučka sa neukončí. Vzor je z PR #127 (24. 9. 2026). V prehliadači to '
+               'agent neoveril.',
+         note='Dôsledok pre používateľa: ak slučka beží aj v aplikácii, obrazovka Popis ponuky stále zaťažuje procesor a batériu '
+               'telefónu a každé prekreslenie rodiča zmaže rozpísané tagy (322). Oprava je rovnaká ako pri 322 (stabilné obslužné '
+               'funkcie vo `SkillsDescriptionScreen.tsx`): v dočasnom teste ostali po pripojení 2 prekreslenia a 2 zápisy stavu a '
+               'varovanie zmizlo. Overenie v prehliadači (kolega alebo majiteľ): v dev builde sa pri otvorení obrazovky nemá objaviť '
+               'varovanie „Maximum update depth exceeded“ a počet prekreslení po pripojení má byť malý. Pri oprave prehľadať podobný '
+               'vzor inde (efekt s `on…Change` v závislostiach, ktorý zapisuje do stavu rodiča); nájdené miesta len nahlásiť ako '
+               'kandidátov. Odhad: stredný · S.',
+         dec=None, src='mapovanie agenta pri nálezu 322 (9. 11. 2026)'),
 ]

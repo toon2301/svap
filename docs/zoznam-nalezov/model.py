@@ -31,7 +31,7 @@ PORADIE_BALIKOV = {
     H: ['Produkčná odolnosť aplikácie', 'Spoľahlivosť CI a testov', 'Bezpečnosť závislostí'],
     P: [
         'Bezpečnosť a produkčná odolnosť', 'Produkčná odolnosť aplikácie', 'Spoľahlivosť CI a testov', 'Navigácia a Späť',
-        'Plynulosť prechodov (mobil)', 'Profil a identita', 'Zdieľanie a obrázky', 'Vzhľad Nástenky', 'Upozornenia na zmazaný obsah', 'Upozornenia a push', 'Žiadosti',
+        'Plynulosť prechodov (mobil)', 'Profil a identita', 'Ponuky (úprava a tagy)', 'Zdieľanie a obrázky', 'Vzhľad Nástenky', 'Upozornenia na zmazaný obsah', 'Upozornenia a push', 'Žiadosti',
         'Vyhľadávanie a Sledovania',
         'Preklady a hlášky', 'Súkromie a krajina', 'iPhone a WebSocket', 'iPhone overenia', BALIK_PRIPRAVA,
     ],

@@ -276,8 +276,16 @@ NEW_ITEMS = [
               'nestabilitu prostredia a automaticky sa neuzatvárajú. Návrh Codexa: celý beh po potvrdení nasadenia v okne bez zmien '
               '(osobitne sledovať `mobile-settings-navigation.spec.ts` a `mobile-settings-offer-watch-motion.spec.ts`). Návrh agenta: '
               'doplniť do `requirePeerConversation` diagnostiku (koľko konverzácií na prvej stránke prešlo každou podmienkou, len '
-              'počty) a bez zmeny testov zistiť (áno alebo nie), či hlavný E2E účet vidí profil `E2E_PEER_SLUG`.',
-         dec=None, src='vetva 151'),
+              'počty) a bez zmeny testov zistiť (áno alebo nie), či hlavný E2E účet vidí profil `E2E_PEER_SLUG`. '
+              'Dodatok 9. 11. 2026 (Codex, `main` `5bf32b26`, po obnovení dát hlavného účtu majiteľom): oba konverzačné testy (b) '
+              'prešli a `[E2E-PEER]` ukázal `firstPage=1 slugMatches=1 deletedMatches=0 namedMatches=1 nameMatches=1`; hlavný účet '
+              'profil `E2E_PEER_SLUG` vidí (áno); oba návraty z Nástenky (c) prešli. K (a) Codex v tomto behu samostatný záver '
+              'neuviedol. Dátové medzery ostávajú: stránkovanie Sledovaní potrebuje aspoň 11 živých zhôd (strážca '
+              '`no_paginated_watch`), scenár firemných hodín potrebuje firemný profil s hodinami a 55 prechodov PASS→SKIP v celom '
+              'behu vzniklo zo strážcov dát (24 desktopových prekladov recenzií, 7 prekladov Like, 11 stránkovania, 12 upozornení, 1 '
+              'firemné hodiny); ďalšie dáta (návody otáčania, prečítané upozornenia, história) sa dohodnú samostatne. Nevytvárať '
+              'ďalšie účty ani verejný obsah len kvôli SKIP.',
+         dec=None, src='vetva 151 a Codex, 9. 11. 2026'),
     dict(n=211, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra', kratko='tri rôzne záložné texty pre názov otváracích hodín',
          what='Kľúč `skills.openingHours.title` má v kóde tri rôzne záložné texty: „Otváracia doba“ (`OpeningHoursModal.tsx`, '
               '`SkillsDescriptionMobileLayout.tsx`, `SkillsDescriptionMobileModals.tsx`), „Otváracia doba (voliteľné)“ (`OpeningHoursSection.tsx`) a '
@@ -320,77 +328,6 @@ NEW_ITEMS = [
               'už inicializovanom `authBootstrapSnapshot`) neplatí. Dve štylistické poznámky k `ZOZNAM.md` (rozdeliť dlhé súvetia pri nálezoch '
               'o diagnostike a o dôkazoch) sú kozmetika a CodeRabbit ich sám označil za nepotvrdené. Vetva 153 sa zlúčila bez nich.',
          dec=None, src='vetva 153'),
-    dict(n=223, bucket=P, imp=N, eff=EM, pkg='Spoľahlivosť CI a testov',
-         kratko='občasné zlyhanie siete pri `GET /api/auth/me/` počas prípravy E2E (príčina nepreukázaná)',
-         what='Codex pri behu špecu `profile-numeric-language` (nasadený `main` `e3ed0f42`) hlásil občasné zlyhanie siete '
-              'pri prípravnom `GET /api/auth/me/`: z 8 pokusov 2 zastavilo toto zlyhanie už počas prípravy a poľský tmavý profilový variant preto '
-              'raz padol, pri troch opakovaniach potom prešiel (3 z 3). Presná príčina nie je preukázaná. Ďalšie dôkazy: v celom behu 30. 10. '
-              '(`main` `e2612438`, 19:08 až 19:45 UTC) skončil druhý `GET /api/auth/me/` sieťovou chybou po 24 178 ms (19:30:21 UTC), '
-              '25 246 ms (19:35:09) a 24 430 ms (19:36:43); v diagnostických opakovaniach `mobile-settings-navigation` (20:00:30 UTC) prišli 401 '
-              'na pollingových GET a 403 na `POST /api/token/refresh/` a v `offer-watch-card-actions` (20:02:46 UTC) vrátil `GET /api/auth/me/` 401 '
-              'a adresa skončila na `/`. Dňa 31. 10. (07:09 až 07:10 UTC) sa v tmavom variante jazykového špecu po úvodnom `GET /api/auth/me/` '
-              '200 dve požiadavky zasekli na 21 s (sieťová chyba) a potom prišli 401 (asi 1,3 s) a 403 pri obnove (asi 1,1 s), teda odpovede '
-              'boli pomalé, nielen odmietnuté.',
-         note='Codex výslovne žiada nepripisovať ju automaticky Railway ani povýšeniu na Django 5.2 (nasadené 30. 10. 2026). Kontrola logov Railway '
-              'majiteľom (okná 20:29 až 20:40 a 21:00 až 21:03 nášho času, teda 19:29 až 19:40 a 20:00 až 20:03 UTC; dátum v jeho súhrne bol 29. 10., '
-              'čaká na potvrdenie, že išlo o 30. 10.): žiadne reštarty ani pády, žiadne HTTP 500 až 504, PostgreSQL a Redis bez zjavných problémov, '
-              'Celery úspešne; opakované `WSREJECT` s `missing_token` pri WebSockete (pravdepodobne odhlásený testovací prehliadač, súvisí s '
-              'nálezom 9, ktorý sa vo vetve 161 nepotvrdil: neprihlásené spojenie sa lokálne odmieta za milisekundy); metriky CPU a RAM v logoch nie sú a zaseknuté požiadavky sa nepotvrdili. V dostupných logoch teda nie je dôkaz, že za '
-              'pády testov môže Railway; príčina ostáva neurčená. V kóde je zapnutá rotácia obnovovacích tokenov (`ROTATE_REFRESH_TOKENS`, '
-              '`BLACKLIST_AFTER_ROTATION`, prístupový token 15 minút, `swaply/settings_split/jwt.py`), čo je relevantné pri 401 a 403, no nie je to dôkaz. '
-              'Sonda Codexa (31. 10. 2026, 13:06 až 13:16 UTC, 600 288 ms; Node `https` bez prehliadača, prihlásenia a cookies, z toho '
-              'istého kontajnera a obrazu `mcr.microsoft.com/playwright:v1.63.0-noble`; `GET /` na frontende a `GET /api/` na verejnom '
-              'koreni API, nové aj znovu použité spojenia, telo odpovede sa zahodilo): 122 z 122 odpovedí HTTP 200, 0 sieťových chýb, 0 '
-              'timeoutov, 0 meraní nad 10 s a dve nad 2 s (maximum 2,84 s; mediány 75 až 240 ms). Zaseknutie sa vo verejných Node volaniach '
-              'nezopakovalo. Je to indícia, nie dôkaz: sonda nepoužila autentifikované `/api/auth/me/`, obnovu JWT ani prehliadačový '
-              'protokol, takže nehovorí nič o WebKite ani o relácii testu. Nález ostáva otvorený. Ďalší krok (Codex): rovnaké verejné volania '
-              'priamo z WebKitu v Dockeri v tom istom čase ako Node sonda; nespúšťať celý beh len kvôli zelenému výsledku. Ak sa zasekne aj '
-              'tam, pripojiť blok `[E2E-EVIDENCE]`. Dovtedy nič neopravovať. Celý beh po nasadení Next 16 (1. 11. 2026, 07:32 až 08:14 UTC, '
-              '`main` `9e311839`, PR #218) priniesol 21 pádov oproti prijatému stavu: 17 z nich prešlo pri všetkých troch opakovaniach, '
-              'jeden (svetlý mobilný variant `profile-numeric-language`) padol 2 zo 4 pokusov na nedokončenom `GET /api/auth/feed/posts/` ešte '
-              'pred otvorením číselnej adresy (nie je to návrat nálezu 222), jeden preskočil dátový strážca (položka 16) a dva kľúče (jeden test v dvoch '
-              'projektoch) sú jedna skutočná regresia (nález 231, opravená). V pôvodných pádoch sa opäť objavili 401 (4×, z toho 3× aj 403 pri obnove relácie), '
-              '`GET /api/auth/me/` zlyhal po 22 690 ms (nemecký tmavý profilový variant, po troch opakovaniach prešiel) a viaceré '
-              'pollingové a zoznamové požiadavky ostali pending alebo zlyhali po asi 16 s. Pomer 17 z 21 svedčí skôr o nestabilite prostredia '
-              'než o dôsledku povýšenia, no príčinu nepreukazuje. Návrh: majiteľ prejde logy Railway aj pre okno 07:32 až 08:30 UTC dňa '
-              '1. 11. (rovnaké otázky ako 30. 10.). Dodatok 1. 11. 2026 (Codex, `main` `583b94c0`): prvý pokus celého behu zasiahol vyčerpaný '
-              'limit Railway (stránka `/dashboard/watches` a obnova relácie vracali 404 o 15:13:34 a 15:18:33 UTC, potvrdil majiteľ) a '
-              'nezapočítava sa. Po navýšení limitu nový celý beh dal 418 prešlo, 13 zlyhalo a 307 preskočených (prijatý stav 427, 2, 303 '
-              'sa nemení); tri diagnostické vykonania každého zo 13 zlyhaných kľúčov dali 37 prešlo a 2 zlyhali. Zlyhania majú spoločný vzor: '
-              'príprava sa zastaví pred samotnou kontrolou (`feed-list` sa nezobrazil, `GET /api/auth/feed/posts/` ostal pending, '
-              '`GET /api/auth/me/` alebo vyhľadávanie zlyhali po asi 23 s, obnova relácie dostala 401 a 403). Dva pády sa zopakovali 2 zo 4 '
-              '(`offer-card-review-translations`, desktopový WebKit, a `profile-numeric-language`, svetlý mobilný variant). Z logov Railway, '
-              'ktoré majiteľ poslal, je potvrdená len jedna chyba: nález 232 (súbeh na serveri). Príčina '
-              'týchto zlyhaní ostáva neurčená; nález ostáva otvorený a Codex pokračuje v mapovaní. Dodatok 1. 11. 2026 večer (Codex, `main` '
-              '`5402c5de`, po PR 221): celý beh dal 427 prešlo, 4 zlyhali a 307 preskočených (WebKit desktop 129/1/116, WebKit mobil '
-              '169/2/75, Chromium 129/1/116); všetkých 13 pádov z predošlého behu tentoraz prešlo. Zlyhali štyri iné kľúče (jeden je '
-              'známy pád č. 3, tri sú nové kombinácie špec/projekt) a pri trojnásobnom opakovaní každého prešlo 12 z 12. Vzor je rovnaký ako '
-              'predtým: príprava alebo navigácia sa zastaví na pending požiadavke (`/api/auth/me/`, `/api/auth/search/`, RSC požiadavka '
-              'profilu asi 23 s), bez 401 a 403 a bez chýb stránky. Striedanie rôznych kľúčov a 12 z 12 pri opakovaní svedčí skôr o '
-              'nestabilite prostredia než o regresii po PR 221, no príčinu nepreukazuje; nález ostáva otvorený. Kontrola logov Railway majiteľom (2. 11. 2026, všetky 4 časy pádov): vo '
-              'všetkých sa objavuje odmietnutie WebSocket spojenia pre chýbajúci token (`missing_token`; ten istý záznam ako pri skoršej '
-              'kontrole, súvisí s nálezom 9, ktorý sa nepotvrdil), Redis a PostgreSQL bez zjavnej chyby. Dôkaz, že tieto záznamy '
-              'spôsobujú pády E2E testov, nie je; príčina pádov ostáva nepotvrdená. Dodatok 5. a 6. 11. 2026 (Codex, `main` `00d627ba`, '
-              'cielený beh siedmich špecov histórie, návratov z profilu, vyhľadávania a Sledovaní): 110 prešlo, 3 zlyhali a 31 '
-              'preskočených (WebKit desktop 38/2/8, WebKit mobil 32/1/15, Chromium 40/0/8). Všetky štyri pády z posledného celého '
-              'behu prešli; tri nové kľúče zlyhali raz a pri izolovaných opakovaniach prešli (desktop 6 z 6, mobil 3 z 3). Vzor ostáva '
-              'rovnaký: prvé požiadavky sú rýchle (stránka `/dashboard` 184 ms, `GET /api/auth/me/` 114 ms) a ďalšia požiadavka alebo '
-              'dávka ostane pending 10 až 26 s; raz skončili `unread-summary` a `unread-count` 200 po asi 26,4 s a hneď potom prišlo 401 '
-              'a pri obnove 403. Okná pádov: 20:08:42 až 20:08:53 UTC a 20:09:16 až 20:09:55 UTC (WebKit desktop) a 20:14:41 až '
-              '20:14:51 UTC (WebKit mobil). Kontrola logov Railway majiteľom (6. 11.): backend fungoval, väčšina požiadaviek skončila '
-              '200, dôkaz o výpadku servera sa nenašiel; dvakrát sa pri obnove prihlásenia objavilo 403 pre chýbajúce CSRF cookie, '
-              'objavili sa aj 401, a logy neukazujú, ako dlho backend jednotlivé požiadavky spracovával. Tabuľka Codexa (29. 10. až '
-              '5. 11. 2026; neúspešné testové pokusy so sieťovými alebo autentifikačnými príznakmi vrátane diagnostických opakovaní, nie '
-              'jednotlivé požiadavky): WebKit desktop 29 (z toho 7 s obnovou 401/403), WebKit mobil 54 (6), Chromium desktop 0 (0). '
-              'Spoločná príčina nie je preukázaná a počty zahŕňajú opakovania, no rozdiel je veľký a WebKit je engine Safari na '
-              'iPhone, preto sa 223 nezatvára ako chyba prostredia testov. Z kódu to nevysvetľujú: cache Redis (predvolený limit 0,3 s '
-              'a chyby sa ignorujú), pomalý dotaz do databázy (limit 5 s by skončil chybou) ani periodické úlohy (každých 5 minút, '
-              'časy pádov sa s nimi nekryjú). Backend posiela pri každej odpovedi API hlavičku `X-App-Duration-Ms` (čas spracovania v '
-              'Djangu); Codex ju od PR #229 (zlúčený 6. 11.) zapisuje do dôkazov pri obnove a pri odpovediach nad 5 s, spolu s názvami '
-              'cookies a prítomnosťou `X-CSRFToken` pri 401 a 403 na obnove. Podľa nich sa rozhodne, či sa čas stráca v backende. Slabé '
-              'miesta obnovy prihlásenia v prehliadači sú v nálezu 245. Navrhnutý ďalší krok: kontrolný beh WebKit proti Chromiu '
-              'striedavo, už s týmito dôkazmi (počas neho sa nič nezlučuje).',
-         dec=None, src='správa Codexa z 30. 10., 1. 11. a 5. 11. 2026 a kontrola logov Railway od majiteľa (2. 11. a 6. 11.)'),
     dict(n=224, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='mobilné Nastavenia: po F5 vedie Zatvoriť na Nástenku, nie na profil',
          what='Nález majiteľa z manuálneho testu na iPhone Safari (30. 10. 2026): vo vlastnom profile → Menu → zoznam Nastavení (Upozornenia, '
@@ -490,3 +427,8 @@ NEW_ITEMS.extend(NEW_ITEMS_NASTENKA)
 from polozky_nove_k14 import NEW_ITEMS_K14  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K14)
+
+# Nález 223 (dlhý denník dôkazov) je v `polozky_nove_223.py` (kvôli limitu 500 riadkov).
+from polozky_nove_223 import NEW_ITEMS_223  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_223)

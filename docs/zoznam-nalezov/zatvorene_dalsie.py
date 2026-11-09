@@ -30,4 +30,18 @@ CLOSED_SINCE = [
               'spôsobila nenačítané fotky účtu A (nález 274, oprava v K9). Účty A a B sú účty z E2E testov (`.env.e2e`; majiteľ '
               '7. 11. 2026): E2E, ktoré hľadajú A z B, ho pri súkromnom A nenájdu (stav dát), čo sa môže týkať nálezu 209. Text pri '
               'súkromnom profile pôsobí ako chyba: nález 290. Skupina HNEĎ je tým prázdna.'),
+    dict(n=318, rozhodnutie='R33', datum='9. 11. 2026',
+         text='ZATVORENÉ (9. 11. 2026, rozhodnutie R33 (a); nález HNEĎ z ručného testu majiteľa po K14, príčinu našla diagnostika z '
+              'logov Railway, bez zmeny kódu): push upozornenia na správy na iPhone po K14 nechodili, lebo premenná '
+              '`WEB_PUSH_MESSAGES_ROLLOUT_PERCENT` bola v Railway nastavená na 5. Log workera pri dvoch testovacích správach ukázal '
+              '`recipient_count=1`, `rollout_skipped_count=1`, `delivered_count=0` a `skipped_reason=rollout_5`, teda backend push '
+              'preskočil a k odoslaniu službe Apple nedošlo (`accounts/services/webpush_rollout.py`: príjemca je v zapnutej skupine, '
+              'len ak `ID účtu % 100` je menšie ako nastavené percento). Majiteľ potvrdil príčinu v nastaveniach Railway, zmenil '
+              'premennú na 100 a oznámil, že upozornenia na správy fungujú. Nebola to chyba kódu ani regresia K14. Rozsah postupného '
+              'zapínania pri ostrom štarte rieši R33. Skupina HNEĎ je tým prázdna. Poznámka bez čísla: zapísať nastavenie rollout do '
+              'logu pri štarte (`poznamky.md`).'),
+    dict(n=324, rozhodnutie='R32', datum='9. 11. 2026',
+         text='ZATVORENÉ rozhodnutím R32 (9. 11. 2026): nález vznikol z odporúčania agenta (b), teda skryť hlavný vypínač a päť '
+              'kategórií upozornení, ktoré nič neukladajú, kým sa nedokončia. Majiteľ zvolil (a): kategórie sa dokončia pred štartom '
+              '(nález 321) a nefunkčné prepínače sa dovtedy skrývať nebudú. Kód sa nemenil.'),
 ]
