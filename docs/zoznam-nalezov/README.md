@@ -63,22 +63,24 @@ Dohoda s majiteľom z 5. 11. 2026, upravená 6. a 7. 11. 2026; platí, kým ju m
   odkladajú, kým majiteľ nedá vedieť. K8 (mapovanie nálezov 274, 275 a 276) sa robila na dva razy (PR #237 a #238; druhé kolo sa volalo
   K9) a dávka drobných opráv išla ako K10 (PR #239); po nich bola vetva agenta 168 (len zoznam). K11 (PR #241) a K12 (PR #242) sú
   hotové a po nich bola vetva agenta 169 (len zoznam). K13 (PR #244) a K14 (PR #245) sú hotové a po nich boli vetvy agenta 170 a 171
-  (len zoznam). Ďalšie dávky kolegu sú K15 až K17 (poradie je v časti 2 zoznamu; dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi).
+  (len zoznam). K15 (PR #250) je hotová a po nej je vetva agenta 172 (len zoznam). Ďalšie dávky kolegu sú K16 a K17 (poradie je v časti 2 zoznamu; dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi).
 - **Vetvy:** kolega K1, K2, K3…; agent číslované (163, 164…); Codex `e2e/<názov>`. S Codexom pracuje len agent.
 - **Čo dostane kolega:** opis nálezu a návrh najlepšej opravy (nálezy sú v častiach 3 až 5 zoznamu, poradie v časti 2). Nález overuje kolega pri
   práci. Od K15 agent pred zlúčením porovná výsledok kolegu s PR, CI a kódom (pozri „Postup od K15“). Nálezy, ktoré majiteľ určí na zmapovanie kolegovi (naposledy 274, 275, 276), agent nemapuje:
   zapíše ich presne podľa opisu a príčinu nájde kolega.
 - **Výnimky z pravidla 500 riadkov:** schvaľuje len majiteľ a každá sa zapíše ako rozhodnutie (R24: jeden riadok v `useDashboardState.ts` pre
   nález 271; R26: dva testové súbory z K8 a K9; R31: osem výmen `alert()` v troch súboroch pre nález 302 v K17, 9. 11. 2026, s podmienkou maximálnej opatrnosti). Pravidlo platí ďalej; či sa vzťahuje aj na testy, čaká na R27.
-- **Po každej práci kolegu** majiteľ pošle agentovi výsledok dávky (jedna strana podľa `sablony/vysledok_davky.md`) a číslo PR. Agent zapíše
-  hotové, nové nálezy podľa filtra a rozhodnutia.
+- **Po každej práci kolegu** majiteľ pošle agentovi číslo PR a krátky verdikt (testy po nasadení prešli alebo neprešli, nové nálezy). Výsledok
+  dávky agent číta z GitHubu: texty commitov nesú overenie, testy, mutácie a odchýlky od karty, CI a boty sú v PR. Samostatnú stranu podľa
+  `sablony/vysledok_davky.md` kolega píše len pri NEJASNÝCH nálezoch (mapovanie), keď v commitoch overenie chýba, alebo keď má kandidátov na
+  nové nálezy. Agent zapíše hotové, nové nálezy podľa filtra a rozhodnutia.
 - **Zoznam:** agent ho aktualizuje v každej vetve a ak to nezvláda, hlási to. Hotový nález kolegu sa z `fronta.py` presunie do
   `hotove_dalsie.DONE_SINCE_DALSIE` (vetva `K1`, číslo PR, `zlucene=True` po zlúčení).
 
 ## Postup od K15 (skúška)
 
 Skúška, ktorú majiteľ odsúhlasil 8. 11. 2026; platí od dávky K15. Po K15 a K16 sa vyhodnotí (čas majiteľa na dávku, počet nových nálezov na
-dávku, chyby zachytené dymovým testom, počet kôl správ) a pravidlá buď ostanú, alebo sa upravia. Nemení sa: v kóde pracuje len jeden, striedanie
+dávku, chyby zachytené dymovým testom, počet kôl správ; údaje z K15: samostatný výsledok dávky netreba, nové nálezy 0, chyby zachytené dymovým testom 0) a pravidlá buď ostanú, alebo sa upravia. Nemení sa: v kóde pracuje len jeden, striedanie
 2 : 1, výnimky z pravidla 500 riadkov schvaľuje len majiteľ a čísla nálezov prideľuje len agent.
 
 **Kto čo robí**
@@ -96,9 +98,11 @@ dávku, chyby zachytené dymovým testom, počet kôl správ) a pravidlá buď o
    a infra; tretí druh vždy samostatne). Pri každom nálezi najlepšia oprava, test, ručná kontrola a značka **JASNÉ** (kolega len rýchlo overí a
    opraví) alebo **NEJASNÉ** (kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ nepovie). Značka je aj na začiatku `preco` v `fronta.py`
    a model ju kontroluje. Hotové karty sú v `karty/` (prvá je `karty/K15.md`).
-2. **Práca kolegu:** vlastná vetva z čerstvého `main`, commit na nález, testy a mutácie, výsledok na jednu stranu podľa `sablony/vysledok_davky.md`.
-3. **Kontrola pred zlúčením:** majiteľ pošle agentovi výsledok a číslo PR, agent ich porovná s PR, CI a kódom (asi 10 minút) a nesúlady napíše skôr,
-   než sa PR zlúči. Toto mení pôvodné „agent jeho PR pred zlúčením nekontroluje“.
+2. **Práca kolegu:** vlastná vetva z čerstvého `main`, commit na nález, testy a mutácie; overenie, mutácie a odchýlky od karty do textu
+   commitu (výsledok dávky agent číta z PR). Samostatná strana podľa `sablony/vysledok_davky.md` len pri NEJASNÝCH nálezoch, keď overenie v
+   commitoch chýba, alebo keď má kolega kandidátov na nové nálezy.
+3. **Kontrola pred zlúčením:** majiteľ pošle agentovi číslo PR, agent porovná commity, CI, boty a kód s kartou (asi 10 minút) a nesúlady napíše
+   skôr, než sa PR zlúči. Toto mení pôvodné „agent jeho PR pred zlúčením nekontroluje“.
 4. **PR a boty:** CI (`checks` aj `backend-postgres`) musí byť zelené. CodeRabbit sa spúšťa na poslednom commite (limit je jedna kontrola za hodinu),
    Codex review sa spustí pri otvorení PR.
 5. **Zlúčenie** len mimo behu Playwrightu. Závislosti, prihlásenie/CSRF a infra sa nasadzujú samostatne, nikdy v jednej dávke s inou zmenou.
@@ -121,4 +125,4 @@ typu nitpick) ide do `poznamky.md` bez čísla, alebo sa opraví v tej istej vet
 **Týždenne:** plný E2E beh v oznámenom okne bez zlučovania (Codex) a čistenie zoznamu: nálezy, ktoré sa nedajú reprodukovať, sa zatvoria rozhodnutím.
 Týždenný audit závislostí beží sám (pondelok).
 
-**Dymová sada v Playwrighte** (5 až 8 špecov, asi 5 minút, proti Railway) je v oblasti Codexa. Návrh Codexa z 9. 11. 2026: sedem existujúcich špecov (`smoke`, `auth-session`, `messages-peer-profile`, `mobile-settings-navigation`, `dashboard-history-navigation`, `html-cache-control`, `sharing-from-feed`; 51 variantov, súčet trvaní testov asi 91 s, trvanie celého procesu zatiaľ nezmerané) so značkou `@smoke` na krátkych scenároch a bez zmeny asercií, tolerancií, timeoutov a retry; zavedie sa v samostatnej vetve Codexa a pred prvým použitím sa zmeria jeden beh. Ôsmy špec s fotkou patrí do 295. Kým značky nie sú, platí len ručný dymový test. Odosielanie správ sa do dymu nedáva (zmazaná správa ostáva v databáze ako prázdny záznam) a push sa v Playwrighte otestovať nedá, takže ostávajú na ručnom teste.
+**Dymová sada v Playwrighte** (5 až 8 špecov, asi 5 minút, proti Railway) je v oblasti Codexa. Codex ju 9. 11. 2026 zaviedol lokálne (zatiaľ bez PR): sedem existujúcich špecov (`smoke`, `auth-session`, `messages-peer-profile`, `mobile-settings-navigation`, `dashboard-history-navigation`, `html-cache-control`, `sharing-from-feed`; 51 variantov) so značkou `@smoke` na krátkych scenároch a bez zmeny asercií, tolerancií, timeoutov a retry. Jedno meranie celého procesu: 2 min 36 s, 40 prešlo, 1 padlo a 10 projektových SKIP; nový pád `auth-session` po F5 pri vyčistených cookies vo WebKite mobile (3 opakovania prešli, príčina neurčená). Spúšťa sa z priečinka `frontend`: `npm run test:e2e:docker -- --grep '@smoke' --workers=1 --retries=0`, až po nasadení a v okne bez zlučovania. Kým sa neosvedčí (niekoľko behov bez nového pádu), nie je podmienkou zlúčenia dávky. Ôsmy špec s fotkou patrí do 295. Okrem dymu platí ručný dymový test. Odosielanie správ sa do dymu nedáva (zmazaná správa ostáva v databáze ako prázdny záznam) a push sa v Playwrighte otestovať nedá, takže ostávajú na ručnom teste.

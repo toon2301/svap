@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='9. 11. 2026',
-    kod='`main` `5bf32b26` (po PR #246)',
+    kod='`main` `b3d7983a` (po PR #250)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,24 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('9. 11. 2026',
+     'Vetva 172 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `b3d7983a`, teda po PR #250). (1) Zápis '
+     'pätnástej práce kolegu: K15 (PR #250, zlúčené 9. 11. 2026 o 19:29 UTC; 3 commity, jeden na nález, 322 a 323 spolu; 9 '
+     'súborov, súbory nad 500 riadkov sa nemenili). Agent ju overil priamo z GitHubu bez samostatného výsledku dávky: CI '
+     '(`checks` aj `backend-postgres`) a CodeRabbit prešli bez pripomienok a texty commitov nesú overenie, mutácie aj '
+     'odchýlky od karty. Hotové sú 322, 323, 320 a 306; kolega slučku z 323 potvrdil aj v prehliadači (produkčný build pred '
+     'opravou 7 575 potvrdení Reactu za 4 s po otvorení obrazovky, po oprave 3). Majiteľ oznámil, že K15 prešla testami po '
+     'nasadení bez nových nálezov. (2) Dôkazy k 223: majiteľ prešiel logy Railway pre dve okná pádov (všetky požiadavky '
+     'dorazili na backend, 401 a 403 s dôvodom „CSRF cookie not set.“, bez chýb spojenia, jeden zahodený paket TCP bez '
+     'dokázaného súvisu) a Codex v dávke K15 zmeral 80 pokusov (väčšie `shm` nepomohlo; v jednom pokuse sa zachytilo, že '
+     'cookies zmizli pred odmietnutou obnovou, po spoločnom zlyhaní dvoch požiadaviek). Agent: najpravdepodobnejšie '
+     'prostredie testov (WebKit v Dockeri), nie aplikácia; nález 223 ostáva otvorený a má ďalšie kroky, doplnok je aj pri '
+     '245. (3) Dávka Codexa K15 (lokálna, čaká na commit a PR): značky `@smoke` na siedmich špecoch (51 variantov, jedno '
+     'meranie 2 min 36 s: 40 prešlo, 1 padlo, 10 projektových SKIP; nový pád `auth-session` po F5 pri vyčistených cookies vo '
+     'WebKite mobile, 3 opakovania prešli), test farieb 320 (4 zo 4), sonda cookies a dôkazy pre dva špecy; E2E má 44 špecov '
+     'a 762 variantov; prijatý stav 427 / 2 / 303 sa nemení. (4) Poradie prác pre kolegu: K16 = 319, 308, 309, 310; K17 = '
+     '302, 311, 312; karta K16 je v `karty/K16.md`. (5) Výsledok dávky: ak texty commitov nesú overenie, agent ich číta z PR '
+     'a kolega samostatnú stranu nepíše (README). Dopad na E2E tejto vetvy: žiadny.'),
     ('9. 11. 2026',
      'Vetva 171 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `5bf32b26`, teda po PR #246; PR #247). (1) '
      'Nález HNEĎ 318 (push na iPhone) je zatvorený: logy Railway (worker, dve testovacie správy) ukázali '
@@ -155,8 +173,8 @@ PORADIE = [
          polozky=['245', '185', 'OW-07', '266', '304', '31', '189', '209', '223', '225', '295']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14 a jej zvyšky sú 308 až 311; 287 a 288 '
-            'čakajú na rozhodnutie R28), Profil a identita (81, 272, 320 formulár zmeny hesla s čiernymi poľami), Zdieľanie a obrázky '
-            '(92, 207; 301 je hotová v K13), ponuky a tagy (322 tag na mobile zmizne, 323 obrazovka Popis ponuky sa neprestajne prekresľuje), '
+            'čakajú na rozhodnutie R28), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
+            '(92, 207; 301 je hotová v K13), ponuky a tagy (322 a 323 sú hotové v K15), '
             'natívne okná `alert()` namiesto toastov (302: zostáva osem, výnimka R31 udelená s maximálnou opatrnosťou), Upozornenia a '
             'push (319 prepínač offline, 321 dokončiť kategórie upozornení pred štartom, R32 (a); najprv mapovanie), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
@@ -164,11 +182,11 @@ PORADIE = [
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '308', '309', '310', '311', '81', '272', '320', '322', '323', '92', '207', '302', '319', '321', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '308', '309', '310', '311', '81', '272', '92', '207', '302', '319', '321', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='175, 176, 204, 306 (surový „Network Error“ v toastoch), APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13)',
+         co='175, 176, 204, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
-         polozky=['175', '176', '204', '306', 'APP-03', '186']),
+         polozky=['175', '176', '204', 'APP-03', '186']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',

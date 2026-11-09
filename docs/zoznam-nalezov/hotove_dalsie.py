@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K14, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K15, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -369,4 +369,48 @@ DONE_SINCE_DALSIE = [
               'preto treba selektory v testoch a E2E zužovať na viditeľné (dnes žiadny taký nie je). Zvyšky sú nálezy 308 až 311. '
               'Dopad na E2E: žiadny podľa kolegu (`mobile-settings-navigation.spec.ts:41` stále vidí '
               '`notifications-push-messages-mobile`).'),
+    dict(n=322, vetva='K15', pr='#250', zlucene=True,
+         text='HOTOVÉ (K15, zlúčené v PR #250 dňa 9. 11. 2026, commit `3d24eb54`; spolu s 323): nový malý hook `useStableScreenProps` '
+              '(nový súbor, 78 riadkov) odovzdáva hooku obrazovky Popis ponuky stabilné vstupy: `initialTags` má rovnakú referenciu, '
+              'kým sa nezmení obsah poľa, a každá zo 17 funkcií `on…` je stabilná a volá vždy najnovšiu funkciu rodiča (zoznam '
+              'funkcií je typovo úplný, takže nová funkcia bez zápisu v zozname sa nepreloží). `SkillsDescriptionScreen.tsx` (teraz '
+              '28 riadkov) ho volá; `SkillsModuleRouter.tsx` (583 riadkov), `useSkillsDescriptionScreenState.ts` (638 riadkov) ani '
+              '`TagsSection.tsx` sa nemenili a návrh z karty držal bez zmeny. Overenie podľa kolegu: 15 nových testov (päť so '
+              'skutočným `SkillsModuleRouter`, z toho štyri padali pred opravou; deväť testov hooku; jeden test na serveri bez '
+              'varovania), mutácie 14 zo 14, Jest v module skills 19 sád a 109 testov, ESLint a tsc bez chýb. V Chromiu (emulácia '
+              'iPhone 13): tag „kvet“ pridaný okrúhlym tlačidlom a uložený: pred opravou ostal riadok Tagy „Pridať tagy“ (tag sa '
+              'stratil), po oprave „1 tag“. CI (`checks`, `backend-postgres`) prešlo a CodeRabbit bol bez pripomienok. Majiteľ 9. 11. '
+              '2026 po nasadení oznámil, že K15 prešla testami bez nových nálezov. Dopad na E2E: žiadny špec s tagmi ani s touto '
+              'obrazovkou na mobile.'),
+    dict(n=323, vetva='K15', pr='#250', zlucene=True,
+         text='HOTOVÉ (K15, zlúčené v PR #250 dňa 9. 11. 2026, commit `3d24eb54`; spolu s 322): slučka prekresľovania obrazovky Popis '
+              'ponuky je odstránená rovnakou opravou (stabilné obslužné funkcie vo `SkillsDescriptionScreen.tsx`). Kolega slučku '
+              'potvrdil aj v prehliadači (Chromium, emulácia iPhone 13, aplikácia ako v prehliadači so simulovaným API): produkčný '
+              'build pred opravou 7 575 potvrdení Reactu za 4 s po otvorení obrazovky (nepretržite), po oprave 3; vývojový build pred '
+              'opravou 8 až 9 chýb „Maximum update depth exceeded“, po oprave 0. V teste so skutočným smerovačom bolo pred opravou 62 '
+              'prekreslení a 122 zápisov do rodiča (poistka testu), po oprave 3 a 2. Podobné miesta (efekt s `on…Change` v '
+              'závislostiach, ktorý zapisuje do rodiča) kolega nenahlásil. Testy a overenie ako pri 322.'),
+    dict(n=320, vetva='K15', pr='#250', zlucene=True,
+         text='HOTOVÉ (K15, zlúčené v PR #250 dňa 9. 11. 2026, commit `3cceeba1`): polia „Nové heslo“ a „Potvrdenie hesla“ v '
+              '`ResetPasswordClient.tsx` majú výslovne `text-gray-900` a v bežnom stave `bg-white`; v stave s chybou ostáva '
+              '`bg-red-50` (dve pozadia sa nebijú). `color-scheme` v `layout.tsx` sa nemenilo. Príčina z karty sa potvrdila. Odchýlka '
+              'od karty: `forgot-password` už má `bg-white dark:bg-black text-gray-900 dark:text-white` (riadok 232), `verify-email` '
+              'a `delete-account/confirm` nemajú žiadne pole, takže sa nemenili. Overenie podľa kolegu: 3 nové testy (všetky padali '
+              'pred opravou), mutácie 7 zo 7; Chromium (emulácia iPhone 13): pri tmavej systémovej schéme malo pole pred opravou '
+              'pozadie `rgb(59, 59, 59)` a biely text, po oprave `rgb(255, 255, 255)` a `rgb(17, 24, 39)`; pri svetlej schéme bolo '
+              'biele pred aj po. Codex po nasadení K15 (9. 11. 2026): nový WebKit test `reset-password-colors.spec.ts` (svetlá aj '
+              'tmavá schéma, WebKit desktop aj mobil) prešiel 4 zo 4 (Chromium 2 projektové SKIP); overenie odkazu je v ňom zachytené '
+              'a odpoveď syntetická, takže netestuje skutočnú platnosť odkazu; test je zatiaľ lokálny a čaká na PR. Majiteľ po '
+              'nasadení oznámil, že K15 prešla testami bez nových nálezov. ESLint hlási v súbore dve staré chyby mimo zmeny (riadok '
+              '56 nepoužitá premenná, riadok 129 `any`): zapísané v `poznamky.md`.'),
+    dict(n=306, vetva='K15', pr='#250', zlucene=True,
+         text='HOTOVÉ (K15, zlúčené v PR #250 dňa 9. 11. 2026, commit `60fe0dec`): `getApiErrorMessage` v `lib/apiError.ts` (90 '
+              'riadkov) vráti záložný text, ak chyba nemá `response` a je to chyba axiosu (`isAxiosError`) alebo nesie kód '
+              '`ERR_NETWORK`, `ECONNABORTED` alebo `ETIMEDOUT`; text od servera má prednosť vždy a obyčajné `Error` s vlastnou '
+              'správou ostáva ako dnes. Odchýlka od karty: pridaný `ETIMEDOUT` a príznak `isAxiosError`, aby sa pokryla aj chyba '
+              'knižnice bez kódu a zrušená požiadavka (`ERR_CANCELED`), ktorá by inak ukázala anglické „canceled“. Overenie podľa '
+              'kolegu: 10 nových testov (päť padalo pred opravou), mutácie 12 z 12; Jest 83 sád a 1 590 testov závislých od '
+              '`apiError.ts` prešlo bez zmeny, ESLint a tsc bez chýb. Texty chýb v `useNotificationPreferences.ts` a '
+              '`usePushMessagesPreference.ts` sa nemenili (nález 319 je v K16). Dopad na E2E: žiadny (E2E nehľadá text „Network '
+              'Error“).'),
 ]

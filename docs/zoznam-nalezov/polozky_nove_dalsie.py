@@ -106,7 +106,10 @@ NEW_ITEMS_DALSIE = [
                'neúspešných pokusov; v Chromiu 0), pričom WebKit je engine Safari na iPhone. Zoznam majiteľa (príloha D, 6. 11. 2026) '
                'dopĺňa: scenár „cudzí profil, približne minúta“ koreloval s reálnym produkčným výpadkom a obnova mohla pri výpadku '
                'alebo preťažení visieť dlho; zhoršovalo to, že „minišatúry“ (čítam ako miniatúry obrázkov) idú cez Django namiesto CDN '
-               '(N9); je to hypotéza z korelácie, nie z logov. Návrh kolegu: nález zatvoriť až po overení v logoch Railway (bod 2).',
+               '(N9); je to hypotéza z korelácie, nie z logov. Návrh kolegu: nález zatvoriť až po overení v logoch Railway (bod 2). '
+               'Dodatok 9. 11. 2026: logy Railway z okien dvoch pádov E2E (majiteľ) potvrdili dôvod 403 na obnove „CSRF cookie not '
+               'set.“, čo zodpovedá prázdnym cookies prehliadača (pozri 223); počty 403 mimo behov E2E za posledné dni (bod 2) sa '
+               'zatiaľ nespočítali.',
          dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom, tabuľka Codexa (pri nálezu 223) a K14'),
     dict(n=247, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
          kratko='klik na položku histórie sa pri písaní ruší až po odoslaní hľadania (debounce), nie hneď',
