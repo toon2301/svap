@@ -1,3 +1,5 @@
+import { AxiosError } from 'axios';
+
 import { getApiErrorMessage, getFieldErrorMessage } from '../apiError';
 
 describe('getFieldErrorMessage', () => {
@@ -43,5 +45,63 @@ describe('getApiErrorMessage', () => {
     expect(getApiErrorMessage({ response: { data: { detail: 'D' } } }, 'fb')).toBe('D');
     expect(getApiErrorMessage({ message: 'M' }, 'fb')).toBe('M');
     expect(getApiErrorMessage(undefined, 'fb')).toBe('fb');
+  });
+});
+
+/**
+ * Sieťová chyba v toaste (nález 306): knižnica axios pri výpadku, offline alebo časovom limite nenastaví `response`
+ * a jej `message` je technický anglický text („Network Error“). Používateľ má dostať preložený záložný text.
+ */
+describe('getApiErrorMessage: chyba axiosu bez odpovede servera', () => {
+  it('skutočná sieťová chyba axiosu (ERR_NETWORK) vráti záložný text, nie „Network Error“', () => {
+    const error = new AxiosError('Network Error', 'ERR_NETWORK');
+
+    expect(error.message).toBe('Network Error');
+    expect(getApiErrorMessage(error, 'Preložený text')).toBe('Preložený text');
+  });
+
+  it.each([
+    ['ECONNABORTED', 'timeout of 30000ms exceeded'],
+    ['ETIMEDOUT', 'connect ETIMEDOUT'],
+    ['ERR_NETWORK', 'Network Error'],
+  ])('chyba axiosu s kódom %s a technickou hláškou vráti záložný text', (code, message) => {
+    expect(getApiErrorMessage(new AxiosError(message, code), 'fb')).toBe('fb');
+    expect(getApiErrorMessage({ code, message }, 'fb')).toBe('fb');
+    expect(getApiErrorMessage(Object.assign(new Error(message), { code }), 'fb')).toBe('fb');
+  });
+
+  it('zrušená požiadavka axiosu (ERR_CANCELED, bez odpovede) vráti záložný text', () => {
+    expect(getApiErrorMessage(new AxiosError('canceled', 'ERR_CANCELED'), 'fb')).toBe('fb');
+  });
+
+  it('text, ktorý poslal server, má prednosť aj pri chybe axiosu', () => {
+    const error = new AxiosError('Request failed with status code 400', 'ERR_BAD_REQUEST', undefined, undefined, {
+      status: 400,
+      data: { error: 'Heslo je príliš slabé.' },
+    } as never);
+
+    expect(getApiErrorMessage(error, 'fb')).toBe('Heslo je príliš slabé.');
+  });
+
+  it('server odpovedal (response je), preto sa kód ani hláška knižnice sieťovej chyby nepoužijú na záložný text', () => {
+    const withDetail = { code: 'ERR_NETWORK', response: { data: { detail: 'D' } }, message: 'Network Error' };
+
+    expect(getApiErrorMessage(withDetail, 'fb')).toBe('D');
+  });
+
+  it('obyčajné Error s vlastnou správou ostáva ako dnes', () => {
+    expect(getApiErrorMessage(new Error('x'), 'fb')).toBe('x');
+    expect(getApiErrorMessage(new Error('Odstránenie obrázka zlyhalo'), 'fb')).toBe('Odstránenie obrázka zlyhalo');
+    expect(getApiErrorMessage({ message: 'M' }, 'fb')).toBe('M');
+  });
+
+  it('Error s textom „Network Error“, ale bez kódu a bez príznaku axiosu, sa nepovažuje za sieťovú chybu', () => {
+    expect(getApiErrorMessage(new Error('Network Error'), 'fb')).toBe('Network Error');
+  });
+
+  it('bez chyby alebo s nereťazcovou správou vráti záložný text', () => {
+    expect(getApiErrorMessage(null, 'fb')).toBe('fb');
+    expect(getApiErrorMessage(undefined, 'fb')).toBe('fb');
+    expect(getApiErrorMessage({ message: 42 }, 'fb')).toBe('fb');
   });
 });

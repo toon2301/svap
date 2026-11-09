@@ -2,8 +2,10 @@
  * Jednotné čítanie chybovej hlášky z API odpovede.
  *
  * Backend používa jednotný tvar (Shape V+): `data.error` je vždy ľudský string.
- * Pre spätnú kompatibilitu a sieťové chyby zachovávame fallback reťazec:
- *   data.error → data.detail → data.message → (axios) error.message → fallback
+ * Pre spätnú kompatibilitu zachovávame fallback reťazec:
+ *   data.error → data.detail → data.message → error.message → fallback
+ * Chyba axiosu bez odpovede servera (offline, výpadok, časový limit) nesie len anglickú technickú hlášku
+ * („Network Error“), preto sa pri nej vždy vráti fallback (nález 306).
  */
 type ApiErrorLike = {
   response?: {
@@ -14,7 +16,22 @@ type ApiErrorLike = {
     };
   };
   message?: unknown;
+  code?: unknown;
+  isAxiosError?: unknown;
 };
+
+/** Kódy axiosu, pri ktorých server neodpovedal (rovnaký zoznam ako `isNetworkFailure` v profile cudzieho používateľa). */
+const NETWORK_FAILURE_CODES = ['ERR_NETWORK', 'ECONNABORTED', 'ETIMEDOUT'];
+
+/**
+ * Server neodpovedal: chyba knižnice axios bez `response` (príznak `isAxiosError` alebo kód výpadku siete, DNS či
+ * časového limitu). Obyčajné `Error` s vlastnou správou, bez kódu a bez príznaku axiosu, to nie je.
+ */
+function isAxiosErrorWithoutResponse(error: unknown): boolean {
+  const candidate = error as ApiErrorLike | null | undefined;
+  if (!candidate || candidate.response) return false;
+  return candidate.isAxiosError === true || NETWORK_FAILURE_CODES.includes(String(candidate.code));
+}
 
 function firstNonEmptyString(...values: unknown[]): string | undefined {
   for (const value of values) {
@@ -25,7 +42,12 @@ function firstNonEmptyString(...values: unknown[]): string | undefined {
   return undefined;
 }
 
+/**
+ * Text chyby API pre používateľa. Chyba axiosu bez odpovede servera (offline, výpadok, časový limit) vráti `fallback`,
+ * nie anglickú hlášku knižnice; inak platí poradie z hlavičky súboru.
+ */
 export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (isAxiosErrorWithoutResponse(error)) return fallback;
   const data = (error as ApiErrorLike)?.response?.data;
   return (
     firstNonEmptyString(
