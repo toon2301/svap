@@ -6,8 +6,8 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='8. 11. 2026',
-    kod='`main` `92fb1b7d` (po PR #245)',
+    datum='9. 11. 2026',
+    kod='`main` `5bf32b26` (po PR #246)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,25 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('9. 11. 2026',
+     'Vetva 171 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `5bf32b26`, teda po PR #246; čaká na PR). (1) '
+     'Diagnostika nálezu HNEĎ 318 (push na iPhone): majiteľ poslal z logov Railway (worker, dve testovacie správy) počty z '
+     'riadku `message_push_delivery_summary`: `recipient_count=1`, `rollout_skipped_count=1`, `delivered_count=0` a '
+     '`skipped_reason=rollout_5`. Push teda preskočil backend kvôli nastaveniu postupného zapínania na 5 % (premenná '
+     '`WEB_PUSH_MESSAGES_ROLLOUT_PERCENT` v Railway); nie je to chyba kódu ani regresia K14. Nález ostáva otvorený (HNEĎ), '
+     'kým majiteľ nezmení nastavenie a neoverí push na iPhone; úloha pre kolegu odpadla a K15 už 318 neobsahuje. Nové '
+     'rozhodnutie R33 (rollout pri štarte). (2) Video majiteľa z 9. 11.: pri novej ponuke na mobile sa pridaný tag '
+     'nezobrazí. Agent ho zmapoval v dočasných testoch so skutočným smerovačom a obrazovkou: nové nálezy 322 (tag sa zmaže, '
+     'keď rodič obrazovke odovzdá nové prázdne pole) a 323 (obrazovka Popis ponuky sa po pripojení neprestajne prekresľuje: '
+     '76 prekreslení a 152 zápisov stavu do zastavenia poistkou). Spoločná oprava (stabilné vstupy v '
+     '`SkillsDescriptionScreen.tsx`) je vyskúšaná v teste; v prehliadači to agent neoveril. Nový balík „Ponuky (úprava a '
+     'tagy)“. (3) Majiteľ nechal rozhodnutia na odporúčanie agenta: R31 je zapísané ako jednorazová výnimka len na výmenu '
+     'osmich `alert()` (nález 302 ide v K17) a R32 ako (b): nefunkčné prepínače upozornení sa skryjú (nový nález 324, PRED '
+     'NASADENÍM) a nález 321 sa presúva do PO NASADENÍ. (4) Poradie prác pre kolegu: K15 = 322, 323, 320, 306; K16 = 324, '
+     '319, 308, 309; K17 = 310, 302, 311, 312; staršie dávky 24, 22, 23, 26 a 247, 248, 250, 256 sa premenovali z K17 a K18 '
+     'na K18 a K19. Karta dávky K15 je v `karty/K15.md`. (5) Doplnky: dymový test pred krokom s push overí, že rollout je '
+     '100 %, a vysvetľuje `skipped_reason`; úloha N5 spomína premenné postupného zapínania push; `poznamky.md` má prvú '
+     'poznámku (zapísať nastavenie rollout do logu pri štarte). Dopad na E2E tejto vetvy: žiadny.'),
     ('8. 11. 2026',
      'Vetva 170 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `92fb1b7d`, teda po PR #245; čaká na PR). (1) '
      'Zápis trinástej a štrnástej práce kolegu: K13 (PR #244, zlúčené 8. 11. 2026 o 15:20; 17 súborov, +839/−19; backend, '
@@ -121,7 +140,7 @@ PORADIE = [
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
             'zlúčené vo vetve 165, PR #230; 246 v K12, PR #242; 296 v K13, PR #244; ostáva 245: overenie v logoch Railway; nový nález HNEĎ '
-            '318: push na iPhone po K14, najprv diagnostika); ďalej 185, OW-07, '
+            '318: push na iPhone, príčina nájdená (rollout 5 % v Railway), ostáva zmeniť nastavenie a overiť, R33); ďalej 185, OW-07, '
             'overenie súkromia obrázkov správ (266), politika S3 bucketu v README (304) a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, '
             '225, 295; 212 je '
             'hotová vo vetve 157, 228 v K6, 194 a časť 204 v K12, 244 v K14)',
@@ -130,13 +149,15 @@ PORADIE = [
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14 a jej zvyšky sú 308 až 311; 287 a 288 '
             'čakajú na rozhodnutie R28), Profil a identita (81, 272, 320 formulár zmeny hesla s čiernymi poľami), Zdieľanie a obrázky '
-            '(92, 207; 301 je hotová v K13), natívne okná `alert()` namiesto toastov (302: zostáva osem, rozhodnutie R31), Upozornenia a '
-            'push (319 prepínač offline, 321 nedokončené kategórie, rozhodnutie R32), Upozornenia na zmazaný obsah (74), Žiadosti (17), '
+            '(92, 207; 301 je hotová v K13), ponuky a tagy (322 tag na mobile zmizne, 323 obrazovka Popis ponuky sa neprestajne prekresľuje), '
+            'natívne okná `alert()` namiesto toastov (302: zostáva osem, výnimka R31 schválená), Upozornenia a '
+            'push (319 prepínač offline, 324 skryť nefunkčné prepínače podľa R32 (b); 321 sa dokončuje po štarte), Upozornenia na '
+            'zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '308', '309', '310', '311', '81', '272', '320', '92', '207', '302', '319', '321', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '308', '309', '310', '311', '81', '272', '320', '322', '323', '92', '207', '302', '319', '324', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, 306 (surový „Network Error“ v toastoch), APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
@@ -227,7 +248,7 @@ DECISIONS = [
          kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]
 
-# Rozhodnutia R13–R30 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+# Rozhodnutia R13–R33 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
 from rozhodnutia_nastenka import DECISIONS_NASTENKA  # noqa: E402
 
 DECISIONS.extend(DECISIONS_NASTENKA)

@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R32: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R33: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
-`alert()`) a R32 (kategórie upozornení: dokončiť, alebo skryť).
+`alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (b)) a R33 (postupné zapínanie push upozornení
+na správy).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28, R29, R31 a R32 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
-7. 11. 2026 a R30 8. 11. 2026.
+(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R33 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+7. 11. 2026, R30 8. 11. 2026 a R31 a R32 9. 11. 2026 (majiteľ nechal rozhodnutie na odporúčanie agenta).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
 """
 
@@ -153,7 +154,13 @@ DECISIONS_NASTENKA = [
          odporucanie='Jednorazová výnimka len na náhradu volaní: súbory nerastú (vymení sa osem volaní a pribudne import). Delenie týchto '
                         'súborov je samostatná a väčšia úloha (TECH-01…11) a zdržiavala by vzhľadovú opravu pred nasadením. Rovnaký postup ako '
                         'pri R24 a R26.',
-         kedy='Pred ďalšou prácou na 302.'),
+         kedy='Rozhodnuté 9. 11. 2026.',
+         odpoved='Jednorazová výnimka podľa odporúčania agenta (majiteľ 9. 11. 2026 napísal „Nechám na tvoje odporúčania“). Rozsah: '
+                  '`SkillsModuleRouter.tsx`, `OfferReviewsView.tsx` a `useSkillsDescriptionScreenState.ts` sa smú zmeniť len na výmenu '
+                  'osmich volaní `alert()` za `toast.error` s prekladmi v šiestich jazykoch (pribudne import, súbory inak nerastú); iná '
+                  'zmena v nich ostáva zakázaná. Výnimka platí pre dávku K17 (nález 302). Ak s ňou majiteľ nesúhlasí, stačí to napísať '
+                  'pred odoslaním karty K17 kolegovi.',
+         datum='9. 11. 2026'),
     dict(id='R32', tema='Kategórie upozornení: dokončiť pred štartom, alebo skryť (321)',
          otazka='Majú sa pred ostrým štartom dokončiť všetky kategórie upozornení v Nastaveniach (Páči sa mi to, Komentáre, Žiadosť o '
                  'zručnosť a ďalšie; dnes sú len lokálny stav), alebo sa majú nefunkčné prepínače do dokončenia skryť a Nastavenia ukážu '
@@ -163,5 +170,19 @@ DECISIONS_NASTENKA = [
                         'myslí, že upozornenia vypol); skrytie je malá zmena na jednom mieste. (a) je väčšia funkcia (model nastavení na '
                         'serveri, rozhodovanie pri doručovaní, rozhranie, testy) a patrí do plánu štartu, ak ju majiteľ chce mať na začiatku. '
                         '(c) sa neodporúča.',
-         kedy='Pred prácou na 321.'),
+         kedy='Rozhodnuté 9. 11. 2026.',
+         odpoved='(b), podľa odporúčania agenta (majiteľ 9. 11. 2026 napísal „Nechám na tvoje odporúčania“): nefunkčné prepínače (hlavný '
+                  'vypínač a päť kategórií) sa do dokončenia skryjú (nález 324, PRED NASADENÍM, dávka K16) a ich dokončenie ostáva po '
+                  'štarte (nález 321, PO NASADENÍ). Ak majiteľ chce kategórie už pred štartom, 321 sa vráti do PRED NASADENÍM.',
+         datum='9. 11. 2026'),
+    dict(id='R33', tema='Postupné zapínanie push upozornení na správy (rollout) v Railway a pri štarte (318)',
+         otazka='Na akú hodnotu nastaviť `WEB_PUSH_MESSAGES_ROLLOUT_PERCENT`? Dnes je v Railway 5, takže push na správy dostane '
+                 'približne každý dvadsiaty účet (podľa čísla účtu). (a) Hneď 100 aj v Railway a pri ostrom štarte podľa potreby znížiť; '
+                 '(b) v Railway 100 a pri ostrom štarte začať malým percentom a zvyšovať ho; (c) nechať 5.',
+         odporucanie='(a) teraz a (b) pri štarte, ktorý sa rozhodne až pri príprave štartu (N14): Railway je testovacie prostredie a pri 5 % '
+                     'nemá test push zmysel (väčšina účtov, aj testovacích, push nikdy nedostane a log ukáže len `rollout_skipped_count`). '
+                     'Postupné zapínanie pri ostrom štarte dáva zmysel, ak majiteľ chce sledovať záťaž a chyby doručenia pri malom počte '
+                     'používateľov, no musí o ňom vedieť a zvyšovať ho (percento sa vyberá podľa čísla účtu a zmena premennej znamená nové '
+                     'nasadenie, preto nie počas behu Playwrightu). (c) sa neodporúča.',
+         kedy='Teraz pre Railway (nález 318: pred opakovaním testu push na iPhone); pre ostrý štart najneskôr pri N14.'),
 ]

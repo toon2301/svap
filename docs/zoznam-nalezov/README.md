@@ -23,7 +23,7 @@ nemôže ticho prestať sedieť.
 | `hotove_dalsie.py` | Nálezy opravené od 6. 11. 2026 (`DONE_SINCE_DALSIE`). Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |
 | `fronta.py` | Poradie prác pre kolegu (dávky K15, K16…, kľúč `davka`); smie obsahovať otvorené nálezy z ktorejkoľvek skupiny (HNEĎ, PRED aj PO NASADENÍ). Hotový nález sa odtiaľto odstráni. |
 | `zatvorene_dalsie.py` | Nálezy zatvorené rozhodnutím majiteľa po prvom vydaní (`CLOSED_SINCE`); zobrazujú sa v časti 8. |
-| `rozhodnutia_nastenka.py` | Rozhodnutia R13–R32: zo zoznamu majiteľa (R13–R19 a R22 rozhodnuté, R20 a R21 čakajú), R23 (čaká), R24 (výnimka z pravidla 500 riadkov pre nález 271, rozhodnuté), R25 (275 je zámer, rozhodnuté), R26 (dve výnimky pre testové súbory, rozhodnuté), R27 (pravidlo 500 riadkov a testy, čaká) a R28 (vstupné animácie modulov, čaká), R29 (animované obrázky, čaká) , R30 (starý endpoint ponúk, rozhodnuté (a)), R31 (výnimka pre osem `alert()`, čaká) a R32 (kategórie upozornení, čaká); `stav.py` ich pripája do `DECISIONS`. |
+| `rozhodnutia_nastenka.py` | Rozhodnutia R13–R33: zo zoznamu majiteľa (R13–R19 a R22 rozhodnuté, R20 a R21 čakajú), R23 (čaká), R24 (výnimka z pravidla 500 riadkov pre nález 271, rozhodnuté), R25 (275 je zámer, rozhodnuté), R26 (dve výnimky pre testové súbory, rozhodnuté), R27 (pravidlo 500 riadkov a testy, čaká) a R28 (vstupné animácie modulov, čaká), R29 (animované obrázky, čaká) , R30 (starý endpoint ponúk, rozhodnuté (a)), R31 (výnimka pre osem `alert()`, rozhodnuté 9. 11.), R32 (kategórie upozornení, rozhodnuté (b) 9. 11.) a R33 (postupné zapínanie push na správy, čaká); `stav.py` ich pripája do `DECISIONS`. |
 | `priloha_nastenka.py` | Príloha D: mapovanie zoznamu majiteľa na tento zoznam (jeden riadok na jeho položku). Generátor overí odkazy v nej. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
 
@@ -36,7 +36,7 @@ Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení 
 2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py`
    (staršie opravy sú v `DONE_SINCE` v `hotove.py`; `n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
    Čiastočne hotový nález ostáva otvorený: jeho text sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.
-3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (R13 až R32 sú v `rozhodnutia_nastenka.py`). Nález, ktorý sa kvôli
+3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (R13 až R33 sú v `rozhodnutia_nastenka.py`). Nález, ktorý sa kvôli
    rozhodnutiu neopravuje, sa odstráni z otvorených a pridá do `CLOSED_SINCE` v `zatvorene_dalsie.py`.
 4. Posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
 5. Z koreňa repozitára spustiť `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`.
@@ -62,14 +62,14 @@ Dohoda s majiteľom z 5. 11. 2026, upravená 6. a 7. 11. 2026; platí, kým ju m
   striedania 2 : 1 a po nich bola vetva agenta 167, ktorá je na pokyn majiteľa z 7. 11. 2026 len zoznam: opravy nálezov agentom sa
   odkladajú, kým majiteľ nedá vedieť. K8 (mapovanie nálezov 274, 275 a 276) sa robila na dva razy (PR #237 a #238; druhé kolo sa volalo
   K9) a dávka drobných opráv išla ako K10 (PR #239); po nich bola vetva agenta 168 (len zoznam). K11 (PR #241) a K12 (PR #242) sú
-  hotové a po nich bola vetva agenta 169 (len zoznam). K13 (PR #244) a K14 (PR #245) sú hotové a po nich je vetva agenta 170 (len
-  zoznam). Ďalšie dve dávky kolegu sú K15 a K16 (poradie je v časti 2 zoznamu).
+  hotové a po nich bola vetva agenta 169 (len zoznam). K13 (PR #244) a K14 (PR #245) sú hotové a po nich boli vetvy agenta 170 a 171
+  (len zoznam). Ďalšie dávky kolegu sú K15 až K17 (poradie je v časti 2 zoznamu; K18 a K19 sú staršie návrhy z nálezov PO NASADENÍ).
 - **Vetvy:** kolega K1, K2, K3…; agent číslované (163, 164…); Codex `e2e/<názov>`. S Codexom pracuje len agent.
 - **Čo dostane kolega:** opis nálezu a návrh najlepšej opravy (nálezy sú v častiach 3 až 5 zoznamu, poradie v časti 2). Nález overuje kolega pri
   práci. Od K15 agent pred zlúčením porovná výsledok kolegu s PR, CI a kódom (pozri „Postup od K15“). Nálezy, ktoré majiteľ určí na zmapovanie kolegovi (naposledy 274, 275, 276), agent nemapuje:
   zapíše ich presne podľa opisu a príčinu nájde kolega.
 - **Výnimky z pravidla 500 riadkov:** schvaľuje len majiteľ a každá sa zapíše ako rozhodnutie (R24: jeden riadok v `useDashboardState.ts` pre
-  nález 271; R26: dva testové súbory z K8 a K9). Pravidlo platí ďalej; či sa vzťahuje aj na testy, čaká na R27.
+  nález 271; R26: dva testové súbory z K8 a K9; R31: osem výmen `alert()` v troch súboroch pre nález 302 v K17, 9. 11. 2026). Pravidlo platí ďalej; či sa vzťahuje aj na testy, čaká na R27.
 - **Po každej práci kolegu** majiteľ pošle agentovi výsledok dávky (jedna strana podľa `sablony/vysledok_davky.md`) a číslo PR. Agent zapíše
   hotové, nové nálezy podľa filtra a rozhodnutia.
 - **Zoznam:** agent ho aktualizuje v každej vetve a ak to nezvláda, hlási to. Hotový nález kolegu sa z `fronta.py` presunie do
@@ -95,7 +95,7 @@ dávku, chyby zachytené dymovým testom, počet kôl správ) a pravidlá buď o
 1. **Karta dávky** (`sablony/karta_davky.md`): jedna strana, 3 až 4 nálezy jedného druhu rizika (vzhľad, backend logika, alebo závislosti, prihlásenie
    a infra; tretí druh vždy samostatne). Pri každom nálezi najlepšia oprava, test, ručná kontrola a značka **JASNÉ** (kolega len rýchlo overí a
    opraví) alebo **NEJASNÉ** (kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ nepovie). Značka je aj na začiatku `preco` v `fronta.py`
-   a model ju kontroluje.
+   a model ju kontroluje. Hotové karty sú v `karty/` (prvá je `karty/K15.md`).
 2. **Práca kolegu:** vlastná vetva z čerstvého `main`, commit na nález, testy a mutácie, výsledok na jednu stranu podľa `sablony/vysledok_davky.md`.
 3. **Kontrola pred zlúčením:** majiteľ pošle agentovi výsledok a číslo PR, agent ich porovná s PR, CI a kódom (asi 10 minút) a nesúlady napíše skôr,
    než sa PR zlúči. Toto mení pôvodné „agent jeho PR pred zlúčením nekontroluje“.
@@ -107,7 +107,8 @@ dávku, chyby zachytené dymovým testom, počet kôl správ) a pravidlá buď o
 7. **Zápis:** agent zapíše hotové, nové nálezy podľa filtra a rozhodnutia (vetva len so zoznamom).
 
 **Keď niečo zlyhá (nález HNEĎ):** rad sa zastaví a ďalšia dávka sa nezlučuje. Majiteľ pošle logy v štandardnej podobe (pri push počty z riadku
-`message_push_delivery_summary`, bez ID). Agent podľa vstupov namapuje príčinu, kolega opraví v samostatnej vetve s jedným nálezom mimo striedania a po
+`message_push_delivery_summary`, bez ID). Najprv sa overuje nastavenie, až potom kód: pri 318 (push na iPhone po K14) ukázal log
+`skipped_reason=rollout_5`, teda postupné zapínanie na 5 % v Railway, nie chybu kódu. Agent podľa vstupov namapuje príčinu, kolega opraví v samostatnej vetve s jedným nálezom mimo striedania a po
 oprave sa zopakuje dymový test. Ak je rozbitý základný tok a oprava nie je do pár hodín, majiteľ vráti predchádzajúce nasadenie v Railway; postup sa
 overí vopred, nie v zhone.
 
