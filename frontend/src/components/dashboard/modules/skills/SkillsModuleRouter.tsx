@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
 import { skillsCategories } from '@/constants/skillsCategories';
@@ -123,8 +124,7 @@ export default function SkillsModuleRouter({
               // ignore
             }
             if (filteredTotal >= MAX_SKILLS_PER_TYPE) {
-              // eslint-disable-next-line no-alert
-              alert(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
+              toast.error(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
               return;
             }
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
