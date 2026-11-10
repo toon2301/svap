@@ -4472,6 +4472,7 @@
     "closedToday": "Nieaktywne / zamknięte",
     "cons": "Minusy",
     "consPlaceholder": "Wpisz minus i naciśnij Enter",
+    "deleteReviewFailed": "Nie udało się usunąć opinii.",
     "deleteReviewMessage": "Czy na pewno chcesz usunąć tę opinię? Tej akcji nie można cofnąć.",
     "deleteReviewTitle": "Usunąć opinię?",
     "editReview": "Edytuj opinię",

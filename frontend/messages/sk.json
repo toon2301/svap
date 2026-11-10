@@ -4472,6 +4472,7 @@
     "closedToday": "Neaktívny / zatvorené",
     "cons": "Minusy",
     "consPlaceholder": "Napíšte mínus a stlačte Enter",
+    "deleteReviewFailed": "Nepodarilo sa vymazať recenziu.",
     "deleteReviewMessage": "Naozaj chceš vymazať túto recenziu? Túto akciu nemožno vrátiť späť.",
     "deleteReviewTitle": "Vymazať recenziu?",
     "editReview": "Upraviť recenziu",

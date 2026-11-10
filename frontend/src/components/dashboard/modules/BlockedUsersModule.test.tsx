@@ -283,3 +283,64 @@ describe('BlockedUsersModule: prechodné stavy pri vstupe (nález 286)', () => {
     expect(screen.getByText('Používateľ 1')).toBeInTheDocument();
   });
 });
+
+describe('BlockedUsersModule: chyba načítania sa oznámi čítačom obrazovky (nález 312)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const page = (count: number): BlockedUsersPage => ({
+    nextCursor: null,
+    results: Array.from({ length: count }, (_, index) => ({
+      id: 200 + index,
+      username: `blocked${index}`,
+      display_name: `Blokovaný ${index + 1}`,
+      avatar_url: null,
+      is_available: true,
+    })),
+  });
+
+  it('chyba načítania je v prvku s rolou alert, ktorý nesie text chyby a nie tlačidlo „Skúsiť znova“', async () => {
+    mockedFetchBlockedUsers.mockRejectedValueOnce(new Error('Server je nedostupný.'));
+    render(<BlockedUsersModule />);
+
+    const alert = await screen.findByRole('alert');
+
+    expect(alert).toHaveTextContent('Server je nedostupný.');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(alert).not.toContainElement(screen.getByRole('button', { name: 'Skúsiť znova' }));
+  });
+
+  it('sieťová chyba bez odpovede servera: v alerte je preložený záložný text, nie anglické „Network Error“', async () => {
+    mockedFetchBlockedUsers.mockRejectedValueOnce({ isAxiosError: true, message: 'Network Error' });
+    render(<BlockedUsersModule />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Načítanie zlyhalo.');
+    expect(screen.queryByText('Network Error')).not.toBeInTheDocument();
+  });
+
+  it('po úspešnom „Skúsiť znova“ alert zmizne a ukáže sa zoznam', async () => {
+    mockedFetchBlockedUsers.mockRejectedValueOnce(new Error('network'));
+    render(<BlockedUsersModule />);
+    await screen.findByRole('alert');
+
+    mockedFetchBlockedUsers.mockResolvedValueOnce(page(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Skúsiť znova' }));
+
+    expect(await screen.findByText('Blokovaný 1')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('bez chyby nie je v module žiadny alert: ani v zozname, ani v prázdnom stave', async () => {
+    mockedFetchBlockedUsers.mockResolvedValueOnce(page(2));
+    const withList = render(<BlockedUsersModule />);
+    expect(await screen.findByText('Blokovaný 1')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    withList.unmount();
+
+    mockedFetchBlockedUsers.mockResolvedValueOnce(page(0));
+    render(<BlockedUsersModule />);
+    expect(await screen.findByText('Nemáte nikoho zablokovaného')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

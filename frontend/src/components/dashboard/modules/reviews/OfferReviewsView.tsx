@@ -328,7 +328,7 @@ export default function OfferReviewsView({
       setReviewsTotalPages(data.total_pages || reviewsTotalPages);
     } catch (error: unknown) {
       if (offerIdRef.current !== requestedOfferId) return;
-      alert(getApiErrorMessage(error, t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.')));
+      toast.error(getApiErrorMessage(error, t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.')));
     } finally {
       if (offerIdRef.current === requestedOfferId) setLoadingMoreReviews(false);
     }
@@ -466,7 +466,7 @@ export default function OfferReviewsView({
       setReviews((prev) =>
         prev.map((item) => (item.id === review.id ? previousReview : item)),
       );
-      alert(getApiErrorMessage(error, t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.')));
+      toast.error(getApiErrorMessage(error, t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.')));
     } finally {
       setPendingReviewLikeIds((prev) => {
         const next = new Set(prev);
@@ -598,7 +598,7 @@ export default function OfferReviewsView({
             setReviewIdToDelete(null);
           } catch (error: unknown) {
             console.error('Chyba pri vymazávaní recenzie:', error);
-            alert(getFieldErrorMessage(error, 'Nepodarilo sa vymazať recenziu.'));
+            toast.error(getFieldErrorMessage(error, t('reviews.deleteReviewFailed', 'Nepodarilo sa vymazať recenziu.')));
           } finally {
             setIsDeletingReview(false);
           }

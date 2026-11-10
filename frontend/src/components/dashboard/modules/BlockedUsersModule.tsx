@@ -220,7 +220,7 @@ export default function BlockedUsersModule({ onBack }: BlockedUsersModuleProps) 
       ) : loadError ? (
         <div className='animate-content-in py-16 text-center'>
           <NoSymbolIcon className='mx-auto h-11 w-11 text-gray-400' aria-hidden='true' />
-          <p className='mt-3 text-sm text-gray-600 dark:text-gray-300'>{loadError}</p>
+          <p role='alert' className='mt-3 text-sm text-gray-600 dark:text-gray-300'>{loadError}</p>
           <button
             type='button'
             onClick={() => void loadInitialUsers()}
