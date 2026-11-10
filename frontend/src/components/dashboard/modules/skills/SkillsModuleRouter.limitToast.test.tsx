@@ -70,10 +70,16 @@ const offer = (id: number): DashboardSkill => ({
   is_seeking: false,
 });
 
-function renderRouter(standardCategories: DashboardSkill[], customCategories: DashboardSkill[]) {
+const seek = (id: number): DashboardSkill => ({ ...offer(id), subcategory: `Hľadám ${id}`, is_seeking: true });
+
+function renderRouter(
+  standardCategories: DashboardSkill[],
+  customCategories: DashboardSkill[],
+  activeModule: 'skills-offer' | 'skills-search' = 'skills-offer',
+) {
   return render(
     <SkillsModuleRouter
-      activeModule="skills-offer"
+      activeModule={activeModule}
       accountType="personal"
       standardCategories={standardCategories}
       customCategories={customCategories}
@@ -159,6 +165,35 @@ describe('SkillsModuleRouter: limit kariet ukáže toast, nie natívne okno (ná
     renderRouter([offer(1)], [offer(2)]);
     fireEvent.click(screen.getByTestId('add-category'));
     expect(setActiveModule).toHaveBeenCalledWith('skills-add-custom-category');
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+
+  it('Hľadám, výber kategórie pri troch kartách: toast, nie natívne okno, a nič sa neotvorí (miesto 3)', () => {
+    renderRouter([seek(1), seek(2)], [seek(3)], 'skills-search');
+
+    fireEvent.click(screen.getByTestId('first-option'));
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith(LIMIT_TEXT);
+    expect(setActiveModule).not.toHaveBeenCalled();
+    expect(setIsSkillsCategoryModalOpen).not.toHaveBeenCalled();
+  });
+
+  it('Hľadám, výber kategórie pod limitom: otvorí okno (desktop) aj obrazovku (mobil), bez toastu a bez natívneho okna', () => {
+    window.innerWidth = 1280;
+    const desktop = renderRouter([seek(1)], [seek(2)], 'skills-search');
+    fireEvent.click(screen.getByTestId('first-option'));
+    expect(setIsSkillsCategoryModalOpen).toHaveBeenCalledWith(true);
+    expect(setActiveModule).not.toHaveBeenCalled();
+    desktop.unmount();
+
+    window.innerWidth = 390;
+    renderRouter([seek(1)], [seek(2)], 'skills-search');
+    fireEvent.click(screen.getByTestId('first-option'));
+    expect(setActiveModule).toHaveBeenCalledWith('skills-select-category');
 
     expect(toast.error).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
