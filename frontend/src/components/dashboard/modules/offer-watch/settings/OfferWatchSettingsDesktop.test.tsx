@@ -82,7 +82,8 @@ describe('OfferWatchSettingsDesktop', () => {
 
   afterEach(() => window.localStorage.clear());
 
-  it('shows an immediately visible page skeleton during the initial load', () => {
+  // Kostra je v DOM od prvého snímku, ale ukáže sa až po 200 ms (nález 310): viditeľnosť rieši `OfferWatchSettingsDesktop.loading.test.tsx`.
+  it('has the page skeleton in the DOM with a status label during the initial load', () => {
     mockedUseOfferWatches.mockReturnValue(hookResult({ isLoading: true }));
 
     render(<OfferWatchSettingsDesktop />);
