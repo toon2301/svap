@@ -458,7 +458,7 @@ export default function SkillsModuleRouter({
                     );
                     return data?.images || [];
                   } catch (error: unknown) {
-                    const msg = getApiErrorMessage(error, 'Odstránenie obrázka zlyhalo');
+                    const msg = getApiErrorMessage(error, t('skills.imageDeleteFailed', 'Odstránenie obrázka zlyhalo.'));
                     throw new Error(msg);
                   }
                 }
