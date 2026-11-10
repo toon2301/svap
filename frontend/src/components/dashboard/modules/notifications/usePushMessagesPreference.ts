@@ -147,7 +147,11 @@ export function usePushMessagesPreference() {
     autoSyncAttemptedRef.current = false;
   }, [preferences.pushNotifications]);
 
-  useEffect(() => {
+  /**
+   * Automatická registrácia odberu: keď je uložená voľba zapnutá, povolenie udelené a tento prehliadač ešte nemá odber,
+   * zaregistruje ho (raz po každej zmene voľby). Zlyhanie sa ukáže ako chyba po akcii.
+   */
+  useEffect(/** Automatická registrácia odberu. */ () => {
     if (loadingPreferences || busyAction !== null) {
       return;
     }
@@ -170,7 +174,8 @@ export function usePushMessagesPreference() {
 
     autoSyncAttemptedRef.current = true;
 
-    void (async () => {
+    /** Zaregistruje odber tohto prehliadača a zapíše výsledok: úspech zruší chybu po akcii, zlyhanie ju nastaví. */
+    void (/** Registrácia odberu. */ async () => {
       try {
         const subscription = await ensureBrowserPushSubscription();
         await registerBrowserPushSubscription(subscription);
@@ -193,6 +198,10 @@ export function usePushMessagesPreference() {
     supportState.supported,
   ]);
 
+  /**
+   * Zapnutie Správ: overí podporu prehliadača, vyžiada povolenie, vytvorí a zaregistruje odber a až potom uloží voľbu,
+   * takže sa voľba neprepne, kým nie je všetko hotové. Každé zlyhanie ukáže chybu po akcii.
+   */
   async function enablePushMessages() {
     const nextSupportState = detectBrowserPushSupport();
     setSupportState(nextSupportState);
@@ -242,6 +251,10 @@ export function usePushMessagesPreference() {
     }
   }
 
+  /**
+   * Vypnutie Správ: najprv uloží voľbu, potom odhlási odber tohto prehliadača. Ak sa odhlásenie nepodarí, voľba ostane
+   * vypnutá a ukáže sa varovanie.
+   */
   async function disablePushMessages() {
     setActionError(null);
     setBusyAction('disabling');

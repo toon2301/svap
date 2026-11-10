@@ -6,6 +6,7 @@ import OfferWatchMobileListScreen from './OfferWatchMobileListScreen';
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     locale: 'sk',
+    /** Preklad bez slovníka: vráti záložný text, a ak nie je, kľúč. */
     t: (_key: string, fallback?: string) => fallback || _key,
   }),
 }));

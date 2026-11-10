@@ -73,7 +73,8 @@ export default function OfferWatchSettingsDesktop({
   const [fadeIn, setFadeIn] = useState(false);
   const fadeClass = fadeIn ? ' animate-content-in' : '';
 
-  useEffect(() => {
+  /** Zaznamená načítavanie: až potom sa obsah, ktorý po ňom príde, krátko vyfaduje (nález 310). */
+  useEffect(/** Zapne prechod obsahu po načítaní. */ () => {
     if (isLoading) setFadeIn(true);
   }, [isLoading]);
 

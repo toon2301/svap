@@ -17,6 +17,7 @@ jest.mock('@/contexts/LanguageContext', () => ({
     locale: 'sk',
     country: 'SK',
     setCountry: jest.fn(),
+    /** Preklad bez slovníka: vráti záložný text, a ak nie je, kľúč. */
     t: (_key: string, fallback?: string) => fallback || _key,
   }),
 }));
