@@ -2,22 +2,14 @@
 
 import { OfferWatchListSkeleton } from './OfferWatchSavedList';
 
-type OfferWatchSettingsSkeletonProps = {
-  loadingLabel: string;
-};
-
-export default function OfferWatchSettingsSkeleton({
-  loadingLabel,
-}: OfferWatchSettingsSkeletonProps) {
+/**
+ * Kostra stránky Sledovanie na desktope (formulár a zoznam). Je len dekoratívna a pulzuje sama. Rolu `status`,
+ * `aria-busy` a text pre čítače obrazovky nesie obal `DelayedSkeleton`, ktorý kostru ukáže až po 200 ms, aby pri
+ * rýchlej odpovedi nepreblikla pred prázdnym stavom (nález 310).
+ */
+export default function OfferWatchSettingsSkeleton() {
   return (
-    <div
-      role='status'
-      aria-live='polite'
-      aria-busy='true'
-      data-testid='offer-watch-settings-skeleton'
-    >
-      <span className='sr-only'>{loadingLabel}</span>
-
+    <div data-testid='offer-watch-settings-skeleton'>
       <section
         className='rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#101011] sm:p-6'
         aria-hidden='true'

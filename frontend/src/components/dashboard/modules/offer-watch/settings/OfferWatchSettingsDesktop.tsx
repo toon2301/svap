@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import DelayedSkeleton from '../../settings/DelayedSkeleton';
 import SettingsDetailHeader from '../../settings/SettingsDetailHeader';
 import { createOfferWatchDraft, validateOfferWatchDraft } from '../offerWatchDraft';
 import { MAX_OFFER_WATCHES } from '../types';
@@ -33,6 +34,12 @@ type OfferWatchSettingsDesktopProps = {
 
 const CREATE_FORM_ID = 'offer-watch-create';
 
+/**
+ * Desktopové Sledovanie: formulár na vytvorenie sledovania a zoznam uložených. Kostra pri načítavaní (celá stránka pri
+ * prvom načítaní, zoznam pri neskoršom) sa ukáže až po 200 ms, takže rýchla odpoveď ju neukáže vôbec a nepreblikla pred
+ * prázdnym stavom (nález 310, rovnako ako na mobile od nálezu 286). Obsah, ktorý príde po načítavaní, sa krátko vyfaduje;
+ * dialógy ho nevyfadujú, lebo načítavanie nespúšťajú.
+ */
 export default function OfferWatchSettingsDesktop({
   onBack,
 }: OfferWatchSettingsDesktopProps) {
@@ -61,6 +68,15 @@ export default function OfferWatchSettingsDesktop({
   const isDeleting = mutation?.kind === 'delete';
   const hasLoadError = Boolean(error && !mutation && !isLoading);
   const isInitialLoading = isLoading && watches.length === 0;
+  // Krátky prechod dostane len obsah, ktorý príde po načítavaní (nález 310): príznak sa zapne, keď sa načítavanie
+  // zaznamená. Otvorenie a zatvorenie dialógov načítavanie nespúšťa, takže ich obsah nevyfaduje.
+  const [fadeIn, setFadeIn] = useState(false);
+  const fadeClass = fadeIn ? ' animate-content-in' : '';
+
+  /** Zaznamená načítavanie: až potom sa obsah, ktorý po ňom príde, krátko vyfaduje (nález 310). */
+  useEffect(/** Zapne prechod obsahu po načítaní. */ () => {
+    if (isLoading) setFadeIn(true);
+  }, [isLoading]);
 
   useEffect(() => {
     if (draft.countryCode || !country) return;
@@ -175,12 +191,18 @@ export default function OfferWatchSettingsDesktop({
       </p>
 
       {isInitialLoading ? (
-        <OfferWatchSettingsSkeleton
-          loadingLabel={t('common.loading', 'Načítavam...')}
-        />
+        // Kostra celej stránky sa ukáže až po 200 ms (rýchla odpoveď ju neukáže vôbec, nález 310) a pulzuje sama.
+        <DelayedSkeleton
+          isLoading
+          label={t('common.loading', 'Načítavam...')}
+          pulse={false}
+          testId='offer-watch-settings-loading'
+        >
+          <OfferWatchSettingsSkeleton />
+        </DelayedSkeleton>
       ) : (
         <>
-          <section className='rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#101011] sm:p-6' aria-label={t('offerWatch.formLabel', 'Nastavenie sledovania')}>
+          <section className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-[#101011] sm:p-6${fadeClass}`} aria-label={t('offerWatch.formLabel', 'Nastavenie sledovania')}>
             <OfferWatchForm
               idPrefix={CREATE_FORM_ID}
               draft={draft}
@@ -195,7 +217,7 @@ export default function OfferWatchSettingsDesktop({
             />
           </section>
 
-          <section className='mt-8' aria-labelledby='offer-watch-saved-title'>
+          <section className={`mt-8${fadeClass}`} aria-labelledby='offer-watch-saved-title'>
             <div className='mb-4 flex items-center justify-between gap-4'>
               <h2 id='offer-watch-saved-title' className='text-xl font-semibold text-gray-900 dark:text-white'>
                 {t('offerWatch.savedTitle', 'Uložené sledovania')}
@@ -220,7 +242,15 @@ export default function OfferWatchSettingsDesktop({
                 </button>
               </div>
             ) : isLoading ? (
-              <OfferWatchListSkeleton />
+              // Kostra zoznamu pri neskoršom načítavaní: tiež až po 200 ms; karty kostry pulzujú samy.
+              <DelayedSkeleton
+                isLoading
+                label={t('offerWatchResults.loading', 'Načítavam sledovania...')}
+                pulse={false}
+                testId='offer-watch-desktop-list-loading'
+              >
+                <OfferWatchListSkeleton />
+              </DelayedSkeleton>
             ) : (
               <OfferWatchSavedList
                 watches={watches}

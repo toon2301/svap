@@ -33,11 +33,53 @@ function buildPermissionMessage(permission: PushPermissionState): string {
   return 'Push notifikacie neboli povolene.';
 }
 
+/** Stav prehliadača, z ktorého sa odvodzuje pasívne varovanie. */
+type PassiveWarningInput = {
+  /** Uložená voľba Správ („Zapnuté“ = `true`). */
+  pushEnabled: boolean;
+  supportState: ReturnType<typeof detectBrowserPushSupport>;
+  permission: PushPermissionState;
+  subscriptionStatus: PushSubscriptionStatus;
+};
+
+/**
+ * Pasívne varovanie pod voľbou Správy (nález 308): uložená voľba je „Zapnuté“, no prehliadač push nepodporuje, má ho
+ * zablokovaný, alebo tento prehliadač nie je zaregistrovaný. Počíta sa čisto zo stavu počas vykresľovania, nie v efekte,
+ * takže varovanie je už v tom istom vykreslení ako riadky voľby a neprichádza o snímok neskôr (inak by posunulo obsah
+ * pod ním). Pri vypnutej voľbe a v ostatných stavoch (napr. povolenie ešte nebolo vyžiadané) vráti `null`.
+ */
+export function getPassiveBrowserWarning({
+  pushEnabled,
+  supportState,
+  permission,
+  subscriptionStatus,
+}: PassiveWarningInput): string | null {
+  if (!pushEnabled) {
+    return null;
+  }
+
+  if (!supportState.supported) {
+    return buildUnsupportedMessage(supportState.reason);
+  }
+
+  if (permission === 'denied') {
+    return buildPermissionMessage(permission);
+  }
+
+  if (permission === 'granted' && subscriptionStatus === 'missing') {
+    return 'Push notifikacie su zapnute, ale tento prehliadac este nie je zaregistrovany.';
+  }
+
+  return null;
+}
+
 /**
  * Voľba push upozornení na správy. Načíta uloženú voľbu, zisťuje stav prehliadača (podpora, povolenie, existujúci
  * odber) a zapína alebo vypína push vrátane registrácie a zrušenia odberu tohto prehliadača. `loading` pokrýva aj
  * kontrolu prehliadača a ukladanie, `initialLoading` len úvodné načítanie uloženej voľby (nález 286): kontrola
- * prehliadača ho nedrží, aby voľba nezostala navždy v kostre, ak sa service worker neozve.
+ * prehliadača ho nedrží, aby voľba nezostala navždy v kostre, ak sa service worker neozve. `error` skladá tri zdroje
+ * v tomto poradí: chyba uloženia či načítania voľby, chyba po akcii (zapnutie, vypnutie, automatická registrácia; je to
+ * stav a trvá do ďalšej akcie) a pasívne varovanie odvodené počas vykresľovania (`getPassiveBrowserWarning`).
  */
 export function usePushMessagesPreference() {
   const {
@@ -47,14 +89,14 @@ export function usePushMessagesPreference() {
     error: preferenceError,
     updatePreference,
   } = useNotificationPreferences();
-  const [permission, setPermission] = useState<PushPermissionState>('unsupported');
+  const [permission, setPermission] = useState<PushPermissionState>(() => getBrowserPushPermissionState());
   const [supportState, setSupportState] = useState(() => detectBrowserPushSupport());
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<PushSubscriptionStatus>('checking');
   const [busyAction, setBusyAction] = useState<'enabling' | 'disabling' | null>(
     null,
   );
-  const [browserError, setBrowserError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const autoSyncAttemptedRef = useRef(false);
 
   useEffect(() => {
@@ -105,7 +147,11 @@ export function usePushMessagesPreference() {
     autoSyncAttemptedRef.current = false;
   }, [preferences.pushNotifications]);
 
-  useEffect(() => {
+  /**
+   * Automatická registrácia odberu: keď je uložená voľba zapnutá, povolenie udelené a tento prehliadač ešte nemá odber,
+   * zaregistruje ho (raz po každej zmene voľby). Zlyhanie sa ukáže ako chyba po akcii.
+   */
+  useEffect(/** Automatická registrácia odberu. */ () => {
     if (loadingPreferences || busyAction !== null) {
       return;
     }
@@ -128,15 +174,16 @@ export function usePushMessagesPreference() {
 
     autoSyncAttemptedRef.current = true;
 
-    void (async () => {
+    /** Zaregistruje odber tohto prehliadača a zapíše výsledok: úspech zruší chybu po akcii, zlyhanie ju nastaví. */
+    void (/** Registrácia odberu. */ async () => {
       try {
         const subscription = await ensureBrowserPushSubscription();
         await registerBrowserPushSubscription(subscription);
         setSubscriptionStatus('subscribed');
-        setBrowserError(null);
+        setActionError(null);
       } catch (error) {
         console.error('Failed to sync browser push subscription:', error);
-        setBrowserError(
+        setActionError(
           'Nepodarilo sa dokoncit registraciu push notifikacii v tomto prehliadaci.',
         );
       }
@@ -151,54 +198,19 @@ export function usePushMessagesPreference() {
     supportState.supported,
   ]);
 
-  useEffect(() => {
-    if (preferenceError) {
-      return;
-    }
-
-    if (!preferences.pushNotifications) {
-      setBrowserError((current) =>
-        current === UNREGISTER_WARNING ? current : null,
-      );
-      return;
-    }
-
-    if (!supportState.supported) {
-      setBrowserError(buildUnsupportedMessage(supportState.reason));
-      return;
-    }
-
-    if (permission === 'denied') {
-      setBrowserError(buildPermissionMessage(permission));
-      return;
-    }
-
-    if (permission === 'granted' && subscriptionStatus === 'missing') {
-      setBrowserError(
-        'Push notifikacie su zapnute, ale tento prehliadac este nie je zaregistrovany.',
-      );
-      return;
-    }
-
-    setBrowserError(null);
-  }, [
-    permission,
-    preferenceError,
-    preferences.pushNotifications,
-    subscriptionStatus,
-    supportState.reason,
-    supportState.supported,
-  ]);
-
+  /**
+   * Zapnutie Správ: overí podporu prehliadača, vyžiada povolenie, vytvorí a zaregistruje odber a až potom uloží voľbu,
+   * takže sa voľba neprepne, kým nie je všetko hotové. Každé zlyhanie ukáže chybu po akcii.
+   */
   async function enablePushMessages() {
     const nextSupportState = detectBrowserPushSupport();
     setSupportState(nextSupportState);
-    setBrowserError(null);
+    setActionError(null);
 
     if (!nextSupportState.supported) {
       setPermission('unsupported');
       setSubscriptionStatus('missing');
-      setBrowserError(buildUnsupportedMessage(nextSupportState.reason));
+      setActionError(buildUnsupportedMessage(nextSupportState.reason));
       return;
     }
 
@@ -214,7 +226,7 @@ export function usePushMessagesPreference() {
 
       if (nextPermission !== 'granted') {
         setSubscriptionStatus('missing');
-        setBrowserError(buildPermissionMessage(nextPermission));
+        setActionError(buildPermissionMessage(nextPermission));
         return;
       }
 
@@ -227,11 +239,11 @@ export function usePushMessagesPreference() {
         return;
       }
 
-      setBrowserError(null);
+      setActionError(null);
     } catch (error) {
       console.error('Failed to enable push notifications:', error);
       setSubscriptionStatus('missing');
-      setBrowserError(
+      setActionError(
         'Nepodarilo sa aktivovat push notifikacie pre tento prehliadac.',
       );
     } finally {
@@ -239,8 +251,12 @@ export function usePushMessagesPreference() {
     }
   }
 
+  /**
+   * Vypnutie Správ: najprv uloží voľbu, potom odhlási odber tohto prehliadača. Ak sa odhlásenie nepodarí, voľba ostane
+   * vypnutá a ukáže sa varovanie.
+   */
   async function disablePushMessages() {
-    setBrowserError(null);
+    setActionError(null);
     setBusyAction('disabling');
 
     const saved = await updatePreference('pushNotifications', false);
@@ -254,11 +270,18 @@ export function usePushMessagesPreference() {
       setSubscriptionStatus('missing');
     } catch (error) {
       console.error('Failed to unregister browser push subscription:', error);
-      setBrowserError(UNREGISTER_WARNING);
+      setActionError(UNREGISTER_WARNING);
     }
 
     setBusyAction(null);
   }
+
+  const passiveWarning = getPassiveBrowserWarning({
+    pushEnabled: preferences.pushNotifications,
+    supportState,
+    permission,
+    subscriptionStatus,
+  });
 
   return {
     value: preferences.pushNotifications,
@@ -273,7 +296,7 @@ export function usePushMessagesPreference() {
     // Len úvodné načítanie uloženej voľby (nález 286). Kontrola prehliadača sem schválne nepatrí: keby sa service worker
     // nikdy neozval, voľba by zostala navždy len ako kostra.
     initialLoading: loadingPreferences,
-    error: preferenceError || browserError,
+    error: preferenceError || actionError || passiveWarning,
     permission,
     supported: supportState.supported,
     onChange: (enabled: boolean) => {
