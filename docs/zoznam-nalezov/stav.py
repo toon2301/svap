@@ -6,8 +6,8 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='9. 11. 2026',
-    kod='`main` `b3d7983a` (po PR #250)',
+    datum='10. 11. 2026',
+    kod='`main` `7243f020` (po PR #251, ten mení len E2E)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,15 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('10. 11. 2026',
+     'Vetva 172, doplnok po kontrole CodeRabbitu (PR #252) a logoch majiteľa. (1) CodeRabbit: tri pripomienky platné a opravené '
+     '(záver pri 223 nesmie z chýbajúceho cookie vylúčiť aplikačnú príčinu; počet 403 mimo testov nevylučuje dopad na '
+     'používateľov; tabuľka rolí v README zosúladená s pravidlom o výsledku dávky). K tomu je v kartách a šablóne jednotne '
+     '„kým majiteľ nepovie“ (bez „alebo agent“). (2) Logy majiteľa k 223 a 245 (prvé 401 z 9. 11. a 15 × 403 na obnove za 7 '
+     'dní): 13 z 15 pravdepodobne patrí k behom Codexa, dve z 8. 11. časovo sedia na jeho pokus; žiadna nie je preukázateľne od '
+     'skutočného používateľa, dopad na používateľov nie je ani potvrdený, ani vylúčený. Ďalšie kroky sú v 223 (tvar '
+     '`NEXT_PUBLIC_API_URL`, natívny beh Codexa, voliteľne logovanie dôvodu 401). (3) Dávka Codexa K15 je zlúčená (PR #251, '
+     '`main` `7243f020`); zlúčenie nezmenilo aplikáciu. Dopad na E2E tejto vetvy: žiadny.'),
     ('9. 11. 2026',
      'Vetva 172 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `b3d7983a`, teda po PR #250). (1) Zápis '
      'pätnástej práce kolegu: K15 (PR #250, zlúčené 9. 11. 2026 o 19:29 UTC; 3 commity, jeden na nález, 322 a 323 spolu; 9 '
@@ -27,7 +36,7 @@ ZMENY = [
      'dokázaného súvisu) a Codex v dávke K15 zmeral 80 pokusov (väčšie `shm` nepomohlo; v jednom pokuse sa zachytilo, že '
      'cookies zmizli pred odmietnutou obnovou, po spoločnom zlyhaní dvoch požiadaviek). Agent: najpravdepodobnejšie '
      'prostredie testov (WebKit v Dockeri), nie aplikácia; nález 223 ostáva otvorený a má ďalšie kroky, doplnok je aj pri '
-     '245. (3) Dávka Codexa K15 (lokálna, čaká na commit a PR): značky `@smoke` na siedmich špecoch (51 variantov, jedno '
+     '245. (3) Dávka Codexa K15 (PR #251, zlúčené 10. 11. 2026 o 06:27 UTC; 23 súborov len v `frontend/e2e/**` a `docs/playwright-odovzdanie.md`): značky `@smoke` na siedmich špecoch (51 variantov, jedno '
      'meranie 2 min 36 s: 40 prešlo, 1 padlo, 10 projektových SKIP; nový pád `auth-session` po F5 pri vyčistených cookies vo '
      'WebKite mobile, 3 opakovania prešli), test farieb 320 (4 zo 4), sonda cookies a dôkazy pre dva špecy; E2E má 44 špecov '
      'a 762 variantov; prijatý stav 427 / 2 / 303 sa nemení. (4) Poradie prác pre kolegu: K16 = 319, 308, 309, 310; K17 = '
