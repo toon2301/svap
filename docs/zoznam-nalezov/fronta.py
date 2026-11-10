@@ -11,13 +11,13 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K14 sú hotové a zlúčené (K6 až K14 sú v `hotove_dalsie.py`): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K15 sú hotové a zlúčené (K6 až K15 sú v `hotove_dalsie.py`): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
-302) a K14 (PR #245) o zámku závislostí, obnove prihlásenia a prechodných stavoch Nastavení (244, 286 a časť 245). Dávky K15 až K17
-navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po K14 a podľa videa z 9. 11.: K15 sú viditeľné chyby (322 a 323 na
-obrazovke Popis ponuky na mobile, 320 a 306), K16 začína nálezom 319 a pokračuje zvyškami
+302), K14 (PR #245) o zámku závislostí, obnove prihlásenia a prechodných stavoch Nastavení (244, 286 a časť 245) a K15 (PR #250)
+o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej chybe v toastoch (322, 323, 320 a 306). Dávky K16 a K17
+navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po K14: K16 začína nálezom 319 a pokračuje zvyškami
 po 286 (308 až 310) a K17 dopĺňa zvyšok nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končí nálezom PO NASADENÍ 312. Nález HNEĎ 318
 (push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Nález 321 (kategórie upozornení; R32 (a): pred
 štartom) a zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie sú: 321 čaká na mapovanie a plán po
@@ -35,9 +35,9 @@ zoznam nemôže ticho zastarať.
 """
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED '
-             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K14 sú hotové; vetvy agenta 167, 168, 169, 170 a 171 '
-             'sú len zoznam (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť). Dávky K15 až K17 navrhol '
-             'agent 8. a 9. 11. 2026 (najprv viditeľné chyby z ručných testov majiteľa po K14 a z videa z 9. 11.) a čakajú na schválenie; '
+             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K15 sú hotové; vetvy agenta 167 až 172 '
+             'sú len zoznam (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť). Dávky K16 a K17 navrhol '
+             'agent 8. a 9. 11. 2026 (zvyšky po 286, nález 319 a výmena osmich `alert()`) a čakajú na schválenie; '
              'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
@@ -48,26 +48,6 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA = [
-    dict(n='322', davka='K15',
-         co='Nová ponuka na mobile: tag pridaný okrúhlym tlačidlom sa nezobrazí (obrazovka Popis ponuky ho zmaže pri prekreslení '
-            'rodiča).',
-         preco='JASNÉ. Z videa majiteľa 9. 11. 2026; príčina je zmapovaná v kóde a oprava vyskúšaná dočasným testom so skutočným '
-               'smerovačom: stabilné vstupy (`initialTags` podľa obsahu a obslužné funkcie so stabilnou identitou) v '
-               '`SkillsDescriptionScreen.tsx` (26 riadkov). Smerovač (583 riadkov) a hook obrazovky (638 riadkov) sa nemenia. Viditeľná '
-               'chyba pri vytváraní ponuky, preto prvá.'),
-    dict(n='323', davka='K15',
-         co='Obrazovka Popis ponuky sa neprestajne prekresľuje (slučka efektov s obslužnými funkciami rodiča; v teste 76 prekreslení '
-            'po pripojení).',
-         preco='JASNÉ. Rovnaká oprava ako 322, preto idú spolu (jeden spoločný commit s oboma číslami); v dev builde overiť, že zmizne '
-               'varovanie „Maximum update depth exceeded“. Podobný vzor inde len nahlásiť.'),
-    dict(n='320', davka='K15',
-         co='Zmena hesla: na iPhone sú polia čierne na svetlej karte (`ResetPasswordClient.tsx`).',
-         preco='JASNÉ. Vzhľadová vec PRED NASADENÍM, potvrdená screenshotom; jeden súbor (350 riadkov) a jedna príčina (polia bez '
-               '`bg-white text-gray-900`); rovnakú kontrolu urobiť na `forgot-password`, `verify-email` a `delete-account`.'),
-    dict(n='306', davka='K15',
-         co='`getApiErrorMessage` ukáže surový „Network Error“ z axiosu skôr než preložený záložný text.',
-         preco='JASNÉ. Malý súbor `lib/apiError.ts` (68 riadkov) s existujúcim testom; hlášky pri offline (319) idú až v K16 a na túto '
-               'zmenu nadväzujú.'),
     dict(n='319', davka='K16',
          co='Upozornenia: pri vypnutom internete sa prepínač Správ prepne bez chybovej hlášky a stav ostane po pripojení.',
          preco='NEJASNÉ (najprv mapovanie). Ktorý prepínač sa testoval: Správy majú vrátenie späť aj chybu, ostatné sú len lokálne '

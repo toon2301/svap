@@ -1,5 +1,8 @@
 # Výsledok dávky K__ (šablóna pre kolegu, jedna strana)
 
+Od K16 sa píše len pri NEJASNÝCH nálezoch (mapovanie), keď overenie nie je v textoch commitov, alebo keď má kolega kandidátov na nové nálezy.
+Inak stačí číslo PR: agent číta overenie, mutácie a odchýlky od karty z commitov, CI a botov priamo z GitHubu.
+
 **PR a commity:** `#__` (zlúčené / nezlúčené); jeden commit na nález, hash a názov.
 **Overenie:** SQLite __ prešlo / __ preskočených; PostgreSQL __ prešlo; Jest __ sád a __ testov; tsc, build, ruff a black čisté; CI (`checks`, `backend-postgres`); stav CodeRabbit a Codex.
 

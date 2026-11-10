@@ -95,10 +95,15 @@ NEW_ITEMS_DALSIE = [
                '`api.ts` si vyžiada nový; cross-origin a HttpOnly cookie sa nemenia; `fetchCsrfToken` má limit 15 s (zvolený podľa '
                'zastavení 10 až 26 s z nálezu 223). `csrf.ts` má teraz 84 riadkov. Overenie podľa kolegu: 15 nových testov (4 so '
                'skutočným `api.ts`), mutácie 16 z 16; CI prešlo. OSTÁVA: (1) Príčina 403 vo WebKite nie je preukázaná: opravený je '
-               'reprodukovaný defekt, no že práve on spôsobuje 403 na iPhone, sa nepotvrdilo; dôkazy z diagnostiky v PR #229 (názvy '
-               'cookies a prítomnosť `X-CSRFToken` pri 401 a 403 na obnove) stále chýbajú. (2) Po nasadení spočítať v logoch Railway '
-               '`POST /api/token/refresh/` so stavom 403 za 24 až 48 h (predtým 13 zo 83 pokusov vo WebKite, teraz sa čaká okolo '
-               'nuly); ak ostanú, treba blok `[E2E-EVIDENCE]` od Codexa. (3) Do `api.ts` by patril časový limit obnovy a kontroly '
+               'reprodukovaný defekt, no že práve on spôsobuje 403 na iPhone, sa nepotvrdilo; dôkazy z diagnostiky (názvy cookies a '
+               'prítomnosť `X-CSRFToken` pri 401 a 403 na obnove) sú od 9. 11. v nálezu 223: pri dvoch odmietnutých obnovách bola '
+               'hlavička prítomná a zoznam cookies prázdny. (2) Počet `POST /api/token/refresh/` so stavom 403 v logoch Railway '
+               '(majiteľ, 10. 11. 2026): 15 za 7 dní (5. až 9. 11.), z toho 13 až po nasadení K14 (od 8. 11.; 2 z 8. 11. a 11 z 9. 11.). K behom Codexa '
+               '(WebKit v Dockeri) pravdepodobne patrí 13 z 15 (2 z 5. 11. a 11 z 9. 11.; 5 podľa času pádov v jeho hlásení, 8 podľa zhody siete a rytmu) a '
+               'dve z 8. 11. časovo sedia na jeho pokus; žiadna nie je preukázateľne od '
+               'skutočného používateľa, produkčný problém to však nevylučuje (zaseknutie požiadaviek bez 401 a 403 sa tým nezmeria). '
+               'K14 teda 403 v testoch neodstránila; podrobnosti sú v nálezu 223 (dodatok 10. 11.). (3) Do `api.ts` by patril '
+               'časový limit obnovy a kontroly '
                '`/auth/me/` po 401 a jedno opakovanie po CSRF 403; súbor má 912 riadkov (limit 500), preto to vyžaduje výnimku '
                'majiteľa alebo rozdelenie súboru a zatiaľ sa nerobí.',
          note='Súvislosť s nálezom 223: zastavenia požiadaviek (10 až 26 s) to nevysvetľujú a nie je preukázané, že za pády E2E môže '
@@ -106,8 +111,11 @@ NEW_ITEMS_DALSIE = [
                'neúspešných pokusov; v Chromiu 0), pričom WebKit je engine Safari na iPhone. Zoznam majiteľa (príloha D, 6. 11. 2026) '
                'dopĺňa: scenár „cudzí profil, približne minúta“ koreloval s reálnym produkčným výpadkom a obnova mohla pri výpadku '
                'alebo preťažení visieť dlho; zhoršovalo to, že „minišatúry“ (čítam ako miniatúry obrázkov) idú cez Django namiesto CDN '
-               '(N9); je to hypotéza z korelácie, nie z logov. Návrh kolegu: nález zatvoriť až po overení v logoch Railway (bod 2).',
-         dec=None, src='kontrola logov Railway od majiteľa (6. 11. 2026), rozbor kódu agentom, tabuľka Codexa (pri nálezu 223) a K14'),
+               '(N9); je to hypotéza z korelácie, nie z logov. Návrh kolegu: nález zatvoriť až po overení v logoch Railway (bod 2). '
+               'Dodatok 9. a 10. 11. 2026: logy Railway z okien dvoch pádov E2E (majiteľ) potvrdili dôvod 403 na obnove „CSRF '
+               'cookie not set.“, čo sedí na prázdne cookies prehliadača, no aplikačnú príčinu nevylučuje: pri cross-origin API K14 '
+               'neplatí a klient tam pošle token z pamäte aj bez cookie (pozri 223). Počty 403 (bod 2) sú v časti OSTÁVA.',
+         dec=None, src='kontrola logov Railway od majiteľa (6., 9. a 10. 11. 2026), rozbor kódu agentom, tabuľka Codexa (pri nálezu 223) a K14'),
     dict(n=247, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
          kratko='klik na položku histórie sa pri písaní ruší až po odoslaní hľadania (debounce), nie hneď',
          what='Zvyšok po oprave APP-05 (K4, PR #231), nahlásil kolega: klik na položku histórie ruší predchádzajúce hľadanie aj klik cez '

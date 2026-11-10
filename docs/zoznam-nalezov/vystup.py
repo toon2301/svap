@@ -397,13 +397,15 @@ def _udrzba(d, m):
     d.w('- **Kolega:** v kóde pracuje vždy len jeden (agent, kolega alebo Codex). Dávka kolegu (aspoň tri nálezy, každý vo vlastnom '
         'commite, vetvy K1, K2…) sa strieda s jednou vetvou agenta v pomere 2 : 1 (dve dávky kolegu, potom jedna vetva agenta), kým '
         'majiteľ dohodu nezmení; kolega smie robiť aj nálezy PRED NASADENÍM a HNEĎ a majiteľ môže pomer dočasne zmeniť (napr. na 1 : 1). '
-        'K6 až K14 sú hotové a vetvy agenta 167 až 171 sú len zoznam (majiteľ 7. 11. 2026). Nálezy, ktoré majiteľ odovzdá kolegovi na '
+        'K6 až K15 sú hotové a vetvy agenta 167 až 172 sú len zoznam (majiteľ 7. 11. 2026). Nálezy, ktoré majiteľ odovzdá kolegovi na '
         'zmapovanie (naposledy 274, 275, 276), agent nemapuje. Výnimky z pravidla 500 riadkov schvaľuje len majiteľ a zapisujú sa ako '
         'rozhodnutia (R24, R26, R31). '
-        'Po každej práci kolegu majiteľ pošle agentovi názov PR, krátky popis opravy a nové nálezy. Podrobnosti sú v `README.md` '
+        'Po každej práci kolegu majiteľ pošle agentovi číslo PR a krátky verdikt (testy po nasadení prešli alebo neprešli, nové '
+        'nálezy); výsledok dávky agent číta z PR. Podrobnosti sú v `README.md` '
         '(časť „Postup s kolegom“).')
     d.w('- **Postup od K15 (skúška od 8. 11. 2026):** karta dávky s označením JASNÉ alebo NEJASNÉ pri každom nálezi, výsledok dávky kolegu '
-        'na jednu stranu, kontrola výsledku agentom pred zlúčením, dymový test majiteľa po každom nasadení (ďalšia dávka sa nezlučuje, kým '
+        'v textoch commitov a v PR (samostatná strana len pri NEJASNÝCH nálezoch a kandidátoch na nové nálezy), kontrola agentom '
+        'pred zlúčením, dymový test majiteľa po každom nasadení (ďalšia dávka sa nezlučuje, kým '
         'neprejde), filter nových nálezov (číslo len s dôkazom a dopadom, najviac 5 na dávku) a zastavenie radu pri chybe HNEĎ. '
         'Šablóny sú v `sablony/`, neočíslované pripomienky v `poznamky.md`, podrobnosti v `README.md`.')
     d.w('- **Príloha D** (zoznam majiteľa z 6. 11. 2026) je mapovanie jeho položiek na tento zoznam v `priloha_nastenka.py`; generátor '

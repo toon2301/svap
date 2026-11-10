@@ -17,4 +17,4 @@ Vyplní agent, schváli majiteľ; kolega ju číta zo zoznamu v `main` alebo z o
 - **Ručne po nasadení:** najviac 3 body.
 - **Dopad na E2E:** ktoré špecy to môže zasiahnuť.
 
-**Značky:** JASNÉ = kolega len rýchlo overí, že nález platí, a opraví. NEJASNÉ = kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ (alebo agent) nepovie.
+**Značky:** JASNÉ = kolega len rýchlo overí, že nález platí, a opraví. NEJASNÉ = kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ nepovie.
