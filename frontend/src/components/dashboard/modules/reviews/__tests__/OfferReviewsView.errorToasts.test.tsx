@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import type { Review } from '../ReviewCard';
 
 const mockApiGet = jest.fn();
+const mockApiPost = jest.fn();
+const mockApiDelete = jest.fn();
 
 /** Preklady, ktoré test dosadí: kľúč, ktorý tu nie je, vráti záložný text z kódu. */
 let mockTranslations: Record<string, string> = {};
@@ -19,13 +21,13 @@ jest.mock('react-hot-toast', () => ({
 jest.mock('@/lib/api', () => ({
   api: {
     get: (...args: unknown[]) => mockApiGet(...args),
-    post: jest.fn(),
+    post: (...args: unknown[]) => mockApiPost(...args),
     patch: jest.fn(),
-    delete: jest.fn(),
+    delete: (...args: unknown[]) => mockApiDelete(...args),
   },
   endpoints: {
     skills: { detail: (id: number) => `skills/${id}` },
-    reviews: { list: (id: number) => `reviews/${id}` },
+    reviews: { list: (id: number) => `reviews/${id}`, like: (id: number) => `reviews/${id}/like` },
   },
 }));
 jest.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 1 } }) }));
@@ -41,13 +43,36 @@ type DesktopStubProps = {
   hasMoreReviews: boolean;
   loadingMoreReviews: boolean;
   onLoadMoreReviews?: () => void;
+  onToggleReviewLike?: (review: Review) => void;
+  pendingReviewLikeIds?: Set<number>;
 };
 
-// Ľahké náhrady podstromov: desktop ukáže počet recenzií a tlačidlo „Zobraziť ďalšie“, ostatné nič.
+// Ľahké náhrady podstromov: desktop ukáže počet recenzií, tlačidlo „Zobraziť ďalšie“ a pri každej recenzii tlačidlo
+// „Páči sa mi“ so stavom (príznak a počet), ostatné nič.
 jest.mock('../OfferReviewsDesktop', () => ({
-  OfferReviewsDesktop: ({ reviews, hasMoreReviews, loadingMoreReviews, onLoadMoreReviews }: DesktopStubProps) => (
+  OfferReviewsDesktop: ({
+    reviews,
+    hasMoreReviews,
+    loadingMoreReviews,
+    onLoadMoreReviews,
+    onToggleReviewLike,
+    pendingReviewLikeIds,
+  }: DesktopStubProps) => (
     <div>
       <span data-testid="review-count">{reviews.length}</span>
+      {reviews.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          data-testid={`like-${item.id}`}
+          data-liked={String(Boolean(item.is_liked_by_me))}
+          data-likes={String(item.likes_count)}
+          disabled={pendingReviewLikeIds?.has(item.id)}
+          onClick={() => onToggleReviewLike?.(item)}
+        >
+          Páči sa mi
+        </button>
+      ))}
       <button
         type="button"
         data-testid="load-more"
@@ -75,7 +100,7 @@ import OfferReviewsView from '../OfferReviewsView';
  * (donačítanie ďalších recenzií, „Páči sa mi“ a zmazanie recenzie) ukazovali natívne okno prehliadača, ktoré blokuje
  * stránku. Majú ukázať toast a ostatné správanie (stav, tlačidlá, modal) nechať ako bolo.
  */
-const review = (id: number): Review => ({
+const review = (id: number, liked = false): Review => ({
   id,
   reviewer_id: 2,
   reviewer_display_name: 'Prvý Používateľ',
@@ -85,20 +110,21 @@ const review = (id: number): Review => ({
   pros: [],
   cons: [],
   likes_count: 3,
-  is_liked_by_me: false,
+  is_liked_by_me: liked,
   created_at: '2026-05-01T10:00:00.000Z',
   updated_at: '2026-05-01T10:00:00.000Z',
 });
 
 /** Prvá strana: jedna recenzia a ďalšia strana, takže tlačidlo „Zobraziť ďalšie“ je aktívne. */
-const firstPage = {
-  results: [review(1)],
+const pageWith = (results: Review[]) => ({
+  results,
   total: 20,
   page: 1,
   page_size: 10,
   total_pages: 2,
   stats: { average: 4, breakdown: {} },
-};
+});
+const firstPage = pageWith([review(1)]);
 
 async function renderView() {
   // Vykreslenie v `act`: načítanie ponuky a recenzií (okamžite vyriešené sľuby) mení stav hneď po mounte.
@@ -116,6 +142,8 @@ beforeEach(() => {
   window.history.replaceState(null, '', '/dashboard/offers/3/reviews');
   alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => undefined);
   mockApiGet.mockReset();
+  mockApiPost.mockReset();
+  mockApiDelete.mockReset();
 });
 
 afterEach(() => {
@@ -177,6 +205,72 @@ describe('OfferReviewsView: zlyhané donačítanie ďalších recenzií (miesto 
     await clickLoadMore();
 
     expect(screen.getByTestId('review-count')).toHaveTextContent('2');
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('OfferReviewsView: zlyhané „Páči sa mi“ pri recenzii (miesto 6)', () => {
+  /** Zoznam s jednou recenziou, ktorá je (ne)označená ako páčiaca sa; detail ponuky prejde. */
+  const loadReviewWith = (liked: boolean) => {
+    mockApiGet.mockImplementation((url: string) =>
+      Promise.resolve({ data: url.startsWith('skills/') ? {} : pageWith([review(1, liked)]) }),
+    );
+  };
+
+  const clickLike = async () => {
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('like-1'));
+    });
+  };
+
+  it('pridanie lajku zlyhá: toast s textom zo servera, nie natívne okno; lajk aj počet sa vrátia a tlačidlo sa uvoľní', async () => {
+    loadReviewWith(false);
+    mockApiPost.mockRejectedValue({ response: { data: { error: 'Najprv sa prihlás.' } } });
+    await renderView();
+    expect(screen.getByTestId('like-1')).toHaveAttribute('data-likes', '3');
+
+    await clickLike();
+
+    expect(mockApiPost).toHaveBeenCalledWith('reviews/1/like');
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Najprv sa prihlás.');
+    const button = screen.getByTestId('like-1');
+    expect(button).toHaveAttribute('data-liked', 'false');
+    expect(button).toHaveAttribute('data-likes', '3');
+    expect(button).toBeEnabled();
+  });
+
+  it('odobratie lajku zlyhá sieťovou chybou: preložený záložný text, lajk aj počet sa vrátia', async () => {
+    mockTranslations = { 'reviews.likeUpdateFailed': 'Could not update the like.' };
+    loadReviewWith(true);
+    mockApiDelete.mockRejectedValue({ isAxiosError: true, message: 'Network Error' });
+    await renderView();
+    expect(screen.getByTestId('like-1')).toHaveAttribute('data-liked', 'true');
+
+    await clickLike();
+
+    expect(mockApiDelete).toHaveBeenCalledWith('reviews/1/like');
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Could not update the like.');
+    const button = screen.getByTestId('like-1');
+    expect(button).toHaveAttribute('data-liked', 'true');
+    expect(button).toHaveAttribute('data-likes', '3');
+    expect(button).toBeEnabled();
+  });
+
+  it('úspešný lajk prevezme stav zo servera a nič neukáže ani natívnym oknom, ani toastom', async () => {
+    loadReviewWith(false);
+    mockApiPost.mockResolvedValue({ data: { review_id: 1, is_liked_by_me: true, likes_count: 4 } });
+    await renderView();
+
+    await clickLike();
+
+    const button = screen.getByTestId('like-1');
+    expect(button).toHaveAttribute('data-liked', 'true');
+    expect(button).toHaveAttribute('data-likes', '4');
     expect(toast.error).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
   });

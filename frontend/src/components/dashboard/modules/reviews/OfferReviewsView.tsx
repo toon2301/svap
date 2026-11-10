@@ -466,7 +466,7 @@ export default function OfferReviewsView({
       setReviews((prev) =>
         prev.map((item) => (item.id === review.id ? previousReview : item)),
       );
-      alert(getApiErrorMessage(error, t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.')));
+      toast.error(getApiErrorMessage(error, t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.')));
     } finally {
       setPendingReviewLikeIds((prev) => {
         const next = new Set(prev);
