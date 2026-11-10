@@ -198,4 +198,33 @@ describe('SkillsModuleRouter: limit kariet ukáže toast, nie natívne okno (ná
     expect(toast.error).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
   });
+
+  it('Hľadám, pridanie vlastnej voľby pri troch kartách: toast, nie natívne okno, a nič sa neotvorí (miesto 4)', () => {
+    renderRouter([seek(1), seek(2)], [seek(3)], 'skills-search');
+
+    fireEvent.click(screen.getByTestId('second-option'));
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith(LIMIT_TEXT);
+    expect(setActiveModule).not.toHaveBeenCalled();
+    expect(setIsAddCustomCategoryModalOpen).not.toHaveBeenCalled();
+  });
+
+  it('Hľadám, pridanie vlastnej voľby pod limitom: otvorí okno (desktop) aj obrazovku (mobil), bez toastu a bez natívneho okna', () => {
+    window.innerWidth = 1280;
+    const desktop = renderRouter([seek(1)], [seek(2)], 'skills-search');
+    fireEvent.click(screen.getByTestId('second-option'));
+    expect(setIsAddCustomCategoryModalOpen).toHaveBeenCalledWith(true);
+    expect(setActiveModule).not.toHaveBeenCalled();
+    desktop.unmount();
+
+    window.innerWidth = 390;
+    renderRouter([seek(1)], [seek(2)], 'skills-search');
+    fireEvent.click(screen.getByTestId('second-option'));
+    expect(setActiveModule).toHaveBeenCalledWith('skills-add-custom-category');
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
 });
