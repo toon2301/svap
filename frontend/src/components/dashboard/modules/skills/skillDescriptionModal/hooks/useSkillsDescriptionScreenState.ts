@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, ChangeEvent } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { resolveInitialOfferDistrictSelection, type OfferCountryCode } from '@/shared/districtRegistry';
 import {
   CurrencyOption,
@@ -515,8 +517,7 @@ export function useSkillsDescriptionScreenState({
         }
       }
     } catch (err: any) {
-      // eslint-disable-next-line no-alert
-      alert(err?.response?.data?.error || err?.message || 'Odstránenie obrázka zlyhalo');
+      toast.error(getApiErrorMessage(err, t('skills.imageDeleteFailed', 'Odstránenie obrázka zlyhalo.')));
     }
   };
 
