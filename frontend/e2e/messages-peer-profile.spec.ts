@@ -116,7 +116,7 @@ function isPeerProfilePath(page: Page): boolean {
   }
 }
 
-test('opening a conversation shows the peer name in the top bar, Späť returns to the list, a cold load restores it', async ({
+test('opening a conversation shows the peer name in the top bar, Späť returns to the list, a cold load restores it', { tag: '@smoke' }, async ({
   page,
 }, testInfo) => {
   const peer = await requirePeerConversation(page, testInfo);
@@ -134,7 +134,7 @@ test('opening a conversation shows the peer name in the top bar, Späť returns 
   await expectConversationOpen(page, peer, 'Priame otvorenie adresy konverzácie');
 });
 
-test('the top bar of a conversation opens the peer profile, Späť and the browser Back return to the same conversation', async ({
+test('the top bar of a conversation opens the peer profile, Späť and the browser Back return to the same conversation', { tag: '@smoke' }, async ({
   page,
 }, testInfo) => {
   const peer = await requirePeerConversation(page, testInfo);

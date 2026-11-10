@@ -16,7 +16,7 @@ import {
 } from './support/search-country-scroll';
 
 // Railway only; genuine GET responses and reusable content, with no personal-data artifacts.
-test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+test.use({ trace: 'off', screenshot: 'off', video: 'off', cookieTimeline: true });
 
 // Service worker aplikácie (public/sw.js) preposiela každé volanie /api/ cez vlastný fetch. Také požiadavky
 // `page.route` nevidí, takže by strážca zápisov (a simulovaná odpoveď) mlčky nefungoval. Preto sa worker

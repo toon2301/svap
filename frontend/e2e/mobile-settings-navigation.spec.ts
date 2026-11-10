@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   await gotoDashboardHome(page);
 });
 
-test('entering a settings section and going back returns to the settings list, Zatvoriť returns to the profile', async ({
+test('entering a settings section and going back returns to the settings list, Zatvoriť returns to the profile', { tag: '@smoke' }, async ({
   page,
 }) => {
   const settingsHeading = page.getByRole('heading', { level: 2, name: 'Nastavenia' }).first();

@@ -4,10 +4,11 @@ Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá
 
 ## Aktuálny prehľad — 9. 11. 2026
 
-Aktuálna spoločná vetva je **`e2e/209-diagnostika`**: obsahuje kód diagnostiky
-aj zjednotené odovzdanie s návrhom dymovej sady. Pôvodná `e2e/dymova-sada`
-a PR #248 zostávajú iba predchádzajúcou revíziou na porovnanie. Súvisiace
-ďalšie opravy sa pridávajú ako commity do tej istej diagnostickej vetvy.
+Aktuálna pracovná vetva tejto dávky je **`e2e/k15-dym-a-dokazy`**, vytvorená
+na výslovný pokyn majiteľa z aktuálneho main `b3d7983a`. Skoršia diagnostika
+`e2e/209-diagnostika` už bola zlúčená cez PR #249; z nej pochádza zjednotené
+odovzdanie. Pôvodná `e2e/dymova-sada` a PR #248 zostávajú iba historickou
+revíziou. Súvisiace ďalšie opravy tejto dávky patria do tej istej novej vetvy.
 
 Zjednotené odovzdanie: celý beh na `5bf32b26` **383 PASS / 22 FAIL / 351 SKIP**,
 tri diagnostické opakovania každého nového pádu, nové dôkazy 223, doplnenie
@@ -15,9 +16,17 @@ ku K14, návrh sedem- až osemsúborového dymu s príkazmi a podmienený test 3
 Prijatý základ ostáva **427 / 2 / 303**; nový beh nie je prijatý. Výsledky nie
 sú opravou aplikácie a plánované testy nie sú označené za hotové.
 
+**Novšia dávka na K15:** značky `@smoke`, pasívna sonda cookies/udalostí 223,
+diagnostický fixture pri dvoch chýbajúcich dôkazoch a regresia farieb 320 sú
+implementované lokálne. Main `b3d7983a` bol majiteľom potvrdený ako nasadený;
+počas merania sa nemení aplikácia ani účty. Výsledky a presné obmedzenia sú
+v závere „K15 — zavedenie dymu a cielená diagnostika“. Historické návrhy nižšie
+opisujú svoj vtedajší stav, nie aktuálny stav implementácie. Plný beh sa teraz
+nespúšťa; najbližší až po nasadení K16 a novom potvrdení okna bez zmien.
+
 ## Ako sa beh spúšťa
 
-- Testy sú v `frontend/e2e/` (43 špecov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
+- Testy sú v `frontend/e2e/` (v tejto E2E vetve 44 špecov / 762 variantov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
 - Bežia proti produkčnej inštancii na Railway (`https://stunning-inspiration-svap.up.railway.app`). Lokálny server sa nespúšťa: appka sa v produkčnom režime správa inak (napr. `Cache-Control: no-store`).
 - Projekty: `webkit-desktop`, `webkit-mobile` (iPhone 15) a `chromium-desktop`. WebKit je povinný.
 - Na Windows sa beh púšťa v Dockeri (Smart App Control blokuje WebKit): z priečinka `frontend` `npm run test:e2e:docker -- --workers=1 --retries=0` (celý beh trvá okolo 40 minút). Jeden projekt: `... -- --project=webkit-mobile`. Skript je `frontend/scripts/e2e-docker.js`, obraz je `mcr.microsoft.com/playwright:v<verzia>-noble`.
@@ -953,3 +962,293 @@ Overenie po oprave opisu: 54/54 lokálnych Node kontrol diagnostiky a ochrany
 podmienky pred príkazmi prešli. Lokálny `--list` znovu potvrdil 51 variantov
 v 7 súboroch; nespustil testy, setup ani Railway. Zmenená je iba dokumentácia,
 aplikácia a testová logika ostali rovnaké. `git diff --check` prešiel.
+
+## K15 — zavedenie dymu a cielená diagnostika (9. 11. 2026)
+
+Základ: nový fetch main `b3d7983a` (PR #250, K15), majiteľom potvrdené
+nasadenie aj okno bez zlučovania, nasadení a zmien účtov. Pokračuje tá istá
+vlastná vetva `e2e/209-diagnostika`, fast-forward z main. Aplikácia, závislosti,
+Jest, migrácie, Railway a register nálezov sa nemenia. **Žiadny plný beh.**
+Prijatý celý základ 427 / 2 / 303 ostáva nezmenený; 222 sa znovu neotvára.
+
+### Dym: implementácia a jedno meranie
+
+Konkrétne krátke scenáre v siedmich schválených špecoch majú `tag: '@smoke'`.
+Ich asercie, tolerancie, časové limity a retry sa nemenili. Lokálny `--list`
+potvrdil **51 variantov / 7 súborov**, nie prázdny výber. Neposielajú sa
+správy ani fotky. Zdieľanie používa jedinečnú značku a pôvodné `finally`.
+Pred zaradením bol opravený E2E helper `cleanupFeedPosts`: HTTP chyba GET
+náhradného vyhľadania alebo neplatný formát je teraz hlásená chyba upratania,
+nie tichý úspech. Žiadne opakované mazanie, zmena endpointu ani maskovanie 500.
+Štyri izolované kontroly pokrývajú HTTP chybu, poradie známych ID, formát a
+mazanie len značky konkrétneho behu. Neskoro vzniknutý neznámy repost stále
+nie je možné garantovane upratať počas nedostupnosti; taký pád treba nahlásiť.
+
+| Projekt | Prešlo | Padlo | Projektový SKIP | Rozpätie pokusov |
+| --- | ---: | ---: | ---: | --- |
+| webkit-desktop | 13 | 0 | 4 | 41,474 s |
+| webkit-mobile | 14 | 1 | 2 | 77,021 s |
+| chromium-desktop | 13 | 0 | 4 | 23,774 s |
+| **Spolu** | **40** | **1** | **10** | **proces 155,595 s (2 min 36 s)** |
+
+Rozpätie projektu je od prvého po posledný pokus, nie súčet procesov.
+Všetky tri scenáre zdieľania prešli vrátane šiestich kontrol odstránenia
+známych dočasných príspevkov a následného GET; to nie je dôkaz fyzického
+mazania objektov S3 ani samostatného súbehového scenára 246.
+
+Nový presný pád: `auth-session.spec.ts` — `a cleared cookie session cannot
+survive a full reload`, webkit-mobile. Zlyhala akcia `page.reload()` na
+riadku 64 po úmyselnom vyčistení cookies, pred následnou kontrolou verejného
+prihlásenia. V pôvodnom pokuse tento špec nemal vlastný evidence fixture;
+samotný riadok súhrnu exportéra **nie je blok vytvorený fixture testu**.
+Do špecu bol preto dopojený existujúci diagnostický fixture bez zmeny
+asercie. Tri samostatné opakovania: **3 PASS / 0 FAIL / 0 SKIP**, proces
+19,892 s. Pôvodný dym ostáva neúspešný. Z týchto údajov nemožno určiť
+chybu aplikácie alebo stotožniť tento pád s 223; pri tomto teste je strata
+cookies zámerná. Nepridalo sa náhradné F5 ani navýšenie timeoutu.
+
+Dva technické pokusy spúšťača sa nerátajú ako výsledok testov: prvý skončil
+na odovzdaní argumentov Node pred Playwrightom, druhý mal 0 vybraných testov
+kvôli koncovej kotve grep za novou značkou. Výber sa opravil a overil cez
+`--list`; bezpečný session sidecar potvrdil úspešný setup druhého pokusu.
+Nešlo o automatické opakovanie neúspešného prihlásenia.
+
+Bežný príkaz z `frontend`, až po potvrdení nasadenia a okna bez zmien:
+
+```powershell
+npm run test:e2e:docker -- --grep '@smoke' --list
+npm run test:e2e:docker -- --grep '@smoke' --workers=1 --retries=0
+```
+
+Samostatné meranie v tejto dávke použilo `diagnostics-tests/railway-targeted.probe.ts`
+v režime `smoke`: rovnaký image, konfigurácia, host IPC, workers=1 a retries=0,
+plus bezpečný JSON export a meranie času procesu. Nie je to nový test ani
+nové pravidlo prijímania celého behu. Ak sa objaví dátový SKIP, dym je
+neoverený; očakávaných 10 projektových SKIP sa uvádza samostatne. Ôsmy špec
+s fotkou až v 295; odoslanie správy a push ostávajú ručne.
+
+### Chýbajúce dôkazy a sonda 223
+
+`search-panel-fixture.spec.ts` a `offer-card-review-translations.spec.ts`
+importujú existujúci `diagnostic-test` namiesto základného Playwright fixture.
+Ich scenáre, asercie, gestá, timeouty a dátové strážce sa nemenia. Podobnosť
+ťuku bez profilovej URL so známym pádom č. 1 je hypotéza; presný nový kľúč
+sa tým nepreznačuje za známy pád.
+
+`support/cookie-timeline.ts` je výslovne zapnutý len v `offer-reviews-back`
+a `search-country-scroll`. Číta názvy cookies kontextu hneď a raz za sekundu,
+bez čakania pred pôvodnou akciou alebo aserciou. Hodnoty sa neprečítajú do
+záznamu. Povolené názvy prejdú pôvodným allowlistom, neznáme sú `other`.
+Kruhová pamäť má 120 vzoriek a 40 udalostí; prvý čas `requestfailed` sa
+zachová aj pri preplnení. Zaseknuté čítania sa neprekrývajú. Odpojenie
+časovača a udalostí nastane pred bežným zatváraním prehliadača.
+
+Výstup obsahuje `[E2E-COOKIE-RING]`, `[E2E-COOKIE-SAMPLE]` (čas začatia aj
+dokončenia odčítania a názvy) a `[E2E-BROWSER-EVENT]` (requestfailed s
+anonymnou cestou, page-crash, browser-disconnected). Pri páde sú súčasťou
+existujúceho `[E2E-EVIDENCE]`; pri PASS sa vypíše len samostatná časová sonda,
+nie falošný blok pádu. `žiadne` je úspešne odčítaný prázdny zoznam,
+`nezistiteľné` je chyba/zaseknutie/busy. Časy sú epoch ms, vzťah len časový:
+vzorka nie je dôkazom obsahu odoslanej Cookie hlavičky ani kauzality.
+
+Cielený spúšťač zachytáva `DEBUG=pw:browser`, nie protokol či telá. Spracuje
+Docker stderr **aj stderr workerov v JSON reporte**, ktoré inak zmiznú z
+vonkajšieho streamu. Von idú iba pevné kategórie procesu/príznaku, čas,
+číselný exit code a povolený signál. Surové vety, PID, argumenty a cesty sa
+neukladajú do bezpečného súhrnu. Bežný exit/stderr nie je automaticky crash.
+Chýbajúca udalosť page/browser zároveň nevylučuje reštart sieťového procesu.
+
+Reprodukčný cielený príkaz, iba v dohodnutom okne:
+
+```powershell
+node node_modules/tsx/dist/cli.mjs e2e/diagnostics-tests/railway-targeted.probe.ts 223-baseline
+node node_modules/tsx/dist/cli.mjs e2e/diagnostics-tests/railway-targeted.probe.ts 223-expanded
+```
+
+Každý režim vyberá výhradne dva schválené testy, oba WebKity, repeat-each=10,
+workers=1, retries=0 (40 variantov, vopred overené cez `--list`). Má pôvodný
+global setup, bez náhradného prihlásenia po chybe. Predpokladá bežiaci Docker
+a lokálny image presnej verzie nainštalovaného Playwrightu (`--pull=never`).
+Normálne používa pôvodný `.env.e2e` vo `frontend`; v oddelenom worktree môže
+`--env-file=<pôvodná cesta>` pripojiť tento istý súbor len na čítanie. Súbor
+sa nevypisuje ani nekopíruje. Bezpečný výsledok je v ignorovanom
+`test-results/safe-<režim>.json`; surové reporty sa nezdieľajú a necommitujú.
+
+**Interpretácia pamäte:** kanonický skript už má `--ipc=host`. Zmerané
+`/dev/shm` má približne 4 GB, Docker VM má 8,16 GB RAM, bez kontajnerového
+hard limitu (`memory.max=max`), pred dymom vyše 7 GB voľných. Rozšírený
+variant preto používa `--ipc=private --shm-size=6g`, nie neúčinné pridanie
+samotného limitu k host IPC. Hostiteľ ani Docker Desktop sa neprestavujú.
+Mení sa aj IPC izolácia, takže porovnanie nie je čistý dôkaz kauzálneho
+účinku RAM a nepridáva fyzickú pamäť. Výsledky uvádzať ako počty z 10
+pokusov, nie opravu 223 alebo záruku stability.
+
+### Farby 320 po nasadení K15
+
+Nový `reset-password-colors.spec.ts`: light aj dark, WebKit desktop aj mobil,
+**4/4 PASS**, Chromium 2 projektové SKIP, proces **17,046 s**. Je to 6 nových
+variantov hlavnej kolekcie, nie rozšírenie sedemsúborového dymu.
+Kontext má prázdnu reláciu a `serviceWorkers: 'block'`; GET overenia pevného
+syntetického odkazu zachytí route a vráti `{valid:true}`. Kontroluje sa, že
+overenie skutočne prebehlo a oba viditeľné prázdne vstupy majú počítané biele
+pozadie a tmavý text aj pri tmavej systémovej schéme. API zápisy sú blokované
+a musia mať počet 0. Žiadny skutočný reset token, e-mail, vyplnenie hesla
+ani odoslanie formulára. Toto **netestuje skutočnú platnosť reset odkazu**.
+
+### Výsledok 223: 80 pokusov, väčšie shm problém neodstránilo
+
+Rovnaké nasadenie, kód runtime/testov, image Playwright 1.63.0, workers=1,
+retries=0, dva konkrétne schválené testy, 10× každý v oboch WebKitoch.
+Počas porovnania sa nemenila aplikácia, účty ani asercie. Režimy bežali
+postupne, nie súbežne. `search-country-scroll` je stále so zablokovaným SW,
+`offer-reviews-back` má pôvodné správanie SW. Rozdiel špecov sa nemenil.
+
+| Test | Projekt | Pôvodné host IPC: PASS / FAIL | Private shm 6 GiB: PASS / FAIL |
+| --- | --- | ---: | ---: |
+| `offer-reviews-back`: cudzí profil po F5, obyčajný profil bez otočenia/zvýraznenia | webkit-desktop | 10 / 0 | 9 / 1 |
+| ten istý | webkit-mobile | 8 / 2 | 9 / 1 |
+| `search-country-scroll`: typing alone, bez Enter | webkit-desktop | 10 / 0 | 10 / 0 |
+| ten istý | webkit-mobile | 9 / 1 | 10 / 0 |
+| **Spolu, bez SKIP** | | **37 / 3** | **38 / 2** |
+
+Pôvodný proces **309 842 ms (5 min 9,842 s)**: WK desktop 20/0/0,
+rozpätie 126 668 ms; WK mobile 17/3/0, 173 759 ms. Rozšírený proces
+**287 482 ms (4 min 47,482 s)**: desktop 19/1/0, 139 988 ms; mobile
+19/1/0, 138 665 ms. Spolu **75 PASS / 5 FAIL / 0 SKIP**, procesy 9 min
+57,324 s. Toto nie je plný beh ani dôvod zmeniť prijatý základ.
+
+Skutočne namerané shm: pôvodné 4 078 481 408 B, rozšírené 6 442 450 944 B.
+Oba režimy mali VM RAM 8 156 962 816 B, memory.max=max a pri štarte približne
+7,46 GB voľných. Jeden priebežný snímok pôvodného kontajnera ukázal 725,7 MiB
+(9,33 % RAM); nie je to maximum. **3/40 oproti 2/40 nie je preukázané
+zlepšenie**: malá vzorka, postupné behy a zároveň iná IPC izolácia. Existujúci
+päťminútový session keeper sa nevypínal ani nemenil. Rozšírená konfigurácia
+nemôže byť označená za opravu alebo dôkaz príčiny.
+
+Všetky pády podľa poradia výskytu daného testu/projektu v JSON reporte:
+
+| Režim | Špec / projekt | Pokus z 10 | Začiatok UTC | Miesto pôvodného pádu |
+| --- | --- | ---: | --- | --- |
+| pôvodný | `offer-reviews-back`, WK mobile | 1 | 20:10:25.485 | riadok 198, nezobrazilo sa tlačidlo recenzií |
+| pôvodný | `offer-reviews-back`, WK mobile | 9 | 20:11:46.065 | riadok 204, neotvorila sa URL recenzií |
+| pôvodný | `search-country-scroll`, WK mobile | 1 | 20:12:15.700 | riadok 95, inicializácia pred písaním |
+| rozšírený | `offer-reviews-back`, WK desktop | 8 | 20:16:19.443 | riadok 204, URL recenzií; potom 401/403 |
+| rozšírený | `offer-reviews-back`, WK mobile | 7 | 20:18:37.259 | riadok 204, URL recenzií |
+
+Časy patria **2026-11-09**, riadky tejto pracovnej revízii. Nejde o nové
+číslované nálezy. Časť „po F5“ sa pri týchto pádoch ešte nevykonala, preto
+ich nemožno označiť za regresiu opravy scrollu 231 ani profilovej adresy 222.
+Vyhľadávací pád nastal ešte pred písaním; nie je dôkazom nesprávnej krajiny.
+
+**Nový priamy podklad 223:** vo všetkých piatich pádoch boli počiatočné
+cookies prítomné a následné SDK odčítania sa zasekli (`nezistiteľné`). V
+pôvodnom režime sa v žiadnej vzorke zo 40 pokusov nepotvrdil prázdny zoznam.
+V rozšírenom režime sa v desktopovom pokuse 8 potvrdili prázdne cookies a
+rovnaký vzorec zlyhaných požiadaviek → 401 → refresh 403. Ostatné pády nemajú
+rovnaký potvrdený 401/403 priebeh.
+
+Časová os desktopového pokusu 8 (UTC):
+
+- 20:16:19.915: úspešne odčítané štyri povolené názvy cookies.
+- Od 20:16:20.909 začína nečitateľné SDK odčítanie; nasleduje medzera v
+  možnosti spoľahlivo zistiť stav cookies, nie preukázaný prázdny zoznam.
+- 20:16:35.093: prvý `requestfailed` (RSC recenzií), takmer súčasne druhé API.
+- 20:16:35.928: prvý **úspešne** odčítaný prázdny zoznam, asi 835 ms po chybe.
+- Približne 20:16:40.935: prihlásené API 401; následná obnova okolo
+  20:16:41.0 vráti 403, `X-App-Duration-Ms: 13`, CSRF hlavička áno.
+
+Strata cookies je teda potvrdená **pred odmietnutou obnovou**. Nedá sa však
+povedať, či nastala presne spolu s prvou sieťovou chybou, pretože predtým
+odčítanie 14 s neodpovedalo. Nie je to dôkaz, akú Cookie hlavičku niesla
+konkrétna požiadavka. Väčšie shm problém nevylúčilo. V žiadnom z 80 pokusov
+sa nezachytila page-crash alebo browser-disconnected udalosť ani explicitný
+crash/OOM/neštandardný exit signál v klasifikovaných browser logoch. To
+**nevylučuje** neohlásený reštart sieťového procesu; hypotéza zostáva otvorená.
+Bežné `requestfailed` pri úspešnom Späť môžu byť zrušené navigácie, nie dôkaz
+výpadku. Niektoré neúspešné požiadavky dobehli až počas zberu evidence, po
+ukončení kruhovej sondy; nulový počet v kruhu preto neznamená nulový počet
+požiadaviek v širšom bloku.
+
+Bezpečný **skrátený a normalizovaný výber** z desktopového pokusu 8
+(hlavičku exportér prekladá na statický špec/riadok; nejde o celý surový report):
+
+```text
+[E2E-EVIDENCE] offer-reviews-back.spec.ts:188 | webkit-desktop | 25336 ms
+url: /dashboard/users/:id [tab]
+  1025  GET  /api/auth/skill-requests/:other/ [:param]  FAILED(failed)  14164 ms
+  1512  GET  /dashboard/offers/:n/reviews [_rsc,returnTo]  FAILED(failed)  13675 ms
+ 21026  GET  /api/auth/skill-requests/:other/ [:param]  401  71 ms
+ 21097  POST /api/token/refresh/  403  131 ms
+        X-App-Duration-Ms: 13
+        refresh cookies: žiadne
+        refresh X-CSRFToken: áno
+[E2E-COOKIE-RING] originAt=1794255379909 samples=25 events=2 omittedSamples=0 omittedEvents=0 firstRequestFailedAt=1794255395093 relation=temporal-only
+[E2E-COOKIE-SAMPLE] from=1794255379909 at=1794255379915 names=access_token,auth_state,csrftoken,refresh_token
+[E2E-COOKIE-SAMPLE] from=1794255380909 at=1794255381910 names=nezistiteľné
+[E2E-COOKIE-SAMPLE] from=1794255394925 at=1794255394925 names=nezistiteľné
+[E2E-BROWSER-EVENT] at=1794255395093 kind=requestfailed path=/dashboard/offers/:n/reviews
+[E2E-BROWSER-EVENT] at=1794255395094 kind=requestfailed path=/api/auth/skill-requests/:other/
+[E2E-COOKIE-SAMPLE] from=1794255395925 at=1794255395928 names=žiadne
+```
+
+Podklad pre ďalšie preverenie (nie potvrdená chyba aplikácie):
+
+- **Názov:** WebKit pri otvorení recenzií prestane odpovedať na čítanie cookies;
+  neskôr sa potvrdí prázdny kontext a odmietnutá obnova.
+- **Špec/test/projekt:** `offer-reviews-back.spec.ts`, `cudzí profil po F5 ›
+  after a reload the arrow returns to the plain profile without a highlighted
+  or flipped card`, desktopový WebKit, rozšírený režim, pokus 8/10.
+- **Kroky:** existujúca relácia → verejný profil druhého testovacieho účtu →
+  tlačidlo recenzií. Prípravný GET identity aj profilu majú 200.
+- **Očakávané/skutočné:** otvoria sa recenzie a relácia zostane platná / URL
+  sa neotvorí, dve požiadavky zlyhajú po približne 14 s, cookies sú potom
+  prázdne a API/refresh vracajú 401/403. F5 sa ešte nestihlo vykonať.
+- **Opakovanie:** presný 401/403 + úspešne odčítané prázdne cookies priebeh
+  **1/80 celkových pokusov** tejto dávky; konkrétne 1/10 tohto testu/projektu
+  v rozšírenom režime. Všetky neúspešné prejavy spolu 5/80; tieto čísla
+  nesmú byť zamieňané. Historické výskyty 223 sú samostatné merania.
+- **Podozrivá oblasť:** ovládacia/sieťová vrstva WebKitu v Dockeri a stav
+  cookies pred obnovou. Konkrétny pád procesu ani chyba aplikácie nie sú
+  preukázané. Časové okno možno porovnať s HTTP logmi Railway. Aplikáciu
+  Codex nemení; pôvodné testy sa nezmäkčili.
+
+Úplné **bezpečné** lokálne súhrny vrátane whitelistovaných riadkov zo všetkých piatich blokov
+a pasívnych sond PASS sú `C:/Projects/svap-e2e-k15-223-baseline-20261109.json`
+a `C:/Projects/svap-e2e-k15-223-expanded-20261109.json`. Dym, jeho tri
+opakovania a farby: `svap-e2e-k15-smoke-20261109.json`,
+`svap-e2e-k15-auth-repeat-20261109.json`, `svap-e2e-k15-colors-20261109.json`
+v rovnakom lokálnom adresári. Nie sú to surové reporty a nepatria do commitu.
+
+Po poslednom cielenom behu bolo majiteľovi oznámené ukončenie okna proti
+Railway. Ďalšie kontroly už iba lokálne. Najbližší plný beh až po K16,
+potvrdenom nasadení a novom okne bez zmien; 295 sa tu neimplementovalo.
+
+### Záverečné lokálne kontroly a riziká
+
+- **110/110** čistých Node kontrol vrátane cookie getterov, medzier v odčítaní,
+  kruhovej pamäte, zlyhania cleanup GET a súkromia exportu/Buffer stderr.
+- Izolovaný browser self-test fixture: vonkajšia kontrola PASS, úmyselných
+  3 PASS / 3 FAIL / 3 SKIP zachovaných, práve tri bezpečné bloky. Samostatný
+  response-diagnostics self-test **3/3 PASS**. Obe kontroly bez Railway,
+  `.env.e2e`, používateľských účtov a skutočnej siete mimo `.invalid`.
+- TypeScript celej aplikácie aj samostatný striktný TypeScript dotknutých
+  E2E súborov, cielený ESLint a `git diff --check` prešli. Nový kontrolný
+  scenár 320 pripúšťa syntetickú odpoveď iba na GET overenia, nie iné metódy.
+- `--list` celkom **762 variantov / 44 špecov**, dym **51 / 7**, oba exit 0.
+  Nejde o vykonaný celý beh. Dotknuté TS/TSX majú najviac 316 riadkov;
+  žiadny nadlimitný TS súbor, app, backend, migrácia ani závislosť sa nemenili.
+- Bezpečnostný self-audit: hodnoty cookies, tokeny, telá, osobné údaje ani
+  raw browser logy do bezpečných výstupov nejdú. Test 320 neodosiela formulár,
+  správy sa neposielajú a zdieľanie maže iba vlastné označené dočasné objekty.
+  Auth stav, `.env.e2e`, reporty a lokálne JSON súhrny ostávajú mimo Git.
+- Otvorené riziká: funkčné výpadky 223 (príčina neurčená), jednorazový nový
+  F5 pád dymu (3 opakovania PASS, nie oprava), nemožnosť zaručiť upratanie
+  neznámeho neskorého objektu pri výpadku. Žiadny preukázaný únik údajov;
+  bez pôvodných dôkazov nemožno F5 pád klasifikovať ako chybu aplikácie.
+
+Majiteľ následne 9. 11. výslovne schválil commit a push tejto dávky na
+**novú vetvu `e2e/k15-dym-a-dokazy`**. Pred prípravou bol znovu stiahnutý
+main, stále `b3d7983a`; kód testov ani aplikácie sa pri tom nemenil. Do
+commitu patria iba E2E súbory a toto odovzdanie, nie lokálne reporty,
+prílohy, auth stav ani `.env.e2e`. PR otvára len majiteľ; žiadne zlúčenie,
+nasadenie alebo ďalší beh proti Railway sa týmto krokom nespúšťa.

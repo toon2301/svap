@@ -13,6 +13,9 @@ import {
 } from './support/dashboard';
 import { FEED_HOME_PATHS } from './support/feed';
 
+// Pasívna kruhová pamäť k 223; nemení gestá, cookies ani asercie.
+test.use({ cookieTimeline: true });
+
 // Recenzie ponuky otvorené z karty vlastnej ponuky a návrat. Iba čítanie – recenzia sa nepridáva ani nemení.
 //
 // Šípka Späť v recenziách má urobiť SKUTOČNÝ krok späť v histórii: profil ostane v pôvodnom stave (bez

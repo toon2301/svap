@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support/diagnostic-test';
 import { ownProfileWithCardsOrSkip } from './support/offer-watch-card-actions';
 import { requireCompletedOwnCardHint } from './support/offer-card-readonly';
 

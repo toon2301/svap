@@ -70,6 +70,8 @@ test('izolovaný fixture zachová PASS/FAIL/SKIP a zachytí iba pôvodný pád',
     assert(results.filter(({ result }) => result.status === 'skipped').length === 1, 'Projekt musí mať jeden SKIP.');
     for (const { variant, result } of results) {
       const output = (result.stdout ?? []).map((item) => item.text ?? '').join('');
+      assert((output.match(/^\[E2E-COOKIE-RING\]/gm) ?? []).length === 1,
+        'Zapnutá pasívna sonda musí mať práve jeden kruhový výstup aj pri beforeEach páde.');
       const blocks = (output.match(/^\[E2E-EVIDENCE\]/gm) ?? []).length;
       const attachments = (result.attachments ?? []).filter((item) => item.name === 'failure-evidence');
       assert(!(result.attachments ?? []).some((item) => /^(?:trace|screenshot|video)$/.test(item.name ?? '')),

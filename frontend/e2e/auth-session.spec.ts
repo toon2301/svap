@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support/diagnostic-test';
 
 // These tests use only the designated E2E account. Password entry is never
 // recorded in a trace or screenshot; no account data is created or deleted.
@@ -31,12 +31,12 @@ async function logoutFromDashboard(page: Page, mobile: boolean) {
 test.describe('anonymous session', () => {
   test.use({ storageState: EMPTY_STORAGE });
 
-  test('a direct visit to the dashboard redirects to the login page', async ({ page }) => {
+  test('a direct visit to the dashboard redirects to the login page', { tag: '@smoke' }, async ({ page }) => {
     await page.goto('/dashboard');
     await expectPublicLogin(page);
   });
 
-  test('login, logout, Back and reload never restore a protected page', async ({ page }, testInfo) => {
+  test('login, logout, Back and reload never restore a protected page', { tag: '@smoke' }, async ({ page }, testInfo) => {
     await page.goto('/');
     await page.locator('#login-email').fill(process.env.E2E_TEST_EMAIL!);
     await page.locator('#login-password').fill(process.env.E2E_TEST_PASSWORD!);
@@ -56,7 +56,7 @@ test.describe('anonymous session', () => {
   });
 });
 
-test('a cleared cookie session cannot survive a full reload', async ({ page, context }) => {
+test('a cleared cookie session cannot survive a full reload', { tag: '@smoke' }, async ({ page, context }) => {
   await page.goto('/dashboard');
   await expect(page.locator('[data-dashboard-main]')).toBeVisible();
 
