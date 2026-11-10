@@ -134,4 +134,33 @@ describe('SkillsModuleRouter: limit kariet ukáže toast, nie natívne okno (ná
     expect(toast.error).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
   });
+
+  it('Ponúkam, pridanie vlastnej kategórie pri troch kartách: toast, nie natívne okno, a nič sa neotvorí (miesto 2)', () => {
+    renderRouter([offer(1), offer(2)], [offer(3)]);
+
+    fireEvent.click(screen.getByTestId('add-category'));
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith(LIMIT_TEXT);
+    expect(setActiveModule).not.toHaveBeenCalled();
+    expect(setIsAddCustomCategoryModalOpen).not.toHaveBeenCalled();
+  });
+
+  it('Ponúkam, pridanie vlastnej kategórie pod limitom: otvorí okno (desktop) aj obrazovku (mobil), bez toastu a bez natívneho okna', () => {
+    window.innerWidth = 1280;
+    const desktop = renderRouter([offer(1)], [offer(2)]);
+    fireEvent.click(screen.getByTestId('add-category'));
+    expect(setIsAddCustomCategoryModalOpen).toHaveBeenCalledWith(true);
+    expect(setActiveModule).not.toHaveBeenCalled();
+    desktop.unmount();
+
+    window.innerWidth = 390;
+    renderRouter([offer(1)], [offer(2)]);
+    fireEvent.click(screen.getByTestId('add-category'));
+    expect(setActiveModule).toHaveBeenCalledWith('skills-add-custom-category');
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+  });
 });

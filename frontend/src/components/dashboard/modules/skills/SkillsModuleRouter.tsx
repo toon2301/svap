@@ -167,8 +167,7 @@ export default function SkillsModuleRouter({
           }}
           onAddCategory={() => {
             if (filteredTotal >= MAX_SKILLS_PER_TYPE) {
-              // eslint-disable-next-line no-alert
-              alert(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
+              toast.error(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
               return;
             }
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
