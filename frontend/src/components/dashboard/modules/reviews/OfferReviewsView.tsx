@@ -598,7 +598,7 @@ export default function OfferReviewsView({
             setReviewIdToDelete(null);
           } catch (error: unknown) {
             console.error('Chyba pri vymazávaní recenzie:', error);
-            alert(getFieldErrorMessage(error, 'Nepodarilo sa vymazať recenziu.'));
+            toast.error(getFieldErrorMessage(error, t('reviews.deleteReviewFailed', 'Nepodarilo sa vymazať recenziu.')));
           } finally {
             setIsDeletingReview(false);
           }

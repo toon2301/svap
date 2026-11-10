@@ -3,6 +3,12 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import toast from 'react-hot-toast';
 
+import cs from '../../../../../../messages/cs.json';
+import de from '../../../../../../messages/de.json';
+import en from '../../../../../../messages/en.json';
+import hu from '../../../../../../messages/hu.json';
+import pl from '../../../../../../messages/pl.json';
+import sk from '../../../../../../messages/sk.json';
 import type { Review } from '../ReviewCard';
 
 const mockApiGet = jest.fn();
@@ -27,7 +33,11 @@ jest.mock('@/lib/api', () => ({
   },
   endpoints: {
     skills: { detail: (id: number) => `skills/${id}` },
-    reviews: { list: (id: number) => `reviews/${id}`, like: (id: number) => `reviews/${id}/like` },
+    reviews: {
+      list: (id: number) => `reviews/${id}`,
+      like: (id: number) => `reviews/${id}/like`,
+      detail: (id: number) => `reviews/detail/${id}`,
+    },
   },
 }));
 jest.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 1 } }) }));
@@ -45,10 +55,11 @@ type DesktopStubProps = {
   onLoadMoreReviews?: () => void;
   onToggleReviewLike?: (review: Review) => void;
   pendingReviewLikeIds?: Set<number>;
+  onDeleteReviewClick?: (reviewId: number) => void;
 };
 
 // Ľahké náhrady podstromov: desktop ukáže počet recenzií, tlačidlo „Zobraziť ďalšie“ a pri každej recenzii tlačidlo
-// „Páči sa mi“ so stavom (príznak a počet), ostatné nič.
+// „Páči sa mi“ so stavom (príznak a počet) a tlačidlo „Vymazať“, ostatné nič.
 jest.mock('../OfferReviewsDesktop', () => ({
   OfferReviewsDesktop: ({
     reviews,
@@ -57,6 +68,7 @@ jest.mock('../OfferReviewsDesktop', () => ({
     onLoadMoreReviews,
     onToggleReviewLike,
     pendingReviewLikeIds,
+    onDeleteReviewClick,
   }: DesktopStubProps) => (
     <div>
       <span data-testid="review-count">{reviews.length}</span>
@@ -73,6 +85,11 @@ jest.mock('../OfferReviewsDesktop', () => ({
           Páči sa mi
         </button>
       ))}
+      {reviews.map((item) => (
+        <button key={item.id} type="button" data-testid={`delete-${item.id}`} onClick={() => onDeleteReviewClick?.(item.id)}>
+          Vymazať
+        </button>
+      ))}
       <button
         type="button"
         data-testid="load-more"
@@ -87,7 +104,29 @@ jest.mock('../OfferReviewsDesktop', () => ({
 }));
 jest.mock('../OfferReviewsMobile', () => ({ OfferReviewsMobile: () => <div /> }));
 jest.mock('../AddReviewModal', () => ({ AddReviewModal: () => null }));
-jest.mock('../DeleteReviewConfirmModal', () => ({ DeleteReviewConfirmModal: () => null }));
+
+type ConfirmStubProps = { open: boolean; onConfirm: () => void | Promise<void>; isDeleting?: boolean };
+
+/** Chyby, ktoré vyleteli z `onConfirm` (skutočné okno ich `await`-uje bez `catch`, takže by skončili nespracované). */
+const mockLeakedErrors: unknown[] = [];
+
+jest.mock('../DeleteReviewConfirmModal', () => ({
+  DeleteReviewConfirmModal: ({ open, onConfirm, isDeleting }: ConfirmStubProps) =>
+    open ? (
+      <button
+        type="button"
+        data-testid="confirm-delete"
+        data-deleting={String(Boolean(isDeleting))}
+        onClick={() => {
+          Promise.resolve()
+            .then(() => onConfirm())
+            .catch((error) => mockLeakedErrors.push(error));
+        }}
+      >
+        Vymazať
+      </button>
+    ) : null,
+}));
 jest.mock('../ReportReviewModal', () => ({ ReportReviewModal: () => null }));
 jest.mock('../../profile/ProfileOpeningHoursMobileModal', () => ({
   ProfileOpeningHoursMobileModal: () => null,
@@ -144,6 +183,7 @@ beforeEach(() => {
   mockApiGet.mockReset();
   mockApiPost.mockReset();
   mockApiDelete.mockReset();
+  mockLeakedErrors.length = 0;
 });
 
 afterEach(() => {
@@ -273,5 +313,89 @@ describe('OfferReviewsView: zlyhané „Páči sa mi“ pri recenzii (miesto 6)'
     expect(button).toHaveAttribute('data-likes', '4');
     expect(toast.error).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('OfferReviewsView: zlyhané zmazanie recenzie (miesto 7)', () => {
+  let consoleErrorSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockApiGet.mockImplementation((url: string) =>
+      Promise.resolve({ data: url.startsWith('skills/') ? {} : pageWith([review(1)]) }),
+    );
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  /** Otvorí potvrdenie zmazania recenzie 1 a potvrdí ho. */
+  const confirmDelete = async () => {
+    fireEvent.click(screen.getByTestId('delete-1'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('confirm-delete'));
+    });
+  };
+
+  it('zlyhá so serverovým textom: toast s týmto textom, nie natívne okno; potvrdenie ostane otvorené a príznak mazania sa uvoľní', async () => {
+    mockApiDelete.mockRejectedValue({ response: { data: { error: 'Recenziu nemožno zmazať.' } } });
+    await renderView();
+
+    await confirmDelete();
+
+    expect(mockApiDelete).toHaveBeenCalledWith('reviews/detail/1');
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Recenziu nemožno zmazať.');
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('confirm-delete')).toHaveAttribute('data-deleting', 'false');
+    expect(screen.getByTestId('review-count')).toHaveTextContent('1');
+    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockLeakedErrors).toEqual([]);
+  });
+
+  it('zlyhá sieťovou chybou: preložený záložný text, nie anglické „Network Error“', async () => {
+    mockTranslations = { 'reviews.deleteReviewFailed': 'Could not delete the review.' };
+    mockApiDelete.mockRejectedValue({ isAxiosError: true, message: 'Network Error' });
+    await renderView();
+
+    await confirmDelete();
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Could not delete the review.');
+    expect(mockLeakedErrors).toEqual([]);
+  });
+
+  it('bez prekladu a bez textu servera ukáže pôvodný slovenský záložný text', async () => {
+    mockApiDelete.mockRejectedValue(new Error('boom'));
+    await renderView();
+
+    await confirmDelete();
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Nepodarilo sa vymazať recenziu.');
+  });
+
+  it('úspešné zmazanie načíta zoznam znova, zavrie potvrdenie a nič neukáže ani natívnym oknom, ani toastom', async () => {
+    mockApiDelete.mockResolvedValue({ data: {} });
+    await renderView();
+
+    await confirmDelete();
+
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
+    expect(screen.queryByTestId('confirm-delete')).not.toBeInTheDocument();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('kľúč `reviews.deleteReviewFailed` je preložený vo všetkých šiestich jazykoch a slovenský text zodpovedá záložnému', () => {
+    [sk, cs, en, pl, de, hu].forEach((messages) => {
+      expect(typeof messages.reviews.deleteReviewFailed).toBe('string');
+      expect(messages.reviews.deleteReviewFailed.trim()).not.toBe('');
+    });
+    expect(sk.reviews.deleteReviewFailed).toBe('Nepodarilo sa vymazať recenziu.');
   });
 });

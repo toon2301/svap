@@ -4472,6 +4472,7 @@
     "closedToday": "Inaktiv / geschlossen",
     "cons": "Nachteile",
     "consPlaceholder": "Nachteil eingeben und Enter drücken",
+    "deleteReviewFailed": "Die Bewertung konnte nicht gelöscht werden.",
     "deleteReviewMessage": "Möchten Sie diese Bewertung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteReviewTitle": "Bewertung löschen?",
     "editReview": "Bewertung bearbeiten",
