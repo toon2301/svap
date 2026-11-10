@@ -328,7 +328,7 @@ export default function OfferReviewsView({
       setReviewsTotalPages(data.total_pages || reviewsTotalPages);
     } catch (error: unknown) {
       if (offerIdRef.current !== requestedOfferId) return;
-      alert(getApiErrorMessage(error, t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.')));
+      toast.error(getApiErrorMessage(error, t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.')));
     } finally {
       if (offerIdRef.current === requestedOfferId) setLoadingMoreReviews(false);
     }
