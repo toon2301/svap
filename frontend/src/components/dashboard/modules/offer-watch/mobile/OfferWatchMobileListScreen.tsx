@@ -27,10 +27,24 @@ type OfferWatchMobileListScreenProps = {
   onRetry: () => void;
 };
 
+/** Rámik hlášky o limite; preberá ho aj neviditeľná rezerva miesta, takže obe majú rovnaký rozmer (nález 309). */
+const LIMIT_BOX_CLASS = 'rounded-xl border px-4 py-3 text-sm';
+
 /**
- * Mobilná obrazovka zoznamu sledovaní: tlačidlo „Vytvoriť sledovanie“ (pri limite skryté), odznak s počtom a zoznam,
- * prázdny stav alebo chyba s „Skúsiť znova“. Kostra pri načítavaní sa ukáže až po 200 ms a obsah, ktorý príde po
- * načítavaní, sa vyfaduje (nález 286); návrat z formulára zoznam znova nevyfaduje.
+ * Zástupný znak počtu počas načítavania (nález 309). Znamienko mínus (U+2212) má v tabuľkových číslicach písma Inter
+ * rovnakú šírku ako číslica, takže odznak pri príchode počtu nezmení šírku (pomlčka U+2013 bola o 2 px užšia).
+ */
+const COUNT_PLACEHOLDER = '\u2212';
+
+/**
+ * Mobilná obrazovka zoznamu sledovaní: tlačidlo „Vytvoriť sledovanie“ (pri limite nahradené hláškou), odznak s počtom
+ * a zoznam, prázdny stav alebo chyba s „Skúsiť znova“. Kostra pri načítavaní sa ukáže až po 200 ms a obsah, ktorý príde
+ * po načítavaní, sa vyfaduje (nález 286); návrat z formulára zoznam znova nevyfaduje.
+ *
+ * Nález 309: kým sa zoznam načítava, odznak ukazuje „− / 5“ (počet ešte nie je známy, „0 / 5“ by klamalo). Tlačidlo aj
+ * hláška o limite sú v jednom mriežkovom políčku, ktorého výšku určuje vyššia z nich: druhá sa nevykresľuje, no jej
+ * miesto drží neviditeľná rezerva s textom v atribúte (v DOM nie je text navyše). Výmena tlačidla za hlášku po
+ * načítaní piatich sledovaní preto nepohne obsahom pod nimi.
  */
 export default function OfferWatchMobileListScreen({
   watches,
@@ -46,6 +60,12 @@ export default function OfferWatchMobileListScreen({
   const { t } = useLanguage();
   const backButtonRef = useRef<HTMLButtonElement>(null);
   const atLimit = watches.length >= MAX_OFFER_WATCHES;
+  const limitMessage = t(
+    'offerWatch.limitReached',
+    'Dosiahol si limit 5 sledovaní. Ak chceš pridať nové, jedno z existujúcich vymaž.',
+  );
+  // Kým sa zoznam načítava, počet nie je známy; „0 / 5“ by pri piatich uložených sledovaniach klamalo.
+  const countText = isLoading ? COUNT_PLACEHOLDER : String(watches.length);
   // Krátky prechod dostane len obsah, ktorý príde po načítavaní (nález 286): príznak sa zapne, keď sa načítavanie
   // zaznamená. Návrat z formulára, keď údaje už sú, zoznam znova nevyfaduje.
   const [fadeIn, setFadeIn] = useState(false);
@@ -67,23 +87,35 @@ export default function OfferWatchMobileListScreen({
       initialFocusRef={backButtonRef}
     >
       <div className='px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))] pt-5 sm:px-6'>
-        {!atLimit ? (
-          <button
-            type='button'
-            onClick={onCreate}
-            disabled={isLoading || hasLoadError || mutation !== null}
-            className='inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-600'
-          >
-            <PlusIcon className='h-5 w-5' aria-hidden='true' />
-            {t('offerWatch.createAction', 'Vytvoriť sledovanie')}
-          </button>
-        ) : null}
-
-        {atLimit ? (
-          <p className='mt-3 rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800 dark:border-purple-900/60 dark:bg-purple-950/25 dark:text-purple-200' role='status'>
-            {t('offerWatch.limitReached', 'Dosiahol si limit 5 sledovaní. Ak chceš pridať nové, jedno z existujúcich vymaž.')}
-          </p>
-        ) : null}
+        <div className='grid min-h-12 items-start' data-testid='offer-watch-create-slot'>
+          {!atLimit ? (
+            <>
+              <button
+                type='button'
+                onClick={onCreate}
+                disabled={isLoading || hasLoadError || mutation !== null}
+                className='col-start-1 row-start-1 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-purple-500 dark:hover:bg-purple-600'
+              >
+                <PlusIcon className='h-5 w-5' aria-hidden='true' />
+                {t('offerWatch.createAction', 'Vytvoriť sledovanie')}
+              </button>
+              {/* Rezerva miesta pre hlášku o limite: neviditeľná, bez textu v DOM (text nesie atribút). */}
+              <div
+                aria-hidden='true'
+                data-testid='offer-watch-limit-reserve'
+                data-ghost={limitMessage}
+                className={`${LIMIT_BOX_CLASS} invisible col-start-1 row-start-1 border-transparent after:content-[attr(data-ghost)]`}
+              />
+            </>
+          ) : (
+            <p
+              className={`${LIMIT_BOX_CLASS} col-start-1 row-start-1 border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900/60 dark:bg-purple-950/25 dark:text-purple-200`}
+              role='status'
+            >
+              {limitMessage}
+            </p>
+          )}
+        </div>
 
         <section className='mt-7' aria-labelledby='offer-watch-mobile-saved-title'>
           <div className='mb-4 flex items-center justify-between gap-4'>
@@ -91,10 +123,10 @@ export default function OfferWatchMobileListScreen({
               {t('offerWatch.savedTitle', 'Uložené sledovania')}
             </h2>
             <span
-              className='rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700 dark:bg-gray-900 dark:text-gray-300'
+              className='rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold tabular-nums text-gray-700 dark:bg-gray-900 dark:text-gray-300'
               aria-label={t('offerWatch.countLabel', 'Počet uložených sledovaní')}
             >
-              {watches.length} / {MAX_OFFER_WATCHES}
+              {countText} / {MAX_OFFER_WATCHES}
             </span>
           </div>
 
