@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K15, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K16, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -413,4 +413,45 @@ DONE_SINCE_DALSIE = [
               '`apiError.ts` prešlo bez zmeny, ESLint a tsc bez chýb. Texty chýb v `useNotificationPreferences.ts` a '
               '`usePushMessagesPreference.ts` sa nemenili (nález 319 je v K16). Dopad na E2E: žiadny (E2E nehľadá text „Network '
               'Error“).'),
+    dict(n=308, vetva='K16', pr='#253', zlucene=True,
+         text='HOTOVÉ (K16, zlúčené v PR #253 dňa 10. 11. 2026, commit `b800f209`): pasívne varovanie pod voľbou Správy (push je '
+              'zablokovaný, nepodporovaný alebo tento prehliadač nie je zaregistrovaný) sa odvodzuje počas vykresľovania novou čistou '
+              'funkciou `getPassiveBrowserWarning` v `usePushMessagesPreference.ts` (288 → 298 riadkov, po JSDoc z commitu `045267c1` '
+              '311), nie v efekte; chyby po akcii ostávajú stavom `actionError` a `error` ich skladá v poradí chyba uloženia či '
+              'načítania, chyba po akcii, pasívne varovanie. Počiatočné povolenie sa zisťuje už pri prvom vykreslení na klientovi, na '
+              'serveri ostáva „unsupported“ (bez rozdielu pri hydratácii, test). Príčinu z karty kolega potvrdil: pred opravou sa '
+              'varovanie objavilo 62 ms po riadkoch voľby a blok Správ vyrástol o 28 px (desktop) a o 68 px (mobil). Odchýlka od '
+              'karty: návrh drží len čiastočne. Druhý, neskorší skok je preč (varovanie je v rovnakom snímku ako riadky voľby), no '
+              'posun pri výmene kostry za hotovú voľbu ostáva (CLS 0,0334 na mobile a 0,0054 na desktope, rovnako ako pred opravou), '
+              'lebo kostra nevie vopred, či varovanie bude; nulový posun by vyžadoval dimenzovať kostru podľa naposledy známej voľby '
+              'uloženej v zariadení, čo je zmena návrhu a nerobila sa (poznámka v `poznamky.md`). Overenie podľa kolegu: 21 nových '
+              'testov (pred opravou padá 12), mutácie 14 z 14, Chromium (produkčný build, simulované API), Jest 43 sád a 966 testov, '
+              'ESLint a tsc bez chýb. Texty varovaní sa nemenili (nález 319). Manuálne testy majiteľa po nasadení prešli. Dopad na '
+              'E2E: žiadny.'),
+    dict(n=309, vetva='K16', pr='#253', zlucene=True,
+         text='HOTOVÉ (K16, zlúčené v PR #253 dňa 10. 11. 2026, commit `c14db2dd`): v `OfferWatchMobileListScreen.tsx` (151 → 183 '
+              'riadkov) ukazuje odznak počas načítavania „− / 5“ (znamienko mínus U+2212 má v písme Inter s tabuľkovými číslicami '
+              'rovnakú šírku ako číslica, odznak má 55 px pred aj po príchode počtu; pomlčka z návrhu karty bola o 2 px užšia) a '
+              'tlačidlo aj hláška o limite sú v jednom mriežkovom políčku, v ktorom miesto druhého drží neviditeľná rezerva '
+              '(`aria-hidden`, text v atribúte `data-ghost`), takže výmena nehýbe obsahom. Návrh drží: CLS pri načítaní piatich '
+              'sledovaní 0,0325 → 0,0000 (cieľ pod 0,01), s nulou a tromi sledovaniami tiež 0,0000. Cena opravy: pri menej ako '
+              'piatich sledovaniach je pod tlačidlom neviditeľná rezerva na výšku hlášky (políčko 66 px namiesto 48 px, teda 18 px '
+              'navyše; na úzkych telefónoch a v nemčine pri 360 px až 38 px); jediná alternatíva je ponechať posun pri piatich '
+              'sledovaniach. Mimo karty kolega nahlásil, že pri chybe načítania ukazuje odznak „0 / 5“ (poznámka v `poznamky.md`). '
+              'Overenie podľa kolegu: 12 nových testov (pred opravou padá 6), mutácie 16 z 16, Chromium (iPhone 13, produkčný build), '
+              'Jest 54 sád a 1 170 testov, ESLint a tsc bez chýb. Texty, `MAX_OFFER_WATCHES` ani '
+              '`data-testid="offer-watch-list-loading"` sa nemenili (pribudli `offer-watch-create-slot` a '
+              '`offer-watch-limit-reserve`). Manuálne testy majiteľa po nasadení prešli. Dopad na E2E: žiadny.'),
+    dict(n=310, vetva='K16', pr='#253', zlucene=True,
+         text='HOTOVÉ (K16, zlúčené v PR #253 dňa 10. 11. 2026, commit `c262e5ae`): kostra celej stránky aj kostra zoznamu v '
+              '`OfferWatchSettingsDesktop.tsx` (251 → 280 riadkov) sú v `DelayedSkeleton` s `pulse={false}` (viditeľné až po 200 ms; '
+              'existujúce preklady `common.loading` a `offerWatchResults.loading`), obsah po načítaní sa krátko vyfaduje '
+              '(`animate-content-in`, len po načítaní, nie pri návrate z dialógu). Pred opravou bola kostra pri odpovedi za 60 ms '
+              'viditeľná 93 ms, po oprave nikdy. Odchýlky od karty: `role="status"`, `aria-busy` a skrytý text sa presunuli z '
+              '`OfferWatchSettingsSkeleton.tsx` (74 → 66 riadkov, prop `loadingLabel` zanikol) na obal `DelayedSkeleton`, inak by '
+              'vznikla druhá rola; názov jedného existujúceho testu sa upravil (tvrdenia ostali); zoznam, ktorý sa pri neskoršom '
+              'načítavaní len vymení za kostru, sa nevyfaduje. Overenie podľa kolegu: 9 nových testov (pred opravou padá 8), mutácie '
+              '16 z 16, Chromium (1280 × 900, produkčný build), Jest 40 sád a 944 testov, ESLint a tsc bez chýb. Vnútorné '
+              '`data-testid` kostry ostali (pribudli obaly `offer-watch-settings-loading` a `offer-watch-desktop-list-loading`). '
+              'Manuálne testy majiteľa po nasadení prešli. Dopad na E2E: žiadny nájdený (čas zobrazenia kostry sa posúva o 200 ms).'),
 ]

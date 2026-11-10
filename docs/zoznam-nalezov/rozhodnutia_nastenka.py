@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R33: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R36: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
-`alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)) a R33 (postupné zapínanie push upozornení
-na správy, rozhodnuté (a)).
+`alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
+na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
+zručnosť, výzva na push pre nových používateľov; čakajú na odpoveď).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R34 až R36 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -195,4 +196,44 @@ DECISIONS_NASTENKA = [
                   'potvrdil, že upozornenia na správy fungujú (nález 318 je tým zatvorený). Postupné zapínanie pri ostrom štarte, teda '
                   'začať malým percentom a zvyšovať ho, sa rozhodne až pri príprave štartu (N14).',
          datum='9. 11. 2026'),
+    dict(id='R34', tema='Kategórie upozornení: ktoré udalosti patria ku ktorej kategórii (321)',
+         otazka='Ktoré druhy upozornení riadi ktorý prepínač v Nastaveniach → Upozornenia? Backend dnes vytvára 22 typov (lajky ponúk, '
+                 'portfólia, profilu a príspevkov, lajky komentárov a recenzií, komentáre a odpovede, nové recenzie a odpovede na ne, '
+                 'označenie a zdieľanie príspevku, žiadosti o zručnosť a ich priebeh, zhoda Sledovania, pozvánka do skupiny), rozhranie '
+                 'má päť kategórií. (a) Odporúčané priradenie: Páči sa mi to = lajky ponúk, portfólia, profilu a príspevkov; Páči sa mi '
+                 'to pre komentáre = lajky komentárov a recenzií; Komentáre = komentáre a odpovede na príspevky, nové recenzie a '
+                 'odpovede na recenzie; Páči sa mi to a komentáre = označenie a zdieľanie príspevku (opis kategórie sa zmení, lebo '
+                 'dnešný „Reakcie a komentáre na fotkách, kde ste označení“ nemá v backende žiadnu udalosť); Žiadosť o zručnosť = '
+                 'žiadosti o zručnosť a ich priebeh; zhoda Sledovania a pozvánka do skupiny bez prepínača (vždy zapnuté). (b) Iné '
+                 'priradenie alebo nové kategórie (napr. „Recenzie“, „Sledovanie“), čo znamená aj nové texty v šiestich jazykoch. (c) '
+                 'Kategóriu „Páči sa mi to a komentáre“ z rozhrania vynechať.',
+         odporucanie='(a): využije existujúcich päť prepínačov, nepridáva texty ani obrazovky a nič nepotláča mimo kategórií, ktoré '
+                        'používateľ pozná. Zhoda Sledovania sa spravuje vlastným ovládaním (zmazaním sledovania) a pozvánka do skupiny čaká na '
+                        'odpoveď, preto by prepínač zbytočne skrýval potrebné veci.',
+         kedy='Pred etapou 1 nálezu 321 (backend).'),
+    dict(id='R35', tema='Hlavný vypínač „Vypnúť všetko“ a žiadosti o zručnosť (321)',
+         otazka='Čo má robiť hlavný vypínač „Vypnúť všetko“ a smie sa vypnúť aj nová žiadosť o zručnosť? Dnes je vypínač len lokálny a '
+                 'Správy (push) nevypína; v backende existuje voľba `in_app_notifications` (pri vypnutí sa upozornenie vôbec neuloží) a '
+                 'nová žiadosť o zručnosť zámerne obchádza všetky voľby, lebo niekto čaká na odpoveď (test '
+                 '`test_skill_request_notification_ignores_in_app_toggle`). (a) Hlavný vypínač = voľba `in_app_notifications` na '
+                 'serveri, kategórie si držia vlastné hodnoty, Správy (push) vypína len ich vlastný prepínač; nová žiadosť o zručnosť '
+                 'chodí vždy a prepínač „Žiadosť o zručnosť“ riadi ich priebeh (prijatie, zamietnutie, dokončenie, zrušenie, skončenie). '
+                 '(b) Ako (a), ale hlavný vypínač potlačí aj push na správy. (c) Všetko vrátane novej žiadosti sa dá vypnúť.',
+         odporucanie='(a): najmenej zmien a nič sa nestratí: zhasne len to, čo používateľ naozaj nechce, a nová žiadosť sa nezmešká (zostane '
+                        'aj odznak v module Žiadosti). Do opisu kategórie a hlavného vypínača pribudne jedna veta, aby to bolo čitateľné. (b) '
+                        'vyžaduje nový príznak pre push, lebo vypnutie push voľby by zrušilo odber; (c) sa neodporúča, lebo druhá strana by '
+                        'zbytočne čakala na odpoveď.',
+         kedy='Pred etapou 2 nálezu 321 (backend).'),
+    dict(id='R36', tema='Push na správy pre nových používateľov: kedy požiadať o povolenie (321)',
+         otazka='Voľba Správy (push) je pre nových používateľov v databáze zapnutá, no doručuje sa až po povolení v prehliadači a po '
+                 'zaregistrovaní odberu. Prehliadač povolenie nedá bez gesta používateľa (a na iPhone push funguje len z aplikácie '
+                 'pridanej na plochu), takže „zapnuté od registrácie“ sa nedá docieliť potichu. Kedy a ako sa o povolenie požiada? (a) '
+                 'Jednorazová odmietnuteľná výzva s tlačidlom „Zapnúť upozornenia na správy v tomto zariadení“ priamo v Nastaveniach → '
+                 'Upozornenia, keď je voľba zapnutá a povolenie sa ešte nevyžiadalo (s návodom pre iPhone). (b) Navyše výzva po '
+                 'registrácii alebo po prvej prijatej správe (väčší zásah: onboarding, nález 252). (c) Bez výzvy; používateľ si '
+                 'povolenie vyžiada sám vypnutím a zapnutím voľby (dnešný stav).',
+         odporucanie='(a): rieši zavádzajúci stav „Zapnuté“, pri ktorom nič nechodí (rovnaký druh chyby ako pôvodný nález 321), je to malá '
+                        'zmena v jednom module a vyžaduje len nový text v šiestich jazykoch. (b) patrí do plánu onboardingu (252). (c) sa '
+                        'neodporúča.',
+         kedy='Pred etapou 3 nálezu 321 (rozhranie).'),
 ]

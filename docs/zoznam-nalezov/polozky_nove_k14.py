@@ -31,28 +31,6 @@ NEW_ITEMS_K14 = [
          note='Návrh kolegu: nahradiť heslom generovaným v teste alebo spoločnou konštantou. Veľký mechanický zásah bez zmeny '
                'správania, preto po nasadení. Odhad kolegu: nízky · M.',
          dec=None, src='K14 (kolega)'),
-    dict(n=308, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
-         kratko='Upozornenia: varovanie pri uloženom „Zapnuté“ a blokovanom alebo nepodporovanom push po načítaní posunie obsah',
-         what='Kolega pri K14 (8. 11. 2026, merané v Chromiu): keď je uložená voľba Správ „Zapnuté“, no push je v prehliadači '
-               'blokovaný alebo nepodporovaný, varovanie sa objaví až po načítaní a posunie obsah o 28 px na desktope a o 68 px na '
-               'mobile. Chyba sa počíta v efekte (`usePushMessagesPreference.ts`), takže príde o snímok neskôr než voľba.',
-         note='Zvyšok po 286. Návrh kolegu: odvodiť chybu počas renderu (nie v efekte) alebo vyhradiť miesto. Odhad kolegu: nízky · '
-               'M. Merania agent nezopakoval.',
-         dec=None, src='K14 (kolega)'),
-    dict(n=309, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
-         kratko='Sledovanie na mobile: odznak „0 / 5“ počas načítavania a po načítaní nahradí tlačidlo hláška o limite',
-         what='Kolega pri K14 (8. 11. 2026, Chromium): na mobilnom zozname Sledovaní odznak ukáže „0 / 5“ počas načítavania a pri 5 / '
-               '5 po načítaní nahradí tlačidlo „Vytvoriť sledovanie“ hláška o limite (CLS 0,033). Týka sa '
-               '`offer-watch/mobile/OfferWatchMobileListScreen.tsx` (151 riadkov).',
-         note='Zvyšok po 286. Návrh kolegu: počas načítavania počet neukazovať a miesto vyhradiť. Odhad kolegu: nízky · S.',
-         dec=None, src='K14 (kolega)'),
-    dict(n=310, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
-         kratko='desktopové Sledovanie ukáže kostru hneď a tá problikne pred prázdnym stavom',
-         what='Kolega pri K14 (8. 11. 2026): desktopové Sledovanie (`OfferWatchSettingsDesktop`, `OfferWatchSettingsSkeleton`) ukáže '
-               'kostru hneď a tá problikne pred prázdnym stavom, rovnako ako mobilné pred K14.',
-         note='Zvyšok po 286 (K14 opravila mobil, Blokované, Upozornenia a Súkromie). Návrh kolegu: použiť `DelayedSkeleton`. Odhad '
-               'kolegu: nízky · S.',
-         dec=None, src='K14 (kolega)'),
     dict(n=311, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
          kratko='`useIsMobile()` začína ako „desktop“; ďalšie vetvy `ModuleRouter` môžu mať prázdny prvý snímok ako Súkromie',
          what='Kolega pri K14 (8. 11. 2026): `useIsMobile()` (`frontend/src/hooks/useIsMobile.ts`) vracia v prvom vykreslení `false` '
@@ -132,7 +110,7 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=321, bucket=P, imp=S_, eff=EL, pkg='Upozornenia a push',
          kratko='Upozornenia: päť kategórií a hlavný vypínač nie sú napojené na server (nedokončená funkcia; dokončiť pred štartom, R32 '
-                'a)',
+               'a); mapovanie a plán po etapách sú hotové, čaká sa na R34 až R36',
          what='Ručný test majiteľa po K14 (8. 11. 2026) a nález kolegu z K14: v Nastaveniach → Upozornenia je šesť kategórií: Správy, '
                'Páči sa mi to, Páči sa mi to a komentáre (reakcie a komentáre na fotkách, kde je používateľ označený), Komentáre, Páči '
                'sa mi to pre komentáre a Žiadosť o zručnosť. Podľa majiteľa je to nedokončená práca: kategórie neposkytujú funkčný '
@@ -141,12 +119,52 @@ NEW_ITEMS_K14 = [
                'a po novom otvorení sa vrátia na „Vypnuté“. Napojená je len voľba Správy (push): `useNotificationPreferences` načíta a '
                'ukladá dve nastavenia servera (`in_app_notifications`, `push_notifications`) a Správy používajú `push_notifications`.',
          note='Očakávané správanie (majiteľ): každá kategória sa dá zapnúť a vypnúť, nastavenie sa uloží a príslušné upozornenie sa '
-               'doručí alebo potlačí. Rozhodnuté R32 (a), 9. 11. 2026: majiteľ chce kategórie dokončiť pred štartom a nechce sa tejto '
-               'práci vyhýbať (agent odporúčal (b), skryť prepínače a dokončiť po štarte; majiteľ to nezvolil, preto sa nález 324 o '
-               'skrytí zatvoril). Ide o väčšiu funkciu (model nastavení na serveri, rozhranie, doručovanie v aplikácii aj push podľa '
-               'nastavenia, testy a E2E; odhad: stredný · L), preto najprv mapovanie a plán po etapách (agent, len čítanie): ktoré '
-               'typy upozornení backend vytvára a kde, ako rozšíriť nastavenia servera o kategórie, kde sa nastavenie musí uplatniť '
-               '(upozornenie v aplikácii, push) a ako sa to preklopí do rozhrania. Až potom etapy pre kolegu (vstupia do fronty po '
-               'plánovaní). Súvisí s nálezmi 319 a 308.',
-         dec='ROZHODNUTIE R32', src='ručný test majiteľa po K14 (8. 11. 2026) a kolega (K14)'),
+               'doručí alebo potlačí; od 10. 11. 2026 aj: nový používateľ má mať všetky upozornenia predvolene zapnuté a vypne si ich '
+               'sám. Rozhodnuté R32 (a), 9. 11. 2026: majiteľ chce kategórie dokončiť pred štartom a nechce sa tejto práci vyhýbať '
+               '(agent odporúčal (b), skryť prepínače a dokončiť po štarte; majiteľ to nezvolil, preto sa nález 324 o skrytí '
+               'zatvoril). Ide o väčšiu funkciu (odhad: stredný · L). MAPOVANIE 10. 11. 2026 (agent, čítanie kódu na `main` '
+               '`29052576`; návrh, nie dôkaz). STAV DNES: (1) Server: `UserProfile` (`accounts/models/user.py`) má len dve voľby, '
+               '`in_app_notifications` a `push_notifications`, obe s predvolenou hodnotou zapnuté (aj pre nových používateľov; profil '
+               'vzniká pri e-mailovej registrácii v `auth_serializers.py`, inak pri prvom čítaní nastavení, a chýbajúci profil sa '
+               'berie ako všetko zapnuté). Rozhranie API: `GET` a `PATCH /api/auth/push/preferences/` (`views/push.py`, '
+               '`PushPreferencesSerializer`) a druhá cesta `dashboard/settings/` (`services/settings.py`) s tými istými dvoma poľami, '
+               'ktorú frontend nepoužíva. (2) Vytváranie upozornení: všetky typy idú cez `create_notification` v '
+               '`services/notification_core.py`, ktorý pri vypnutej voľbe `in_app_notifications` upozornenie vôbec neuloží '
+               '(minimalizácia údajov); jediná výnimka je nová žiadosť o zručnosť (`notification_events/skill_requests.py`, zámerne '
+               'obchádza voľbu, lebo niekto čaká na odpoveď; test `test_skill_request_notification_ignores_in_app_toggle`). Backend '
+               'vytvára 22 typov (`NotificationType`): lajky ponúk, portfólia, profilu a príspevkov, lajky komentárov a recenzií, '
+               'komentáre a odpovede na komentáre, nové recenzie a odpovede na ne, označenie a zdieľanie príspevku, žiadosti o '
+               'zručnosť a ich priebeh, zhoda Sledovania a pozvánka do skupiny. (3) Push existuje len pre správy '
+               '(`webpush_delivery.deliver_message_push`, odbery vyberá `webpush_subscriptions.py` podľa `push_notifications`); iné '
+               'upozornenia push nemajú a e-mailové upozornenia backend neposiela (len overenie a obnova hesla). (4) Rozhranie: '
+               '`NotificationSettingsModule.tsx` (150 riadkov) drží hlavný vypínač „Vypnúť všetko“ a päť kategórií ako lokálny '
+               '`useState(false)` (pri zapnutí hlavného si zapamätá predošlé hodnoty); hlavný vypínač Správy nevypína; '
+               '`useNotificationPreferences.ts` (123) pozná len dve serverové voľby a má texty chýb bez diakritiky a bez prekladu '
+               '(nález 319); `Desktop.tsx` 293 a `Mobile.tsx` 220 riadkov; preklady sú v `frontend/messages/*.json` (šesť jazykov, '
+               'blok `notifications`). (5) Kategória „Páči sa mi to a komentáre“ (opis „Reakcie a komentáre na fotkách, kde ste '
+               'označení“) nemá v backende zodpovedajúcu udalosť: lajk a komentár dostane len autor príspevku a označený používateľ '
+               'dostane len upozornenie o označení. PREDNASTAVENÉ ZAPNUTÉ (požiadavka majiteľa z 10. 11. 2026): server to už dnes '
+               'spĺňa pre obe existujúce voľby; nové kategórie sa majú ukladať tak, aby „zapnuté“ bolo predvolené (zapnuté je každý, '
+               'kto nič nevypol), vďaka čomu netreba dátovú migráciu ani kód pri registrácii a platí to rovnako pre nových aj '
+               'existujúcich používateľov (tí dnes dostávajú všetko, takže sa pre nich nič nezmení). V rozhraní sa dnes kategórie len '
+               'zdanlivo ukazujú ako „Vypnuté“, lebo ide o lokálny stav; po etape 3 ukážu skutočný stav (predvolene Zapnuté, bez '
+               'falošného „Vypnuté“ počas načítania). Výnimka sú Správy (push): voľba je zapnutá, no doručuje sa až po povolení v '
+               'prehliadači a registrácii odberu; to sa potichu nedá a na iPhone push funguje len z aplikácie pridanej na plochu, '
+               'preto je potrebná výzva (R36). PLÁN PO ETAPÁCH: Etapa 0 (majiteľ): R34 (priradenie typov ku kategóriám), R35 (hlavný '
+               'vypínač a žiadosti o zručnosť), R36 (výzva na povolenie push). Etapa 1 (backend, kolega, nasadí sa samostatne, lebo '
+               'obsahuje migráciu): päť nových predvolene zapnutých polí v `UserProfile` (alebo jedno pole s vypnutými kategóriami), '
+               'migrácia, rozšírenie `get_notification_preferences` a `update_notification_preferences`, `PushPreferencesSerializer` '
+               '(spätne kompatibilné; nové kľúče voliteľné, neznámy kľúč sa odmietne), cesty `dashboard/settings/`, administrácie a '
+               'testy (predvolené zapnuté pre nového aj starého používateľa, zmena po jednej kategórii, neznámy kľúč). Etapa 2 '
+               '(backend, kolega): jedna tabuľka typ → kategória (alebo „vždy zapnuté“) a kontrola v `create_notification` hneď za '
+               '`in_app_notifications`, nová žiadosť o zručnosť podľa R35, test, že každý `NotificationType` je v tabuľke alebo v '
+               'zozname „vždy zapnuté“ (poistka pre nový typ), testy potlačenia a doručenia pre každú kategóriu. Etapa 3 (frontend, '
+               'kolega; spolu s opravou 319, lebo menia tie isté súbory): `useNotificationPreferences` pre všetky kategórie s '
+               'optimistickým ukladaním, vrátením hodnoty a prekladanou chybou, `NotificationSettingsModule` bez lokálnych `useState`, '
+               'hlavný vypínač podľa R35, kostra alebo „načítavam“ namiesto falošného „Vypnuté“, výzva podľa R36, preklady v šiestich '
+               'jazykoch a testy; všetky dotknuté súbory majú pod 320 riadkov. Etapa 4 (Codex, po etapách 2 a 3): E2E: zmena kategórie '
+               'prežije obnovenie stránky (s vrátením pôvodnej hodnoty), vypnutá kategória nevytvorí upozornenie (dva testovacie účty '
+               'a upratanie), `mobile-settings-navigation.spec.ts` po zmene rozhrania. Etapy vstúpia do fronty po rozhodnutiach R34 až '
+               'R36; súvisí s nálezom 319 a s hotovým 308.',
+         dec='ROZHODNUTIE R34', src='ručný test majiteľa po K14 (8. 11. 2026), kolega (K14) a mapovanie agenta (10. 11. 2026)'),
 ]
