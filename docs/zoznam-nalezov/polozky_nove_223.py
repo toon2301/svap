@@ -171,7 +171,8 @@ NEW_ITEMS_223 = [
               'samotných 14 až 26 s) sa v logoch servera nepozná. Stav krokov k 10. 11. 2026: (1) hotovo: `NEXT_PUBLIC_API_URL` je '
               '`/api`, takže oprava K14 platí aj v testovanom prostredí (majiteľ); (2) majiteľ nevie, či 8. 11. o 19:29 UTC ešte '
               'bežal Codexov beh, dve 403 ostávajú nepotvrdené; (3) nový krok pre majiteľa: v logoch Railway pozrieť, či asi 2 s '
-              'pred `POST /api/token/refresh/` s 403 o 11:16:13 a o 20:16:42 UTC prebehlo aj `GET /api/auth/csrf-token/` a s akým '
+              'pred `POST /api/token/refresh/` s 403 o 11:16:13 a 20:16:42 UTC (9. 11.) i o 16:59:12 a 17:00:54 UTC (10. 11.) prebehlo aj '
+              '`GET /api/auth/csrf-token/` a s akým '
               'stavom (rozhodne medzi „prehliadač cookie z odpovede neuložil“ a „cookie bola, no neodišla“); (4) Codex po K16 v '
               'oznámenom okne: '
               'podľa Codexovho návrhu z 10. 11. najprv izolovaný štart natívneho WebKitu na Windows bez Railway (historicky ho '
@@ -181,6 +182,23 @@ NEW_ITEMS_223 = [
               'neprítomnosť nového volania sama chybou nie je, token mohol byť už dostupný); (5) voliteľne, na rozhodnutie '
               'majiteľa (zmena prihlásenia '
               'ide samostatne): backend by zapísal do logu dôvod 401 a zlyhania obnovy (len kód, bez tokenov), aby sa nabudúce '
-              'dalo potvrdiť, čo prišlo.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11. a 9. 11. 2026 (dva dodatky) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              'dalo potvrdiť, čo prišlo. ' +
+              'Dodatok 10. 11. 2026 večer (Codex, výsledok K16, `main` `29052576`, okno 16:35 až 17:20 UTC): dym `@smoke` 40 prešlo, '
+              '1 padlo a 10 preskočených (2 min 44 s; `auth-session` 9 z 9, predošlý pád po F5 sa nezopakoval; padol '
+              '`messages-peer-profile` vo webkit-mobile pri priamom otvorení konverzácie, v celom behu aj v troch opakovaniach '
+              'prešiel); celý beh 385 prešlo, 9 padlo a 368 preskočených (38 min 45 s), nie je prijatý (prijatý základ ostáva 427 / 2 '
+              '/ 303). Osem nových pádov dalo pri trojnásobnom opakovaní 21 prešlo, 0 padlo a 3 preskočené (maďarský preklad recenzií '
+              '3× preskočený pre chýbajúci hint), deviaty je známy pád č. 3. Pády sú najmä z prípravy (feed-list sa nezobrazil, '
+              'požiadavky zlyhali po 10 až 12 s). V dvoch mobilných pádoch sú opäť 401 a odmietnutá obnova 403 s prázdnymi cookies a '
+              'hlavičkou `X-CSRFToken` (klient asi 16:59:12,8 a 17:00:54,6 UTC, `X-App-Duration-Ms` 12 a 7); pri druhom sa prvé '
+              'sieťové zlyhanie objavilo 17:00:43,8 UTC a prvá prázdna vzorka cookies 17:00:44,7 UTC, teda asi 0,9 s po ňom a ešte '
+              'pred 401. Udalosť page crash ani odpojenie prehliadača sa nezachytili. Codex navrhuje bez implementácie: doplniť '
+              'dôkazy o pôvod žiadosti o obnovu a o predchádzajúce `GET /api/auth/csrf-token/`, pripojiť existujúci dôkazový fixture '
+              'k `mobile-settings-offer-watch-motion` a `search-cache-revalidation`, izolovaný natívny štart WebKitu na Windows a '
+              'pripraviť chýbajúce dáta. Preskočenia: 59 pôvodne prechádzajúcich testov je teraz preskočených pre chýbajúce dáta (31 '
+              'nedokončený vlastný hint karty, 12 chýbajúce stránkovateľné sledovanie, 6 chýbajúce prečítané upozornenie, 3 '
+              'upozornenia len na prvej stránke, 3 príliš krátky zoznam upozornení, 2 fixture s firemnými hodinami, 2 '
+              'neklasifikované); neznamená to opravu ani chybu aplikácie a príprava dát na testovacom účte vyžaduje dohodu s '
+              'majiteľom.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11. a 10. 11. 2026 (tri dodatky) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]

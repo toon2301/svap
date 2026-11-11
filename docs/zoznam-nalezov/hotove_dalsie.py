@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K16, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K17, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -454,4 +454,23 @@ DONE_SINCE_DALSIE = [
               '16 z 16, Chromium (1280 × 900, produkčný build), Jest 40 sád a 944 testov, ESLint a tsc bez chýb. Vnútorné '
               '`data-testid` kostry ostali (pribudli obaly `offer-watch-settings-loading` a `offer-watch-desktop-list-loading`). '
               'Manuálne testy majiteľa po nasadení prešli. Dopad na E2E: žiadny nájdený (čas zobrazenia kostry sa posúva o 200 ms).'),
+    dict(n=302, vetva='K17', pr='#254', zlucene=True,
+         text='HOTOVÉ (K13 šesť miest, K17 osem miest; K17 zlúčené v PR #254 dňa 10. 11. 2026): všetkých štrnásť natívnych `alert()` '
+              'z pôvodného rozsahu je toast s prekladmi. K13 (PR #244, commit `e83100db`): `useSkillsModals.ts` 3, '
+              '`DashboardModals.tsx` 2 a `TagsSection.tsx` 1, nový preklad `accountType.changeFailed`. K17 (výnimka R31, každé miesto '
+              'vo vlastnom commite): `SkillsModuleRouter.tsx` 4 (limit kariet; commity `2c065c79`, `a2cc112d`, `5bd8dd2b`, '
+              '`568506a9`), `OfferReviewsView.tsx` 3 (`14b3f4de`, `c2bfd472`, `1921a638`) a `useSkillsDescriptionScreenState.ts` 1 '
+              '(`37490596`); nový preklad `reviews.deleteReviewFailed` v šiestich jazykoch a použitie existujúceho '
+              '`skills.imageDeleteFailed`. Pripomienku CodeRabbitu k PR #254 (slovenský záložný text pri sieťovej chybe cez smerovač) '
+              'opravil commit `69231ddc` jedným riadkom `SkillsModuleRouter.tsx:461` (mimo pôvodného rozsahu, na žiadosť majiteľa). '
+              'Kontrola agenta po zlúčení (R31): diff troch súborov sú len importy, nahradené riadky a päť zastaraných komentárov '
+              '`eslint-disable-next-line no-alert`; počty riadkov 583 → 580, 692 → 692, 638 → 639. Kolega zistil, že štyri `alert()` '
+              'v `SkillsModuleRouter.tsx` boli cez skutočné rozhranie nedosiahnuteľné (limit stráži `SkillsScreen`), takže ich '
+              'používateľ nikdy nevidel (poznámka v `poznamky.md`). Overenie podľa kolegu: celý Jest 571 sád a 8 594 testov, tsc, '
+              'build a kontroly prekladov čisté, mutácie 47 z 47 (302: 37, preklad: 5, 312: 5). Dopad na E2E: žiadny. Ručný test '
+              'majiteľa po nasadení K17 zatiaľ nepotvrdený.'),
+    dict(n=312, vetva='K17', pr='#254', zlucene=True,
+         text='HOTOVÉ (K17, zlúčené v PR #254 dňa 10. 11. 2026, commit `3d179be1`): chyba načítania v `BlockedUsersModule.tsx` (279 '
+              'riadkov) má `role="alert"` (jeden riadok), takže ju čítač obrazovky oznámi. Overenie podľa kolegu: nový test (rola '
+              '`alert` a text chyby), mutácie 5 z 5. Dopad na E2E: žiadny. Čítač obrazovky sa neskúšal (patrí do 294).'),
 ]

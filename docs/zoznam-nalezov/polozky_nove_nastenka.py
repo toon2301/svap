@@ -341,21 +341,6 @@ NEW_ITEMS_NASTENKA = [
          note='Kozmetika vývojovej zálohy: po rozhodnutí R30 (a) a K13 endpoint v produkcii vracia 400 a ostáva len bez bucketu '
               '(lokálny vývoj, testy), takže ide len o pohodlie pri vývoji. Odhad kolegu: nízky · S.',
          dec=None, src='K12 (kolega)'),
-    dict(n=302, bucket=P, imp=N, eff=EM, pkg='Preklady a hlášky',
-         kratko='natívne `alert()` ostáva na 8 miestach v 3 súboroch nad 500 riadkov (zvyšok po K13)',
-         what='ČIASTOČNE HOTOVÉ: šesť `alert()` v súboroch do 500 riadkov je toast s prekladmi v K13 (PR #244, zlúčené 8. 11. 2026, '
-               'commit `e83100db`): `useSkillsModals.ts` 3, `DashboardModals.tsx` 2 (teraz 492 riadkov) a `TagsSection.tsx` 1; nový '
-               'preklad `accountType.changeFailed` v šiestich jazykoch. Overenie podľa kolegu: 25 testov (19 padalo pred opravou), '
-               'mutácie 20 z 20; z kontroly CodeRabbit sa odstránili tri spye na `window.alert` v `TagsSection.test.tsx` (`cff8e0ae`; '
-               'nález platil len sčasti: `restoreAllMocks` v súbore bol a dva zvyšné spye sú potrebné, bez nich mutácia prežije). '
-               'OSTÁVA osem volaní v troch súboroch nad 500 riadkov: `SkillsModuleRouter.tsx` 4 (583 riadkov), `OfferReviewsView.tsx` '
-               '3 (692 riadkov) a `useSkillsDescriptionScreenState.ts` 1 (638 riadkov); agent počty overil 8. 11. 2026. Natívne okno '
-               'prehliadača je rušivé (blokuje stránku) a texty v nich sú čiastočne bez prekladu.',
-         note='Výnimka z pravidla 500 riadkov je udelená (R31, 9. 11. 2026; majiteľ: maximálna opatrnosť): len výmena osmich volaní '
-               '`alert` za `toast.error` s prekladmi vo všetkých šiestich jazykoch, súbory nerastú okrem importu; podmienky opatrnosti '
-               'sú v odpovedi na R31. Pri každom mieste skontrolovať, či chyba po `alert` letí ďalej a volajúci ukáže ešte jedno '
-               'hlásenie. Odhad: nízky · M. Vzhľadová vec, preto PRED NASADENÍM.',
-         dec='ROZHODNUTIE R31', src='K11 (kolega) a manuálny test majiteľa, 7. 11. 2026; zvyšok po K13'),
     dict(n=303, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
          kratko='32 zo 43 súborov s `<img>` nemá `onError` (netriedené)',
          what='Po K11 (nález 291) má `onError` len časť miest s fotkami. Hrubé počítanie agenta (8. 11. 2026, bez testov): 32 zo 43 súborov '

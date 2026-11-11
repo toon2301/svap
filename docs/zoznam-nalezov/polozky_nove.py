@@ -35,7 +35,13 @@ NEW_ITEMS = [
               'určite slovenských), v `de.json` 3 a v `hu.json` 1, takže rozsah je väčší, než tu uvedené odhady (časť zhôd sú legitímne '
               'rovnaké slová).',
          note='Zahŕňa APP-02 a APP-03 z registra. Ak štart nepokryje češtinu a poľštinu, môže počkať (rozhodnutie R2). '
-              'Odporúčanie: jeden preklad naraz, najprv profil, vyhľadávanie a karty ponúk.',
+              'Odporúčanie: jeden preklad naraz, najprv profil, vyhľadávanie a karty ponúk. ' +
+              'Doplnok 10. 11. 2026 (kolega v K17, agent čísla preveril): v `cs.json` má 29 hodnôt slovenské písmená (ľ, ĺ, ŕ, ô, ä) '
+              'a asi 394 viacslovných hodnôt je zhodných so `sk.json` (napr. dialóg zmazania recenzie `reviews.deleteReviewMessage` a '
+              '`reviews.reportError`; v `reviews.*` je takých 17); z nich je 264 v `skillsCatalog`, kde sú technické názvy legitímne '
+              'zhodné, takže mimo katalógu zručností je to asi 130. Ostatné jazyky podľa rovnakého počítania (spolu, z toho v '
+              '`skillsCatalog`): pl 123 (66), en 93 (79), de 260 (258), hu 40, teda mimo katalógu asi pl 57, en 14 a de 2. Oprava '
+              'čaká na rozhodnutie R2 (ktoré jazyky pri štarte).',
          dec='ROZHODNUTIE R2', src='vetva 138'),
     dict(n=180, bucket=P, imp=S_, eff=EM, pkg='iPhone a WebSocket',
          what='Upozornenia: na iPhone sa občas preruší WebSocket (kód 1006); na diagnostiku treba logy servera.',
