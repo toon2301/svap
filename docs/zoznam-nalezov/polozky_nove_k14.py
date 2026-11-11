@@ -188,7 +188,7 @@ NEW_ITEMS_K14 = [
                '(`reviews.deleteReviewFailed`), okno nechá otvorené a zoznam neobnoví, hoci recenzia na serveri už neexistuje. Toast '
                'po úspešnom vymazaní kód neukazuje vôbec (kľúč neexistuje). BACKEND: `review_detail_view` '
                '(`accounts/views/reviews.py`, riadok 270) vracia pri `DELETE` stav 204 s telom `{"message": ...}`; HTTP zakazuje telo '
-               'pri 204 a je to jediné z 15 miest s 204 v backende, ostatné vracajú 204 bez tela. REPRODUKCIA (agent, lokálne): '
+               'pri 204 a je to jediné z 13 miest s 204 v backende, ostatných 12 vracia 204 bez tela. REPRODUKCIA (agent, lokálne): '
                'gunicorn 23.0.0 (ako v produkcii) a klient Node 22 s keep-alive spojeniami (rovnako ako proxy `rewrites` v Next.js, '
                'cez ktorú ide `/api`): `DELETE` prejde so stavom 204, no hneď nasledujúca požiadavka na tom istom spojení zlyhá s '
                'chybou `HPE_INVALID_CONSTANT Parse Error: Expected HTTP/` a až ďalšia prejde; pri 204 bez tela prejdú všetky. '
