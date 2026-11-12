@@ -4,6 +4,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """Päť kategórií upozornení (notify_*) v UserProfile, predvolene zapnuté."""
 
     dependencies = [
         ("accounts", "0125_dashboard_search_description_indexes"),
