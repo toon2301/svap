@@ -4466,6 +4466,8 @@
     "reportReasonSpam": "Spam",
     "reportReasonFake": "Fałszywa opinia",
     "reportReasonOther": "Inne",
+    "addCon": "Dodaj minus",
+    "addPro": "Dodaj plus",
     "addReview": "Dodaj opinię",
     "addOwnerResponse": "Dodaj odpowiedź właściciela",
     "addedOn": "dodano",

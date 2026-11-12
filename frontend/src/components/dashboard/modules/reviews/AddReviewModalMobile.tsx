@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { XMarkIcon, StarIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, StarIcon, InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -12,7 +12,12 @@ import {
   MAX_PRO_CON_ITEMS,
   MAX_ITEM_CHARS,
   PRO_CON_LIST_MAX_HEIGHT,
+  withPendingItem,
 } from './addReviewModalShared';
+
+/** Tlačidlo na pridanie plusu alebo mínusu vedľa vstupu: dotyková plocha aspoň 44 px na šírku. */
+const ADD_ITEM_BUTTON_CLASS =
+  'shrink-0 w-11 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/60';
 
 export function AddReviewModalMobile({
   open,
@@ -109,16 +114,30 @@ export function AddReviewModalMobile({
   const removePro = (index: number) => setPros((prev) => prev.filter((_, i) => i !== index));
   const removeCon = (index: number) => setCons((prev) => prev.filter((_, i) => i !== index));
 
+  /**
+   * Uloží recenziu. Text, ktorý je vo vstupe plusov alebo mínusov, ale nebol potvrdený (Enter alebo tlačidlo), sa pridá
+   * do zoznamu, aby sa pri uložení nestratil; pri neúspešnom uložení ostane v zozname a druhýkrát sa nepošle.
+   */
   const handleSubmit = async () => {
     setError(null);
     if (rating === 0) {
       setError('Prosím, vyber hodnotenie (hviezdičky).');
       return;
     }
+    const submittedPros = withPendingItem(pros, proInput);
+    const submittedCons = withPendingItem(cons, conInput);
+    if (submittedPros !== pros) {
+      setPros(submittedPros);
+      setProInput('');
+    }
+    if (submittedCons !== cons) {
+      setCons(submittedCons);
+      setConInput('');
+    }
     if (onSubmit) {
       setIsSubmitting(true);
       try {
-        await onSubmit(rating, text.slice(0, MAX_CHARS), pros, cons);
+        await onSubmit(rating, text.slice(0, MAX_CHARS), submittedPros, submittedCons);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Nepodarilo sa pridať recenziu. Skús to znova.');
         setIsSubmitting(false);
@@ -218,14 +237,25 @@ export function AddReviewModalMobile({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('reviews.pros', 'Plusy')}</label>
-              <input
-                type="text"
-                value={proInput}
-                onChange={(e) => setProInput(e.target.value.slice(0, MAX_ITEM_CHARS))}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPro(); } }}
-                placeholder={t('reviews.prosPlaceholder', 'Napíšte plus a stlačte Enter')}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400/60"
-              />
+              <div className="flex items-stretch gap-2">
+                <input
+                  type="text"
+                  value={proInput}
+                  onChange={(e) => setProInput(e.target.value.slice(0, MAX_ITEM_CHARS))}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPro(); } }}
+                  placeholder={t('reviews.prosPlaceholder', 'Napíšte plus a stlačte Enter')}
+                  className="min-w-0 flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400/60"
+                />
+                <button
+                  type="button"
+                  onClick={addPro}
+                  disabled={!proInput.trim() || pros.length >= MAX_PRO_CON_ITEMS}
+                  aria-label={t('reviews.addPro', 'Pridať plus')}
+                  className={ADD_ITEM_BUTTON_CLASS}
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+              </div>
               {pros.length > 0 && (
                 <div className="flex flex-col gap-0 mt-1 overflow-y-auto overscroll-contain review-modal-mobile-scrollbar [&>span]:-mb-2 last:[&>span]:mb-0" style={{ maxHeight: PRO_CON_LIST_MAX_HEIGHT }}>
                   {pros.map((item, index) => (
@@ -243,14 +273,25 @@ export function AddReviewModalMobile({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('reviews.cons', 'Minusy')}</label>
-              <input
-                type="text"
-                value={conInput}
-                onChange={(e) => setConInput(e.target.value.slice(0, MAX_ITEM_CHARS))}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCon(); } }}
-                placeholder={t('reviews.consPlaceholder', 'Napíšte mínus a stlačte Enter')}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400/60"
-              />
+              <div className="flex items-stretch gap-2">
+                <input
+                  type="text"
+                  value={conInput}
+                  onChange={(e) => setConInput(e.target.value.slice(0, MAX_ITEM_CHARS))}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCon(); } }}
+                  placeholder={t('reviews.consPlaceholder', 'Napíšte mínus a stlačte Enter')}
+                  className="min-w-0 flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400/60"
+                />
+                <button
+                  type="button"
+                  onClick={addCon}
+                  disabled={!conInput.trim() || cons.length >= MAX_PRO_CON_ITEMS}
+                  aria-label={t('reviews.addCon', 'Pridať mínus')}
+                  className={ADD_ITEM_BUTTON_CLASS}
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+              </div>
               {cons.length > 0 && (
                 <div className="flex flex-col gap-0 mt-1 overflow-y-auto overscroll-contain review-modal-mobile-scrollbar [&>span]:-mb-2 last:[&>span]:mb-0" style={{ maxHeight: PRO_CON_LIST_MAX_HEIGHT }}>
                   {cons.map((item, index) => (
