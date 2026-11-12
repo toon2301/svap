@@ -1,5 +1,7 @@
 from typing import Any
 
+from rest_framework import serializers
+
 from accounts.models import UserProfile
 
 # Kategórie upozornení (nález 321): názvy polí UserProfile, ktoré každú kategóriu
@@ -67,6 +69,30 @@ def update_notification_preferences(
     return get_notification_preferences(user)
 
 
+def _validated_notification_values(notifications: dict[str, Any]) -> dict[str, bool]:
+    """
+    Overí prítomné voľby upozornení rovnako ako `push/preferences/` (pravdivostný typ DRF).
+
+    Pravdivostné reťazce ("true", "false", "1", "0") sa prevedú podľa významu, nie ako
+    neprázdny text. Neplatná hodnota (aj None) vyvolá ValidationError so všetkými chybami
+    naraz a nič sa neuloží. Neznáme kľúče sa ignorujú.
+    """
+    values: dict[str, bool] = {}
+    errors: dict[str, Any] = {}
+    for name in NOTIFICATION_PREFERENCE_FIELDS:
+        if name not in notifications:
+            continue
+        try:
+            values[name] = serializers.BooleanField().run_validation(
+                notifications[name]
+            )
+        except serializers.ValidationError as exc:
+            errors[name] = exc.detail
+    if errors:
+        raise serializers.ValidationError({"notifications": errors})
+    return values
+
+
 def build_dashboard_settings_payload(user) -> dict[str, Any]:
     """Zostaví nastavenia rozhrania; `notifications` nesie sedem volieb upozornení."""
     profile = get_or_create_user_profile(user)
@@ -95,6 +121,8 @@ def apply_dashboard_settings_patch(user, payload: dict[str, Any]) -> dict[str, A
 
     V bloku `notifications` sa uložia len prítomné z siedmich volieb upozornení; iné
     kľúče sa ticho ignorujú (ako doteraz, na rozdiel od `push/preferences/`).
+    Hodnota voľby upozornení, ktorá nie je pravdivostná, vyvolá ValidationError (400
+    cez spoločný spracovateľ chýb) a nič sa neuloží.
     """
     normalized_payload = payload if isinstance(payload, dict) else {}
     profile = get_or_create_user_profile(user)
@@ -103,10 +131,9 @@ def apply_dashboard_settings_patch(user, payload: dict[str, Any]) -> dict[str, A
 
     notifications = normalized_payload.get("notifications")
     if isinstance(notifications, dict):
-        for name in NOTIFICATION_PREFERENCE_FIELDS:
-            if name in notifications:
-                setattr(profile, name, bool(notifications[name]))
-                profile_update_fields.append(name)
+        for name, value in _validated_notification_values(notifications).items():
+            setattr(profile, name, value)
+            profile_update_fields.append(name)
 
     privacy = normalized_payload.get("privacy")
     if isinstance(privacy, dict):

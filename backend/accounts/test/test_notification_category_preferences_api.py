@@ -272,6 +272,55 @@ class TestDashboardSettingsNotifications:
         assert response.status_code == status.HTTP_200_OK
         assert _stored(user) == {**_all(True), "notify_likes": False}
 
+    @pytest.mark.parametrize("field", ALL_OPTIONS)
+    @pytest.mark.parametrize(("text", "expected"), [("false", False), ("true", True)])
+    def test_patch_converts_boolean_strings_by_meaning(
+        self, auth_client, settings_url, user, field, text, expected
+    ):
+        """Pravdivostný reťazec sa prevedie podľa významu, nie ako neprázdny text (vždy pravda)."""
+        UserProfile.objects.filter(user=user).update(**{field: not expected})
+
+        response = auth_client.patch(
+            settings_url, {"notifications": {field: text}}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["settings"]["notifications"][field] is expected
+        assert _stored(user)[field] is expected
+
+    @pytest.mark.parametrize(
+        "field", ["in_app_notifications", "notify_likes", "notify_skill_requests"]
+    )
+    @pytest.mark.parametrize("bad_value", ["maybe", "", None, [], {}, 2])
+    def test_patch_rejects_invalid_value_with_400_and_changes_nothing(
+        self, auth_client, settings_url, user, field, bad_value
+    ):
+        """Hodnota, ktorá nie je pravdivostná (aj null), je 400 a nič sa neuloží."""
+        response = auth_client.patch(
+            settings_url, {"notifications": {field: bad_value}}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert field in response.data["validation_errors"]["notifications"]
+        assert _stored(user) == _all(True)
+
+    def test_invalid_value_blocks_the_whole_request(
+        self, auth_client, settings_url, user
+    ):
+        """Neplatná hodnota zastaví celú požiadavku: neuloží sa platná voľba ani súkromie."""
+        response = auth_client.patch(
+            settings_url,
+            {
+                "notifications": {"notify_likes": "maybe", "notify_comments": False},
+                "privacy": {"show_email": True},
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert _stored(user) == _all(True)
+        assert UserProfile.objects.get(user=user).show_email is False
+
 
 @pytest.mark.django_db
 def test_service_rejects_unknown_option_name_and_changes_nothing(user):
