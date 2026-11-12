@@ -267,9 +267,9 @@ def review_detail_view(request, review_id):
         reviewer = review.reviewer
         review.delete()
         transaction.on_commit(lambda: _skill_requests_cache_invalidate_for_user(reviewer))
-        return Response(
-            {"message": "Recenzia bola odstránená"}, status=status.HTTP_204_NO_CONTENT
-        )
+        # 204 No Content nesmie niesť telo: inak proxy pokazí spojenie a nasledujúca
+        # požiadavka na ňom (zoznam recenzií) zlyhá na chybe parsera (nález 325).
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST", "DELETE"])
