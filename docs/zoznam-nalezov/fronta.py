@@ -73,13 +73,14 @@ FRONTA = [
          co='Mazanie recenzie: po úspešnom zmazaní ostane okno aj recenzia a ukáže sa chybový toast; backend vracia 204 s telom.',
          preco='JASNÉ (len backendová časť: odpoveď 204 bez tela). Agent reprodukoval, že po 204 s telom zlyhá nasledujúca požiadavka '
                'cez proxy Next.js (gunicorn 23 a Node 22), čo je presne načítanie zoznamu po zmazaní; v produkcii nepotvrdené. '
-               'Frontendová časť (zavrieť okno a odstrániť recenziu aj pri zlyhaní načítania, toast po úspechu) ide až po nasadení a '
-               'ručnom overení a vyžaduje výnimku R37 (b), lebo `OfferReviewsView.tsx` má 692 riadkov.'),
+               'Frontendová časť (toast „Recenzia bola vymazaná.“ a podľa výsledku overenia zavretie okna aj pri zlyhaní načítania) '
+               'ide samostatnou kartou po nasadení a ručnom overení; výnimka R37 (b) a (c) je udelená 11. 11. 2026, lebo '
+               '`OfferReviewsView.tsx` má 692 riadkov.'),
     dict(n='326', davka='K18',
          co='Mobilná úprava ponuky: zmazanie jednej fotky zmaže z editora vizuálne všetky; `return data?.images || []` pri 204 bez '
             'tela.',
-         preco='JASNÉ, ale čaká na R37 (a): jeden riadok v `SkillsModuleRouter.tsx` (580 riadkov) vyžaduje výnimku s podmienkami R31. '
-               'Kolega ju robí ako poslednú a až po odpovedi majiteľa; ak by výnimka nebola udelená, ide alternatíva cez backend.'),
+         preco='JASNÉ. Výnimka R37 (a) je udelená 11. 11. 2026: jeden riadok v `SkillsModuleRouter.tsx` (580 riadkov) s podmienkami '
+               'R31. Kolega ju robí ako poslednú.'),
     dict(n='321', davka='K19',
          co='Upozornenia: kategórie napojené na server, etapy 1 a 2 (backend): päť predvolene zapnutých polí s migráciou, API a '
             'potlačenie upozornení podľa kategórie.',

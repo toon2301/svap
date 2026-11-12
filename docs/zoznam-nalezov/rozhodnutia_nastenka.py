@@ -6,10 +6,10 @@ pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázk
 `alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
 na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
 zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
-mazania fotky 326 a mazania recenzie 325; čaká na odpoveď).
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R37 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026 a R37 11. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -282,5 +282,15 @@ DECISIONS_NASTENKA = [
                         'odpovede 204 pravdepodobne odstráni príčinu a výnimka by nebola potrebná; ak príznaky ostanú, kolega presunie obsluhu '
                         'mazania do nového súboru tak, aby `OfferReviewsView.tsx` nenarástol. (c) áno, ako pri nahlásení recenzie '
                         '(`reports.submitSuccess`); nový text v šiestich jazykoch.',
-         kedy='Pred prácou na 326 (v dávke K18 je posledná a kolega ju robí až po odpovedi) a po nasadení backendovej opravy 325.'),
+         kedy='Rozhodnuté 11. 11. 2026.',
+         odpoved='Majiteľ 11. 11. 2026: všetky tri áno, podľa odporúčania agenta. (a) Výnimka pre jeden riadok v '
+                  '`SkillsModuleRouter.tsx` (nález 326) je udelená s podmienkami R31: vlastný commit, test, ktorý bez zmeny padá, v diffe '
+                  'len ten riadok, počet riadkov sa nezvýši; ak by oprava vyžadovala čokoľvek iné, kolega sa zastaví a nahlási to bez '
+                  'zmeny kódu; alternatíva cez backend sa nepoužije. (b) Výnimka pre frontendovú časť nálezu 325 (`OfferReviewsView.tsx`, '
+                  '692 riadkov) je udelená s tými istými podmienkami v znení otázky: ide až po nasadení backendovej opravy 325 (K18) a '
+                  'ručnom overení majiteľom; nová logika mazania ide do nového súboru a pôvodný súbor nesmie narásť. (c) Po úspešnom '
+                  'vymazaní recenzie sa ukáže toast „Recenzia bola vymazaná.“ (nový kľúč v šiestich jazykoch). Agent to vykladá tak, že '
+                  'toast (c) ide v každom prípade, lebo mení ten istý veľký súbor a pôjde v rovnakom frontendovom kroku ako (b), a '
+                  'ošetrenie zlyhania načítania zoznamu (b) len ak príznaky po oprave backendu ostanú.',
+         datum='11. 11. 2026'),
 ]

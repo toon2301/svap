@@ -200,12 +200,13 @@ NEW_ITEMS_K14 = [
                'tela, ako ostatné miesta; frontend správu `message` nečíta (`OfferReviewsView.tsx` výsledok `api.delete` nepoužíva, '
                'agent overil). Test volá pohľad priamo (`APIRequestFactory`), lebo testovací klient Djanga telo pri 204 sám odstráni a '
                'cez `APIClient` by chybu nezachytil. `accounts/views/reviews.py` má 511 riadkov (pravidlo pre produkčný backend: '
-               'rozdeliť, ak je to bezpečné, inak nahlásiť a pokračovať), zmena je jeden riadok. (2) Frontend, až po nasadení kroku '
-               '(1) a len ak príznaky ostanú alebo majiteľ chce toast: po úspešnom `api.delete` hneď zavrieť okno a odstrániť recenziu '
-               'zo stavu, načítanie zoznamu dať do vlastného `try/catch`, aby jeho zlyhanie nezobrazilo chybu o mazaní, a po úspechu '
-               'ukázať toast „Recenzia bola vymazaná.“ (nový kľúč v šiestich jazykoch); `OfferReviewsView.tsx` má 692 riadkov, takže '
-               'to vyžaduje výnimku (R37 b) a najlepšie presun obsluhy do nového súboru bez rastu pôvodného. Odhad: stredný · M '
-               '(backend S).',
+               'rozdeliť, ak je to bezpečné, inak nahlásiť a pokračovať), zmena je jeden riadok. (2) Frontend (samostatná karta po '
+               'nasadení kroku (1) a ručnom overení majiteľom): po úspechu vždy ukázať toast „Recenzia bola vymazaná.“ (nový kľúč '
+               '`reviews.deleteReviewSuccess` v šiestich jazykoch) a len ak príznaky po kroku (1) ostanú, po úspešnom `api.delete` '
+               'hneď zavrieť okno a odstrániť recenziu zo stavu a načítanie zoznamu dať do vlastného `try/catch`, aby jeho zlyhanie '
+               'nezobrazilo chybu o mazaní. `OfferReviewsView.tsx` má 692 riadkov; majiteľ 11. 11. 2026 udelil výnimku (R37 b a c) s '
+               'podmienkami R31: nová logika mazania ide do nového súboru a pôvodný súbor nesmie narásť. Odhad: stredný · M (backend '
+               'S).',
          dec='ROZHODNUTIE R37', src='ručný test majiteľa po K17 (10. 11. 2026) a mapovanie agenta (11. 11. 2026)'),
     dict(n=326, bucket=P, imp=S_, eff=ES, pkg='Ponuky (úprava a tagy)',
          kratko='Mobilná úprava ponuky: zmazanie jednej fotky zmaže z editora vizuálne všetky (server zmaže len jednu); príčinou je '
@@ -226,12 +227,11 @@ NEW_ITEMS_K14 = [
                'je limit.',
          note='Návrh: vrátiť zo `SkillsModuleRouter.tsx` `data?.images` (bez `|| []`), takže pri odpovedi bez zoznamu funkcia vráti '
                '`undefined` a hook odstráni z lokálneho stavu len zmazanú fotku; typ `Promise<SkillImage[] | void>` to už dovoľuje. Je '
-               'to jeden riadok v súbore nad 500 riadkov (`SkillsModuleRouter.tsx`, 580 riadkov), preto čaká na výnimku R37 (a) s '
-               'podmienkami ako pri R31 (vlastný commit, test, ktorý bez zmeny padá, v diffe len ten riadok, počet riadkov sa '
-               'nezvýši). Alternatíva bez výnimky: backend vráti po zmazaní zoznam zvyšných fotiek (`{"images": [...]}`, stav 200), čo '
-               'je tvar, ktorý frontend očakáva, no mení rozhranie servera kvôli jednému riadku. Test: smerovač s odpoveďou `{ status: '
-               '204, data: "" }` nesmie vrátiť prázdne pole a hook s dvoma fotkami po zmazaní jednej druhú ponechá (existujúci test z '
-               'K17 používa `mockResolvedValue([])`, čo je presne chybný predpoklad). Odhad: stredný · S.',
+               'to jeden riadok v súbore nad 500 riadkov (`SkillsModuleRouter.tsx`, 580 riadkov); majiteľ 11. 11. 2026 udelil výnimku '
+               'R37 (a) s podmienkami ako pri R31 (vlastný commit, test, ktorý bez zmeny padá, v diffe len ten riadok, počet riadkov '
+               'sa nezvýši), takže alternatíva cez backend (zoznam zvyšných fotiek so stavom 200) sa nepoužije. Test: smerovač s '
+               'odpoveďou `{ status: 204, data: "" }` nesmie vrátiť prázdne pole a hook s dvoma fotkami po zmazaní jednej druhú '
+               'ponechá (existujúci test z K17 používa `mockResolvedValue([])`, čo je presne chybný predpoklad). Odhad: stredný · S.',
          dec='ROZHODNUTIE R37', src='ručný test majiteľa po K17 (10. 11. 2026) a mapovanie agenta (11. 11. 2026)'),
     dict(n=327, bucket=P, imp=S_, eff=EM, pkg='Recenzie',
          kratko='Formulár recenzie (mobil aj desktop): plus a mínus sa pridá len klávesom Enter, tlačidlo chýba a nepotvrdený text sa '
