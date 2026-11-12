@@ -17,6 +17,7 @@ from django.db import transaction
 from accounts.models import Notification, NotificationType
 from accounts.realtime import notify_user
 from accounts.serializers import NotificationSerializer
+from accounts.services.notification_categories import is_notification_category_enabled
 
 NOTIFICATION_FEED_LIMIT = 15
 _DEFAULT_UNREAD_COUNT_CACHE_TTL_SECONDS = 60
@@ -164,7 +165,17 @@ def create_notification(
     group_invitation=None,
     data: dict | None = None,
 ) -> Notification | None:
+    """
+    Vytvorí upozornenie, ak ho používateľ nemá vypnuté; inak vráti None a nič neuloží.
+
+    Najprv rozhoduje hlavný vypínač `in_app_notifications` (potlačí všetko, čo ide
+    cez túto funkciu), potom kategória typu upozornenia (tabuľka v
+    notification_categories; typ bez kategórie chodí vždy). Profil sa pritom číta
+    jediným dopytom: `user.profile` Django po prvom čítaní drží na inštancii.
+    """
     if not _in_app_notifications_enabled(user):
+        return None
+    if not is_notification_category_enabled(user, notif_type):
         return None
 
     notification = Notification.objects.create(

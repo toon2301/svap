@@ -118,6 +118,12 @@ def push_subscription_current_view(request):
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def push_preferences_view(request):
+    """
+    GET: všetkých sedem volieb upozornení (dva hlavné vypínače a päť kategórií).
+
+    PATCH: zmena ľubovoľnej podmnožiny z nich; každý neznámy kľúč požiadavku
+    odmietne (400) a nič sa neuloží. Odpoveď má vždy všetkých sedem hodnôt.
+    """
     if request.method == "GET":
         return Response(
             get_notification_preferences(request.user),
@@ -132,8 +138,6 @@ def push_preferences_view(request):
         )
 
     preferences = update_notification_preferences(
-        request.user,
-        in_app_notifications=serializer.validated_data.get("in_app_notifications"),
-        push_notifications=serializer.validated_data.get("push_notifications"),
+        request.user, **serializer.validated_data
     )
     return Response(preferences, status=status.HTTP_200_OK)

@@ -36,6 +36,11 @@ class DashboardSettingsPreferencesTests(APITestCase):
             {
                 "in_app_notifications": False,
                 "push_notifications": True,
+                "notify_likes": True,
+                "notify_comment_likes": True,
+                "notify_comments": True,
+                "notify_tags_and_shares": True,
+                "notify_skill_requests": True,
             },
         )
 
@@ -52,6 +57,11 @@ class DashboardSettingsPreferencesTests(APITestCase):
             {
                 "in_app_notifications": False,
                 "push_notifications": False,
+                "notify_likes": True,
+                "notify_comment_likes": True,
+                "notify_comments": True,
+                "notify_tags_and_shares": True,
+                "notify_skill_requests": True,
             },
         )
 
@@ -68,6 +78,11 @@ class DashboardSettingsPreferencesTests(APITestCase):
             {
                 "in_app_notifications": False,
                 "push_notifications": True,
+                "notify_likes": True,
+                "notify_comment_likes": True,
+                "notify_comments": True,
+                "notify_tags_and_shares": True,
+                "notify_skill_requests": True,
             },
         )
         self.assertEqual(response.data["privacy"]["profile_visibility"], "private")
@@ -92,6 +107,11 @@ class DashboardSettingsPreferencesTests(APITestCase):
             {
                 "in_app_notifications": True,
                 "push_notifications": False,
+                "notify_likes": True,
+                "notify_comment_likes": True,
+                "notify_comments": True,
+                "notify_tags_and_shares": True,
+                "notify_skill_requests": True,
             },
         )
 
