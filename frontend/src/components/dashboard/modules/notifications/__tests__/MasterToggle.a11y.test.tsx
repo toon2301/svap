@@ -117,13 +117,12 @@ describe('MasterToggle: prístupný názov a stav', () => {
   it('dva vypínače na jednej stránke (počítač a mobil) majú každý svoj názov a navzájom rôzne identifikátory', () => {
     render(
       <div>
-        <MasterToggle enabled={false} onChange={jest.fn()} label="Vypnúť všetko" testId="a" />
-        <MasterToggle enabled label="Vypnúť všetko" onChange={jest.fn()} testId="b" />
+        <MasterToggle enabled={false} onChange={jest.fn()} label="Vypnúť všetko" />
+        <MasterToggle enabled label="Vypnúť všetko" onChange={jest.fn()} />
       </div>,
     );
 
-    const first = screen.getByTestId('a');
-    const second = screen.getByTestId('b');
+    const [first, second] = screen.getAllByRole('switch', { name: 'Vypnúť všetko' });
     expect(first.getAttribute('aria-labelledby')).toBeTruthy();
     expect(second.getAttribute('aria-labelledby')).toBeTruthy();
     expect(first.getAttribute('aria-labelledby')).not.toBe(second.getAttribute('aria-labelledby'));
@@ -132,8 +131,8 @@ describe('MasterToggle: prístupný názov a stav', () => {
   });
 
   it('bez textu a bez prepojenia nemá vypínač názov (rodič ho musí poskytnúť)', () => {
-    render(<MasterToggle enabled={false} onChange={jest.fn()} label="" compact testId="bez-nazvu" />);
+    render(<MasterToggle enabled={false} onChange={jest.fn()} label="" compact />);
 
-    expect(screen.getByTestId('bez-nazvu')).toHaveAccessibleName('');
+    expect(screen.getByRole('switch', { name: '' })).toHaveAccessibleName('');
   });
 });
