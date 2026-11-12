@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "p",
     "title": "Értesítések",
     "turnOffAll": "Összes kikapcsolása",
-    "turnOffAllDesc": "Összes értesítés ideiglenes kikapcsolása",
+    "turnOffAllDesc": "Kikapcsolja az összes értesítést az Üzenetek kivételével. Az új készség kérések továbbra is megérkeznek.",
     "unknownActor": "Felhasználó",
     "unreadLabel": "Olvasatlan"
   },

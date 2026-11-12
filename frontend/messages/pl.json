@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "min",
     "title": "Powiadomienia",
     "turnOffAll": "Wyłącz wszystko",
-    "turnOffAllDesc": "Tymczasowo wyłącz wszystkie powiadomienia",
+    "turnOffAllDesc": "Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności będą nadal przychodzić.",
     "unknownActor": "Użytkownik",
     "unreadLabel": "Nieprzeczytane"
   },

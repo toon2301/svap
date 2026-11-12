@@ -31,6 +31,10 @@ export interface NotificationsCommonLabels {
 /** Hlavný vypínač „Vypnúť všetko“. */
 export interface NotificationsMaster {
   enabled: boolean;
+  /** Vypínač sa nedá meniť (voľby sa nenačítali zo servera). */
+  disabled: boolean;
+  /** Voľby sa ešte načítavajú zo servera: vypínač nemá polohu, len kostru. */
+  loading: boolean;
   onChange: (enabled: boolean) => void;
 }
 

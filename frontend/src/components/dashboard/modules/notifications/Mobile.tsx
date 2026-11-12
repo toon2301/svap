@@ -51,8 +51,11 @@ export default function Mobile({
           <MasterToggle
             enabled={master.enabled}
             onChange={master.onChange}
+            disabled={master.disabled}
+            loading={master.loading}
             label=""
             compact
+            testId="notifications-master-toggle-mobile"
           />
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700" />

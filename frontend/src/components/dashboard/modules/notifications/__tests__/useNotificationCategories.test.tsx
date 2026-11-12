@@ -2,7 +2,8 @@ import { renderHook } from '@testing-library/react';
 import toast from 'react-hot-toast';
 
 import { DEFAULT_PREFERENCES, type NotificationPreferenceKey } from '../notificationPreferenceKeys';
-import { SAVE_ERROR_TOAST_ID, useNotificationCategories } from '../useNotificationCategories';
+import { SAVE_ERROR_TOAST_ID } from '../preferenceSaveError';
+import { useNotificationCategories } from '../useNotificationCategories';
 import type { NotificationPreferencesController } from '../useNotificationPreferences';
 
 jest.mock('react-hot-toast', () => ({
@@ -12,8 +13,8 @@ jest.mock('react-hot-toast', () => ({
 
 /**
  * Riadky kategórií upozornení pre obrazovku Nastavenia → Upozornenia (nález 321, etapa 3a): každá kategória zapína a
- * vypína svoju voľbu servera, hodnoty idú zo zdieľaného stavu, zablokované kategórie sa ukážu ako „Vypnuté“ a zakázané
- * a chyba uloženia ide na toast.
+ * vypína svoju voľbu servera, hodnoty idú zo zdieľaného stavu, kategórie zablokované hlavným vypínačom (R35,
+ * `in_app_notifications` je `false`) sa ukážu ako „Vypnuté“ a zakázané a chyba uloženia ide na toast.
  */
 
 /** Zdieľaný stav volieb s atrapou ukladania; `overrides` prepíše, čo test potrebuje. */
@@ -46,14 +47,14 @@ describe('useNotificationCategories', () => {
   });
 
   it('vráti päť kategórií v poradí obrazovky', () => {
-    const { result } = renderHook(() => useNotificationCategories(makeController(), false));
+    const { result } = renderHook(() => useNotificationCategories(makeController()));
 
     expect(result.current.map((row) => row.id)).toEqual(CATEGORIES.map(([id]) => id));
   });
 
   it.each(CATEGORIES)('kategória %s ukladá voľbu %s a posiela len ju', (id, preference) => {
     const controller = makeController();
-    const { result } = renderHook(() => useNotificationCategories(controller, false));
+    const { result } = renderHook(() => useNotificationCategories(controller));
     const row = result.current.find((entry) => entry.id === id);
 
     row?.onChange(false);
@@ -75,7 +76,7 @@ describe('useNotificationCategories', () => {
         notifySkillRequests: false,
       },
     });
-    const { result } = renderHook(() => useNotificationCategories(controller, false));
+    const { result } = renderHook(() => useNotificationCategories(controller));
 
     expect(Object.fromEntries(result.current.map((row) => [row.id, row.value]))).toEqual({
       likes: false,
@@ -88,8 +89,10 @@ describe('useNotificationCategories', () => {
   });
 
   it('zablokované kategórie (hlavný vypínač) sú „Vypnuté“ a zakázané, aj keď sú uložené zapnuté', () => {
-    const controller = makeController();
-    const { result } = renderHook(() => useNotificationCategories(controller, true));
+    const controller = makeController({
+      preferences: { ...DEFAULT_PREFERENCES, inAppNotifications: false },
+    });
+    const { result } = renderHook(() => useNotificationCategories(controller));
 
     expect(result.current.every((row) => row.value === false)).toBe(true);
     expect(result.current.every((row) => row.disabled === true)).toBe(true);
@@ -98,17 +101,18 @@ describe('useNotificationCategories', () => {
     expect(controller.updatePreference).not.toHaveBeenCalled();
   });
 
-  it('po odblokovaní sa vrátia uložené hodnoty', () => {
-    const controller = makeController({
-      preferences: { ...DEFAULT_PREFERENCES, notifyLikes: false, notifyComments: true },
-    });
+  it('po vypnutí hlavného vypínača sa vrátia uložené hodnoty', () => {
+    const stored = { ...DEFAULT_PREFERENCES, notifyLikes: false, notifyComments: true };
     const { result, rerender } = renderHook(
-      ({ blocked }) => useNotificationCategories(controller, blocked),
-      { initialProps: { blocked: true } },
+      ({ inApp }) =>
+        useNotificationCategories(
+          makeController({ preferences: { ...stored, inAppNotifications: inApp } }),
+        ),
+      { initialProps: { inApp: false } },
     );
     expect(result.current.find((row) => row.id === 'comments')?.value).toBe(false);
 
-    rerender({ blocked: false });
+    rerender({ inApp: true });
 
     expect(result.current.find((row) => row.id === 'comments')?.value).toBe(true);
     expect(result.current.find((row) => row.id === 'likes')?.value).toBe(false);
@@ -116,14 +120,14 @@ describe('useNotificationCategories', () => {
 
   it('kým sa voľby načítavajú, každý riadok nesie príznak načítavania (namiesto hodnoty je kostra)', () => {
     const controller = makeController({ loading: true });
-    const { result } = renderHook(() => useNotificationCategories(controller, false));
+    const { result } = renderHook(() => useNotificationCategories(controller));
 
     expect(result.current.every((row) => row.loading === true)).toBe(true);
   });
 
   it('po zlyhaní načítania sú riadky zakázané a už sa nenačítavajú', () => {
     const controller = makeController({ loadFailed: true });
-    const { result } = renderHook(() => useNotificationCategories(controller, false));
+    const { result } = renderHook(() => useNotificationCategories(controller));
 
     expect(result.current.every((row) => row.disabled === true)).toBe(true);
     expect(result.current.every((row) => row.loading === false)).toBe(true);
@@ -131,7 +135,7 @@ describe('useNotificationCategories', () => {
 
   it('chyba uloženia ide na toast s jedným spoločným identifikátorom, nie do stránky', () => {
     const controller = makeController();
-    const { result } = renderHook(() => useNotificationCategories(controller, false));
+    const { result } = renderHook(() => useNotificationCategories(controller));
 
     result.current[0].onChange(false);
     const options = jest.mocked(controller.updatePreference).mock.calls[0][2];
@@ -144,7 +148,7 @@ describe('useNotificationCategories', () => {
   });
 
   it('názvy a opisy sú preložené (slovenčina s diakritikou)', () => {
-    const { result } = renderHook(() => useNotificationCategories(makeController(), false));
+    const { result } = renderHook(() => useNotificationCategories(makeController()));
 
     expect(result.current.map((row) => row.title)).toEqual([
       'Páči sa mi to',

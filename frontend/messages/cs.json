@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "m",
     "title": "Upozornění",
     "turnOffAll": "Vypnout vše",
-    "turnOffAllDesc": "Dočasně vypnout všechna upozornění",
+    "turnOffAllDesc": "Vypne všechna upozornění kromě Zpráv. Nové žádosti o dovednost budou přicházet i nadále.",
     "unknownActor": "Uživatel",
     "unreadLabel": "Nepřečtené"
   },

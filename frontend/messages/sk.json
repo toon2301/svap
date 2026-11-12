@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "m",
     "title": "Upozornenia",
     "turnOffAll": "Vypnúť všetko",
-    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia",
+    "turnOffAllDesc": "Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť budú chodiť ďalej.",
     "unknownActor": "Používateľ",
     "unreadLabel": "Neprečítané"
   },

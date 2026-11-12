@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "min",
     "title": "Notifications",
     "turnOffAll": "Turn off all",
-    "turnOffAllDesc": "Temporarily disable all notifications",
+    "turnOffAllDesc": "Turns off all notifications except Messages. New skill requests will still arrive.",
     "unknownActor": "User",
     "unreadLabel": "Unread"
   },

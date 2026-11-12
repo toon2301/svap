@@ -1,15 +1,11 @@
 'use client';
 
-import toast from 'react-hot-toast';
-
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import type { NotificationPreferenceKey } from './notificationPreferenceKeys';
+import { showPreferenceSaveError } from './preferenceSaveError';
 import type { NotificationCategoryId, NotificationCategoryRow } from './settingsTypes';
 import type { NotificationPreferencesController } from './useNotificationPreferences';
-
-/** Jedna zdieľaná karta pre chyby ukladania, aby sa opakované zlyhania (napr. viac ťuknutí bez internetu) nezoradili pod seba. */
-export const SAVE_ERROR_TOAST_ID = 'notification-preferences-save-error';
 
 /** Kategória upozornení: voľba servera, ktorú zapína a vypína, a jej preložený názov a opis. */
 interface CategoryDefinition {
@@ -22,17 +18,17 @@ interface CategoryDefinition {
 /**
  * Päť kategórií upozornení v poradí obrazovky Nastavenia → Upozornenia (nález 321, etapa 3a): preložený názov a opis,
  * hodnota zo servera a zmena, ktorá ju uloží (cez `updatePreference` zdieľaného `controller`). Chyba uloženia (aj pri
- * vypnutom internete) sa ukáže ako toast, nie ako blok, ktorý by posunul obsah (nález 308). Zablokované kategórie
- * (`blocked`, hlavný vypínač „Vypnúť všetko“) sa ukážu ako „Vypnuté“ a zakázané; ich uložené hodnoty sa nemenia, takže
- * sa po odblokovaní vrátia. Kým sa voľby nenačítajú (`loading`), riadok nesie `loading` a namiesto hodnoty sa ukáže
- * kostra; po zlyhaní načítania sú riadky zakázané.
+ * vypnutom internete) sa ukáže ako toast, nie ako blok, ktorý by posunul obsah (nález 308). Keď je hlavný vypínač
+ * „Vypnúť všetko“ zapnutý (`in_app_notifications` je `false`, R35), kategórie sa ukážu ako „Vypnuté“ a zakázané; ich
+ * uložené hodnoty sa nemenia, takže sa po vypnutí hlavného vypínača vrátia. Kým sa voľby nenačítajú (`loading`), riadok
+ * nesie `loading` a namiesto hodnoty sa ukáže kostra; po zlyhaní načítania sú riadky zakázané.
  */
 export function useNotificationCategories(
   controller: NotificationPreferencesController,
-  blocked: boolean,
 ): NotificationCategoryRow[] {
   const { t } = useLanguage();
   const { preferences, loading, loadFailed, updatePreference } = controller;
+  const blocked = !preferences.inAppNotifications;
 
   const definitions: CategoryDefinition[] = [
     {
@@ -90,11 +86,7 @@ export function useNotificationCategories(
     disabled: blocked || loadFailed,
     loading,
     onChange: (enabled: boolean) => {
-      void updatePreference(preference, enabled, {
-        onError: (message) => {
-          toast.error(message, { id: SAVE_ERROR_TOAST_ID });
-        },
-      });
+      void updatePreference(preference, enabled, { onError: showPreferenceSaveError });
     },
   }));
 }

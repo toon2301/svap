@@ -10,7 +10,8 @@ jest.mock('@/lib/api', () => ({
   api: {
     get: jest.fn().mockResolvedValue({ data: {} }),
     post: jest.fn(),
-    patch: jest.fn(),
+    // Hlavný vypínač ukladá `in_app_notifications` na server (R35).
+    patch: jest.fn().mockResolvedValue({ data: { in_app_notifications: false } }),
     delete: jest.fn(),
   },
   endpoints: { push: { preferences: '/auth/push/preferences/' } },
@@ -44,10 +45,12 @@ describe('NotificationSettingsModule (desktop behaviors)', () => {
 
     // Now, at least one "Zapnuté" option button in mobile layout should be disabled when master is on
     // On desktop we used inputs originally, but we keep assertion generic by checking disabled attribute on mobile buttons as well
-    const hasDisabledNotificationToggle = screen
-      .getAllByText('Zapnute')
-      .some((label) => (label.closest('button') as HTMLButtonElement | null)?.disabled);
-    expect(hasDisabledNotificationToggle).toBe(true);
+    await waitFor(() => {
+      const hasDisabledNotificationToggle = screen
+        .getAllByText('Zapnute')
+        .some((label) => (label.closest('button') as HTMLButtonElement | null)?.disabled);
+      expect(hasDisabledNotificationToggle).toBe(true);
+    });
   });
 });
 
