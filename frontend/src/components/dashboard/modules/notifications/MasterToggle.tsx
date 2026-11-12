@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useId } from 'react';
 
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
@@ -16,6 +16,10 @@ interface MasterToggleProps {
   loading?: boolean;
   /** `data-testid` tlačidla vypínača. */
   testId?: string;
+  /** `id` prvku mimo komponentu, ktorý je názvom vypínača; použije sa pri prázdnom `label` (kompaktné mobilné rozloženie). */
+  labelledBy?: string;
+  /** `id` prvku mimo komponentu, ktorý opisuje vypínač. */
+  describedBy?: string;
 }
 
 /**
@@ -24,8 +28,23 @@ interface MasterToggleProps {
  * ostatné kostry Nastavení. S `enabled` `null` (po zlyhaní načítania) je poloha neznáma: vypínač je zakázaný, sivý a
  * bez bežca, ale nie zaneprázdnený, lebo predvolená poloha nie je stav servera (PR 258). `disabled` ho len zakáže
  * (stlmený, kliknutie nič nezmení).
+ *
+ * Tlačidlo je prepínač (`role="switch"`) a stav oznamuje cez `aria-checked` (počas načítania a pri neznámej polohe
+ * chýba). Názov preberá z viditeľného textu cez `aria-labelledby`, takže sa text nezdvojí; ak je `label` prázdny, názov
+ * (a prípadný opis) sa prepoja na prvky rodiča cez `labelledBy` a `describedBy`.
  */
-export default function MasterToggle({ enabled, onChange, label, compact, disabled, loading, testId }: MasterToggleProps) {
+export default function MasterToggle({
+  enabled,
+  onChange,
+  label,
+  compact,
+  disabled,
+  loading,
+  testId,
+  labelledBy,
+  describedBy,
+}: MasterToggleProps) {
+  const labelId = useId();
   const showSkeleton = useDelayedLoading(Boolean(loading));
   const unknown = enabled === null;
   let stateClass = enabled ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600';
@@ -37,11 +56,18 @@ export default function MasterToggle({ enabled, onChange, label, compact, disabl
 
   return (
     <div className={`flex items-center ${compact ? 'justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800' : 'justify-between'}`}>
-      <span className={compact ? 'text-sm font-medium text-gray-900 dark:text-white' : 'text-sm font-medium text-gray-900 dark:text-white'}>
+      <span
+        id={label ? labelId : undefined}
+        className={compact ? 'text-sm font-medium text-gray-900 dark:text-white' : 'text-sm font-medium text-gray-900 dark:text-white'}
+      >
         {label}
       </span>
       <button
         type="button"
+        role="switch"
+        aria-checked={loading ? undefined : (enabled ?? undefined)}
+        aria-labelledby={label ? labelId : labelledBy}
+        aria-describedby={describedBy}
         onClick={() => onChange(!enabled)}
         disabled={disabled || loading || unknown}
         aria-busy={loading ? true : undefined}

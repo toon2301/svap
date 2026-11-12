@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 import PriceSection from '../skillDescriptionModal/sections/PriceSection';
 
@@ -43,9 +43,10 @@ describe('PriceSection', () => {
       />,
     );
 
-    const row = screen.getByText('Dohodou').closest('div');
-    expect(row).not.toBeNull();
-    fireEvent.click(within(row!).getByRole('button'));
+    // Prepínač je od PR 258 `role="switch"` s názvom z viditeľného textu a oznamuje stav (zdieľaný komponent MasterToggle).
+    const toggle = screen.getByRole('switch', { name: 'Dohodou' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(toggle);
 
     expect(onNegotiableChange).toHaveBeenCalledWith(true);
   });

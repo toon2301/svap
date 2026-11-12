@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useId } from 'react';
 
 import MasterToggle from './MasterToggle';
 import OptionRow from './OptionRow';
@@ -36,15 +36,19 @@ export default function Mobile({
   categories,
   pushMessages,
 }: MobileProps) {
+  // Názov a opis hlavného vypínača vykresľuje toto rozloženie, preto ich vypínač preberá cez identifikátory (PR 258).
+  const masterLabelId = useId();
+  const masterDescriptionId = useId();
+
   return (
     <div className="lg:hidden px-4 pt-2 pb-6 text-[var(--foreground)]">
       <div className="space-y-0">
         <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
           <div>
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <div id={masterLabelId} className="text-sm font-medium text-gray-900 dark:text-white">
               {labels.turnOffAll}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div id={masterDescriptionId} className="text-xs text-gray-500 dark:text-gray-400">
               {labels.turnOffAllDesc}
             </div>
           </div>
@@ -55,6 +59,8 @@ export default function Mobile({
             label=""
             compact
             testId="notifications-master-toggle-mobile"
+            labelledBy={masterLabelId}
+            describedBy={masterDescriptionId}
           />
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700" />
