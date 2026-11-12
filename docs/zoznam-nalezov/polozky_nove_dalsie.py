@@ -113,8 +113,10 @@ NEW_ITEMS_DALSIE = [
                'alebo preťažení visieť dlho; zhoršovalo to, že „minišatúry“ (čítam ako miniatúry obrázkov) idú cez Django namiesto CDN '
                '(N9); je to hypotéza z korelácie, nie z logov. Návrh kolegu: nález zatvoriť až po overení v logoch Railway (bod 2). '
                'Dodatok 9. a 10. 11. 2026: logy Railway z okien dvoch pádov E2E (majiteľ) potvrdili dôvod 403 na obnove „CSRF '
-               'cookie not set.“, čo sedí na prázdne cookies prehliadača, no aplikačnú príčinu nevylučuje: pri cross-origin API K14 '
-               'neplatí a klient tam pošle token z pamäte aj bez cookie (pozri 223). Počty 403 (bod 2) sú v časti OSTÁVA.',
+               'cookie not set.“, čo sedí na prázdne cookies prehliadača. Testované prostredie používa `/api` (same-origin, majiteľ '
+               '10. 11.), takže K14 platí; zastaraný token z pamäte to nevysvetľuje len vtedy, keď bola cookie v relácii aspoň raz '
+               'čitateľná (inak `getCsrfToken()` použije token z pamäte, pozri 223); iné aplikačné príčiny to nevylučuje (pozri '
+               '223). Počty 403 (bod 2) sú v časti OSTÁVA.',
          dec=None, src='kontrola logov Railway od majiteľa (6., 9. a 10. 11. 2026), rozbor kódu agentom, tabuľka Codexa (pri nálezu 223) a K14'),
     dict(n=247, bucket=A, imp=N, eff=ES, pkg='Vyhľadávanie a Sledovania',
          kratko='klik na položku histórie sa pri písaní ruší až po odoslaní hľadania (debounce), nie hneď',

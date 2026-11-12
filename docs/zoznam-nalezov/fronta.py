@@ -11,17 +11,19 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K15 sú hotové a zlúčené (K6 až K15 sú v `hotove_dalsie.py`): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K18 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`; z K16 zostáva mapovanie nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), a z K18 toast pri nálezu 325): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
 302), K14 (PR #245) o zámku závislostí, obnove prihlásenia a prechodných stavoch Nastavení (244, 286 a časť 245) a K15 (PR #250)
-o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej chybe v toastoch (322, 323, 320 a 306). Dávky K16 a K17
-navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po K14: K16 začína nálezom 319 a pokračuje zvyškami
-po 286 (308 až 310) a K17 dopĺňa zvyšok nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končí nálezom PO NASADENÍ 312. Nález HNEĎ 318
+o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej chybe v toastoch (322, 323, 320 a 306) a K16 (PR #253) o
+varovaní v Upozorneniach a o načítavaní Sledovania (308, 309 a 310) a K17 (PR #254) o ôsmich natívnych `alert()` a o roli `alert`
+pri chybe Blokovaných (302 a 312) s mapovaním 311. Dávky K16 a K17 navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po
+K14: K16 začínala nálezom 319 (mapovanie, výsledok od kolegu čaká) a pokračovala zvyškami po 286 (308 až 310), K17 dopĺňala zvyšok
+nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 sú etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`), K20 bude etapa 3 spolu s 319 a K21 toast pri 325. Nález HNEĎ 318
 (push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Nález 321 (kategórie upozornení; R32 (a): pred
-štartom) a zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie sú: 321 čaká na mapovanie a plán po
-etapách, 245 na majiteľa. Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
+štartom) a zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie sú: 321 má mapovanie a plán po
+etapách (v nálezu 321), rozhodnutia R34 až R36 sú zodpovedané a etapy 1 a 2 sú dávka K19 (etapa 3 ide ako K20 po nasadení K19), 245 čaká na majiteľa. Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
 PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a K14, K15 a K16, K17 a K18, no tie označenia sa použili na iné dávky, preto
 dostanú číslo K až vtedy, keď pôjdu kolegovi (pred ne pribudnú etapy nálezu 321). Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
 určuje majiteľ (`SCHVALENE`). V poradí idú všetky nálezy HNEĎ a PRED NASADENÍM pred nálezmi PO NASADENÍ. Výnimku schvaľuje majiteľ a
@@ -35,9 +37,10 @@ zoznam nemôže ticho zastarať.
 """
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED '
-             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K15 sú hotové; vetvy agenta 167 až 172 '
-             'sú len zoznam (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť). Dávky K16 a K17 navrhol '
-             'agent 8. a 9. 11. 2026 (zvyšky po 286, nález 319 a výmena osmich `alert()`) a čakajú na schválenie; '
+             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K18 sú hotové (z K16 čaká mapovanie 319, z K18 toast pri 325; nález 311 z K17 majiteľ uzavrel, R38); '
+             'vetvy agenta 167 až 173 sú len zoznam (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá '
+             'vedieť). Dávku K19 (etapy 1 a 2 nálezu 321, backend) navrhol agent 10. 11. 2026 po rozhodnutiach R34 až R36 a čaká na schválenie; '
+             'etapa 3 spolu s 319 (K20) a toast pri 325 (K21) vstúpia do poradia po nej; '
              'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
@@ -48,39 +51,23 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA = [
-    dict(n='319', davka='K16',
+    dict(n='321', davka='K19',
+         co='Upozornenia: kategórie napojené na server, etapy 1 a 2 (backend): päť predvolene zapnutých polí s migráciou, API a '
+            'potlačenie upozornení podľa kategórie.',
+         preco='JASNÉ. Rozhodnutia R34 až R36 sú zodpovedané (10. 11. 2026). Veľká funkcia, preto dva celky (ukladanie, potom '
+               'potlačenie) v štyroch commitoch; všetky dotknuté súbory majú pod 500 riadkov. Etapa 3 (rozhranie, spolu s opravou 319) '
+               'a etapa 4 (E2E, Codex) vstúpia do poradia po K19.'),
+    dict(n='319', davka='K20',
          co='Upozornenia: pri vypnutom internete sa prepínač Správ prepne bez chybovej hlášky a stav ostane po pripojení.',
          preco='NEJASNÉ (najprv mapovanie). Ktorý prepínač sa testoval: Správy majú vrátenie späť aj chybu, ostatné sú len lokálne '
                '(nález 321, ktorý sa dokončí pred štartom); texty chýb v `useNotificationPreferences.ts` (123 riadkov) a '
-               '`usePushMessagesPreference.ts` (288 riadkov) sú bez diakritiky a bez prekladu.'),
-    dict(n='308', davka='K16',
-         co='Upozornenia: varovanie pri uloženom „Zapnuté“ a blokovanom push po načítaní posunie obsah (28 px desktop, 68 px '
-            'mobil).',
-         preco='JASNÉ. Zvyšok po 286 (K14); `usePushMessagesPreference.ts` a `PushMessagesStatus.tsx` majú do 288 riadkov; chybu '
-               'odvodiť počas renderu.'),
-    dict(n='309', davka='K16',
-         co='Sledovanie na mobile: odznak „0 / 5“ počas načítavania a po načítaní nahradí tlačidlo hláška o limite (CLS 0,033).',
-         preco='JASNÉ. Zvyšok po 286; `OfferWatchMobileListScreen.tsx` má 151 riadkov.'),
-    dict(n='310', davka='K16',
-         co='Desktopové Sledovanie ukáže kostru hneď a tá problikne pred prázdnym stavom.',
-         preco='JASNÉ. Zvyšok po 286: použiť `DelayedSkeleton` z K14, rovnako ako pri mobile (309).'),
-    dict(n='302', davka='K17',
-         co='Osem natívnych `alert()` v troch súboroch nad 500 riadkov (`SkillsModuleRouter.tsx` 4, `OfferReviewsView.tsx` 3, '
-            '`useSkillsDescriptionScreenState.ts` 1) nahradiť toastom s prekladmi.',
-         preco='JASNÉ. Výnimka (R31, 9. 11. 2026, udelená majiteľom s podmienkou maximálnej opatrnosti): jednorazová úprava týchto '
-               'troch súborov len na výmenu osmich volaní `alert()` za `toast.error` s prekladmi v šiestich jazykoch. Opatrnosť: každé '
-               'miesto vo vlastnom commite, pred výmenou test, ktorý bez zmeny padá, v diffe len pridaný import a nahradené riadky, '
-               'počet riadkov súborov pred a po vo výsledku dávky a diff týchto súborov porovná agent riadok po riadku pred zlúčením. '
-               'Súbory nesmú narásť okrem importu, iná zmena v nich je zakázaná. Pri každom mieste skontrolovať, či chyba letí ďalej a '
-               'volajúci neukáže druhé hlásenie. Ide až po K15, lebo 322 a 323 menia vstupy obrazovky vo vedľajšom súbore.'),
-    dict(n='311', davka='K17',
-         co='`useIsMobile()` začína ako „desktop“; ďalšie vetvy `ModuleRouter` môžu mať prázdny prvý snímok.',
-         preco='NEJASNÉ (najprv mapovanie, ktoré moduly). Hypotéza kolegu, nezmerané; `ModuleRouter.tsx` má 439 riadkov, takže nové '
-               'vetvy nesmú súbor posunúť nad 500.'),
-    dict(n='312', davka='K17',
-         co='Blokovaní používatelia: chyba načítania nemá `role=alert`.',
-         preco='JASNÉ. PO NASADENÍ, no jeden riadok v `BlockedUsersModule.tsx` (279 riadkov), ktorý K14 práve upravovala; ide na '
-               'koniec dávky za nálezy PRED NASADENÍM.'),
+               '`usePushMessagesPreference.ts` (311 riadkov po K16) sú bez diakritiky a bez prekladu. Zostáva z K16: výsledok '
+               'mapovania od kolegu ešte nedošiel; oprava pôjde spolu s etapou 3 nálezu 321, lebo oba menia tie isté súbory.'),
+    dict(n='325', davka='K21',
+         co='Mazanie recenzie: po úspešnom zmazaní ukázať toast „Recenzia bola vymazaná.“ (zvyšok po K18).',
+         preco='JASNÉ. Backendová časť je hotová v K18 (PR #255) a manuálne testy prešli; zostáva toast (R37 c). Výnimka pre '
+               '`OfferReviewsView.tsx` (692 riadkov) je udelená (R37 b a c) s podmienkou, že nová logika mazania ide do nového súboru '
+               'a pôvodný súbor nenarastie; ak sa to bez rastu nedá, kolega sa zastaví a nahlási to bez zmeny kódu.'),
     dict(n='24', davka='PO-A',
          co='`setHighlightedSkillId(null)` necháva hodnotu v `sessionStorage` (priame volania setteru namiesto '
             '`clearHighlighting()`).',

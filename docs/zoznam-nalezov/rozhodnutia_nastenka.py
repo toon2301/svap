@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R33: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R38: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
-`alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)) a R33 (postupné zapínanie push upozornení
-na správy, rozhodnuté (a)).
+`alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
+na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
+zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -163,7 +165,14 @@ DECISIONS_NASTENKA = [
                   'nahradené riadky, bez preformátovania a premenovania; kolega uvedie počet riadkov troch súborov pred zmenou a po nej a '
                   'agent pred zlúčením porovná diff týchto súborov riadok po riadku; pri každom mieste overiť, že chyba nelietá ďalej a '
                   'volajúci neukáže druhé hlásenie; spustiť testy dotknutých modulov aj celý Jest; ak by oprava vyžadovala čokoľvek iné, '
-                  'kolega sa zastaví a nahlási to bez zmeny kódu.',
+                  'kolega sa zastaví a nahlási to bez zmeny kódu. ' +
+                  'Doplnenie 10. 11. 2026 (K17, PR #254): na pripomienku CodeRabbitu a na žiadosť majiteľa sa smel upraviť aj jeden '
+                  'riadok `SkillsModuleRouter.tsx:461` (záložný text odstránenia fotky cez `t()` s kľúčom `skills.imageDeleteFailed`, '
+                  'počet riadkov sa nezmenil). Agent po zlúčení porovnal diff troch súborov riadok po riadku: pridané sú len importy a '
+                  'nahradené riadky, k tomu zmizlo päť zastaraných komentárov `eslint-disable-next-line no-alert` (štyri v '
+                  '`SkillsModuleRouter.tsx` a jeden v `useSkillsDescriptionScreenState.ts`); počty riadkov 583 → 580, 692 → 692 a 638 → '
+                  '639. Odstránenie štyroch nedosiahnuteľných vetiev limitu kariet v `SkillsModuleRouter.tsx` výnimka nepokrýva a agent '
+                  'ho neodporúča (sú poistka pre prípad, že sa strážca v `SkillsScreen` zmení); ostáva poznámka v `poznamky.md`.',
          datum='9. 11. 2026'),
     dict(id='R32', tema='Kategórie upozornení: dokončiť pred štartom, alebo skryť (321)',
          otazka='Majú sa pred ostrým štartom dokončiť všetky kategórie upozornení v Nastaveniach (Páči sa mi to, Komentáre, Žiadosť o '
@@ -195,4 +204,106 @@ DECISIONS_NASTENKA = [
                   'potvrdil, že upozornenia na správy fungujú (nález 318 je tým zatvorený). Postupné zapínanie pri ostrom štarte, teda '
                   'začať malým percentom a zvyšovať ho, sa rozhodne až pri príprave štartu (N14).',
          datum='9. 11. 2026'),
+    dict(id='R34', tema='Kategórie upozornení: ktoré udalosti patria ku ktorej kategórii (321)',
+         otazka='Ktoré druhy upozornení riadi ktorý prepínač v Nastaveniach → Upozornenia? Backend dnes vytvára 21 typov (lajky ponúk, '
+                 'portfólia, profilu a príspevkov, lajky komentárov a recenzií, komentáre a odpovede, nové recenzie a odpovede na ne, '
+                 'označenie a zdieľanie príspevku, žiadosti o zručnosť a ich priebeh, zhoda Sledovania, pozvánka do skupiny), rozhranie '
+                 'má päť kategórií. (a) Odporúčané priradenie: Páči sa mi to = lajky ponúk, portfólia, profilu a príspevkov; Páči sa mi '
+                 'to pre komentáre = lajky komentárov a recenzií; Komentáre = komentáre a odpovede na príspevky, nové recenzie a '
+                 'odpovede na recenzie; Páči sa mi to a komentáre = označenie a zdieľanie príspevku (opis kategórie sa zmení, lebo '
+                 'dnešný „Reakcie a komentáre na fotkách, kde ste označení“ nemá v backende žiadnu udalosť); Žiadosť o zručnosť = '
+                 'žiadosti o zručnosť a ich priebeh; zhoda Sledovania a pozvánka do skupiny bez prepínača (vždy zapnuté). (b) Iné '
+                 'priradenie alebo nové kategórie (napr. „Recenzie“, „Sledovanie“), čo znamená aj nové texty v šiestich jazykoch. (c) '
+                 'Kategóriu „Páči sa mi to a komentáre“ z rozhrania vynechať.',
+         odporucanie='(a): využije existujúcich päť prepínačov, nepridáva texty ani obrazovky a nič nepotláča mimo kategórií, ktoré '
+                        'používateľ pozná. Zhoda Sledovania sa spravuje vlastným ovládaním (zmazaním sledovania) a pozvánka do skupiny čaká na '
+                        'odpoveď, preto by prepínač zbytočne skrýval potrebné veci.',
+         kedy='Rozhodnuté 10. 11. 2026.',
+         odpoved='Majiteľ 10. 11. 2026 súhlasil s odporúčaným priradením (a) s dvoma úpravami. (1) „Páči sa mi to pre komentáre“ zahŕňa '
+                  'okrem lajkov komentárov a recenzií aj lajky odpovedí na komentáre; agent overil, že odpoveď na komentár je komentár s '
+                  'rodičom (`FeedPostComment.parent_comment`) a jej lajk už dnes vytvára upozornenie `feed_post_comment_liked`, takže '
+                  'nový typ netreba (lajk odpovede majiteľa na recenziu v aplikácii neexistuje). (2) Kategória „Páči sa mi to a '
+                  'komentáre“ sa premenuje a dostane nový opis, lebo dnešný „Reakcie a komentáre na fotkách, kde ste označení“ nemá v '
+                  'backende žiadnu udalosť; majiteľov príklad je „Označenie v príspevku“. Agent navrhuje názov „Označenie a zdieľanie '
+                  'príspevku“ s opisom „Keď vás niekto označí v príspevku alebo zdieľa váš príspevok“, lebo sem patrí aj zdieľanie (ak '
+                  'majiteľ chce presne svoj názov, zdieľanie sa presunie k „Páči sa mi to“). Ostatné podľa návrhu: Páči sa mi to = lajky '
+                  'ponúk, portfólia, profilu a príspevkov; Komentáre = komentáre a odpovede na príspevky, nové recenzie a odpovede na '
+                  'recenzie; Žiadosť o zručnosť = žiadosti o zručnosť a ich priebeh; zhoda Sledovania (majiteľ výslovne súhlasil) a '
+                  'pozvánka do skupiny (bola v tom istom bode návrhu) bez prepínača, vždy zapnuté.',
+         datum='10. 11. 2026'),
+    dict(id='R35', tema='Hlavný vypínač „Vypnúť všetko“ a žiadosti o zručnosť (321)',
+         otazka='Čo má robiť hlavný vypínač „Vypnúť všetko“ a smie sa vypnúť aj nová žiadosť o zručnosť? Dnes je vypínač len lokálny a '
+                 'Správy (push) nevypína; v backende existuje voľba `in_app_notifications` (pri vypnutí sa upozornenie vôbec neuloží) a '
+                 'nová žiadosť o zručnosť zámerne obchádza všetky voľby, lebo niekto čaká na odpoveď (test '
+                 '`test_skill_request_notification_ignores_in_app_toggle`). (a) Hlavný vypínač = voľba `in_app_notifications` na '
+                 'serveri, kategórie si držia vlastné hodnoty, Správy (push) vypína len ich vlastný prepínač; nová žiadosť o zručnosť '
+                 'chodí vždy a prepínač „Žiadosť o zručnosť“ riadi ich priebeh (prijatie, zamietnutie, dokončenie, zrušenie, skončenie). '
+                 '(b) Ako (a), ale hlavný vypínač potlačí aj push na správy. (c) Všetko vrátane novej žiadosti sa dá vypnúť.',
+         odporucanie='(a): najmenej zmien a nič sa nestratí: zhasne len to, čo používateľ naozaj nechce, a nová žiadosť sa nezmešká (zostane '
+                        'aj odznak v module Žiadosti). Do opisu kategórie a hlavného vypínača pribudne jedna veta, aby to bolo čitateľné. (b) '
+                        'vyžaduje nový príznak pre push, lebo vypnutie push voľby by zrušilo odber; (c) sa neodporúča, lebo druhá strana by '
+                        'zbytočne čakala na odpoveď.',
+         kedy='Rozhodnuté 10. 11. 2026.',
+         odpoved='Majiteľ 10. 11. 2026 určil správanie sám: keď sa zapne „Vypnúť všetko“, aktivuje sa vypnutie na všetkých možnostiach v '
+                  'sekcii Upozornenia okrem Správ. Agent to zapisuje ako variant (a) bez push: hlavný vypínač = serverová voľba '
+                  '`in_app_notifications`; kategórie ostanú v rozhraní zobrazené ako „Vypnuté“ a zakázané a po vypnutí hlavného vypínača '
+                  'sa vrátia ich uložené hodnoty; Správy (push) sa hlavným vypínačom nemenia. Nevyslovené ostalo, či pri zapnutom „Vypnúť '
+                  'všetko“ chodí nová žiadosť o zručnosť; platí dnešné správanie (chodí vždy, lebo niekto čaká na odpoveď), kým majiteľ '
+                  'nepovie inak; ostatné kroky žiadosti (prijatie, zamietnutie, dokončenie, zrušenie, skončenie) sa riadia kategóriou a '
+                  'hlavným vypínačom.',
+         datum='10. 11. 2026'),
+    dict(id='R36', tema='Push na správy pre nových používateľov: kedy požiadať o povolenie (321)',
+         otazka='Voľba Správy (push) je pre nových používateľov v databáze zapnutá, no doručuje sa až po povolení v prehliadači a po '
+                 'zaregistrovaní odberu. Prehliadač povolenie nedá bez gesta používateľa (a na iPhone push funguje len z aplikácie '
+                 'pridanej na plochu), takže „zapnuté od registrácie“ sa nedá docieliť potichu. Kedy a ako sa o povolenie požiada? (a) '
+                 'Jednorazová odmietnuteľná výzva s tlačidlom „Zapnúť upozornenia na správy v tomto zariadení“ priamo v Nastaveniach → '
+                 'Upozornenia, keď je voľba zapnutá a povolenie sa ešte nevyžiadalo (s návodom pre iPhone). (b) Navyše výzva po '
+                 'registrácii alebo po prvej prijatej správe (väčší zásah: onboarding, nález 252). (c) Bez výzvy; používateľ si '
+                 'povolenie vyžiada sám vypnutím a zapnutím voľby (dnešný stav).',
+         odporucanie='(a): rieši zavádzajúci stav „Zapnuté“, pri ktorom nič nechodí (rovnaký druh chyby ako pôvodný nález 321), je to malá '
+                        'zmena v jednom module a vyžaduje len nový text v šiestich jazykoch. (b) patrí do plánu onboardingu (252). (c) sa '
+                        'neodporúča.',
+         kedy='Rozhodnuté 10. 11. 2026.',
+         odpoved='(a): majiteľ 10. 11. 2026 súhlasil s odporúčaním. V Nastaveniach → Upozornenia sa pri zapnutej voľbe Správ a '
+                  'nevyžiadanom povolení v prehliadači ukáže jednorazová odmietnuteľná výzva s tlačidlom (s návodom pre iPhone); ide do '
+                  'etapy 3 nálezu 321.',
+         datum='10. 11. 2026'),
+    dict(id='R37', tema='Výnimka z pravidla 500 riadkov: oprava mazania fotky (326) a mazania recenzie (325)',
+         otazka='Oprava 326 je jeden riadok v `SkillsModuleRouter.tsx` (580 riadkov): `return data?.images || [];` (riadok 456) má '
+               'vrátiť `data?.images`, aby sa pri odpovedi 204 bez tela nenahradil zoznam fotiek prázdnym poľom. Frontendová časť 325 '
+               '(okno sa zavrie a recenzia zmizne zo zoznamu, aj keď zlyhá následné načítanie; toast po úspešnom vymazaní) by menila '
+               '`OfferReviewsView.tsx` (692 riadkov). (a) Smie kolega opraviť 326 ako výnimku s podmienkami R31 (vlastný commit, test, '
+               'ktorý bez zmeny padá, v diffe len ten riadok, počet riadkov sa nezvýši)? Alternatíva bez výnimky: backend vráti po '
+               'zmazaní fotky zoznam zvyšných fotiek so stavom 200, čo mení rozhranie servera. (b) Smie kolega urobiť frontendovú časť '
+               '325 ako výnimku s tými istými podmienkami, ale až po nasadení backendovej opravy 325 a len ak príznaky ostanú? (c) Má '
+               'po úspešnom vymazaní recenzie pribudnúť toast „Recenzia bola vymazaná.“? Dnes sa po úspechu neukáže nič.',
+         odporucanie='(a) áno: je to jeden riadok, príčina je presne ten riadok a postup je rovnaký ako pri R31; alternatíva mení rozhranie '
+                        'servera kvôli jednému riadku frontendu. (b) áno, ale až po nasadení backendovej opravy a ručnom overení: oprava '
+                        'odpovede 204 pravdepodobne odstráni príčinu a výnimka by nebola potrebná; ak príznaky ostanú, kolega presunie obsluhu '
+                        'mazania do nového súboru tak, aby `OfferReviewsView.tsx` nenarástol. (c) áno, ako pri nahlásení recenzie '
+                        '(`reports.submitSuccess`); nový text v šiestich jazykoch.',
+         kedy='Rozhodnuté 11. 11. 2026.',
+         odpoved='Majiteľ 11. 11. 2026: všetky tri áno, podľa odporúčania agenta. (a) Výnimka pre jeden riadok v '
+                  '`SkillsModuleRouter.tsx` (nález 326) je udelená s podmienkami R31: vlastný commit, test, ktorý bez zmeny padá, v diffe '
+                  'len ten riadok, počet riadkov sa nezvýši; ak by oprava vyžadovala čokoľvek iné, kolega sa zastaví a nahlási to bez '
+                  'zmeny kódu; alternatíva cez backend sa nepoužije. (b) Výnimka pre frontendovú časť nálezu 325 (`OfferReviewsView.tsx`, '
+                  '692 riadkov) je udelená s tými istými podmienkami v znení otázky: ide až po nasadení backendovej opravy 325 (K18) a '
+                  'ručnom overení majiteľom; nová logika mazania ide do nového súboru a pôvodný súbor nesmie narásť. (c) Po úspešnom '
+                  'vymazaní recenzie sa ukáže toast „Recenzia bola vymazaná.“ (nový kľúč v šiestich jazykoch). Agent to vykladá tak, že '
+                  'toast (c) ide v každom prípade, lebo mení ten istý veľký súbor a pôjde v rovnakom frontendovom kroku ako (b), a '
+                  'ošetrenie zlyhania načítania zoznamu (b) len ak príznaky po oprave backendu ostanú.',
+         datum='11. 11. 2026'),
+    dict(id='R38', tema='Nález 311: opraviť `useIsMobile()` teraz, alebo nechať tak a uzavrieť',
+         otazka='Kolega zmeral v K17 pri prvom vykreslení na mobile posun 0,022 (Správy) a 0,031 (Žiadosti), lebo `useIsMobile()` vráti '
+                 'v prvom vykreslení `isMobile: false` a `isResolved: false`, a navrhol opravu v hooku cez `useSyncExternalStore` (odhad '
+                 'M). Hook používa veľa komponentov v celej aplikácii a oprava by nezlepšila prvé vykreslenie na serveri. Opraviť teraz '
+                 '(samostatná dávka s testom hydratácie a dymom), alebo nález uzavrieť a vrátiť sa k nemu, ak sa prejav v používaní '
+                 'ukáže?',
+         odporucanie='Uzavrieť: dopad je nízky (posun pod 0,1, čo sa pokladá za dobrú hodnotu), prejav sa pri používaní nikomu neukázal a '
+                        'oprava by menila spoločný hook pre celú aplikáciu, takže riziko nových chýb je väčšie než prínos. Ak sa prejav objaví, '
+                        'otvorí sa nový nález s odkazom na 311 a s meraním kolegu.',
+         kedy='Rozhodnuté 12. 11. 2026.',
+         odpoved='Majiteľ 12. 11. 2026: nález 311 pri používaní nezaregistroval a nechce kvôli nemu riskovať nové chyby v spoločnom '
+                  'hooku; zatiaľ ho nechá tak a nález uzatvára, ak sa prejav ukáže, dá vedieť. Agent súhlasil.',
+         datum='12. 11. 2026'),
 ]

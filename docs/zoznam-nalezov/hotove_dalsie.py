@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K15, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K18, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -413,4 +413,84 @@ DONE_SINCE_DALSIE = [
               '`apiError.ts` prešlo bez zmeny, ESLint a tsc bez chýb. Texty chýb v `useNotificationPreferences.ts` a '
               '`usePushMessagesPreference.ts` sa nemenili (nález 319 je v K16). Dopad na E2E: žiadny (E2E nehľadá text „Network '
               'Error“).'),
+    dict(n=308, vetva='K16', pr='#253', zlucene=True,
+         text='HOTOVÉ (K16, zlúčené v PR #253 dňa 10. 11. 2026, commit `b800f209`): pasívne varovanie pod voľbou Správy (push je '
+              'zablokovaný, nepodporovaný alebo tento prehliadač nie je zaregistrovaný) sa odvodzuje počas vykresľovania novou čistou '
+              'funkciou `getPassiveBrowserWarning` v `usePushMessagesPreference.ts` (288 → 298 riadkov, po JSDoc z commitu `045267c1` '
+              '311), nie v efekte; chyby po akcii ostávajú stavom `actionError` a `error` ich skladá v poradí chyba uloženia či '
+              'načítania, chyba po akcii, pasívne varovanie. Počiatočné povolenie sa zisťuje už pri prvom vykreslení na klientovi, na '
+              'serveri ostáva „unsupported“ (bez rozdielu pri hydratácii, test). Príčinu z karty kolega potvrdil: pred opravou sa '
+              'varovanie objavilo 62 ms po riadkoch voľby a blok Správ vyrástol o 28 px (desktop) a o 68 px (mobil). Odchýlka od '
+              'karty: návrh drží len čiastočne. Druhý, neskorší skok je preč (varovanie je v rovnakom snímku ako riadky voľby), no '
+              'posun pri výmene kostry za hotovú voľbu ostáva (CLS 0,0334 na mobile a 0,0054 na desktope, rovnako ako pred opravou), '
+              'lebo kostra nevie vopred, či varovanie bude; nulový posun by vyžadoval dimenzovať kostru podľa naposledy známej voľby '
+              'uloženej v zariadení, čo je zmena návrhu a nerobila sa (poznámka v `poznamky.md`). Overenie podľa kolegu: 21 nových '
+              'testov (pred opravou padá 12), mutácie 14 z 14, Chromium (produkčný build, simulované API), Jest 43 sád a 966 testov, '
+              'ESLint a tsc bez chýb. Texty varovaní sa nemenili (nález 319). Manuálne testy majiteľa po nasadení prešli. Dopad na '
+              'E2E: žiadny.'),
+    dict(n=309, vetva='K16', pr='#253', zlucene=True,
+         text='HOTOVÉ (K16, zlúčené v PR #253 dňa 10. 11. 2026, commit `c14db2dd`): v `OfferWatchMobileListScreen.tsx` (151 → 183 '
+              'riadkov) ukazuje odznak počas načítavania „− / 5“ (znamienko mínus U+2212 má v písme Inter s tabuľkovými číslicami '
+              'rovnakú šírku ako číslica, odznak má 55 px pred aj po príchode počtu; pomlčka z návrhu karty bola o 2 px užšia) a '
+              'tlačidlo aj hláška o limite sú v jednom mriežkovom políčku, v ktorom miesto druhého drží neviditeľná rezerva '
+              '(`aria-hidden`, text v atribúte `data-ghost`), takže výmena nehýbe obsahom. Návrh drží: CLS pri načítaní piatich '
+              'sledovaní 0,0325 → 0,0000 (cieľ pod 0,01), s nulou a tromi sledovaniami tiež 0,0000. Cena opravy: pri menej ako '
+              'piatich sledovaniach je pod tlačidlom neviditeľná rezerva na výšku hlášky (políčko 66 px namiesto 48 px, teda 18 px '
+              'navyše; na úzkych telefónoch a v nemčine pri 360 px až 38 px); jediná alternatíva je ponechať posun pri piatich '
+              'sledovaniach. Mimo karty kolega nahlásil, že pri chybe načítania ukazuje odznak „0 / 5“ (poznámka v `poznamky.md`). '
+              'Overenie podľa kolegu: 12 nových testov (pred opravou padá 6), mutácie 16 z 16, Chromium (iPhone 13, produkčný build), '
+              'Jest 54 sád a 1 170 testov, ESLint a tsc bez chýb. Texty, `MAX_OFFER_WATCHES` ani '
+              '`data-testid="offer-watch-list-loading"` sa nemenili (pribudli `offer-watch-create-slot` a '
+              '`offer-watch-limit-reserve`). Manuálne testy majiteľa po nasadení prešli. Dopad na E2E: žiadny.'),
+    dict(n=310, vetva='K16', pr='#253', zlucene=True,
+         text='HOTOVÉ (K16, zlúčené v PR #253 dňa 10. 11. 2026, commit `c262e5ae`): kostra celej stránky aj kostra zoznamu v '
+              '`OfferWatchSettingsDesktop.tsx` (251 → 280 riadkov) sú v `DelayedSkeleton` s `pulse={false}` (viditeľné až po 200 ms; '
+              'existujúce preklady `common.loading` a `offerWatchResults.loading`), obsah po načítaní sa krátko vyfaduje '
+              '(`animate-content-in`, len po načítaní, nie pri návrate z dialógu). Pred opravou bola kostra pri odpovedi za 60 ms '
+              'viditeľná 93 ms, po oprave nikdy. Odchýlky od karty: `role="status"`, `aria-busy` a skrytý text sa presunuli z '
+              '`OfferWatchSettingsSkeleton.tsx` (74 → 66 riadkov, prop `loadingLabel` zanikol) na obal `DelayedSkeleton`, inak by '
+              'vznikla druhá rola; názov jedného existujúceho testu sa upravil (tvrdenia ostali); zoznam, ktorý sa pri neskoršom '
+              'načítavaní len vymení za kostru, sa nevyfaduje. Overenie podľa kolegu: 9 nových testov (pred opravou padá 8), mutácie '
+              '16 z 16, Chromium (1280 × 900, produkčný build), Jest 40 sád a 944 testov, ESLint a tsc bez chýb. Vnútorné '
+              '`data-testid` kostry ostali (pribudli obaly `offer-watch-settings-loading` a `offer-watch-desktop-list-loading`). '
+              'Manuálne testy majiteľa po nasadení prešli. Dopad na E2E: žiadny nájdený (čas zobrazenia kostry sa posúva o 200 ms).'),
+    dict(n=302, vetva='K17', pr='#254', zlucene=True,
+         text='HOTOVÉ (K13 šesť miest, K17 osem miest; K17 zlúčené v PR #254 dňa 10. 11. 2026): všetkých štrnásť natívnych `alert()` '
+              'z pôvodného rozsahu je toast s prekladmi. K13 (PR #244, commit `e83100db`): `useSkillsModals.ts` 3, '
+              '`DashboardModals.tsx` 2 a `TagsSection.tsx` 1, nový preklad `accountType.changeFailed`. K17 (výnimka R31, každé miesto '
+              'vo vlastnom commite): `SkillsModuleRouter.tsx` 4 (limit kariet; commity `2c065c79`, `a2cc112d`, `5bd8dd2b`, '
+              '`568506a9`), `OfferReviewsView.tsx` 3 (`14b3f4de`, `c2bfd472`, `1921a638`) a `useSkillsDescriptionScreenState.ts` 1 '
+              '(`37490596`); nový preklad `reviews.deleteReviewFailed` v šiestich jazykoch a použitie existujúceho '
+              '`skills.imageDeleteFailed`. Pripomienku CodeRabbitu k PR #254 (slovenský záložný text pri sieťovej chybe cez smerovač) '
+              'opravil commit `69231ddc` jedným riadkom `SkillsModuleRouter.tsx:461` (mimo pôvodného rozsahu, na žiadosť majiteľa). '
+              'Kontrola agenta po zlúčení (R31): diff troch súborov sú len importy, nahradené riadky a päť zastaraných komentárov '
+              '`eslint-disable-next-line no-alert`; počty riadkov 583 → 580, 692 → 692, 638 → 639. Kolega zistil, že štyri `alert()` '
+              'v `SkillsModuleRouter.tsx` boli cez skutočné rozhranie nedosiahnuteľné (limit stráži `SkillsScreen`), takže ich '
+              'používateľ nikdy nevidel (poznámka v `poznamky.md`). Overenie podľa kolegu: celý Jest 571 sád a 8 594 testov, tsc, '
+              'build a kontroly prekladov čisté, mutácie 47 z 47 (302: 37, preklad: 5, 312: 5). Dopad na E2E: žiadny. Ručný test '
+              'majiteľa po nasadení K17 zatiaľ nepotvrdený.'),
+    dict(n=312, vetva='K17', pr='#254', zlucene=True,
+         text='HOTOVÉ (K17, zlúčené v PR #254 dňa 10. 11. 2026, commit `3d179be1`): chyba načítania v `BlockedUsersModule.tsx` (279 '
+              'riadkov) má `role="alert"` (jeden riadok), takže ju čítač obrazovky oznámi. Overenie podľa kolegu: nový test (rola '
+              '`alert` a text chyby), mutácie 5 z 5. Dopad na E2E: žiadny. Čítač obrazovky sa neskúšal (patrí do 294).'),
+    dict(n=326, vetva='K18', pr='#255', zlucene=True,
+         text='HOTOVÉ (K18, zlúčené v PR #255 dňa 12. 11. 2026, commit `7482f0a8`): `onRemoveExistingImage` v '
+               '`SkillsModuleRouter.tsx` vracia `data?.images` (predtým `data?.images || []`), takže pri odpovedi 204 bez tela vráti '
+               '`undefined` a hook obrazovky Popis ponuky vyradí len zmazanú fotku namiesto toho, aby všetky fotky nahradil prázdnym '
+               'zoznamom. Výnimka R37 (a): presne jeden riadok v súbore nad 500 riadkov (riadok 459, nie 456; počet riadkov 580 → 580; '
+               'bez komentára, lebo súbor nesmel narásť); hook (639 riadkov) a `OfferReviewsView.tsx` (692) sa nezmenili. Desktopová '
+               'cesta sa netýkala. Overenie podľa kolegu: 11 nových testov (pred zmenou padajú 4), mutácie 10 z 10, ESLint a tsc bez '
+               'chýb; agent nezávisle: celý Jest 577 sád a 8 636 testov prešlo, nové testy pred zmenou padajú. Boty (Codex P1, '
+               'CodeRabbit Major) upozornili len na pravidlo 500 riadkov; majiteľ odpovedal výnimkou R37 (a). CI zelené, manuálne '
+               'testy majiteľa prešli. Dopad na E2E: žiadny.'),
+    dict(n=327, vetva='K18', pr='#255', zlucene=True,
+         text='HOTOVÉ (K18, zlúčené v PR #255 dňa 12. 11. 2026, commit `94af9829`): `AddReviewModalMobile.tsx` (307 → 348 riadkov) má '
+               'pri vstupoch plusov a mínusov tlačidlo s ikonou plus (`aria-label` z nových kľúčov `reviews.addPro` a `reviews.addCon` '
+               'v šiestich jazykoch; neaktívne pri prázdnom vstupe a pri 10 položkách) a mobilný aj desktopový formulár '
+               '(`AddReviewModalDesktop.tsx`, 317 → 332) pri uložení pridajú nepotvrdený text cez novú `withPendingItem` v '
+               '`addReviewModalShared.ts` (31 → 42; oriezanie, najviac 120 znakov a 10 položiek); pri neúspešnom uložení text ostane v '
+               'zozname a nepošle sa dvakrát. Rozloženie desktopu, zástupné texty (stále „… a stlačte Enter“, kandidát v '
+               '`poznamky.md`) a odosielanie na server sa nemenili. Overenie podľa kolegu: 30 nových testov (pred opravou padá 14 z 19 '
+               'v hlavnom súbore), mutácie 15 z 15, ESLint, tsc a kontroly prekladov čisté; agent nezávisle: nové testy pred opravou '
+               'padajú (30 zo 42), celý Jest prešiel. Manuálne testy majiteľa prešli. Dopad na E2E: žiadny.'),
 ]

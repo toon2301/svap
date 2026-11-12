@@ -6,8 +6,8 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='10. 11. 2026',
-    kod='`main` `7243f020` (po PR #251, ten mení len E2E)',
+    datum='12. 11. 2026',
+    kod='`main` `65cb117e` (po PR #255, K18)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,97 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('12. 11. 2026',
+      'Vetva 173, doplnok po kontrole CodeRabbitu (PR #256, hlavička `8f5ada90`; CI `checks` a `backend-postgres` zelené, '
+      'Codex bez nálezov, názov PR „173“ je len neurčitá kontrola). (1) Tri pripomienky CodeRabbitu sú platné a opravené: '
+      'karta K19 hovorila, že existujúce testy prejdú bez zmeny, hoci rozšírená odpoveď `push/preferences/` zmení presné '
+      'porovnanie dvoch kľúčov v `test_dashboard_settings_preferences.py` (štyri tvrdenia; karta teraz povoľuje len ich '
+      'úpravu a spätnú kompatibilitu opisuje ako zachovanie pôvodných dvoch kľúčov); záver pri 223 o vylúčení zastaranej '
+      'pamäte platí len vtedy, keď bola cookie v relácii aspoň raz čitateľná (`getCsrfToken()` inak vráti token z odpovede '
+      'z pamäte); `PushPreferencesSerializer` neznáme kľúče pri známom kľúči ticho ignoruje (agent overil v kóde), preto '
+      'karta K19 žiada odmietnuť každý neznámy kľúč a test zmiešanej požiadavky (jediný klient posiela vždy jeden známy '
+      'kľúč). (2) Rozhodnutie R38: majiteľ nález 311 pri používaní nezaregistroval a nechce riskovať nové chyby v spoločnom '
+      'hooku `useIsMobile()`, preto sa nález uzatvára; ak sa prejav objaví, dá vedieť a otvorí sa nový nález s odkazom na '
+      '311. Z K17 tým nezostáva nič otvorené. (3) Druhé kolo CodeRabbitu (09:50 UTC, hlavička `f9ca9ebe`) malo dve drobné '
+      'pripomienky k textu pri 223 a 245, obe platné a opravené: tvrdenie, odkiaľ pochádza hlavička `X-CSRFToken`, je teraz '
+      'podmienené stavom `cookieWasReadable` (aj pri 245) a úspešné `GET /api/auth/csrf-token/` v logu servera sa nepokladá '
+      'za dôkaz, že prehliadač cookie uložil alebo neskôr poslal. Dopad na E2E: žiadny.'),
+    ('12. 11. 2026',
+      'Vetva 173, doplnok po K18 (vychádza z `main` `65cb117e`, teda po PR #255; main je zlúčený do vetvy). (1) K18 (PR '
+      '#255, zlúčené 12. 11. 2026 o 07:02 UTC; 3 commity): hotové 326 a 327, z 325 je hotová backendová časť (odpoveď 204 '
+      'bez tela). Agent vetvu pred otvorením PR skontroloval (hlavička PR `7482f0a8` je tá istá): backendové testy recenzií '
+      '45 prešlo, celý Jest 577 sád a 8 636 testov, tsc, ESLint a kontroly prekladov čisté, nové testy pred opravou padajú. '
+      'CI (`checks`, `backend-postgres`) zelené; Codex (P1) aj CodeRabbit (Major) mali po jednej pripomienke k pravidlu 500 '
+      'riadkov pri `SkillsModuleRouter.tsx`, ktorú majiteľ zodpovedal udelením výnimky R37 (a), CodeRabbit to vzal na '
+      'vedomie; názov PR „K18“ bez popisu je len neurčitá kontrola. Manuálne testy majiteľa prešli. Kolega pri 325 živo '
+      'overil príčinu na produkčnom builde Next s gunicornom (zlyháva už samotný DELETE, nie až nasledujúci GET) a ohlásil '
+      'dva kandidáty bez čísla: zástupné texty „… a stlačte Enter“ a 511 riadkov v `reviews.py` (obe v `poznamky.md`). Z '
+      '325 zostáva toast „Recenzia bola vymazaná.“ (R37 c), ošetrenie zlyhania načítania (R37 b) sa nerobí, lebo príznaky '
+      'zmizli. (2) Výsledok Codexa: dym na `main` `65cb117e` prešiel bez pádu (41 / 0 / 10 za 1 min 51 s); pád otvorenia '
+      'konverzácie z K16 sa nezopakoval (doplnok v 223); plný beh čaká na okno. (3) Poradie: K19 (etapy 1 a 2 nálezu 321, '
+      'backend) je ďalšia, K20 bude etapa 3 spolu s 319 a K21 toast pri 325. (4) Postup od K15: nové číslované nálezy z '
+      'dávky 0 (325 až 327 vznikli z ručných testov po K17), samostatná strana nebola potrebná, chyby zachytené dymovým '
+      'testom 0; odporúčanie agenta je postup ponechať. Dopad na E2E: žiadny.'),
+    ('11. 11. 2026',
+      'Vetva 173, doplnok po odpovedi majiteľa na R37 (všetky tri áno). (a) Výnimka pre jeden riadok v '
+      '`SkillsModuleRouter.tsx` (326) s podmienkami R31, takže 326 už nečaká na rozhodnutie. (b) Výnimka pre frontendovú '
+      'časť 325 (`OfferReviewsView.tsx`, 692 riadkov) po nasadení backendovej opravy a ručnom overení; nová logika do '
+      'nového súboru, pôvodný nesmie narásť. (c) Toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (nový kľúč v šiestich '
+      'jazykoch). Agent odpoveď vykladá tak, že toast ide v každom prípade a ošetrenie zlyhania načítania len ak príznaky '
+      'po oprave backendu ostanú. Karta K18 je upravená (326 bez čakania); frontendová časť 325 ide samostatnou kartou po '
+      'overení. Nová vetva sa nezakladá: zápis ide do vetvy 173. Dopad na E2E: žiadny.'),
+    ('11. 11. 2026',
+      'Vetva 173, doplnok z 11. 11. 2026 (vychádza z `main` `f9b2a1d4`, teda po PR #254). (1) Ručné testy majiteľa po K17 '
+      'našli tri chyby: po vymazaní recenzie ostane okno aj recenzia a ukáže sa chybový toast (325), zmazanie jednej fotky '
+      'v mobilnej úprave ponuky zmaže z editora vizuálne všetky (326) a plus či mínus v recenzii sa na mobile nedá potvrdiť '
+      '(327). Agent ich zmapoval v kóde a žiadna nie je regresia z K17 (K17 menila len chybové vetvy a tieto miesta sú '
+      'staršie). Príčiny: 325 odpoveď 204 s telom pri mazaní recenzie (jediná v backende), po ktorej zlyhá nasledujúca '
+      'požiadavka cez proxy Next.js (agent reprodukoval mechanizmus s gunicornom 23 a Node 22; v produkcii nepotvrdené), '
+      '326 `return data?.images || []` pri odpovedi 204 bez tela (hook nahradí fotky prázdnym poľom), 327 pridanie položky '
+      'len klávesom Enter a zahodenie nepotvrdeného textu. (2) Nová dávka K18 (327, backendová časť 325, potom 326; karta '
+      '`karty/K18.md`) predbieha etapy 321, ktoré sa presúvajú na K19 (karta `karty/K19.md`). (3) Nové rozhodnutie R37: '
+      'výnimky z pravidla 500 riadkov pre jeden riadok v `SkillsModuleRouter.tsx` (326) a pre prípadnú frontendovú časť 325 '
+      'a otázka, či má po vymazaní recenzie pribudnúť toast. (4) Nový balík „Recenzie“ v skupine PRED NASADENÍM. Dopad na '
+      'E2E tejto vetvy: žiadny; špecy neovládajú mazanie recenzie ani fotky, ani plusy a mínusy.'),
+    ('10. 11. 2026',
+     'Vetva 173, doplnok z večera 10. 11. 2026 (vychádza z `main` `f9b2a1d4`, teda po PR #254; main je zlúčený do vetvy). '
+     '(1) Rozhodnutia majiteľa: R34 (priradenie typov ku kategóriám podľa návrhu s dvoma úpravami: lajky odpovedí na '
+     'komentáre patria do „Páči sa mi to pre komentáre“, agent overil, že už dnes vytvárajú upozornenie, a kategória „Páči '
+     'sa mi to a komentáre“ sa premenuje, agent navrhuje „Označenie a zdieľanie príspevku“, a dostane nový opis), R35 '
+     '(hlavný vypínač „Vypnúť všetko“ vypne všetky možnosti v Upozorneniach okrem Správ) a R36 (a) (výzva na povolenie '
+     'push). Majiteľ zároveň potvrdil, že postup od K15 ostáva. (2) K17 (PR #254, zlúčené 10. 11. 2026 o 19:15 UTC; 10 '
+     'commitov, CI zelené, jedna pripomienka CodeRabbitu opravená v `69231ddc`, Codex bez nálezov): hotové 302 (osem '
+     '`alert()` ako toast, každé miesto vo vlastnom commite) a 312; mapovanie 311 je hotové a čaká na súhlas majiteľa s '
+     'opravou v hooku. Agent po zlúčení porovnal diff troch súborov nad 500 riadkov riadok po riadku (R31): len importy, '
+     'nahradené riadky a päť zastaraných komentárov `eslint-disable-next-line no-alert`; počty riadkov 583 → 580, 692 → 692, '
+     '638 → 639; jeden riadok `SkillsModuleRouter.tsx:461` je mimo pôvodného rozsahu (na žiadosť majiteľa, doplnenie R31). '
+     'Kolega: štyri `alert()` v `SkillsModuleRouter.tsx` boli cez rozhranie nedosiahnuteľné (poznámka); slovenské texty v '
+     '`cs.json` patria do 176 a R2 (agent overil čísla). Ručný test K17 čaká. (3) Výsledok Codexa po K16 (okno 16:35 až '
+     '17:20 UTC): dym 40 / 1 / 10, celý beh 385 / 9 / 368 (nie je prijatý), osem nových pádov a pri trojnásobnom opakovaní '
+     '21 prešlo, 3 preskočené, 0 padlo; dve nové udalosti 401 a 403 s prázdnymi cookies (223); 59 testov preskakuje pre '
+     'chýbajúce dáta, na ich prípravu treba dohodu s majiteľom. (4) Etapy nálezu 321: dávka K19 (etapy 1 a 2, backend) má '
+     'kartu `karty/K19.md` (v tom čase pod názvom K18; premenované 11. 11. 2026). Dopad na E2E tejto vetvy: žiadny.'),
+    ('10. 11. 2026',
+     'Vetva 173 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `29052576`, teda po PR #253). (1) Zápis '
+     'šestnástej práce kolegu: K16 (PR #253, zlúčené 10. 11. 2026 o 11:03 UTC; 4 commity: tri na nález a JSDoc po kontrole '
+     'pokrytia docstringov od CodeRabbit; 9 súborov, žiadny nad 500 riadkov). Agent ju overil z GitHubu bez samostatného '
+     'výsledku dávky: CI (`checks` aj `backend-postgres`) prešlo, Codex bol bez nálezov, riadkové pripomienky bota nie sú a '
+     'texty commitov nesú overenie, mutácie aj odchýlky od karty. Hotové sú 308 (s odchýlkou: posun pri výmene kostry za '
+     'voľbu ostáva, CLS 0,0334 na mobile), 309 (cena: rezerva 18 px pod tlačidlom) a 310; mapovanie 319 ostáva, výsledok od '
+     'kolegu ešte nedošiel. Majiteľ oznámil, že nasadenie aj manuálne testy prešli bez nových nálezov; kolega nahlásil dve '
+     'poznámky bez čísla (odznak „0 / 5“ pri chybe načítania a zvyšný posun kostry Správ). (2) Odpovede majiteľa k 223: '
+     '`NEXT_PUBLIC_API_URL` vo frontende na Railway je `/api` (API cez rovnaký pôvod, takže oprava K14 platí aj v testovanom '
+     'prostredí); či 8. 11. o 19:29 UTC bežal Codexov beh, nevie. Agent z toho a z `csrf.ts` odvodil, že hlavička '
+     '`X-CSRFToken` pri prázdnych cookies sedí na to, že prehliadač cookie z odpovede neuložil alebo nepripojil (ak bola cookie v '
+     'relácii aspoň raz čitateľná; inak mohla ísť aj zastaraná hlavička z pamäte, pozri 223); nález 223 '
+     'ostáva otvorený a má nový krok (logy Railway: `GET /api/auth/csrf-token/` tesne pred obnovou). Codex čaká na okno po '
+     'nasadení K16 (dym `@smoke`, potom plný beh); jeho návrhy (natívny beh na Windows, doplnenie dôkazov obnovy) sú v 223. '
+     '(3) Mapovanie nálezu 321 (kategórie upozornení) na žiadosť majiteľa vrátane požiadavky, aby boli všetky upozornenia '
+     'pre nového používateľa predvolene zapnuté: server to už dnes spĺňa pre obe existujúce voľby, nové kategórie sa majú '
+     'ukladať v tvare „zapnuté, kým používateľ nevypne“ (bez dátovej migrácie); plán má štyri etapy a tri rozhodnutia R34 až '
+     'R36. (4) Dávka K17 (302 s výnimkou R31, 311, 312) má kartu `karty/K17.md`. (5) Skúška postupu po K15 a K16: nové '
+     'číslované nálezy 0 a chyby zachytené dymovým testom 0, výsledok dávky z PR stačil (samostatná strana len pri 319); '
+     'odporúčanie agenta je postup ponechať. Dopad na E2E tejto vetvy: žiadny.'),
     ('10. 11. 2026',
      'Vetva 172, doplnok po kontrole CodeRabbitu (PR #252) a logoch majiteľa. (1) CodeRabbit: tri pripomienky platné a opravené '
      '(záver pri 223 nesmie z chýbajúceho cookie vylúčiť aplikačnú príčinu; počet 403 mimo testov nevylučuje dopad na '
@@ -181,17 +272,17 @@ PORADIE = [
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
          polozky=['245', '185', 'OW-07', '266', '304', '31', '189', '209', '223', '225', '295']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
-         co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14 a jej zvyšky sú 308 až 311; 287 a 288 '
+         co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14, jej zvyšky 308 až 310 sú hotové v K16 a 311 je zatvorený rozhodnutím R38; 287 a 288 '
             'čakajú na rozhodnutie R28), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
             '(92, 207; 301 je hotová v K13), ponuky a tagy (322 a 323 sú hotové v K15), '
-            'natívne okná `alert()` namiesto toastov (302: zostáva osem, výnimka R31 udelená s maximálnou opatrnosťou), Upozornenia a '
-            'push (319 prepínač offline, 321 dokončiť kategórie upozornení pred štartom, R32 (a); najprv mapovanie), Upozornenia '
+            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), toast po vymazaní recenzie (325; 326 a 327 sú hotové v K18), Upozornenia a '
+            'push (319 prepínač offline, 321 dokončiť kategórie upozornení pred štartom, R32 (a); plán po etapách je hotový, R34 až R36 sú zodpovedané a etapy 1 a 2 sú dávka K19), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '308', '309', '310', '311', '81', '272', '92', '207', '302', '319', '321', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '321', '325', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
@@ -282,7 +373,7 @@ DECISIONS = [
          kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]
 
-# Rozhodnutia R13–R33 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+# Rozhodnutia R13–R38 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
 from rozhodnutia_nastenka import DECISIONS_NASTENKA  # noqa: E402
 
 DECISIONS.extend(DECISIONS_NASTENKA)
