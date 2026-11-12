@@ -336,6 +336,20 @@ class UserProfile(models.Model):
     # Push notifikácie riadi samostatný push_notifications toggle.
     in_app_notifications = models.BooleanField(_("In-app notifikácie"), default=True)
     push_notifications = models.BooleanField(_("Push notifikácie"), default=True)
+    # Kategórie upozornení (nález 321): každú sa dá vypnúť zvlášť a všetky sú
+    # predvolene zapnuté. Vypnutá kategória znamená, že upozornenie jej typov sa
+    # vôbec neuloží (rovnako ako pri in_app_notifications).
+    notify_likes = models.BooleanField(_("Upozornenia: Páči sa mi to"), default=True)
+    notify_comment_likes = models.BooleanField(
+        _("Upozornenia: Páči sa mi to pre komentáre"), default=True
+    )
+    notify_comments = models.BooleanField(_("Upozornenia: Komentáre"), default=True)
+    notify_tags_and_shares = models.BooleanField(
+        _("Upozornenia: Označenia a zdieľania"), default=True
+    )
+    notify_skill_requests = models.BooleanField(
+        _("Upozornenia: Žiadosť o zručnosť"), default=True
+    )
 
     # Súkromie
     show_email = models.BooleanField(_("Zobraziť email"), default=False)

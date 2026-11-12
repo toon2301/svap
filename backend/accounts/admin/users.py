@@ -120,7 +120,20 @@ class UserProfileAdmin(admin.ModelAdmin):
     fieldsets = (
         (_("Pouzivatel"), {"fields": ("user",)}),
         (_("Preferencie"), {"fields": ("preferred_communication",)}),
-        (_("Notifikacie"), {"fields": ("in_app_notifications", "push_notifications")}),
+        (
+            _("Notifikacie"),
+            {
+                "fields": (
+                    "in_app_notifications",
+                    "push_notifications",
+                    "notify_likes",
+                    "notify_comment_likes",
+                    "notify_comments",
+                    "notify_tags_and_shares",
+                    "notify_skill_requests",
+                )
+            },
+        ),
         (_("Sukromie"), {"fields": ("show_email", "show_phone")}),
         (
             _("Dolezite datumy"),
