@@ -27,11 +27,14 @@ export interface UpdatePreferenceOptions {
   onError?: (message: string) => void;
 }
 
-/** Požiadavka na uloženie jednej voľby, ktorá práve beží (jedna na voľbu; neskoršia zmena ju nahradí). */
-interface SaveRequest {
-  id: number;
-  value: boolean;
-  promise: Promise<boolean>;
+/** Fronta zápisov jednej voľby: požiadavky idú po jednej a čakajúce zmeny sa zlučujú do najnovšej. */
+interface WriteQueue {
+  /** Poradové číslo najnovšej zmeny; staršie čakajúce zmeny sa preskočia. */
+  latestId: number;
+  /** Hodnota najnovšej zmeny, teda to, čo sa má nakoniec uložiť. */
+  desired: boolean;
+  /** Dokončí sa, keď sa vybavia zápisy tejto voľby až po najnovšiu zmenu (výsledok: je uložená). */
+  tail: Promise<boolean>;
 }
 
 /** Výsledok `useNotificationPreferences`: spoločný stav, ktorý zdieľajú Správy, hlavný vypínač a kategórie. */
@@ -51,9 +54,14 @@ export function isBrowserOffline(): boolean {
  * Zmena jednej voľby pošle `PATCH` len s jej kľúčom (server odmietne každý neznámy kľúč), hodnotu v rozhraní prepne hneď
  * a po zlyhaní vráti len túto voľbu na poslednú potvrdenú hodnotu, nie celý predchádzajúci stav, takže neprepíše inú,
  * medzitým uloženú zmenu. Z odpovede servera sa použije len uložená voľba. Pri vypnutom internete sa nič neodošle,
- * hodnota sa nezmení a hneď sa ukáže preložená chyba. Rovnaká zmena, ktorá už beží, sa neposiela znova (stlačenie aj
- * kliknutie na ten istý riadok), a zmena na hodnotu, ktorú voľba už má, nespraví nič. Pri dvoch zmenách tej istej voľby
- * rozhoduje neskoršia a výsledok staršej sa ignoruje. Časový limit požiadavky ostáva globálny (`lib/api.ts`).
+ * hodnota sa nezmení a hneď sa ukáže preložená chyba. Rovnaká zmena, ktorá už beží alebo čaká, sa neposiela znova
+ * (stlačenie aj kliknutie na ten istý riadok), a zmena na hodnotu, ktorú voľba už má, nespraví nič.
+ *
+ * Zápisy tej istej voľby idú po jednej (PR 258): kým beží `PATCH`, ďalšia zmena tej istej voľby čaká a odošle sa až po
+ * ňom, takže návrat po chybe vychádza z hodnoty, ktorú server skutočne potvrdil, aj keď predchádzajúci zápis uspel.
+ * Čakajúce zmeny sa zlučujú: odošle sa len najnovšia, a to len ak sa líši od potvrdenej hodnoty. Chyba sa ohlási len pri
+ * poslednej zmene (ak sa medzitým zmenilo, čo používateľ chce, o zlyhaní staršieho zápisu sa nehlási nič). Zápisy
+ * rôznych volieb sa nezdržiavajú. Časový limit požiadavky ostáva globálny (`lib/api.ts`).
  *
  * `loading` platí len pre úvodné načítanie, `loadFailed` pre jeho zlyhanie (hodnoty sú vtedy predvolené, nie zo servera),
  * `isSaving(key)` pre rozpracovanú zmenu danej voľby. `error` nesie chybu načítania alebo uloženia, ktorá nešla cez
@@ -66,8 +74,17 @@ export function useNotificationPreferences() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const requestsRef = useRef<Partial<Record<NotificationPreferenceKey, SaveRequest>>>({});
-  const requestCounterRef = useRef(0);
+  // Zrkadlo `confirmed` pre asynchrónne čítanie: fronta zápisov potrebuje poslednú potvrdenú hodnotu aj v čase, keď
+  // je uzáver vykreslenia už zastaraný. Zapisuje sa len v obsluhách a asynchrónnych návratoch, nie počas vykresľovania.
+  const confirmedRef = useRef<NotificationPreferencesState>(DEFAULT_PREFERENCES);
+  const writesRef = useRef<Partial<Record<NotificationPreferenceKey, WriteQueue>>>({});
+  const writeCounterRef = useRef(0);
+
+  /** Zapíše potvrdené hodnoty zo servera do stavu aj do zrkadla, z ktorého číta fronta zápisov. */
+  function setConfirmedState(next: NotificationPreferencesState) {
+    confirmedRef.current = next;
+    setConfirmed(next);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +96,9 @@ export function useNotificationPreferences() {
           endpoints.push.preferences,
         );
         if (!cancelled) {
-          setConfirmed(mapApiPayloadToState(response.data));
+          const loaded = mapApiPayloadToState(response.data);
+          confirmedRef.current = loaded;
+          setConfirmed(loaded);
         }
       } catch (loadError) {
         console.error('Failed to load notification preferences:', loadError);
@@ -120,12 +139,10 @@ export function useNotificationPreferences() {
       return false;
     }
 
-    const running = requestsRef.current[key];
-    if (running?.value === value) {
-      return running.promise;
-    }
-    if (!running && preferences[key] === value) {
-      return true;
+    const queue = writesRef.current[key];
+    // Porovnáva sa s hodnotou, ktorá sa nakoniec uloží (najnovšia zmena vo fronte), inak s potvrdenou zo servera.
+    if ((queue ? queue.desired : confirmedRef.current[key]) === value) {
+      return queue ? queue.tail : true;
     }
 
     /** Ukáže chybu cez `onError` volajúceho, inak cez `error` hooku; vráti `false` ako výsledok zmeny. */
@@ -144,18 +161,18 @@ export function useNotificationPreferences() {
       );
     }
 
-    const id = requestCounterRef.current + 1;
-    requestCounterRef.current = id;
+    const id = writeCounterRef.current + 1;
+    writeCounterRef.current = id;
     setPending((current) => ({ ...current, [key]: value }));
     if (!options.onError) {
       setSaveError(null);
     }
 
-    /** Táto požiadavka je stále najnovšia pre danú voľbu (neskoršia zmena ju nenahradila). */
-    const isLatest = () => requestsRef.current[key]?.id === id;
-    /** Ukončí požiadavku: odstráni ju z bežiacich a rozpracovanú hodnotu zo zobrazených. */
+    /** Táto zmena je stále najnovšia pre danú voľbu (neskoršia ju nenahradila). */
+    const isLatest = () => writesRef.current[key]?.latestId === id;
+    /** Ukončí zápisy voľby: fronta sa vyprázdni a zobrazí sa potvrdená hodnota. */
     const finish = () => {
-      delete requestsRef.current[key];
+      delete writesRef.current[key];
       setPending((current) => {
         const next = { ...current };
         delete next[key];
@@ -163,18 +180,28 @@ export function useNotificationPreferences() {
       });
     };
 
-    const promise = (async (): Promise<boolean> => {
+    /** Vybaví túto zmenu, keď príde na rad (po predchádzajúcich zápisoch tej istej voľby). */
+    const write = async (): Promise<boolean> => {
+      if (!isLatest()) {
+        // Nahradila ju novšia zmena: odošle sa len tá.
+        return false;
+      }
+      if (confirmedRef.current[key] === value) {
+        // Server túto hodnotu už má (napr. po zlyhaní staršieho zápisu používateľ vrátil pôvodnú), nie je čo posielať.
+        finish();
+        return true;
+      }
       try {
         const response = await api.patch<NotificationPreferencesApiPayload>(
           endpoints.push.preferences,
           mapStatePatchToApiPatch(key, value),
         );
+        const saved = response.data?.[PREFERENCE_API_KEYS[key]];
+        setConfirmedState({
+          ...confirmedRef.current,
+          [key]: typeof saved === 'boolean' ? saved : value,
+        });
         if (isLatest()) {
-          const saved = response.data?.[PREFERENCE_API_KEYS[key]];
-          setConfirmed((current) => ({
-            ...current,
-            [key]: typeof saved === 'boolean' ? saved : value,
-          }));
           finish();
         }
         return true;
@@ -192,9 +219,13 @@ export function useNotificationPreferences() {
         }
         return false;
       }
-    })();
-    requestsRef.current[key] = { id, value, promise };
-    return promise;
+    };
+
+    // Fronta sa zaeviduje skôr, než sa zápis spustí (`isLatest` ju hľadá); prvý zápis ide hneď, ďalšie po predchádzajúcom.
+    const entry: WriteQueue = { latestId: id, desired: value, tail: Promise.resolve(true) };
+    writesRef.current[key] = entry;
+    entry.tail = (queue ? queue.tail.then(write) : write()).catch(() => false);
+    return entry.tail;
   }
 
   const error =

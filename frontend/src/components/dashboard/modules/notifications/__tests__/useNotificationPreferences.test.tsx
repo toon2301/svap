@@ -28,7 +28,7 @@ jest.mock('@/lib/api', () => ({
  * Hook `useNotificationPreferences` pre sedem volieb upozornení (nález 321, etapa 3a, a nález 319). Server vracia a
  * prijíma `in_app_notifications`, `push_notifications` a päť kategórií `notify_*`. Zmena jednej voľby pošle `PATCH` len
  * s jej kľúčom (server odmietne každý neznámy kľúč), zlyhanie vráti len túto hodnotu (nie celý objekt) a pri vypnutom
- * internete sa nič neodošle.
+ * internete sa nič neodošle. Poradie zápisov tej istej voľby (fronta) pokrýva `useNotificationPreferences.writes.test.tsx`.
  */
 type ServerState = {
   in_app_notifications: boolean;
@@ -321,35 +321,6 @@ describe('useNotificationPreferences: zlyhanie vráti len zmenenú hodnotu', () 
 
     expect(result.current.preferences.notifyComments).toBe(false);
     expect(result.current.preferences.notifyLikes).toBe(false);
-  });
-
-  it('dve zmeny tej istej voľby: neskoršia vyhráva a zlyhanie staršej požiadavky ju nevráti ani neohlási', async () => {
-    const calls = mockManualPatch();
-    const { result } = await renderLoaded();
-    const onError = jest.fn();
-
-    act(() => {
-      void result.current.updatePreference('notifyLikes', false, { onError });
-    });
-    act(() => {
-      void result.current.updatePreference('notifyLikes', true);
-    });
-    expect(calls).toHaveLength(2);
-    expect(result.current.preferences.notifyLikes).toBe(true);
-
-    await act(async () => {
-      calls[0].fail({ isAxiosError: true, message: 'Network Error' });
-    });
-    expect(result.current.preferences.notifyLikes).toBe(true);
-    // Novšia požiadavka ešte beží: voľba sa stále ukladá a o staršej zlyhanej sa nehlási nič.
-    expect(result.current.isSaving('notifyLikes')).toBe(true);
-    expect(onError).not.toHaveBeenCalled();
-
-    await act(async () => {
-      calls[1].respond(SERVER_DEFAULT);
-    });
-    expect(result.current.preferences.notifyLikes).toBe(true);
-    expect(result.current.isSaving('notifyLikes')).toBe(false);
   });
 
   it('sieťová chyba bez odpovede servera dá preložený text, nie anglické „Network Error“', async () => {

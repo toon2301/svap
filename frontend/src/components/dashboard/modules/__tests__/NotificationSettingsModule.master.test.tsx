@@ -326,6 +326,38 @@ describe('NotificationSettingsModule: hlavný vypínač pri chybe a počas nač�
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('rýchle dvojité prepnutie: prvý zápis uspeje a druhý zlyhá, hlavný vypínač ukazuje hodnotu uloženú na serveri (PR 258)', async () => {
+    mockServer();
+    render(<NotificationSettingsModule />);
+    await waitForLoaded();
+    const first = deferred<{ data: Server }>();
+    let patchCount = 0;
+    jest.mocked(api.patch).mockImplementation(async () => {
+      patchCount += 1;
+      if (patchCount === 1) return first.promise;
+      throw { isAxiosError: true, message: 'Network Error' };
+    });
+
+    fireEvent.click(master('desktop'));
+    fireEvent.click(master('desktop'));
+
+    expect(api.patch).toHaveBeenCalledTimes(1);
+    expect(isMasterOn('desktop')).toBe(false);
+    await act(async () => {
+      server = { ...server, in_app_notifications: false };
+      first.resolve({ data: { ...server } });
+    });
+
+    // Prvý zápis uložil `in_app_notifications` false (hlavný vypínač zapnutý), druhý zlyhal: vypínač zostane zapnutý.
+    await waitFor(() => expect(api.patch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(isMasterOn('desktop')).toBe(true));
+    LAYOUTS.forEach((layout) => {
+      expect(isMasterOn(layout)).toBe(true);
+      expect(option(category('likes', layout), 'Vypnuté')).toBeDisabled();
+    });
+    expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+
   it('pri vypnutom internete sa nič neodošle, hlavný vypínač sa nezmení a toast je preložený (319)', async () => {
     mockServer();
     render(<NotificationSettingsModule />);

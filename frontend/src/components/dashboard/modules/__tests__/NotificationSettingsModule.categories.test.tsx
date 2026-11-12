@@ -340,6 +340,36 @@ describe('NotificationSettingsModule: chyba uloženia kategórie', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('rýchle dvojité prepnutie: prvý zápis uspeje a druhý zlyhá, riadok ukazuje hodnotu uloženú na serveri (PR 258)', async () => {
+    mockServer();
+    render(<NotificationSettingsModule />);
+    await waitFor(() => expect(isSelected(option('likes', 'desktop', 'Zapnuté'))).toBe(true));
+    const first = deferred<{ data: Server }>();
+    let patchCount = 0;
+    jest.mocked(api.patch).mockImplementation(async () => {
+      patchCount += 1;
+      if (patchCount === 1) return first.promise;
+      throw { isAxiosError: true, message: 'Network Error' };
+    });
+
+    press(option('likes', 'desktop', 'Vypnuté'));
+    press(option('likes', 'desktop', 'Zapnuté'));
+
+    // Druhý zápis čaká na prvý: na server zatiaľ odišiel len jeden PATCH a rozhranie ukazuje poslednú voľbu.
+    expect(api.patch).toHaveBeenCalledTimes(1);
+    expect(isSelected(option('likes', 'desktop', 'Zapnuté'))).toBe(true);
+    await act(async () => {
+      server = { ...server, notify_likes: false };
+      first.resolve({ data: { ...server } });
+    });
+
+    // Prvý zápis uložil „Vypnuté“, druhý zlyhal: riadok sa vráti na to, čo má server, nie na pôvodné „Zapnuté“.
+    await waitFor(() => expect(api.patch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(isSelected(option('likes', 'desktop', 'Vypnuté'))).toBe(true));
+    LAYOUTS.forEach((layout) => expect(isSelected(option('likes', layout, 'Vypnuté'))).toBe(true));
+    expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+
   it('zlyhanie jednej kategórie nevráti inú, medzitým uloženú', async () => {
     mockServer();
     render(<NotificationSettingsModule />);
