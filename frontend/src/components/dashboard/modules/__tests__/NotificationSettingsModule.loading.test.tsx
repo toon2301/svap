@@ -246,7 +246,7 @@ describe('NotificationSettingsModule: úvodné načítanie (nález 286)', () => 
     });
   });
 
-  it('pri zlyhaní načítania kostra zmizne, ukáže sa chyba a riadky s predvolenou voľbou', async () => {
+  it('pri zlyhaní načítania kostra zmizne, ukáže sa chyba a zakázané riadky bez vybranej voľby', async () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const preferences = deferPreferences();
     render(<NotificationSettingsModule />);
@@ -258,9 +258,13 @@ describe('NotificationSettingsModule: úvodné načítanie (nález 286)', () => 
       expect(within(box).queryByTestId('section-options-skeleton')).not.toBeInTheDocument();
       expect(within(box).queryByTestId('notifications-push-skeleton-mobile')).not.toBeInTheDocument();
       expect(within(box).getAllByRole('button')).toHaveLength(2);
-      expect(within(box).getByText('Nepodarilo sa nacitat nastavenia upozorneni.')).toBeInTheDocument();
+      // Predvolené „Vypnuté“ nie je stav servera, preto nie je vybraný žiadny riadok (PR 258).
+      within(box)
+        .getAllByRole('button')
+        .forEach((button) => expect(isSelected(button)).toBe(false));
+      expect(within(box).getByText('Nastavenia upozornení sa nepodarilo načítať.')).toBeInTheDocument();
       // Chyba sa pridá do stránky až po zlyhaní, preto musí byť upozornením, ktoré čítač obrazovky oznámi.
-      expect(within(box).getByRole('alert')).toHaveTextContent('Nepodarilo sa nacitat nastavenia upozorneni.');
+      expect(within(box).getByRole('alert')).toHaveTextContent('Nastavenia upozornení sa nepodarilo načítať.');
     });
     consoleError.mockRestore();
   });

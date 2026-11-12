@@ -254,7 +254,7 @@ describe('NotificationSettingsModule', () => {
     await waitFor(() => {
       expect(
         within(getDesktopPushSection()).getByText(
-          'Push notifikacie su v tomto prehliadaci zablokovane. Povol ich v nastaveniach prehliadaca.',
+          'Push notifikácie sú v tomto prehliadači zablokované. Povoľ ich v nastaveniach prehliadača.',
         ),
       ).toBeInTheDocument();
     });
