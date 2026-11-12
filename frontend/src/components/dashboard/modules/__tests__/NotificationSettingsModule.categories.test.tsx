@@ -195,6 +195,22 @@ describe('NotificationSettingsModule: kategórie počas načítania', () => {
     });
   });
 
+  it('premenovaná kategória ukazuje názov a opis označenia a zdieľania príspevku (R34), nie starý „Páči sa mi to a komentáre“', () => {
+    deferPreferences();
+    render(<NotificationSettingsModule />);
+
+    LAYOUTS.forEach((layout) => {
+      const box = category('tags-and-shares', layout);
+      expect(within(box).getByText('Označenie a zdieľanie príspevku')).toBeInTheDocument();
+      expect(
+        within(box).getByText('Keď vás niekto označí v príspevku alebo zdieľa váš príspevok'),
+      ).toBeInTheDocument();
+      expect(within(box).queryByText('Páči sa mi to a komentáre')).not.toBeInTheDocument();
+      expect(within(box).queryByText(/Reakcie a komentáre na fotkách/)).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText('Páči sa mi to a komentáre')).not.toBeInTheDocument();
+  });
+
   it('po načítaní sú hneď vybrané hodnoty zo servera, bez prechodného „Vypnuté“', async () => {
     resetServer({
       notify_likes: false,

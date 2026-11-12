@@ -43,10 +43,10 @@ export function useNotificationCategories(
     {
       id: 'tags-and-shares',
       preference: 'notifyTagsAndShares',
-      title: t('notifications.likesAndComments', 'Páči sa mi to a komentáre'),
+      title: t('notifications.tagsAndShares', 'Označenie a zdieľanie príspevku'),
       description: t(
-        'notifications.likesAndCommentsDesc',
-        'Reakcie a komentáre na fotkách, kde ste označení',
+        'notifications.tagsAndSharesDesc',
+        'Keď vás niekto označí v príspevku alebo zdieľa váš príspevok',
       ),
     },
     {

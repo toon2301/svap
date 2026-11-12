@@ -14,6 +14,41 @@ type Language = keyof typeof LANGUAGES;
 
 const block = (language: Language) => LANGUAGES[language].notifications as Record<string, string>;
 
+describe('notifications.tagsAndShares: premenovaná kategória (R34)', () => {
+  const TITLES: Record<Language, string> = {
+    sk: 'Označenie a zdieľanie príspevku',
+    cs: 'Označení a sdílení příspěvku',
+    en: 'Post tags and shares',
+    pl: 'Oznaczenia i udostępnienia posta',
+    de: 'Markieren und Teilen von Beiträgen',
+    hu: 'Bejegyzés megjelölése és megosztása',
+  };
+  const DESCRIPTIONS: Record<Language, string> = {
+    sk: 'Keď vás niekto označí v príspevku alebo zdieľa váš príspevok',
+    cs: 'Když vás někdo označí v příspěvku nebo sdílí váš příspěvek',
+    en: 'When someone tags you in a post or shares your post',
+    pl: 'Gdy ktoś oznaczy Cię w poście lub udostępni Twój post',
+    de: 'Wenn Sie jemand in einem Beitrag markiert oder Ihren Beitrag teilt',
+    hu: 'Amikor valaki megjelöli Önt egy bejegyzésben, vagy megosztja az Ön bejegyzését',
+  };
+
+  it.each(Object.keys(TITLES) as Language[])('%s: názov a opis kategórie označenia a zdieľania príspevku', (language) => {
+    expect(block(language).tagsAndShares).toBe(TITLES[language]);
+    expect(block(language).tagsAndSharesDesc).toBe(DESCRIPTIONS[language]);
+  });
+
+  it.each(Object.keys(TITLES) as Language[])('%s: staré kľúče likesAndComments a likesAndCommentsDesc už neexistujú', (language) => {
+    expect(block(language)).not.toHaveProperty('likesAndComments');
+    expect(block(language)).not.toHaveProperty('likesAndCommentsDesc');
+  });
+
+  it('názvy a opisy sa v jednotlivých jazykoch líšia (nie sú skopírované zo slovenčiny)', () => {
+    const languages = Object.keys(TITLES) as Language[];
+    expect(new Set(languages.map((language) => block(language).tagsAndShares)).size).toBe(languages.length);
+    expect(new Set(languages.map((language) => block(language).tagsAndSharesDesc)).size).toBe(languages.length);
+  });
+});
+
 describe('notifications.turnOffAllDesc: opis hlavného vypínača (R35)', () => {
   const EXPECTED: Record<Language, string> = {
     sk: 'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť budú chodiť ďalej.',

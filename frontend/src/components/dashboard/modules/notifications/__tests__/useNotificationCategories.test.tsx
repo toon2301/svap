@@ -152,7 +152,7 @@ describe('useNotificationCategories', () => {
 
     expect(result.current.map((row) => row.title)).toEqual([
       'Páči sa mi to',
-      'Páči sa mi to a komentáre',
+      'Označenie a zdieľanie príspevku',
       'Komentáre',
       'Páči sa mi to pre komentáre',
       'Žiadosť o zručnosť',
