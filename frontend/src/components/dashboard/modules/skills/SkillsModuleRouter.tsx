@@ -456,7 +456,7 @@ export default function SkillsModuleRouter({
                     const { data } = await api.delete(
                       endpoints.skills.imageDetail(selectedSkillsCategory.id!, imageId),
                     );
-                    return data?.images || [];
+                    return data?.images;
                   } catch (error: unknown) {
                     const msg = getApiErrorMessage(error, t('skills.imageDeleteFailed', 'Odstránenie obrázka zlyhalo.'));
                     throw new Error(msg);
