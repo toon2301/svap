@@ -6,118 +6,36 @@ import MasterToggle from './MasterToggle';
 import OptionRow from './OptionRow';
 import OptionRowsSkeleton from './OptionRowsSkeleton';
 import PushMessagesStatus from './PushMessagesStatus';
-
-interface NotificationsLabels {
-  turnOffAll: string;
-  turnOffAllDesc: string;
-  loadingPreferences: string;
-  messagesPush: string;
-  messagesPushDesc: string;
-  likes: string;
-  likesDesc: string;
-  likesAndComments: string;
-  likesAndCommentsDesc: string;
-  comments: string;
-  commentsDesc: string;
-  likesForComments: string;
-  likesForCommentsDesc: string;
-  skillRequest: string;
-  skillRequestDesc: string;
-}
-
-interface NotificationsState {
-  master: boolean;
-  likes: boolean;
-  likesComments: boolean;
-  comments: boolean;
-  likesForComments: boolean;
-  skillRequest: boolean;
-}
-
-interface NotificationsSetState {
-  setMaster: (value: boolean) => void;
-  setLikes: (value: boolean) => void;
-  setLikesComments: (value: boolean) => void;
-  setComments: (value: boolean) => void;
-  setLikesForComments: (value: boolean) => void;
-  setSkillRequest: (value: boolean) => void;
-}
-
-interface PushMessagesProps {
-  value: boolean;
-  disabled: boolean;
-  loading: boolean;
-  initialLoading?: boolean;
-  error: string | null;
-  onChange: (value: boolean) => void;
-}
+import type {
+  NotificationCategoryRow,
+  NotificationsCommonLabels,
+  NotificationsLabels,
+  NotificationsMaster,
+  PushMessagesProps,
+} from './settingsTypes';
 
 interface MobileProps {
   labels: NotificationsLabels;
-  state: NotificationsState;
-  setState: NotificationsSetState;
-  labelsCommon: {
-    off: string;
-    on: string;
-  };
+  labelsCommon: NotificationsCommonLabels;
+  master: NotificationsMaster;
+  categories: NotificationCategoryRow[];
   pushMessages: PushMessagesProps;
 }
 
 /**
- * Mobilné rozloženie Upozornení (pod lg): hlavný vypínač „Vypnúť všetko“, voľba Správy (push) a ostatné voľby
- * „Vypnuté / Zapnuté“. Kým sa uložená voľba Správ načíta, namiesto jej riadkov je kostra a stavový riadok pod ňou
- * drží výšku, aby sa nič neposúvalo (nález 286). Obal `notifications-push-messages-mobile` je v DOM od prvého snímku.
+ * Mobilné rozloženie Upozornení (pod lg): hlavný vypínač „Vypnúť všetko“, voľba Správy (push) a päť kategórií
+ * „Vypnuté / Zapnuté“. Dostáva už hotové texty a riadky (kategórie s hodnotou, zablokovaním a príznakom načítavania),
+ * nepozná hooky ani server. Kým sa uložená voľba Správ alebo kategória načíta, namiesto jej riadkov je kostra a stavový
+ * riadok pod Správami drží výšku, aby sa nič neposúvalo (nález 286). Obal `notifications-push-messages-mobile` je v DOM
+ * od prvého snímku.
  */
 export default function Mobile({
   labels,
-  state,
-  setState,
   labelsCommon,
+  master,
+  categories,
   pushMessages,
 }: MobileProps) {
-  const sections = [
-    {
-      key: 'likes',
-      title: labels.likes,
-      description: labels.likesDesc,
-      value: state.likes,
-      setValue: setState.setLikes,
-      disabled: state.master,
-    },
-    {
-      key: 'likes-comments',
-      title: labels.likesAndComments,
-      description: labels.likesAndCommentsDesc,
-      value: state.likesComments,
-      setValue: setState.setLikesComments,
-      disabled: state.master,
-    },
-    {
-      key: 'comments',
-      title: labels.comments,
-      description: labels.commentsDesc,
-      value: state.comments,
-      setValue: setState.setComments,
-      disabled: state.master,
-    },
-    {
-      key: 'likes-for-comments',
-      title: labels.likesForComments,
-      description: labels.likesForCommentsDesc,
-      value: state.likesForComments,
-      setValue: setState.setLikesForComments,
-      disabled: state.master,
-    },
-    {
-      key: 'skill-request',
-      title: labels.skillRequest,
-      description: labels.skillRequestDesc,
-      value: state.skillRequest,
-      setValue: setState.setSkillRequest,
-      disabled: state.master,
-    },
-  ];
-
   return (
     <div className="lg:hidden px-4 pt-2 pb-6 text-[var(--foreground)]">
       <div className="space-y-0">
@@ -131,8 +49,8 @@ export default function Mobile({
             </div>
           </div>
           <MasterToggle
-            enabled={state.master}
-            onChange={setState.setMaster}
+            enabled={master.enabled}
+            onChange={master.onChange}
             label=""
             compact
           />
@@ -183,33 +101,43 @@ export default function Mobile({
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700" />
 
-        {sections.map((section) => (
-          <React.Fragment key={section.key}>
-            <div className="p-4 rounded-lg bg-[var(--background)]">
+        {categories.map((category) => (
+          <React.Fragment key={category.id}>
+            <div
+              className="p-4 rounded-lg bg-[var(--background)]"
+              data-testid={`notifications-category-${category.id}-mobile`}
+            >
               <div className="mb-3">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                  {section.title}
+                  {category.title}
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  {section.description}
+                  {category.description}
                 </p>
               </div>
-              <div className="space-y-0">
-                <OptionRow
-                  label={labelsCommon.off}
-                  selected={!section.value}
-                  disabled={section.disabled}
-                  onSelect={() => section.setValue(false)}
+              {category.loading ? (
+                <OptionRowsSkeleton
+                  label={labels.loadingPreferences}
+                  testId={`notifications-category-skeleton-${category.id}-mobile`}
                 />
-                <div className="-mt-1" />
-                <OptionRow
-                  label={labelsCommon.on}
-                  selected={section.value}
-                  disabled={section.disabled}
-                  onSelect={() => section.setValue(true)}
-                  rightDot
-                />
-              </div>
+              ) : (
+                <div className="space-y-0">
+                  <OptionRow
+                    label={labelsCommon.off}
+                    selected={!category.value}
+                    disabled={category.disabled}
+                    onSelect={() => category.onChange(false)}
+                  />
+                  <div className="-mt-1" />
+                  <OptionRow
+                    label={labelsCommon.on}
+                    selected={category.value}
+                    disabled={category.disabled}
+                    onSelect={() => category.onChange(true)}
+                    rightDot
+                  />
+                </div>
+              )}
             </div>
             <div className="border-t border-gray-200 dark:border-gray-700" />
           </React.Fragment>

@@ -6,54 +6,27 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import Desktop from './notifications/Desktop';
 import Mobile from './notifications/Mobile';
-import { usePushMessagesPreference } from './notifications/usePushMessagesPreference';
+import { useNotificationCategories } from './notifications/useNotificationCategories';
+import { useNotificationPreferences } from './notifications/useNotificationPreferences';
+import { usePushMessagesPreferenceWith } from './notifications/usePushMessagesPreference';
 
 type NotificationSettingsModuleProps = {
   onBack?: () => void;
 };
 
+/**
+ * Nastavenia → Upozornenia (nález 321, etapa 3a). Jedno načítanie siedmich volieb zo servera (`useNotificationPreferences`),
+ * z ktorého čerpá voľba Správy (`usePushMessagesPreferenceWith`) aj päť kategórií (`useNotificationCategories`); modul sám
+ * nedrží žiadny stav kategórií, hodnoty, načítavanie, zlyhanie načítania aj ukladanie sú v zdieľanom hooku a rozloženia
+ * `Desktop` a `Mobile` dostávajú len hotové riadky. Hlavný vypínač zatiaľ len lokálne blokuje kategórie (napojenie na
+ * server je ďalší krok, R35).
+ */
 export default function NotificationSettingsModule({ onBack }: NotificationSettingsModuleProps = {}) {
   const { t } = useLanguage();
-  const pushMessages = usePushMessagesPreference();
-
-  const [masterToggleEnabled, setMasterToggleEnabled] = useState(false);
-  const [likesEnabled, setLikesEnabled] = useState(false);
-  const [likesCommentsEnabled, setLikesCommentsEnabled] = useState(false);
-  const [commentsEnabled, setCommentsEnabled] = useState(false);
-  const [likesForCommentsEnabled, setLikesForCommentsEnabled] = useState(false);
-  const [skillRequestEnabled, setSkillRequestEnabled] = useState(false);
-
-  const [previousStates, setPreviousStates] = useState({
-    likes: false,
-    likesComments: false,
-    comments: false,
-    likesForComments: false,
-    skillRequest: false,
-  });
-
-  const handleMasterToggleChange = (enabled: boolean) => {
-    if (enabled) {
-      setPreviousStates({
-        likes: likesEnabled,
-        likesComments: likesCommentsEnabled,
-        comments: commentsEnabled,
-        likesForComments: likesForCommentsEnabled,
-        skillRequest: skillRequestEnabled,
-      });
-      setLikesEnabled(false);
-      setLikesCommentsEnabled(false);
-      setCommentsEnabled(false);
-      setLikesForCommentsEnabled(false);
-      setSkillRequestEnabled(false);
-    } else {
-      setLikesEnabled(previousStates.likes);
-      setLikesCommentsEnabled(previousStates.likesComments);
-      setCommentsEnabled(previousStates.comments);
-      setLikesForCommentsEnabled(previousStates.likesForComments);
-      setSkillRequestEnabled(previousStates.skillRequest);
-    }
-    setMasterToggleEnabled(enabled);
-  };
+  const preferences = useNotificationPreferences();
+  const pushMessages = usePushMessagesPreferenceWith(preferences);
+  const [masterEnabled, setMasterEnabled] = useState(false);
+  const categories = useNotificationCategories(preferences, masterEnabled);
 
   const labels = {
     title: t('notifications.title', 'Upozornenia'),
@@ -72,37 +45,6 @@ export default function NotificationSettingsModule({ onBack }: NotificationSetti
       'notifications.messagesPushDesc',
       'Zapnite alebo vypnite upozornenia na  spravy, ked nie ste v aktivnom chate.',
     ),
-    likes: t('notifications.likes', 'Paci sa mi to'),
-    likesDesc: t(
-      'notifications.likesDesc',
-      "Zapnite alebo vypnite upozornenia na 'Paci sa mi to'.",
-    ),
-    likesAndComments: t(
-      'notifications.likesAndComments',
-      'Paci sa mi to a komentare',
-    ),
-    likesAndCommentsDesc: t(
-      'notifications.likesAndCommentsDesc',
-      'Reakcie a komentare na fotkach, kde ste oznaceni',
-    ),
-    comments: t('notifications.comments', 'Komentare'),
-    commentsDesc: t(
-      'notifications.commentsDesc',
-      'Zapnite alebo vypnite upozornenia na komentare.',
-    ),
-    likesForComments: t(
-      'notifications.likesForComments',
-      'Paci sa mi to pre komentare',
-    ),
-    likesForCommentsDesc: t(
-      'notifications.likesForCommentsDesc',
-      "Zapnite alebo vypnite upozornenia na 'Paci sa mi to' pre komentare.",
-    ),
-    skillRequest: t('notifications.skillRequest', 'Ziadost o zrucnost'),
-    skillRequestDesc: t(
-      'notifications.skillRequestDesc',
-      'Zapnite alebo vypnite upozornenia na ziadosti o zrucnost.',
-    ),
   };
 
   const labelsCommon = {
@@ -110,39 +52,23 @@ export default function NotificationSettingsModule({ onBack }: NotificationSetti
     on: t('notifications.on', 'Zapnute'),
   };
 
-  const state = {
-    master: masterToggleEnabled,
-    likes: likesEnabled,
-    likesComments: likesCommentsEnabled,
-    comments: commentsEnabled,
-    likesForComments: likesForCommentsEnabled,
-    skillRequest: skillRequestEnabled,
-  };
-
-  const setState = {
-    setMaster: handleMasterToggleChange,
-    setLikes: setLikesEnabled,
-    setLikesComments: setLikesCommentsEnabled,
-    setComments: setCommentsEnabled,
-    setLikesForComments: setLikesForCommentsEnabled,
-    setSkillRequest: setSkillRequestEnabled,
-  };
+  const master = { enabled: masterEnabled, onChange: setMasterEnabled };
 
   return (
     <>
       <Desktop
         labels={labels}
         labelsCommon={labelsCommon}
-        state={state}
-        setState={setState}
+        master={master}
+        categories={categories}
         pushMessages={pushMessages}
         onBack={onBack}
       />
       <Mobile
         labels={labels}
         labelsCommon={labelsCommon}
-        state={state}
-        setState={setState}
+        master={master}
+        categories={categories}
         pushMessages={pushMessages}
       />
     </>

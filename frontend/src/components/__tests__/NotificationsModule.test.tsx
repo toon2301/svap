@@ -1,12 +1,23 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import NotificationSettingsModule from '../dashboard/modules/NotificationSettingsModule';
 
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, d: string) => d }),
 }));
 
+// Kategórie sa načítavajú zo servera (zdieľaný hook volieb); odpoveď má všetko zapnuté.
+jest.mock('@/lib/api', () => ({
+  api: {
+    get: jest.fn().mockResolvedValue({ data: {} }),
+    post: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
+  },
+  endpoints: { push: { preferences: '/auth/push/preferences/' } },
+}));
+
 jest.mock('../dashboard/modules/notifications/usePushMessagesPreference', () => ({
-  usePushMessagesPreference: () => ({
+  usePushMessagesPreferenceWith: () => ({
     value: false,
     disabled: false,
     loading: false,
@@ -18,9 +29,13 @@ jest.mock('../dashboard/modules/notifications/usePushMessagesPreference', () => 
 }));
 
 describe('NotificationSettingsModule (desktop behaviors)', () => {
-  it('turn off all disables other toggles', () => {
+  it('turn off all disables other toggles', async () => {
     // Force desktop by mocking window size via className hidden lg:block logic is in component
     render(<NotificationSettingsModule />);
+    // Kategórie majú najprv kostru; riadky sa objavia po načítaní volieb.
+    await waitFor(() => {
+      expect(screen.getByTestId('notifications-category-likes-mobile')).toHaveTextContent('Zapnute');
+    });
 
     const turnOffAll = screen.getAllByText('Vypnut vsetko')[0];
     // Click the switch container (button is next to the text). For simplicity click text then the nearest button.
