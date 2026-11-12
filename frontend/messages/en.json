@@ -4466,6 +4466,8 @@
     "reportReasonSpam": "Spam",
     "reportReasonFake": "Fake review",
     "reportReasonOther": "Other",
+    "addCon": "Add con",
+    "addPro": "Add pro",
     "addReview": "Add review",
     "addOwnerResponse": "Add owner response",
     "addedOn": "added on",

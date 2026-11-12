@@ -12,6 +12,7 @@ import {
   MAX_PRO_CON_ITEMS,
   MAX_ITEM_CHARS,
   PRO_CON_LIST_MAX_HEIGHT,
+  withPendingItem,
 } from './addReviewModalShared';
 
 export function AddReviewModalDesktop({
@@ -110,16 +111,30 @@ export function AddReviewModalDesktop({
   const removePro = (index: number) => setPros((prev) => prev.filter((_, i) => i !== index));
   const removeCon = (index: number) => setCons((prev) => prev.filter((_, i) => i !== index));
 
+  /**
+   * Uloží recenziu. Text, ktorý je vo vstupe plusov alebo mínusov, ale nebol potvrdený (Enter alebo tlačidlo), sa pridá
+   * do zoznamu, aby sa pri uložení nestratil; pri neúspešnom uložení ostane v zozname a druhýkrát sa nepošle.
+   */
   const handleSubmit = async () => {
     setError(null);
     if (rating === 0) {
       setError('Prosím, vyber hodnotenie (hviezdičky).');
       return;
     }
+    const submittedPros = withPendingItem(pros, proInput);
+    const submittedCons = withPendingItem(cons, conInput);
+    if (submittedPros !== pros) {
+      setPros(submittedPros);
+      setProInput('');
+    }
+    if (submittedCons !== cons) {
+      setCons(submittedCons);
+      setConInput('');
+    }
     if (onSubmit) {
       setIsSubmitting(true);
       try {
-        await onSubmit(rating, text.slice(0, MAX_CHARS), pros, cons);
+        await onSubmit(rating, text.slice(0, MAX_CHARS), submittedPros, submittedCons);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Nepodarilo sa pridať recenziu. Skús to znova.');
         setIsSubmitting(false);
