@@ -26,7 +26,10 @@ ZMENY = [
       'karta K19 žiada odmietnuť každý neznámy kľúč a test zmiešanej požiadavky (jediný klient posiela vždy jeden známy '
       'kľúč). (2) Rozhodnutie R38: majiteľ nález 311 pri používaní nezaregistroval a nechce riskovať nové chyby v spoločnom '
       'hooku `useIsMobile()`, preto sa nález uzatvára; ak sa prejav objaví, dá vedieť a otvorí sa nový nález s odkazom na '
-      '311. Z K17 tým nezostáva nič otvorené. Dopad na E2E: žiadny.'),
+      '311. Z K17 tým nezostáva nič otvorené. (3) Druhé kolo CodeRabbitu (09:50 UTC, hlavička `f9ca9ebe`) malo dve drobné '
+      'pripomienky k textu pri 223 a 245, obe platné a opravené: tvrdenie, odkiaľ pochádza hlavička `X-CSRFToken`, je teraz '
+      'podmienené stavom `cookieWasReadable` (aj pri 245) a úspešné `GET /api/auth/csrf-token/` v logu servera sa nepokladá '
+      'za dôkaz, že prehliadač cookie uložil alebo neskôr poslal. Dopad na E2E: žiadny.'),
     ('12. 11. 2026',
       'Vetva 173, doplnok po K18 (vychádza z `main` `65cb117e`, teda po PR #255; main je zlúčený do vetvy). (1) K18 (PR '
       '#255, zlúčené 12. 11. 2026 o 07:02 UTC; 3 commity): hotové 326 a 327, z 325 je hotová backendová časť (odpoveď 204 '
@@ -93,7 +96,8 @@ ZMENY = [
      'poznámky bez čísla (odznak „0 / 5“ pri chybe načítania a zvyšný posun kostry Správ). (2) Odpovede majiteľa k 223: '
      '`NEXT_PUBLIC_API_URL` vo frontende na Railway je `/api` (API cez rovnaký pôvod, takže oprava K14 platí aj v testovanom '
      'prostredí); či 8. 11. o 19:29 UTC bežal Codexov beh, nevie. Agent z toho a z `csrf.ts` odvodil, že hlavička '
-     '`X-CSRFToken` pri prázdnych cookies sedí na to, že prehliadač cookie z odpovede neuložil alebo nepripojil; nález 223 '
+     '`X-CSRFToken` pri prázdnych cookies sedí na to, že prehliadač cookie z odpovede neuložil alebo nepripojil (ak bola cookie v '
+     'relácii aspoň raz čitateľná; inak mohla ísť aj zastaraná hlavička z pamäte, pozri 223); nález 223 '
      'ostáva otvorený a má nový krok (logy Railway: `GET /api/auth/csrf-token/` tesne pred obnovou). Codex čaká na okno po '
      'nasadení K16 (dym `@smoke`, potom plný beh); jeho návrhy (natívny beh na Windows, doplnenie dôkazov obnovy) sú v 223. '
      '(3) Mapovanie nálezu 321 (kategórie upozornení) na žiadosť majiteľa vrátane požiadavky, aby boli všetky upozornenia '
