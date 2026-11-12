@@ -11,7 +11,7 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K18 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`; z K16 zostáva mapovanie nálezu 319, z K17 mapovanie 311 a z K18 toast pri nálezu 325): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K18 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`; z K16 zostáva mapovanie nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), a z K18 toast pri nálezu 325): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
@@ -37,7 +37,7 @@ zoznam nemôže ticho zastarať.
 """
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED '
-             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K18 sú hotové (z K16 čaká mapovanie 319, z K17 rozhodnutie o 311, z K18 toast pri 325); '
+             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K18 sú hotové (z K16 čaká mapovanie 319, z K18 toast pri 325; nález 311 z K17 majiteľ uzavrel, R38); '
              'vetvy agenta 167 až 173 sú len zoznam (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá '
              'vedieť). Dávku K19 (etapy 1 a 2 nálezu 321, backend) navrhol agent 10. 11. 2026 po rozhodnutiach R34 až R36 a čaká na schválenie; '
              'etapa 3 spolu s 319 (K20) a toast pri 325 (K21) vstúpia do poradia po nej; '
@@ -68,12 +68,6 @@ FRONTA = [
          preco='JASNÉ. Backendová časť je hotová v K18 (PR #255) a manuálne testy prešli; zostáva toast (R37 c). Výnimka pre '
                '`OfferReviewsView.tsx` (692 riadkov) je udelená (R37 b a c) s podmienkou, že nová logika mazania ide do nového súboru '
                'a pôvodný súbor nenarastie; ak sa to bez rastu nedá, kolega sa zastaví a nahlási to bez zmeny kódu.'),
-    dict(n='311', davka='K17',
-         co='`useIsMobile()` začína ako „desktop“; ďalšie vetvy `ModuleRouter` môžu mať prázdny prvý snímok.',
-         preco='NEJASNÉ (mapovanie hotové, čaká na súhlas majiteľa s opravou). Kolega (K17): Správy a Žiadosti majú napriek stráži '
-               '`isResolved` posun 0,022 a 0,031; navrhuje opravu v hooku `useIsMobile` cez `useSyncExternalStore` (odhad M). '
-               'Chýba úplná strana mapovania (zoznam modulov, merania). `ModuleRouter.tsx` má 439 riadkov, takže nové vetvy nesmú '
-               'súbor posunúť nad 500.'),
     dict(n='24', davka='PO-A',
          co='`setHighlightedSkillId(null)` necháva hodnotu v `sessionStorage` (priame volania setteru namiesto '
             '`clearHighlighting()`).',

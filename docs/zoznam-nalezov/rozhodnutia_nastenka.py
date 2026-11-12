@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R37: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R38: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
 `alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
 na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
 zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
-mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026).
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026 a R37 11. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -293,4 +293,17 @@ DECISIONS_NASTENKA = [
                   'toast (c) ide v každom prípade, lebo mení ten istý veľký súbor a pôjde v rovnakom frontendovom kroku ako (b), a '
                   'ošetrenie zlyhania načítania zoznamu (b) len ak príznaky po oprave backendu ostanú.',
          datum='11. 11. 2026'),
+    dict(id='R38', tema='Nález 311: opraviť `useIsMobile()` teraz, alebo nechať tak a uzavrieť',
+         otazka='Kolega zmeral v K17 pri prvom vykreslení na mobile posun 0,022 (Správy) a 0,031 (Žiadosti), lebo `useIsMobile()` vráti '
+                 'v prvom vykreslení `isMobile: false` a `isResolved: false`, a navrhol opravu v hooku cez `useSyncExternalStore` (odhad '
+                 'M). Hook používa veľa komponentov v celej aplikácii a oprava by nezlepšila prvé vykreslenie na serveri. Opraviť teraz '
+                 '(samostatná dávka s testom hydratácie a dymom), alebo nález uzavrieť a vrátiť sa k nemu, ak sa prejav v používaní '
+                 'ukáže?',
+         odporucanie='Uzavrieť: dopad je nízky (posun pod 0,1, čo sa pokladá za dobrú hodnotu), prejav sa pri používaní nikomu neukázal a '
+                        'oprava by menila spoločný hook pre celú aplikáciu, takže riziko nových chýb je väčšie než prínos. Ak sa prejav objaví, '
+                        'otvorí sa nový nález s odkazom na 311 a s meraním kolegu.',
+         kedy='Rozhodnuté 12. 11. 2026.',
+         odpoved='Majiteľ 12. 11. 2026: nález 311 pri používaní nezaregistroval a nechce kvôli nemu riskovať nové chyby v spoločnom '
+                  'hooku; zatiaľ ho nechá tak a nález uzatvára, ak sa prejav ukáže, dá vedieť. Agent súhlasil.',
+         datum='12. 11. 2026'),
 ]

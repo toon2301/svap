@@ -36,7 +36,7 @@ Po **každom novom nálezi alebo oprave** (v tej istej vetve, v ktorej sa mení 
 2. **Oprava nálezu:** odstrániť ho z `ORIG_OPEN` (`polozky_povodne.py`) alebo `NEW_ITEMS` a pridať do `DONE_SINCE_DALSIE` v `hotove_dalsie.py`
    (staršie opravy sú v `DONE_SINCE` v `hotove.py`; `n`, `text`, `vetva`, `pr` keď je známe, `zlucene=True` po zlúčení PR). Ak ho spomínala vlna v `stav.PORADIE`, upraviť ju.
    Čiastočne hotový nález ostáva otvorený: jeho text sa upraví na zvyšok a hotová časť sa v ňom uvedie s PR a commitom.
-3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (R13 až R37 sú v `rozhodnutia_nastenka.py`). Nález, ktorý sa kvôli
+3. **Odpoveď na rozhodnutie:** vyplniť `odpoved` a `datum` v `stav.DECISIONS` (R13 až R38 sú v `rozhodnutia_nastenka.py`). Nález, ktorý sa kvôli
    rozhodnutiu neopravuje, sa odstráni z otvorených a pridá do `CLOSED_SINCE` v `zatvorene_dalsie.py`.
 4. Posunúť `stav.STAV` (dátum, stav kódu) a doplniť riadok do `stav.ZMENY`.
 5. Z koreňa repozitára spustiť `python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`.
@@ -63,7 +63,7 @@ Dohoda s majiteľom z 5. 11. 2026, upravená 6. a 7. 11. 2026; platí, kým ju m
   odkladajú, kým majiteľ nedá vedieť. K8 (mapovanie nálezov 274, 275 a 276) sa robila na dva razy (PR #237 a #238; druhé kolo sa volalo
   K9) a dávka drobných opráv išla ako K10 (PR #239); po nich bola vetva agenta 168 (len zoznam). K11 (PR #241) a K12 (PR #242) sú
   hotové a po nich bola vetva agenta 169 (len zoznam). K13 (PR #244) a K14 (PR #245) sú hotové a po nich boli vetvy agenta 170 a 171
-  (len zoznam). K15 (PR #250), K16 (PR #253, okrem mapovania 319), K17 (PR #254, okrem rozhodnutia o 311) a K18 (PR #255, okrem toastu pri 325) sú hotové a po nich sú vetvy agenta 172 a 173 (len zoznam). Ďalšie dávky kolegu sú K19 (etapy 1 a 2 nálezu 321), K20 (etapa 3 nálezu 321 spolu s 319) a K21 (toast pri 325) (poradie je v časti 2 zoznamu; dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi).
+  (len zoznam). K15 (PR #250), K16 (PR #253, okrem mapovania 319), K17 (PR #254; nález 311 uzavrel majiteľ, R38) a K18 (PR #255, okrem toastu pri 325) sú hotové a po nich sú vetvy agenta 172 a 173 (len zoznam). Ďalšie dávky kolegu sú K19 (etapy 1 a 2 nálezu 321), K20 (etapa 3 nálezu 321 spolu s 319) a K21 (toast pri 325) (poradie je v časti 2 zoznamu; dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi).
 - **Vetvy:** kolega K1, K2, K3…; agent číslované (163, 164…); Codex `e2e/<názov>`. S Codexom pracuje len agent.
 - **Čo dostane kolega:** opis nálezu a návrh najlepšej opravy (nálezy sú v častiach 3 až 5 zoznamu, poradie v časti 2). Nález overuje kolega pri
   práci. Od K15 agent pred zlúčením porovná výsledok kolegu s PR, CI a kódom (pozri „Postup od K15“). Nálezy, ktoré majiteľ určí na zmapovanie kolegovi (naposledy 274, 275, 276), agent nemapuje:

@@ -44,4 +44,13 @@ CLOSED_SINCE = [
          text='ZATVORENÉ rozhodnutím R32 (9. 11. 2026): nález vznikol z odporúčania agenta (b), teda skryť hlavný vypínač a päť '
               'kategórií upozornení, ktoré nič neukladajú, kým sa nedokončia. Majiteľ zvolil (a): kategórie sa dokončia pred štartom '
               '(nález 321) a nefunkčné prepínače sa dovtedy skrývať nebudú. Kód sa nemenil.'),
+    dict(n=311, rozhodnutie='R38', datum='12. 11. 2026',
+         text='ZATVORENÉ rozhodnutím R38 (12. 11. 2026; nález kolegu z K14, mapovanie K17, bez zmeny kódu): `useIsMobile()` '
+               '(`frontend/src/hooks/useIsMobile.ts`) vráti v prvom vykreslení `isMobile: false` a `isResolved: false` a pravdivú '
+               'hodnotu až po efekte, takže vetvy `isMobile ? A : B` v `ModuleRouter.tsx` (439 riadkov) môžu mať na mobile krátko iný '
+               'alebo prázdny prvý snímok. Kolega pri K17 zmeral posun 0,022 (Správy) a 0,031 (Žiadosti) a navrhol opravu v hooku cez '
+               '`useSyncExternalStore` (odhad M); spoločný hook používa veľa komponentov a oprava by nezlepšila prvé vykreslenie na '
+               'serveri. Majiteľ prejav pri používaní nezaregistroval a nechce kvôli nemu riskovať nové chyby, preto sa nález '
+               'uzatvára; ak sa prejav v používaní ukáže, majiteľ dá vedieť a otvorí sa nový nález s odkazom na 311. Zvyšky po 286 sú '
+               'tým uzavreté (308 až 310 sú hotové v K16).'),
 ]

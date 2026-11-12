@@ -31,20 +31,6 @@ NEW_ITEMS_K14 = [
          note='Návrh kolegu: nahradiť heslom generovaným v teste alebo spoločnou konštantou. Veľký mechanický zásah bez zmeny '
                'správania, preto po nasadení. Odhad kolegu: nízky · M.',
          dec=None, src='K14 (kolega)'),
-    dict(n=311, bucket=P, imp=N, eff=EM, pkg='Plynulosť prechodov (mobil)',
-         kratko='`useIsMobile()` začína ako „desktop“; ďalšie vetvy `ModuleRouter` môžu mať prázdny prvý snímok ako Súkromie',
-         what='Kolega pri K14 (8. 11. 2026): `useIsMobile()` (`frontend/src/hooks/useIsMobile.ts`) vracia v prvom vykreslení `false` '
-               '(stav `isResolved: false`). V `ModuleRouter.tsx` (439 riadkov) sú aj ďalšie vetvy `isMobile ? A : B` (napr. '
-               'sledovania), ktoré môžu mať rovnaký prázdny prvý snímok ako mal modul Súkromie (12 až 24 ms), kým ho K14 nevyriešila '
-               'rozložením cez CSS. Hypotéza, nezmerané.',
-         note='Zvyšok po 286. Najprv mapovanie (ktoré moduly), potom podľa nálezu: rozloženie cez CSS alebo čakanie na `isResolved`. '
-               'Odhad kolegu: nízky · M. MAPOVANIE K17 (kolega, 10. 11. 2026; agentovi zatiaľ prišlo len zhrnutie, úplná strana '
-               'mapovania so zoznamom modulov a meraniami ešte nie): moduly Správy a Žiadosti majú napriek stráži `isResolved` posun '
-               '0,022 a 0,031; kolega navrhuje opravu v hooku `useIsMobile` cez `useSyncExternalStore` (odhad M) a žiada súhlas '
-               'majiteľa (karta K17: kód sa nemení, kým nepovie majiteľ). Agent: spoločný hook používa veľa komponentov a oprava '
-               'nezlepší prvé vykreslenie na serveri (SSR), preto najprv potrebuje zoznam modulov a merania pred a po; ak majiteľ '
-               'súhlasí, ide samostatne s testom hydratácie a s dymom `@smoke` pred zlúčením.',
-         dec=None, src='K14 (kolega)'),
     dict(n=313, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
          kratko='`.animate-fade-in` je v `globals.css` definovaná dvakrát',
          what='Kolega pri K14 (8. 11. 2026): trieda `.animate-fade-in` je v `frontend/src/app/globals.css` definovaná dvakrát (riadky '
