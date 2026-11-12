@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K17, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
+"""Nálezy opravené od 6. 11. 2026 (práca kolegu K3 až K18, Codexove PR a vetva 165): `DONE_SINCE_DALSIE`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -473,4 +473,24 @@ DONE_SINCE_DALSIE = [
          text='HOTOVÉ (K17, zlúčené v PR #254 dňa 10. 11. 2026, commit `3d179be1`): chyba načítania v `BlockedUsersModule.tsx` (279 '
               'riadkov) má `role="alert"` (jeden riadok), takže ju čítač obrazovky oznámi. Overenie podľa kolegu: nový test (rola '
               '`alert` a text chyby), mutácie 5 z 5. Dopad na E2E: žiadny. Čítač obrazovky sa neskúšal (patrí do 294).'),
+    dict(n=326, vetva='K18', pr='#255', zlucene=True,
+         text='HOTOVÉ (K18, zlúčené v PR #255 dňa 12. 11. 2026, commit `7482f0a8`): `onRemoveExistingImage` v '
+               '`SkillsModuleRouter.tsx` vracia `data?.images` (predtým `data?.images || []`), takže pri odpovedi 204 bez tela vráti '
+               '`undefined` a hook obrazovky Popis ponuky vyradí len zmazanú fotku namiesto toho, aby všetky fotky nahradil prázdnym '
+               'zoznamom. Výnimka R37 (a): presne jeden riadok v súbore nad 500 riadkov (riadok 459, nie 456; počet riadkov 580 → 580; '
+               'bez komentára, lebo súbor nesmel narásť); hook (639 riadkov) a `OfferReviewsView.tsx` (692) sa nezmenili. Desktopová '
+               'cesta sa netýkala. Overenie podľa kolegu: 11 nových testov (pred zmenou padajú 4), mutácie 10 z 10, ESLint a tsc bez '
+               'chýb; agent nezávisle: celý Jest 577 sád a 8 636 testov prešlo, nové testy pred zmenou padajú. Boty (Codex P1, '
+               'CodeRabbit Major) upozornili len na pravidlo 500 riadkov; majiteľ odpovedal výnimkou R37 (a). CI zelené, manuálne '
+               'testy majiteľa prešli. Dopad na E2E: žiadny.'),
+    dict(n=327, vetva='K18', pr='#255', zlucene=True,
+         text='HOTOVÉ (K18, zlúčené v PR #255 dňa 12. 11. 2026, commit `94af9829`): `AddReviewModalMobile.tsx` (307 → 348 riadkov) má '
+               'pri vstupoch plusov a mínusov tlačidlo s ikonou plus (`aria-label` z nových kľúčov `reviews.addPro` a `reviews.addCon` '
+               'v šiestich jazykoch; neaktívne pri prázdnom vstupe a pri 10 položkách) a mobilný aj desktopový formulár '
+               '(`AddReviewModalDesktop.tsx`, 317 → 332) pri uložení pridajú nepotvrdený text cez novú `withPendingItem` v '
+               '`addReviewModalShared.ts` (31 → 42; oriezanie, najviac 120 znakov a 10 položiek); pri neúspešnom uložení text ostane v '
+               'zozname a nepošle sa dvakrát. Rozloženie desktopu, zástupné texty (stále „… a stlačte Enter“, kandidát v '
+               '`poznamky.md`) a odosielanie na server sa nemenili. Overenie podľa kolegu: 30 nových testov (pred opravou padá 14 z 19 '
+               'v hlavnom súbore), mutácie 15 z 15, ESLint, tsc a kontroly prekladov čisté; agent nezávisle: nové testy pred opravou '
+               'padajú (30 zo 42), celý Jest prešiel. Manuálne testy majiteľa prešli. Dopad na E2E: žiadny.'),
 ]

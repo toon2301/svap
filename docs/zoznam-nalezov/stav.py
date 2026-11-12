@@ -6,8 +6,8 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='11. 11. 2026',
-    kod='`main` `f9b2a1d4` (po PR #254, K17)',
+    datum='12. 11. 2026',
+    kod='`main` `65cb117e` (po PR #255, K18)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,22 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('12. 11. 2026',
+      'Vetva 173, doplnok po K18 (vychádza z `main` `65cb117e`, teda po PR #255; main je zlúčený do vetvy). (1) K18 (PR '
+      '#255, zlúčené 12. 11. 2026 o 07:02 UTC; 3 commity): hotové 326 a 327, z 325 je hotová backendová časť (odpoveď 204 '
+      'bez tela). Agent vetvu pred otvorením PR skontroloval (hlavička PR `7482f0a8` je tá istá): backendové testy recenzií '
+      '45 prešlo, celý Jest 577 sád a 8 636 testov, tsc, ESLint a kontroly prekladov čisté, nové testy pred opravou padajú. '
+      'CI (`checks`, `backend-postgres`) zelené; Codex (P1) aj CodeRabbit (Major) mali po jednej pripomienke k pravidlu 500 '
+      'riadkov pri `SkillsModuleRouter.tsx`, ktorú majiteľ zodpovedal udelením výnimky R37 (a), CodeRabbit to vzal na '
+      'vedomie; názov PR „K18“ bez popisu je len neurčitá kontrola. Manuálne testy majiteľa prešli. Kolega pri 325 živo '
+      'overil príčinu na produkčnom builde Next s gunicornom (zlyháva už samotný DELETE, nie až nasledujúci GET) a ohlásil '
+      'dva kandidáty bez čísla: zástupné texty „… a stlačte Enter“ a 511 riadkov v `reviews.py` (obe v `poznamky.md`). Z '
+      '325 zostáva toast „Recenzia bola vymazaná.“ (R37 c), ošetrenie zlyhania načítania (R37 b) sa nerobí, lebo príznaky '
+      'zmizli. (2) Výsledok Codexa: dym na `main` `65cb117e` prešiel bez pádu (41 / 0 / 10 za 1 min 51 s); pád otvorenia '
+      'konverzácie z K16 sa nezopakoval (doplnok v 223); plný beh čaká na okno. (3) Poradie: K19 (etapy 1 a 2 nálezu 321, '
+      'backend) je ďalšia, K20 bude etapa 3 spolu s 319 a K21 toast pri 325. (4) Postup od K15: nové číslované nálezy z '
+      'dávky 0 (325 až 327 vznikli z ručných testov po K17), samostatná strana nebola potrebná, chyby zachytené dymovým '
+      'testom 0; odporúčanie agenta je postup ponechať. Dopad na E2E: žiadny.'),
     ('11. 11. 2026',
       'Vetva 173, doplnok po odpovedi majiteľa na R37 (všetky tri áno). (a) Výnimka pre jeden riadok v '
       '`SkillsModuleRouter.tsx` (326) s podmienkami R31, takže 326 už nečaká na rozhodnutie. (b) Výnimka pre frontendovú '
@@ -243,14 +259,14 @@ PORADIE = [
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14, jej zvyšky 308 až 310 sú hotové v K16 a ostáva 311; 287 a 288 '
             'čakajú na rozhodnutie R28), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
             '(92, 207; 301 je hotová v K13), ponuky a tagy (322 a 323 sú hotové v K15), '
-            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), recenzie a fotky v úprave ponuky (325 až 327: ručný test po K17, dávka K18), Upozornenia a '
+            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), toast po vymazaní recenzie (325; 326 a 327 sú hotové v K18), Upozornenia a '
             'push (319 prepínač offline, 321 dokončiť kategórie upozornení pred štartom, R32 (a); plán po etapách je hotový, R34 až R36 sú zodpovedané a etapy 1 a 2 sú dávka K19), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '311', '81', '272', '92', '207', '319', '321', '325', '326', '327', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '311', '81', '272', '92', '207', '319', '321', '325', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
          preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',

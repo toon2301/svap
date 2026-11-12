@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 305: kandidáti kolegu z K13 a K14, ručné testy majiteľa po K14 (8. 11. 2026) a diagnostika a video majiteľa
-z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327).
+z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327; 326 a 327 sú hotové v K18, z 325 zostáva toast).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_dalsie.DONE_SINCE_DALSIE`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
@@ -175,18 +175,29 @@ NEW_ITEMS_K14 = [
                'inak. Výzva na povolenie push pre nových používateľov ide do etapy 3 (R36 a). Najbližšie: karta K19 (etapy 1 a 2, '
                'backend), potom etapa 3 spolu s opravou 319.',
          dec='ROZHODNUTIE R36', src='ručný test majiteľa po K14 (8. 11. 2026), kolega (K14) a mapovanie agenta (10. 11. 2026)'),
-    dict(n=325, bucket=P, imp=S_, eff=EM, pkg='Recenzie',
-         kratko='Mazanie recenzie: po úspešnom zmazaní ostane otvorené okno aj recenzia a ukáže sa chybový toast; príčinou je odpoveď '
-               '204 s telom, po ktorej zlyhá nasledujúca požiadavka',
-         what='Ručný test majiteľa po K17 (10. 11. 2026): po úspešnom vymazaní recenzie zostáva otvorené potvrdzovacie okno, recenzia '
-               'ostáva viditeľná až do opätovného otvorenia sekcie a nezobrazuje sa správny toast. Nie je to regresia z K17: K17 '
-               'zmenila v `OfferReviewsView.tsx` len `alert()` na `toast.error` v chybovej vetve (diff má tri riadky). MAPOVANIE '
-               '(agent, 11. 11. 2026, čítanie kódu na `main` `f9b2a1d4` a lokálna reprodukcia mechanizmu; v produkcii nepotvrdené). '
-               'FRONTEND: obsluha potvrdenia v `OfferReviewsView.tsx` (riadky 583 až 605) po `api.delete` najprv čaká na '
-               '`reloadReviews()` (ďalšia požiadavka, `GET` zoznamu recenzií) a až potom zavrie okno (`setReviewIdToDelete(null)`); '
-               'akákoľvek výnimka z načítania zoznamu skončí v `catch`, ktorý ukáže „Nepodarilo sa vymazať recenziu.“ '
-               '(`reviews.deleteReviewFailed`), okno nechá otvorené a zoznam neobnoví, hoci recenzia na serveri už neexistuje. Toast '
-               'po úspešnom vymazaní kód neukazuje vôbec (kľúč neexistuje). BACKEND: `review_detail_view` '
+    dict(n=325, bucket=P, imp=N, eff=EM, pkg='Recenzie',
+         kratko='Mazanie recenzie: backend (odpoveď 204 bez tela) je hotový v K18 a manuálne testy prešli; zostáva toast „Recenzia bola '
+               'vymazaná.“ po úspešnom zmazaní (R37 c)',
+         what='ČIASTOČNE HOTOVÉ (K18, zlúčené v PR #255 dňa 12. 11. 2026, commit `f48d963e`): `review_detail_view` vracia pri '
+               '`DELETE` `Response(status=204)` bez tela; nový test `accounts/test/test_review_delete_response.py` (3 testy, pohľad sa '
+               'volá priamo, lebo testovací klient telo pri 204 sám odstráni; pred opravou padá 1, mutácie 5 z 5). Kolega to overil '
+               'naživo (produkčný build Next s `BACKEND_ORIGIN` na lokálny gunicorn): so starým kódom DELETE skončil chybou '
+               '`HPE_INVALID_CONSTANT`, cez proxy Next chybou `ECONNRESET` a v logu Next sa trikrát objavilo `Failed to proxy` (3 z '
+               '3); s opraveným kódom prešiel DELETE (204, 0 B) aj nasledujúci GET zoznamu (200; 3 z 3). Odchýlka od mapovania agenta: '
+               'zlyháva už samotný DELETE, nie až nasledujúci GET; príčina je tá istá (204 s telom), prejav závisí od miesta, kde '
+               'parser narazí na zvyšné bajty. Ako sa to správalo za proxy na Railway, tu overiť nešlo. Agent nezávisle: 45 '
+               'backendových testov prešlo, nový test pred opravou padá. Manuálne testy majiteľa po nasadení prešli (podľa karty '
+               'vrátane vymazania vlastnej recenzie), takže príznaky zmizli a podmienka pre frontendové ošetrenie zlyhania načítania '
+               '(R37 b) sa nenaplnila. ZOSTÁVA: toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (R37 c). PÔVODNÝ OPIS A MAPOVANIE '
+               '(10. a 11. 11. 2026): Ručný test majiteľa po K17 (10. 11. 2026): po úspešnom vymazaní recenzie zostáva otvorené '
+               'potvrdzovacie okno, recenzia ostáva viditeľná až do opätovného otvorenia sekcie a nezobrazuje sa správny toast. Nie je '
+               'to regresia z K17: K17 zmenila v `OfferReviewsView.tsx` len `alert()` na `toast.error` v chybovej vetve (diff má tri '
+               'riadky). MAPOVANIE (agent, 11. 11. 2026, čítanie kódu na `main` `f9b2a1d4` a lokálna reprodukcia mechanizmu; v '
+               'produkcii nepotvrdené). FRONTEND: obsluha potvrdenia v `OfferReviewsView.tsx` (riadky 583 až 605) po `api.delete` '
+               'najprv čaká na `reloadReviews()` (ďalšia požiadavka, `GET` zoznamu recenzií) a až potom zavrie okno '
+               '(`setReviewIdToDelete(null)`); akákoľvek výnimka z načítania zoznamu skončí v `catch`, ktorý ukáže „Nepodarilo sa '
+               'vymazať recenziu.“ (`reviews.deleteReviewFailed`), okno nechá otvorené a zoznam neobnoví, hoci recenzia na serveri už '
+               'neexistuje. Toast po úspešnom vymazaní kód neukazuje vôbec (kľúč neexistuje). BACKEND: `review_detail_view` '
                '(`accounts/views/reviews.py`, riadok 270) vracia pri `DELETE` stav 204 s telom `{"message": ...}`; HTTP zakazuje telo '
                'pri 204 a je to jediné z 13 miest s 204 v backende, ostatných 12 vracia 204 bez tela. REPRODUKCIA (agent, lokálne): '
                'gunicorn 23.0.0 (ako v produkcii) a klient Node 22 s keep-alive spojeniami (rovnako ako proxy `rewrites` v Next.js, '
@@ -196,61 +207,11 @@ NEW_ITEMS_K14 = [
                'toast, otvorené okno, neobnovený zoznam). Nepotvrdené: pokus bol bez Railway a bez celého Next.js, takže v produkcii '
                'treba overiť v logoch frontendu na Railway, či sa v čase testu objavila chyba `Failed to proxy` s textom `Parse '
                'Error`, alebo v prehliadači stavy `DELETE` a hneď nasledujúceho `GET` (204 a potom 5xx).',
-         note='Návrh v dvoch krokoch. (1) Backend (dávka K18): pri `DELETE` vrátiť `Response(status=status.HTTP_204_NO_CONTENT)` bez '
-               'tela, ako ostatné miesta; frontend správu `message` nečíta (`OfferReviewsView.tsx` výsledok `api.delete` nepoužíva, '
-               'agent overil). Test volá pohľad priamo (`APIRequestFactory`), lebo testovací klient Djanga telo pri 204 sám odstráni a '
-               'cez `APIClient` by chybu nezachytil. `accounts/views/reviews.py` má 511 riadkov (pravidlo pre produkčný backend: '
-               'rozdeliť, ak je to bezpečné, inak nahlásiť a pokračovať), zmena je jeden riadok. (2) Frontend (samostatná karta po '
-               'nasadení kroku (1) a ručnom overení majiteľom): po úspechu vždy ukázať toast „Recenzia bola vymazaná.“ (nový kľúč '
-               '`reviews.deleteReviewSuccess` v šiestich jazykoch) a len ak príznaky po kroku (1) ostanú, po úspešnom `api.delete` '
-               'hneď zavrieť okno a odstrániť recenziu zo stavu a načítanie zoznamu dať do vlastného `try/catch`, aby jeho zlyhanie '
-               'nezobrazilo chybu o mazaní. `OfferReviewsView.tsx` má 692 riadkov; majiteľ 11. 11. 2026 udelil výnimku (R37 b a c) s '
-               'podmienkami R31: nová logika mazania ide do nového súboru a pôvodný súbor nesmie narásť. Odhad: stredný · M (backend '
-               'S).',
-         dec='ROZHODNUTIE R37', src='ručný test majiteľa po K17 (10. 11. 2026) a mapovanie agenta (11. 11. 2026)'),
-    dict(n=326, bucket=P, imp=S_, eff=ES, pkg='Ponuky (úprava a tagy)',
-         kratko='Mobilná úprava ponuky: zmazanie jednej fotky zmaže z editora vizuálne všetky (server zmaže len jednu); príčinou je '
-               '`return data?.images || []` pri odpovedi 204 bez tela',
-         what='Ručný test majiteľa po K17 (10. 11. 2026): po odstránení jednej fotografie z editora vizuálne zmiznú všetky '
-               'fotografie; po aktualizácii karty zostanú ostatné správne zachované. Nie je to regresia z K17 (K17 zmenila len chybové '
-               'vetvy, úspešná vetva je rovnaká ako v najstaršej stope histórie z 24. 9. 2026). MAPOVANIE (agent, 11. 11. 2026, '
-               'čítanie kódu na `main` `f9b2a1d4`): v mobilnej obrazovke Popis ponuky `handleRemoveExistingImageClick` '
-               '(`useSkillsDescriptionScreenState.ts`, riadok 503; volá ho `SkillsDescriptionMobileLayout.tsx`, riadok 404) hneď zmaže '
-               'fotku na serveri cez `onRemoveExistingImage` zo `SkillsModuleRouter.tsx` (riadky 452 až 466), ktorá vracia '
-               '`data?.images || []`. Server (`skill_image_detail_view`, `accounts/views/skills.py`, riadok 482) vracia 204 bez tela, '
-               'takže `data` je prázdny reťazec a funkcia vráti `[]`; hook pokladá prázdne pole za nový zoznam fotiek '
-               '(`Array.isArray([])` je pravda) a nahradí ním všetky existujúce fotky, aj keď server zmazal len jednu. Vetva, ktorá by '
-               'z lokálneho stavu odstránila len zmazanú fotku (`existingImages.filter(...)`), sa tak nikdy nevykoná. Desktopová cesta '
-               '(`useSkillsModals.handleRemoveSkillImage`) po zmazaní načíta detail ponuky a vracia skutočný zoznam, takže sa netýka. '
-               'Na údajoch škoda nie je: ostatné fotky ostávajú na serveri, preto ich po aktualizácii karty vidno; hypotéza '
-               '(neoverené): počítadlo povolených nových fotiek v editore počíta s prázdnym zoznamom a dovolí vybrať viac fotiek, než '
-               'je limit.',
-         note='Návrh: vrátiť zo `SkillsModuleRouter.tsx` `data?.images` (bez `|| []`), takže pri odpovedi bez zoznamu funkcia vráti '
-               '`undefined` a hook odstráni z lokálneho stavu len zmazanú fotku; typ `Promise<SkillImage[] | void>` to už dovoľuje. Je '
-               'to jeden riadok v súbore nad 500 riadkov (`SkillsModuleRouter.tsx`, 580 riadkov); majiteľ 11. 11. 2026 udelil výnimku '
-               'R37 (a) s podmienkami ako pri R31 (vlastný commit, test, ktorý bez zmeny padá, v diffe len ten riadok, počet riadkov '
-               'sa nezvýši), takže alternatíva cez backend (zoznam zvyšných fotiek so stavom 200) sa nepoužije. Test: smerovač s '
-               'odpoveďou `{ status: 204, data: "" }` nesmie vrátiť prázdne pole a hook s dvoma fotkami po zmazaní jednej druhú '
-               'ponechá (existujúci test z K17 používa `mockResolvedValue([])`, čo je presne chybný predpoklad). Odhad: stredný · S.',
-         dec='ROZHODNUTIE R37', src='ručný test majiteľa po K17 (10. 11. 2026) a mapovanie agenta (11. 11. 2026)'),
-    dict(n=327, bucket=P, imp=S_, eff=EM, pkg='Recenzie',
-         kratko='Formulár recenzie (mobil aj desktop): plus a mínus sa pridá len klávesom Enter, tlačidlo chýba a nepotvrdený text sa '
-               'pri uložení potichu zahodí',
-         what='Ručný test majiteľa po K17 (10. 11. 2026): na mobile pri vytváraní aj úprave recenzie chýba možnosť potvrdiť zadaný '
-               'plus alebo mínus, preto sa položka neuloží. Nie je to regresia z K17 (súbory formulára K17 nemenila). MAPOVANIE '
-               '(agent, 11. 11. 2026, čítanie kódu na `main` `f9b2a1d4`): v `AddReviewModalMobile.tsx` (307 riadkov, riadky 93 až 107 '
-               'a 219 až 267) aj v `AddReviewModalDesktop.tsx` (317 riadkov) sa plus a mínus pridá do zoznamu iba klávesom Enter '
-               '(`onKeyDown`, funkcie `addPro` a `addCon`); tlačidlo na potvrdenie neexistuje a text napísaný do vstupu, ktorý sa '
-               'nepotvrdil, `handleSubmit` do odoslania nezahrnie (posiela len `pros` a `cons`), takže sa potichu zahodí. Opis v poli '
-               '(„Napíšte plus a stlačte Enter“) na mobile nepomáha, ak používateľ nevie, že má použiť Enter, alebo ak klávesnica '
-               'Enter neodošle. Či Enter na iPhone odošle `keydown`, z kódu nepoznať (neoverené: treba v prehliadači s emuláciou '
-               'iPhonu a na zariadení).',
-         note='Návrh: (1) pri oboch vstupoch v mobilnom formulári viditeľné tlačidlo na pridanie (ikona plus, `aria-label` s novými '
-               'kľúčmi v šiestich jazykoch), ktoré zavolá existujúce `addPro` a `addCon`; (2) pri odoslaní (`handleSubmit`) sa '
-               'nepotvrdený text vo vstupoch pridá do `pros` a `cons` (v rámci limitu 10 položiek a 120 znakov), v mobilnom aj '
-               'desktopovom formulári, aby sa nič potichu nestratilo; spoločná pomocná funkcia môže ísť do `addReviewModalShared.ts` '
-               '(31 riadkov). Oba formuláre majú pod 320 riadkov, výnimka netreba. Test: napísať text do vstupu a kliknúť na tlačidlo '
-               '(položka sa objaví a vstup sa vyčistí), napísať text a rovno odoslať (`onSubmit` dostane položku), limit 10 položiek, '
-               'úprava existujúcej recenzie. Odhad: stredný · M.',
-         dec=None, src='ručný test majiteľa po K17 (10. 11. 2026) a mapovanie agenta (11. 11. 2026)'),
+         note='Zostáva toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (nový kľúč `reviews.deleteReviewSuccess` v šiestich '
+               'jazykoch; R37 c). `OfferReviewsView.tsx` má 692 riadkov; majiteľ 11. 11. 2026 udelil výnimku (R37 b a c) s podmienkami '
+               'R31: nová logika mazania (obsluha potvrdenia) ide do nového súboru a pôvodný súbor nesmie narásť, vlastný commit, '
+               'test, ktorý bez zmeny padá, počty riadkov pred a po v texte commitu; ak sa to bez rastu súboru nedá, kolega sa zastaví '
+               'a nahlási to bez zmeny kódu. Zavretie okna a odstránenie recenzie aj pri zlyhaní načítania zoznamu (R37 b) sa nerobí: '
+               'príznaky po oprave backendu zmizli. Odhad: nízky · M.',
+         dec='ROZHODNUTIE R37', src='ručný test majiteľa po K17 (10. 11. 2026), mapovanie agenta (11. 11. 2026) a K18 (kolega, 12. 11. 2026)'),
 ]

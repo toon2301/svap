@@ -199,6 +199,12 @@ NEW_ITEMS_223 = [
               'nedokončený vlastný hint karty, 12 chýbajúce stránkovateľné sledovanie, 6 chýbajúce prečítané upozornenie, 3 '
               'upozornenia len na prvej stránke, 3 príliš krátky zoznam upozornení, 2 fixture s firemnými hodinami, 2 '
               'neklasifikované); neznamená to opravu ani chybu aplikácie a príprava dát na testovacom účte vyžaduje dohodu s '
-              'majiteľom.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11. a 10. 11. 2026 (tri dodatky) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              'majiteľom. '
+              'DODATOK 12. 11. 2026 (Codex, dym po K18): dymová sada `@smoke` na `main` `65cb117e` (po PR #255) prešla bez pádu: '
+              'webkit-desktop 13 / 0 / 4, webkit-mobile 15 / 0 / 2, chromium-desktop 13 / 0 / 4, spolu 41 prešlo, 0 padlo a 10 '
+              'preskočených za 1 min 51 s bez automatických opakovaní; všetkých 10 preskočení je očakávaných pre iné rozloženie, nie '
+              'pre chýbajúce dáta. Pád otvorenia konverzácie (`messages-peer-profile`, webkit-mobile) z dymu po K16 sa nezopakoval, '
+              'mobilný `auth-session` po F5 prešiel a upratanie dočasných príspevkov dalo 6 z 6 kontrol. Plný beh sa nespustil (čaká '
+              'na okno oznámené majiteľom); Codex nemenil kód ani testy. Jedna čistá vzorka občasný charakter chyby nevyvracia.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11. a 12. 11. 2026 (štyri dodatky) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]
