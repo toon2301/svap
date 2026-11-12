@@ -9,6 +9,12 @@ User = get_user_model()
 
 
 class DashboardSettingsPreferencesTests(APITestCase):
+    """
+    Čítanie a ukladanie volieb upozornení cez push/preferences/ a dashboard/settings/.
+
+    Server nesie sedem volieb: dva hlavné vypínače a päť kategórií upozornení.
+    """
+
     def setUp(self):
         self.user = User.objects.create_user(
             username="settings-user",
@@ -28,6 +34,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.push_preferences_url = reverse("accounts:push_preferences")
 
     def test_push_preferences_get_returns_persisted_values(self):
+        """GET push/preferences/ vráti uložených sedem volieb (kategórie zapnuté)."""
         response = self.client.get(self.push_preferences_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -45,6 +52,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
         )
 
     def test_push_preferences_patch_persists_changes(self):
+        """PATCH push/preferences/ uloží jednu voľbu a vráti všetkých sedem hodnôt."""
         response = self.client.patch(
             self.push_preferences_url,
             {"push_notifications": False},
@@ -70,6 +78,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.assertFalse(self.profile.in_app_notifications)
 
     def test_dashboard_settings_get_returns_real_notification_values(self):
+        """GET dashboard/settings/ nesie v notifications sedem skutočných hodnôt."""
         response = self.client.get(self.dashboard_settings_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -90,6 +99,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.assertFalse(response.data["privacy"]["show_phone"])
 
     def test_dashboard_settings_patch_updates_notification_preferences(self):
+        """PATCH dashboard/settings/ zmení zadané voľby a vráti všetkých sedem."""
         response = self.client.patch(
             self.dashboard_settings_url,
             {
