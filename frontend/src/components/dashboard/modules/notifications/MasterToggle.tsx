@@ -29,9 +29,11 @@ interface MasterToggleProps {
  * bez bežca, ale nie zaneprázdnený, lebo predvolená poloha nie je stav servera (PR 258). `disabled` ho len zakáže
  * (stlmený, kliknutie nič nezmení).
  *
- * Tlačidlo je prepínač (`role="switch"`) a stav oznamuje cez `aria-checked` (počas načítania a pri neznámej polohe
- * chýba). Názov preberá z viditeľného textu cez `aria-labelledby`, takže sa text nezdvojí; ak je `label` prázdny, názov
- * (a prípadný opis) sa prepoja na prvky rodiča cez `labelledBy` a `describedBy`.
+ * Pri známej polohe (mimo načítavania) je tlačidlo prepínač (`role="switch"`) a stav oznamuje cez `aria-checked`. Kým sa
+ * poloha načítava alebo je neznáma, prepínač to nie je: prepínač bez `aria-checked` vystavuje prehliadač ako vypnutý
+ * (`checked: false`) a čítačka by oznámila nepravdivé „vypnuté“, preto je vtedy tlačidlo zakázané, pomenované a bez
+ * stavu (PR 258). Názov preberá z viditeľného textu cez `aria-labelledby`, takže sa text nezdvojí; ak je `label`
+ * prázdny, názov (a prípadný opis) sa prepoja na prvky rodiča cez `labelledBy` a `describedBy`.
  */
 export default function MasterToggle({
   enabled,
@@ -47,6 +49,8 @@ export default function MasterToggle({
   const labelId = useId();
   const showSkeleton = useDelayedLoading(Boolean(loading));
   const unknown = enabled === null;
+  /** Poloha je známa a nenačítava sa: až vtedy je tlačidlo prepínač s oznámeným stavom. */
+  const isSwitch = !loading && !unknown;
   let stateClass = enabled ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600';
   if (loading) {
     stateClass = showSkeleton ? 'bg-gray-200 dark:bg-gray-700 animate-pulse' : 'invisible';
@@ -64,8 +68,8 @@ export default function MasterToggle({
       </span>
       <button
         type="button"
-        role="switch"
-        aria-checked={loading ? undefined : (enabled ?? undefined)}
+        role={isSwitch ? 'switch' : undefined}
+        aria-checked={isSwitch ? Boolean(enabled) : undefined}
         aria-labelledby={label ? labelId : labelledBy}
         aria-describedby={describedBy}
         onClick={() => onChange(!enabled)}
@@ -80,7 +84,7 @@ export default function MasterToggle({
           transformOrigin: 'left center',
         }}
       >
-        {!loading && !unknown && (
+        {isSwitch && (
           <span
             className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
               enabled ? 'left-6' : 'left-1'

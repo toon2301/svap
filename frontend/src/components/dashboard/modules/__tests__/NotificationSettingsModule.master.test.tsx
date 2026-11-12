@@ -444,16 +444,31 @@ describe('NotificationSettingsModule: prístupnosť hlavného vypínača (PR 258
     expect(within(mobileLayout).getAllByText('Vypnúť všetko')).toHaveLength(1);
   });
 
-  it('počas načítania a po zlyhaní načítania prepínač neoznamuje žiadny stav', async () => {
+  it('počas načítania a po zlyhaní načítania to nie je prepínač (čítačka by ho oznámila ako vypnutý), ale pomenované tlačidlo', async () => {
     const preferences = deferPreferences();
     render(<NotificationSettingsModule />);
 
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Vypnúť všetko' })).toHaveLength(2);
     LAYOUTS.forEach((layout) => expect(master(layout)).not.toHaveAttribute('aria-checked'));
     await preferences.fail();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Vypnúť všetko' })).toHaveLength(2);
     LAYOUTS.forEach((layout) => {
       expect(master(layout)).toHaveAccessibleName('Vypnúť všetko');
       expect(master(layout)).not.toHaveAttribute('aria-checked');
     });
+  });
+
+  it('po úspešnom načítaní sa z pomenovaného tlačidla stane prepínač v oboch rozloženiach', async () => {
+    mockServer();
+    const preferences = deferPreferences();
+    render(<NotificationSettingsModule />);
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+
+    await preferences.respond();
+
+    expect(screen.getAllByRole('switch', { name: 'Vypnúť všetko' })).toHaveLength(2);
   });
 });
 
