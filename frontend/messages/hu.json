@@ -4466,6 +4466,8 @@
     "reportReasonSpam": "Spam",
     "reportReasonFake": "Hamis értékelés",
     "reportReasonOther": "Egyéb",
+    "addCon": "Hátrány hozzáadása",
+    "addPro": "Előny hozzáadása",
     "addReview": "Értékelés hozzáadása",
     "addOwnerResponse": "Válasz hozzáadása",
     "addedOn": "hozzáadva",

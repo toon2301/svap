@@ -4466,6 +4466,8 @@
     "reportReasonSpam": "Spam",
     "reportReasonFake": "Gefälschte Bewertung",
     "reportReasonOther": "Sonstiges",
+    "addCon": "Nachteil hinzufügen",
+    "addPro": "Vorteil hinzufügen",
     "addReview": "Bewertung hinzufügen",
     "addOwnerResponse": "Antwort hinzufügen",
     "addedOn": "hinzugefügt",

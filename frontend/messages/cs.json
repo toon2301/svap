@@ -4466,6 +4466,8 @@
     "reportReasonSpam": "Spam",
     "reportReasonFake": "Falešná recenze",
     "reportReasonOther": "Jiné",
+    "addCon": "Přidat minus",
+    "addPro": "Přidat plus",
     "addReview": "Pridať recenziu",
     "addOwnerResponse": "Pridať odpoveď majiteľa",
     "addedOn": "pridané",

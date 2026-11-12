@@ -29,3 +29,14 @@ export function getInitials(name: string): string {
   if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
   return '?';
 }
+
+/**
+ * Pridá nepotvrdený text zo vstupu na koniec zoznamu plusov alebo mínusov: oriezaný, najviac `MAX_ITEM_CHARS` znakov;
+ * prázdny text sa nepridá a zoznam nikdy nepresiahne `MAX_PRO_CON_ITEMS` položiek. Vstupný zoznam sa nemení; ak sa
+ * nič nepridá, vráti sa ten istý zoznam (volajúci to pozná podľa rovnosti odkazov).
+ */
+export function withPendingItem(items: string[], pendingInput: string): string[] {
+  const trimmed = pendingInput.trim().slice(0, MAX_ITEM_CHARS);
+  if (!trimmed || items.length >= MAX_PRO_CON_ITEMS) return items;
+  return [...items, trimmed];
+}
