@@ -21,7 +21,8 @@ interface CategoryDefinition {
  * vypnutom internete) sa ukáže ako toast, nie ako blok, ktorý by posunul obsah (nález 308). Keď je hlavný vypínač
  * „Vypnúť všetko“ zapnutý (`in_app_notifications` je `false`, R35), kategórie sa ukážu ako „Vypnuté“ a zakázané; ich
  * uložené hodnoty sa nemenia, takže sa po vypnutí hlavného vypínača vrátia. Kým sa voľby nenačítajú (`loading`), riadok
- * nesie `loading` a namiesto hodnoty sa ukáže kostra; po zlyhaní načítania sú riadky zakázané.
+ * nesie `loading` a namiesto hodnoty sa ukáže kostra; po zlyhaní načítania sú riadky zakázané a ich hodnota je
+ * neznáma (`null`): predvolené hodnoty nie sú stav servera, preto sa nesmú ukázať ako vybrané (PR 258).
  */
 export function useNotificationCategories(
   controller: NotificationPreferencesController,
@@ -82,7 +83,7 @@ export function useNotificationCategories(
     id,
     title,
     description,
-    value: blocked ? false : preferences[preference],
+    value: loadFailed ? null : blocked ? false : preferences[preference],
     disabled: blocked || loadFailed,
     loading,
     onChange: (enabled: boolean) => {

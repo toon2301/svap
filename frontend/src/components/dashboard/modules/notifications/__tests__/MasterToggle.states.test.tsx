@@ -59,6 +59,23 @@ describe('MasterToggle: zakázaný a načítavaný stav', () => {
     expect(button).toHaveClass('animate-pulse');
   });
 
+  it('neznáma poloha (enabled null, hodnota sa nenačítala): zakázaný vypínač bez bežca a bez pulzu, kliknutie nič nezmení', () => {
+    const onChange = jest.fn();
+    render(<MasterToggle enabled={null} onChange={onChange} label="Vypnúť všetko" testId="master" />);
+
+    const button = screen.getByTestId('master');
+    fireEvent.click(button);
+
+    expect(button).toBeDisabled();
+    expect(button.querySelector('span')).toBeNull();
+    expect(button).not.toHaveClass('bg-purple-400');
+    expect(button).not.toHaveClass('animate-pulse');
+    expect(button).not.toHaveClass('invisible');
+    // Nejde o načítavanie: vypínač nie je zaneprázdnený, len jeho hodnotu nepoznáme.
+    expect(button).not.toHaveAttribute('aria-busy');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('po načítaní sa vráti bežný vypínač s bežcom v správnej polohe', () => {
     const { rerender } = render(
       <MasterToggle enabled label="Vypnúť všetko" onChange={jest.fn()} loading testId="master" />,

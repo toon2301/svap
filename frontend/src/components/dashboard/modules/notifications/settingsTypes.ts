@@ -30,9 +30,8 @@ export interface NotificationsCommonLabels {
 
 /** Hlavný vypínač „Vypnúť všetko“. */
 export interface NotificationsMaster {
-  enabled: boolean;
-  /** Vypínač sa nedá meniť (voľby sa nenačítali zo servera). */
-  disabled: boolean;
+  /** Poloha vypínača; `null` = hodnota nie je známa (nenačítala sa zo servera): bez polohy a zakázaný. */
+  enabled: boolean | null;
   /** Voľby sa ešte načítavajú zo servera: vypínač nemá polohu, len kostru. */
   loading: boolean;
   onChange: (enabled: boolean) => void;
@@ -43,8 +42,11 @@ export interface NotificationCategoryRow {
   id: NotificationCategoryId;
   title: string;
   description: string;
-  /** Zobrazená hodnota („Zapnuté“ = `true`); pri zablokovanej kategórii vždy `false`. */
-  value: boolean;
+  /**
+   * Zobrazená hodnota („Zapnuté“ = `true`); pri zablokovanej kategórii vždy `false`. `null` = hodnota nie je známa
+   * (nenačítala sa zo servera): žiadna voľba nie je vybraná, nie predvolená.
+   */
+  value: boolean | null;
   /** Riadky sa nedajú meniť (kategórie sú zablokované hlavným vypínačom alebo sa nenačítali zo servera). */
   disabled: boolean;
   /** Hodnoty sa ešte načítavajú zo servera: namiesto riadkov je kostra (nikdy nepravdivé „Vypnuté“). */
@@ -52,9 +54,9 @@ export interface NotificationCategoryRow {
   onChange: (enabled: boolean) => void;
 }
 
-/** Voľba Správy (push) z `usePushMessagesPreference`. */
+/** Voľba Správy (push) z `usePushMessagesPreference`; `value` je `null`, kým nie je známa (nenačítala sa). */
 export interface PushMessagesProps {
-  value: boolean;
+  value: boolean | null;
   disabled: boolean;
   loading: boolean;
   initialLoading?: boolean;

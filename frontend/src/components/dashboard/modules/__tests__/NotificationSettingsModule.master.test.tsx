@@ -396,7 +396,7 @@ describe('NotificationSettingsModule: hlavný vypínač pri chybe a počas nač�
     });
   });
 
-  it('po zlyhaní načítania je hlavný vypínač zakázaný', async () => {
+  it('po zlyhaní načítania je hlavný vypínač zakázaný a bez polohy (predvolená hodnota nie je stav servera)', async () => {
     const preferences = deferPreferences();
     render(<NotificationSettingsModule />);
 
@@ -405,6 +405,9 @@ describe('NotificationSettingsModule: hlavný vypínač pri chybe a počas nač�
     LAYOUTS.forEach((layout) => {
       expect(master(layout)).toBeDisabled();
       expect(master(layout)).not.toHaveAttribute('aria-busy');
+      // Neznáma poloha: bez bežca a nie fialový ako zapnutý vypínač.
+      expect(master(layout).querySelector('span')).toBeNull();
+      expect(isMasterOn(layout)).toBe(false);
     });
     expect(api.patch).not.toHaveBeenCalled();
   });

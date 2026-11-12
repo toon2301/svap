@@ -108,8 +108,8 @@ export function usePushMessagesPreference() {
  * načítanie uloženej voľby (nález 286): kontrola prehliadača ho nedrží, aby voľba nezostala navždy v kostre, ak sa
  * service worker neozve. `error` skladá tri zdroje v tomto poradí: chyba uloženia či načítania voľby, chyba po akcii
  * (zapnutie, vypnutie, automatická registrácia; je to stav a trvá do ďalšej akcie) a pasívne varovanie odvodené počas
- * vykresľovania (`getPassiveBrowserWarning`). `disabled` platí aj po zlyhaní načítania voľby. Všetky texty sú preložené
- * (nález 319).
+ * vykresľovania (`getPassiveBrowserWarning`). Po zlyhaní načítania voľby je `value` neznáma (`null`, predvolené „Vypnuté“
+ * nie je stav servera, PR 258) a `disabled` platí. Všetky texty sú preložené (nález 319).
  */
 export function usePushMessagesPreferenceWith(controller: NotificationPreferencesController) {
   const { t } = useLanguage();
@@ -339,7 +339,7 @@ export function usePushMessagesPreferenceWith(controller: NotificationPreference
   );
 
   return {
-    value: preferences.pushNotifications,
+    value: loadFailed ? null : preferences.pushNotifications,
     // Po zlyhaní načítania je voľba zakázaná: zobrazená hodnota je len predvolená, nie stav servera.
     disabled:
       loadingPreferences ||

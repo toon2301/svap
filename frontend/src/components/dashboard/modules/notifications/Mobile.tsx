@@ -51,7 +51,6 @@ export default function Mobile({
           <MasterToggle
             enabled={master.enabled}
             onChange={master.onChange}
-            disabled={master.disabled}
             loading={master.loading}
             label=""
             compact
@@ -81,14 +80,14 @@ export default function Mobile({
             <div className="space-y-0">
               <OptionRow
                 label={labelsCommon.off}
-                selected={!pushMessages.value}
+                selected={pushMessages.value === false}
                 disabled={pushMessages.disabled}
                 onSelect={() => pushMessages.onChange(false)}
               />
               <div className="-mt-1" />
               <OptionRow
                 label={labelsCommon.on}
-                selected={pushMessages.value}
+                selected={pushMessages.value === true}
                 disabled={pushMessages.disabled}
                 onSelect={() => pushMessages.onChange(true)}
                 rightDot
@@ -127,14 +126,14 @@ export default function Mobile({
                 <div className="space-y-0">
                   <OptionRow
                     label={labelsCommon.off}
-                    selected={!category.value}
+                    selected={category.value === false}
                     disabled={category.disabled}
                     onSelect={() => category.onChange(false)}
                   />
                   <div className="-mt-1" />
                   <OptionRow
                     label={labelsCommon.on}
-                    selected={category.value}
+                    selected={category.value === true}
                     disabled={category.disabled}
                     onSelect={() => category.onChange(true)}
                     rightDot

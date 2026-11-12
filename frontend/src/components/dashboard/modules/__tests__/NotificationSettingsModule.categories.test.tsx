@@ -422,4 +422,42 @@ describe('NotificationSettingsModule: zlyhanie načítania', () => {
     });
     expect(api.patch).not.toHaveBeenCalled();
   });
+
+  it('neznáma hodnota sa neukazuje ako vybraná: žiadna kategória ani Správy nemajú vybraný riadok (PR 258)', async () => {
+    const preferences = deferPreferences();
+    render(<NotificationSettingsModule />);
+
+    await preferences.fail();
+
+    // Predvolené hodnoty (kategórie „Zapnuté“, Správy „Vypnuté“) nie sú stav servera, preto nesmú vyzerať ako vybrané.
+    LAYOUTS.forEach((layout) => {
+      CATEGORIES.forEach(([id]) => {
+        expect(isSelected(option(id, layout, 'Vypnuté'))).toBe(false);
+        expect(isSelected(option(id, layout, 'Zapnuté'))).toBe(false);
+      });
+      const push = screen.getByTestId(`notifications-push-messages-${layout}`);
+      expect(isSelected(within(push).getByRole('button', { name: /Vypnuté/ }))).toBe(false);
+      expect(isSelected(within(push).getByRole('button', { name: /Zapnuté/ }))).toBe(false);
+    });
+  });
+
+  it('po úspešnom načítaní je vždy vybraná práve jedna voľba (kategórie aj Správy)', async () => {
+    resetServer({ notify_comments: false, push_notifications: true });
+    mockServer();
+    render(<NotificationSettingsModule />);
+    await waitFor(() => expect(within(category('comments', 'desktop')).getAllByRole('button')).toHaveLength(2));
+
+    LAYOUTS.forEach((layout) => {
+      const boxes = [
+        ...CATEGORIES.map(([id]) => category(id, layout)),
+        screen.getByTestId(`notifications-push-messages-${layout}`),
+      ];
+      boxes.forEach((box) => {
+        const selected = within(box)
+          .getAllByRole('button')
+          .filter((button) => isSelected(button));
+        expect(selected).toHaveLength(1);
+      });
+    });
+  });
 });

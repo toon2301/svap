@@ -154,7 +154,6 @@ export default function Desktop({
           <MasterToggle
             enabled={master.enabled}
             onChange={master.onChange}
-            disabled={master.disabled}
             loading={master.loading}
             label={labels.turnOffAll}
             testId="notifications-master-toggle-desktop"

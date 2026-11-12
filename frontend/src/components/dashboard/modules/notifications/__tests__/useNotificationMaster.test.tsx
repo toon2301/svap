@@ -64,16 +64,17 @@ describe('useNotificationMaster', () => {
     });
   });
 
-  it('počas načítania je vypínač zakázaný a nesie príznak načítavania; po zlyhaní načítania je len zakázaný', () => {
+  it('počas načítania nesie vypínač príznak načítavania; po zlyhaní načítania je jeho poloha neznáma (null), nie vypnutá', () => {
     const loading = renderHook(() => useNotificationMaster(makeController({ loading: true })));
     expect(loading.result.current.loading).toBe(true);
 
     const failed = renderHook(() => useNotificationMaster(makeController({ loadFailed: true })));
-    expect(failed.result.current.disabled).toBe(true);
+    // Predvolená hodnota (upozornenia zapnuté, vypínač vypnutý) nie je stav servera, preto sa nesmie ukázať.
+    expect(failed.result.current.enabled).toBeNull();
     expect(failed.result.current.loading).toBe(false);
 
     const ready = renderHook(() => useNotificationMaster(makeController()));
-    expect(ready.result.current.disabled).toBe(false);
+    expect(ready.result.current.enabled).toBe(false);
     expect(ready.result.current.loading).toBe(false);
   });
 

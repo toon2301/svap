@@ -125,12 +125,26 @@ describe('useNotificationCategories', () => {
     expect(result.current.every((row) => row.loading === true)).toBe(true);
   });
 
-  it('po zlyhaní načítania sú riadky zakázané a už sa nenačítavajú', () => {
+  it('po zlyhaní načítania sú riadky zakázané, už sa nenačítavajú a ich hodnota je neznáma (null), nie predvolená', () => {
     const controller = makeController({ loadFailed: true });
     const { result } = renderHook(() => useNotificationCategories(controller));
 
     expect(result.current.every((row) => row.disabled === true)).toBe(true);
     expect(result.current.every((row) => row.loading === false)).toBe(true);
+    // Predvolené hodnoty (všetko zapnuté) nie sú stav servera, preto sa nesmú ukázať ako vybrané.
+    expect(result.current.every((row) => row.value === null)).toBe(true);
+  });
+
+  it('pri úspešnom načítaní je hodnota vždy pravdivostná (nie null), aj pri zablokovaní hlavným vypínačom', () => {
+    const loaded = renderHook(() => useNotificationCategories(makeController()));
+    expect(loaded.result.current.every((row) => typeof row.value === 'boolean')).toBe(true);
+
+    const blocked = renderHook(() =>
+      useNotificationCategories(
+        makeController({ preferences: { ...DEFAULT_PREFERENCES, inAppNotifications: false } }),
+      ),
+    );
+    expect(blocked.result.current.every((row) => row.value === false)).toBe(true);
   });
 
   it('chyba uloženia ide na toast s jedným spoločným identifikátorom, nie do stránky', () => {

@@ -7,7 +7,8 @@ import OptionRowsSkeleton from './OptionRowsSkeleton';
 interface SectionProps {
   title: string;
   description: string;
-  value: boolean;
+  /** Zobrazená hodnota; `null` = nie je známa (nenačítala sa zo servera): žiadny riadok nie je vybraný. */
+  value: boolean | null;
   setValue: (v: boolean) => void;
   disabled?: boolean;
   icon?: React.ReactNode;
@@ -22,8 +23,8 @@ interface SectionProps {
 
 /**
  * Sekcia Upozornení s nadpisom, popisom, ikonou a dvojicou riadkov „Vypnuté / Zapnuté“. S `loading` namiesto riadkov
- * ukáže kostru rovnakej výšky (nález 286), takže sa po načítaní uloženej voľby nič neposunie. Bez `loading` sa sekcia
- * správa ako doteraz.
+ * ukáže kostru rovnakej výšky (nález 286), takže sa po načítaní uloženej voľby nič neposunie. S hodnotou `null` (po
+ * zlyhaní načítania) sú riadky vykreslené, no žiadny nie je vybraný. Inak sa sekcia správa ako doteraz.
  */
 export default function Section({ title, description, value, setValue, disabled, icon, desktop, offLabel = 'Vypnuté', onLabel = 'Zapnuté', loading = false, loadingLabel = 'Načítavam...' }: SectionProps) {
   return (
@@ -38,9 +39,9 @@ export default function Section({ title, description, value, setValue, disabled,
             <OptionRowsSkeleton label={loadingLabel} dense={desktop} testId="section-options-skeleton" />
           ) : (
             <div className="space-y-0">
-              <OptionRow label={offLabel} selected={!value} disabled={disabled} onSelect={() => setValue(false)} dense={desktop} />
+              <OptionRow label={offLabel} selected={value === false} disabled={disabled} onSelect={() => setValue(false)} dense={desktop} />
               <div className={desktop ? '' : '-mt-1'} />
-              <OptionRow label={onLabel} selected={value} disabled={disabled} onSelect={() => setValue(true)} dense={desktop} />
+              <OptionRow label={onLabel} selected={value === true} disabled={disabled} onSelect={() => setValue(true)} dense={desktop} />
             </div>
           )}
         </div>
