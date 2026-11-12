@@ -454,6 +454,11 @@ DONE_PR_TABLE = [
     ('#198', '138', '154, 165, 166 (+ „a ďalší (N)“ a hlášky pri Obľúbených)'),
 ]
 
+# Zlúčené PR, v ktorých nie je hotový ani jeden celý nález (len časť otvoreného nálezu); pridávajú sa za riadky odvodené z `DONE_SINCE`.
+DONE_PR_TABLE_CASTOCNE = [
+    ('#257', 'K19', '321 (etapy 1 a 2 zo štyroch: server; zostáva rozhranie a E2E)'),
+]
+
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.
 SERIA_UPOZORNENIA = (
     'Séria Upozornenia (nečíslované nálezy): #187 riadky upozornení na mobile majú 72 px ako riadky konverzácií, '

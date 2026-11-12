@@ -326,7 +326,8 @@ def _hotove(d, m):
     podla_pr = defaultdict(list)
     for x in stav.DONE_SINCE:
         podla_pr[(x.get('pr') or 'PR čaká', x.get('vetva', ''))].append(str(x['n']))
-    riadky = list(stav.DONE_PR_TABLE) + [(pr, vetva, ', '.join(cisla)) for (pr, vetva), cisla in podla_pr.items()]
+    riadky = (list(stav.DONE_PR_TABLE) + [(pr, vetva, ', '.join(cisla)) for (pr, vetva), cisla in podla_pr.items()]
+              + list(stav.DONE_PR_TABLE_CASTOCNE))
     d.tabulka(['PR', 'Vetva', 'Položky'], riadky)
     d.w(stav.SERIA_UPOZORNENIA)
     d.w()
