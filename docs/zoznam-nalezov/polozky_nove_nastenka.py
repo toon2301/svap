@@ -7,7 +7,7 @@ nálezy (270, 271, 273, 274, 276, 277, 279, 281, 282, 286, 291, 292, 293, 296, 2
 PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, preto sa každá položka porovnala s týmto zoznamom a s
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
-po oprave odstráni odtiaľto a zapíše do `hotove_dalsie.DONE_SINCE_DALSIE`; čísla sa nikdy nepoužívajú znova.
+po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova.
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401

@@ -267,6 +267,22 @@ NEW_ITEMS_223 = [
               '14:39:25, 14:43:44 až 14:44:09 a 14:47:31 až 14:48:07 UTC; pre 403 aj 14:45:36, 14:45:46, 15:21:16 a 15:21:26 UTC) '
               'hľadať `Failed to proxy`, `ECONNRESET`, `socket hang up` alebo `Parse Error`: nález tam by znamenal problém spojenia '
               'Next → backend, ktorý môže postihnúť aj používateľov, a chýbajúci záznam by naznačoval, že požiadavka sa k Next '
-              'nedostala.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11. a 12. 11. 2026 (dym po K18 a celý beh po K19) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              'nedostala. '
+              'DODATOK 13. 11. 2026 (Codex, správa o lokálnych úpravách po K20; nič sa nespúšťalo proti Railway, aplikácia sa '
+              'nemenila, prijatý základ ostáva 427 / 2 / 303; úpravy sú len lokálne na vetve `e2e/223-dokazy-limit-328` z `main` '
+              '`203e8d14` a zatiaľ nie sú commitnuté ani nahrané): (1) dôkazový fixture sa napojil na päť špecov, ktoré nemali '
+              'pôvodný blok dôkazov (`mobile-settings-offer-watch-motion`, `offer-watch-mobile-results-return`, '
+              '`search-cache-revalidation`, `search-preview-tab-top` a `sharing-from-profile`); v špecoch sa zmenil len import. (2) '
+              'Dôkaz pri obnove relácie pribudol o údaj, či je žiadosť o obnovu na ten istý pôvod (áno alebo nie), a o poslednú '
+              'pozorovanú odpoveď `GET /api/auth/csrf-token/` (stav a časy; žiadne hodnoty cookies ani tokenov). (3) Text dôkazu o '
+              'zaseknutej požiadavke je nový: „bez odpovede do konca testu (aspoň X s)“ namiesto „zlyhanie po X s“. (4) Príčina 223 '
+              'ostáva otvorená: ide len o diagnostiku, nie o opravu aplikácie. Kontroly Codexa: Node 121 z 121, izolované '
+              'prehliadačové varianty 30 z 30 (tri projekty), Jest infraštruktúry 52 z 52, zámerný beh fixture 3 prešli, 3 padli a 3 '
+              'preskočené s tromi blokmi dôkazov, `tsc`, ESLint a `git diff --check` bez chýb, zber 44 špecov a 762 variantov. Ďalší '
+              'krok podľa Codexa: dohodnúť termín porovnania natívneho Windows WebKitu a Dockeru na špecoch `search-mobile-cards`, '
+              '`offer-card-review-translations` a `search-panel-fixture` (rovnaký počet pokusov, bez zmeny testov), až potom živé '
+              'overenie opravy 328; API test siedmich volieb a scenáre kategórií čakajú, kým majiteľ nepotvrdí nasadenie K20 a nedá '
+              'súhlas (295 sa neimplementoval). Dokument `docs/playwright-odovzdanie.md` Codex aktualizoval. Čaká na majiteľa: súhlas '
+              's commitom a nahraním vetvy a dohoda termínu porovnania.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. 11. 2026 (dym po K18, celý beh po K19 a lokálne úpravy po K20) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]

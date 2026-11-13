@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Nálezy zatvorené rozhodnutím majiteľa po prvom vydaní zoznamu: `CLOSED_SINCE`.
 
-Zatvorený nález nie je opravený v kóde, preto nepatrí do `hotove_dalsie.DONE_SINCE_DALSIE`; zobrazí sa v časti 8 spolu s pôvodnými
+Zatvorený nález nie je opravený v kóde, preto nepatrí do `hotove_k20.DONE_SINCE_K20`; zobrazí sa v časti 8 spolu s pôvodnými
 zatvorenými (`povodny_zoznam.json`). Postup: nález odstrániť z `ORIG_OPEN` (`polozky_povodne.py`) alebo z `NEW_ITEMS` a pridať sem s číslom,
 rozhodnutím z `stav.DECISIONS` (musí byť rozhodnuté, teda mať `odpoved`), dátumom a textom, ktorý hovorí, prečo sa nález zatvoril.
 Kontrola v `model.py` overí číslovanie, existenciu rozhodnutia a že zatvorený nález nie je zároveň otvorený ani hotový.

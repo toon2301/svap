@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R38: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R39: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
 `alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
 na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
 zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
-mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026).
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026) a R39 (gulička pri Žiadostiach pri vypnutej kategórii, nález 330; čaká).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R39 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -306,4 +306,19 @@ DECISIONS_NASTENKA = [
          odpoved='Majiteľ 12. 11. 2026: nález 311 pri používaní nezaregistroval a nechce kvôli nemu riskovať nové chyby v spoločnom '
                   'hooku; zatiaľ ho nechá tak a nález uzatvára, ak sa prejav ukáže, dá vedieť. Agent súhlasil.',
          datum='12. 11. 2026'),
+    dict(id='R39', tema='Číselná gulička pri Žiadostiach pri vypnutej kategórii „Žiadosť o zručnosť“ (330)',
+         otazka='Pri vypnutej kategórii „Žiadosť o zručnosť“ sa nová žiadosť doručí a je viditeľná v Žiadostiach, no rozsvieti číselnú '
+                 'guličku pri položke Žiadosti v menu, lebo nová žiadosť chodí vždy (R35; kategória riadi len jej priebeh). Majiteľ pri '
+                 'ručnom teste po K20 (13. 11. 2026) očakával, že sa žiadosť doručí, ale gulička sa nezobrazí. (a) Gulička sleduje '
+                 'kategóriu: pri vypnutej kategórii sa upozornenie na novú žiadosť vytvorí rovno ako prečítané (žiadosť sa doručí a je v '
+                 'Žiadostiach, bez guličky); hlavný vypínač „Vypnúť všetko“ ostáva ako dnes (gulička sa pri novej žiadosti rozsvieti, '
+                 'ako hovorí jeho opis). (b) Ako (a), ale gulička sa nezobrazí ani pri zapnutom hlavnom vypínači a veta v jeho opise sa '
+                 'zmení (napríklad „Nové žiadosti o zručnosť sa zobrazia v Žiadostiach bez upozornenia.“). (c) Nechať ako dnes a do '
+                 'opisu kategórie doplniť vetu, že nová žiadosť chodí vždy.',
+         odporucanie='(b): každý vypínač potom robí to, čo hovorí; inak by hlavný vypínač „Vypnúť všetko“ ostal jediným, ktorý guličku '
+                        'nechá, a vyzeralo by to ako tá istá chyba znova. Žiadosť sa nestratí: ostane doručená a viditeľná v Žiadostiach a '
+                        'používateľ si guličku vypol sám. Zmena je malá (backend v jednej funkcii a jeden test, pri (b) text hlavného vypínača '
+                        'v šiestich jazykoch). Ak majiteľ chce, aby hlavný vypínač nevypínal nič, čo čaká na odpoveď druhého používateľa, volí '
+                        '(a).',
+         kedy='Pred prácou na 330 (dávka K21).'),
 ]
