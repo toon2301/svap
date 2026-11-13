@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Napíšte mínus a stlačte Enter",
     "deleteReviewFailed": "Nepodarilo sa vymazať recenziu.",
     "deleteReviewMessage": "Naozaj chceš vymazať túto recenziu? Túto akciu nemožno vrátiť späť.",
+    "deleteReviewSuccess": "Recenzia bola vymazaná.",
     "deleteReviewTitle": "Vymazať recenziu?",
     "editReview": "Upraviť recenziu",
     "experience": "Prax",

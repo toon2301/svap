@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Írjon hátrányt és nyomja meg az Entert",
     "deleteReviewFailed": "Nem sikerült törölni az értékelést.",
     "deleteReviewMessage": "Törli ezt az értékelést? Ez a művelet nem vonható vissza.",
+    "deleteReviewSuccess": "Az értékelés törölve lett.",
     "deleteReviewTitle": "Értékelés törlése?",
     "editReview": "Értékelés szerkesztése",
     "experience": "Tapasztalat",

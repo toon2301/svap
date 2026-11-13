@@ -21,7 +21,7 @@ const mockT = (key: string, fallback: string) => mockTranslations[key] ?? fallba
 
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
-  default: Object.assign(jest.fn(), { error: jest.fn() }),
+  default: Object.assign(jest.fn(), { error: jest.fn(), success: jest.fn() }),
 }));
 
 jest.mock('@/lib/api', () => ({
@@ -348,6 +348,7 @@ describe('OfferReviewsView: zlyhané zmazanie recenzie (miesto 7)', () => {
     expect(alertSpy).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledTimes(1);
     expect(toast.error).toHaveBeenCalledWith('Recenziu nemožno zmazať.');
+    expect(toast.success).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('confirm-delete')).toHaveAttribute('data-deleting', 'false');
     expect(screen.getByTestId('review-count')).toHaveTextContent('1');
@@ -365,6 +366,7 @@ describe('OfferReviewsView: zlyhané zmazanie recenzie (miesto 7)', () => {
     expect(alertSpy).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledTimes(1);
     expect(toast.error).toHaveBeenCalledWith('Could not delete the review.');
+    expect(toast.success).not.toHaveBeenCalled();
     expect(mockLeakedErrors).toEqual([]);
   });
 
@@ -376,9 +378,10 @@ describe('OfferReviewsView: zlyhané zmazanie recenzie (miesto 7)', () => {
 
     expect(toast.error).toHaveBeenCalledTimes(1);
     expect(toast.error).toHaveBeenCalledWith('Nepodarilo sa vymazať recenziu.');
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it('úspešné zmazanie načíta zoznam znova, zavrie potvrdenie a nič neukáže ani natívnym oknom, ani toastom', async () => {
+  it('úspešné zmazanie načíta zoznam znova, zavrie potvrdenie a ukáže toast úspechu (bez chyby a bez natívneho okna; nález 325)', async () => {
     mockApiDelete.mockResolvedValue({ data: {} });
     await renderView();
 
@@ -386,9 +389,70 @@ describe('OfferReviewsView: zlyhané zmazanie recenzie (miesto 7)', () => {
 
     expect(mockApiGet).toHaveBeenCalledTimes(3);
     expect(screen.queryByTestId('confirm-delete')).not.toBeInTheDocument();
+    expect(toast.success).toHaveBeenCalledTimes(1);
+    expect(toast.success).toHaveBeenCalledWith('Recenzia bola vymazaná.');
     expect(toast.error).not.toHaveBeenCalled();
     expect(alertSpy).not.toHaveBeenCalled();
     expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('text toastu úspechu je z prekladu `reviews.deleteReviewSuccess`', async () => {
+    mockTranslations = { 'reviews.deleteReviewSuccess': 'The review was deleted.' };
+    mockApiDelete.mockResolvedValue({ data: {} });
+    await renderView();
+
+    await confirmDelete();
+
+    expect(toast.success).toHaveBeenCalledTimes(1);
+    expect(toast.success).toHaveBeenCalledWith('The review was deleted.');
+  });
+
+  it('toast úspechu sa ukáže až po načítaní zoznamu: kým sa zoznam načítava, potvrdenie ostáva a toast nie je', async () => {
+    let releaseReload!: () => void;
+    let listCalls = 0;
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.startsWith('skills/')) return Promise.resolve({ data: {} });
+      listCalls += 1;
+      if (listCalls === 1) return Promise.resolve({ data: pageWith([review(1)]) });
+      return new Promise((resolve) => {
+        releaseReload = () => resolve({ data: pageWith([]) });
+      });
+    });
+    mockApiDelete.mockResolvedValue({ data: {} });
+    await renderView();
+
+    await confirmDelete();
+
+    expect(mockApiDelete).toHaveBeenCalledWith('reviews/detail/1');
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByTestId('confirm-delete')).toHaveAttribute('data-deleting', 'true');
+
+    await act(async () => {
+      releaseReload();
+    });
+
+    expect(toast.success).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('confirm-delete')).not.toBeInTheDocument();
+    expect(screen.getByTestId('review-count')).toHaveTextContent('0');
+  });
+
+  it('zmazanie prejde, no zoznam sa nenačíta: toast úspechu nie je, chyba je ako doteraz a potvrdenie ostáva (R37 b sa nerobí)', async () => {
+    let listCalls = 0;
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.startsWith('skills/')) return Promise.resolve({ data: {} });
+      listCalls += 1;
+      return listCalls === 1 ? Promise.resolve({ data: pageWith([review(1)]) }) : Promise.reject(new Error('reload failed'));
+    });
+    mockApiDelete.mockResolvedValue({ data: {} });
+    await renderView();
+
+    await confirmDelete();
+
+    expect(mockApiDelete).toHaveBeenCalledWith('reviews/detail/1');
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Nepodarilo sa vymazať recenziu.');
+    expect(screen.getByTestId('confirm-delete')).toHaveAttribute('data-deleting', 'false');
   });
 
   it('kľúč `reviews.deleteReviewFailed` je preložený vo všetkých šiestich jazykoch a slovenský text zodpovedá záložnému', () => {
@@ -397,5 +461,15 @@ describe('OfferReviewsView: zlyhané zmazanie recenzie (miesto 7)', () => {
       expect(messages.reviews.deleteReviewFailed.trim()).not.toBe('');
     });
     expect(sk.reviews.deleteReviewFailed).toBe('Nepodarilo sa vymazať recenziu.');
+  });
+
+  it('kľúč `reviews.deleteReviewSuccess` je preložený vo všetkých šiestich jazykoch (nie skopírovaná slovenčina) a slovenský text zodpovedá záložnému', () => {
+    const texts = [sk, cs, en, pl, de, hu].map((messages) => {
+      expect(typeof messages.reviews.deleteReviewSuccess).toBe('string');
+      expect(messages.reviews.deleteReviewSuccess.trim()).not.toBe('');
+      return messages.reviews.deleteReviewSuccess;
+    });
+    expect(new Set(texts).size).toBe(texts.length);
+    expect(sk.reviews.deleteReviewSuccess).toBe('Recenzia bola vymazaná.');
   });
 });
