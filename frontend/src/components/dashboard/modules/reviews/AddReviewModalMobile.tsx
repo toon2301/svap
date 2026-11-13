@@ -50,6 +50,8 @@ export function AddReviewModalMobile({
       setCons([]);
       setProInput('');
       setConInput('');
+      // Okno ostáva po zatvorení vytvorené (stály `key`): príznak odosielania sa vráti, aby bolo pri ďalšom otvorení použiteľné.
+      setIsSubmitting(false);
     }
   }, [open]);
 
