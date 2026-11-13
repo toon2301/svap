@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "min",
     "title": "Powiadomienia",
     "turnOffAll": "Wyłącz wszystko",
-    "turnOffAllDesc": "Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności będą nadal przychodzić.",
+    "turnOffAllDesc": "Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności i tak pojawią się w Prośbach, tylko bez odznaki.",
     "unknownActor": "Użytkownik",
     "unreadLabel": "Nieprzeczytane"
   },
@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Wpisz minus i naciśnij Enter",
     "deleteReviewFailed": "Nie udało się usunąć opinii.",
     "deleteReviewMessage": "Czy na pewno chcesz usunąć tę opinię? Tej akcji nie można cofnąć.",
+    "deleteReviewSuccess": "Opinia została usunięta.",
     "deleteReviewTitle": "Usunąć opinię?",
     "editReview": "Edytuj opinię",
     "experience": "Doświadczenie",

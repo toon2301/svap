@@ -9,6 +9,10 @@ zaradený, aby po novom type nezostalo upozornenie bez rozhodnutia.
 
 Hlavný vypínač `in_app_notifications` je nezávislý a rieši sa v notification_core.
 
+Počiatočná žiadosť o zručnosť (`SKILL_REQUEST`) patrí do kategórie `notify_skill_requests`, no nejde cez
+create_notification: create_skill_request_notification ju vytvorí vždy (žiadosť sa doručí a je v Žiadostiach), pri vypnutej
+kategórii alebo hlavnom vypínači však už prečítanú, takže sa nepočíta do odznaku (nález 330, R39 (b)).
+
 LEAF modul: importuje len modely, takže ho notification_core môže bezpečne importovať.
 """
 
@@ -16,14 +20,11 @@ from __future__ import annotations
 
 from accounts.models import NotificationType
 
-# Typy bez vlastného prepínača: zhoda sledovania, pozvánka do skupiny a počiatočná
-# žiadosť o zručnosť (tá obchádza aj hlavný vypínač, pozri
-# create_skill_request_notification).
+# Typy bez vlastného prepínača: zhoda sledovania a pozvánka do skupiny.
 ALWAYS_ON_NOTIFICATION_TYPES: frozenset[str] = frozenset(
     {
         NotificationType.OFFER_WATCH_MATCH,
         NotificationType.GROUP_INVITATION,
-        NotificationType.SKILL_REQUEST,
     }
 )
 
@@ -45,7 +46,9 @@ NOTIFICATION_TYPE_CATEGORY: dict[str, str] = {
     # Označenia a zdieľania
     NotificationType.FEED_POST_TAGGED: "notify_tags_and_shares",
     NotificationType.FEED_POST_SHARED: "notify_tags_and_shares",
-    # Žiadosť o zručnosť (okrem počiatočnej žiadosti, tá chodí vždy)
+    # Žiadosť o zručnosť (aj počiatočná žiadosť: tá nejde cez create_notification, pri vypnutej
+    # kategórii ju create_skill_request_notification vytvorí ako prečítanú, pozri modul vyššie)
+    NotificationType.SKILL_REQUEST: "notify_skill_requests",
     NotificationType.SKILL_REQUEST_ACCEPTED: "notify_skill_requests",
     NotificationType.SKILL_REQUEST_REJECTED: "notify_skill_requests",
     NotificationType.SKILL_REQUEST_COMPLETION_REQUESTED: "notify_skill_requests",

@@ -5,7 +5,7 @@
  *
  * `app/global-error.tsx` nahrádza celý koreňový layout, takže tu nie sú dostupné poskytovatelia (jazyk,
  * téma), štýly z `globals.css` ani router. Preto:
- * - jazyk sa číta priamo (uložená voľba `appLocale`, inak jazyk prehliadača, inak slovenčina),
+ * - jazyk sa číta priamo (uložená voľba `appLocale`, inak jazyk prehliadača, inak angličtina),
  * - texty sú v `messages/*.json` pod kľúčom `appError` (všetkých 6 jazykov), rovnako ako ostatné texty,
  * - vzhľad je zapísaný priamo v štýloch; farby pozadia a textu preberá z režimu prehliadača (`Canvas`,
  *   `CanvasText`), takže stránka je čitateľná vo svetlom aj tmavom režime,
@@ -46,7 +46,7 @@ export function globalErrorTexts(locale: GlobalErrorLocale): GlobalErrorTexts {
 }
 
 /**
- * Jazyk prehliadača zúžený na jazyky appky; neznámy jazyk dá slovenčinu. Rovnaké pravidlo ako
+ * Jazyk prehliadača zúžený na jazyky appky; neznámy jazyk dá angličtinu (zvyšok sveta, nález 332). Rovnaké pravidlo ako
  * `localeFromBrowser` v `LanguageContext`, no tu je zámerne vlastná kópia: stránka `global-error` sa ukazuje
  * vtedy, keď niečo zlyhalo v koreni appky, a nemá závisieť od modulov, ktoré mohli chybu spôsobiť.
  */
@@ -61,13 +61,13 @@ function localeFromNavigator(): GlobalErrorLocale {
     if (value.startsWith('hu')) return 'hu';
     if (value.startsWith('en')) return 'en';
   } catch {
-    // Bez údajov z prehliadača ostane slovenčina.
+    // Bez údajov z prehliadača ostane angličtina.
   }
-  return 'sk';
+  return 'en';
 }
 
 /**
- * Jazyk, v ktorom sa má chyba ukázať: uložená voľba používateľa, inak jazyk prehliadača, inak slovenčina.
+ * Jazyk, v ktorom sa má chyba ukázať: uložená voľba používateľa, inak jazyk prehliadača, inak angličtina.
  * Úložisko nemusí byť dostupné (súkromný režim, zablokované cookies) – to nie je dôvod, aby stránka spadla.
  */
 export function readGlobalErrorLocale(): GlobalErrorLocale {

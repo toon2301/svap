@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "min",
     "title": "Notifications",
     "turnOffAll": "Turn off all",
-    "turnOffAllDesc": "Turns off all notifications except Messages. New skill requests will still arrive.",
+    "turnOffAllDesc": "Turns off all notifications except Messages. New skill requests will still appear in Requests, just without a badge.",
     "unknownActor": "User",
     "unreadLabel": "Unread"
   },
@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Type a con and press Enter",
     "deleteReviewFailed": "Could not delete the review.",
     "deleteReviewMessage": "Are you sure you want to delete this review? This action cannot be undone.",
+    "deleteReviewSuccess": "The review was deleted.",
     "deleteReviewTitle": "Delete review?",
     "editReview": "Edit review",
     "experience": "Prax",

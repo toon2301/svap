@@ -64,6 +64,10 @@ export function localeFromCountry(country: CountryCode): SupportedLocale | null 
   return null;
 }
 
+/**
+ * Jazyk prehliadača zúžený na jazyky aplikácie (pl, sk, cs, de, hu, en). Jazyk mimo nich, prázdny jazyk aj chyba pri
+ * čítaní jazyka prehliadača dajú angličtinu: zvyšok sveta dostane angličtinu (R2, nález 332).
+ */
 export function localeFromBrowser(): SupportedLocale {
   try {
     const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
@@ -75,7 +79,7 @@ export function localeFromBrowser(): SupportedLocale {
     if (value.startsWith('hu')) return 'hu';
     if (value.startsWith('en')) return 'en';
   } catch {}
-  return 'sk';
+  return 'en';
 }
 
 function getByPath(messages: Record<string, unknown>, key: string): unknown {

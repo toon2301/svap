@@ -77,10 +77,27 @@ describe('jazyk stránky global-error', () => {
     expect(readGlobalErrorLocale()).toBe(expected);
   });
 
-  it('neznámy jazyk prehliadača dá slovenčinu', () => {
-    browserSpeaks('fr-FR');
+  it.each(['fr-FR', 'ja-JP', 'th-TH', ''])('neznámy jazyk prehliadača (%j) dá angličtinu (zvyšok sveta, nález 332)', (language) => {
+    browserSpeaks(language);
 
-    expect(readGlobalErrorLocale()).toBe('sk');
+    expect(readGlobalErrorLocale()).toBe('en');
+  });
+
+  it('bez údajov z prehliadača (čítanie jazyka zlyhá) dá angličtinu', () => {
+    jest.spyOn(window.navigator, 'languages', 'get').mockImplementation(() => {
+      throw new Error('Denied');
+    });
+
+    expect(readGlobalErrorLocale()).toBe('en');
+  });
+
+  it('nedostupné úložisko a neznámy jazyk prehliadača dajú angličtinu', () => {
+    browserSpeaks('fr-FR');
+    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    expect(readGlobalErrorLocale()).toBe('en');
   });
 
   it.each(['xx', '', 'constructor', '__proto__', 'toString'])(

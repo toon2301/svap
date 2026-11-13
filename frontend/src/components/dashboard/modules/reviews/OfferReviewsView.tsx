@@ -22,6 +22,7 @@ import { invalidateOffersCache } from '../profile/profileOffersCache';
 import { DASHBOARD_HOME_PATH } from '../../components/dashboardRoutes';
 import { useOfferReviewsBack } from '../../contexts/OfferReviewsBackContext';
 import { adoptOfferReviewsOrigin } from './offerReviewsOrigin';
+import { useConfirmDeleteReview } from './useConfirmDeleteReview';
 
 const REVIEWS_PAGE_SIZE = 10;
 
@@ -347,6 +348,18 @@ export default function OfferReviewsView({
     setReviewsTotalPages(data.total_pages || 1);
   };
 
+  // Potvrdenie zmazania vlastnej recenzie (zmazanie, nový zoznam, toast úspechu) rieši samostatný hook.
+  const confirmDeleteReview = useConfirmDeleteReview({
+    offerId,
+    reviewIdToDelete,
+    viewerUserId,
+    offerOwnerUserId: offer?.user_id ?? offer?.owner?.id,
+    reloadReviews,
+    setOffer,
+    setReviewIdToDelete,
+    setIsDeletingReview,
+  });
+
   const isBusinessOwner = useMemo(() => {
     if (!offer || !user) return false;
     return offer.user_id === user.id || offer.owner?.id === user.id;
@@ -580,29 +593,7 @@ export default function OfferReviewsView({
         open={reviewIdToDelete !== null}
         onClose={() => setReviewIdToDelete(null)}
         isDeleting={isDeletingReview}
-        onConfirm={async () => {
-          if (reviewIdToDelete == null || offerId == null) return;
-          setIsDeletingReview(true);
-          try {
-            await api.delete(endpoints.reviews.detail(reviewIdToDelete));
-            await reloadReviews();
-            setOffer((prev) =>
-              prev ? { ...prev, already_reviewed: false, can_review: true } : prev,
-            );
-
-            // Po zmene recenzie invaliduj cache ponúk, aby sa ikona recenzií na profile prepnula hneď po návrate.
-            if (viewerUserId != null) invalidateOffersCache(viewerUserId);
-            const ownerUserIdForInvalidation = offer?.user_id ?? offer?.owner?.id;
-            if (typeof ownerUserIdForInvalidation === 'number') invalidateOffersCache(ownerUserIdForInvalidation);
-
-            setReviewIdToDelete(null);
-          } catch (error: unknown) {
-            console.error('Chyba pri vymazávaní recenzie:', error);
-            toast.error(getFieldErrorMessage(error, t('reviews.deleteReviewFailed', 'Nepodarilo sa vymazať recenziu.')));
-          } finally {
-            setIsDeletingReview(false);
-          }
-        }}
+        onConfirm={confirmDeleteReview}
       />
 
       <AddReviewModal

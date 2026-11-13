@@ -261,8 +261,9 @@ def skill_requests_view(request):
             status=status.HTTP_200_OK,
         )
 
-    # Notifikácia pre vlastníka karty – cez service (jednotné vytváranie:
-    # rešpektuje in_app_notifications, dispatch Requests badge cez on_commit).
+    # Notifikácia pre vlastníka karty – cez service (jednotné vytváranie: vytvorí sa vždy,
+    # pri vypnutom hlavnom vypínači alebo kategórii ako prečítaná, takže odznak nesvieti;
+    # dispatch Requests badge cez on_commit).
     try:
         create_skill_request_notification(
             skill_request=obj,

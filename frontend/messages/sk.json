@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "m",
     "title": "Upozornenia",
     "turnOffAll": "Vypnúť všetko",
-    "turnOffAllDesc": "Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť budú chodiť ďalej.",
+    "turnOffAllDesc": "Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.",
     "unknownActor": "Používateľ",
     "unreadLabel": "Neprečítané"
   },
@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Napíšte mínus a stlačte Enter",
     "deleteReviewFailed": "Nepodarilo sa vymazať recenziu.",
     "deleteReviewMessage": "Naozaj chceš vymazať túto recenziu? Túto akciu nemožno vrátiť späť.",
+    "deleteReviewSuccess": "Recenzia bola vymazaná.",
     "deleteReviewTitle": "Vymazať recenziu?",
     "editReview": "Upraviť recenziu",
     "experience": "Prax",

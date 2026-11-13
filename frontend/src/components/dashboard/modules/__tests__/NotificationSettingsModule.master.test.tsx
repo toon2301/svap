@@ -430,14 +430,14 @@ describe('NotificationSettingsModule: prístupnosť hlavného vypínača (PR 258
       .forEach((toggle) => expect(toggle).toHaveAttribute('aria-checked', 'true'));
   });
 
-  it('mobilný prepínač má opis (že Správy ostanú a žiadosti o zručnosť chodia ďalej) bez zdvojenia nadpisu', async () => {
+  it('mobilný prepínač má opis (že Správy ostanú a žiadosti o zručnosť sa zobrazia bez odznaku) bez zdvojenia nadpisu', async () => {
     mockServer();
     render(<NotificationSettingsModule />);
     await waitForLoaded();
 
     expect(master('mobile')).toHaveAccessibleName('Vypnúť všetko');
     expect(master('mobile')).toHaveAccessibleDescription(
-      'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť budú chodiť ďalej.',
+      'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.',
     );
     // Nadpis „Vypnúť všetko“ je v mobilnom rozložení len raz (názov sa prepája, nekopíruje).
     const mobileLayout = master('mobile').closest('.lg\\:hidden') as HTMLElement;
@@ -473,13 +473,15 @@ describe('NotificationSettingsModule: prístupnosť hlavného vypínača (PR 258
 });
 
 describe('NotificationSettingsModule: opis hlavného vypínača', () => {
-  it('mobil ukazuje opis, že sa vypnú všetky upozornenia okrem Správ a nové žiadosti o zručnosť chodia ďalej', async () => {
+  it('mobil ukazuje opis, že sa vypnú všetky upozornenia okrem Správ a nové žiadosti o zručnosť sa zobrazia bez odznaku', async () => {
     mockServer();
     render(<NotificationSettingsModule />);
     await waitForLoaded();
 
     expect(
-      screen.getByText('Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť budú chodiť ďalej.'),
+      screen.getByText(
+        'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.',
+      ),
     ).toBeInTheDocument();
   });
 });

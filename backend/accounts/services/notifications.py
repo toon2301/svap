@@ -24,13 +24,13 @@ from .notification_core import (  # noqa: F401
     NOTIFICATION_FEED_LIMIT,
     UNREAD_COUNT_CACHE_TTL_SECONDS,
     _dispatch_created_notification,
-    _in_app_notifications_enabled,
     _trim_managed_notifications,
     _unread_cache_key,
     cache_unread_count,
     create_notification,
     exclude_general_notification_types,
     get_unread_count,
+    in_app_notifications_enabled,
 )
 
 # Retenčná politika (dni) podľa typu. Purge maže notifikácie staršie než limit
