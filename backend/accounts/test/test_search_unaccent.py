@@ -18,20 +18,28 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import OfferedSkill
+from accounts.search_lookups import UnaccentLowerValue
 from accounts.views.dashboard_views.utils import accent_insensitive_contains_q
 
 User = get_user_model()
 
 
 class AccentInsensitiveContainsQTests(TestCase):
+    """Tvar filtra `accent_insensitive_contains_q` pre PostgreSQL a SQLite vetvu."""
+
     def test_postgresql_branch_uses_unaccent_lower_contains(self):
+        """PostgreSQL: pole ide cez `unaccent_lower`, hľadaný text sa upraví v databáze, nie v Pythone."""
         with patch("accounts.views.dashboard_views.utils.connection") as conn:
             conn.vendor = "postgresql"
             q = accent_insensitive_contains_q("first_name", "Malíár")
-        # Diakritika sa odstráni v Pythone, pole sa porovná cez unaccent_lower transform.
-        self.assertEqual(
-            q.children, [("first_name__unaccent_lower__contains", "maliar")]
-        )
+        # Hľadaný text sa odovzdá nezmenený a upraví ho tá istá databázová funkcia ako
+        # stĺpec (inak by sa písmená ako ł a ß, ktoré Python nerozloží, nikdy nezhodli).
+        key, value = q.children[0]
+        self.assertEqual(len(q.children), 1)
+        self.assertEqual(key, "first_name__unaccent_lower__contains")
+        self.assertIsInstance(value, UnaccentLowerValue)
+        (term,) = value.get_source_expressions()
+        self.assertEqual(term.value, "Malíár")
 
     def test_sqlite_branch_uses_accent_regex(self):
         with patch("accounts.views.dashboard_views.utils.connection") as conn:
