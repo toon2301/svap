@@ -20,7 +20,7 @@ o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej c
 varovaní v Upozorneniach a o načítavaní Sledovania (308, 309 a 310) a K17 (PR #254) o ôsmich natívnych `alert()` a o roli `alert`
 pri chybe Blokovaných (302 a 312) s mapovaním 311. Dávky K16 a K17 navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po
 K14: K16 začínala nálezom 319 (mapovanie, výsledok od kolegu čaká) a pokračovala zvyškami po 286 (308 až 310), K17 dopĺňala zvyšok
-nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 navrhuje agent ako malé opravy 331 (okno recenzie), 325 (toast) a po rozhodnutí R39 aj 330 (gulička Žiadostí) a výzvu na push (etapa 3b nálezu 321) posunúť do K22. Nález HNEĎ 318
+nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 sú malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`), K22 výzva na push (etapa 3b nálezu 321) a návrh K23 až K25: delenie `FeedPostComments.tsx` (333), zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Nález HNEĎ 318
 (push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie je: čaká na majiteľa. Nález 321 (kategórie upozornení; R32 (a): pred štartom) má plán po etapách v nálezu 321: etapy 1 a 2 sú zlúčené v K19, etapa 3a v K20 a etapa 3b (výzva na push) ide ako K22. Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
 PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a K14, K15 a K16, K17 a K18, no tie označenia sa použili na iné dávky, preto
 dostanú číslo K až vtedy, keď pôjdu kolegovi (pred ne pribudnú etapy nálezu 321). Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
@@ -39,8 +39,10 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'pri 325, z K20 výzva na push a E2E nálezu 321; nález 311 z K17 majiteľ uzavrel, R38); '
              'vetvy agenta 167 až 174 sú len zoznam a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z '
              '13. 11. 2026 (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť). Dávku K21 (331 okno '
-             'recenzie, 325 toast a po rozhodnutí R39 aj 330 gulička Žiadostí) navrhol agent 13. 11. 2026 po ručných testoch K20 a čaká '
-             'na schválenie; výzva na push (etapa 3b nálezu 321) ide po nej ako K22; '
+             'recenzie, 332 jazyk pre zvyšok sveta, 330 gulička Žiadostí a 325 toast; karta `karty/K21.md`) navrhol agent 13. 11. 2026 '
+             'po ručných testoch K20 a rozhodnutiach R2, R20 a R39 a čaká na schválenie; výzva na push (etapa 3b nálezu 321) ide po '
+             'nej ako K22 a K23 až K25 (delenie `FeedPostComments.tsx`, zoznam lajkujúcich, preklady) sú návrh, každá najprv ako '
+             'mapovanie; '
              'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
@@ -57,18 +59,23 @@ FRONTA = [
          preco='JASNÉ. Príčina je zreprodukovaná testom v oddelenej kópii (mobilné aj desktopové okno) a oprava jedným riadkom v '
                'každom okne je overená; `AddReviewModalMobile.tsx` má 348 a `AddReviewModalDesktop.tsx` 332 riadkov, '
                '`OfferReviewsView.tsx` (692 riadkov) sa nemení.'),
+    dict(n='332', davka='K21',
+         co='Jazyk: zvyšok sveta dostane angličtinu namiesto slovenčiny (jazyk prehliadača ostáva druhým signálom).',
+         preco='JASNÉ. Rozhodnuté 13. 11. 2026 (R2 a pravidlo majiteľa): posledná náhrada v `localeFromBrowser` '
+               '(`LanguageContext.tsx`, 222 riadkov) a `localeFromNavigator` (`GlobalErrorView.tsx`, 155 riadkov) je angličtina; '
+               'tri existujúce testy tvrdia starú náhradu a upravia sa.'),
+    dict(n='330', davka='K21',
+         co='Upozornenia: pri vypnutej kategórii „Žiadosť o zručnosť“ alebo pri „Vypnúť všetko“ sa pri novej žiadosti nemá '
+            'rozsvietiť číselný odznak pri Žiadostiach.',
+         preco='JASNÉ. Rozhodnuté R39 (b) 13. 11. 2026. Backend: v `create_skill_request_notification` vytvoriť upozornenie ako '
+               'prečítané, keď je kategória alebo hlavný vypínač vypnutý; tri existujúce testy tvrdia opak a upravia sa; nový text '
+               'opisu hlavného vypínača v šiestich jazykoch; frontend sa inak nemení.'),
     dict(n='325', davka='K21',
          co='Mazanie recenzie: po úspešnom zmazaní ukázať toast „Recenzia bola vymazaná.“ (zvyšok po K18).',
          preco='JASNÉ. Backendová časť je hotová v K18 (PR #255) a manuálne testy prešli; zostáva toast (R37 c). Výnimka pre '
                '`OfferReviewsView.tsx` (692 riadkov) je udelená (R37 b a c) s podmienkou, že nová logika mazania ide do nového súboru '
-               'a pôvodný súbor nenarastie; ak sa to bez rastu nedá, kolega sa zastaví a nahlási to bez zmeny kódu. Patrí do tej '
-               'istej oblasti (recenzie) ako 331, preto idú spolu.'),
-    dict(n='330', davka='K21',
-         co='Upozornenia: pri vypnutej kategórii „Žiadosť o zručnosť“ sa pri novej žiadosti nemá rozsvietiť číselná gulička pri '
-            'Žiadostiach (až po rozhodnutí R39).',
-         preco='JASNÉ po rozhodnutí R39; bez rozhodnutia sa nerobí. Backend: v `create_skill_request_notification` vytvoriť '
-               'upozornenie ako prečítané, keď je kategória (podľa R39 b aj hlavný vypínač) vypnutá; jeden test, frontend sa nemení; '
-               'pri R39 (b) aj nový text `turnOffAllDesc` v šiestich jazykoch.'),
+               'a pôvodný súbor nenarastie; ak sa to bez rastu nedá, kolega sa zastaví a nahlási to bez zmeny kódu. Robí sa ako '
+               'posledný z K21.'),
     dict(n='321', davka='K22',
          co='Upozornenia: výzva na povolenie push pre Správy (etapa 3b, R36 a) a E2E (etapa 4, Codex).',
          preco='JASNÉ. Rozhodnutie R36 (a) je zodpovedané: jednorazová odmietnuteľná výzva s tlačidlom v Nastaveniach → '
@@ -76,6 +83,23 @@ FRONTA = [
                'zlúčené (`usePushMessagesPreference.ts` má 368 riadkov, pod 500; nové texty v šiestich jazykoch). Je to samostatná '
                'väčšia funkcia, preto ide oddelene od malých opráv v K21. Etapa 4 (E2E) je úloha Codexa po nasadení K20 a po dohode '
                's majiteľom.'),
+    dict(n='333', davka='K23',
+         co='Nástenka: rozdeliť `FeedPostComments.tsx` (1 487 riadkov) bez zmeny vzhľadu; potom `FeedPostCard.tsx` a '
+            '`FeedPostMobileDetail.tsx` (R23).',
+         preco='NEJASNÉ (najprv mapovanie hraníc, kód nemeň, kým majiteľ nepovie). Rozhodnutie R23 je zodpovedané (13. 11. '
+               '2026): delenie po jednom súbore, každé vo vlastnej vetve s ručným testom majiteľa; výnimka z pravidla 500 riadkov '
+               'sa neudeľuje a povolenie platí len pre tieto tri súbory. Prvá dávka je mapovanie `FeedPostComments.tsx`.'),
+    dict(n='262', davka='K24',
+         co='Zoznam lajkujúcich pri ponukách, portfóliu a profile (R20, variant A): najprv mapovanie.',
+         preco='NEJASNÉ (najprv mapovanie, kód nemeň: ktoré koncové body a modely lajkov existujú pre ponuky, portfólio a profil '
+               'a ktoré frontendové miesta majú nad 500 riadkov). Rozhodnutie R20 je zodpovedané (13. 11. 2026): pred štartom, '
+               'viditeľnosť ako na Nástenke (verejný zoznam, súkromné a blokované účty skryté). Veľká funkcia (L), pôjde na viac '
+               'dávok.'),
+    dict(n='176', davka='K25',
+         co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
+         preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '
+               'meranie z 6. 11. 2026: cs 247, pl 49, de 3 a hu 1 hodnôt zhodných so slovenčinou). R2 je zodpovedané (13. 11. 2026). '
+               'Zahŕňa 175 a APP-03; veľká práca (L), po jazykoch.'),
     dict(n='24', davka='PO-A',
          co='`setHighlightedSkillId(null)` necháva hodnotu v `sessionStorage` (priame volania setteru namiesto '
             '`clearHighlighting()`).',

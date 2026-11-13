@@ -143,23 +143,29 @@ NEW_ITEMS_NASTENKA = [
               'komentárov: komentár aj odpoveď majú dnes sivú bublinu (`rounded-2xl bg-gray-100`, v tmavom režime `bg-gray-800/60`) '
               'v `FeedPostComments.tsx`, takže redizajn skupiny 7 je stále otvorený. Dotýka sa súborov nad 500 riadkov '
               '(`FeedPostComments.tsx` 1 487, `FeedPostCard.tsx` 1 033, `FeedPostMobileDetail.tsx` 594), takže pred štartom práce '
-              'treba rozhodnúť R23 (najprv rozdeliť súbory, alebo výnimka z pravidla 500 riadkov). Majiteľ plánuje upraviť vizuálnu '
+              'najprv rozdeliť súbory: R23 je rozhodnuté 13. 11. 2026 (nález 333, bez výnimky z pravidla 500 riadkov). Majiteľ plánoval upraviť vizuálnu '
               'stránku Nástenky aj sám (príloha D); po jeho úpravách nasleduje technická a bezpečnostná kontrola jeho zmien a jeden '
-              'súhrnný audit celej Nástenky (obe strany spolu), tiež pred nasadením. Poradie dohodnúť, aby sa nerobilo dvakrát.',
+              'súhrnný audit celej Nástenky (obe strany spolu), tiež pred nasadením. Poradie dohodnúť, aby sa nerobilo dvakrát. Majiteľ 13. 11. '
+              '2026: vzhľad Nástenky zatiaľ sám neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď.',
          dec='ROZHODNUTIE R23', src=ZDROJ),
-    dict(n=262, bucket=A, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='zoznam „kto lajkol“ je len pre Nástenku; rozšírenie na ponuky, portfólio a profil nie je rozhodnuté',
-         what='Zoznam lajkujúcich dnes existuje len pre Nástenku (`feed/FeedLikersDialog.tsx`); jeho rozšírenie na ponuky, portfólio a '
-              'profil má nerozhodnutý rozsah a súkromie (kto zoznam vidí).',
-         note='Najprv rozhodnutie (R20), potom návrh a backend. Agent v tomto kole nezisťoval, ktoré koncové body lajkov dnes vracajú '
-              'zoznam.',
+    dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
+         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A)',
+         what='Zoznam lajkujúcich dnes existuje len pre Nástenku: príspevky a komentáre (`feed/FeedLikersDialog.tsx`; backend '
+               '`feed_post_likers_view` a `feed_post_comment_likers_view` v `accounts/views/feed_likes.py`, verejné aj pre '
+               'neprihláseného). ROZHODNUTÉ 13. 11. 2026 (R20, variant A): urobiť pred nasadením a rozšíriť na ponuky, portfólio a '
+               'profil s rovnakými pravidlami viditeľnosti ako na Nástenke: zoznam vidí každý, kto vidí daný obsah (aj neprihlásený); '
+               'súkromné účty (`is_public = false`) a neaktívne účty sa v ňom nezobrazia, blokovaní sa filtrujú v oboch smeroch pred '
+               'stránkovaním a prihlásený vždy vidí seba (`_likers_response`, testy `test_feed_likers_api.py`); stránkovanie kurzorom '
+               'po 20 (najviac 50). Agent odporúčal variant C (lajky profilu nech vidí len vlastník); majiteľ zvolil A.',
+         note='Krok 0 (mapovanie, kód sa nemení): zistiť, ktoré koncové body a modely lajkov dnes existujú pre ponuky '
+               '(`OfferedSkillLike`), profil (`ProfileLike`) a portfólio (samostatný model `*Like` agent nenašiel, lajky portfólia '
+               'treba dohľadať), ktoré dotknuté frontendové miesta majú nad 500 riadkov (karty ponúk a profilové sekcie sú v zozname '
+               'TECH) a ako sa zovšeobecní `FeedLikersDialog`. Návrh (neoverený): spoločný pomocník `_likers_response` použiť pre '
+               'všetky druhy obsahu, nové koncové body po vzore `feed_post_likers_view`, frontend zovšeobecniť dialóg a pridať vstup '
+               '„kto lajkol“ pri karte ponuky, v portfóliu a pri profile; pôjde na viac dávok (najprv backend s testami súkromia a '
+               'blokovania, potom frontend). Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), preto testy '
+               'súkromných účtov, blokovania a neaktívnych účtov sú povinné. Odhad: nízky · L.',
          dec='ROZHODNUTIE R20', src=ZDROJ),
-    dict(n=263, bucket=A, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='zobrazenie Nástenky podľa krajiny nad rámec radenia nemá definovaný rozsah',
-         what='Podľa zoznamu majiteľa krajina dnes len ovplyvňuje poradie príspevkov na Nástenke (krajinové radenie feedu je hotové); '
-              'širšie zobrazenie podľa krajiny (napr. filter alebo oddelené feedy) má nedefinovaný rozsah.',
-         note='Najprv rozhodnutie (R21). Podobný produktový návrh pre vyhľadávanie je APP-04. Ide o funkciu, nie o chybu.',
-         dec='ROZHODNUTIE R21', src=ZDROJ),
     dict(n=264, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='audit nedostupného obsahu: žiadosti pri zmazaní ponuky a štyri tiché miesta (správy, portfólio, upozornenia)',
          what='Staršie odložené položky spred práce na Nástenke: (1) SkillRequest audit: presmerovania z upozornení pri zmazaní ponuky '
@@ -259,7 +265,8 @@ NEW_ITEMS_NASTENKA = [
          what='Kolega pri K8: moduly sa pri každom otvorení vyfadujú z priehľadnosti 0. Pri Obľúbených je to zmerané (~270 ms), pri '
               'Štatistikách (`StatisticsModule.tsx`, 296 riadkov) a detaile príspevku len z kódu. Zoznam príspevkov Nástenky to po K8 nemá '
               '(`initial={false}`).',
-         note='Treba rozhodnúť, či vstupné animácie zjednotiť (R28). Pri zapnutom „Znížiť pohyb“ (134) sa posun a mierka vykonajú '
+         note='ROZHODNUTÉ R28 (13. 11. 2026): zjednotiť po overení na iPhone: najprv pokus na jednom module (Obľúbené) a ručné overenie '
+              'majiteľom, potom jeden pomocník pre vstup modulu. Pri zapnutom „Znížiť pohyb“ (134) sa posun a mierka vykonajú '
               'okamžite a ďalej sa animuje len priehľadnosť, takže práve vstupný fade z 0 môže byť to, čo majiteľ na iPhone vidí ako preblik '
               '(hypotéza, neoverené). Odhad kolegu: nízky · S.',
          dec='ROZHODNUTIE R28', src='K8 (kolega)'),
@@ -268,7 +275,8 @@ NEW_ITEMS_NASTENKA = [
          what='Kolega pri K8: `feed/FeedPostCard.tsx` (1 033 riadkov) má vlastnú vstupnú animáciu navyše k obalu zoznamu. K8 ju neutralizuje '
               'zvonka (nad kartami); čisté riešenie je jeden riadok priamo v karte.',
          note='Čisté riešenie vyžaduje jednorazovú výnimku z pravidla 500 riadkov (TECH-01…11) alebo delenie súboru. Odhad kolegu: nízky · '
-              'S. Súvisí s 287 a s redizajnom Nástenky (261, R23).',
+              'S. Súvisí s 287 a s redizajnom Nástenky (261, R23); podľa R28 a R23 ide spolu s delením súboru (nález 333), nie ako výnimka z '
+              'pravidla.',
          dec=None, src='K8 (kolega)'),
     dict(n=289, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
          kratko='„Znížiť pohyb“ a zoznam Nastavení: tmavé pozadie sa ďalej vyfaduje a nová obrazovka sa rozjasňuje',
@@ -318,22 +326,6 @@ NEW_ITEMS_NASTENKA = [
               'cez signál `post_delete` modelu `FeedPostImage` (`accounts/signals.py`), no ako best-effort po commite (chyby sa '
               'ignorujú), takže z UI sa fyzické zmazanie objektu v S3 nedokáže; test smie tvrdiť len zmiznutie príspevku.',
          dec=None, src='K8, K10 (kolega) a Codex, 7. 11. a 9. 11. 2026'),
-    dict(n=298, bucket=A, imp=N, eff=ES, pkg='Funkcie – väčšie balíky',
-         kratko='avatary a správy sploštia animovaný PNG a WebP na prvú snímku',
-         what='Kolega pri K12: zdieľané `strip_image_metadata` (`swaply/image_metadata.py`) ukladá PNG a WebP bez `save_all`, takže animovaný PNG '
-              'a WebP sa v avataroch (`accounts/avatar_images.py`) a v správach (`messaging/services/messages.py`) uložia len ako prvá snímka. '
-              'Reprodukované na vzorke s 3 snímkami (K12). Starý endpoint ponúk animáciu od K12 zachováva (`swaply/animated_image_metadata.py`).',
-         note='Návrh kolegu: rozhodnúť, či je to zámer (R29); ak nie, použiť `strip_animated_image_metadata` aj tam. Odhad kolegu: nízky · S. '
-              'Avatary a správy sú dnes konzistentné s hlavnou cestou ponúk cez S3 (nález 299), ktorá tiež ukladá statickú snímku.',
-         dec='ROZHODNUTIE R29', src='K12 (kolega)'),
-    dict(n=299, bucket=A, imp=N, eff=EM, pkg='Funkcie – väčšie balíky',
-         kratko='hlavná cesta ponúk cez S3 ukladá z GIF, WebP a APNG len prvú snímku',
-         what='Kolega pri K12: hlavná cesta cez S3 (`process_offered_skill_image` v `swaply/tasks/offer_images.py`) ukladá z GIF, WebP a APNG vždy len '
-              'prvú snímku ako statický WebP (priehľadnosť ostáva). Starý endpoint animáciu po K12 zachová, takže správanie ponúk nie je '
-              'jednotné: cez S3 (to, čo používa UI) animácia zmizne.',
-         note='Produktové rozhodnutie (R29): majú ponuky podporovať animované fotky? Odhad kolegu: nízky · M. Ak nie, zodpovedá to dnešnému '
-              'správaniu UI a netreba nič meniť (kód z K12 pre animované obrázky starého endpointu potom slúži len vývojovej zálohe, R30).',
-         dec='ROZHODNUTIE R29', src='K12 (kolega)'),
     dict(n=300, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
          kratko='telo chyby starého endpointu ponúk je Python zoznam',
          what='Kolega pri K12: starý multipart endpoint ponúk vracia pri chybe validácie `str(ValidationError)`, takže telo odpovede je text '

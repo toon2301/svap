@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 305: kandidáti kolegu z K13 a K14, ručné testy majiteľa po K14 (8. 11. 2026) a diagnostika a video majiteľa
-z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327; 326 a 327 sú hotové v K18, z 325 zostáva toast) a report Codexa po K19 (328) a ručné testy majiteľa po K20 s mapovaním agenta z 13. 11. 2026 (330 a 331; hotový 329 je v `hotove_k20.py`).
+z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327; 326 a 327 sú hotové v K18, z 325 zostáva toast) a report Codexa po K19 (328) a ručné testy majiteľa po K20 s mapovaním agenta z 13. 11. 2026 (330 a 331; hotový 329 je v `hotove_k20.py`), pravidlo majiteľa pri R2 (332) a rozhodnutie R23 (333).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
@@ -315,8 +315,8 @@ NEW_ITEMS_K14 = [
                'len ak sa dá bez zmeny údajov účtu), aplikácia sa nemenila a prijatý základ ostáva 427 / 2 / 303.',
          dec=None, src='report Codexa (celý beh po K19, 12. 11. 2026) a kontrola agenta v kóde a správa Codexa z 13. 11. 2026'),
     dict(n=330, bucket=P, imp=S_, eff=ES, pkg='Upozornenia a push',
-         kratko='Upozornenia: pri vypnutej kategórii „Žiadosť o zručnosť“ sa pri novej žiadosti stále rozsvieti číselná gulička pri '
-               'Žiadostiach (nová žiadosť chodí vždy podľa R35; čaká na rozhodnutie R39)',
+         kratko='Upozornenia: pri vypnutej kategórii „Žiadosť o zručnosť“ alebo pri „Vypnúť všetko“ sa pri novej žiadosti nemá '
+               'rozsvietiť číselný odznak pri Žiadostiach (rozhodnuté R39 (b), ide do K21)',
          what='Ručný test majiteľa po K20 (13. 11. 2026, počítač aj mobil): pri vypnutej kategórii „Žiadosť o zručnosť“ pošle '
                'používateľ B používateľovi A novú žiadosť; žiadosť sa doručí a zobrazí v Žiadostiach (správne), no pri sekcii Žiadosti '
                'sa rozsvieti číselná gulička. Očakávanie majiteľa: žiadosť sa doručí a zobrazí v Žiadostiach, ale číselná gulička pri '
@@ -336,15 +336,25 @@ NEW_ITEMS_K14 = [
                'žiadosti o zručnosť.“ (`notifications.skillRequestDesc`), vetu „Nové žiadosti o zručnosť budú chodiť ďalej.“ má len '
                'opis hlavného vypínača (`turnOffAllDesc`; podľa kolegu ju vidno len na mobile). Správanie teda zodpovedá R35, no je v '
                'rozpore s očakávaním majiteľa pri vypnutej kategórii.',
-         note='ČAKÁ NA ROZHODNUTIE R39 (návrh agenta, nie dôkaz). (a) Gulička sleduje kategóriu: pri vypnutej kategórii „Žiadosť o '
-               'zručnosť“ sa upozornenie na novú žiadosť vytvorí rovno ako prečítané, takže sa nezapočíta do guličky; žiadosť sa '
-               'doručí a je viditeľná v Žiadostiach; hlavný vypínač „Vypnúť všetko“ ostáva ako dnes (nová žiadosť guličku rozsvieti, '
-               'opis hlavného vypínača to hovorí). (b) Ako (a), ale gulička sa nezobrazí ani pri zapnutom hlavnom vypínači a veta v '
-               'jeho opise sa upraví. (c) Nechať ako dnes a do opisu kategórie doplniť vetu, že nová žiadosť chodí vždy. Zmena pri (a) '
-               'a (b) je v `create_skill_request_notification` (okolo piatich riadkov: príznak `is_read` podľa kategórie, pri (b) aj '
-               'podľa `in_app_notifications`) a v jednom teste, frontend sa nemení (počet zo servera sa len zníži); pri (b) pribudne '
-               'zmena textu `turnOffAllDesc` v šiestich jazykoch. Súvisiaci komentár v `views/skill_requests.py` (riadok 265) je '
-               'zastaraný (poznámka v `poznamky.md`). Odhad: nízky · S.',
+         note='ROZHODNUTÉ 13. 11. 2026 (R39, variant (b); majiteľ vlastnými slovami: nová žiadosť príde priamo do Žiadostí ako '
+               'notifikačný odznak, táto logika ostáva a mení sa len to, že pri vypnutom „Vypnúť všetko“ alebo vypnutej kategórii '
+               '„Žiadosť o zručnosť“ notifikácia nepríde; inak ostáva všetko ako je). PLÁN (návrh agenta z čítania kódu, nie dôkaz): v '
+               '`create_skill_request_notification` (`services/notification_events/skill_requests.py`) sa upozornenie na novú žiadosť '
+               'vytvorí rovno ako prečítané (`is_read=True`), keď má príjemca vypnutý hlavný vypínač (`in_app_notifications`) alebo '
+               'kategóriu `notify_skill_requests`; žiadosť sa doručí a je v Žiadostiach, odznak sa nerozsvieti (počet neprečítaných z '
+               '`GET /api/auth/me/`, z `unread-count` aj z realtime udalosti ostane bez nového) a žiadosti, ktoré prídu počas '
+               'vypnutia, odznak nerozsvietia ani po zapnutí. Čisté riešenie: typ `skill_request` presunúť v '
+               '`notification_categories.py` zo zoznamu vždy zapnutých do tabuľky kategórií (`notify_skill_requests`; '
+               '`create_notification` ho nepoužíva, takže sa nič nepotlačí navyše) a profil prečítať jediným dopytom ako v '
+               '`create_notification`. Tri existujúce testy tvrdia opak a treba ich upraviť (žiadosť sa vytvorí, no neráta sa do '
+               'odznaku): `test_skill_request_badge_works_when_in_app_notifications_disabled` '
+               '(`test_skill_requests_notifications.py`), `test_skill_request_notification_ignores_in_app_toggle` '
+               '(`test_notifications_in_app_toggle.py`) a `test_initial_skill_request_arrives_with_everything_off` '
+               '(`test_notification_category_gate.py`); pribudnú testy pre kategóriu aj hlavný vypínač a pre zapnutý stav (odznak sa '
+               'rozsvieti). Text `notifications.turnOffAllDesc` v šiestich jazykoch sa zmení (návrh sk: „Vypne všetky upozornenia '
+               'okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.“; na počítači hlavný vypínač '
+               'opis nemá a ostáva tak) a upraví sa test `notificationsMessages.test.ts`; zastaraný komentár v '
+               '`views/skill_requests.py` (riadok 265) sa opraví. Frontend sa inak nemení. Odhad: nízky · S.',
          dec='ROZHODNUTIE R39', src='ručný test majiteľa po K20 (13. 11. 2026) a mapovanie agenta'),
     dict(n=331, bucket=P, imp=S_, eff=ES, pkg='Recenzie',
          kratko='Recenzie: po úspešnom pridaní recenzie ostane pri ďalšom otvorení okna „Pridať recenziu“ tlačidlo zakázané s textom '
@@ -374,4 +384,41 @@ NEW_ITEMS_K14 = [
                'Test: pridať recenziu, okno sa zatvorí, znova ho otvoriť; tlačidlo je „Pridať“ a použiteľné (mobil aj desktop); '
                'mutácia: odstrániť vynulovanie. Odhad: nízky · S.',
          dec=None, src='ručný test majiteľa po K20 (13. 11. 2026), mapovanie agenta a reprodukcia v oddelenej kópii'),
+    dict(n=332, bucket=P, imp=S_, eff=ES, pkg='Preklady a hlášky',
+         kratko='Jazyk pre zvyšok sveta: ak krajina ani jazyk prehliadača nie sú jedným zo šiestich jazykov, aplikácia dá slovenčinu; '
+               'má dať angličtinu (R2)',
+         what='Pravidlo majiteľa (13. 11. 2026, pri R2): podľa krajiny, v ktorej sa aplikácia otvorí, sa zvolí jazyk (Slovensko '
+               'slovenčina, Česko čeština, Maďarsko maďarčina, Rakúsko a Nemecko nemčina, Poľsko poľština) a zvyšok sveta dostane '
+               'angličtinu. Dnes (`LanguageContext.tsx`, 222 riadkov; agent čítal kód 13. 11. 2026): krajina z IP adresy (`ipapi.co`) '
+               'dá jazyk len pre PL, SK, CZ, DE, AT a HU (`localeFromCountry`), inak sa použije jazyk prehliadača '
+               '(`localeFromBrowser`: pl, sk, cs, de, hu a en) a ak ani ten nie je z týchto šiestich, vráti sa slovenčina. Používateľ '
+               'z krajiny mimo šiestich s telefónom v inom jazyku (napríklad thajskom) teda dostane slovenčinu namiesto angličtiny; '
+               'rovnaká náhrada je aj v stránke `global-error` (`GlobalErrorView.tsx`, 155 riadkov, `localeFromNavigator`, zámerne '
+               'vlastná kópia). Ručná voľba v Nastaveniach (`appLocale` v úložisku prehliadača) má prednosť a nemení sa. Existujúce '
+               'testy tvrdia starú náhradu: `LanguageContext.locale.test.tsx` (`ja-JP` a prázdny jazyk dajú `sk`, chyba pri čítaní '
+               'jazyka dá `sk`) a `GlobalErrorView.test.tsx` („neznámy jazyk prehliadača dá slovenčinu“).',
+         note='Rozhodnuté majiteľom 13. 11. 2026: jazyk prehliadača alebo telefónu ostáva druhým signálom (Slovák na dovolenke v '
+               'Thajsku so slovenským telefónom dostane slovenčinu, Thajčan s thajským telefónom angličtinu). Návrh opravy: posledná '
+               'náhrada v `localeFromBrowser` aj `localeFromNavigator` je angličtina (`en`) namiesto slovenčiny; nemení sa priorita '
+               '(ručná voľba, krajina, jazyk prehliadača), začiatočný stav `sk` pred zistením ani zisťovanie krajiny (to rieši nález '
+               '186 a R7); upraviť testy tak, aby tvrdili `en`, a overiť (alebo doplniť) test priority: krajina mimo šiestich s '
+               'jazykom prehliadača jedným zo šiestich dá tento jazyk. Ak kolega pri overení pozoruje krátke zablikanie slovenčiny '
+               'pred prepnutím jazyka, nahlási ho ako kandidáta (nemeniť). Súvisí s R2 a s 186. Dopad na E2E: špecy nastavujú '
+               '`appLocale` ručne, takže sa to nezmení (agent overil prehľadaním `frontend/e2e`). Odhad: nízky · S.',
+         dec='ROZHODNUTIE R2', src='pravidlo majiteľa pri R2 (13. 11. 2026) a kontrola agenta v kóde'),
+    dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
+         kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
+               'vzhľadu, až potom redizajn (R23)',
+         what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov rozdelia po jednom: '
+               '`feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a `feed/FeedPostMobileDetail.tsx` 594 '
+               '(počty agent overil 13. 11. 2026). Delenie nesmie zmeniť správanie ani vzhľad; každý súbor ide vo vlastnej vetve s '
+               'vlastnou kartou dávky a s ručným testom majiteľa (komentáre, odpovede, lajky komentárov, tagy, fotky v príspevku, '
+               'mobilný detail) a až potom sa redizajn (261) robí nad menšími súbormi. Výnimka z pravidla 500 riadkov sa neudeľuje: '
+               'povolenie platí len pre delenie týchto troch súborov.',
+         note='Majiteľ vzhľad Nástenky zatiaľ sám neupravuje (13. 11. 2026), takže delenie môže ísť hneď; ak začne upravovať, dá '
+               'vedieť. Súvisí s 261 (redizajn), 288 (vlastná vstupná animácia v `FeedPostCard.tsx` sa upraví pri delení, R28), 259 a '
+               '256. Postup pre každú kartu: najprv mapovanie hraníc (čo je komentár, odpoveď, zoznam, formulár, hooky; kód sa '
+               'nemení), potom presun po jednom celku do nových súborov so zachovaním verejného rozhrania, po každom kroku celý Jest a '
+               'existujúce testy komentárov; E2E sa po delení spustí (Codex). Odhad: stredný · L (tri samostatné dávky).',
+         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026)'),
 ]

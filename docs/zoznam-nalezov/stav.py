@@ -16,6 +16,22 @@ from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
     ('13. 11. 2026',
+      'Vetva 174, doplnok po rozhodnutiach majiteľa z 13. 11. 2026. (1) Rozhodnuté: R39 (b): nová žiadosť o zručnosť príde '
+      'do Žiadostí ako odznak a pri vypnutom „Vypnúť všetko“ alebo vypnutej kategórii „Žiadosť o zručnosť“ odznak nepríde '
+      '(nález 330 je tým jasný a ide do K21); R2: všetkých šesť jazykov (sk, cs, hu, de, pl, en) má byť pri štarte plne '
+      'preložených (majiteľ najprv odpovedal na inú vec: výber jazyka podľa krajiny; agent zistil, že ho aplikácia už robí, '
+      'a rozdiel, že zvyšok sveta dostane slovenčinu namiesto angličtiny, je nový nález 332; jazyk prehliadača ostáva '
+      'druhým signálom); R20 (A): zoznam lajkujúcich ako na Nástenke pre ponuky, portfólio aj profil, pred nasadením (nález '
+      '262 ide do skupiny PRED NASADENÍM); R21: krajina ostáva len pri radení (263 zatvorený); R23: najprv sa delia súbory '
+      'Nástenky po jednom (nový nález 333; majiteľ vzhľad Nástenky zatiaľ sám neupravuje); R27: malé zmeny testových '
+      'súborov nad 500 riadkov sa povoľujú (úprava `AGENTS.md` a `svaply.mdc` vo vetve 176); R28: vstupné animácie sa '
+      'zjednotia po overení na iPhone; R29: animované obrázky sa nepodporujú (298 a 299 zatvorené). (2) Číselný prehľad: '
+      'nálezy 1–333, zatvorené 14 (pribudli 263, 298 a 299). (3) Fronta: K21 sú malé opravy 331, 332, 330 a 325 (karta '
+      '`karty/K21.md`), K22 výzva na push (etapa 3b nálezu 321) a návrh K23 až K25: delenie `FeedPostComments.tsx` (333), '
+      'zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Dopad na E2E: K21 mení stav tlačidla v okne '
+      'recenzie a výber jazyka pri neznámom jazyku (špecy nastavujú `appLocale` ručne); po K21 Codex doplní scenár žiadosti '
+      'o zručnosť s odznakom.'),
+    ('13. 11. 2026',
       'Vetva 174 (vychádza z `main` `203e8d14`, teda po PR #259; main je zlúčený do vetvy). (1) K20 (PR #258, zlúčené 12. '
       '11. 2026 o 21:56 UTC; päť commitov podľa karty a päť opráv po kontrolách botov): etapa 3a nálezu 321 je hotová vo '
       'frontende (sedem volieb zo servera, kategórie bez lokálneho stavu s kostrou počas načítania, hlavný vypínač podľa '
@@ -323,20 +339,20 @@ PORADIE = [
          polozky=['245', '185', 'OW-07', '266', '304', '31', '189', '209', '223', '225', '295', '328']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14, jej zvyšky 308 až 310 sú hotové v K16 a 311 je zatvorený rozhodnutím R38; 287 a 288 '
-            'čakajú na rozhodnutie R28), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
+            'idú podľa R28 po overení na iPhone), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
             '(92, 207; 301 je hotová v K13), ponuky a tagy (322 a 323 sú hotové v K15), '
             'natívne okná `alert()` namiesto toastov (302 je hotová v K17), recenzie (325 toast po vymazaní, 331 zaseknuté tlačidlo v okne „Pridať recenziu“; 326 a 327 sú hotové v K18), Upozornenia a '
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 dokončiť kategórie upozornení pred štartom, R32 (a): etapy 1 a 2 sú hotové v K19, etapa 3a v K20, ostáva výzva na push (K22) a E2E; 330 gulička Žiadostí pri vypnutej kategórii, rozhodnutie R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov najprv vyžaduje rozhodnutie R23 o súboroch nad 500 riadkov) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '321', '325', '330', '331', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '321', '325', '330', '331', '262', '333', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='175, 176, 204, APP-03, 186 (a podľa R2 poradie jazykov; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
-         preco='Závisí od toho, ktoré jazyky budú pri štarte (R2).',
-         polozky=['175', '176', '204', 'APP-03', '186']),
+         co='175, 176, 204, APP-03, 186 a 332 (R2: všetkých šesť jazykov pred štartom; 332: zvyšok sveta dostane angličtinu; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
+         preco='Všetkých šesť jazykov (sk, cs, hu, de, pl, en) musí byť pri štarte hotových (R2, 13. 11. 2026).',
+         polozky=['175', '176', '204', 'APP-03', '186', '332']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',
@@ -362,7 +378,20 @@ DECISIONS = [
                      'slovenčinou) ukázalo viac: v `cs.json` 247 (aspoň 29 určite slovenských), v `pl.json` 49, v `de.json` 3 a v `hu.json` 1, '
                      'takže rozsah 176 je väčší, než sa čakalo. Ak štart cieli len na Slovensko, 176 môže ísť po nasadení; ak aj na Česko a '
                      'Poľsko, patrí pred štart. Malé veci (120 a 177 sú hotové v K6, ostáva zvyšok 175) idú pred štart v každom prípade.',
-         kedy='Pred prácou na 176 (určuje poradie prekladov), najneskôr pred štartom.'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: všetkých šesť jazykov aplikácie (slovenčina, čeština, maďarčina, nemčina, poľština a angličtina) '
+                 'má byť pri štarte plne preložených. Majiteľ najprv odpovedal na inú vec: ako sa má jazyk vyberať (Slovensko '
+                 'slovenčina, Česko čeština, Maďarsko maďarčina, Rakúsko nemčina, Poľsko poľština a zvyšok sveta angličtina); agent '
+                 'vysvetlil, že R2 sa pýtal na rozsah prekladov, a z odpovede vyvodil, že každý z týchto jazykov musí byť hotový, čo '
+                 'majiteľ potvrdil („určite áno“). Nález 176 (zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine; meranie '
+                 'kolegu z 6. 11. 2026: cs 247, pl 49, de 3 a hu 1 hodnôt zhodných so slovenčinou, časť sú legitímne rovnaké slová) a '
+                 'súvisiace 175 a APP-03 idú pred štart a poradie jazykov netreba určovať. Výber jazyka podľa krajiny aplikácia už robí '
+                 '(`LanguageContext.tsx`: krajina z IP adresy dá PL, SK, CZ a HU ich jazyk a DE a AT nemčinu, inak jazyk prehliadača, '
+                 'inak slovenčina; ručná voľba v Nastaveniach má prednosť a ukladá sa v prehliadači). Rozdiel oproti pravidlu majiteľa '
+                 '(zvyšok sveta má dostať angličtinu) rieši nový nález 332; jazyk prehliadača alebo telefónu ostáva druhým signálom '
+                 '(majiteľ 13. 11. 2026: podľa odporúčania agenta). Spôsob zisťovania krajiny (dnes cudzia služba `ipapi.co` z '
+                 'prehliadača) rieši nález 186 a R7 pred štartom.',
+         datum='13. 11. 2026'),
     dict(id='R3', tema='Číselné slugy (81)',
          otazka='Zakázať slug zložený len z číslic, alebo ho vo frontende uprednostniť pred ID?',
          odporucanie='Zakázať pri generovaní (predpona `u-`) a doplniť migráciu existujúcich. Frontendová záplata nerieši, že dve rôzne veci majú '
