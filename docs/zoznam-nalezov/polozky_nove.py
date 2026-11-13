@@ -42,7 +42,11 @@ NEW_ITEMS = [
               '`reviews.reportError`; v `reviews.*` je takých 17); z nich je 264 v `skillsCatalog`, kde sú technické názvy legitímne '
               'zhodné, takže mimo katalógu zručností je to asi 130. Ostatné jazyky podľa rovnakého počítania (spolu, z toho v '
               '`skillsCatalog`): pl 123 (66), en 93 (79), de 260 (258), hu 40, teda mimo katalógu asi pl 57, en 14 a de 2. Oprava '
-              'R2 je rozhodnuté: všetkých šesť jazykov pred štartom.',
+              'R2 je rozhodnuté: všetkých šesť jazykov pred štartom. '
+              'Doplnok 13. 11. 2026 (kolega, K21): maďarský preklad pomenúva sekciu Žiadosti nejednotne: `navigation.requests` je '
+              '„Kérelmek“ a `requests.title` (nadpis stránky) je „Kérések“ (`frontend/messages/hu.json`); pri mapovaní po jazykoch '
+              'treba zvoliť jeden výraz a rovnaký použiť aj v novej vete opisu hlavného vypínača (`notifications.turnOffAllDesc`, '
+              'nález 330), ktorá dnes používa „Kérelmek“.',
          dec='ROZHODNUTIE R2', src='vetva 138'),
     dict(n=180, bucket=P, imp=S_, eff=EM, pkg='iPhone a WebSocket',
          what='Upozornenia: na iPhone sa občas preruší WebSocket (kód 1006); na diagnostiku treba logy servera.',
@@ -114,7 +118,13 @@ NEW_ITEMS = [
          what='Zistenie krajiny volá z prehliadača `https://ipapi.co/json/` (`LanguageContext.tsx`): tretia strana dostane IP '
               'každého používateľa; závislosť od cudzej služby a jej limitov.',
          note='Pre ostrý štart v EÚ treba buď súhlas a zápis do zásad ochrany údajov, alebo zistiť krajinu na vlastnej '
-              'strane (hlavička `CF-IPCountry` pri Cloudflare, GeoIP na backende). Súvisí s OW-18 (krajina vo vyhľadávaní).',
+              'strane (hlavička `CF-IPCountry` pri Cloudflare, GeoIP na backende). Súvisí s OW-18 (krajina vo vyhľadávaní). '
+              'DOPLNOK 13. 11. 2026 (kolega, K21; po oprave 332): pri prvej návšteve (bez uloženej voľby a bez čerstvej vyrovnávacej '
+              'pamäte krajiny) sa úvodná stránka najprv ukáže po slovensky (začiatočný stav `sk` v `LanguageContext.tsx`) a po '
+              'odpovedi `ipapi.co` sa prepne; v Chromiu so simulovaným oneskorením 400 ms to bolo asi 0,4 s po slovensky, pri '
+              'slovenskom prostredí a pri ručnej voľbe sa jazyk neprepína. Serverové zistenie krajiny (hlavička `CF-IPCountry`, R7) '
+              'by zablikanie odstránilo a umožnilo by aj správny atribút `lang` už v prvom HTML (nález 335 rieši len zápis `lang` v '
+              'prehliadači).',
          dec='ROZHODNUTIE R7', src='kontrola 26. 10. 2026'),
     dict(n=187, bucket=A, imp=N, eff=EM, pkg='Service worker a PWA',
          what='`public/sw.js`: vetvy `respondWith(fetch(request))` pre `/api/*`, dokumenty a `/_next/` len znovu vydajú tú istú požiadavku '

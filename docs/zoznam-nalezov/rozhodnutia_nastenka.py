@@ -370,6 +370,6 @@ DECISIONS_NASTENKA = [
                  'ani po opätovnom zapnutí (implementácia: upozornenie sa vytvorí rovno ako prečítané; frontend sa nemení). Majiteľ '
                  'návrh vety pre opis hlavného vypínača nenamietal: „Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa '
                  'aj tak zobrazia v Žiadostiach, len bez odznaku.“ (na počítači hlavný vypínač opis nemá a ostáva tak). Nález 330 ide do '
-                 'dávky K21; E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',
+                 'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',
          datum='13. 11. 2026'),
 ]

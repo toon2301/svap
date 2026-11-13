@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Nové nálezy od čísla 305: kandidáti kolegu z K13 a K14, ručné testy majiteľa po K14 (8. 11. 2026) a diagnostika a video majiteľa
-z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327; 326 a 327 sú hotové v K18, z 325 zostáva toast) a report Codexa po K19 (328) a ručné testy majiteľa po K20 s mapovaním agenta z 13. 11. 2026 (330 a 331; hotový 329 je v `hotove_k20.py`), pravidlo majiteľa pri R2 (332) a rozhodnutie R23 (333).
+z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327; 325, 326 a 327 sú hotové v K18 a K21) a report Codexa po K19 (328) a ručné testy majiteľa po K20 s mapovaním agenta z 13. 11. 2026 (330 a 331; hotové 329, 330, 331 a 332 sú v `hotove_k20.py`), pravidlo majiteľa pri R2 (332), rozhodnutie R23 (333) a ručné testy majiteľa po K21 s kandidátmi kolegu (334 a 335).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
@@ -109,8 +109,8 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=321, bucket=P, imp=S_, eff=EL, pkg='Upozornenia a push',
          kratko='Upozornenia: kategórie a hlavný vypínač (nedokončená funkcia; dokončiť pred štartom, R32 '
-               'a); server (K19) aj rozhranie kategórií s hlavným vypínačom (K20, etapa 3a) sú hotové, zostáva výzva na push (K22), '
-                'rozhodnutie R39 o guličke Žiadostí (nález 330) a E2E (etapa 4)',
+               'a); server (K19) aj rozhranie kategórií s hlavným vypínačom (K20, etapa 3a) sú hotové, zostáva výzva na push (K23) '
+                'a E2E (etapa 4); odznak Žiadostí pri vypnutej kategórii (R39, nález 330) je hotový v K21',
          what='ČIASTOČNE HOTOVÉ (K19 a K20). '
                'ETAPA 3a (K20, zlúčené v PR #258 dňa 12. 11. 2026 o 21:56 UTC, merge `e26caa31`; päť commitov podľa karty `8525ce0e`, '
                '`cf22717e`, `02ea322b`, `a8f3ccf4` a `4a80caf0` a päť opráv po kontrolách botov `ddaf3a64`, `888762a4`, `6543df31`, '
@@ -174,13 +174,13 @@ NEW_ITEMS_K14 = [
                'opravil, docstringy v štyroch upravených testoch ostávajú) a druhé kolo bolo bez pripomienok; tabuľka sedí na R34 (18 '
                'typov v piatich kategóriách a 3 vždy zapnuté, spolu 21); lokálne prešlo 325 testov (183 nových a 142 súvisiacich), '
                '`makemigrations --check` bez zmien a tri vlastné mutácie tabuľky (zámena kategórie, chýbajúci profil ako vypnuté, '
-               'počiatočná žiadosť v kategórii) test zachytil 3 z 3. Manuálne testy majiteľa po nasadení nenašli nález. ZOSTÁVA (stav 13. 11. 2026): (a) etapa 3b (K22): výzva na povolenie push pre Správy (R36 a: jednorazová odmietnuteľná '
-               'výzva s tlačidlom v Nastaveniach → Upozornenia a s návodom pre iPhone); (b) rozhodnutie R39 o guličke Žiadostí pri '
-               'vypnutej kategórii „Žiadosť o zručnosť“ (nález 330); (c) rozhodnutie majiteľa, či sa nová veta v opise hlavného '
+               'počiatočná žiadosť v kategórii) test zachytil 3 z 3. Manuálne testy majiteľa po nasadení nenašli nález. ZOSTÁVA (stav 13. 11. 2026, po K21): (a) etapa 3b (K23): výzva na povolenie push pre Správy (R36 a: jednorazová odmietnuteľná '
+               'výzva s tlačidlom v Nastaveniach → Upozornenia a s návodom pre iPhone); (b) hotové v K21 (PR #260, nález 330): odznak Žiadostí pri '
+               'vypnutej kategórii „Žiadosť o zručnosť“ sa nerozsvieti (rozhodnutie R39); (c) rozhodnutie majiteľa, či sa nová veta v opise hlavného '
                'vypínača má ukázať aj na počítači; (d) etapa 4 (Codex po nasadení K20 a po dohode s majiteľom): E2E zmena kategórie s '
                'vrátením pôvodnej hodnoty, API test siedmich volieb (jedna zmena a návrat pôvodnej hodnoty; Codex ho odložil, kým '
-               'majiteľ nepotvrdí nasadenie K20) a vypnutá kategória s dvoma účtami a upratanie; (e) ručné testy majiteľa po K20 ešte '
-               'nie sú dokončené. PÔVODNÝ OPIS A MAPOVANIE (8. a 10. 11. 2026): '
+               'majiteľ nepotvrdí nasadenie K20) a vypnutá kategória s dvoma účtami a upratanie; (e) ručné testy majiteľa po K20 priniesli 330 a 331 '
+               '(obe hotové v K21). PÔVODNÝ OPIS A MAPOVANIE (8. a 10. 11. 2026): '
                'Ručný test majiteľa po K14 (8. 11. 2026) a nález kolegu z K14: v Nastaveniach → Upozornenia je šesť kategórií: Správy, '
                'Páči sa mi to, Páči sa mi to a komentáre (reakcie a komentáre na fotkách, kde je používateľ označený), Komentáre, Páči '
                'sa mi to pre komentáre a Žiadosť o zručnosť. Podľa majiteľa je to nedokončená práca: kategórie neposkytujú funkčný '
@@ -243,50 +243,11 @@ NEW_ITEMS_K14 = [
                'príklad „Označenie v príspevku“, agent navrhuje „Označenie a zdieľanie príspevku“, lebo patrí sem aj zdieľanie); '
                'Žiadosť o zručnosť = žiadosti o zručnosť a ich priebeh; zhoda Sledovania a pozvánka do skupiny bez prepínača, vždy '
                'zapnuté. Hlavný vypínač „Vypnúť všetko“ vypne všetky možnosti v Upozorneniach okrem Správ (kategórie ostanú viditeľne '
-               'vypnuté a po návrate sa vrátia ich hodnoty); nová žiadosť o zručnosť chodí aj pri ňom, ako dnes, kým majiteľ nepovie '
-               'inak. Výzva na povolenie push pre nových používateľov ide do etapy 3 (R36 a). Najbližšie (13. 11. 2026): K20 (etapa '
-               '3a) je zlúčená; ďalej K22 (výzva na push, R36 a), rozhodnutie R39 (nález 330) a E2E (Codex).',
+               'vypnuté a po návrate sa vrátia ich hodnoty); nová žiadosť o zručnosť sa pri ňom doručí do Žiadostí, no bez odznaku (R39 b, K21). '
+               'Výzva na povolenie push pre nových používateľov ide do etapy 3 (R36 a). Najbližšie (13. 11. 2026): K20 (etapa '
+               '3a) a K21 (odznak Žiadostí, nález 330) sú zlúčené; ďalej K23 (výzva na push, R36 a) a E2E (Codex).',
          dec='ROZHODNUTIE R36', src='ručný test majiteľa po K14 (8. 11. 2026), kolega (K14), mapovanie agenta (10. 11. 2026) a K19 a K20 '
                                     '(kolega, 12. 11. 2026) a ručný test po K20 (13. 11. 2026) s kontrolou agenta po zlúčení'),
-    dict(n=325, bucket=P, imp=N, eff=EM, pkg='Recenzie',
-         kratko='Mazanie recenzie: backend (odpoveď 204 bez tela) je hotový v K18 a manuálne testy prešli; zostáva toast „Recenzia bola '
-               'vymazaná.“ po úspešnom zmazaní (R37 c)',
-         what='ČIASTOČNE HOTOVÉ (K18, zlúčené v PR #255 dňa 12. 11. 2026, commit `f48d963e`): `review_detail_view` vracia pri '
-               '`DELETE` `Response(status=204)` bez tela; nový test `accounts/test/test_review_delete_response.py` (3 testy, pohľad sa '
-               'volá priamo, lebo testovací klient telo pri 204 sám odstráni; pred opravou padá 1, mutácie 5 z 5). Kolega to overil '
-               'naživo (produkčný build Next s `BACKEND_ORIGIN` na lokálny gunicorn): so starým kódom DELETE skončil chybou '
-               '`HPE_INVALID_CONSTANT`, cez proxy Next chybou `ECONNRESET` a v logu Next sa trikrát objavilo `Failed to proxy` (3 z '
-               '3); s opraveným kódom prešiel DELETE (204, 0 B) aj nasledujúci GET zoznamu (200; 3 z 3). Odchýlka od mapovania agenta: '
-               'zlyháva už samotný DELETE, nie až nasledujúci GET; príčina je tá istá (204 s telom), prejav závisí od miesta, kde '
-               'parser narazí na zvyšné bajty. Ako sa to správalo za proxy na Railway, tu overiť nešlo. Agent nezávisle: 45 '
-               'backendových testov prešlo, nový test pred opravou padá. Manuálne testy majiteľa po nasadení prešli (podľa karty '
-               'vrátane vymazania vlastnej recenzie), takže príznaky zmizli a podmienka pre frontendové ošetrenie zlyhania načítania '
-               '(R37 b) sa nenaplnila. ZOSTÁVA: toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (R37 c). PÔVODNÝ OPIS A MAPOVANIE '
-               '(10. a 11. 11. 2026): Ručný test majiteľa po K17 (10. 11. 2026): po úspešnom vymazaní recenzie zostáva otvorené '
-               'potvrdzovacie okno, recenzia ostáva viditeľná až do opätovného otvorenia sekcie a nezobrazuje sa správny toast. Nie je '
-               'to regresia z K17: K17 zmenila v `OfferReviewsView.tsx` len `alert()` na `toast.error` v chybovej vetve (diff má tri '
-               'riadky). MAPOVANIE (agent, 11. 11. 2026, čítanie kódu na `main` `f9b2a1d4` a lokálna reprodukcia mechanizmu; v '
-               'produkcii nepotvrdené). FRONTEND: obsluha potvrdenia v `OfferReviewsView.tsx` (riadky 583 až 605) po `api.delete` '
-               'najprv čaká na `reloadReviews()` (ďalšia požiadavka, `GET` zoznamu recenzií) a až potom zavrie okno '
-               '(`setReviewIdToDelete(null)`); akákoľvek výnimka z načítania zoznamu skončí v `catch`, ktorý ukáže „Nepodarilo sa '
-               'vymazať recenziu.“ (`reviews.deleteReviewFailed`), okno nechá otvorené a zoznam neobnoví, hoci recenzia na serveri už '
-               'neexistuje. Toast po úspešnom vymazaní kód neukazuje vôbec (kľúč neexistuje). BACKEND: `review_detail_view` '
-               '(`accounts/views/reviews.py`, riadok 270) vracia pri `DELETE` stav 204 s telom `{"message": ...}`; HTTP zakazuje telo '
-               'pri 204 a je to jediné z 13 miest s 204 v backende, ostatných 12 vracia 204 bez tela. REPRODUKCIA (agent, lokálne): '
-               'gunicorn 23.0.0 (ako v produkcii) a klient Node 22 s keep-alive spojeniami (rovnako ako proxy `rewrites` v Next.js, '
-               'cez ktorú ide `/api`): `DELETE` prejde so stavom 204, no hneď nasledujúca požiadavka na tom istom spojení zlyhá s '
-               'chybou `HPE_INVALID_CONSTANT Parse Error: Expected HTTP/` a až ďalšia prejde; pri 204 bez tela prejdú všetky. '
-               'Nasledujúca požiadavka je presne načítanie zoznamu z `reloadReviews()`, čo vysvetľuje všetky tri príznaky (chybový '
-               'toast, otvorené okno, neobnovený zoznam). Nepotvrdené: pokus bol bez Railway a bez celého Next.js, takže v produkcii '
-               'treba overiť v logoch frontendu na Railway, či sa v čase testu objavila chyba `Failed to proxy` s textom `Parse '
-               'Error`, alebo v prehliadači stavy `DELETE` a hneď nasledujúceho `GET` (204 a potom 5xx).',
-         note='Zostáva toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (nový kľúč `reviews.deleteReviewSuccess` v šiestich '
-               'jazykoch; R37 c). `OfferReviewsView.tsx` má 692 riadkov; majiteľ 11. 11. 2026 udelil výnimku (R37 b a c) s podmienkami '
-               'R31: nová logika mazania (obsluha potvrdenia) ide do nového súboru a pôvodný súbor nesmie narásť, vlastný commit, '
-               'test, ktorý bez zmeny padá, počty riadkov pred a po v texte commitu; ak sa to bez rastu súboru nedá, kolega sa zastaví '
-               'a nahlási to bez zmeny kódu. Zavretie okna a odstránenie recenzie aj pri zlyhaní načítania zoznamu (R37 b) sa nerobí: '
-               'príznaky po oprave backendu zmizli. Odhad: nízky · M.',
-         dec='ROZHODNUTIE R37', src='ručný test majiteľa po K17 (10. 11. 2026), mapovanie agenta (11. 11. 2026) a K18 (kolega, 12. 11. 2026)'),
     dict(n=328, bucket=P, imp=N, eff=ES, pkg='Spoľahlivosť CI a testov',
          kratko='E2E: test `offer-watch-pagination-errors` (mobilný variant) vyžaduje tlačidlo „Vytvoriť sledovanie“ aj pri plnom '
                 'limite piatich sledovaní',
@@ -307,105 +268,24 @@ NEW_ITEMS_K14 = [
                'existujúce sledovanie kvôli zelenému testu. Poznámka agenta: očakávanie sa odvodí z odpovede servera, takže test sa '
                'nezmäkčuje, no aby chyba v skrývaní tlačidla pri menej ako piatich sledovaniach nezostala nezachytená, treba overiť '
                'oba stavy (napr. skúška so zoznamom štyroch a piatich sledovaní, ak sa dá bez zmeny údajov účtu). Odhad: nízky · S. '
-               'STAV 13. 11. 2026: Codex má opravu testu lokálne pripravenú (vetva `e2e/223-dokazy-limit-328` z `main` `203e8d14`, '
-               'zatiaľ necommitnutá a nenahraná): test počká na pôvodné načítanie uložených sledovaní a ustálený zoznam, overí počet a '
-               'podľa neho očakáva pod limitom viditeľné a aktívne tlačidlo „Vytvoriť sledovanie“, pri limite piatich chýbajúce '
-               'tlačidlo a viditeľnú hlášku; načítavanie a chyba sa nepočítajú za úspech; kontrola správy, navigácie a Späť ostala. '
-               'Overené s umelým DOM pre počty 0, 4 a 5 (účty sa nemenili); živé overenie proti Railway ešte nebolo (stav pod limitom '
-               'len ak sa dá bez zmeny údajov účtu), aplikácia sa nemenila a prijatý základ ostáva 427 / 2 / 303.',
-         dec=None, src='report Codexa (celý beh po K19, 12. 11. 2026) a kontrola agenta v kóde a správa Codexa z 13. 11. 2026'),
-    dict(n=330, bucket=P, imp=S_, eff=ES, pkg='Upozornenia a push',
-         kratko='Upozornenia: pri vypnutej kategórii „Žiadosť o zručnosť“ alebo pri „Vypnúť všetko“ sa pri novej žiadosti nemá '
-               'rozsvietiť číselný odznak pri Žiadostiach (rozhodnuté R39 (b), ide do K21)',
-         what='Ručný test majiteľa po K20 (13. 11. 2026, počítač aj mobil): pri vypnutej kategórii „Žiadosť o zručnosť“ pošle '
-               'používateľ B používateľovi A novú žiadosť; žiadosť sa doručí a zobrazí v Žiadostiach (správne), no pri sekcii Žiadosti '
-               'sa rozsvieti číselná gulička. Očakávanie majiteľa: žiadosť sa doručí a zobrazí v Žiadostiach, ale číselná gulička pri '
-               'sekcii sa nemá zobraziť. MAPOVANIE (agent, 13. 11. 2026, čítanie kódu na `main` `203e8d14`; nie dôkaz z prehliadača): '
-               '(1) Gulička pri položke Žiadosti v ľavom menu (`Sidebar.tsx`, riadok 392) a v hornej lište na mobile '
-               '(`MobileTopNav.tsx`, riadok 75) ukazuje počet neprečítaných upozornení typu `skill_request`, teda počiatočných '
-               'upozornení na novú žiadosť (`unreadCount` z `RequestsNotificationsContext.tsx`); počet prichádza z `GET /api/auth/me/` '
-               '(pole `unread_skill_request_count`, `auth_helpers.py`), z `GET notifications/unread-count/?type=skill_request` a z '
-               'realtime udalosti `skill_request`. Čísla na záložkách vnútri Žiadostí (Čakajúce, Aktívne) sú iná vec: počítajú samotné '
-               'žiadosti, nie upozornenia, a od nastavení upozornení nezávisia. (2) Nová žiadosť chodí vždy: '
-               '`create_skill_request_notification` (`services/notification_events/skill_requests.py`) zámerne obchádza hlavný vypínač '
-               'aj kategóriu, upozornenie vytvorí a pošle udalosť guličky; typ je v `ALWAYS_ON_NOTIFICATION_TYPES` '
-               '(`notification_categories.py`) a správanie stráži test `test_skill_request_notification_ignores_in_app_toggle`. '
-               'Kategória „Žiadosť o zručnosť“ (`notify_skill_requests`) riadi len priebeh žiadosti (prijatie, zamietnutie, '
-               'dokončenie, zrušenie a skončenie). Je to rozhodnutie R35 z 10. 11. 2026 a agent pri ňom odporúčal, aby ostal aj odznak '
-               'v module Žiadosti. (3) Rozhranie to pri kategórii nehovorí: opis kategórie je „Zapnite alebo vypnite upozornenia na '
-               'žiadosti o zručnosť.“ (`notifications.skillRequestDesc`), vetu „Nové žiadosti o zručnosť budú chodiť ďalej.“ má len '
-               'opis hlavného vypínača (`turnOffAllDesc`; podľa kolegu ju vidno len na mobile). Správanie teda zodpovedá R35, no je v '
-               'rozpore s očakávaním majiteľa pri vypnutej kategórii.',
-         note='ROZHODNUTÉ 13. 11. 2026 (R39, variant (b); majiteľ vlastnými slovami: nová žiadosť príde priamo do Žiadostí ako '
-               'notifikačný odznak, táto logika ostáva a mení sa len to, že pri vypnutom „Vypnúť všetko“ alebo vypnutej kategórii '
-               '„Žiadosť o zručnosť“ notifikácia nepríde; inak ostáva všetko ako je). PLÁN (návrh agenta z čítania kódu, nie dôkaz): v '
-               '`create_skill_request_notification` (`services/notification_events/skill_requests.py`) sa upozornenie na novú žiadosť '
-               'vytvorí rovno ako prečítané (`is_read=True`), keď má príjemca vypnutý hlavný vypínač (`in_app_notifications`) alebo '
-               'kategóriu `notify_skill_requests`; žiadosť sa doručí a je v Žiadostiach, odznak sa nerozsvieti (počet neprečítaných z '
-               '`GET /api/auth/me/`, z `unread-count` aj z realtime udalosti ostane bez nového) a žiadosti, ktoré prídu počas '
-               'vypnutia, odznak nerozsvietia ani po zapnutí. Čisté riešenie: typ `skill_request` presunúť v '
-               '`notification_categories.py` zo zoznamu vždy zapnutých do tabuľky kategórií (`notify_skill_requests`; '
-               '`create_notification` ho nepoužíva, takže sa nič nepotlačí navyše) a profil prečítať jediným dopytom ako v '
-               '`create_notification`. Tri existujúce testy tvrdia opak a treba ich upraviť (žiadosť sa vytvorí, no neráta sa do '
-               'odznaku): `test_skill_request_badge_works_when_in_app_notifications_disabled` '
-               '(`test_skill_requests_notifications.py`), `test_skill_request_notification_ignores_in_app_toggle` '
-               '(`test_notifications_in_app_toggle.py`) a `test_initial_skill_request_arrives_with_everything_off` '
-               '(`test_notification_category_gate.py`); pribudnú testy pre kategóriu aj hlavný vypínač a pre zapnutý stav (odznak sa '
-               'rozsvieti). Text `notifications.turnOffAllDesc` v šiestich jazykoch sa zmení (návrh sk: „Vypne všetky upozornenia '
-               'okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.“; na počítači hlavný vypínač '
-               'opis nemá a ostáva tak) a upraví sa test `notificationsMessages.test.ts`; zastaraný komentár v '
-               '`views/skill_requests.py` (riadok 265) sa opraví. Frontend sa inak nemení. Odhad: nízky · S.',
-         dec='ROZHODNUTIE R39', src='ručný test majiteľa po K20 (13. 11. 2026) a mapovanie agenta'),
-    dict(n=331, bucket=P, imp=S_, eff=ES, pkg='Recenzie',
-         kratko='Recenzie: po úspešnom pridaní recenzie ostane pri ďalšom otvorení okna „Pridať recenziu“ tlačidlo zakázané s textom '
-               '„Načítavam…“ (stav odosielania sa nevynuluje); obnovenie stránky to opraví',
-         what='Ručný test majiteľa po K20 (13. 11. 2026, mobil, recenzie pri karte iného používateľa): pridať recenziu, zmazať ju, '
-               'pridať znova (funguje), zmazať druhú a skúsiť pridať tretiu: tlačidlo ostane na „Načítavam“ a nedá sa kliknúť; '
-               'obnovenie stránky to opraví. Očakávané: po zmazaní sa dá pridať nová recenzia bez obnovenia. MAPOVANIE A REPRODUKCIA '
-               '(agent, 13. 11. 2026, `main` `203e8d14`): ide o tlačidlo v okne „Pridať recenziu“ (nie o tlačidlo na stránke '
-               'recenzií): `AddReviewModalMobile.tsx` (348 riadkov, riadok 339) aj `AddReviewModalDesktop.tsx` (332 riadkov, riadok '
-               '323) ukazujú pri `isSubmitting` text kľúča `common.loading`, ktorý je po slovensky „Načítavam...“ (záložné '
-               '„Pridávam...“ sa nikdy neukáže, lebo kľúč existuje), a tlačidlo je zakázané. `isSubmitting` sa nastaví na `true` pred '
-               'odoslaním a na `false` sa vráti len v `catch` (mobil riadky 138 a 143, desktop 135 a 140); po úspešnom odoslaní sa '
-               'nevráti. Okno sa pri pridaní nevytvára odznova (`OfferReviewsView.tsx`, riadok 609: kľúč okna je pri pridaní stály, '
-               '`new-review`), len sa zatvorí (`open=false`, vráti `null`) a jeho stav ostane; efekt pri zatvorení vynuluje '
-               'hviezdičky, text, plusy a mínusy, no nie `isSubmitting`. Pri ďalšom otvorení v tej istej návšteve stránky recenzií je '
-               'preto tlačidlo hneď zakázané s textom „Načítavam...“. Pri úprave recenzie sa kľúč okna zmení (ID recenzie) a okno '
-               'vznikne odznova, takže úprava chybu zakryje; obnovenie stránky alebo odchod a návrat na recenzie okno tiež vytvorí '
-               'odznova. Prvé „funguje“ z hlásenia sa tým dá vysvetliť návratom na kartu medzi krokmi (nepotvrdené); podľa kódu druhé '
-               'pridanie v tej istej návšteve zlyhá vždy. REPRODUKCIA (agent, oddelená kópia `main` `203e8d14` s čerstvou inštaláciou, '
-               'Jest; obal napodobňuje stránku: po úspechu okno zatvorí a tlačidlo ho otvorí znova): po úspešnom pridaní a opätovnom '
-               'otvorení je tlačidlo zakázané s textom „Načítavam...“ v mobilnom aj v desktopovom okne (2 z 2 testov padajú); po '
-               'pridaní jedného riadku `setIsSubmitting(false)` do vetvy zatvorenia okna (efekt `[open]`) prejdú oba (2 z 2). '
-               'Repozitár sa pri tom nemenil. Chyba je v kóde od vzniku okna (PR #127, 24. 9. 2026); K18 (nález 327) sa `isSubmitting` '
-               'nedotkla.',
-         note='Návrh opravy: vynulovať `isSubmitting` pri zatvorení okna (alebo po úspešnom odoslaní) v oboch súboroch '
-               '(`AddReviewModalMobile.tsx` 348 a `AddReviewModalDesktop.tsx` 332 riadkov, pod 500; `OfferReviewsView.tsx` sa nemení). '
-               'Test: pridať recenziu, okno sa zatvorí, znova ho otvoriť; tlačidlo je „Pridať“ a použiteľné (mobil aj desktop); '
-               'mutácia: odstrániť vynulovanie. Odhad: nízky · S.',
-         dec=None, src='ručný test majiteľa po K20 (13. 11. 2026), mapovanie agenta a reprodukcia v oddelenej kópii'),
-    dict(n=332, bucket=P, imp=S_, eff=ES, pkg='Preklady a hlášky',
-         kratko='Jazyk pre zvyšok sveta: ak krajina ani jazyk prehliadača nie sú jedným zo šiestich jazykov, aplikácia dá slovenčinu; '
-               'má dať angličtinu (R2)',
-         what='Pravidlo majiteľa (13. 11. 2026, pri R2): podľa krajiny, v ktorej sa aplikácia otvorí, sa zvolí jazyk (Slovensko '
-               'slovenčina, Česko čeština, Maďarsko maďarčina, Rakúsko a Nemecko nemčina, Poľsko poľština) a zvyšok sveta dostane '
-               'angličtinu. Dnes (`LanguageContext.tsx`, 222 riadkov; agent čítal kód 13. 11. 2026): krajina z IP adresy (`ipapi.co`) '
-               'dá jazyk len pre PL, SK, CZ, DE, AT a HU (`localeFromCountry`), inak sa použije jazyk prehliadača '
-               '(`localeFromBrowser`: pl, sk, cs, de, hu a en) a ak ani ten nie je z týchto šiestich, vráti sa slovenčina. Používateľ '
-               'z krajiny mimo šiestich s telefónom v inom jazyku (napríklad thajskom) teda dostane slovenčinu namiesto angličtiny; '
-               'rovnaká náhrada je aj v stránke `global-error` (`GlobalErrorView.tsx`, 155 riadkov, `localeFromNavigator`, zámerne '
-               'vlastná kópia). Ručná voľba v Nastaveniach (`appLocale` v úložisku prehliadača) má prednosť a nemení sa. Existujúce '
-               'testy tvrdia starú náhradu: `LanguageContext.locale.test.tsx` (`ja-JP` a prázdny jazyk dajú `sk`, chyba pri čítaní '
-               'jazyka dá `sk`) a `GlobalErrorView.test.tsx` („neznámy jazyk prehliadača dá slovenčinu“).',
-         note='Rozhodnuté majiteľom 13. 11. 2026: jazyk prehliadača alebo telefónu ostáva druhým signálom (Slovák na dovolenke v '
-               'Thajsku so slovenským telefónom dostane slovenčinu, Thajčan s thajským telefónom angličtinu). Návrh opravy: posledná '
-               'náhrada v `localeFromBrowser` aj `localeFromNavigator` je angličtina (`en`) namiesto slovenčiny; nemení sa priorita '
-               '(ručná voľba, krajina, jazyk prehliadača), začiatočný stav `sk` pred zistením ani zisťovanie krajiny (to rieši nález '
-               '186 a R7); upraviť testy tak, aby tvrdili `en`, a overiť (alebo doplniť) test priority: krajina mimo šiestich s '
-               'jazykom prehliadača jedným zo šiestich dá tento jazyk. Ak kolega pri overení pozoruje krátke zablikanie slovenčiny '
-               'pred prepnutím jazyka, nahlási ho ako kandidáta (nemeniť). Súvisí s R2 a s 186. Dopad na E2E: špecy nastavujú '
-               '`appLocale` ručne, takže sa to nezmení (agent overil prehľadaním `frontend/e2e`). Odhad: nízky · S.',
-         dec='ROZHODNUTIE R2', src='pravidlo majiteľa pri R2 (13. 11. 2026) a kontrola agenta v kóde'),
+               'STAV 13. 11. 2026 (večer): oprava testu je zlúčená v PR #261 (vetva `e2e/223-dokazy-limit-328`, commity `d918a8eb` a '
+               '`7d387fcf`, merge `8b951cd9`, nasadené): test počká na pôvodné načítanie uložených sledovaní a ustálený zoznam, overí '
+               'počet a podľa neho očakáva pod limitom viditeľné a aktívne tlačidlo „Vytvoriť sledovanie“, pri limite piatich '
+               'chýbajúce tlačidlo a viditeľnú hlášku; načítavanie a chyba sa nepočítajú za úspech; kontrola správy, navigácie a Späť '
+               'ostala. Overené s umelým DOM pre počty 0, 4 a 5 (účty sa nemenili). Codex review v PR #261 dal jednu platnú '
+               'pripomienku (P2): test pri otvorení správy zachytil prvú odpoveď 401 a hneď vyžadoval stav 200, hoci aplikácia '
+               'podporuje obnovu prihlásenia s jedným zopakovaním pôvodnej požiadavky (`frontend/src/lib/api.ts`), takže mohol padnúť '
+               'aj pri správnom fungovaní; pred opravou 9 z 9 izolovaných variantov (počty 0, 4 a 5 v troch projektoch) zlyhalo na '
+               'zachytenej 401. Oprava (`7d387fcf`): čakanie preskočí iba prvú 401 presného `GET` zoznamu sledovaní, výsledok '
+               'opakovanej požiadavky odovzdá pôvodnej kontrole stavu 200 a načítaného rozhrania, opakovaná 401 ani iné chyby HTTP sa '
+               'za úspech nepočítajú a zlyhaná obnova test neprepustí; pomocník nevysiela vlastné požiadavky ani opakovania testu a '
+               'timeouty, tolerancie a kontrola limitu ostali. Kontroly Codexa: Node 124 z 124, izolované prehliadačové varianty 42 z '
+               '42, Jest infraštruktúry 52 z 52, TypeScript frontendu aj E2E bez chýb, lint a kontrola zmien prešli; zber ostáva 44 '
+               'špecov a 762 variantov; CI (`checks`, `backend-postgres`) aj CodeRabbit sú zelené; vlákno Codex review ostalo na '
+               'GitHube neuzavreté (zatvára majiteľ). ŽIVÉ OVERENIE proti Railway ešte nebolo (stav pod limitom len ak sa dá bez zmeny '
+               'údajov účtu), aplikácia sa nemenila a prijatý základ ostáva 427 / 2 / 303; nález ostáva otvorený do živého overenia v '
+               'dohodnutom behu.',
+         dec=None, src='report Codexa (celý beh po K19, 12. 11. 2026), kontrola agenta v kóde, správy Codexa z 13. 11. 2026 a PR #261'),
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
                'vzhľadu, až potom redizajn (R23)',
@@ -421,4 +301,49 @@ NEW_ITEMS_K14 = [
                'nemení), potom presun po jednom celku do nových súborov so zachovaním verejného rozhrania, po každom kroku celý Jest a '
                'existujúce testy komentárov; E2E sa po delení spustí (Codex). Odhad: stredný · L (tri samostatné dávky).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026)'),
+    dict(n=334, bucket=P, imp=N, eff=ES, pkg='Recenzie',
+         kratko='Recenzie: chybová hláška z neúspešného odoslania ostane v okne „Pridať recenziu“ aj po zatvorení a opätovnom otvorení',
+         what='Ručný test majiteľa po K21 (13. 11. 2026, mobil aj počítač): otvoriť okno „Pridať recenziu“, vyplniť povinné údaje, '
+               'vypnúť internet a skúsiť odoslať; po zobrazení chyby zapnúť internet, okno zatvoriť a znova otvoriť: chybová hláška z '
+               'predchádzajúceho neúspešného odoslania ostane zobrazená, hoci sa má ukázať čistý formulár. Kolega ju uviedol ako '
+               'kandidáta v texte commitu `59cbc04c` (K21) aj v strane výsledku dávky K21 a agent ju 13. 11. 2026 zreprodukoval '
+               'pomocnou skúškou v oboch oknách (2 z 2). PRÍČINA (kód): `AddReviewModalMobile.tsx` (353 riadkov) a '
+               '`AddReviewModalDesktop.tsx` (337) držia chybu v stave `error`; efekt `useEffect(..., [open])` pri zatvorení vynuluje '
+               'hviezdičky, text, plusy a mínusy, no nie `error`, a `setError(null)` je len na začiatku odosielania (`handleSubmit`). '
+               'Okno sa pri pridaní nevytvára odznova (kľúč okna new-review v `OfferReviewsView.tsx` je stály), takže jeho stav '
+               'ostane; rovnaká príčina ako pri 331. Agent prešiel aj ostatné okná s rovnakým vzorom (heuristické prehľadanie 13. 11. '
+               '2026: deväť okien so skorým návratom pri zatvorení a stavom chyby): chybu pri otvorení nulujú `HelpRequestModal`, '
+               '`ReportUserModal`, `ReportReviewModal` a `OwnerResponseModal`, `OfferWatchEditDialog` ju nuluje pri zmene sledovania a '
+               'okná zdieľania (`OfferShareModal`, `ProfileShareModal`) nulujú chybu QR kódu, takže problém je len v oboch oknách '
+               'recenzie.',
+         note='Návrh opravy (agent z čítania kódu, nie dôkaz): do vetvy `if (!open) { … }` efektu `[open]` v oboch oknách doplniť '
+               '`setError(null);` (jeden riadok v každom) a test do `AddReviewModal.reopen.test.tsx` (314 riadkov): po neúspešnom '
+               'odoslaní, zatvorení a opätovnom otvorení nie je text chyby vidieť v mobilnom ani desktopovom okne a po novom '
+               'neúspešnom odoslaní sa chyba ukáže znova; mutácia (odstrániť riadok) test zachytí. Nemeniť `OfferReviewsView.tsx` (nad '
+               '500 riadkov). Odhad: nízky · S. Dopad na E2E: žiadny.',
+         dec=None, src='ručný test majiteľa po K21 (13. 11. 2026), kandidát kolegu (K21) a kontrola agenta v kóde'),
+    dict(n=335, bucket=P, imp=S_, eff=ES, pkg='Preklady a hlášky',
+         kratko='Jazyk: atribút `lang` na `<html>` je vždy „sk“, aj keď je aplikácia v inom jazyku',
+         what='Ručný test majiteľa po K21 (13. 11. 2026, počítač, všetky podporované jazyky): po zmene jazyka aplikácie (napríklad na '
+               'angličtinu alebo nemčinu) vráti `document.documentElement.lang` v konzole vždy `sk`, hoci texty rozhrania sú správne '
+               'preložené; atribút má zodpovedať jazyku aplikácie (`en`, `de` a ďalšie). Dôsledok: čítačky obrazovky vyberajú '
+               'výslovnosť podľa `lang`, prehliadač môže ponúknuť preklad z nesprávneho jazyka a kontrola pravopisu v poliach používa '
+               'nesprávny jazyk. Kolega to uviedol ako kandidáta v správe K21 a potvrdil v Chromiu vo všetkých 11 scenároch skúšky '
+               '332. PRÍČINA (kód, agent 13. 11. 2026): koreňový `app/layout.tsx` (104 riadkov, riadok 56) má pevné `<html lang="sk">` '
+               '(server nepozná jazyk, ktorý sa zisťuje až v prehliadači); `LanguageProvider` (`contexts/LanguageContext.tsx`, 226 '
+               'riadkov) drží jazyk v stave `locale` (začiatok `sk`, potom uložená voľba, krajina z IP a jazyk prehliadača), no nikde '
+               'ho nezapisuje do `document.documentElement.lang`; vlastné `lang` dnes nastavujú len `app/global-error.tsx` (`<html '
+               'lang={locale}>`) a jeden prvok v `app/page.tsx`. Súbor `src/pages/_document.tsx` (`<Html lang="sk">`) patrí '
+               'pravdepodobne do nepoužívaného pages routera (overiť pri oprave).',
+         note='Návrh opravy (agent z čítania kódu, nie dôkaz): v `LanguageProvider` efekt, ktorý pri každej zmene `locale` nastaví '
+               '`document.documentElement.lang = locale` (vzor: `ThemeContext.tsx` mení triedu `dark` na `<html>` z prehliadača); kódy '
+               'aplikácie (`sk`, `cs`, `en`, `pl`, `de`, `hu`) sú platné kódy jazykov. Úvodné HTML zo servera ostáva `sk`, čo súhlasí '
+               's obsahom, ktorý sa vykreslí najprv slovensky; po načítaní sa `lang` vyrovná s jazykom. Test (nový súbor v '
+               '`contexts/__tests__/`): bez uloženej voľby `sk`, uložená voľba každého zo šiestich jazykov, `setLocale` zmení `lang` a '
+               'jazyk z krajiny alebo z prehliadača (simulované `ipapi.co`) ho tiež zmení; mutácia (odstrániť efekt) test zachytí. '
+               'Serverové riešenie (správny `lang` už v prvom HTML, napríklad z hlavičky `CF-IPCountry` alebo cookie) patrí k nálezu '
+               '186 a R7 (zisťovanie krajiny) a odstránilo by aj zablikanie slovenčiny pri prvej návšteve. Odhad: stredný · S. Dopad '
+               'na E2E: žiadny špec `lang` nekontroluje (agent overil prehľadaním `frontend/e2e`); jednoduchú kontrolu atribútu môže '
+               'po nasadení doplniť Codex.',
+         dec=None, src='ručný test majiteľa po K21 (13. 11. 2026), kandidát kolegu (K21) a kontrola agenta v kóde'),
 ]

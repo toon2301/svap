@@ -283,6 +283,16 @@ NEW_ITEMS_223 = [
               '`offer-card-review-translations` a `search-panel-fixture` (rovnaký počet pokusov, bez zmeny testov), až potom živé '
               'overenie opravy 328; API test siedmich volieb a scenáre kategórií čakajú, kým majiteľ nepotvrdí nasadenie K20 a nedá '
               'súhlas (295 sa neimplementoval). Dokument `docs/playwright-odovzdanie.md` Codex aktualizoval. Čaká na majiteľa: súhlas '
-              's commitom a nahraním vetvy a dohoda termínu porovnania.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. 11. 2026 (dym po K18, celý beh po K19 a lokálne úpravy po K20) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              's commitom a nahraním vetvy a dohoda termínu porovnania. '
+              'DODATOK 13. 11. 2026 (večer; správa Codexa a kontrola agenta z GitHubu): lokálne úpravy z predchádzajúceho dodatku sú '
+              'commitnuté a nahrané ako PR #261 (vetva `e2e/223-dokazy-limit-328`, 22 súborov, +805 a −13 riadkov, commity `d918a8eb` '
+              'a `7d387fcf`), zlúčené 13. 11. 2026 o 19:19 UTC (merge `8b951cd9`) a nasadené; CI (`checks`, `backend-postgres`) aj '
+              'CodeRabbit sú zelené na hlavičke PR. Zmenila sa len oblasť E2E (testy, pomocníci a dokument '
+              '`docs/playwright-odovzdanie.md`), aplikácia ani údaje účtov nie. Codex review dal jednu platnú pripomienku (P2: test '
+              'limitu Sledovania 328 nepočítal s obnovou prihlásenia), opravenú druhým commitom (podrobnosti sú v 328); vlákno ostalo '
+              'na GitHube neuzavreté (zatvára majiteľ). Proti Railway sa nič nespúšťalo a prijatý základ ostáva 427 / 2 / 303. '
+              'Príčina 223 ostáva otvorená. Ďalší krok podľa Codexa: dohodnúť okno na porovnanie natívneho Windows WebKitu a Dockeru '
+              '(špecy `search-mobile-cards`, `offer-card-review-translations` a `search-panel-fixture`, rovnaký počet pokusov, bez '
+              'zmeny testov), potom živé overenie opravy 328.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20 a PR #261) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]

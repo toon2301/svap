@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20`.
+"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329 a dávka K21: 331, 332, 330 a 325).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_dalsie.py` má 496 riadkov). `hotove.py` ho pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -34,4 +34,69 @@ DONE_SINCE_K20 = [
                'sada: PostgreSQL 16.15 2 532 prešlo a 2 preskočené, SQLite 2 510 prešlo a 24 preskočených, 0 zlyhalo; ruff a black '
                'čisté. Nasadenie aj kontrola CodeRabbitu prebehli bez problému (hlásenie majiteľa, 13. 11. 2026). Dopad na E2E: '
                'žiadny.'),
+    dict(n=331, vetva='K21', pr='#260', zlucene=True,
+         text='HOTOVÉ (vetva K21, zlúčené v PR #260 dňa 13. 11. 2026, merge `79f907bd`; commit `59cbc04c` a oprava po CodeRabbite '
+               '`71f9cff4`). HLÁSENIE MAJITEĽA (ručný test po K20, 13. 11. 2026, mobil): po pridaní, zmazaní a opätovnom pridaní '
+               'recenzie ostalo tlačidlo v okne „Pridať recenziu“ zakázané na „Načítavam…“ (obnovenie stránky to opravilo). PRÍČINA: '
+               'stránka okno pri pridaní nevytvára odznova (kľúč okna new-review je stály) a po úspešnom odoslaní ho len zatvorí, kým '
+               '`isSubmitting` sa vracal na `false` len pri chybe; pri úprave sa kľúč mení, takže tam chyba nevznikala. OPRAVA '
+               '(`59cbc04c`): `setIsSubmitting(false)` pri zatvorení okna v `AddReviewModalMobile.tsx` aj `AddReviewModalDesktop.tsx`. '
+               'PRIPOMIENKA CODERABBITU (Minor, PR #260): vynulovanie pri zatvorení umožnilo okno počas odosielania zatvoriť, znova '
+               'otvoriť a poslať druhú požiadavku, kým prvá ešte beží, a prvá úspešná by zatvorila už znova otvorené okno. Kolega už '
+               'vetvu nemohol upravovať, preto opravu (`71f9cff4`) urobil agent vo vetve K21 s výslovným povolením majiteľa: príznak '
+               'odosielania sa vracia v `finally` po dokončení požiadavky (úspešnom aj neúspešnom), vynulovanie pri zatvorení sa '
+               'odstránilo a počas odosielania sa okno nedá zavrieť (krížik a Zrušiť sú zakázané, klepnutie na pozadie nič nerobí; pri '
+               'zlyhaní sa ovládanie odomkne). Okrajový prípad podľa kolegu: server druhú recenziu tej istej ponuky aj tak odmietne '
+               '(jedinečné obmedzenie). OVERENIE (kolega): 10 testov v novom `AddReviewModal.reopen.test.tsx` (6 pred opravou padalo), '
+               'mutácie 2 z 2, Chromium (iPhone 13 aj počítač, produkčný build, simulovaný server): štyri cykly pridať, zmazať, pridať '
+               'bez obnovenia. OVERENIE (agent, oprava po CodeRabbite): testy najprv zlyhali na kóde K21 (6 z 8 nových), po oprave '
+               'prechádza 18 z 18 v súbore (197 → 314 riadkov), mutácie 10 z 10 (päť častí opravy v oboch oknách), moduly recenzií a '
+               'žiadostí 21 súborov a 180 testov, celý Jest 592 súborov a 8 854 testov, `tsc` a ESLint čisté; CI (`checks`, '
+               '`backend-postgres`) zelené, CodeRabbit nový commit preskočil (limit jednej kontroly za hodinu), Codex review hlavičky '
+               '`71f9cff4` bez pripomienok; vlákno CodeRabbitu ostalo na GitHube neuzavreté (zatvára majiteľ). Z ručných testov po '
+               'nasadení (13. 11. 2026) pribudol nález 334 (stará chybová hláška po zatvorení a opätovnom otvorení okna). Dopad na '
+               'E2E: žiadny.'),
+    dict(n=332, vetva='K21', pr='#260', zlucene=True,
+         text='HOTOVÉ (vetva K21, zlúčené v PR #260 dňa 13. 11. 2026, merge `79f907bd`, commit `eceda277`). PRAVIDLO MAJITEĽA pri R2 '
+               '(13. 11. 2026): podľa krajiny, v ktorej sa aplikácia otvorí, sa zvolí jazyk (Slovensko slovenčina, Česko čeština, '
+               'Maďarsko maďarčina, Rakúsko a Nemecko nemčina, Poľsko poľština) a zvyšok sveta dostane angličtinu; jazyk prehliadača '
+               'alebo telefónu ostáva druhým signálom a ručná voľba v Nastaveniach má prednosť. OPRAVA: posledná náhrada je `en` '
+               'namiesto `sk` v `localeFromBrowser` (`LanguageContext.tsx`) aj v `localeFromNavigator` (`GlobalErrorView.tsx`), '
+               'vrátane chyby pri čítaní jazyka prehliadača; upravené komentáre a docstringy. Nemení sa: poradie priorít, začiatočný '
+               'stav `sk` pred zistením a zisťovanie krajiny (`ipapi.co`; nález 186 a R7). OVERENIE (kolega): pred opravou padalo 17 z '
+               '99 testov v oboch dotknutých súboroch, po oprave prechádza 99 z 99; tretí test starého správania '
+               '(`src/app/__tests__/global-error.test.tsx`) odhalil až celý Jest; nový test priority so skutočným poskytovateľom (16 '
+               'kombinácií krajina z IP × jazyk prehliadača, ručná voľba a uložená krajina formulára); mutácie 3 z 3; Chromium '
+               '(produkčný build, `ipapi.co` simulované): 11 z 11 scenárov; celý Jest 592 súborov a 8 846 testov. POZOROVANIA KOLEGU: '
+               'zablikanie slovenčiny pri prvej návšteve (patrí k nálezu 186 a R7) a `<html lang="sk">` pri každom jazyku (nález 335). '
+               'Dopad na E2E: žiadny.'),
+    dict(n=330, vetva='K21', pr='#260', zlucene=True,
+         text='HOTOVÉ (vetva K21, zlúčené v PR #260 dňa 13. 11. 2026, merge `79f907bd`, commit `c4d50bfb`; rozhodnutie R39 (b)). '
+               'HLÁSENIE MAJITEĽA (ručný test po K20, 13. 11. 2026): pri vypnutej kategórii „Žiadosť o zručnosť“ sa pri novej žiadosti '
+               'rozsvietil číselný odznak pri Žiadostiach. PRÍČINA: `create_skill_request_notification` vytvárala upozornenie zámerne '
+               'vždy ako neprečítané a typ bol medzi vždy zapnutými. OPRAVA (backend, bez migrácie): žiadosť sa doručí a zobrazí v '
+               'Žiadostiach a upozornenie sa vytvorí, no ako prečítané (`is_read=True`, `read_at`), keď má príjemca vypnutý hlavný '
+               'vypínač alebo kategóriu `notify_skill_requests`, takže počet neprečítaných (`/api/auth/me/`, `unread-count`, realtime '
+               'udalosť) sa nezvýši a odznak sa nerozsvieti; typ `skill_request` je v tabuľke kategórií (nie medzi vždy zapnutými), '
+               '`in_app_notifications_enabled` dostal verejný názov a hlavný vypínač aj kategória sa čítajú jedným dopytom profilu; '
+               'opis hlavného vypínača má vo všetkých šiestich jazykoch novú druhú vetu (na počítači vypínač opis nemá). OVERENIE '
+               '(kolega): pred opravou padalo 17 zo 156 testov (10 nových a 7 upravených) a 8 z 38 pri texte vypínača; nový '
+               '`test_skill_request_muted_badge.py` (12 prípadov); mutácie 9 z 9; celé testy backendu (SQLite) 2 521 prešlo, 24 '
+               'preskočených; ruff čistý; PostgreSQL sa overilo v CI. NEOVERENÉ: scenár s dvoma účtami proti skutočnému serveru (patrí '
+               'do etapy 4 nálezu 321, Codex). Dopad na E2E: žiadny nájdený; scenár so žiadosťou o zručnosť a odznakom doplní Codex v '
+               'etape 4.'),
+    dict(n=325, vetva='K21', pr='#260', zlucene=True,
+         text='HOTOVÉ (backendová časť v K18, PR #255, commit `f48d963e`; zvyšok vo vetve K21, zlúčené v PR #260 dňa 13. 11. 2026, '
+               'merge `79f907bd`, commit `9d26d9c4`; výnimka R37 (b a c) z 11. 11. 2026). Po úspešnom zmazaní vlastnej recenzie sa '
+               'ukáže toast „Recenzia bola vymazaná.“ (nový kľúč `reviews.deleteReviewSuccess` v šiestich jazykoch). Obsluha '
+               'potvrdenia zmazania (zmazanie, `reloadReviews`, ponuka, cache, zatvorenie potvrdenia a toasty) je v novom hooku '
+               '`reviews/useConfirmDeleteReview.ts` (69 riadkov); `OfferReviewsView.tsx` má 692 riadkov pred zmenou a 683 po zmene '
+               '(nenarástol, podmienky R31). Zavretie okna a odstránenie recenzie aj pri zlyhaní načítania zoznamu po zmazaní (R37 b) '
+               'sa nerobí, lebo príznaky po oprave backendu zmizli: ak zmazanie prejde a načítanie zoznamu zlyhá, ukáže sa chyba '
+               'mazania a potvrdenie ostane otvorené, hoci recenzia je na serveri už zmazaná (test túto cestu pripína ako súčasné '
+               'správanie). OVERENIE (kolega): pred zmenou padali 3 z 15 testov v `OfferReviewsView.errorToasts.test.tsx` (401 → 475 '
+               'riadkov) a nový `useConfirmDeleteReview.test.tsx` (217 riadkov, 12 prípadov) sa nedal spustiť; po zmene prechádza celý '
+               'modul recenzií; mutácie 9 z 9; Chromium (mobil, počítač, slovensky aj anglicky): toast po každom zo štyroch zmazaní. '
+               'POZNÁMKA KOLEGU: `onSubmit` pri pridaní a úprave recenzie opakuje blok zneplatnenia cache ponúk ako nový hook '
+               '(`poznamky.md`). Dopad na E2E: žiadny.'),
 ]
