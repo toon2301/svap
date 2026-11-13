@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { LanguageProvider, localeFromBrowser, localeFromCountry, useLanguage } from '../LanguageContext';
 import * as languageContext from '../LanguageContext';
-import { GEO_DETECTION_CACHE_KEY } from '@/shared/offerCountryPreference';
+import { GEO_DETECTION_CACHE_KEY, LAST_MANUAL_OFFER_COUNTRY_KEY } from '@/shared/offerCountryPreference';
 import sk from '../../../messages/sk.json';
 import cs from '../../../messages/cs.json';
 import en from '../../../messages/en.json';
@@ -55,8 +55,8 @@ describe('language remains independent from the search country', () => {
 
   it.each([
     ['pl-PL', 'pl'], ['sk-SK', 'sk'], ['cs-CZ', 'cs'], ['cz-CZ', 'cs'], ['de-AT', 'de'],
-    ['hu-HU', 'hu'], ['en-GB', 'en'], ['ja-JP', 'sk'], ['', 'sk'],
-  ])('keeps browser locale mapping %s independent of country detection', (language, expected) => {
+    ['hu-HU', 'hu'], ['en-GB', 'en'], ['ja-JP', 'en'], ['fr-FR', 'en'], ['th-TH', 'en'], ['', 'en'],
+  ])('keeps browser locale mapping %s independent of country detection (unknown language gives English)', (language, expected) => {
     Object.defineProperty(navigator, 'languages', { configurable: true, value: [language] });
     Object.defineProperty(navigator, 'language', { configurable: true, value: language });
     expect(localeFromBrowser()).toBe(expected);
@@ -68,9 +68,9 @@ describe('language remains independent from the search country', () => {
     expect(localeFromBrowser()).toBe('pl');
   });
 
-  it('falls back safely when browser language access throws', () => {
+  it('falls back safely to English when browser language access throws', () => {
     Object.defineProperty(navigator, 'languages', { configurable: true, get: () => { throw new Error('Denied'); } });
-    expect(localeFromBrowser()).toBe('sk');
+    expect(localeFromBrowser()).toBe('en');
   });
 
   it('rejects useLanguage outside its required provider', () => {
@@ -87,5 +87,78 @@ describe('language remains independent from the search country', () => {
     languageContext.writeGeoDetectionCache(entry);
     expect(languageContext.readGeoDetectionCache()).toEqual(entry);
     expect(languageContext.isGeoDetectionCacheFresh(entry)).toBe(true);
+  });
+});
+
+/**
+ * Jazyk pri prvom otvorení bez uloženej voľby (nález 332, R2). Poradie: ručná voľba (`appLocale`), krajina z IP adresy
+ * (SK, CZ, PL, DE, AT a HU dajú svoj jazyk), jazyk prehliadača (pl, sk, cs, de, hu, en) a nakoniec angličtina pre zvyšok
+ * sveta, takže Slovák na dovolenke v Thajsku so slovenským telefónom dostane slovenčinu a Thajčan s thajským telefónom
+ * angličtinu.
+ */
+describe('jazyk bez uloženej voľby: krajina, jazyk prehliadača a náhrada (nález 332)', () => {
+  /** Čerstvý výsledok zisťovania krajiny v úložisku (bez volania `ipapi.co`); `null` je zlyhané zisťovanie. */
+  const detectCountry = (country: string | null) =>
+    localStorage.setItem(
+      GEO_DETECTION_CACHE_KEY,
+      JSON.stringify({ country, detectedAt: Date.now(), status: country ? 'ok' : 'failed' }),
+    );
+
+  const browserSpeaks = (language: string) => {
+    Object.defineProperty(navigator, 'language', { configurable: true, value: language });
+    Object.defineProperty(navigator, 'languages', { configurable: true, value: [language] });
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it.each([
+    // Zvyšok sveta, jazyk prehliadača mimo šiestich jazykov aplikácie: angličtina.
+    ['TH', 'th-TH', 'en'],
+    ['TH', 'fr-FR', 'en'],
+    ['IT', 'ja-JP', 'en'],
+    [null, 'ja-JP', 'en'],
+    [null, '', 'en'],
+    // Zvyšok sveta, jazyk prehliadača z šiestich: druhý signál rozhodne.
+    ['TH', 'sk-SK', 'sk'],
+    ['TH', 'pl-PL', 'pl'],
+    ['IT', 'de-DE', 'de'],
+    ['US', 'en-US', 'en'],
+    [null, 'hu-HU', 'hu'],
+    // Krajina zo šiestich má prednosť pred jazykom prehliadača.
+    ['SK', 'fr-FR', 'sk'],
+    ['PL', 'en-US', 'pl'],
+    ['CZ', 'de-DE', 'cs'],
+    ['AT', 'ja-JP', 'de'],
+    ['DE', 'sk-SK', 'de'],
+    ['HU', 'th-TH', 'hu'],
+  ])('krajina %s a jazyk prehliadača %j dajú jazyk %s', (country, language, expected) => {
+    detectCountry(country);
+    browserSpeaks(language);
+
+    const hook = renderHook(useLanguage, { wrapper });
+
+    expect(hook.result.current.locale).toBe(expected);
+  });
+
+  it('ručne zvolený jazyk má prednosť pred krajinou aj jazykom prehliadača', () => {
+    localStorage.setItem('appLocale', 'cs');
+    detectCountry('PL');
+    browserSpeaks('de-DE');
+
+    const hook = renderHook(useLanguage, { wrapper });
+
+    expect(hook.result.current.locale).toBe('cs');
+  });
+
+  it('s uloženou krajinou formulára rozhoduje jazyk prehliadača a mimo šiestich jazykov je to angličtina', () => {
+    localStorage.setItem(LAST_MANUAL_OFFER_COUNTRY_KEY, 'CZ');
+    detectCountry('SK');
+    browserSpeaks('fr-FR');
+
+    const hook = renderHook(useLanguage, { wrapper });
+
+    expect(hook.result.current.locale).toBe('en');
   });
 });

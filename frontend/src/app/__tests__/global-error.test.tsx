@@ -9,6 +9,7 @@ import { act, render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import * as Sentry from '@sentry/nextjs';
 import de from '../../../messages/de.json';
+import en from '../../../messages/en.json';
 import sk from '../../../messages/sk.json';
 import GlobalError from '../global-error';
 
@@ -28,7 +29,7 @@ function silenceHtmlNestingWarning() {
   });
 }
 
-/** Prehliadač hlási daný jazyk (jsdom má predvolene `en-US`, čo by dalo angličtinu). */
+/** Prehliadač hlási daný jazyk (jsdom má predvolene `en-US`). */
 function browserSpeaks(language: string) {
   jest.spyOn(window.navigator, 'language', 'get').mockReturnValue(language);
   jest.spyOn(window.navigator, 'languages', 'get').mockReturnValue([language]);
@@ -85,11 +86,20 @@ describe('global-error', () => {
     const { container } = render(<GlobalError error={new Error('x')} />);
 
     expect(captureException).toHaveBeenCalledTimes(1);
-    expect(container).toHaveTextContent(sk.appError.title);
+    expect(container).toHaveTextContent(en.appError.title);
   });
 
-  it('bez uloženej voľby a pri neznámom jazyku prehliadača ukáže slovenčinu', () => {
+  it('bez uloženej voľby a pri neznámom jazyku prehliadača ukáže angličtinu (zvyšok sveta, nález 332)', () => {
     browserSpeaks('fr-FR');
+
+    const { container } = render(<GlobalError error={new Error('x')} />);
+
+    expect(container).toHaveTextContent(en.appError.title);
+    expect(document.documentElement).toHaveAttribute('lang', 'en');
+  });
+
+  it('bez uloženej voľby a pri jazyku prehliadača zo šiestich jazykov ukáže tento jazyk', () => {
+    browserSpeaks('sk-SK');
 
     const { container } = render(<GlobalError error={new Error('x')} />);
 
