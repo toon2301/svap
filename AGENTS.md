@@ -6,7 +6,8 @@ Tento súbor platí pre každého agenta, ktorý v repozitári pracuje. Kód, ko
 
 - Dodrž `.cursor/rules/svaply.mdc` (trvalé pravidlá projektu: malé zmeny, veľkosť súborov, testovanie, pravidlá pre Playwright) a `AGENT_SECURITY_RULES.md`.
 - Rob malé, logicky oddelené zmeny. Čo je mimo zadanej úlohy, len nahlás, neopravuj to potichu.
-- Súbory `.ts` a `.tsx` nad 500 riadkov sa nemenia, len sa nahlásia (zoznam je v `docs/zoznam-nalezov`, položka TECH-01…11). Novú logiku daj do nového súboru.
+- Produkčné súbory `.ts` a `.tsx` nad 500 riadkov sa nemenia, len sa nahlásia (zoznam je v `docs/zoznam-nalezov`, položka TECH-01…11). Novú logiku daj do nového súboru.
+- Testové súbory (`*.test.ts`, `*.test.tsx`) nad 500 riadkov sa meniť smú, ale len málo: pridaj test alebo uprav mock; nové testy daj radšej do nového súboru (rozhodnutie majiteľa R27, 13. 11. 2026).
 - Do kódu, logov, výpisov a príloh nikdy nedávaj osobné údaje, tokeny ani heslá. Súbor `frontend/.env.e2e` ostáva len na počítači majiteľa.
 - Nič nevypisuj z odpovedí servera ani z textov stránky. Z výpisov chýb môžu ísť len cesty bez ID a slugov, názvy parametrov, počty a časy.
 - PR otvára a zlučuje len majiteľ. Agent vetvu nahrá (push) a napíše, čo je v nej. Odpovede a uzatváranie vlákien na GitHube robí tiež majiteľ.
