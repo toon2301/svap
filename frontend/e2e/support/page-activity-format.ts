@@ -11,7 +11,8 @@
 // atribútov). Čokoľvek mimo zoznamu sa vypíše ako `other`, takže ani nový slug, adresa či ID sa do bloku nedostanú. Čistí
 // sa tu, v čistých pomôckach, aby to strážil Jest.
 
-import { formatResponseDetails, needsResponseDetails, type ResponseDetails } from './response-diagnostics-format';
+import { formatResponseDetails, isRefreshPath, needsResponseDetails, type ResponseDetails } from './response-diagnostics-format';
+import { formatRefreshProvenance, type RefreshProvenance } from './refresh-provenance-format';
 
 /** Jedna požiadavka stránky (API alebo navigácia) so stavom a trvaním. */
 export type ActivityEntry = {
@@ -30,6 +31,8 @@ export type ActivityEntry = {
   failure: string | null;
   /** Iba číselné trvanie servera a bezpečné príznaky odpovede, nikdy hodnoty cookies. */
   responseDetails?: ResponseDetails;
+  /** Snímok pôvodu obnovy a predchádzajúceho CSRF GET, bez adries a hodnôt. */
+  refreshProvenance?: RefreshProvenance;
 };
 
 /**
@@ -200,9 +203,17 @@ function formatEntry(entry: ActivityEntry, elapsedMs: number): string[] {
   const status = entry.failure ? `FAILED(${failureKind(entry.failure)})` : entry.status === null ? 'pending' : String(entry.status);
   const duration = entry.durationMs === null ? '…' : `${entry.durationMs} ms`;
   const query = entry.query ? ` [${entry.query}]` : '';
+  const waitedMs = Math.max(0, Math.floor(entry.durationMs ?? elapsedMs - entry.startedAt));
+  const failure = entry.failure ? failureKind(entry.failure) : null;
+  // Ide o spodnú hranicu pozorovaného čakania, nie o serverový timeout alebo jeho trvanie.
+  const noResponse = entry.status === null && failure !== 'cancelled' && failure !== 'net::ERR_ABORTED'
+    && Number.isFinite(waitedMs)
+    ? [`        no response: bez odpovede do konca testu (aspoň ${(waitedMs / 1000).toFixed(3)} s)`] : [];
   return [
     `${String(entry.startedAt).padStart(6)}  ${entry.method.padEnd(4)} ${entry.path}${query}  ${status}  ${duration}`,
     ...formatResponseDetails(entry, elapsedMs),
+    ...(isRefreshPath(entry.path) ? formatRefreshProvenance(entry.refreshProvenance) : []),
+    ...noResponse,
   ];
 }
 
@@ -224,7 +235,7 @@ function formatSnapshot(snapshot: PageSnapshot | null): string[] {
 export function formatEvidence(input: EvidenceInput): string {
   // Staršia obnova alebo pomalá odpoveď nesmie zmiznúť iba preto, že prišli ďalšie poll požiadavky.
   const shown = input.entries.filter((entry, index) =>
-    index >= input.entries.length - MAX_ENTRIES || needsResponseDetails(entry, input.elapsedMs));
+    index >= input.entries.length - MAX_ENTRIES || isRefreshPath(entry.path) || needsResponseDetails(entry, input.elapsedMs));
   const hidden = input.entries.length - shown.length;
   const lines = [
     `[E2E-EVIDENCE] ${input.title} | ${input.project} | ${(input.elapsedMs / 1000).toFixed(1)} s`,

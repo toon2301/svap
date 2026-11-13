@@ -15,6 +15,10 @@ test('prehliadač odčíta čas servera a iba bezpečné údaje odmietnutej obno
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
     if (url.origin !== origin) { externalRequests += 1; await route.abort(); return; }
+    if (url.pathname === '/api/auth/csrf-token/') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ csrf_token: secret }) });
+      return;
+    }
     if (url.pathname === '/api/token/refresh/') {
       refreshes += 1;
       await route.fulfill({
@@ -34,6 +38,7 @@ test('prehliadač odčíta čas servera a iba bezpečné údaje odmietnutej obno
   });
   const activity = observePage(page);
   await page.goto(origin);
+  assert.equal(await page.evaluate(async () => (await fetch('/api/auth/csrf-token/')).status), 200);
   assert.equal(await page.evaluate(async token => (await fetch('/api/token/refresh/', {
     method: 'POST', headers: { 'X-CSRFToken': token },
   })).status, secret), 403);
@@ -41,6 +46,8 @@ test('prehliadač odčíta čas servera a iba bezpečné údaje odmietnutej obno
   assert.ok(first.includes('X-App-Duration-Ms: 37'));
   assert.ok(first.includes('refresh cookies: csrftoken,other,refresh_token'));
   assert.ok(first.includes('refresh X-CSRFToken: áno'));
+  assert.ok(first.includes('refresh same origin: áno'));
+  assert.match(first, /refresh preceding csrf GET: \/api\/auth\/csrf-token\/ status=200 start=\d+ response=\d+ end=(?:\d+|n\/a) snapshot=\d+ failed=nie/);
   await context.clearCookies();
   assert.equal(await page.evaluate(async () => (await fetch('/api/token/refresh/', { method: 'POST' })).status), 401);
   assert.equal(await page.evaluate(async () => (await fetch('/api/token/refresh/', { method: 'POST' })).status), 200);

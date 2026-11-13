@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support/diagnostic-test';
 import { cleanupFeedPosts, takeCreatedPost, uniqueRunMarker } from './support/feed';
 
 // Zdieľanie vlastnej ponuky z vlastného profilu na Nástenku – historicky

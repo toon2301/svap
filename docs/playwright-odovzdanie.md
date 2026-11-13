@@ -1,8 +1,123 @@
-# Playwright: odovzdanie (stav k 9. 11. 2026)
+# Playwright: odovzdanie (stav k 13. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálny prehľad — 9. 11. 2026
+## Aktuálna dávka — 13. 11. 2026: dôkazy 223 a oprava testu 328
+
+Pracovná vetva je **`e2e/223-dokazy-limit-328`**, pôvodný základ main
+**`203e8d14`**; pred odoslaním je aktualizovaná na **`79f907bd`** (K21), bez
+prekrytia pripravených zmien. Aplikácia, testovacie účty, tolerancie, timeouty a retry sa nemenia.
+Zmeny sú len v E2E a tomto odovzdaní. Táto dávka zatiaľ nebežala proti Railway;
+termín porovnania natívneho WebKitu a Dockeru treba dohodnúť s majiteľom.
+Prítomnosť K20 v main nie je potvrdením jeho nasadenia ani otvorením testovacieho okna.
+Test siedmich API volieb a dvojúčtové scenáre kategórií teraz nepribúdajú.
+
+**Porovnávací stav:** prijatý základ zostáva **427 PASS / 2 FAIL / 303 SKIP**.
+Celý beh po K19 na `73173920` skončil **377 / 23 / 362** (37 min 38 s),
+z toho 21 nových pádov a známe pády č. 1 a 3. Cielené opakovania boli
+**47 / 4 / 12** z 63 pokusov; nemenia výsledok celého behu. Report je zapísaný
+majiteľom pri 223 (dodatok 12. 11.) a 328, nie je novým prijatým základom.
+
+### Dôkazy: päť špecov a súvislosť obnovy s CSRF GET
+
+Existujúci `support/diagnostic-test.ts` je pripojený aj do špecov
+`mobile-settings-offer-watch-motion`, `offer-watch-mobile-results-return`,
+`search-cache-revalidation`, `search-preview-tab-top` a `sharing-from-profile`.
+V týchto piatich súboroch sa mení iba import fixture, nie scenáre ani asercie.
+PASS a SKIP nevytvárajú blok pádu; ochrana súkromia zostáva rovnaká.
+
+`[E2E-EVIDENCE]` pri obnove obsahuje navyše tieto pevne formátované metadáta:
+
+```text
+        refresh same origin: áno
+        refresh preceding csrf GET: /api/auth/csrf-token/ status=200 start=5 response=9 end=11 snapshot=12 failed=nie
+```
+
+- `refresh same origin`: porovnanie protokolu, domény a portu cieľovej URL obnovy
+  s URL stránky pri začiatku požiadavky (`áno / nie / nezistiteľné`). Nie je to
+  čítanie ani výpis HTTP hlavičky `Origin`; samotné adresy sa nevypisujú.
+- CSRF: posledný pozorovaný **GET presnej cesty** `/api/auth/csrf-token/`
+  na rovnakom cieľovom pôvode ako obnova. Záznam z iného servera ani POST sa nepoužije.
+  Časy sú celé ms od začiatku pozorovania: `start` začiatok GET, `response`
+  prijatie stavu/hlavičiek, `end` dokončenie alebo zlyhanie, `snapshot` začiatok obnovy.
+  `n/a` znamená, že daný údaj v okamihu snímky ešte nebol známy; `failed` je príznak
+  zlyhania GET. Hlavičky nie sú dôkazom dokončeného tela.
+- Snímka sa uzavrie pri začiatku obnovy. Neskoršia odpoveď GET ju spätne nemení.
+  `nepozorované` nepreukazuje, že GET nikdy neprebehol (napríklad pred pozorovaním);
+  `nezistiteľné` označuje nedostupný snímok. Ide o časovú súvislosť, nie dôkaz príčiny 403.
+- Doterajšie údaje `X-App-Duration-Ms`, názvy cookies a príznak `X-CSRFToken`
+  zostávajú. Nikdy sa nepridávajú hodnoty hlavičiek, cookies, tokenov ani texty odpovedí.
+
+Pri požiadavke bez pozorovanej odpovede sa pridá napríklad:
+
+```text
+        no response: bez odpovede do konca testu (aspoň 23.456 s)
+```
+
+Je to spodná hranica pozorovaného čakania, **nie trvanie spracovania servera ani
+preukázaný serverový timeout**. Starý strojovo čitateľný riadok požiadavky ostáva
+zachovaný. Zrušené požiadavky ani požiadavky s prijatým HTTP stavom túto poznámku
+nedostanú. Bez odpovede nie je dostupná ani hlavička s trvaním Djanga.
+
+### 328: správny ustálený stav správy Sledovania
+
+Mobilný scenár v `offer-watch-pagination-errors.spec.ts` zachytí pôvodný GET
+aplikácie `/api/auth/offer-watches/` pri otvorení správy a overí stav 200,
+platný zoznam, počet v UI a počet kariet. Pomocník neposiela dodatočné API volanie
+a nezapisuje údaje účtu; zo súkromnej odpovede kontroluje iba počet.
+
+- Menej než 5: tlačidlo vytvorenia musí byť viditeľné **aj aktívne**, bez hlášky limitu.
+- Pri 5: tlačidlo nesmie byť prítomné, musí sa ukázať správna hláška limitu.
+- Načítavací stav, neplatná odpoveď ani chyba sa nesmú zameniť za úspech.
+- Návrat Späť do pôvodného upozornenia zostáva overovaný.
+
+Izolované browser kontroly používajú syntetický DOM, nie produkčné účty. Overili
+počty **0, 4 a 5**, nesprávne stavy aj ochranu textu odpovede v troch projektoch.
+To overuje kontrakt pomocníka, **nie funkčnosť skutočnej aplikácie s účtom pod limitom**.
+Taký živý stav sa overí iba ak už existuje; sledovania sa kvôli nemu nemažú ani nevytvárajú.
+
+### Lokálne overenie a ďalšie porovnanie
+
+Z `frontend` (žiadny z týchto príkazov sa nepripája na Railway):
+
+```powershell
+$checks = Get-ChildItem e2e/diagnostics-tests -Filter '*.check.ts' |
+  Where-Object { $_.Name -notmatch 'browser|^diagnostic-fixture' } |
+  ForEach-Object FullName
+node node_modules/tsx/dist/cli.mjs --test @checks
+node node_modules/tsx/dist/cli.mjs --test e2e/diagnostics-tests/watch-manager-ready-browser.check.ts e2e/diagnostics-tests/response-diagnostics-browser.check.ts
+$env:E2E_DIAGNOSTICS_DOCKER='1'
+try {
+  node node_modules/tsx/dist/cli.mjs --test e2e/diagnostics-tests/diagnostic-fixture.check.ts
+} finally { Remove-Item Env:E2E_DIAGNOSTICS_DOCKER }
+```
+
+Browser kontroly nepotrebujú `.env.e2e` ani prihlasovací stav. Kontrola fixture má
+zámerný vnútorný výsledok 3 PASS / 3 FAIL / 3 SKIP a musí zachovať tri dôkazové bloky;
+vonkajší kontrolný test musí prejsť. Nové kontroly nie sú súčasťou produkčnej kolekcie.
+
+**Výsledok lokálneho overenia 13. 11.:** 121/121 Node kontrol, 27/27 browser
+variantov pomocníka 328 a 3/3 browser variantov metadát odpovede. Vonkajšia
+kontrola fixture prešla a zachovala vnútorné 3/3/3 aj tri dôkazové bloky.
+Existujúce Jest kontroly `E2ePageActivity` a `E2eServiceWorker.guard`: 52/52.
+TypeScript frontendu aj explicitná kontrola celej E2E oblasti s projektovými
+aliasmi a Node typmi, ESLint dotknutých súborov a `git diff --check` prešli.
+Kolekcia ostáva 44 špecov / 762 variantov (254 na projekt); nevznikol nový živý beh.
+Pred commitom sa lokálne kontroly vrátane izolovaných browser kontrol zopakovali
+aj po aktualizácii vetvy na main `79f907bd` (K21), s rovnakým úspešným výsledkom.
+
+**Návrh najbližšieho dohodnutého okna:** porovnať rovnakých šesť konkrétnych kľúčov
+z K19, každý 3× natívne vo Windows a 3× v Dockeri (18 + 18 pokusov):
+`search-mobile-cards` — svetlý desktopový dopyt, mobilný dopyt pri 393 px a mobilná
+zmena rozmerov s otvoreným detailom; `offer-card-review-translations` — mobilné
+de/light a pl/dark; `search-panel-fixture` — desktopový výber používateľa z panelu.
+Presné názvy/varianty sa pred behom overia cez `--list`. Rovnaký main, verzia
+Playwrightu, projekty, údaje, počty pokusov, workers=1 a retries=0 v oboch spôsoboch.
+Bez prepisovania testov, zmeny asercií, timeoutov alebo zámeny ťuku za klik.
+SKIP sa uvádza oddelene, nie ako úspešný pokus; porovnanie neprepisuje výsledok K19.
+**Termín ešte nie je dohodnutý, porovnanie sa nespustilo.**
+
+## Historický prehľad — 9. 11. 2026
 
 Aktuálna pracovná vetva tejto dávky je **`e2e/k15-dym-a-dokazy`**, vytvorená
 na výslovný pokyn majiteľa z aktuálneho main `b3d7983a`. Skoršia diagnostika

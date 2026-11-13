@@ -1,4 +1,5 @@
 import { expect, test } from './support/diagnostic-test';
+import { expectLoadedWatchManager, isWatchManagerResponse } from './support/offer-watch-manager-ready';
 import {
   RESULTS_PANEL,
   expectErrorAfterAllCards,
@@ -179,9 +180,12 @@ for (const theme of ['light', 'dark'] as const) {
       const notice = page.getByTestId('offer-watch-results-mobile-unavailable');
       await expect(notice).toBeVisible();
       await expect(page.locator(RESULTS_PANEL)).toHaveCount(0);
-      await notice.getByRole('button', { name: 'Spravovať sledovania', exact: true }).click();
+      const [managerResponse] = await Promise.all([
+        page.waitForResponse(response => isWatchManagerResponse(response, page.url())),
+        notice.getByRole('button', { name: 'Spravovať sledovania', exact: true }).click(),
+      ]);
       await expect(page).toHaveURL(/\/dashboard\/settings\/watches(?:\?|$)/);
-      await expect(page.getByRole('button', { name: 'Vytvoriť sledovanie', exact: true })).toBeVisible();
+      await expectLoadedWatchManager(page, managerResponse);
       await page.goBack();
       await expect(notice).toBeVisible();
     });
