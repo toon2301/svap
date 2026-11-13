@@ -133,7 +133,7 @@ describe('usePushMessagesPreference: initialLoading', () => {
     await preferences.fail();
 
     expect(result.current.initialLoading).toBe(false);
-    expect(result.current.error).toBe('Nepodarilo sa nacitat nastavenia upozorneni.');
+    expect(result.current.error).toBe('Nastavenia upozornení sa nepodarilo načítať.');
     consoleError.mockRestore();
   });
 

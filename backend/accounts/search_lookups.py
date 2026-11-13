@@ -6,6 +6,11 @@ Custom ORM transform pre accent- & case-insensitive vyhľadávanie na PostgreSQL
 expression GIN trigram indexu z migrácie ``0086_search_unaccent_indexes`` (rovnaký
 ``public.immutable_unaccent(lower(col))``), takže ho plánovač môže využiť.
 
+Hľadaný text sa spracuje tou istou databázovou funkciou (`UnaccentLowerValue`), nie v Pythone:
+``unaccent`` mení aj písmená, ktoré sa nedajú rozložiť na základné písmeno a diakritiku
+(napr. ``ł`` na ``l``, ``ß`` na ``ss``, ``đ`` na ``d``, ``ø`` na ``o``, ``æ`` na ``ae``, ``œ`` na ``oe``),
+a rozklad Unicode v Pythone ich nechá nezmenené, takže stĺpec a hľadaný text by sa nikdy nezhodli.
+
 `immutable_unaccent` je IMMUTABLE wrapper nad ``unaccent('unaccent', ...)`` – built-in
 ``unaccent`` je len STABLE, a na STABLE funkcii nemožno postaviť index. Transform sa
 používa LEN na PostgreSQL (volajúci vetví podľa ``connection.vendor``); na sqlite/dev
@@ -14,7 +19,7 @@ sa použije accent-regex fallback, preto ``as_sql`` zámerne nedefinujeme.
 
 from __future__ import annotations
 
-from django.db.models import CharField, TextField, Transform
+from django.db.models import CharField, Func, TextField, Transform
 from django.db.models.functions import Lower
 
 
@@ -28,6 +33,23 @@ class UnaccentLower(Transform):
         # textovo aj rezolučne zhodné s expression indexom z 0086 a nezáviselo od
         # search_path app spojenia (rovnaký dôvod ako v migrácii).
         return f"public.immutable_unaccent(lower({lhs_sql}))", lhs_params
+
+
+class UnaccentLowerValue(Func):
+    """
+    Hľadaný text (výraz alebo hodnota) bez diakritiky a malými písmenami, tou istou funkciou ako stĺpec.
+
+    Vyrendruje ``public.immutable_unaccent(lower(<výraz>))``, rovnako ako `UnaccentLower` pri stĺpci,
+    takže obe strany porovnania prechádzajú identickou úpravou a nerozídu sa ani pri písmenách, ktoré
+    `unaccent` mení inak než rozklad Unicode v Pythone. Používa sa ako pravá strana
+    ``field__unaccent_lower__contains``; `contains` ošetrí znaky ``%``, ``_`` a ``\\`` v hľadanom texte
+    priamo v SQL, takže sa berú doslovne. Ako `UnaccentLower` je to len pre PostgreSQL.
+    """
+
+    function = "public.immutable_unaccent"
+    template = "%(function)s(lower(%(expressions)s))"
+    arity = 1
+    output_field = TextField()
 
 
 def register_search_lookups() -> None:

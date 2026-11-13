@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 
 import { api } from '@/lib/api';
 
+import sk from '../../../../../../messages/sk.json';
 import { getPassiveBrowserWarning, usePushMessagesPreference } from '../usePushMessagesPreference';
 
 jest.mock('@/lib/api', () => ({
@@ -24,14 +25,18 @@ jest.mock('@/lib/api', () => ({
 /**
  * Pasívne varovanie pod voľbou Správy (nález 308): odvodzuje sa počas vykresľovania, takže je už v tom istom vykreslení
  * ako riadky voľby. Pred opravou ho nastavoval až efekt, a tak prišlo o snímok neskôr než voľba a posunulo obsah pod ním.
- * Texty varovaní sa nemenia (to je nález 319), preto sa tu porovnávajú tak, ako sú v kóde.
+ * Texty varovaní sú preložené (nález 319), v slovenčine sa tu porovnávajú tak, ako sú v `messages/sk.json`.
  */
-const BLOCKED = 'Push notifikacie su v tomto prehliadaci zablokovane. Povol ich v nastaveniach prehliadaca.';
-const UNSUPPORTED = 'Tento prehliadac nepodporuje push notifikacie.';
-const NOT_REGISTERED = 'Push notifikacie su zapnute, ale tento prehliadac este nie je zaregistrovany.';
-const REGISTRATION_FAILED = 'Nepodarilo sa dokoncit registraciu push notifikacii v tomto prehliadaci.';
-const SAVE_FAILED = 'Nepodarilo sa ulozit nastavenia upozorneni.';
-const UNREGISTER_FAILED = 'Push upozornenia boli vypnute, ale odhlasenie tohto prehliadaca sa nepodarilo dokoncit.';
+const BLOCKED = 'Push notifikácie sú v tomto prehliadači zablokované. Povoľ ich v nastaveniach prehliadača.';
+const UNSUPPORTED = 'Tento prehliadač nepodporuje push notifikácie.';
+const NOT_REGISTERED = 'Push notifikácie sú zapnuté, ale tento prehliadač ešte nie je zaregistrovaný.';
+const REGISTRATION_FAILED = 'Nepodarilo sa dokončiť registráciu push notifikácií v tomto prehliadači.';
+const SAVE_FAILED = 'Nastavenia upozornení sa nepodarilo uložiť.';
+const UNREGISTER_FAILED = 'Push upozornenia boli vypnuté, ale odhlásenie tohto prehliadača sa nepodarilo dokončiť.';
+
+/** Preklad ako v aplikácii v slovenčine: text z `messages/sk.json` podľa bodkovej cesty kľúča. */
+const translate = (key: string): string =>
+  key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], sk) as string;
 
 type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void };
 
@@ -224,7 +229,8 @@ describe('usePushMessagesPreference: pasívne varovanie počas vykresľovania (n
     await preferences.respond(true);
     expect(result.current.error).toBe(BLOCKED);
 
-    jest.mocked(api.patch).mockRejectedValueOnce(new Error('offline'));
+    // Skutočné zlyhanie siete: chyba axiosu bez odpovede servera (obyčajné `Error` by nieslo vlastnú správu).
+    jest.mocked(api.patch).mockRejectedValueOnce({ isAxiosError: true, message: 'Network Error' });
     await act(async () => {
       result.current.onChange(false);
     });
@@ -309,7 +315,7 @@ describe('getPassiveBrowserWarning', () => {
     [
       'nezabezpečený kontext',
       { pushEnabled: true, supportState: { supported: false, reason: 'insecure_context' }, permission: 'unsupported', subscriptionStatus: 'missing' },
-      'Push notifikacie su dostupne iba v zabezpecenom prehliadaci.',
+      'Push notifikácie sú dostupné iba v zabezpečenom prehliadači.',
     ],
     ['zablokované povolenie', { pushEnabled: true, supportState: supported, permission: 'denied', subscriptionStatus: 'missing' }, BLOCKED],
     ['povolenie nevyžiadané', { pushEnabled: true, supportState: supported, permission: 'default', subscriptionStatus: 'missing' }, null],
@@ -317,6 +323,6 @@ describe('getPassiveBrowserWarning', () => {
     ['povolené, odber sa kontroluje', { pushEnabled: true, supportState: supported, permission: 'granted', subscriptionStatus: 'checking' }, null],
     ['povolené, odber existuje', { pushEnabled: true, supportState: supported, permission: 'granted', subscriptionStatus: 'subscribed' }, null],
   ] as const)('%s', (_name, input, expected) => {
-    expect(getPassiveBrowserWarning(input as Parameters<typeof getPassiveBrowserWarning>[0])).toBe(expected);
+    expect(getPassiveBrowserWarning(input as Parameters<typeof getPassiveBrowserWarning>[0], translate)).toBe(expected);
   });
 });
