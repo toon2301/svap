@@ -8,7 +8,7 @@ type Suite = { suites?: Suite[]; specs?: Array<{ tests?: Array<{ projectName?: s
   results?: Array<{ status?: string; errors?: Array<{ stack?: string; message?: string }> }> }> }> };
 
 /** Surový syntetický report zostane v pamäti; výstup obsahuje iba projekt a riadok. */
-test('pomocník 328 odmietne loading aj nesprávny limit a overí stavy 0, 4, 5 bez Railway', () => {
+test('pomocník 328 overí stavy 0, 4, 5 aj jednu obnovu relácie bez Railway', () => {
   const frontend = path.resolve(__dirname, '../..');
   const libraries = fs.realpathSync(path.join(frontend, 'node_modules'));
   const version = JSON.parse(fs.readFileSync(path.join(libraries, '@playwright/test/package.json'), 'utf8')).version;
@@ -34,6 +34,6 @@ test('pomocník 328 odmietne loading aj nesprávny limit a overí stavy 0, 4, 5 
   }
   assert.equal(result.status, 0, 'Izolované kontroly správy sledovaní musia prejsť.');
   assert.deepEqual(report.stats && { passed: report.stats.expected, failed: report.stats.unexpected,
-    skipped: report.stats.skipped, flaky: report.stats.flaky }, { passed: 27, failed: 0, skipped: 0, flaky: 0 });
-  console.log('[WATCH-MANAGER-SELFTEST] projects=3 passed=27 failed=0 skipped=0');
+    skipped: report.stats.skipped, flaky: report.stats.flaky }, { passed: 42, failed: 0, skipped: 0, flaky: 0 });
+  console.log('[WATCH-MANAGER-SELFTEST] projects=3 passed=42 failed=0 skipped=0');
 });

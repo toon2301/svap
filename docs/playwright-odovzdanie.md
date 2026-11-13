@@ -76,6 +76,26 @@ počty **0, 4 a 5**, nesprávne stavy aj ochranu textu odpovede v troch projekto
 To overuje kontrakt pomocníka, **nie funkčnosť skutočnej aplikácie s účtom pod limitom**.
 Taký živý stav sa overí iba ak už existuje; sledovania sa kvôli nemu nemažú ani nevytvárajú.
 
+### Oprava po kontrole PR #261: jedna podporovaná obnova relácie
+
+Nález je platný: pôvodné čakanie vybralo prvú 401 zo zoznamu sledovaní a test
+vyžadoval 200 skôr, než interceptor aplikácie stihol obnoviť reláciu. Overené
+v `frontend/src/lib/api.ts`: pôvodný GET smie po obnove zopakovať práve raz.
+Aplikácia sa nemení. Izolovaný regresný pokus pred opravou potvrdil falošný pád
+**9/9** (počty 0, 4, 5 v troch projektoch), vždy na zachytenej 401 namiesto 200.
+
+`waitForWatchManagerResponse` sa zapojí pred kliknutím a preskočí iba prvú 401
+presného GET na rovnakom pôvode. Výsledok jedného opakovania, vrátane ďalšej 401,
+odovzdá pôvodnej tvrdej kontrole stavu 200 a načítaného UI. Ostatné HTTP chyby sa
+neignorujú. Ak obnova zlyhá a ďalší GET nepríde, čakanie nemôže prejsť; pôvodný
+timeout zostáva. Pomocník sám neposiela požiadavky, neobnovuje reláciu a nepridáva
+retry testu. Pôvodná 401 aj obnova zostávajú dostupné v diagnostických dôkazoch.
+
+Kontroly zahŕňajú priamu odpoveď, úspešnú obnovu pri počtoch 0, 4, 5, opakovanú
+401, odmietnutú obnovu bez opakovania GET a nesúvisiace odpovede. Syntetická
+stránka má explicitnú UTF-8 deklaráciu, aby kontrola slovenských názvov nezávisela
+od predvoleného kódovania prehliadača. Žiadny z týchto pokusov nejde na Railway.
+
 ### Lokálne overenie a ďalšie porovnanie
 
 Z `frontend` (žiadny z týchto príkazov sa nepripája na Railway):
@@ -105,6 +125,11 @@ aliasmi a Node typmi, ESLint dotknutých súborov a `git diff --check` prešli.
 Kolekcia ostáva 44 špecov / 762 variantov (254 na projekt); nevznikol nový živý beh.
 Pred commitom sa lokálne kontroly vrátane izolovaných browser kontrol zopakovali
 aj po aktualizácii vetvy na main `79f907bd` (K21), s rovnakým úspešným výsledkom.
+
+**Po oprave nálezu z PR #261:** 124/124 Node kontrol a 42/42 izolovaných browser
+variantov správy sledovaní, bez SKIP alebo retry. Existujúce dve Jest sady: 52/52.
+TypeScript frontendu aj celej E2E oblasti a lint prešli. Produkčná kolekcia zostáva
+44 špecov / 762 variantov. Tieto výsledky nie sú novým behom proti Railway.
 
 **Návrh najbližšieho dohodnutého okna:** porovnať rovnakých šesť konkrétnych kľúčov
 z K19, každý 3× natívne vo Windows a 3× v Dockeri (18 + 18 pokusov):

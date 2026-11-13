@@ -12,6 +12,23 @@ export function isWatchManagerResponse(response: Response, pageUrl: string): boo
 }
 
 /**
+ * Čakanie sa zapojí pred navigáciou. Preskočí iba prvú 401, po ktorej interceptor
+ * aplikácie smie raz obnoviť reláciu a zopakovať GET. Ďalšia 401 aj ostatné chyby
+ * sú konečný výsledok na overenie; pomocník nič neposiela a nemení timeout.
+ */
+export function waitForWatchManagerResponse(page: Page): Promise<Response> {
+  let ignoredUnauthorized = false;
+  return page.waitForResponse(response => {
+    if (!isWatchManagerResponse(response, page.url())) return false;
+    if (response.status() === 401 && !ignoredUnauthorized) {
+      ignoredUnauthorized = true;
+      return false;
+    }
+    return true;
+  });
+}
+
+/**
  * Overí ustálený mobilný zoznam podľa skutočnej odpovede. Pri limite patrí do UI
  * hláška, nie tlačidlo; samotné viditeľné zakázané tlačidlo počas načítavania nestačí.
  * Zo súkromnej odpovede sa do asercií prenesie iba počet, nikdy údaje kariet.
