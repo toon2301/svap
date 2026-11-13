@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "min",
     "title": "Notifications",
     "turnOffAll": "Turn off all",
-    "turnOffAllDesc": "Turns off all notifications except Messages. New skill requests will still arrive.",
+    "turnOffAllDesc": "Turns off all notifications except Messages. New skill requests will still appear in Requests, just without a badge.",
     "unknownActor": "User",
     "unreadLabel": "Unread"
   },

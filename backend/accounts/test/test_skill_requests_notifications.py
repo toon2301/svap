@@ -84,9 +84,14 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(c.status_code, status.HTTP_200_OK)
         self.assertEqual(c.data.get("count"), 1)
 
-    def test_skill_request_badge_works_when_in_app_notifications_disabled(self):
-        # BOD 2 (end-to-end): owner vypne in_app_notifications; skill_request badge
-        # musí stále fungovať – je to transakčná notifikácia (niekto čaká na odpoveď).
+    def test_skill_request_arrives_without_badge_when_in_app_notifications_disabled(
+        self,
+    ):
+        """Pri vypnutom hlavnom vypínači sa žiadosť doručí, no odznak pri Žiadostiach sa nerozsvieti (R39 (b), nález 330).
+
+        Žiadosť je viditeľná v zozname príjemcu a upozornenie `skill_request` sa vytvorí, ale ako prečítané, takže
+        počet neprečítaných pre odznak ostáva 0.
+        """
         from accounts.models import UserProfile
 
         profile, _ = UserProfile.objects.get_or_create(user=self.owner)
@@ -99,20 +104,22 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
 
-        # Notifikácia SKILL_REQUEST sa vytvorila napriek vypnutému toggle.
-        self.assertTrue(
-            Notification.objects.filter(
-                user=self.owner, type=NotificationType.SKILL_REQUEST
-            ).exists()
+        # Upozornenie SKILL_REQUEST sa vytvorilo napriek vypnutému hlavnému vypínaču, ale ako prečítané.
+        notification = Notification.objects.get(
+            user=self.owner, type=NotificationType.SKILL_REQUEST
         )
+        self.assertTrue(notification.is_read)
+        self.assertIsNotNone(notification.read_at)
 
-        # Badge (unread count) funguje.
+        # Odznak (počet neprečítaných) sa nerozsvieti, žiadosť je v zozname príjemcu.
         self.client.force_authenticate(user=self.owner)
         c = self.client.get(
             f"{self.base}/notifications/unread-count/", {"type": "skill_request"}
         )
         self.assertEqual(c.status_code, status.HTTP_200_OK)
-        self.assertEqual(c.data.get("count"), 1)
+        self.assertEqual(c.data.get("count"), 0)
+        listed = self.client.get(f"{self.base}/skill-requests/")
+        self.assertEqual([item["id"] for item in listed.data["received"]], [r.data["id"]])
 
     def test_notifications_feed_pagination_and_backward_compat(self):
         # BOD 3: opt-in stránkovanie cez ?page (dict odpoveď); bez ?page ostáva

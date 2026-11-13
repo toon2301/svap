@@ -1,16 +1,24 @@
 """Notifikácie k žiadostiam o výmenu (skill requests).
 
-``create_skill_request_notification`` zámerne obchádza in_app toggle a
-dispatchuje Requests badge vlastnou cestou – detaily v docstringu funkcie.
+``create_skill_request_notification`` vytvorí upozornenie na novú žiadosť vždy, no pri
+vypnutom hlavnom vypínači alebo kategórii „Žiadosť o zručnosť“ už prečítané (odznak sa
+nerozsvieti, nález 330), a dispatchuje Requests badge vlastnou cestou – detaily
+v docstringu funkcie.
 """
 
 from __future__ import annotations
 
 from django.db import transaction
+from django.utils import timezone
 
 from accounts.models import Notification, NotificationType
 
-from ..notification_core import create_notification, dispatch_unread_badge
+from ..notification_categories import is_notification_category_enabled
+from ..notification_core import (
+    create_notification,
+    dispatch_unread_badge,
+    in_app_notifications_enabled,
+)
 
 
 def _skill_request_kind(skill_request) -> str:
@@ -57,9 +65,16 @@ def create_skill_request_notification(
     a dispatchuje Requests badge (skill_request WS event + cache) cez
     transaction.on_commit.
 
-    ZÁMERNE NErešpektuje in_app_notifications toggle: skill_request je transakčná
-    notifikácia (niekto čaká na odpoveď), preto badge musí chodiť vždy. Ostatné
-    typy (recenzie, lajky, …) ostávajú gatované cez create_notification.
+    Upozornenie sa vytvorí VŽDY: žiadosť sa príjemcovi doručí a je viditeľná v jeho
+    Žiadostiach (niekto čaká na odpoveď). Ak má však príjemca vypnutý hlavný vypínač
+    `in_app_notifications` alebo kategóriu `notify_skill_requests`, vytvorí sa už
+    prečítané (`is_read=True` a `read_at` ako pri Notification.mark_read), takže sa
+    nepočíta do odznaku pri Žiadostiach (počet z `/api/auth/me/`, `unread-count` aj
+    z udalosti skill_request ostane bez nového) a nepripočíta sa ani po opätovnom
+    zapnutí (nález 330, R39 (b)). Udalosť skill_request sa posiela ako doteraz. Hlavný
+    vypínač aj kategória sa čítajú jedným dopytom profilu (`user.profile` Django po
+    prvom čítaní drží na inštancii), rovnako ako v create_notification. Ostatné typy
+    (recenzie, lajky, …) ostávajú gatované cez create_notification.
     """
     recipient = skill_request.recipient
     offer = skill_request.offer
@@ -69,6 +84,11 @@ def create_skill_request_notification(
         body = f"{actor_name} ponúka pomoc s kartou: {subject}"
     else:
         body = f"{actor_name} má záujem o ponuku: {subject}"
+
+    muted = not (
+        in_app_notifications_enabled(recipient)
+        and is_notification_category_enabled(recipient, NotificationType.SKILL_REQUEST)
+    )
 
     notification = Notification.objects.create(
         user=recipient,
@@ -84,6 +104,8 @@ def create_skill_request_notification(
         },
         actor=actor,
         skill_request=skill_request,
+        is_read=muted,
+        read_at=timezone.now() if muted else None,
     )
     transaction.on_commit(
         lambda: _dispatch_skill_request_notification(

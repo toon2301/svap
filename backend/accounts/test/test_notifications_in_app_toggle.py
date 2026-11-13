@@ -7,6 +7,7 @@ from accounts.models import Notification, NotificationType, OfferedSkill, SkillR
 from accounts.services.notifications import (
     create_notification,
     create_skill_request_notification,
+    get_unread_count,
 )
 
 User = get_user_model()
@@ -73,9 +74,12 @@ class TestInAppNotificationsToggle:
         assert result is not None
         assert Notification.objects.filter(user=recipient).count() == 1
 
-    def test_skill_request_notification_ignores_in_app_toggle(self):
-        # BOD 2: skill_request je transakčná notifikácia (niekto čaká na odpoveď),
-        # preto badge chodí VŽDY – aj keď má príjemca in_app_notifications=False.
+    def test_skill_request_notification_is_created_read_when_in_app_disabled(self):
+        """Pri vypnutom hlavnom vypínači sa upozornenie na novú žiadosť vytvorí, ale ako prečítané (R39 (b), nález 330).
+
+        Žiadosť sa tým doručí (upozornenie existuje), no nepočíta sa do neprečítaných, takže odznak pri Žiadostiach
+        sa nerozsvieti; čas prečítania je vyplnený rovnako ako pri `Notification.mark_read`.
+        """
         recipient = _user("owner", "owner@example.com")
         requester = _user("req", "req@example.com")
         _set_in_app(recipient, False)
@@ -92,11 +96,16 @@ class TestInAppNotificationsToggle:
         )
 
         assert result is not None
+        notification = Notification.objects.get(
+            user=recipient, type=NotificationType.SKILL_REQUEST
+        )
+        assert notification.is_read is True
+        assert notification.read_at is not None
         assert (
-            Notification.objects.filter(
-                user=recipient, type=NotificationType.SKILL_REQUEST
-            ).count()
-            == 1
+            get_unread_count(
+                user_id=recipient.id, notif_type=NotificationType.SKILL_REQUEST
+            )
+            == 0
         )
 
     def test_push_preference_independent_of_in_app(self):

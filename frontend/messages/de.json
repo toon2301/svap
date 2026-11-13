@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "Min.",
     "title": "Benachrichtigungen",
     "turnOffAll": "Alle ausschalten",
-    "turnOffAllDesc": "Schaltet alle Benachrichtigungen außer Nachrichten aus. Neue Fähigkeitsanfragen kommen weiterhin an.",
+    "turnOffAllDesc": "Schaltet alle Benachrichtigungen außer Nachrichten aus. Neue Fähigkeitsanfragen erscheinen trotzdem unter Anfragen, nur ohne Abzeichen.",
     "unknownActor": "Benutzer",
     "unreadLabel": "Ungelesen"
   },

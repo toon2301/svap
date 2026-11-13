@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "m",
     "title": "Upozornění",
     "turnOffAll": "Vypnout vše",
-    "turnOffAllDesc": "Vypne všechna upozornění kromě Zpráv. Nové žádosti o dovednost budou přicházet i nadále.",
+    "turnOffAllDesc": "Vypne všechna upozornění kromě Zpráv. Nové žádosti o dovednost se přesto zobrazí v Žádostech, jen bez odznaku.",
     "unknownActor": "Uživatel",
     "unreadLabel": "Nepřečtené"
   },

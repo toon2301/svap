@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "min",
     "title": "Powiadomienia",
     "turnOffAll": "Wyłącz wszystko",
-    "turnOffAllDesc": "Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności będą nadal przychodzić.",
+    "turnOffAllDesc": "Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności i tak pojawią się w Prośbach, tylko bez odznaki.",
     "unknownActor": "Użytkownik",
     "unreadLabel": "Nieprzeczytane"
   },
