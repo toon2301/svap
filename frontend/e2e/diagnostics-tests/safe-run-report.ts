@@ -24,6 +24,10 @@ export function safeEvidence(raw: string): string[] {
   return raw.split(/\r?\n/).filter(line => {
     if (/^\s*X-App-Duration-Ms: (\d+|chýba|nezistiteľné)$/.test(line)) return true;
     if (/^\s*refresh X-CSRFToken: (áno|nie|nezistiteľné)$/.test(line)) return true;
+    if (/^\s*refresh same origin: (áno|nie|nezistiteľné)$/.test(line)) return true;
+    if (/^\s*refresh preceding csrf GET: (nepozorované|nezistiteľné)$/.test(line)) return true;
+    if (/^\s*refresh preceding csrf GET: \/api\/auth\/csrf-token\/ status=([1-5]\d\d|n\/a) start=(\d+|n\/a) response=(\d+|n\/a) end=(\d+|n\/a) snapshot=(\d+|n\/a) failed=(áno|nie|nezistiteľné)$/.test(line)) return true;
+    if (/^\s*no response: bez odpovede do konca testu \(aspoň \d+\.\d{3} s\)$/.test(line)) return true;
     const cookies = /^\s*refresh cookies: (.+)$/.exec(line);
     if (cookies) return safeNames(cookies[1]);
     const url = /^url: (\/\S*?)(?: \[([^\]]*)\])?$/.exec(line);

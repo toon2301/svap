@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "Min.",
     "title": "Benachrichtigungen",
     "turnOffAll": "Alle ausschalten",
-    "turnOffAllDesc": "Schaltet alle Benachrichtigungen außer Nachrichten aus. Neue Fähigkeitsanfragen kommen weiterhin an.",
+    "turnOffAllDesc": "Schaltet alle Benachrichtigungen außer Nachrichten aus. Neue Fähigkeitsanfragen erscheinen trotzdem unter Anfragen, nur ohne Abzeichen.",
     "unknownActor": "Benutzer",
     "unreadLabel": "Ungelesen"
   },
@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Nachteil eingeben und Enter drücken",
     "deleteReviewFailed": "Die Bewertung konnte nicht gelöscht werden.",
     "deleteReviewMessage": "Möchten Sie diese Bewertung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteReviewSuccess": "Die Bewertung wurde gelöscht.",
     "deleteReviewTitle": "Bewertung löschen?",
     "editReview": "Bewertung bearbeiten",
     "experience": "Erfahrung",

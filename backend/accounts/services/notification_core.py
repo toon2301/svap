@@ -135,14 +135,16 @@ def _dispatch_created_notification(notification_id: int, user_id: int) -> None:
     )
 
 
-def _in_app_notifications_enabled(user) -> bool:
+def in_app_notifications_enabled(user) -> bool:
     """
-    Rešpektuje používateľovu preferenciu in-app notifikácií.
+    Rešpektuje používateľovu preferenciu in-app notifikácií (hlavný vypínač).
 
-    Pri vypnutí sa notifikácia VÔBEC neuloží (GDPR minimalizácia dát). Push
-    notifikácie riadi samostatný push_notifications toggle a tento gate ich
-    neovplyvňuje. Fail-open (default True), ak profil chýba alebo nastane chyba –
-    nechceme ticho stratiť notifikáciu kvôli chybe čítania preferencie.
+    create_notification pri vypnutí notifikáciu VÔBEC neuloží (GDPR minimalizácia
+    dát); create_skill_request_notification ju pri vypnutí vytvorí ako prečítanú,
+    aby sa žiadosť doručila bez odznaku (nález 330). Push notifikácie riadi
+    samostatný push_notifications toggle a tento gate ich neovplyvňuje. Fail-open
+    (default True), ak profil chýba alebo nastane chyba – nechceme ticho stratiť
+    notifikáciu kvôli chybe čítania preferencie.
     """
     try:
         profile = getattr(user, "profile", None)
@@ -173,7 +175,7 @@ def create_notification(
     notification_categories; typ bez kategórie chodí vždy). Profil sa pritom číta
     jediným dopytom: `user.profile` Django po prvom čítaní drží na inštancii.
     """
-    if not _in_app_notifications_enabled(user):
+    if not in_app_notifications_enabled(user):
         return None
     if not is_notification_category_enabled(user, notif_type):
         return None

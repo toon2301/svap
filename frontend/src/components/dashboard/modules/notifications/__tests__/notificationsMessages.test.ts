@@ -49,17 +49,17 @@ describe('notifications.tagsAndShares: premenovaná kategória (R34)', () => {
   });
 });
 
-describe('notifications.turnOffAllDesc: opis hlavného vypínača (R35)', () => {
+describe('notifications.turnOffAllDesc: opis hlavného vypínača (R35, R39 (b))', () => {
   const EXPECTED: Record<Language, string> = {
-    sk: 'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť budú chodiť ďalej.',
-    cs: 'Vypne všechna upozornění kromě Zpráv. Nové žádosti o dovednost budou přicházet i nadále.',
-    en: 'Turns off all notifications except Messages. New skill requests will still arrive.',
-    pl: 'Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności będą nadal przychodzić.',
-    de: 'Schaltet alle Benachrichtigungen außer Nachrichten aus. Neue Fähigkeitsanfragen kommen weiterhin an.',
-    hu: 'Kikapcsolja az összes értesítést az Üzenetek kivételével. Az új készség kérések továbbra is megérkeznek.',
+    sk: 'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.',
+    cs: 'Vypne všechna upozornění kromě Zpráv. Nové žádosti o dovednost se přesto zobrazí v Žádostech, jen bez odznaku.',
+    en: 'Turns off all notifications except Messages. New skill requests will still appear in Requests, just without a badge.',
+    pl: 'Wyłącza wszystkie powiadomienia oprócz Wiadomości. Nowe prośby o umiejętności i tak pojawią się w Prośbach, tylko bez odznaki.',
+    de: 'Schaltet alle Benachrichtigungen außer Nachrichten aus. Neue Fähigkeitsanfragen erscheinen trotzdem unter Anfragen, nur ohne Abzeichen.',
+    hu: 'Kikapcsolja az összes értesítést az Üzenetek kivételével. Az új készség kérések ettől még megjelennek a Kérelmek között, csak jelvény nélkül.',
   };
 
-  it.each(Object.keys(EXPECTED) as Language[])('%s: opis hovorí, že Správy ostanú a nové žiadosti o zručnosť chodia ďalej', (language) => {
+  it.each(Object.keys(EXPECTED) as Language[])('%s: opis hovorí, že Správy ostanú a nové žiadosti o zručnosť sa zobrazia v Žiadostiach bez odznaku', (language) => {
     expect(block(language).turnOffAllDesc).toBe(EXPECTED[language]);
   });
 

@@ -1535,7 +1535,7 @@
     "timeMinutesShort": "p",
     "title": "Értesítések",
     "turnOffAll": "Összes kikapcsolása",
-    "turnOffAllDesc": "Kikapcsolja az összes értesítést az Üzenetek kivételével. Az új készség kérések továbbra is megérkeznek.",
+    "turnOffAllDesc": "Kikapcsolja az összes értesítést az Üzenetek kivételével. Az új készség kérések ettől még megjelennek a Kérelmek között, csak jelvény nélkül.",
     "unknownActor": "Felhasználó",
     "unreadLabel": "Olvasatlan"
   },
@@ -4487,6 +4487,7 @@
     "consPlaceholder": "Írjon hátrányt és nyomja meg az Entert",
     "deleteReviewFailed": "Nem sikerült törölni az értékelést.",
     "deleteReviewMessage": "Törli ezt az értékelést? Ez a művelet nem vonható vissza.",
+    "deleteReviewSuccess": "Az értékelés törölve lett.",
     "deleteReviewTitle": "Értékelés törlése?",
     "editReview": "Értékelés szerkesztése",
     "experience": "Tapasztalat",

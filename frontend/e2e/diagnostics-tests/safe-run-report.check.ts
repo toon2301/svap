@@ -14,6 +14,9 @@ test('export nikdy neprepíše hlavičky, hodnoty cookies, token, telo, text chy
     ` 1  GET /api/auth/${PRIVATE}/  200  10 ms`, ' 2  POST /api/token/refresh/  403  10 ms',
     '        X-App-Duration-Ms: 1', '        refresh cookies: csrftoken,refresh_token',
     '        refresh X-CSRFToken: áno', '[E2E-COOKIE-SAMPLE] from=1 at=2 names=žiadne',
+    `        refresh same origin: ${PRIVATE}`,
+    `        refresh preceding csrf GET: /api/auth/csrf-token/?token=${PRIVATE} status=200 start=1 response=2 end=3 snapshot=4 failed=nie`,
+    `        no response: bez odpovede do konca testu (aspoň ${PRIVATE} s)`,
   ].join('\n');
   const output = safeEvidence(text).join('\n');
   assert.ok(!output.includes(PRIVATE));
@@ -31,6 +34,9 @@ test('export prijme pôvodné formáty vrátane číselnej hlavičky a anonymnej
     '[E2E-COOKIE-SAMPLE] from=1 at=2 names=access_token,csrftoken,refresh_token',
     '[E2E-BROWSER-EVENT] at=2 kind=requestfailed path=/api/auth/me/',
     '[E2E-BROWSER-EVENT] at=3 kind=page-crash path=n/a'];
+  lines.push('        refresh same origin: áno', '        refresh preceding csrf GET: nepozorované',
+    '        refresh preceding csrf GET: /api/auth/csrf-token/ status=200 start=1 response=2 end=3 snapshot=4 failed=nie',
+    '        no response: bez odpovede do konca testu (aspoň 23.456 s)');
   assert.deepEqual(safeEvidence(lines.join('\n')), lines);
 });
 

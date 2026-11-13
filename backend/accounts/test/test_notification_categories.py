@@ -20,7 +20,7 @@ from accounts.services.settings import NOTIFICATION_CATEGORY_FIELDS
 
 User = get_user_model()
 
-# Dohodnuté zaradenie typov (R34 až R36). Zámerne je napísané ešte raz, nezávisle od modulu: zámena typu medzi
+# Dohodnuté zaradenie typov (R34 až R36 a R39 (b): aj počiatočná žiadosť o zručnosť). Zámerne je napísané ešte raz, nezávisle od modulu: zámena typu medzi
 # kategóriami alebo vypustenie typu by sa inak prezradila až v správaní, nie v tabuľke.
 EXPECTED_CATEGORY_TYPES = {
     "notify_likes": {
@@ -38,6 +38,7 @@ EXPECTED_CATEGORY_TYPES = {
     },
     "notify_tags_and_shares": {"feed_post_tagged", "feed_post_shared"},
     "notify_skill_requests": {
+        "skill_request",
         "skill_request_accepted",
         "skill_request_rejected",
         "skill_request_completion_requested",
@@ -46,7 +47,7 @@ EXPECTED_CATEGORY_TYPES = {
         "skill_request_cancelled",
     },
 }
-EXPECTED_ALWAYS_ON = {"offer_watch_match", "group_invitation", "skill_request"}
+EXPECTED_ALWAYS_ON = {"offer_watch_match", "group_invitation"}
 
 
 def _fresh_user(username, **profile_updates):

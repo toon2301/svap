@@ -31,7 +31,9 @@ from accounts.services.notifications import (
 
 User = get_user_model()
 
-# Dohodnuté zaradenie typov (R34 až R36), napísané ešte raz nezávisle od modulu s tabuľkou.
+# Dohodnuté zaradenie typov (R34 až R36 a R39 (b)), napísané ešte raz nezávisle od modulu s tabuľkou. Počiatočná žiadosť
+# o zručnosť (`skill_request`) patrí do kategórie `notify_skill_requests`: `create_notification` ju pri vypnutej
+# kategórii potlačí ako každý iný typ a `create_skill_request_notification` ju vytvorí ako prečítanú.
 CATEGORY_OF_TYPE = {
     "offer_liked": "notify_likes",
     "portfolio_liked": "notify_likes",
@@ -45,6 +47,7 @@ CATEGORY_OF_TYPE = {
     "review_reply_created": "notify_comments",
     "feed_post_tagged": "notify_tags_and_shares",
     "feed_post_shared": "notify_tags_and_shares",
+    "skill_request": "notify_skill_requests",
     "skill_request_accepted": "notify_skill_requests",
     "skill_request_rejected": "notify_skill_requests",
     "skill_request_completion_requested": "notify_skill_requests",
@@ -52,7 +55,7 @@ CATEGORY_OF_TYPE = {
     "skill_request_terminated": "notify_skill_requests",
     "skill_request_cancelled": "notify_skill_requests",
 }
-ALWAYS_ON_TYPES = ("offer_watch_match", "group_invitation", "skill_request")
+ALWAYS_ON_TYPES = ("offer_watch_match", "group_invitation")
 CATEGORY_FIELDS = tuple(sorted(set(CATEGORY_OF_TYPE.values())))
 ALL_TYPES = (*CATEGORY_OF_TYPE, *ALWAYS_ON_TYPES)
 
@@ -186,8 +189,11 @@ class TestMainSwitch:
         assert result is None
         assert _count(recipient) == 0
 
-    def test_initial_skill_request_arrives_with_everything_off(self, actor):
-        """Počiatočná žiadosť o zručnosť obchádza hlavný vypínač aj kategórie."""
+    def test_initial_skill_request_is_created_read_with_everything_off(self, actor):
+        """Počiatočná žiadosť o zručnosť sa pri vypnutom hlavnom vypínači aj kategóriách vytvorí, ale ako prečítaná.
+
+        R39 (b), nález 330: žiadosť sa doručí (upozornenie existuje), no nesvieti odznak pri Žiadostiach.
+        """
         recipient = _user("gate-initial-owner", in_app_notifications=False, **ALL_OFF)
         offer = OfferedSkill.objects.create(
             user=recipient, category="IT", subcategory="Web"
@@ -202,6 +208,8 @@ class TestMainSwitch:
 
         assert result is not None
         assert _count(recipient, NotificationType.SKILL_REQUEST) == 1
+        assert result.is_read is True
+        assert result.read_at is not None
 
 
 @pytest.mark.django_db

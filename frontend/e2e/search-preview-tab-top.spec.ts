@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Response } from '@playwright/test';
+import { expect, test, type Page, type Response } from './support/diagnostic-test';
 import { initializeSearchContext } from './support/search-country-scroll';
 import { measureReturn, openLastAuthor, searchPanel } from './support/search-panel-return';
 
