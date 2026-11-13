@@ -1,4 +1,4 @@
-import { expect, test, type APIResponse, type Locator, type Page, type Request, type Response, type Route } from '@playwright/test';
+import { expect, test, type APIResponse, type Locator, type Page, type Request, type Response, type Route } from './support/diagnostic-test';
 import {
   DIAGNOSTICS_LABEL, SEARCH_PATH, diagnosticValue, initializeSearchContext, isPanelSearch, openInitialSearch,
 } from './support/search-country-scroll';

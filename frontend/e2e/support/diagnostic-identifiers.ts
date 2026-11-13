@@ -3,7 +3,7 @@ import { normalizePath } from './page-activity-format';
 // Neznámy segment alebo názov parametra sa nevypisuje ani skrátený. Nový endpoint
 // sa dá zaradiť do zoznamu až po overení, že ide o statický názov bez údajov.
 const PATH_SEGMENTS = new Set([
-  'api', 'auth', 'dashboard', 'search', 'global', 'recommendations', 'me', 'token', 'refresh',
+  'api', 'auth', 'dashboard', 'search', 'global', 'recommendations', 'me', 'token', 'refresh', 'csrf-token',
   'users', 'user', 'profile', 'profiles', 'offers', 'skills', 'skill-requests', 'offer-watches',
   'matches', 'watches', 'settings', 'language', 'account', 'notifications', 'unread-count',
   'messaging', 'conversations', 'unread-summary', 'feed', 'posts', 'comments', 'reviews',

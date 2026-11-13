@@ -3,6 +3,8 @@ import { captureWithin } from './evidence-deadline';
 import { diagnosticMethod, diagnosticPath, diagnosticQuery, diagnosticTitle } from './diagnostic-identifiers';
 import { isRefreshPath } from './response-diagnostics-format';
 import { readResponseDetails } from './response-diagnostics';
+import { RefreshProvenanceObserver } from './refresh-provenance';
+import type { RefreshProvenance } from './refresh-provenance-format';
 import {
   formatEvidence,
   type ActiveElement,
@@ -75,6 +77,7 @@ export class PageActivity {
   private readonly pageErrors: string[] = [];
   private consoleErrors = 0;
   private readonly responseReads = new Set<Promise<void>>();
+  private readonly refreshProvenance = new RefreshProvenanceObserver();
 
   /** Pripojí sa na udalosti stránky; z chyby stránky uchová len názov a z konzoly len počet chýb. */
   constructor(private readonly page: Page) {
@@ -97,6 +100,7 @@ export class PageActivity {
     const entry = this.entries.get(request);
     if (!entry) return;
     entry.status = response.status();
+    this.refreshProvenance.onResponse(request, entry.status, Date.now() - this.startedAt);
     const deniedRefresh = isRefreshPath(entry.path) && (entry.status === 401 || entry.status === 403);
     entry.responseDetails = {
       appDurationMs: 'nezistiteľné',
@@ -113,14 +117,18 @@ export class PageActivity {
   private onRequest(request: Request): void {
     if (!isRelevant(request)) return;
     const url = new URL(request.url());
+    const startedAt = Date.now() - this.startedAt;
+    let refreshProvenance: RefreshProvenance | undefined;
+    try { refreshProvenance = this.refreshProvenance.onRequest(request, this.page.url(), startedAt); } catch { /* Iba pasívne metadáta. */ }
     this.entries.set(request, {
       method: diagnosticMethod(request.method()),
       path: diagnosticPath(url.pathname),
       query: diagnosticQuery(url.search),
-      startedAt: Date.now() - this.startedAt,
+      startedAt,
       durationMs: null,
       status: null,
       failure: null,
+      ...(refreshProvenance ? { refreshProvenance } : {}),
     });
     if (isSearch(request)) {
       this.searchInFlight += 1;
@@ -133,6 +141,7 @@ export class PageActivity {
     const entry = this.entries.get(request);
     if (!entry) return;
     entry.durationMs = Date.now() - this.startedAt - entry.startedAt;
+    this.refreshProvenance.onEnd(request, entry.startedAt + entry.durationMs, false);
     this.finishSearch(request);
     try {
       const response = await request.response();
@@ -147,6 +156,7 @@ export class PageActivity {
     const entry = this.entries.get(request);
     if (!entry) return;
     entry.durationMs = Date.now() - this.startedAt - entry.startedAt;
+    this.refreshProvenance.onEnd(request, entry.startedAt + entry.durationMs, true);
     // Surový text zostáva len v pamäti; do bloku prejde výlučne ako druh cez `failureKind` (veta môže obsahovať adresu).
     entry.failure = request.failure()?.errorText ?? 'unknown';
     this.finishSearch(request);
