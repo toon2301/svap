@@ -50,8 +50,6 @@ export function AddReviewModalMobile({
       setCons([]);
       setProInput('');
       setConInput('');
-      // Okno ostáva po zatvorení vytvorené (stály `key`): príznak odosielania sa vráti, aby bolo pri ďalšom otvorení použiteľné.
-      setIsSubmitting(false);
     }
   }, [open]);
 
@@ -142,6 +140,9 @@ export function AddReviewModalMobile({
         await onSubmit(rating, text.slice(0, MAX_CHARS), submittedPros, submittedCons);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Nepodarilo sa pridať recenziu. Skús to znova.');
+      } finally {
+        // Príznak sa vráti až po dokončení požiadavky (úspešnom aj neúspešnom): okno ostáva po zatvorení vytvorené (stály
+        // `key`), takže pri ďalšom otvorení je tlačidlo použiteľné, no kým požiadavka beží, ostáva zakázané.
         setIsSubmitting(false);
       }
     } else {
@@ -149,8 +150,9 @@ export function AddReviewModalMobile({
     }
   };
 
+  /** Počas odosielania sa okno nedá zavrieť: rozbehnutá požiadavka by inak mohla zatvoriť znova otvorené okno alebo sa poslať druhýkrát. */
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget && !isSubmitting) onClose();
   };
 
   if (!open || !mounted || typeof document === 'undefined') return null;
@@ -185,7 +187,8 @@ export function AddReviewModalMobile({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
+                disabled={isSubmitting}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={t('common.close', 'Zavrieť')}
               >
                 <XMarkIcon className="w-5 h-5" />
@@ -329,7 +332,7 @@ export function AddReviewModalMobile({
             </div>
 
             <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="flex-1 py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <button type="button" onClick={onClose} disabled={isSubmitting} className="flex-1 py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 {t('common.cancel', 'Zrušiť')}
               </button>
               <button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 import { AddReviewModalDesktop } from '../AddReviewModalDesktop';
@@ -24,7 +24,8 @@ interface PageHarnessProps {
 
 /**
  * Napodobňuje stránku recenzií: kľúč okna je stály (pri pridaní `'new-review'`, pri úprave ID recenzie), okno sa po
- * úspešnom odoslaní zatvorí a pri zlyhaní ostane otvorené (chyba sa vyhodí späť do okna).
+ * úspešnom odoslaní zatvorí a pri zlyhaní ostane otvorené (chyba sa vyhodí späť do okna). Tlačidlo „Zavrieť zvonka“
+ * napodobňuje zatvorenie okna samotnou stránkou (nie ovládacími prvkami okna).
  */
 function PageHarness({ Modal, onSubmit, reviewToEdit = null }: PageHarnessProps) {
   const [open, setOpen] = useState(false);
@@ -32,6 +33,9 @@ function PageHarness({ Modal, onSubmit, reviewToEdit = null }: PageHarnessProps)
     <>
       <button type="button" onClick={() => setOpen(true)}>
         Otvoriť okno
+      </button>
+      <button type="button" onClick={() => setOpen(false)}>
+        Zavrieť zvonka
       </button>
       <Modal
         key={reviewToEdit?.id || 'new-review'}
@@ -54,6 +58,8 @@ const WINDOWS: ReadonlyArray<[string, React.ComponentType<AddReviewModalProps>]>
 ];
 
 const LOADING_LABEL = 'Načítavam...';
+const CLOSE_LABEL = 'Zavrieť';
+const CANCEL_LABEL = 'Zrušiť';
 
 const openModal = () => fireEvent.click(screen.getByRole('button', { name: 'Otvoriť okno' }));
 
@@ -193,5 +199,116 @@ describe.each(WINDOWS)('%s „Pridať recenziu“: opätovné otvorenie (nález 
     await submit('Uložiť');
 
     expect(onSubmit).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * Zatvorenie okna počas odosielania (pripomienka CodeRabbitu k PR 260). Príznak odosielania sa nesmie vrátiť, kým
+ * požiadavka beží: inak by sa okno dalo zavrieť, znova otvoriť a poslať druhýkrát a prvá úspešná požiadavka by zatvorila
+ * už znova otvorené okno. Preto sa okno počas odosielania nedá zavrieť (krížik, Zrušiť, pozadie) a príznak sa vráti až po
+ * dokončení požiadavky.
+ */
+describe.each(WINDOWS)('%s „Pridať recenziu“: zatvorenie počas odosielania', (_name, Modal) => {
+  it('počas odosielania sa okno nedá zavrieť (krížik, Zrušiť ani kliknutie na pozadie) a po dokončení sa zatvorí samo', async () => {
+    const pending = deferred();
+    const onSubmit = jest.fn().mockReturnValue(pending.promise);
+    render(<PageHarness Modal={Modal} onSubmit={onSubmit} />);
+
+    openModal();
+    rate(4);
+    fireEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    await screen.findByRole('button', { name: LOADING_LABEL });
+
+    const closeButton = screen.getByRole('button', { name: CLOSE_LABEL });
+    const cancelButton = screen.getByRole('button', { name: CANCEL_LABEL });
+    expect(closeButton).toBeDisabled();
+    expect(cancelButton).toBeDisabled();
+    fireEvent.click(closeButton);
+    fireEvent.click(cancelButton);
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: LOADING_LABEL })).toBeDisabled();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pending.resolve();
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('pri zlyhaní odoslania sa tlačidlá na zatvorenie znova odomknú a okno sa dá zavrieť aj klepnutím na pozadie', async () => {
+    const onSubmit = jest.fn().mockRejectedValue(new Error('Server je nedostupný.'));
+    render(<PageHarness Modal={Modal} onSubmit={onSubmit} />);
+
+    openModal();
+    rate(4);
+    await submit();
+
+    expect(await screen.findByText('Server je nedostupný.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: CLOSE_LABEL })).toBeEnabled();
+    expect(screen.getByRole('button', { name: CANCEL_LABEL })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('ak stránka okno zatvorí počas odosielania, po opätovnom otvorení ostane tlačidlo zakázané, kým požiadavka nedobehne', async () => {
+    const pending = deferred();
+    const onSubmit = jest.fn().mockReturnValue(pending.promise);
+    render(<PageHarness Modal={Modal} onSubmit={onSubmit} />);
+
+    openModal();
+    rate(4);
+    fireEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    await screen.findByRole('button', { name: LOADING_LABEL });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zavrieť zvonka' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    openModal();
+    rate(5);
+
+    const sending = screen.getByRole('button', { name: LOADING_LABEL });
+    expect(sending).toBeDisabled();
+    fireEvent.click(sending);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pending.resolve();
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    openModal();
+    rate(3);
+
+    expect(screen.queryByRole('button', { name: LOADING_LABEL })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pridať' })).toBeEnabled();
+  });
+
+  it('úprava recenzie: počas ukladania sa okno nedá zavrieť a po uložení sa zatvorí', async () => {
+    const pending = deferred();
+    const onSubmit = jest.fn().mockReturnValue(pending.promise);
+    render(<PageHarness Modal={Modal} onSubmit={onSubmit} reviewToEdit={reviewToEdit()} />);
+
+    openModal();
+    fireEvent.click(screen.getByRole('button', { name: 'Uložiť' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Uložiť' })).toBeDisabled());
+    expect(screen.getByRole('button', { name: CLOSE_LABEL })).toBeDisabled();
+    expect(screen.getByRole('button', { name: CANCEL_LABEL })).toBeDisabled();
+    fireEvent.click(screen.getByRole('dialog'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pending.resolve();
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
