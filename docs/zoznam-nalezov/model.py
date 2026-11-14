@@ -33,7 +33,7 @@ PORADIE_BALIKOV = {
         'Bezpečnosť a produkčná odolnosť', 'Produkčná odolnosť aplikácie', 'Spoľahlivosť CI a testov', 'Navigácia a Späť',
         'Plynulosť prechodov (mobil)', 'Profil a identita', 'Ponuky (úprava a tagy)', 'Recenzie', 'Zdieľanie a obrázky', 'Vzhľad Nástenky', 'Upozornenia na zmazaný obsah', 'Upozornenia a push', 'Žiadosti',
         'Vyhľadávanie a Sledovania',
-        'Preklady a hlášky', 'Súkromie a krajina', 'iPhone a WebSocket', 'iPhone overenia', BALIK_PRIPRAVA,
+        'Preklady a hlášky', 'Súkromie a krajina', 'iPhone a WebSocket', 'iPhone overenia', 'Funkcie – väčšie balíky', BALIK_PRIPRAVA,
     ],
     A: [
         'Pravdepodobne už vyriešené', 'Funkcie – väčšie balíky', 'Nástenka a zdieľanie', 'Navigácia – scroll', 'Navigácia – drobnosti',

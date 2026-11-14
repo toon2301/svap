@@ -81,17 +81,17 @@ RIADKY = [
          ids=['191', '222']),
     dict(pdf='Skupiny 6–8: mobilné doladenia, redizajn komentárov, redizajn tagov',
          stav='Nový nález (jeden pre všetky tri skupiny), dizajnové priania; podľa majiteľa (6. 11. 2026) všetko pred nasadením. '
-              'Komentáre majú dnes stále bublinu, takže skupina 7 je otvorená; pred prácou treba rozhodnúť R23 o súboroch nad 500 '
-              'riadkov.',
+              'Komentáre majú dnes stále bublinu, takže skupina 7 je otvorená; R23 je rozhodnuté 13. 11. 2026: najprv sa súbory Nástenky '
+              'rozdelia (nález 333), potom redizajn.',
          ids=['261', 'R23']),
     dict(pdf='FE UI na mazanie a správu vlastných príspevkov (`can_manage`)',
          stav='Zastarané: frontend `can_manage` používa (`FeedPostMobileDetail.tsx`, `FeedPhotoViewerChrome.tsx`), mazanie je vo '
               '`FeedPostCard.tsx` a v mobilnom detaile (`deleteFeedPost`) a úprava v `FeedPostEditModal`.',
          ids=[], kde='nič nepribudlo'),
     dict(pdf='Zoznam „kto lajkol“ mimo Nástenky',
-         stav='Nový nález s čakajúcim rozhodnutím o rozsahu a súkromí.', ids=['262', 'R20']),
+         stav='Nález 262; R20 rozhodnuté 13. 11. 2026: pred štartom, viditeľnosť ako na Nástenke.', ids=['262', 'R20']),
     dict(pdf='Zobrazenie Nástenky podľa krajiny nad rámec radenia',
-         stav='Nový nález s čakajúcim rozhodnutím o rozsahu.', ids=['263', 'R21']),
+         stav='Nález 263 zatvorený rozhodnutím R21 (13. 11. 2026): krajina ostáva len pri radení.', ids=['263', 'R21']),
     dict(pdf='Vlastný vizuálny pass majiteľa na Nástenke',
          stav='Plán, nie nález: majiteľ upraví vizuálnu stránku Nástenky a nahlási, keď bude hotový; potom technická bezpečnostná '
               'kontrola jeho zmien a jeden súhrnný audit celej Nástenky (obe strany spolu); podľa majiteľa (6. 11. 2026) všetky vzhľadové '

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Nálezy zatvorené rozhodnutím majiteľa po prvom vydaní zoznamu: `CLOSED_SINCE`.
 
-Zatvorený nález nie je opravený v kóde, preto nepatrí do `hotove_dalsie.DONE_SINCE_DALSIE`; zobrazí sa v časti 8 spolu s pôvodnými
+Zatvorený nález nie je opravený v kóde, preto nepatrí do `hotove_k20.DONE_SINCE_K20`; zobrazí sa v časti 8 spolu s pôvodnými
 zatvorenými (`povodny_zoznam.json`). Postup: nález odstrániť z `ORIG_OPEN` (`polozky_povodne.py`) alebo z `NEW_ITEMS` a pridať sem s číslom,
 rozhodnutím z `stav.DECISIONS` (musí byť rozhodnuté, teda mať `odpoved`), dátumom a textom, ktorý hovorí, prečo sa nález zatvoril.
 Kontrola v `model.py` overí číslovanie, existenciu rozhodnutia a že zatvorený nález nie je zároveň otvorený ani hotový.
@@ -53,4 +53,22 @@ CLOSED_SINCE = [
                'serveri. Majiteľ prejav pri používaní nezaregistroval a nechce kvôli nemu riskovať nové chyby, preto sa nález '
                'uzatvára; ak sa prejav v používaní ukáže, majiteľ dá vedieť a otvorí sa nový nález s odkazom na 311. Zvyšky po 286 sú '
                'tým uzavreté (308 až 310 sú hotové v K16).'),
+    dict(n=263, rozhodnutie='R21', datum='13. 11. 2026',
+         text='ZATVORENÉ rozhodnutím R21 (13. 11. 2026; nález zo zoznamu majiteľa, bez zmeny kódu): krajina na Nástenke ostáva len '
+               'pri radení príspevkov (krajinové radenie feedu je hotové); filter ani oddelené feedy podľa krajiny sa pred štartom '
+               'nerobia, lebo pri malom počte používateľov by filter obsah len zmenšil. K širšiemu zobrazeniu podľa krajiny sa vráti '
+               'podľa spätnej väzby prvých používateľov a vtedy sa otvorí nový nález s odkazom na 263. Podobný produktový návrh pre '
+               'vyhľadávanie (APP-04) ostáva odložený.'),
+    dict(n=298, rozhodnutie='R29', datum='13. 11. 2026',
+         text='ZATVORENÉ rozhodnutím R29 (13. 11. 2026; nález kolegu z K12, bez zmeny kódu): avatary (`accounts/avatar_images.py`) a '
+               'správy (`messaging/services/messages.py`) ukladajú z animovaného PNG a WebP len prvú snímku cez `strip_image_metadata` '
+               '(`swaply/image_metadata.py`), čo je zámer: pri štarte sa animované obrázky nepodporujú a všade ostane statická prvá '
+               'snímka. Reprodukcia kolegu (vzorka s tromi snímkami, K12) platí a správanie je teraz určené. Ak sa po štarte ukáže '
+               'potreba animácií (najskôr v správach), otvorí sa nový nález s odkazom na 298.'),
+    dict(n=299, rozhodnutie='R29', datum='13. 11. 2026',
+         text='ZATVORENÉ rozhodnutím R29 (13. 11. 2026; nález kolegu z K12, bez zmeny kódu): hlavná cesta ponúk cez S3 '
+               '(`process_offered_skill_image` v `swaply/tasks/offer_images.py`) ukladá z GIF, WebP a APNG len prvú snímku ako '
+               'statický WebP, čo je zámer a zodpovedá správaniu UI. Starý endpoint ponúk animáciu po K12 zachováva '
+               '(`swaply/animated_image_metadata.py`), no slúži len ako vývojová záloha (R30, rozhodnuté (a)); kód z K12 ostáva, kým '
+               'ostáva endpoint.'),
 ]

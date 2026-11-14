@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R38: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R39: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
 `alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
 na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
 zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
-mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026).
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026) a R39 (gulička pri Žiadostiach pri vypnutej kategórii, nález 330; rozhodnuté 13. 11. 2026).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28 a R29 sú otázky, ktoré čakajú na odpoveď; R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R39 majiteľ rozhodol 13. 11. 2026 (spolu s R2); R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -57,12 +57,26 @@ DECISIONS_NASTENKA = [
          otazka='Má sa zoznam lajkujúcich rozšíriť na ponuky, portfólio a profil a kto ho smie vidieť?',
          odporucanie='Zatiaľ nie. Ak sa to bude robiť, najprv ho vidí len vlastník obsahu (podobne ako počet lajkov) a verejný zoznam až '
                      'neskôr a len pri obsahu, ktorý je sám verejný; na Nástenke ostáva ako dnes.',
-         kedy='Pred prácou na 262.'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: urobiť určite pred nasadením, nie potom; viditeľnosť variant A, teda ako na Nástenke. Zoznam '
+                 'lajkujúcich sa rozšíri na ponuky, portfólio a profil a zoznam vidí každý, kto vidí daný obsah (aj neprihlásený). '
+                 'Pravidlá z Nástenky (`_likers_response` v `accounts/views/feed_likes.py`, testy `test_feed_likers_api.py`): v zozname '
+                 'sa nezobrazia súkromné účty (`is_public = false`) ani neaktívne účty, blokovaní sa filtrujú v oboch smeroch pred '
+                 'stránkovaním a prihlásený vždy vidí seba; stránkovanie kurzorom po 20 (najviac 50). Agent odporúčal variant C (zoznam '
+                 'lajkov profilu vidí len vlastník); majiteľ zvolil A. Nález 262 sa presúva do skupiny PRED NASADENÍM (veľká funkcia: '
+                 'najprv backendové koncové body pre ponuky, portfólio a profil s rovnakými pravidlami, potom frontend; pôjde na viac '
+                 'dávok).',
+         datum='13. 11. 2026'),
     dict(id='R21', tema='Zobrazenie Nástenky podľa krajiny (263)',
          otazka='Má krajina okrem poradia ovplyvniť aj to, čo sa na Nástenke zobrazí (filter, oddelené feedy)?',
          odporucanie='Nie pred štartom: pri malom počte používateľov by filter len zmenšil obsah. Nechať krajinu ako dnes (len radenie) '
                      'a vrátiť sa k tomu podľa spätnej väzby.',
-         kedy='Pred prácou na 263.'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: súhlas s odporúčaním agenta („máš pravdu“): zobrazenie Nástenky podľa krajiny sa pred štartom '
+                 'nemení nad rámec radenia príspevkov (hotové); filter ani oddelené feedy podľa krajiny sa nerobia, lebo pri malom počte '
+                 'používateľov by filter obsah len zmenšil. K širšiemu zobrazeniu sa vráti podľa spätnej väzby používateľov. Nález 263 '
+                 'sa zatvára.',
+         datum='13. 11. 2026'),
     dict(id='R22', tema='Význam overovacieho odznaku (269)',
          otazka='Čo má odznak „overený účet“ znamenať a komu sa má ukazovať?',
          odporucanie='Agent odporúčal pred štartom odznak skryť alebo premenovať na „overený e-mail“, lebo ho dostane každý s overeným '
@@ -82,7 +96,15 @@ DECISIONS_NASTENKA = [
                      'vzhľadu a s manuálnym testom (aj zoznam majiteľa označuje delenie týchto súborov za rizikové). Redizajn potom '
                      'prebehne nad menšími súbormi s menším rizikom regresie. Výnimka je rýchlejšia, no mení veľký súbor naraz. '
                      'Ak vizuálnu stránku Nástenky upraví majiteľ sám, treba dohodnúť, či sa súbory delia pred jeho úpravami alebo po nich.',
-         kedy='Pred prácou na 261 (vzhľadové veci sú pred nasadením).'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: súhlas s odporúčaním agenta: súbory Nástenky sa najprv rozdelia, po jednom (začať '
+                 '`FeedPostComments.tsx`, 1 487 riadkov, potom `FeedPostCard.tsx` 1 033 a `FeedPostMobileDetail.tsx` 594), každé delenie '
+                 'vo vlastnej vetve bez zmeny vzhľadu a s ručným testom majiteľa; redizajn komentárov, tagov a mobilných úprav (nález '
+                 '261) prebehne až nad menšími súbormi. Výnimka z pravidla 500 riadkov sa neudeľuje: povolenie platí len pre delenie '
+                 'týchto troch súborov bez zmeny správania a vzhľadu a každé delenie dostane vlastnú kartu dávky. Majiteľ vzhľad '
+                 'Nástenky zatiaľ sám neupravuje („zatiaľ neupravujem sám nič“), takže delenie môže ísť hneď; ak začne upravovať, dá '
+                 'vedieť, aby sa nezlučovali dve práce na tých istých súboroch súčasne. Práca je zapísaná ako nový nález 333.',
+         datum='13. 11. 2026'),
     dict(id='R24', tema='Výnimka z pravidla 500 riadkov pre nález 271',
          otazka='Smie sa jednorazovo zmeniť jeden riadok v `hooks/useDashboardState.ts` (921 riadkov, nad limitom 500), aby sa opravil nález '
                 '271 (po zmene typu účtu zmizne na mobile spodný panel)?',
@@ -120,7 +142,14 @@ DECISIONS_NASTENKA = [
          odporucanie='Spresniť znenie: malé zmeny existujúcich testových súborov nad 500 riadkov (pridať test, upraviť mock) povoliť, nové '
                      'testy dávať radšej do nového súboru, a TECH-11 prestať viesť ako „nemeniť“. Inak Codex pri každom takom PR hlási P1 '
                      'a majiteľ musí výnimku udeľovať znova (R26). Produkčné súbory nad 500 riadkov ostávajú bez zmeny.',
-         kedy='Pred ďalšou zmenou testového súboru nad 500 riadkov; stačí upraviť `AGENTS.md` a `svaply.mdc`.'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: súhlas s odporúčaním agenta: v existujúcom testovom súbore nad 500 riadkov (`*.test.ts`, '
+                 '`*.test.tsx`) sa povoľujú malé zmeny (pridať test, upraviť mock); nové testy sa dávajú radšej do nového súboru; '
+                 'testové súbory sa z pravidla „nemeniť“ vyberajú a položka TECH-11 sa prestáva viesť ako „nemeniť“; produkčné súbory '
+                 '`.ts` a `.tsx` nad 500 riadkov ostávajú bez zmeny. Dôsledok: Codex pri takých PR už nemá hlásiť porušenie (P1) a '
+                 'majiteľ nemusí udeľovať jednotlivé výnimky ako R26. Pravidlo sa upraví v `AGENTS.md` a `.cursor/rules/svaply.mdc` '
+                 '(vetva 176, PR otvára majiteľ).',
+         datum='13. 11. 2026'),
     dict(id='R28', tema='Vstupné animácie modulov na mobile (287, 288)',
          otazka='Zjednotiť vstupné animácie modulov tak, aby sa pri otvorení modulu nezačínalo od priehľadnosti 0 (a pri „Znížiť pohyb“ '
                 'sa neanimovala ani priehľadnosť), alebo ich nechať ako dnes?',
@@ -128,7 +157,15 @@ DECISIONS_NASTENKA = [
                      'animuje len priehľadnosť, takže vstupný fade z 0 môže byť práve ten preblik (hypotéza). Jeden pomocník pre vstup '
                      'modulu (bez fadu z 0 pri návrate a pri „Znížiť pohyb“) je lacnejší než oprava po moduloch; `FeedPostCard.tsx` '
                      '(1 033 riadkov) a profilové sekcie nad 500 riadkov by vyžadovali výnimku.',
-         kedy='Pred prácou na 287 a 288 (289 je samostatná oprava, rozhodnutie ju ovplyvní len čiastočne).'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: súhlas s odporúčaním agenta: vstupné animácie modulov sa zjednotia (bez fadu z priehľadnosti 0 '
+                 'pri návrate a pri „Znížiť pohyb“), ale až po overení na iPhone, že práve vstupný fade je príčinou preblikov pri '
+                 'zapnutom „Znížiť pohyb“ (hypotéza). Postup: najprv pokus na jednom module (Obľúbené, kde je fade zmeraný na asi 270 '
+                 'ms) a ručné overenie majiteľom na iPhone; ak preblik zmizne, jeden pomocník pre vstup modulu nahradí vlastné animácie '
+                 'po moduloch. Nález 288 (`FeedPostCard.tsx`, 1 033 riadkov) sa nerobí ako výnimka z pravidla: najprv sa súbor rozdelí '
+                 'bez zmeny správania a vzhľadu (nález 333, R23) a oprava animácie 288 nasleduje samostatne, až po dokončení a ručnom '
+                 'overení delenia, už nad menším súborom.',
+         datum='13. 11. 2026'),
     dict(id='R29', tema='Animované obrázky (298, 299)',
          otazka='Majú ponuky, avatary a správy podporovať animované obrázky (animovaný WebP, APNG, GIF), alebo sa má všade ukladať statická '
                 'snímka?',
@@ -136,7 +173,12 @@ DECISIONS_NASTENKA = [
                      'zdieľanej funkcie `strip_image_metadata`). Je to jednotné a jednoduché; animácie majú zmysel skôr v správach a to až '
                      'podľa spätnej väzby. Nálezy 298 a 299 sa potom zatvoria ako zámer a kód z K12 pre animované obrázky starého endpointu '
                      'ostane len, ak ostane endpoint (R30).',
-         kedy='Pred prácou na 298 a 299.'),
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: súhlas s odporúčaním agenta: pri štarte ponuky, avatary aj správy ostanú so statickou prvou '
+                 'snímkou (dnešné správanie hlavnej cesty cez S3 aj zdieľanej funkcie `strip_image_metadata`); animované obrázky (GIF, '
+                 'animovaný WebP a APNG) sa nepodporujú a ukážu sa ako nehybný obrázok. Nálezy 298 a 299 sa zatvárajú ako zámer. Kód z '
+                 'K12 pre animované obrázky starého endpointu ostáva, kým ostáva endpoint (R30).',
+         datum='13. 11. 2026'),
     dict(id='R30', tema='Starý multipart endpoint ponúk (301, 300)',
          otazka='Čo s endpointom `POST /api/auth/skills/<id>/images/`, ktorý UI na produkcii nevolá (tam ide S3) a ktorého fotky sú na '
                 'produkcii neprístupné (nález 301)? (a) v produkcii ho vypnúť, keď je S3 nakonfigurované, a ponechať ako vývojovú zálohu; '
@@ -306,4 +348,33 @@ DECISIONS_NASTENKA = [
          odpoved='Majiteľ 12. 11. 2026: nález 311 pri používaní nezaregistroval a nechce kvôli nemu riskovať nové chyby v spoločnom '
                   'hooku; zatiaľ ho nechá tak a nález uzatvára, ak sa prejav ukáže, dá vedieť. Agent súhlasil.',
          datum='12. 11. 2026'),
+    dict(id='R39', tema='Číselná gulička pri Žiadostiach pri vypnutej kategórii „Žiadosť o zručnosť“ (330)',
+         otazka='Pri vypnutej kategórii „Žiadosť o zručnosť“ sa nová žiadosť doručí a je viditeľná v Žiadostiach, no rozsvieti číselnú '
+                 'guličku pri položke Žiadosti v menu, lebo nová žiadosť chodí vždy (R35; kategória riadi len jej priebeh). Majiteľ pri '
+                 'ručnom teste po K20 (13. 11. 2026) očakával, že sa žiadosť doručí, ale gulička sa nezobrazí. (a) Gulička sleduje '
+                 'kategóriu: pri vypnutej kategórii sa upozornenie na novú žiadosť vytvorí rovno ako prečítané (žiadosť sa doručí a je v '
+                 'Žiadostiach, bez guličky); hlavný vypínač „Vypnúť všetko“ ostáva ako dnes (gulička sa pri novej žiadosti rozsvieti, '
+                 'ako hovorí jeho opis). (b) Ako (a), ale gulička sa nezobrazí ani pri zapnutom hlavnom vypínači a veta v jeho opise sa '
+                 'zmení (napríklad „Nové žiadosti o zručnosť sa zobrazia v Žiadostiach bez upozornenia.“). (c) Nechať ako dnes a do '
+                 'opisu kategórie doplniť vetu, že nová žiadosť chodí vždy.',
+         odporucanie='(b): každý vypínač potom robí to, čo hovorí; inak by hlavný vypínač „Vypnúť všetko“ ostal jediným, ktorý guličku '
+                        'nechá, a vyzeralo by to ako tá istá chyba znova. Žiadosť sa nestratí: ostane doručená a viditeľná v Žiadostiach a '
+                        'používateľ si guličku vypol sám. Zmena je malá (backend v jednej funkcii a jeden test, pri (b) text hlavného vypínača '
+                        'v šiestich jazykoch). Ak majiteľ chce, aby hlavný vypínač nevypínal nič, čo čaká na odpoveď druhého používateľa, volí '
+                        '(a).',
+         kedy='Rozhodnuté 13. 11. 2026.',
+         odpoved='Majiteľ 13. 11. 2026: variant (b). Vlastnými slovami: nová žiadosť o zručnosť príde príjemcovi priamo do Žiadostí (nie '
+                 'do zvončeka s ostatnými upozorneniami) a pri Žiadostiach sa ukáže ako notifikačný odznak; táto logika ostáva a mení sa '
+                 'len to, že keď je v nastaveniach upozornení vypnuté „Vypnúť všetko“ alebo len kategória „Žiadosť o zručnosť“, '
+                 'notifikácia (odznak) pri novej žiadosti nepríde; inak ostáva všetko tak, ako je. Agent to vykladá tak: žiadosť sa '
+                 'doručí a je viditeľná v Žiadostiach aj pri vypnutom odznaku; žiadosti, ktoré prídu počas vypnutia, odznak nerozsvietia '
+                 'ani po opätovnom zapnutí (implementácia: upozornenie sa vytvorí rovno ako prečítané; frontend sa nemení). '
+                 'Prepínač „Vypnúť všetko“ je zapnutý, keď sú všetky upozornenia okrem Správ vypnuté (na serveri je '
+                 '`in_app_notifications` `false`); formuláciu majiteľa „vypnuté „Vypnúť všetko““ agent vykladá ako tento stav, teda '
+                 'odznak sa nezobrazí pri zapnutom prepínači „Vypnúť všetko“ (tak to implementovala K21 a tak je to aj v otázke R39 '
+                 '(b)); ak majiteľ myslel opak, dá vedieť. Majiteľ '
+                 'návrh vety pre opis hlavného vypínača nenamietal: „Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa '
+                 'aj tak zobrazia v Žiadostiach, len bez odznaku.“ (na počítači hlavný vypínač opis nemá a ostáva tak). Nález 330 ide do '
+                 'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',
+         datum='13. 11. 2026'),
 ]

@@ -441,6 +441,11 @@ from hotove_dalsie import DONE_SINCE_DALSIE  # noqa: E402
 
 DONE_SINCE.extend(DONE_SINCE_DALSIE)
 
+# Nálezy opravené od 13. 11. 2026 sú v `hotove_k20.py` (kvôli limitu 500 riadkov); do `DONE_SINCE` sa pridávajú tu.
+from hotove_k20 import DONE_SINCE_K20  # noqa: E402
+
+DONE_SINCE.extend(DONE_SINCE_K20)
+
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
 DONE_PR_TABLE = [
     ('#177', '126', '128, 137, 141 (prvá polovica), 155'),
@@ -452,6 +457,12 @@ DONE_PR_TABLE = [
     ('#196', '136', '162, 163, 164'),
     ('#197', '137', '171, 172'),
     ('#198', '138', '154, 165, 166 (+ „a ďalší (N)“ a hlášky pri Obľúbených)'),
+]
+
+# Zlúčené PR, v ktorých nie je hotový ani jeden celý nález (len časť otvoreného nálezu); pridávajú sa za riadky odvodené z `DONE_SINCE`.
+DONE_PR_TABLE_CASTOCNE = [
+    ('#257', 'K19', '321 (etapy 1 a 2 zo štyroch: server; zostáva rozhranie a E2E)'),
+    ('#258', 'K20', '321 (etapa 3a: rozhranie kategórií a hlavný vypínač; zostáva výzva na push, rozhodnutie R39 a E2E), 319 (kód; čaká na ručný test)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.

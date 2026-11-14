@@ -46,7 +46,10 @@ REG_ITEMS = [
               '`useConversationThreadController` sa nezasahuje (nález 218). Podľa zoznamu majiteľa (príloha D) sa veľké súbory '
               '(`DashboardContent`, `ProfileOffersSection`, `RequestsNotificationsContext`, `lib/api.ts`, `FeedPostCard`, `FeedPostComments`) '
               'majú deliť po jednom a po každom delení má nasledovať manuálny test, lebo riziko regresie je vysoké. Od 7. 11. 2026 má '
-              '`useDashboardState` 922 riadkov: jedna schválená výnimka z pravidla, jeden pridaný riadok pri oprave nálezu 271 (R24).', dec=None),
+              '`useDashboardState` 922 riadkov: jedna schválená výnimka z pravidla, jeden pridaný riadok pri oprave nálezu 271 (R24). '
+              'Od 13. 11. 2026 (R27) sa testové súbory nad 500 riadkov z pravidla „nemeniť“ vyberajú: TECH-11 '
+              '(`DashboardContentView.test.tsx`, 895 riadkov) sa už nevedie ako „nemeniť“ a malé zmeny testov (pridať test, upraviť '
+              'mock) sú povolené; nové testy idú radšej do nového súboru.', dec=None),
     dict(id='TOOL-01', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='`next lint` vyžaduje interaktívnu konfiguráciu; CI lint nespúšťa.', note='Pridať neinteraktívny lint do CI až po vyčistení chýb (206; 178 je hotový len pre jediný súbor).', dec=None),
     dict(id='TOOL-02', bucket=A, imp=N, eff=ES, pkg='Nástroje a testy', what='Windows WebKit natívne nejde (Code Integrity); funguje cez Docker kontajner.', note='Obmedzenie prostredia.', dec=None),
 ]
