@@ -162,8 +162,9 @@ DECISIONS_NASTENKA = [
                  'pri návrate a pri „Znížiť pohyb“), ale až po overení na iPhone, že práve vstupný fade je príčinou preblikov pri '
                  'zapnutom „Znížiť pohyb“ (hypotéza). Postup: najprv pokus na jednom module (Obľúbené, kde je fade zmeraný na asi 270 '
                  'ms) a ručné overenie majiteľom na iPhone; ak preblik zmizne, jeden pomocník pre vstup modulu nahradí vlastné animácie '
-                 'po moduloch. Nález 288 (`FeedPostCard.tsx`, 1 033 riadkov) ide spolu s delením tohto súboru (nález 333), nie ako '
-                 'výnimka z pravidla.',
+                 'po moduloch. Nález 288 (`FeedPostCard.tsx`, 1 033 riadkov) sa nerobí ako výnimka z pravidla: najprv sa súbor rozdelí '
+                 'bez zmeny správania a vzhľadu (nález 333, R23) a oprava animácie 288 nasleduje samostatne, až po dokončení a ručnom '
+                 'overení delenia, už nad menším súborom.',
          datum='13. 11. 2026'),
     dict(id='R29', tema='Animované obrázky (298, 299)',
          otazka='Majú ponuky, avatary a správy podporovať animované obrázky (animovaný WebP, APNG, GIF), alebo sa má všade ukladať statická '
@@ -367,7 +368,11 @@ DECISIONS_NASTENKA = [
                  'len to, že keď je v nastaveniach upozornení vypnuté „Vypnúť všetko“ alebo len kategória „Žiadosť o zručnosť“, '
                  'notifikácia (odznak) pri novej žiadosti nepríde; inak ostáva všetko tak, ako je. Agent to vykladá tak: žiadosť sa '
                  'doručí a je viditeľná v Žiadostiach aj pri vypnutom odznaku; žiadosti, ktoré prídu počas vypnutia, odznak nerozsvietia '
-                 'ani po opätovnom zapnutí (implementácia: upozornenie sa vytvorí rovno ako prečítané; frontend sa nemení). Majiteľ '
+                 'ani po opätovnom zapnutí (implementácia: upozornenie sa vytvorí rovno ako prečítané; frontend sa nemení). '
+                 'Prepínač „Vypnúť všetko“ je zapnutý, keď sú všetky upozornenia okrem Správ vypnuté (na serveri je '
+                 '`in_app_notifications` `false`); formuláciu majiteľa „vypnuté „Vypnúť všetko““ agent vykladá ako tento stav, teda '
+                 'odznak sa nezobrazí pri zapnutom prepínači „Vypnúť všetko“ (tak to implementovala K21 a tak je to aj v otázke R39 '
+                 '(b)); ak majiteľ myslel opak, dá vedieť. Majiteľ '
                  'návrh vety pre opis hlavného vypínača nenamietal: „Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa '
                  'aj tak zobrazia v Žiadostiach, len bez odznaku.“ (na počítači hlavný vypínač opis nemá a ostáva tak). Nález 330 ide do '
                  'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',

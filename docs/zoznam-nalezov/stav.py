@@ -19,7 +19,7 @@ ZMENY = [
       'Vetva 174, doplnok po K21 (vychádza z `main` `8b951cd9`, teda po PR #261; main je zlúčený do vetvy). (1) K21 (PR #260, '
       'zlúčené 13. 11. 2026 o 16:25 UTC, merge `79f907bd`; päť commitov: štyri podľa karty `59cbc04c`, `eceda277`, `c4d50bfb` '
       'a `9d26d9c4` a oprava po CodeRabbite `71f9cff4`): hotové 331 (okno „Pridať recenziu“ po úspešnom pridaní), 332 (jazyk '
-      'pre zvyšok sveta je angličtina, R2), 330 (odznak Žiadostí pri vypnutej kategórii alebo „Vypnúť všetko“, R39 b) a 325 '
+      'pre zvyšok sveta je angličtina, R2), 330 (odznak Žiadostí pri vypnutej kategórii alebo zapnutom „Vypnúť všetko“, R39 b) a 325 '
       '(toast po zmazaní recenzie, výnimka R37 b a c; `OfferReviewsView.tsx` 692 → 683 riadkov). Kontrola agenta z GitHubu: '
       'CI (`checks`, `backend-postgres`) je zelené na hlavičke PR, CodeRabbit mal jednu pripomienku (Minor: pri 331 sa po '
       'zatvorení okna počas odosielania dala poslať druhá požiadavka) a Codex review hlavičky `71f9cff4` bola bez '
@@ -43,7 +43,7 @@ ZMENY = [
       'doplniť jednoduchú kontrolu atribútu).'),
     ('13. 11. 2026',
       'Vetva 174, doplnok po rozhodnutiach majiteľa z 13. 11. 2026. (1) Rozhodnuté: R39 (b): nová žiadosť o zručnosť príde '
-      'do Žiadostí ako odznak a pri vypnutom „Vypnúť všetko“ alebo vypnutej kategórii „Žiadosť o zručnosť“ odznak nepríde '
+      'do Žiadostí ako odznak a pri zapnutom „Vypnúť všetko“ (všetky upozornenia vypnuté) alebo vypnutej kategórii „Žiadosť o zručnosť“ odznak nepríde '
       '(nález 330 je tým jasný a ide do K21); R2: všetkých šesť jazykov (sk, cs, hu, de, pl, en) má byť pri štarte plne '
       'preložených (majiteľ najprv odpovedal na inú vec: výber jazyka podľa krajiny; agent zistil, že ho aplikácia už robí, '
       'a rozdiel, že zvyšok sveta dostane slovenčinu namiesto angličtiny, je nový nález 332; jazyk prehliadača ostáva '

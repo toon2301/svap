@@ -275,8 +275,9 @@ NEW_ITEMS_NASTENKA = [
          what='Kolega pri K8: `feed/FeedPostCard.tsx` (1 033 riadkov) má vlastnú vstupnú animáciu navyše k obalu zoznamu. K8 ju neutralizuje '
               'zvonka (nad kartami); čisté riešenie je jeden riadok priamo v karte.',
          note='Čisté riešenie vyžaduje jednorazovú výnimku z pravidla 500 riadkov (TECH-01…11) alebo delenie súboru. Odhad kolegu: nízky · '
-              'S. Súvisí s 287 a s redizajnom Nástenky (261, R23); podľa R28 a R23 ide spolu s delením súboru (nález 333), nie ako výnimka z '
-              'pravidla.',
+              'S. Súvisí s 287 a s redizajnom Nástenky (261, R23); podľa R28 a R23 nasleduje až po delení súboru (nález 333), ktoré '
+              'nesmie meniť správanie ani vzhľad: oprava animácie ide samostatne (vlastný commit a ručný test) po dokončení a overení '
+              'delenia, už nad menším súborom, nie ako výnimka z pravidla.',
          dec=None, src='K8 (kolega)'),
     dict(n=289, bucket=P, imp=N, eff=ES, pkg='Plynulosť prechodov (mobil)',
          kratko='„Znížiť pohyb“ a zoznam Nastavení: tmavé pozadie sa ďalej vyfaduje a nová obrazovka sa rozjasňuje',
