@@ -98,6 +98,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const manualCountryRef = useRef<OfferCountryCode | ''>('');
   const explicitLocaleRef = useRef(false);
 
+  /**
+   * Atribút `lang` na `<html>` sleduje jazyk aplikácie (používajú ho čítačky obrazovky, ponuka prekladu v prehliadači aj
+   * kontrola pravopisu). Úvodné HTML zo servera má pevné `lang="sk"`, lebo server jazyk nepozná; po načítaní sa vyrovná
+   * s jazykom aplikácie (nález 335).
+   */
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   useEffect(() => {
     let hasSavedLocale = false;
     try {

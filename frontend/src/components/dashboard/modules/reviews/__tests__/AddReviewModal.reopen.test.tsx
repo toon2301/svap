@@ -312,3 +312,76 @@ describe.each(WINDOWS)('%s „Pridať recenziu“: zatvorenie počas odosielania
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Chybová hláška po zatvorení a opätovnom otvorení okna (nález 334). Okno sa pri pridaní nevytvára odznova (stály `key`),
+ * takže chyba z neúspešného odoslania ostávala v stave aj po zatvorení a pri ďalšom otvorení sa ukázala znova v inak
+ * čistom formulári. Pri zatvorení sa preto vynuluje spolu s ostatnými poľami; nová chyba sa ukáže ako doteraz.
+ */
+describe.each(WINDOWS)('%s „Pridať recenziu“: chyba po opätovnom otvorení (nález 334)', (_name, Modal) => {
+  const SERVER_ERROR = 'Server je nedostupný.';
+
+  /** Spôsoby zatvorenia okna: tlačidlá a pozadie okna alebo stránka sama (tlačidlo „Zavrieť zvonka“ obalu). */
+  const CLOSE_WAYS: ReadonlyArray<[string, () => void]> = [
+    ['tlačidlom „Zrušiť“', () => fireEvent.click(screen.getByRole('button', { name: CANCEL_LABEL }))],
+    ['krížikom', () => fireEvent.click(screen.getByRole('button', { name: CLOSE_LABEL }))],
+    ['klepnutím na pozadie', () => fireEvent.click(screen.getByRole('dialog'))],
+    ['stránkou samotnou', () => fireEvent.click(screen.getByRole('button', { name: 'Zavrieť zvonka' }))],
+  ];
+
+  it.each(CLOSE_WAYS)(
+    'po neúspešnom odoslaní a zatvorení %s je pri ďalšom otvorení formulár bez chyby a po novom zlyhaní sa chyba ukáže znova',
+    async (_label, close) => {
+      const onSubmit = jest.fn().mockRejectedValue(new Error(SERVER_ERROR));
+      render(<PageHarness Modal={Modal} onSubmit={onSubmit} />);
+
+      openModal();
+      rate(4);
+      await submit();
+      expect(await screen.findByText(SERVER_ERROR)).toBeInTheDocument();
+
+      close();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+      openModal();
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByText(SERVER_ERROR)).not.toBeInTheDocument();
+
+      rate(3);
+      await submit();
+
+      expect(await screen.findByText(SERVER_ERROR)).toBeInTheDocument();
+      expect(onSubmit).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('úprava recenzie: po neúspešnom uložení a zatvorení je pri ďalšom otvorení formulár s pôvodnými hodnotami a bez chyby', async () => {
+    const onSubmit = jest.fn().mockRejectedValue(new Error(SERVER_ERROR));
+    render(<PageHarness Modal={Modal} onSubmit={onSubmit} reviewToEdit={reviewToEdit()} />);
+
+    openModal();
+    await submit('Uložiť');
+    expect(await screen.findByText(SERVER_ERROR)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: CANCEL_LABEL }));
+    openModal();
+
+    expect(screen.queryByText(SERVER_ERROR)).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('Pôvodná recenzia')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uložiť' })).toBeEnabled();
+  });
+
+  it('chyba z predošlého zlyhania nezmizne, kým je okno otvorené: tlačidlo sa odomkne a text chyby ostáva viditeľný', async () => {
+    const onSubmit = jest.fn().mockRejectedValue(new Error(SERVER_ERROR));
+    render(<PageHarness Modal={Modal} onSubmit={onSubmit} />);
+
+    openModal();
+    rate(4);
+    await submit();
+
+    expect(await screen.findByText(SERVER_ERROR)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pridať' })).toBeEnabled();
+    expect(screen.getByText(SERVER_ERROR)).toBeInTheDocument();
+  });
+});
