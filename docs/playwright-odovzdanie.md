@@ -1,8 +1,199 @@
-# Playwright: odovzdanie (stav k 13. 11. 2026)
+# Playwright: odovzdanie (stav k 15. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálna dávka — 13. 11. 2026: dôkazy 223 a oprava testu 328
+## Aktuálna dávka — 15. 11. 2026: stav po K22, jazyk a voľby upozornení
+
+Vetva **`e2e/lang-a-volby-k22`** vychádza z čerstvého main **`52626ab7`**
+(K22; opätovne overené cez fetch). PR #261 je zlúčený (`8b951cd9`), CI a
+CodeRabbit prijaté; prípadné zostávajúce review vlákno uzatvára majiteľ.
+K20, K21 a K22 sú podľa majiteľa nasadené; **K23 ešte nebola oznámená ako nasadená**.
+Aplikácia, závislosti, prihlasovacie údaje, timeouty, tolerancie a retry sa nemenia.
+Povolená dočasná zmena jednej kategórie v API teste sa overene vrátila.
+
+### Prijaté živé overenie po K22
+
+Majiteľ zapísal tieto výsledky do zoznamu (vetva 177):
+
+| Beh | webkit-desktop P/F/S | webkit-mobile P/F/S | chromium-desktop P/F/S | Celkom P/F/S | Čas procesu |
+| --- | --- | --- | --- | --- | --- |
+| Dym `@smoke` | 13 / 0 / 4 | 15 / 0 / 2 | 13 / 0 / 4 | **41 / 0 / 10** | 2 min 39 s |
+| 328, mobil light + dark | — | 2 / 0 / 0 | — | **2 / 0 / 0** | 18 s |
+
+Dym mal rovnakých 51 kľúčov a výsledkov ako prijatý dym po K18. Prihlásenie
+(9 PASS) a HTML `no-store` (18 PASS) sú zahrnuté v 41, nepripočítavajú sa znova.
+Upratanie zdieľania bolo potvrdené 6/6 kontrolami. Nevznikol nový blok pádu.
+328 je prijatý pri limite 5/5; **živý stav pod limitom zostáva neoverený**.
+Kvôli nemu sa žiadne sledovanie nemenilo. Nie je to nový celý beh:
+prijatý základ **427 / 2 / 303** zostáva, posledný celý K19 bol **377 / 23 / 362**.
+
+**223 zostáva otvorený.** Natívny Windows WebKit sa zastavil pred otvorením
+stránky na Smart App Control (nepodpísaná DLL); nejde o dôkaz príčiny straty relácie
+vo WebKite v Dockeri. Návrh Ubuntu vo WSL čaká na **R40**. Dovtedy sa kvôli nemu
+nič neinštaluje, nemení ani nespúšťa; porovnanie reálnych špecov neprebehlo.
+
+### Nové testy — 335 a API časť etapy 4 nálezu 321
+
+- `document-language.spec.ts`: šesť `appLocale` (sk, cs, en, pl, de, hu), každý
+  vo všetkých troch projektoch, teda **18 variantov** vrátane oboch WebKitov.
+  Izolovaný localStorage, anonymný kontext, žiadna tvorba dát. Čakajúca asercia
+  `toHaveAttribute('lang', locale)` používa pôvodný limit; okamžité čítanie by
+  nesprávne vyhodnotilo počiatočné serverové `lang="sk"`. Žiadny pevný sleep.
+- `notification-preferences.api.ts`: **jeden test v chromium-desktop**, spúšťaný
+  vlastnou `notification-preferences.playwright.config.ts`, nie bežným plným behom.
+  Bežný prihlasovací setup, storageState, prehliadač aj timeouty zostávajú.
+  Samostatná konfigurácia má jeden projekt, workers=1, retries=0 a maxFailures=1.
+  Test pri vypnutom zastavení po prvom páde odmietne vykonať zápis. Jediná zmena
+  kategórie `notify_likes` na opačnú hodnotu, nie postupné vypínanie všetkých volieb.
+  Majiteľ ponechal rozsah na odporúčaní Codexu; zvolený je menší živý zásah.
+  GET aj odpoveď PATCH sa kontrolujú vo všetkých siedmich poliach:
+  `in_app_notifications`, `push_notifications`, `notify_likes`,
+  `notify_comment_likes`, `notify_comments`, `notify_tags_and_shares`,
+  `notify_skill_requests`.
+- Fixture uloží pôvodný stav iba v pamäti. Vo `finally` obnoví všetkých sedem
+  hodnôt a potom vykoná záverečný GET, aj keď obnovovací PATCH zlyhá. Chyba obnovy
+  ostáva nahlas FAIL, nie SKIP alebo zelený výsledok. Teardown používa pôvodný
+  samostatný rozpočet Playwrightu aj pri vyčerpaní času tela testu; timeout sa
+  nepredlžuje. Zápis sa odmietne pred API pri workers != 1, retry != 0 alebo
+  repeat-each != 1. Test beží sériovo a oddelene od ostatných živých špecov;
+  zlyhanie obnovy tak nemôže spustiť ďalší špec s potenciálne zmenenými voľbami.
+- CSRF a cookies ostávajú v prehliadači; transport vráti len HTTP stav a sedem
+  booleanov, iné polia zahodí. Žiadne hodnoty volieb, cookies, tokenov ani texty
+  odpovedí sa nevypisujú alebo neprikladajú. Diagnostický fixture vypína screenshot,
+  trace aj video. Pevný výpis `[E2E-PREFERENCES] restored=verified|failed fields=7`
+  oznamuje iba výsledok overenia obnovy, nie hodnoty.
+
+**Živé overenie nových špecov 15. 11. prešlo v potvrdenom okne na `52626ab7`:**
+
+| Test | webkit-desktop P/F/S | webkit-mobile P/F/S | chromium-desktop P/F/S | Celkom P/F/S | Čas procesu |
+| --- | --- | --- | --- | --- | --- |
+| 335, šesť jazykov | 6 / 0 / 0 | 6 / 0 / 0 | 6 / 0 / 0 | **18 / 0 / 0** | 43,503 s |
+| API 321, jeden roundtrip | — | — | 1 / 0 / 0 | **1 / 0 / 0** | 9,886 s |
+
+Jazykový beh: **18:26:39.924–18:27:23.427 UTC**, report 28,525 s;
+časy projektov 8,735 / 7,206 / 3,811 s. API: **18:27:46.624–18:27:56.510 UTC**,
+report 5,645 s, samotný variant 1,040 s. Obe prihlásenia uspeli na prvý pokus,
+žiadny retry alebo nový pád. API vytvorilo presne jeden pevný záznam
+`[E2E-PREFERENCES] restored=verified fields=7`: záverečný GET potvrdil všetkých
+sedem pôvodných hodnôt. Hodnoty sa nezverejňujú. Nevznikol blok pádu
+`[E2E-EVIDENCE]`. Nejde o celý beh ani o nový prijatý porovnávací základ.
+
+Bezpečné lokálne metadáta (mimo Gitu, nie raw reporty ani prílohy):
+`C:/Projects/svap-e2e-k22-nove-lang-20261115-1794767199924-details.json` a
+`C:/Projects/svap-e2e-k22-nove-preferences-20261115-1794767266624-details.json`.
+Beh použil štandardný Docker skript; dočasný lokálny spúšťač len zachytil a
+filtroval výpisy a pripojil pôvodný env a existujúce knižnice read-only. Env
+nekopíroval ani nečítal mimo bežnej konfigurácie. Testy sa počas behu nemenili.
+**Po skončení bolo okno uvoľnené; ďalší beh proti Railway nie je naplánovaný.**
+
+Pred každým ďalším spustením treba nové potvrdenie konkrétneho nasadenia a okna
+bez zlučovania, nasadení, iných testov a zmien účtu. Použité príkazy z `frontend`:
+
+```powershell
+npm run test:e2e:docker -- e2e/document-language.spec.ts --workers=1 --retries=0
+npm run test:e2e:docker -- --config=e2e/notification-preferences.playwright.config.ts --workers=1 --retries=0 --max-failures=1
+```
+
+Pri chybe API testu ďalší živý zápis nespúšťať bez preverenia výsledku obnovy.
+Pád procesu alebo nedostupný server nemôže `finally` zaručene upratať. Ani
+záverečný GET nie je záruka proti neskorému dokončeniu časovo neistej požiadavky;
+pri takom zlyhaní je potrebná kontrola majiteľa, nie automatické opakovanie PATCH.
+Hodnoty sa kvôli zálohe neukladajú do súboru ani do logu.
+
+Bežná kolekcia cez `--list`: **45 špecov / 780 variantov (260 na projekt)**.
+Oproti doterajším 762 pribudlo iba 18 jazykových variantov. Samostatná API
+kolekcia má **1 test / 1 projekt**, do plného behu ani dymu sa nepripočítava.
+Výsledky celých behov sa naďalej porovnávajú podľa kľúčov, nie len odčítaním súčtov.
+
+### Lokálne overenie novej dávky — bez Railway
+
+- **144/144 Node kontrol**, z toho 20 nových pre kontrakt siedmich volieb,
+  neplatné odpovede, neistý PATCH, chybu tela, ignorovanú obnovu a ochranu výpisov.
+- **2/2 vonkajšie browser kontroly** nového fixture. Vnútorná sada zámerne
+  skončila 1 PASS / 4 riadené FAIL / 10 projektových SKIP: potvrdila návrat aj po
+  chybe a timeoute tela a hlasný pád pri chybe obnovy. Samostatný riadený pokus
+  s workers=2 potvrdil odmietnutie pred prvým API volaním. Nie sú to pády aplikácie.
+- Docker týchto kontrol má **`--network=none`**, bez global setupu, env a účtu.
+  Route používa syntetický Railway origin len pre overenie guardu; všetky odpovede
+  sú lokálne podvrhnuté. Kontrola výpisov zahŕňa aj syntetický CSRF marker a stderr.
+- Existujúce Jest `E2ePageActivity` a `E2eServiceWorker.guard`: **52/52**, bez zmien.
+- TypeScript frontendu aj explicitne celej E2E oblasti: **0 chýb**. ESLint nových
+  súborov a `git diff --check`: bez chýb. `--list` potvrdil 780 + oddelený 1 variant,
+  v API konfigurácii jeden projekt, workers=1, retries=0 a maxFailures=1.
+
+Lokálne zopakovanie z `frontend` (nečíta env ani nevolá Railway):
+
+```powershell
+node node_modules/tsx/dist/cli.mjs --test e2e/diagnostics-tests/notification-preferences.check.ts
+node node_modules/tsx/dist/cli.mjs --test e2e/diagnostics-tests/notification-preferences-browser.check.ts
+```
+
+Súbory tejto dávky (iba oblasť Codexu; bez migrácií, bez zmeny aplikácie):
+
+```text
+frontend/e2e/document-language.spec.ts
+frontend/e2e/notification-preferences.api.ts
+frontend/e2e/notification-preferences.playwright.config.ts
+frontend/e2e/support/notification-preferences-roundtrip.ts
+frontend/e2e/support/notification-preferences-transport.ts
+frontend/e2e/support/notification-preferences-test.ts
+frontend/e2e/diagnostics-tests/notification-preferences.check.ts
+frontend/e2e/diagnostics-tests/notification-preferences-browser.check.ts
+frontend/e2e/diagnostics-tests/notification-preferences.scenario.ts
+frontend/e2e/diagnostics-tests/notification-preferences.playwright.config.ts
+docs/playwright-odovzdanie.md
+```
+
+### 330 — iba mapovanie, žiadne vytváranie žiadostí
+
+Overené v aktuálnom kóde, **nie živým pokusom medzi účtami**:
+
+1. POST `/api/auth/skill-requests/` s existujúcou viditeľnou kartou typu Ponúkam
+   vytvorí žiadosť. Účty musia byť odlišné, aktívne, bez blokovania a nesmú byť
+   administrátorské; karta nesmie byť skrytá alebo pre žiadateľa nedostupná.
+   Existujúca aktívna žiadosť tej istej dvojice žiadateľ/karta vráti 200 a nevytvorí
+   novú udalosť. Scenár potrebuje **201 a nové ID iba v pamäti**, nie znovupoužitú
+   starú žiadosť. Po zrušenej žiadosti vytvorí ďalší POST nový záznam.
+2. Pri vypnutom `notify_skill_requests` (alebo `in_app_notifications`) žiadosť
+   príde do prijatých a jej notifikácia vznikne už prečítaná. Počet typu
+   `skill_request` sa nezvýši; opätovné zapnutie starú notifikáciu neoživí.
+   Po zapnutí oboch volieb musí ďalšia **nová** žiadosť počet zvýšiť o 1.
+3. Pred oboma krokmi odčítať východiskový počet a zostať mimo prijatých Žiadostí:
+   otvorenie ich záložky pending automaticky označuje neprečítané za prečítané.
+   Doručenie sa najprv preukáže cez GET zoznamu a odznak sa sleduje mimo Žiadostí,
+   až potom UI. Nesmie sa plošne označiť pôvodný obsah za prečítaný. Ak má scenár
+   otvoriť aj prijaté Žiadosti v UI, príjemca preto potrebuje nulový pôvodný počet
+   neprečítaných žiadostí; inak by automatika aplikácie zmenila aj staršie dáta.
+4. Zrušenie je PATCH `/api/auth/skill-requests/<id>/` s `action: 'cancel'` od
+   žiadateľa. `action: 'hide'` sa dá následne spraviť z oboch účtov. **To však iba
+   zruší/skryje, neodstráni riadok ani jeho notifikáciu.** GET počítadla pritom
+   filtruje `is_read`, nie stav zrušenia. Ani prípadné zmazanie samotnej žiadosti
+   automaticky nezmaže notifikáciu (`SET_NULL`). Bežné API nemá DELETE žiadosti.
+
+**Pred implementáciou/živým behom potrebujeme od majiteľa:** potvrdiť prístup do
+oboch vyhradených testovacích účtov (bez posielania údajov do chatu), dostupnú
+verejnú ponuku príjemcu a neprítomnosť aktívnej žiadosti tejto dvojice, súhlas na
+dve nové žiadosti a dočasnú zmenu/obnovu volieb. Posledný dym potvrdil otvorenie
+konverzácie/profilu partnera, **nie prihlásenie ako partner ani vhodnosť ponuky**.
+Dostupnosť prihlasovacích údajov druhého účtu sa ručne z `.env.e2e` nekontroluje.
+
+Treba dohodnúť **skutočné upratanie len nových záznamov vrátane ich notifikácií**
+(vlastní Claude/majiteľ), alebo výslovne schváliť, že zrušené/skryté záznamy zostanú.
+Pri požiadavke „nič po sebe nenechať“ dnešné bežné API nestačí. Plošné mazanie,
+mazanie účtov/ponúk ani úprava starých žiadostí nie sú prijateľné upratanie.
+Voľby príjemcu sa musia v každom prípade vrátiť vo `finally` a potvrdiť cez GET.
+Scenár 330, kontrola údajov živých účtov ani druhé prihlásenie sa v tejto dávke
+nespustili.
+
+### Až po oznámení nasadenia K23
+
+V novom dohodnutom okne najprv dym `@smoke`, osobitne sledovať
+`mobile-settings-navigation.spec.ts` vo webkit-mobile. K23 má pridať výzvu pod
+Správy; existujúci špec overuje obal `notifications-push-messages-mobile`, nie
+vnútorný text výzvy. Potom dohodnúť UI scenár kategórií s návratom pôvodného
+stavu. Tento UI scenár ani dym po K23 teraz nie sú vykonané alebo označené hotové.
+
+## Historická dávka — 13. 11. 2026: dôkazy 223 a oprava testu 328
 
 Pracovná vetva je **`e2e/223-dokazy-limit-328`**, pôvodný základ main
 **`203e8d14`**; pred odoslaním je aktualizovaná na **`79f907bd`** (K21), bez
@@ -166,7 +357,7 @@ nespúšťa; najbližší až po nasadení K16 a novom potvrdení okna bez zmien
 
 ## Ako sa beh spúšťa
 
-- Testy sú v `frontend/e2e/` (v tejto E2E vetve 44 špecov / 762 variantov, pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
+- Testy sú v `frontend/e2e/` (v tejto E2E vetve 45 špecov / 780 variantov bežnej kolekcie, samostatný API kontrakt má vlastnú konfiguráciu a 1 variant; pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
 - Bežia proti produkčnej inštancii na Railway (`https://stunning-inspiration-svap.up.railway.app`). Lokálny server sa nespúšťa: appka sa v produkčnom režime správa inak (napr. `Cache-Control: no-store`).
 - Projekty: `webkit-desktop`, `webkit-mobile` (iPhone 15) a `chromium-desktop`. WebKit je povinný.
 - Na Windows sa beh púšťa v Dockeri (Smart App Control blokuje WebKit): z priečinka `frontend` `npm run test:e2e:docker -- --workers=1 --retries=0` (celý beh trvá okolo 40 minút). Jeden projekt: `... -- --project=webkit-mobile`. Skript je `frontend/scripts/e2e-docker.js`, obraz je `mcr.microsoft.com/playwright:v<verzia>-noble`.
