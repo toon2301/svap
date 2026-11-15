@@ -6,12 +6,15 @@ import MasterToggle from './MasterToggle';
 import OptionRow from './OptionRow';
 import OptionRowsSkeleton from './OptionRowsSkeleton';
 import PushMessagesStatus from './PushMessagesStatus';
+import PushPermissionPrompt from './PushPermissionPrompt';
 import type {
   NotificationCategoryRow,
   NotificationsCommonLabels,
   NotificationsLabels,
   NotificationsMaster,
   PushMessagesProps,
+  PushPromptLabels,
+  PushPromptProps,
 } from './settingsTypes';
 
 interface MobileProps {
@@ -20,6 +23,8 @@ interface MobileProps {
   master: NotificationsMaster;
   categories: NotificationCategoryRow[];
   pushMessages: PushMessagesProps;
+  pushPrompt: PushPromptProps;
+  pushPromptLabels: PushPromptLabels;
 }
 
 /**
@@ -27,7 +32,8 @@ interface MobileProps {
  * „Vypnuté / Zapnuté“. Dostáva už hotové texty a riadky (kategórie s hodnotou, zablokovaním a príznakom načítavania),
  * nepozná hooky ani server. Kým sa uložená voľba Správ alebo kategória načíta, namiesto jej riadkov je kostra a stavový
  * riadok pod Správami drží výšku, aby sa nič neposúvalo (nález 286). Obal `notifications-push-messages-mobile` je v DOM
- * od prvého snímku.
+ * od prvého snímku; pod stavovým riadkom je v ňom podľa stavu výzva na povolenie upozornení v tomto zariadení
+ * (nález 321, etapa 3b).
  */
 export default function Mobile({
   labels,
@@ -35,6 +41,8 @@ export default function Mobile({
   master,
   categories,
   pushMessages,
+  pushPrompt,
+  pushPromptLabels,
 }: MobileProps) {
   // Názov a opis hlavného vypínača vykresľuje toto rozloženie, preto ich vypínač preberá cez identifikátory (PR 258).
   const masterLabelId = useId();
@@ -105,6 +113,11 @@ export default function Mobile({
             initialLoading={pushMessages.initialLoading}
             loadingLabel={labels.loadingPreferences}
             error={pushMessages.error}
+          />
+          <PushPermissionPrompt
+            prompt={pushPrompt}
+            labels={pushPromptLabels}
+            testId="notifications-push-prompt-mobile"
           />
         </div>
         <div className="border-t border-gray-200 dark:border-gray-700" />

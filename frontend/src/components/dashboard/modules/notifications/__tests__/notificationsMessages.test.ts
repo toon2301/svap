@@ -68,3 +68,91 @@ describe('notifications.turnOffAllDesc: opis hlavného vypínača (R35, R39 (b))
     expect(new Set(texts).size).toBe(texts.length);
   });
 });
+
+describe('notifications.pushPrompt*: výzva na povolenie push pre Správy (R36 a)', () => {
+  type PushPromptKey = 'pushPromptTitle' | 'pushPromptBody' | 'pushPromptEnable' | 'pushPromptDismiss' | 'pushPromptIosGuide';
+  const KEYS: PushPromptKey[] = ['pushPromptTitle', 'pushPromptBody', 'pushPromptEnable', 'pushPromptDismiss', 'pushPromptIosGuide'];
+
+  const EXPECTED: Record<Language, Record<PushPromptKey, string>> = {
+    sk: {
+      pushPromptTitle: 'Povoľte upozornenia na správy',
+      pushPromptBody:
+        'Upozornenia na správy máte zapnuté, no toto zariadenie ich ešte nemá povolené. Po povolení vám správy prídu aj vtedy, keď Svaply nemáte otvorené.',
+      pushPromptEnable: 'Zapnúť upozornenia na správy v tomto zariadení',
+      pushPromptDismiss: 'Nie teraz',
+      pushPromptIosGuide:
+        'Na iPhone a iPade fungujú upozornenia len v aplikácii pridanej na plochu. V Safari ťuknite na Zdieľať, vyberte Pridať na plochu a Svaply potom otvorte z ikony na ploche.',
+    },
+    cs: {
+      pushPromptTitle: 'Povolte upozornění na zprávy',
+      pushPromptBody:
+        'Upozornění na zprávy máte zapnutá, ale toto zařízení je ještě nemá povolená. Po povolení vám zprávy přijdou i tehdy, když aplikaci Svaply nemáte otevřenou.',
+      pushPromptEnable: 'Zapnout upozornění na zprávy v tomto zařízení',
+      pushPromptDismiss: 'Teď ne',
+      pushPromptIosGuide:
+        'Na iPhonu a iPadu fungují upozornění jen v aplikaci přidané na plochu. V Safari klepněte na Sdílet, vyberte Přidat na plochu a Svaply pak otevřete z ikony na ploše.',
+    },
+    en: {
+      pushPromptTitle: 'Allow message notifications',
+      pushPromptBody:
+        "Message notifications are turned on, but this device hasn't been allowed to show them yet. Once allowed, you'll get messages even when Svaply isn't open.",
+      pushPromptEnable: 'Turn on message notifications on this device',
+      pushPromptDismiss: 'Not now',
+      pushPromptIosGuide:
+        'On iPhone and iPad, notifications only work in an app added to the Home Screen. In Safari, tap Share, choose Add to Home Screen, then open Svaply from its icon on the Home Screen.',
+    },
+    pl: {
+      pushPromptTitle: 'Zezwól na powiadomienia o wiadomościach',
+      pushPromptBody:
+        'Powiadomienia o wiadomościach są włączone, ale to urządzenie nie ma jeszcze na nie zezwolenia. Po zezwoleniu wiadomości będą do Ciebie docierać także wtedy, gdy aplikacja Svaply nie jest otwarta.',
+      pushPromptEnable: 'Włącz powiadomienia o wiadomościach na tym urządzeniu',
+      pushPromptDismiss: 'Nie teraz',
+      pushPromptIosGuide:
+        'Na iPhonie i iPadzie powiadomienia działają tylko w aplikacji dodanej do ekranu początkowego. W Safari dotknij Udostępnij, wybierz Dodaj do ekranu początkowego, a potem otwórz Svaply z ikony na ekranie początkowym.',
+    },
+    de: {
+      pushPromptTitle: 'Benachrichtigungen für Nachrichten erlauben',
+      pushPromptBody:
+        'Benachrichtigungen für Nachrichten sind eingeschaltet, aber dieses Gerät hat sie noch nicht erlaubt. Nach der Erlaubnis erhalten Sie Nachrichten auch dann, wenn Svaply nicht geöffnet ist.',
+      pushPromptEnable: 'Benachrichtigungen für Nachrichten auf diesem Gerät einschalten',
+      pushPromptDismiss: 'Nicht jetzt',
+      pushPromptIosGuide:
+        'Auf iPhone und iPad funktionieren Benachrichtigungen nur in einer App, die zum Home-Bildschirm hinzugefügt wurde. Tippen Sie in Safari auf Teilen, wählen Sie Zum Home-Bildschirm und öffnen Sie Svaply dann über das Symbol auf dem Home-Bildschirm.',
+    },
+    hu: {
+      pushPromptTitle: 'Engedélyezze az üzenetek értesítéseit',
+      pushPromptBody:
+        'Az üzenetértesítések be vannak kapcsolva, de ez az eszköz még nem engedélyezte őket. Az engedélyezés után az üzenetek akkor is megérkeznek, ha a Svaply nincs megnyitva.',
+      pushPromptEnable: 'Üzenetértesítések bekapcsolása ezen az eszközön',
+      pushPromptDismiss: 'Most nem',
+      pushPromptIosGuide:
+        'iPhone-on és iPaden az értesítések csak a főképernyőre helyezett alkalmazásban működnek. A Safariban koppintson a Megosztás gombra, válassza a Főképernyőhöz adás lehetőséget, majd nyissa meg a Svaply-t a főképernyőn lévő ikonról.',
+    },
+  };
+
+  it.each(Object.keys(EXPECTED) as Language[])('%s: všetkých päť textov výzvy je preložených doslovne podľa dohodnutého znenia', (language) => {
+    for (const key of KEYS) {
+      expect(block(language)[key]).toBe(EXPECTED[language][key]);
+    }
+  });
+
+  it.each((Object.keys(EXPECTED) as Language[]).filter((language) => language !== 'sk'))(
+    '%s: texty výzvy nie sú skopírované zo slovenčiny',
+    (language) => {
+      for (const key of KEYS) {
+        // Poľské „Nie teraz“ je rovnaké ako slovenské: ide o skutočný preklad, nie o kópiu.
+        if (language === 'pl' && key === 'pushPromptDismiss') continue;
+        expect(block(language)[key]).not.toBe(block('sk')[key]);
+      }
+    },
+  );
+
+  it('texty výzvy sa v jednotlivých jazykoch líšia (okrem zhodného „Nie teraz“ v slovenčine a poľštine)', () => {
+    const languages = Object.keys(EXPECTED) as Language[];
+    for (const key of KEYS) {
+      const texts = languages.map((language) => block(language)[key]);
+      const expectedDistinct = key === 'pushPromptDismiss' ? languages.length - 1 : languages.length;
+      expect(new Set(texts).size).toBe(expectedDistinct);
+    }
+  });
+});

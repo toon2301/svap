@@ -63,3 +63,28 @@ export interface PushMessagesProps {
   error: string | null;
   onChange: (value: boolean) => void;
 }
+
+/** Preložené texty výzvy na povolenie push upozornení pre Správy (nález 321, etapa 3b, R36 a). */
+export interface PushPromptLabels {
+  title: string;
+  /** Text výzvy s tlačidlom na povolenie. */
+  body: string;
+  /** Tlačidlo, ktoré vyžiada povolenie upozornení v tomto zariadení. */
+  enable: string;
+  /** Tlačidlo „Nie teraz“: výzvu skryje a v tomto prehliadači sa už nevráti. */
+  dismiss: string;
+  /** Návod pre iPhone a iPad mimo nainštalovanej aplikácie (namiesto textu a tlačidla na povolenie). */
+  iosGuide: string;
+}
+
+/** Výzva na povolenie push pre Správy z `usePushPermissionPrompt`; `variant` je `null`, keď sa výzva nemá ukázať. */
+export interface PushPromptProps {
+  /** `enable` = text a tlačidlo na povolenie, `ios-install` = návod bez tlačidla na povolenie, `null` = žiadna výzva. */
+  variant: 'enable' | 'ios-install' | null;
+  /** Tlačidlo na povolenie sa nedá stlačiť (beží ukladanie alebo iná akcia). */
+  disabled: boolean;
+  /** Vyžiada povolenie; volá sa priamo v obsluhe kliknutia, kvôli geste používateľa. */
+  enable: () => void;
+  /** Skryje výzvu a v tomto prehliadači sa už nevráti. */
+  dismiss: () => void;
+}
