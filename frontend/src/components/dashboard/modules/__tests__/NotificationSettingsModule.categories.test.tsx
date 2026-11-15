@@ -453,8 +453,9 @@ describe('NotificationSettingsModule: zlyhanie načítania', () => {
         screen.getByTestId(`notifications-push-messages-${layout}`),
       ];
       boxes.forEach((box) => {
+        // Len riadky voľby: v obale Správ je pri zapnutých Správach a povolení „default“ aj výzva s tlačidlami (321, 3b).
         const selected = within(box)
-          .getAllByRole('button')
+          .getAllByRole('button', { name: /^(Vypnuté|Zapnuté)$/ })
           .filter((button) => isSelected(button));
         expect(selected).toHaveLength(1);
       });

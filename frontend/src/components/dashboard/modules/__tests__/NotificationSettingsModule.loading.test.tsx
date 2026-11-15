@@ -191,7 +191,8 @@ describe('NotificationSettingsModule: úvodné načítanie (nález 286)', () => 
     boxes().forEach((box) => {
       expect(within(box).queryByTestId('section-options-skeleton')).not.toBeInTheDocument();
       expect(within(box).queryByTestId('notifications-push-skeleton-mobile')).not.toBeInTheDocument();
-      expect(within(box).getAllByRole('button')).toHaveLength(2);
+      // Riadky voľby: pri zapnutých Správach a povolení „default“ je v obale aj výzva s tlačidlami (321, etapa 3b).
+      expect(within(box).getAllByRole('button', { name: /^(Vypnuté|Zapnuté)$/ })).toHaveLength(2);
     });
     advance(1000);
     boxes().forEach((box) => expect(within(box).queryByRole('status', { busy: true })).not.toBeInTheDocument());

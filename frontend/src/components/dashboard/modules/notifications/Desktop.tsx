@@ -5,6 +5,7 @@ import React from 'react';
 import SettingsDetailHeader from '../settings/SettingsDetailHeader';
 import MasterToggle from './MasterToggle';
 import PushMessagesStatus from './PushMessagesStatus';
+import PushPermissionPrompt from './PushPermissionPrompt';
 import Section from './Section';
 import type {
   NotificationCategoryId,
@@ -13,6 +14,8 @@ import type {
   NotificationsLabels,
   NotificationsMaster,
   PushMessagesProps,
+  PushPromptLabels,
+  PushPromptProps,
 } from './settingsTypes';
 
 interface DesktopProps {
@@ -21,6 +24,8 @@ interface DesktopProps {
   master: NotificationsMaster;
   categories: NotificationCategoryRow[];
   pushMessages: PushMessagesProps;
+  pushPrompt: PushPromptProps;
+  pushPromptLabels: PushPromptLabels;
   onBack?: () => void;
 }
 
@@ -129,7 +134,8 @@ const CATEGORY_ICONS: Record<NotificationCategoryId, React.ReactNode> = {
 /**
  * Rozloženie Upozornení na počítači (od lg): hlavný vypínač „Vypnúť všetko“, voľba Správy (push) a päť kategórií.
  * Dostáva už hotové texty a riadky (kategórie s hodnotou, zablokovaním a príznakom načítavania), nepozná hooky ani
- * server. Kým sa kategória načítava, namiesto jej riadkov je kostra rovnakej výšky (nález 286, 321).
+ * server. Kým sa kategória načítava, namiesto jej riadkov je kostra rovnakej výšky (nález 286, 321). Pod stavovým
+ * riadkom Správ, v tom istom obale, je podľa stavu výzva na povolenie upozornení v tomto zariadení (nález 321, etapa 3b).
  */
 export default function Desktop({
   labels,
@@ -137,6 +143,8 @@ export default function Desktop({
   master,
   categories,
   pushMessages,
+  pushPrompt,
+  pushPromptLabels,
   onBack,
 }: DesktopProps) {
   return (
@@ -198,6 +206,11 @@ export default function Desktop({
             initialLoading={pushMessages.initialLoading}
             loadingLabel={labels.loadingPreferences}
             error={pushMessages.error}
+          />
+          <PushPermissionPrompt
+            prompt={pushPrompt}
+            labels={pushPromptLabels}
+            testId="notifications-push-prompt-desktop"
           />
         </div>
 

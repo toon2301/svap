@@ -8,6 +8,7 @@ import { useNotificationCategories } from './notifications/useNotificationCatego
 import { useNotificationMaster } from './notifications/useNotificationMaster';
 import { useNotificationPreferences } from './notifications/useNotificationPreferences';
 import { usePushMessagesPreferenceWith } from './notifications/usePushMessagesPreference';
+import { usePushPermissionPrompt } from './notifications/usePushPermissionPrompt';
 
 type NotificationSettingsModuleProps = {
   onBack?: () => void;
@@ -18,12 +19,14 @@ type NotificationSettingsModuleProps = {
  * z ktorého čerpá voľba Správy (`usePushMessagesPreferenceWith`) aj päť kategórií (`useNotificationCategories`); modul sám
  * nedrží žiadny stav kategórií, hodnoty, načítavanie, zlyhanie načítania aj ukladanie sú v zdieľanom hooku a rozloženia
  * `Desktop` a `Mobile` dostávajú len hotové riadky. Hlavný vypínač „Vypnúť všetko“ (`useNotificationMaster`) je
- * `in_app_notifications` na serveri v opačnej hodnote a keď je zapnutý, kategórie sú „Vypnuté“ a zakázané (R35).
+ * `in_app_notifications` na serveri v opačnej hodnote a keď je zapnutý, kategórie sú „Vypnuté“ a zakázané (R35). Pod voľbou
+ * Správy sa podľa jej stavu ukáže výzva na povolenie upozornení v tomto zariadení (`usePushPermissionPrompt`, etapa 3b).
  */
 export default function NotificationSettingsModule({ onBack }: NotificationSettingsModuleProps = {}) {
   const { t } = useLanguage();
   const preferences = useNotificationPreferences();
   const pushMessages = usePushMessagesPreferenceWith(preferences);
+  const pushPrompt = usePushPermissionPrompt(pushMessages);
   const master = useNotificationMaster(preferences);
   const categories = useNotificationCategories(preferences);
 
@@ -51,6 +54,23 @@ export default function NotificationSettingsModule({ onBack }: NotificationSetti
     on: t('notifications.on', 'Zapnute'),
   };
 
+  const pushPromptLabels = {
+    title: t('notifications.pushPromptTitle', 'Povoľte upozornenia na správy'),
+    body: t(
+      'notifications.pushPromptBody',
+      'Upozornenia na správy máte zapnuté, no toto zariadenie ich ešte nemá povolené. Po povolení vám správy prídu aj vtedy, keď Svaply nemáte otvorené.',
+    ),
+    enable: t(
+      'notifications.pushPromptEnable',
+      'Zapnúť upozornenia na správy v tomto zariadení',
+    ),
+    dismiss: t('notifications.pushPromptDismiss', 'Nie teraz'),
+    iosGuide: t(
+      'notifications.pushPromptIosGuide',
+      'Na iPhone a iPade fungujú upozornenia len v aplikácii pridanej na plochu. V Safari ťuknite na Zdieľať, vyberte Pridať na plochu a Svaply potom otvorte z ikony na ploche.',
+    ),
+  };
+
   return (
     <>
       <Desktop
@@ -59,6 +79,8 @@ export default function NotificationSettingsModule({ onBack }: NotificationSetti
         master={master}
         categories={categories}
         pushMessages={pushMessages}
+        pushPrompt={pushPrompt}
+        pushPromptLabels={pushPromptLabels}
         onBack={onBack}
       />
       <Mobile
@@ -67,6 +89,8 @@ export default function NotificationSettingsModule({ onBack }: NotificationSetti
         master={master}
         categories={categories}
         pushMessages={pushMessages}
+        pushPrompt={pushPrompt}
+        pushPromptLabels={pushPromptLabels}
       />
     </>
   );
