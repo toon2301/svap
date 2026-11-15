@@ -50,6 +50,8 @@ export function AddReviewModalMobile({
       setCons([]);
       setProInput('');
       setConInput('');
+      // Okno ostáva po zatvorení vytvorené (stály `key`): chyba z neúspešného odoslania sa nesmie ukázať pri ďalšom otvorení.
+      setError(null);
     }
   }, [open]);
 
