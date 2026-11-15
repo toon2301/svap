@@ -1,6 +1,6 @@
 import { test } from './support/notification-preferences-test';
 
-// Samostatná konfigurácia: jeden účet, Chromium desktop, workers=1 a bez retry.
+// Samostatná konfigurácia: tri projekty postupne, jeden účet, workers=1 a bez retry.
 // Pred živým behom je potrebné dohodnuté okno bez ďalších testov alebo zmien účtu.
 test.describe.configure({ mode: 'serial', retries: 0 });
 test.use({ serviceWorkers: 'block', preferenceKey: 'notify_likes' });

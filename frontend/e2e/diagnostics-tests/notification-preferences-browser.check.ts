@@ -52,33 +52,30 @@ test('finally obnoví voľby aj po chybe a timeoute; zlyhanie obnovy ostane FAIL
   const { code, report, variants } = run();
   assert.equal(code, 1, 'Riadené chyby sa nesmú zmeniť na zelený výsledok.');
   assert.deepEqual(report.stats && { passed: report.stats.expected, failed: report.stats.unexpected,
-    skipped: report.stats.skipped, flaky: report.stats.flaky }, { passed: 1, failed: 4, skipped: 10, flaky: 0 });
+    skipped: report.stats.skipped, flaky: report.stats.flaky }, { passed: 3, failed: 12, skipped: 0, flaky: 0 });
   assert.equal(variants.length, 15);
-  const active = variants.filter(item => item.projectName === 'chromium-desktop');
-  assert.equal(active.length, 5);
-  const observations = active.map(item => {
-    assert.equal(item.results?.length, 1);
-    const attempt = item.results[0];
-    const observed = observation(attempt);
-    assert.equal(observed.unexpected, 0);
-    assert.equal(observed.gets, 3);
-    assert.equal(observed.patches, 2);
-    assert.equal(observed.csrf, 1);
-    assert.equal(observed.csrfPresent, true);
-    const output = (attempt.stdout ?? []).map(item => item.text ?? '').join('');
-    assert.match(output, new RegExp(`\\[E2E-PREFERENCES\\] restored=${observed.mode === 'normal' ? 'verified' : 'failed'} fields=7`));
-    return { ...observed, status: attempt.status };
-  });
-  assert.equal(observations.filter(item => item.mode === 'normal' && item.restored).length, 3);
-  assert.equal(observations.filter(item => item.mode === 'restore-status' && !item.restored && item.status === 'failed').length, 1);
-  assert.equal(observations.filter(item => item.mode === 'restore-shape' && item.restored && item.status === 'failed').length, 1);
-  assert.equal(observations.filter(item => item.status === 'timedOut' && item.restored).length, 1);
-  for (const variant of variants.filter(item => item.projectName !== 'chromium-desktop')) {
-    assert.equal(variant.results?.[0]?.status, 'skipped');
-    const observed = observation(variant.results[0]);
-    assert.equal(observed.gets + observed.patches + observed.csrf, 0);
+  for (const project of ['webkit-desktop', 'webkit-mobile', 'chromium-desktop']) {
+    const active = variants.filter(item => item.projectName === project);
+    assert.equal(active.length, 5);
+    const observations = active.map(item => {
+      assert.equal(item.results?.length, 1);
+      const attempt = item.results[0];
+      const observed = observation(attempt);
+      assert.equal(observed.unexpected, 0);
+      assert.equal(observed.gets, 3);
+      assert.equal(observed.patches, 2);
+      assert.equal(observed.csrf, 1);
+      assert.equal(observed.csrfPresent, true);
+      const output = (attempt.stdout ?? []).map(item => item.text ?? '').join('');
+      assert.match(output, new RegExp(`\\[E2E-PREFERENCES\\] restored=${observed.mode === 'normal' ? 'verified' : 'failed'} fields=7`));
+      return { ...observed, status: attempt.status };
+    });
+    assert.equal(observations.filter(item => item.mode === 'normal' && item.restored).length, 3);
+    assert.equal(observations.filter(item => item.mode === 'restore-status' && !item.restored && item.status === 'failed').length, 1);
+    assert.equal(observations.filter(item => item.mode === 'restore-shape' && item.restored && item.status === 'failed').length, 1);
+    assert.equal(observations.filter(item => item.status === 'timedOut' && item.restored).length, 1);
   }
-  console.log('[PREFERENCES-SELFTEST] projects=3 passed=1 controlledFailures=4 skipped=10');
+  console.log('[PREFERENCES-SELFTEST] projects=3 passed=3 controlledFailures=12 skipped=0');
 });
 
 test('workers=2 odmietne zápis ešte pred prvým API volaním', () => {
@@ -89,4 +86,27 @@ test('workers=2 odmietne zápis ešte pred prvým API volaním', () => {
   const observed = observation(variants[0].results![0]);
   assert.equal(observed.gets + observed.patches + observed.csrf, 0);
   assert.equal(observed.unexpected, 0);
+});
+
+test('zlyhanie obnovy v prvom projekte zastaví ďalšie dva ešte pred prípravou API', () => {
+  const { code, report, variants } = run(['--max-failures=1', '--grep=zlyhanie fixture zostane FAIL']);
+  assert.equal(code, 1);
+  assert.equal(report.stats?.unexpected, 1);
+  assert.equal(report.stats?.expected, 0);
+  assert.equal(variants.length, 3);
+  const first = variants.find(item => item.projectName === 'webkit-desktop');
+  assert.equal(first?.results?.length, 1);
+  assert.equal(first.results[0].status, 'failed');
+  const observed = observation(first.results[0]);
+  assert.equal(observed.mode, 'restore-status');
+  assert.equal(observed.restored, false);
+  assert.equal(observed.gets, 3);
+  assert.equal(observed.patches, 2);
+  for (const variant of variants.filter(item => item.projectName !== 'webkit-desktop')) {
+    for (const attempt of variant.results ?? []) {
+      assert.equal(attempt.status, 'skipped');
+      const output = (attempt.stdout ?? []).map(item => item.text ?? '').join('');
+      assert.doesNotMatch(output, /\[(?:PREFERENCES-SELFTEST|E2E-PREFERENCES)\]/);
+    }
+  }
 });

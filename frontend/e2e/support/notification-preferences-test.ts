@@ -8,8 +8,10 @@ type PreferencesFixtures = { preferenceKey: NotificationPreferenceKey; verifyPre
 export const test = base.extend<PreferencesFixtures>({
   preferenceKey: ['notify_likes', { option: true }],
   verifyPreferenceChange: async ({ page, baseURL, preferenceKey }, runFixture, testInfo) => {
-    // Je to API kontrakt jedného účtu; WebKit pokrytie zabezpečuje jazykový špec.
-    base.skip(testInfo.project.name !== 'chromium-desktop', 'Zápis volieb beží iba v jednom projekte.');
+    // Aj WebKit musí overiť transport a návrat; jeden pracovník drží projekty za sebou.
+    if (!['webkit-desktop', 'webkit-mobile', 'chromium-desktop'].includes(testInfo.project.name)) {
+      throw new Error('API skúška vyžaduje jeden z troch podporovaných projektov.');
+    }
     if (testInfo.config.workers !== 1 || testInfo.retry !== 0 || testInfo.project.retries !== 0 || testInfo.project.repeatEach !== 1) {
       throw new Error('Zápis volieb vyžaduje workers=1, retries=0 a repeat-each=1; súbežný alebo opakovaný beh je zakázaný.');
     }

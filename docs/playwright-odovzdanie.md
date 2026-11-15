@@ -7,6 +7,8 @@ Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá
 Vetva **`e2e/lang-a-volby-k22`** vychádza z čerstvého main **`52626ab7`**
 (K22; opätovne overené cez fetch). PR #261 je zlúčený (`8b951cd9`), CI a
 CodeRabbit prijaté; prípadné zostávajúce review vlákno uzatvára majiteľ.
+Pred opravou pripomienky PR #267 bol stiahnutý main **`07a72900`** (K23);
+neprekrýva E2E súbory tejto vetvy. Jeho prítomnosť nepotvrdzuje nasadenie.
 K20, K21 a K22 sú podľa majiteľa nasadené; **K23 ešte nebola oznámená ako nasadená**.
 Aplikácia, závislosti, prihlasovacie údaje, timeouty, tolerancie a retry sa nemenia.
 Povolená dočasná zmena jednej kategórie v API teste sa overene vrátila.
@@ -39,10 +41,12 @@ nič neinštaluje, nemení ani nespúšťa; porovnanie reálnych špecov neprebe
   Izolovaný localStorage, anonymný kontext, žiadna tvorba dát. Čakajúca asercia
   `toHaveAttribute('lang', locale)` používa pôvodný limit; okamžité čítanie by
   nesprávne vyhodnotilo počiatočné serverové `lang="sk"`. Žiadny pevný sleep.
-- `notification-preferences.api.ts`: **jeden test v chromium-desktop**, spúšťaný
+- `notification-preferences.api.ts`: **jeden kontrakt v troch projektoch**
+  (`webkit-desktop`, `webkit-mobile`, `chromium-desktop`), spúšťaný
   vlastnou `notification-preferences.playwright.config.ts`, nie bežným plným behom.
   Bežný prihlasovací setup, storageState, prehliadač aj timeouty zostávajú.
-  Samostatná konfigurácia má jeden projekt, workers=1, retries=0 a maxFailures=1.
+  Projekty bežia za sebou: workers=1, retries=0 a maxFailures=1. Každý variant
+  dokončí návrat pôvodných volieb skôr, než začne ďalší projekt.
   Test pri vypnutom zastavení po prvom páde odmietne vykonať zápis. Jediná zmena
   kategórie `notify_likes` na opačnú hodnotu, nie postupné vypínanie všetkých volieb.
   Majiteľ ponechal rozsah na odporúčaní Codexu; zvolený je menší živý zásah.
@@ -64,6 +68,10 @@ nič neinštaluje, nemení ani nespúšťa; porovnanie reálnych špecov neprebe
   oznamuje iba výsledok overenia obnovy, nie hodnoty.
 
 **Živé overenie nových špecov 15. 11. prešlo v potvrdenom okne na `52626ab7`:**
+
+Nasledujúca tabuľka opisuje pôvodný commit `e770b837`: API vtedy bežalo iba
+v Chromiu. Po oprave PR #267 má API tri projekty; **nové živé varianty WebKitu
+ešte neboli spustené**. Lokálny syntetický výsledok nie je ich živým overením.
 
 | Test | webkit-desktop P/F/S | webkit-mobile P/F/S | chromium-desktop P/F/S | Celkom P/F/S | Čas procesu |
 | --- | --- | --- | --- | --- | --- |
@@ -87,7 +95,8 @@ nekopíroval ani nečítal mimo bežnej konfigurácie. Testy sa počas behu neme
 **Po skončení bolo okno uvoľnené; ďalší beh proti Railway nie je naplánovaný.**
 
 Pred každým ďalším spustením treba nové potvrdenie konkrétneho nasadenia a okna
-bez zlučovania, nasadení, iných testov a zmien účtu. Použité príkazy z `frontend`:
+bez zlučovania, nasadení, iných testov a zmien účtu. Príkazy z `frontend`
+pre ďalšie dohodnuté overenie (API konfigurácia už vyberá všetky tri projekty):
 
 ```powershell
 npm run test:e2e:docker -- e2e/document-language.spec.ts --workers=1 --retries=0
@@ -102,24 +111,37 @@ Hodnoty sa kvôli zálohe neukladajú do súboru ani do logu.
 
 Bežná kolekcia cez `--list`: **45 špecov / 780 variantov (260 na projekt)**.
 Oproti doterajším 762 pribudlo iba 18 jazykových variantov. Samostatná API
-kolekcia má **1 test / 1 projekt**, do plného behu ani dymu sa nepripočítava.
+kolekcia má **1 kontrakt / 3 projektové varianty**, do plného behu ani dymu
+sa nepripočítava.
 Výsledky celých behov sa naďalej porovnávajú podľa kľúčov, nie len odčítaním súčtov.
 
 ### Lokálne overenie novej dávky — bez Railway
 
 - **144/144 Node kontrol**, z toho 20 nových pre kontrakt siedmich volieb,
   neplatné odpovede, neistý PATCH, chybu tela, ignorovanú obnovu a ochranu výpisov.
-- **2/2 vonkajšie browser kontroly** nového fixture. Vnútorná sada zámerne
-  skončila 1 PASS / 4 riadené FAIL / 10 projektových SKIP: potvrdila návrat aj po
-  chybe a timeoute tela a hlasný pád pri chybe obnovy. Samostatný riadený pokus
-  s workers=2 potvrdil odmietnutie pred prvým API volaním. Nie sú to pády aplikácie.
+- **3/3 vonkajšie browser kontroly** po oprave PR #267. Vnútorná sada zámerne
+  skončila **3 PASS / 12 riadených FAIL / 0 SKIP**: každý z troch projektov overil
+  päť scenárov, vrátane návratu po chybe a timeoute tela a hlasného pádu pri chybe
+  obnovy. Samostatný riadený pokus s workers=2 potvrdil odmietnutie pred prvým API
+  volaním. Pokus s maxFailures=1 potvrdil, že zlyhanie obnovy v prvom WebKite
+  zastaví ďalšie dva projekty ešte pred prípravou API. Nie sú to pády aplikácie.
 - Docker týchto kontrol má **`--network=none`**, bez global setupu, env a účtu.
   Route používa syntetický Railway origin len pre overenie guardu; všetky odpovede
   sú lokálne podvrhnuté. Kontrola výpisov zahŕňa aj syntetický CSRF marker a stderr.
 - Existujúce Jest `E2ePageActivity` a `E2eServiceWorker.guard`: **52/52**, bez zmien.
 - TypeScript frontendu aj explicitne celej E2E oblasti: **0 chýb**. ESLint nových
-  súborov a `git diff --check`: bez chýb. `--list` potvrdil 780 + oddelený 1 variant,
-  v API konfigurácii jeden projekt, workers=1, retries=0 a maxFailures=1.
+  súborov a `git diff --check`: bez chýb. `--list` potvrdil 780 bežných variantov;
+  samostatná API konfigurácia po oprave vyberá 3 projekty, workers=1, retries=0
+  a maxFailures=1.
+
+**Platný nález PR #267:** zdieľaný fixture preskakoval oba WebKity a samostatná
+konfigurácia ich nevyberala. Jazykový špec nepokrýval ich transport, CSRF ani návrat
+volieb. Nová regresná kontrola pred opravou skutočne padla na pôvodnom výsledku
+1 PASS / 4 riadené FAIL / 10 SKIP. Po odstránení projektového `skip` sa v každom
+WebKite vykoná celý roundtrip; neznámy projekt sa odmietne, nie potichu preskočí.
+Pôvodné asercie zmeny a obnovy, konečné timeouty, zákaz retry a sériové vykonávanie
+ostávajú. Oprava sa overovala iba v Dockeri s vypnutou sieťou; nevytvorila nový
+živý zápis ani beh na Railway. Nové okno pre živé WebKity musí potvrdiť majiteľ.
 
 Lokálne zopakovanie z `frontend` (nečíta env ani nevolá Railway):
 
@@ -357,7 +379,7 @@ nespúšťa; najbližší až po nasadení K16 a novom potvrdení okna bez zmien
 
 ## Ako sa beh spúšťa
 
-- Testy sú v `frontend/e2e/` (v tejto E2E vetve 45 špecov / 780 variantov bežnej kolekcie, samostatný API kontrakt má vlastnú konfiguráciu a 1 variant; pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
+- Testy sú v `frontend/e2e/` (v tejto E2E vetve 45 špecov / 780 variantov bežnej kolekcie, samostatný API kontrakt má vlastnú konfiguráciu a 3 projektové varianty; pomocníci v `frontend/e2e/support/`). Beží ich Playwright, Jest ich nezbiera.
 - Bežia proti produkčnej inštancii na Railway (`https://stunning-inspiration-svap.up.railway.app`). Lokálny server sa nespúšťa: appka sa v produkčnom režime správa inak (napr. `Cache-Control: no-store`).
 - Projekty: `webkit-desktop`, `webkit-mobile` (iPhone 15) a `chromium-desktop`. WebKit je povinný.
 - Na Windows sa beh púšťa v Dockeri (Smart App Control blokuje WebKit): z priečinka `frontend` `npm run test:e2e:docker -- --workers=1 --retries=0` (celý beh trvá okolo 40 minút). Jeden projekt: `... -- --project=webkit-mobile`. Skript je `frontend/scripts/e2e-docker.js`, obraz je `mcr.microsoft.com/playwright:v<verzia>-noble`.
