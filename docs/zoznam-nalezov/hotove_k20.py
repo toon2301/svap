@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329 a dávka K21: 331, 332, 330 a 325).
+"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_dalsie.py` má 496 riadkov). `hotove.py` ho pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -100,4 +100,56 @@ DONE_SINCE_K20 = [
                'modul recenzií; mutácie 9 z 9; Chromium (mobil, počítač, slovensky aj anglicky): toast po každom zo štyroch zmazaní. '
                'POZNÁMKA KOLEGU: `onSubmit` pri pridaní a úprave recenzie opakuje blok zneplatnenia cache ponúk ako nový hook '
                '(`poznamky.md`). Dopad na E2E: žiadny.'),
+    dict(n=334, vetva='K22', pr='#264', zlucene=True,
+         text='HOTOVÉ (vetva K22, zlúčené v PR #264 dňa 15. 11. 2026 o 07:19 UTC, merge `52626ab7`, commit `fecebf5c`). HLÁSENIE '
+               'MAJITEĽA (ručný test po K21, 13. 11. 2026, mobil aj počítač): po neúspešnom odoslaní recenzie (vypnutý internet) a '
+               'opätovnom otvorení okna „Pridať recenziu“ ostala v čistom formulári zobrazená stará chybová hláška. PRÍČINA: stránka okno '
+               'pri pridaní nevytvára odznova (kľúč okna new-review je stály) a efekt `[open]` pri zatvorení nulovalo hviezdičky, text, '
+               'plusy a mínusy, no nie stav `error` (`setError(null)` bolo len na začiatku odosielania). OPRAVA: `setError(null);` vo '
+               'vetve `if (!open)` efektu `[open]` v `AddReviewModalMobile.tsx` aj `AddReviewModalDesktop.tsx` (jeden riadok a komentár '
+               'v každom); `OfferReviewsView.tsx` (683 riadkov), text chyby, odosielanie a príznak odosielania z K21 sa nemenili. '
+               'OVERENIE (kolega): 12 nových testov v `AddReviewModal.reopen.test.tsx` (314 → 387 riadkov; 10 pred opravou padalo); '
+               'odchýlka od karty: test pokrýva štyri spôsoby zatvorenia (Zrušiť, krížik, klepnutie na pozadie a zatvorenie stránkou '
+               'samotnou) aj úpravu recenzie; mutácie 2 z 2 (po odstránení riadku v ktoromkoľvek okne padá 5 testov); Chromium (iPhone 13 '
+               'aj počítač, produkčný build, vypnutý internet zrušenou požiadavkou): po „Zrušiť“ a opätovnom otvorení chyba nie je vidieť, '
+               'nové zlyhanie ju ukáže znova a po zapnutí internetu odoslanie recenziu pridá; celý Jest 593 súborov a 8 884 testov prešlo, '
+               '`tsc`, build a kontroly prekladov čisté, ESLint v piatich zmenených súboroch bez chýb (dve staré varovania '
+               '`no-img-element` v oknách recenzie). Okrajová cesta mimo používateľského toku (dočasný test kolegu, zmazaný): ak by '
+               'stránka okno zatvorila počas odosielania a požiadavka neskôr zlyhala, chyba sa ukáže pri ďalšom otvorení; v skutočnej '
+               'stránke sa okno počas odosielania zatvoriť nedá (K21), takže sa to nestane. KONTROLA AGENTA (15. 11. 2026, z GitHubu): '
+               'PR #264 má dva commity, päť súborov a 225 pridaných riadkov; CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené a '
+               'bez pripomienok ku kódu (jediná poznámka CodeRabbitu: názov PR „K22“ je len kód), Codex review hlavičky `eb5fd2cb` bola '
+               'bez nálezov a vlákna na GitHube nie sú. Ručné testy majiteľa po nasadení prešli bez nových nálezov (správa z 15. 11. '
+               '2026). Dopad na E2E: žiadny.'),
+    dict(n=335, vetva='K22', pr='#264', zlucene=True,
+         text='HOTOVÉ (vetva K22, zlúčené v PR #264 dňa 15. 11. 2026 o 07:19 UTC, merge `52626ab7`, commit `eb5fd2cb`). HLÁSENIE '
+               'MAJITEĽA (ručný test po K21, 13. 11. 2026, počítač, všetky jazyky): `document.documentElement.lang` bol vždy `sk`, hoci '
+               'texty rozhrania boli správne preložené. PRÍČINA: koreňový `app/layout.tsx` má pevné `<html lang="sk">` (server nepozná '
+               'jazyk, ktorý sa zisťuje až v prehliadači) a `LanguageProvider` držal jazyk v stave `locale`, no nezapisoval ho do '
+               '`<html>`. OPRAVA: efekt `document.documentElement.lang = locale` v `LanguageProvider` (`LanguageContext.tsx` 226 → 235 '
+               'riadkov, s komentárom); `layout.tsx`, `global-error.tsx`, `app/page.tsx`, zisťovanie krajiny a začiatočný stav `sk` sa '
+               'nemenili, takže úvodné HTML zo servera ostáva `sk` a po načítaní sa atribút vyrovná s jazykom aplikácie (v skúške kolegu '
+               'to trvalo 0,25 až 0,75 s). Serverové riešenie (správny `lang` už v prvom HTML) patrí k nálezu 186 a R7. OVERENIE '
+               '(kolega): nový súbor `LanguageContext.htmlLang.test.tsx` (139 riadkov, 18 testov; 16 pred opravou padalo; simulované '
+               '`ipapi.co`, úložisko a jazyk prehliadača), mutácie 4 zo 4; Chromium (produkčný build): `lang` zodpovedá jazyku vo všetkých '
+               'scenároch (krajina, jazyk prehliadača, uložená voľba), po prepnutí v Nastaveniach je `en` a `de`, po obnovení stránky `de` '
+               'a ostáva aj po `router.refresh()` a klientskej navigácii; celý Jest 593 súborov a 8 884 testov prešlo. NEOVERENÉ: '
+               'čítačky obrazovky, ponuka prekladu v prehliadači a kontrola pravopisu (overený je atribút `lang`). KONTROLA AGENTA a '
+               'ručné testy majiteľa: ako pri 334 (CI zelené, boty bez pripomienok ku kódu, ručné testy po nasadení prešli). Dopad na E2E: '
+               'žiadny špec `lang` nekontroluje; jednoduchú kontrolu atribútu pre šesť jazykov môže doplniť Codex. Z práce vznikla '
+               'poznámka: záložné stránky 404 a 500 majú `lang="sk"` a anglický text (`poznamky.md`).'),
+    dict(n=328, vetva='e2e/223-dokazy-limit-328', pr='#261', zlucene=True,
+         text='HOTOVÉ (oprava testu v PR #261, vetva `e2e/223-dokazy-limit-328`, commity `d918a8eb` a `7d387fcf`, zlúčené 13. 11. 2026 o '
+               '19:19 UTC, merge `8b951cd9`; živé overenie 15. 11. 2026). CHYBA: test „results route shows guidance and opens '
+               'management, not an empty desktop panel“ (`frontend/e2e/offer-watch-pagination-errors.spec.ts`, mobilný variant) '
+               'vyžadoval tlačidlo „Vytvoriť sledovanie“ aj pri plnom limite piatich sledovaní, hoci ho aplikácia pri limite zámerne '
+               'skrýva a ukáže hlášku; aplikácia sa správala správne, chyba bola v očakávaní testu (pád č. 16 celého behu po K19, '
+               'webkit-mobile). OPRAVA (Codex, E2E): test počká na pôvodné načítanie uložených sledovaní a ustálený zoznam, overí počet a '
+               'podľa neho očakáva pod limitom viditeľné a aktívne tlačidlo, pri limite chýbajúce tlačidlo a viditeľnú hlášku; '
+               'načítavanie a chyba sa nepočítajú za úspech; čakanie preskočí iba prvú 401 presného `GET` zoznamu sledovaní (obnova '
+               'prihlásenia), takže test nepadá pri správnom fungovaní (platná pripomienka Codex review P2). ŽIVÉ OVERENIE (Codex, '
+               '15. 11. 2026, proti Railway na `main` `52626ab7`): mobilný svetlý aj tmavý variant 2 z 2 prešli (asi 18 s) pri účte s 5 z 5 '
+               'sledovaní, teda stav pri limite je overený naživo; stav pod limitom ostáva naživo neoverený (údaje účtu sa kvôli testu '
+               'nemenili) a je overený len umelým DOM pre počty 0, 4 a 5 (13. 11. 2026). Aplikácia ani údaje účtov sa nemenili, pôvodné '
+               'asercie a časové limity zostali a obrazové prílohy boli vypnuté kvôli súkromiu. Dopad na používateľov: žiadny.'),
 ]

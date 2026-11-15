@@ -293,6 +293,30 @@ NEW_ITEMS_223 = [
               'na GitHube neuzavreté (zatvára majiteľ). Proti Railway sa nič nespúšťalo a prijatý základ ostáva 427 / 2 / 303. '
               'Príčina 223 ostáva otvorená. Ďalší krok podľa Codexa: dohodnúť okno na porovnanie natívneho Windows WebKitu a Dockeru '
               '(špecy `search-mobile-cards`, `offer-card-review-translations` a `search-panel-fixture`, rovnaký počet pokusov, bez '
-              'zmeny testov), potom živé overenie opravy 328.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20 a PR #261) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              'zmeny testov), potom živé overenie opravy 328. '
+              'DODATOK 15. 11. 2026 (Codex, správa po K22; kontrola agenta z odovzdanej správy): na `main` `52626ab7` (K22, PR #264) '
+              'Codex pustil dymovú sadu v oddelenej pracovnej kópii (`main` sa počas behov nemenil): WebKit desktop 13 prešlo, 0 '
+              'zlyhalo a 4 preskočené, WebKit mobil 15, 0 a 2, Chromium desktop 13, 0 a 4; spolu 41 prešlo, 0 zlyhalo a 10 preskočených '
+              '(asi 2 minúty 39 sekúnd). Všetkých 51 výsledkov sa zhoduje s prijatým dymom po K18 a preskočené varianty sú určené pre '
+              'iné rozloženie; v dyme prešlo aj všetkých 9 variantov prihlásenia a relácie a 18 variantov HTML no-store (sú súčasťou '
+              'tých 41, nie navyše). ŽIVÉ OVERENIE 328: mobilný svetlý aj tmavý variant 2 z 2 prešli (asi 18 s) pri účte s 5 z 5 '
+              'sledovaní; stav pod limitom ostáva naživo neoverený (sledovania sa kvôli testu nemenili) a všetkých 6 kontrol upratania '
+              'dočasných príspevkov z dymu prešlo. Zdrojový kód aplikácie ani testov sa nemenil, nový commit ani push nevznikol, '
+              'obrazové prílohy boli vypnuté kvôli súkromiu a pôvodné asercie a časové limity ostali. V dyme sa žiadne zlyhanie '
+              'siete ani odmietnutá obnova relácie neobjavili, no 41 prešlo a 0 zlyhalo nie je dôkaz o vyriešení 223 (dym je krátky). PREKÁŽKA '
+              'POROVNANIA WINDOWS A DOCKER: plánované porovnanie šiestich variantov, každý 3× v oboch prostrediach, sa nespustilo, '
+              'lebo natívny Windows WebKit zlyhal už pri lokálnom štarte prázdnej stránky bez siete. Overená príčina: Smart App '
+              'Control blokuje knižnicu `ngtcp2_crypto_quictls.dll` (stav podpisu `NotSigned`; udalosti Windows 3077 a 3033). '
+              'Neuskutočnil sa žiadny porovnávací prihlasovací pokus ani požiadavka na Railway; do oddelenej testovacej cache sa '
+              'doplnil Chromium, ktorý potrebuje pôvodné prihlasovacie nastavenie testov, a ochrana Windows sa nemenila. Report '
+              'nevysvetľuje, prečo skoršia izolovaná skúška natívneho WebKitu na prázdnej stránke (12. 11. 2026) prešla; príčina '
+              'rozdielu je neurčená. Je to prekážka testovacieho prostredia, nie dôkaz príčiny 223, ktorý ostáva otvorený. NÁVRH '
+              'CODEXA (zatiaľ neschválený, otázka pre majiteľa je R40): ponechať ochranu Windows zapnutú a pripraviť samostatné Ubuntu '
+              'vo WSL bez zásahu do interného prostredia `docker-desktop` a s rovnakým Playwrightom 1.63.0: najprv overiť miesto a '
+              'pamäť, potom WebKit na prázdnej stránke bez siete, po dohode otvoriť nové testovacie okno a pustiť rovnakých šesť '
+              'variantov, každý 3× mimo Dockeru a 3× v Dockeri, bez zmeny testov a údajov účtov. Upozornenie Codexa: išlo by o Linux '
+              'bez Dockeru verzus Docker, nie o pôvodné Windows a Docker; na presné porovnanie Windows a Docker treba samostatné '
+              'Windows prostredie, kde WebKit funguje bez oslabovania ochrany. Ubuntu zatiaľ nie je nainštalované a ďalšie testy ani '
+              'systémové zmeny sa nerobia, kým majiteľ nerozhodne.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. a 15. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20, PR #261, dym po K22 a prekážka porovnania Windows a Docker) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]
