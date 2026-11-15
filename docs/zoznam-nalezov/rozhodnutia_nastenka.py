@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R39: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R40: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
 `alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
 na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
 zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
-mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026) a R39 (gulička pri Žiadostiach pri vypnutej kategórii, nález 330; rozhodnuté 13. 11. 2026).
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026) a R39 (gulička pri Žiadostiach pri vypnutej kategórii, nález 330; rozhodnuté 13. 11. 2026) a R40 (porovnanie Windows a Docker pre nález 223: čaká na majiteľa).
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
 (majú `odpoved`). R20, R21, R23, R27, R28, R29 a R39 majiteľ rozhodol 13. 11. 2026 (spolu s R2); R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
@@ -377,4 +377,20 @@ DECISIONS_NASTENKA = [
                  'aj tak zobrazia v Žiadostiach, len bez odznaku.“ (na počítači hlavný vypínač opis nemá a ostáva tak). Nález 330 ide do '
                  'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',
          datum='13. 11. 2026'),
+    dict(id='R40', tema='Porovnanie Windows a Docker pre nález 223: ako ďalej, keď natívny Windows WebKit nejde',
+         otazka='Plánované porovnanie šiestich variantov E2E špecov (každý 3× natívne na Windows a 3× v Dockeri) sa nespustilo, lebo '
+                 'natívny Windows WebKit blokuje Smart App Control (knižnica `ngtcp2_crypto_quictls.dll` je bez podpisu, udalosti '
+                 'Windows 3077 a 3033). Ako ďalej pri nálezu 223 (WebKit v Dockeri občas stratí spojenie alebo cookies, Chromium nie; '
+                 'dym po K22 prešiel bez pádu: 41 prešlo a 0 zlyhalo)? (a) Schváliť návrh Codexa: samostatné Ubuntu vo WSL (ochrana Windows ostane zapnutá, '
+                 '`docker-desktop` sa nemení), rovnaký Playwright 1.63.0, najprv WebKit na prázdnej stránke bez siete, potom v '
+                 'oznámenom okne rovnakých šesť variantov, každý 3× mimo Dockeru a 3× v Dockeri, bez zmeny testov a údajov účtov; '
+                 'výsledok je „Linux bez Dockeru“ proti Dockeru, nie Windows proti Dockeru. (b) Porovnanie nerobiť a 223 len '
+                 'sledovať: pády sa zapisujú do dôkazov pri každom celom behu a dymovej sade. (c) Vypnúť Smart App Control, aby '
+                 'WebKit na Windows išiel. (d) Pripraviť samostatné Windows prostredie (iný počítač alebo virtuálny stroj), kde '
+                 'WebKit funguje bez oslabenia ochrany: presné porovnanie, no najväčšia práca.',
+         odporucanie='(a), ak majiteľ chce 223 ďalej skúmať: ochrana počítača sa nemení, Ubuntu je jedna inštalácia bez zásahu do '
+                      'Dockeru a porovnanie oddelí vplyv Dockeru (zdieľaná pamäť, IPC, sieť) od vplyvu samotného WebKitu; vplyv Windows '
+                      'nevyskúša. (c) sa neodporúča: oslabuje ochranu počítača majiteľa kvôli jednému testu. (d) je presné, no drahé. '
+                      '(b) je v poriadku, ak majiteľ nechce ďalšiu prácu: nález 223 ostane otvorený a E2E sa nezhoršuje.',
+         kedy='Pred ďalšou prácou Codexa na porovnaní; dovtedy Codex nič neinštaluje ani nemení.'),
 ]

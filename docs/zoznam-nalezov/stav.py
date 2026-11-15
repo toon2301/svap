@@ -6,15 +6,41 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='13. 11. 2026',
-    kod='`main` `8b951cd9` (po PR #261, Codexove dôkazy a oprava testu 328; K21 je PR #260)',
+    datum='15. 11. 2026',
+    kod='`main` `52626ab7` (po PR #264, K22; PR #262 a #263 sú zlúčené a K21 je PR #260)',
     register='21. 10. 2026 + PR #193',
 )
 
-# Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo). Záznamy do 6. 11. 2026 sú v `zmeny_starsie.py`.
+# Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo). Záznamy do 8. 11. 2026 sú v `zmeny_starsie.py`.
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('15. 11. 2026',
+      'Vetva 177 (vychádza z `main` `52626ab7`, teda po PR #264). (1) K22 (PR #264, zlúčené 15. 11. 2026 o 07:19 UTC, merge '
+      '`52626ab7`; dva commity `fecebf5c` a `eb5fd2cb`): hotové 334 (chybová hláška z neúspešného odoslania sa po zatvorení okna '
+      '„Pridať recenziu“ vynuluje; jeden riadok v každom z dvoch súborov okna) a 335 (atribút `lang` na `<html>` sleduje jazyk '
+      'aplikácie; efekt v `LanguageProvider`). Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) a CodeRabbit sú '
+      'zelené, CodeRabbit nemal pripomienky ku kódu (jediná poznámka: názov PR „K22“ je len kód), Codex review hlavičky '
+      '`eb5fd2cb` bola bez nálezov a vlákna na GitHube nie sú. Ručné testy majiteľa po nasadení prešli bez nových nálezov. '
+      'Samostatná strana kolegu prišla (jeden kandidát a štyri poznámky): kandidát o anglickom „Network Error“ v okne recenzie '
+      '(kolega ho uvádza od K15 a v K22 ho potvrdil v prehliadači) je nový nález 336 (oprava je v `OfferReviewsView.tsx`, '
+      '683 riadkov, a vyžaduje výnimku z pravidla 500 riadkov, preto nie je vo fronte); záložné stránky 404 a 500 s `lang="sk"` '
+      'a anglickým textom, prípad „odoslanie prešlo a načítanie zoznamu zlyhalo“, nadbytočné `lang` v `app/page.tsx` a '
+      'opakované varovanie Jestu sú poznámky v `poznamky.md`. (2) Zlúčené sú aj vetvy agenta 174 (PR #262, zoznam po K21 a '
+      'opravy pripomienok botov) a 176 (PR #263: `AGENTS.md` a `.cursor/rules/svaply.mdc`, R27). (3) Správa Codexa z 15. 11. '
+      '2026 (kód ani testy sa nemenili, nový commit ani push nevznikol): dymová sada na `main` `52626ab7` dala 41 prešlo, 0 '
+      'zlyhalo a 10 preskočených (WebKit desktop 13 / 0 / 4, WebKit mobil 15 / 0 / 2, Chromium desktop 13 / 0 / 4; zhoduje sa s '
+      'prijatým dymom po K18); živé overenie 328 prešlo 2 z 2 pri účte s limitom 5 z 5 sledovaní (stav pod limitom ostáva '
+      'naživo neoverený), preto je nález 328 hotový; porovnanie Windows a Docker sa nespustilo, lebo natívny Windows WebKit '
+      'blokuje Smart App Control (knižnica `ngtcp2_crypto_quictls.dll` bez podpisu, udalosti 3077 a 3033); nález 223 ostáva '
+      'otvorený a Codex navrhuje Ubuntu vo WSL (Linux bez Dockeru proti Dockeru), čo čaká na majiteľa: nové rozhodnutie R40 '
+      '(podrobnosti sú v 223, dodatok 15. 11.). (4) Karta K23 (`karty/K23.md`): výzva na povolenie push pre Správy (etapa 3b '
+      'nálezu 321, R36 a) s mapovaním agenta v nálezu 321; je to JASNÉ, správanie na iPhone overí majiteľ ručne. (5) Číselný '
+      'prehľad: nálezy 1–336, zatvorené 14, hotové 130 (pribudli 334, 335 a 328), jedno nové číslo (336). (6) Poradie: K23 '
+      '(výzva na push; čaká na schválenie majiteľa), potom návrh K24 až K26 (delenie `FeedPostComments.tsx`, zoznam '
+      'lajkujúcich a preklady, každá najprv ako mapovanie). Dopad na E2E: K22 žiadny; K23 pridá výzvu pod voľbu Správy v '
+      'Nastaveniach → Upozornenia (špec `mobile-settings-navigation` overuje len jej obal), etapu 4 nálezu 321 (API test siedmich '
+      'volieb a scenár odznaku žiadostí hneď, UI scenár kategórií po K23) a jednoduchú kontrolu atribútu `lang` rieši Codex.'),
     ('13. 11. 2026',
       'Vetva 174, doplnok po K21 (vychádza z `main` `8b951cd9`, teda po PR #261; main je zlúčený do vetvy). (1) K21 (PR #260, '
       'zlúčené 13. 11. 2026 o 16:25 UTC, merge `79f907bd`; päť commitov: štyri podľa karty `59cbc04c`, `eceda277`, `c4d50bfb` '
@@ -251,92 +277,6 @@ ZMENY = [
      'špecov, značky `@smoke`) v `README.md`. Podklad Codexa o číselnej adrese vlastného profilu je z 30. 10.: nález 222 je '
      'hotový (PR #215) a špec 9. 11. prešiel 2 z 2. (7) Doplnky: úloha N5 spomína premenné postupného zapínania push; '
      '`poznamky.md` má prvú poznámku (zapísať nastavenie rollout do logu pri štarte). Dopad na E2E tejto vetvy: žiadny.'),
-    ('8. 11. 2026',
-     'Vetva 170 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `92fb1b7d`, teda po PR #245; čaká na PR). (1) '
-     'Zápis trinástej a štrnástej práce kolegu: K13 (PR #244, zlúčené 8. 11. 2026 o 15:20; 17 súborov, +839/−19; backend, '
-     'frontend a CI) a K14 (PR #245, zlúčené 8. 11. 2026 o 19:42; 39 súborov, +3 157/−123). Agent porovnal správu kolegu s '
-     'PR, s CI a s kódom na `main`: CI (`checks` aj `backend-postgres`) prešlo v oboch PR aj na `main` po oboch zlúčeniach; '
-     'CodeRabbit mal v každom PR dve pripomienky a výhradu k názvu PR (v #244 jedna platila len sčasti, v #245 obe platné; '
-     'všetky opravené), pri poslednom commite oboch PR preskočil (limit) a Codex nemal nálezy. Hotové sú 301, 296, 297, 244 '
-     'a 286 (všetky štyri sekcie); 302 a 245 sú hotové len sčasti. Návrh agenta pre 296 (mazať po jednej) sám nestačil: '
-     'kolega našiel deadlock a doplnil zámok riadku používateľa. Merania kolegu v prehliadači (px, ms, CLS) agent '
-     'nezopakoval. (2) Ručné testy majiteľa po K14: push na iPhone neprichádza (nález 318, HNEĎ; podozrenie na regresiu, '
-     'príčina nepotvrdená; agent mapoval kód a zámok závislostí), prepínač upozornení offline (319), zmena hesla s čiernymi '
-     'poľami (320, príčina `color-scheme` a polia bez pozadia) a nedokončené kategórie upozornení (321, spolu s kandidátom N '
-     'kolegu). (3) Nové nálezy 305 až 321: kandidáti kolegu A, C, D, E, F, G, H, I, J, K, M, O a P (305 až 317); kandidát B '
-     'je v 302, L v 206 a N v 321. (4) Doplnky: 183, 194, 196, 206 a 240 (príčina incidentu je odstránená v 244). (5) '
-     'Rozhodnutie R30 zapísané ako (a) (majiteľ poslal kolegovi text K13 s týmto variantom a PR zlúčil); nové čakajúce R31 '
-     '(výnimka pre osem `alert()`) a R32 (kategórie upozornení: dokončiť, alebo skryť). (6) Poradie prác pre kolegu: K13 a '
-     'K14 sú hotové; nová dávka K15 (318 diagnostika, 320, 306, 319) a K16 (308 až 311 a 312); staršie dávky 24, 22, 23, 26 '
-     'a 247, 248, 250, 256 sa premenovali z K15 a K16 na K17 a K18; 302 a 245 čakajú na rozhodnutie a dôkazy, preto nie sú v '
-     'poradí. (7) Nové balíky „Upozornenia a push“ (P) a „Produkčná odolnosť aplikácie“ (aj v skupine HNEĎ). (8) Od K15 skúška '
-     'nového postupu (odsúhlasil majiteľ 8. 11. 2026): karta dávky s označením JASNÉ alebo NEJASNÉ, výsledok dávky na jednu stranu, '
-     'kontrola výsledku agentom pred zlúčením, dymový test majiteľa po nasadení, filter nových nálezov (číslo len s dôkazom a '
-     'dopadom, najviac 5 na dávku; ostatné do `poznamky.md`) a zastavenie radu pri chybe HNEĎ; šablóny sú v `sablony/` a pravidlá '
-     'v `README.md`. Dopad na E2E tejto vetvy: žiadny.'),
-    ('8. 11. 2026',
-     'Vetva 169 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `95fee208`, teda po PR #242; čaká na PR). (1) Zápis '
-     'jedenástej a dvanástej práce kolegu: K11 (PR #241, zlúčené 7. 11. 2026; frontend, 27 súborov) a K12 (PR #242, zlúčené 8. 11. 2026; '
-     'backend a `.github`, 18 súborov); CI (`checks` aj `backend-postgres`) prešlo v oboch, pri #241 kontrola CodeRabbit na poslednom '
-     'commite preskočila (jej pripomienka k dostupnosti dlaždice galérie je opravená a uzavretá), pri #242 prešla a Codex mal jednu platnú '
-     'pripomienku (animovaný WebP a APNG, opravené v `331e06ef`). Hotové sú 279 (viditeľná náhrada zlyhanej fotky), 291, 292 (PO NASADENÍ, '
-     'v K11 na pokyn majiteľa), 293, 282, 246 a 194; 204 je hotová v časti CI, ostáva len `ProfileModule.tsx:468`. (2) Ručný test majiteľa '
-     'po K12: fotka z priamo volaného starého endpointu ponúk je na produkcii neprístupná (S3 `AccessDenied`) a v ponuke sa nezobrazí: nový '
-     'nález 301; podľa kódu to zrejme nie je regresia K12 (endpoint ukladá do `offers/`, kým verejné sú schválené fotky z `media/`). '
-     '(3) Nové nálezy 296 až 304: z K12 296 (hromadné `QuerySet.delete()` obchádza zámky z 246), 297 (`check:missing-translations` nie je v '
-     'CI), 298 a 299 (animované obrázky: avatary, správy a hlavná cesta cez S3 ukladajú len prvú snímku), 300 (telo chyby starého endpointu '
-     'je Python zoznam); z K11 302 (14 natívnych `alert()` ostáva v 6 súboroch) a 303 (32 zo 43 súborov s `<img>` nemá `onError`, '
-     'netriedené); z mapovania nálezu 301 ešte 304 (`README.md` radí sprístupniť na čítanie celý S3 bucket, kým kód počíta s tým, že '
-     'priame adresy fotiek sú zablokované). (4) Doplnky: 196 (nový workflow používa staršie akcie), 229 (`glob` a `minimatch` pri prahu '
-     '`high` audit nehlási), 183 '
-     '(výnimka pre pytest sa po pytest 9 ohlási ako zastaraná), 227 (37 zápisov `ref.current` počas renderu v 27 súboroch), 36 (trieda '
-     '`max-h-[calc(100vh-2rem)]` fotky je v `LightboxPhoto.tsx`), 209 (re-check Codexu: súkromie môže vysvetliť (a), čiastočne (c), nie '
-     '(b)) a 295 (plán Codexa). (5) Nové rozhodnutia R29 (animované obrázky) a R30 (starý endpoint ponúk). (6) Poradie prác pre kolegu: K11 '
-     'a K12 sú hotové; nová dávka K13 (301, 296, 297, 302 len súbory do 500 riadkov) a K14 (244, 245 s mapovaním, 286); staršie dávky 24, '
-     '22, 23, 26 a 247, 248, 250, 256 sa premenovali z K13 a K14 na K15 a K16. (7) Starší denník zmien (do 6. 11. 2026) je v novom súbore '
-     '`zmeny_starsie.py`, aby `stav.py` ostal pod 500 riadkov.'),
-    ('7. 11. 2026',
-     'Vetva 168 (len zoznam podľa pokynu majiteľa z 7. 11.; vychádza z `main` `4e57b990`, teda po PR #239; čaká na PR). (1) Zápis ôsmej až '
-     'desiatej práce kolegu: K8 sa robila na dva razy (PR #237 a #238; druhé kolo sa volalo K9) a dávka drobných opráv išla ako K10 '
-     '(PR #239); všetky tri sú zlúčené a CI (`checks` aj `backend-postgres`) prešlo; kontrola CodeRabbit prešla pri #237 a #238, pri #239 '
-     'na poslednom commite preskočila a jej skoršia pripomienka (zápis do `ref` počas renderu v karuseli ponúk) je opravená. Hotové sú '
-     '274 (fotky súkromného autora idú cez doménu frontendu), 276 (preblik na mobile: Nástenka a zoznam Nastavení), 277 (`role` a '
-     '`aria-live` na pruhu pripojenia) a 281 (diakritika záložných textov Obľúbených). 275 sa zatvára rozhodnutím R25: účet A má súkromný '
-     'profil, čo je zámer; skupina HNEĎ je prázdna. 193 a 279 ostávajú otvorené: kód z K10 je zlúčený, no ručný test majiteľa k 279 '
-     'neprešiel (zlyhaná fotka je prázdna čierna plocha bez ikony a textu) a pri 193 majiteľ pozoroval prijatie súboru BMP v portfóliu a '
-     'na Nástenke, čo sa podľa kódu nemalo stať (klient aj server odmietajú príponu `.bmp`, prekódovanie v prehliadači nie je). '
-     '(2) Nové nálezy 282 až 295: z K8 až K10 282 (starý endpoint ponúk ukladá polohu GPS), 283 až 289 (zvyšky preblikov na mobile, nový '
-     'balík „Plynulosť prechodov (mobil)“), 290 (text pri súkromnom profile), 291 (lightboxy bez `onError`) a 292 (zápis do `ref` počas '
-     'renderu); z ručných testov majiteľa 293 (natívne `alert()` namiesto toastu pri chybe nahrávania fotky, v rade portfólia chýba '
-     'toast) a 294 (ručný test VoiceOverom pre 277); z analýzy Codexu a správ kolegu 295 (E2E nepokrýva fotky). (3) Doplnky: 209 (Codex: '
-     'vysvetlenie „iba chýbajúce dáta“ nie je preukázané; účty A a B sú E2E účty), 204 (oprava poznámky: `ProfileEditForm.tsx` je '
-     'nepoužitý, nález 239), 206 (druhé miesto s `no-explicit-any`) a 91 (manuálny test sa po oprave 274 dá urobiť). (4) Rozhodnutia: '
-     'R25 (275 je zámer), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9, schválené majiteľom na vláknach '
-     'Codexu), nové čakajúce R27 (platí pravidlo 500 riadkov aj pre testy?) a R28 (zjednotiť vstupné animácie modulov?). (5) Poradie '
-     'prác pre kolegu: nové dávky K11 (fotky na frontende: 279, 293, 291) a K12 (súkromie a CI: 282, 246, 194 a časť 204 s CI); '
-     'staršie dávky 24, 22, 23, 26 a 247, 248, 250, 256 sa z K9 a K10 premenovali na K13 a K14. Nález 292 (PO NASADENÍ) ide na '
-     'začiatku K13, aby poradie dodržalo pravidlo, že nálezy PRED NASADENÍM idú pred nálezmi PO NASADENÍ (pripomienka CodeRabbit '
-     'k PR #240). Vlna HNEĎ zmizla z časti 2.'),
-    ('7. 11. 2026',
-     'Vetva 167 (len zoznam podľa pokynu majiteľa z 7. 11.: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť; vychádza z `main` '
-     '`cbbee6e1`, teda po PR #235; čaká na PR). (1) Zápis šiestej a siedmej práce kolegu: obe sú zlúčené, nasadené na Railway, CI (`checks` aj '
-     '`backend-postgres`) prešlo a kontrola CodeRabbit prešla. K6 (PR #234, zlúčené 6. 11. 2026): nálezy 120, 177, 119 a 228 sú hotové, 204 '
-     'čiastočne (tri kľúče a skript sú hotové, ostáva `profile.photoRemovedError`) a APP-01 z registra je zatvorené. K7 (PR #235, zlúčené 7. 11. '
-     '2026): nálezy 271, 270 a 273 (vznikli pri K6 a opravené sú v K7) sú hotové; 91 a 175 čiastočne (91: frontend hotový, backendový zvyšok '
-     'sa presúva do PO NASADENÍ; 175: hotová časť Obľúbené, ostávajú Spolupráce). Manuálne testy majiteľa prešli okrem testu zdieľanej karty po '
-     'zmazaní fotky, ktorý sa nedal urobiť kvôli nálezu 274. (2) Nové nálezy majiteľa z manuálneho testu 7. 11. 2026, zapísané presne podľa '
-     'jeho opisu a nezmapované (majiteľ: príčinu nájde kolega): 274 (fotky v príspevkoch sa na jednom testovacom účte nenačítajú, na druhom sú '
-     'v poriadku), 275 (účet B nevidí účet A: hľadanie, ponuky, Nástenka aj profil, bez blokovania; HNEĎ, nový balík „Viditeľnosť medzi účtami“) a '
-     '276 (mobil: pri prepínaní obrazoviek obsah krátko preblikne). (3) Nové nálezy kolegu: z K6 272 (meno recenzenta v okne „Pridať recenziu“), '
-     'z K7 277 (pruh pripojenia bez `role` a `aria-live`), 278 (prázdny updater v `handleUserUpdate`), 279 (`BlurredContainImage` bez `onError` na '
-     'ďalších šiestich miestach), 280 (priamy vstup do sekcie Nastavení nastaví `isRightSidebarOpen`) a 281 (šesť záložných textov Obľúbených bez '
-     'diakritiky). Doplnky: 176 a R2 (meranie hodnôt zhodných so slovenčinou: cs 247, pl 49, de 3, hu 1), 206 (jeden `no-explicit-any` v '
-     '`FavoritesModule.test.tsx`) a 224 (počet riadkov `useDashboardState.ts`). (4) Nové rozhodnutie R24: jednorazová výnimka z pravidla 500 '
-     'riadkov pre nález 271 (jeden riadok v `useDashboardState.ts`, ktorý má teraz 922 riadkov); majiteľ ju schválil odovzdaním K7. (5) Pravidlá '
-     'práce: striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED NASADENÍM a HNEĎ; majiteľ môže pomer '
-     'dočasne zmeniť). Fronta prác pre kolegu je teraz všeobecná, je v časti 2 a jej prvá dávka K8 je mapovanie nálezov 275, 274 a 276 '
-     'kolegom (rozhodnutie majiteľa 7. 11.); dávky z fronty, ktoré sa pôvodne volali K6 a K7 (24, 22, 23, 26 a 247, 248, 250, 256), sa nerobili '
-     'a sú teraz K9 a K10.'),
 ] + ZMENY_STARSIE
 
 # Nálezy opravené po prvom vydaní (`DONE_SINCE`), tabuľka PR (`DONE_PR_TABLE`) a popis série Upozornenia (`SERIA_UPOZORNENIA`) sú v
@@ -359,26 +299,26 @@ PORADIE = [
             'zlúčené vo vetve 165, PR #230; 246 v K12, PR #242; 296 v K13, PR #244; ostáva 245: overenie v logoch Railway; nový nález HNEĎ '
             '318 je zatvorený: push na iPhone nechodil pre nastavenie rollout 5 % v Railway, R33); ďalej 185, OW-07, '
             'overenie súkromia obrázkov správ (266), politika S3 bucketu v README (304) a balík „Spoľahlivosť CI a testov“ (31, TEST-…, 189, 209, 223, '
-            '225, 295, 328; 212 je '
-            'hotová vo vetve 157, 228 v K6, 194 a časť 204 v K12, 244 v K14)',
+            '225, 295; 212 je '
+            'hotová vo vetve 157, 228 v K6, 194 a časť 204 v K12, 244 v K14, 328 v PR #261)',
          preco='Veľké skoky verzií sú najlacnejšie teraz, kým je kódu najmenej, a hneď po nich treba spustiť celé testy.',
-         polozky=['245', '185', 'OW-07', '266', '304', '31', '189', '209', '223', '225', '295', '328']),
+         polozky=['245', '185', 'OW-07', '266', '304', '31', '189', '209', '223', '225', '295']),
     dict(vlna='2 – viditeľné chyby a overenia (iPhone a mobil)',
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14, jej zvyšky 308 až 310 sú hotové v K16 a 311 je zatvorený rozhodnutím R38; 287 a 288 '
             'idú podľa R28 po overení na iPhone), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
             '(92, 207; 301 je hotová v K13), ponuky a tagy (322 a 323 sú hotové v K15), '
-            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), recenzie (334 stará chybová hláška v okne „Pridať recenziu“; 325 a 331 sú hotové v K21, 326 a 327 v K18), Upozornenia a '
+            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), recenzie (336 anglické „Network Error“ v okne „Pridať recenziu“, čaká na výnimku majiteľa pre `OfferReviewsView.tsx`; 325 a 331 sú hotové v K21, 334 v K22, 326 a 327 v K18), Upozornenia a '
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 dokončiť kategórie upozornení pred štartom, R32 (a): etapy 1 a 2 sú hotové v K19, etapa 3a v K20, ostáva výzva na push (K23) a E2E; 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '321', '334', '262', '333', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '321', '336', '262', '333', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='175, 176, 204, APP-03, 186 a 335 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335: atribút `lang` na `<html>`; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
+         co='175, 176, 204, APP-03 a 186 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335 (atribút `lang` na `<html>`) v K22; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
          preco='Všetkých šesť jazykov (sk, cs, hu, de, pl, en) musí byť pri štarte hotových (R2, 13. 11. 2026).',
-         polozky=['175', '176', '204', 'APP-03', '186', '335']),
+         polozky=['175', '176', '204', 'APP-03', '186']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',
@@ -478,7 +418,7 @@ DECISIONS = [
          kedy='Pred prácou na 235; dovtedy sa 2FA používateľom neponúka.'),
 ]
 
-# Rozhodnutia R13–R39 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+# Rozhodnutia R13–R40 (zoznam majiteľa v prílohe D a rozhodnutia po ňom) sú v `rozhodnutia_nastenka.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
 from rozhodnutia_nastenka import DECISIONS_NASTENKA  # noqa: E402
 
 DECISIONS.extend(DECISIONS_NASTENKA)
