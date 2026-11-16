@@ -109,7 +109,7 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
-               'vzhľadu, až potom redizajn (R23)',
+               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie hotové (K26), delenie v piatich dávkach od K28',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov rozdelia po jednom: '
                '`feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a `feed/FeedPostMobileDetail.tsx` 594 '
                '(počty agent overil 13. 11. 2026). Delenie nesmie zmeniť správanie ani vzhľad; každý súbor ide vo vlastnej vetve s '
@@ -120,11 +120,40 @@ NEW_ITEMS_K14 = [
                'vedieť. Súvisí s 261 (redizajn), 288 (vlastná vstupná animácia v `FeedPostCard.tsx` sa upraví samostatne až po dokončení a overení delenia, R28 a R23), 259 a '
                '256. Postup pre každú kartu: najprv mapovanie hraníc (čo je komentár, odpoveď, zoznam, formulár, hooky; kód sa '
                'nemení), potom presun po jednom celku do nových súborov so zachovaním verejného rozhrania, po každom kroku celý Jest a '
-               'existujúce testy komentárov; E2E sa po delení spustí (Codex). Odhad: stredný · L (tri samostatné dávky).',
-         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026)'),
+               'existujúce testy komentárov; E2E sa po delení spustí (Codex). Odhad: stredný · L (tri samostatné dávky). '
+               'VÝSLEDOK MAPOVANIA K26 (kolega, 16. 11. 2026, kód sa nemenil; čítané z `main` `910700ea`; celé znenie je v '
+               '`karty/K26_vysledok.md` a `karty/K26_podklady.md`): čísla z karty sedia (20 `useState`, 17 `useRef`, 7 efektov, 5 '
+               'importérov; `onCommentsReady` volá len `FeedPostMobileDetail.tsx` a žiadny test ho nemenuje). Pokrytie celým Jestom '
+               'je 97,9 % riadkov a 85,7 % vetiev; z 39 skúšobných pokazení kódu existujúce testy zachytili 13 a 26 prežilo. Opravy '
+               'predbežného rozboru agenta: hľadanie cieľa, strop 20 stránok a zvýraznenie na 3 s strážia 21 testov, skutočné medzery '
+               'sú inde (zastarané odpovede po zmene, chyby pridania, odpovede a zmazania, reset hľadania pri zmene cieľa, signál '
+               '`onCommentsReady`); chýbal krok „posun a indikátor nových“; hooky samy nestačia (ostane asi 700 riadkov), preto sa '
+               'riadok komentára, pole na komentár a indikátor vyčleňujú skôr. PLÁN (9 krokov, každý vlastný commit a po ňom celý '
+               'Jest, `tsc`, ESLint, kontroly prekladov a build): 0 charakterizačné testy (len nové súbory); 1 konštanty a čisté '
+               'funkcie (`feedCommentsLogic.ts`, asi 175 riadkov; hlavný súbor potom 1 335); 2 riadok komentára (`FeedCommentItem.tsx`, '
+               'asi 170; 1 215); 3 pole na komentár, indikátor a kostra (3 súbory, asi 190; 1 110); 4 hľadanie cieľa '
+               '(`useFeedCommentsSeek.ts`, asi 255; 905; riziko stredné); 5 posun a indikátor nových (`useFeedCommentsScroll.ts`, asi '
+               '85; 865; stredné); 6 načítanie a polling (`useFeedCommentsLoader.ts`, asi 340; 600; vysoké); 7 mutácie '
+               '(`useFeedCommentMutations.ts`, asi 200; 470; stredné až vysoké); 8 typ vlastností a importy (asi 60; 420). Veľkosti '
+               'sú odhad (±40 riadkov), názvy súborov návrh. V komponente ostáva signál `onCommentsReady`, efekt posunu navrch a '
+               'odvodené hodnoty; poradie efektov sa nemení. ROZHODNUTIA MAJITEĽA (16. 11. 2026, podľa odporúčaní agenta): R45 '
+               'odtlačok HTML šiestich stavov len dočasne (vznikne v kroku 0, zmaže sa v poslednej dávke); R46 päť dávok (0 | 1–3 | '
+               '4 | 5–6 | 7–8) s jedným ručným testom po každej okrem dávky 0; R47 redizajn 261 až po poslednej dávke; R48 oprava 338 '
+               'po kroku 6 v novom súbore; R49 trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom. Dávka 1 je K28 '
+               '(`karty/K28.md`); ďalšie dávky sa pripravia po zlúčení predchádzajúcej. RUČNE po každej dávke okrem dávky 0: okno '
+               'detailu na počítači (pridať, odpovedať, upraviť, zmazať s potvrdením, lajknúť, rozbaliť odpovede); z upozornenia '
+               '(okno aj adresa `?comment=`): doskroluje a zvýrazní komentár asi 3 s, odpoveď v zbalenom vlákne sa rozbalí; mobilný '
+               'detail na iPhone (pri fotke alebo zdieľanom náhľade a aspoň 3 komentároch sa otvorí rovno pri komentároch); panel '
+               'nad fotkou na mobile; živé komentáre z druhého účtu (polling 8 s). E2E: komentárov sa dotýkajú len '
+               '`feed-post-detail.spec.ts` a `notification-click.spec.ts`; návrh pre Codexa: pridať a zmazať vlastný komentár (okno '
+               'aj mobilný detail), odpoveď a úprava s upratovaním, po kliku na upozornenie cieľový komentár v zornom poli; E2E '
+               'nepokryje stránkovanie, polling, 3 s zvýraznenie ani iPhone. Súvislosti: 261 (skupiny 6 a 7) sa dotýka riadku '
+               'komentára a poľa na komentár; 288 je vo `FeedPostCard.tsx` (po jeho delení, R28); 259 a 256 sú na delení nezávislé; '
+               'z mapovania vznikol nález 338.',
+         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=337, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
-         kratko='E2E: UI scenár zmeny kategórie upozornení s vrátením pôvodnej hodnoty (zvyšok etapy 4 nálezu 321); rozhodnuté '
-                '(R44, 16. 11. 2026), implementuje Codex',
+         kratko='E2E: UI scenár zmeny kategórie upozornení s vrátením pôvodnej hodnoty (zvyšok etapy 4 nálezu 321); scenár '
+                'zlúčený (PR #276), živý beh čaká na okno majiteľa',
          what='Zvyšok etapy 4 nálezu 321 (Codex): API kontrakt siedmich volieb a kontrola atribútu `lang` sú zlúčené (PR '
                '#267) a overené naživo, no samotná zmena kategórie cez rozhranie (klik alebo ťuk, uloženie na server, '
                'obnovenie stránky a návrat hodnoty) nemá E2E scenár. MAPOVANIE CODEXA (16. 11. 2026, '
@@ -148,7 +177,58 @@ NEW_ITEMS_K14 = [
                'nerobiť (pokrývajú ju desiatky jednotkových testov hooku, komponentu a celého modulu, ručný test na iPhone '
                'prešiel a v E2E by ju videl len jeden z troch projektov). Implementuje Codex; pred implementáciou '
                'skontroluje, že testovací účet má zapnuté upozornenia v aplikácii (inak scenár nahlási majiteľovi a hlavný '
-               'vypínač potichu nezapína) a živé okno proti Railway oznámi majiteľ samostatne. Nález sa uzavrie, keď '
-               'scenár prejde naživo vo WebKite desktop aj mobil. Odhad: stredný · M. Dopad na aplikáciu: žiadny.',
+               'vypínač potichu nezapína) a živé okno proti Railway oznámi majiteľ samostatne. IMPLEMENTÁCIA (Codex, PR #276, zlúčené 16. '
+               '11. 2026 o 21:39 UTC, merge `da27a931`; commity `9ccc972d` a `93b1210e`): samostatná konfigurácia '
+               '`notification-category.playwright.config.ts` a scenár `notification-category.ui.ts` (2 varianty, WebKit desktop '
+               'aj mobil; mimo bežného celého behu a dymu), nové pomocné súbory v `frontend/e2e/support/` a '
+               '`frontend/e2e/diagnostics-tests/`; majiteľ potvrdil, že hlavný E2E účet má upozornenia v aplikácii zapnuté. '
+               'Lokálne overené bez Railway (45/45 kontrol logiky, 18/18 prehliadačových kontrol v oboch WebKitoch, 0 SKIP, bez '
+               'retry); CodeRabbit mal jednu platnú pripomienku (odpoveď 3xx nesmie potvrdiť bezpečný návrat), opravenú v '
+               '`93b1210e`. ŽIVÝ BEH ešte nebol: čaká na nové okno potvrdené majiteľom (návrh z 20:00 uplynul; počas okna sa '
+               'nezlučuje ani nenasadzuje). Nález sa uzavrie, keď scenár prejde naživo vo WebKite desktop aj mobil. Odhad: '
+               'stredný · M. Dopad na aplikáciu: žiadny.',
          dec='ROZHODNUTIE R44', src='report Codexa z 16. 11. 2026 (mapovanie UI kategórií a schopností prehliadačov) a rozhodnutia majiteľa R43 a R44'),
+    dict(n=338, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='komentáre: zoznam ostane na „Načítavam…“, keď sa počas prvého načítania úspešne pridá komentár; oprava až po '
+                'kroku 6 delenia (R48)',
+         what='Kolega pri mapovaní K26 (16. 11. 2026; agent overil čítaním kódu): v `FeedPostComments.tsx` `load()` (riadky 446 až '
+               '481) zahodí zastaranú odpoveď cez `return` v `try` aj v `catch` (riadky 456 a 470) a `finally` zhasne načítavanie '
+               'len pri zhode poradia (riadok 479); `handleSubmit` (riadok 949) po úspešnom pridaní komentára zvýši `loadSeqRef`. '
+               'Pole na komentár je dostupné aj počas načítavania, takže ak sa komentár pridá skôr, než dobehne prvé načítanie, '
+               'odpoveď načítania sa zahodí a `loading` ostane `true`: zoznam, chyba aj polling sa neukážu a signál '
+               '`onCommentsReady` nepadne, kým sa komentáre neotvoria znova. Dôkaz: sonda kolegu v kópii mimo repozitára '
+               '(úspešné aj zlyhané načítanie po pridaní komentára): po 300 ms „Načítavam…“ ostáva a zoznam sa dopytoval '
+               '1×; kontrola bez pridania prejde; riadky 456 a 470 nevykoná žiadny test. Dopad: pri pomalej sieti sa komentár '
+               'uloží, no zoznam sa neukáže do znovuotvorenia; pravdepodobnosť nízka.',
+         note='ROZHODNUTÉ (R48, majiteľ 16. 11. 2026, podľa odporúčania agenta): opraviť až po kroku 6 delenia `FeedPostComments.tsx` '
+               '(333), v novom súbore `useFeedCommentsLoader.ts`, ako samostatný commit s testom; výnimka z pravidla 500 riadkov '
+               'netreba (oprava priamo v súbore s 1 487 riadkami by ju chcela a miešala by sa so správaním pri delení). Odhad: '
+               'nízky · S.',
+         dec='ROZHODNUTIE R48', src='K26 (kolega) a kontrola agenta čítaním kódu (16. 11. 2026)'),
+    dict(n=339, bucket=P, imp=S_, eff=ES, pkg='Súkromie a krajina',
+         kratko='ponuka neaktívneho vlastníka: detail aj lajk prejdú cez priame id (vyhľadávanie ju vynecháva)',
+         what='Kolega pri K27 (16. 11. 2026, sonda mimo repozitára: vlastník s `is_active=False`, prihlásený divák): '
+               '`GET skills/<id>/` vráti 200 a `POST skills/<id>/like/` vráti 201 a lajk sa uloží, kým vo vyhľadávaní ponuka nie '
+               'je. Príčina: `offer_hidden_from_user` (`accounts/services/offer_visibility.py`) nekontroluje `is_active` vlastníka, '
+               'rovnako ako ho nekontrolujú `skills_detail_view` (`accounts/views/skills.py`) ani `offer_like_view` '
+               '(`accounts/views/offer_likes.py`); vyhľadávanie ho vynecháva cez `searchable_user_q`. Pri zmazaní účtu '
+               'používateľom sa ponuky mažú (`accounts/account_deletion.py`), takže sa to týka účtov deaktivovaných inak (napríklad '
+               'administráciou). Nový pohľad zoznamu lajkujúcich ponuky (K27) aktívneho vlastníka kontroluje. Dopad: obsah ponuky '
+               'deaktivovaného účtu je cez priame id dostupný každému prihlásenému a dá sa naň dávať lajky.',
+         note='Návrh (neoverený): jedna podmienka v `offer_hidden_from_user` (neaktívny vlastník = skrytá ponuka pre cudzieho '
+               'diváka; vlastník ju vidí vždy) a testy detailu, lajku a zoznamu; po zmene skontrolovať ostatných volajúcich '
+               'pomocníka (napríklad `review_hidden_from_user`). Malá backendová dávka bez ručného testu. Odhad: nízky · S.',
+         dec=None, src='K27 (kolega, 16. 11. 2026)'),
+    dict(n=340, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
+         kratko='E2E: poistka proti `--repeat-each` v staršom API scenári volieb nefunguje v Playwrighte 1.63 (R50)',
+         what='Codex pri PR #276 (16. 11. 2026, `docs/playwright-odovzdanie.md`): v Playwrighte 1.63 sa voľba `--repeat-each=2` '
+               'nepremietne do `testInfo.project.repeatEach`, ako predpokladá starší `frontend/e2e/support/notification-preferences-test.ts`, '
+               'takže poistka proti opakovaniu API scenára volieb nezaberie: bez siete a účtov sa syntetický scenár pri tejto voľbe '
+               'vykonal 2×, štyri simulované PATCH, oba návraty overené. Predpísaný príkaz bez opakovania medzeru nevyvolá; ide o '
+               'poistku proti nesprávnemu ručnému spusteniu (stredné prevádzkové riziko E2E), nie o chybu aplikácie. Nový UI scenár '
+               '(337) opakovanie odmieta už v rodičovskej konfigurácii pred prípravou, overené negatívnym behom.',
+         note='Codex odporúča samostatný súhlas na opravu (malá zmena len v `frontend/e2e/**`, bez zásahu do aplikácie). Odporúčanie '
+               'agenta (R50): áno, ako malá samostatná vetva Codexa; dovtedy API scenár volieb nespúšťať s `--repeat-each`. Odhad: '
+               'nízky · S.',
+         dec='ROZHODNUTIE R50', src='report Codexa z 16. 11. 2026 (PR #276)'),
 ]

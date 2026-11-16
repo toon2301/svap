@@ -89,8 +89,9 @@ NEW_ITEMS_NASTENKA = [
               'zdieľaní z detailu) a širšie pokrytie ďalších tokov (história portfólia, nový vstup na profil, Nastavenia, zvýraznenie, '
               'záložky). Chýbajú aj komentáre (pridanie, odpoveď, úprava vlastného komentára, mazanie): `e2e/feed-post-detail.spec.ts` pokrýva '
               'len otvorenie a zatvorenie vrstvy komentárov. Úprava vlastného komentára (tlačidlo „Upraviť“ vo `FeedPostComments.tsx`) '
-              'má testy len na backende (`accounts/test/test_feed_edit_api.py`); frontendové testy volanie `updateFeedPostComment` '
-              'iba nahrádzajú prázdnou funkciou. Podobné medzery už vedú 110, 113, 157 a 233.',
+              'má testy na backende (`accounts/test/test_feed_edit_api.py`) aj na frontende (`FeedPostComments.edit.test.tsx`, 12 '
+              'testov, ktoré kontrolujú aj argumenty volania `updateFeedPostComment`; pôvodné tvrdenie, že ho testy iba nahrádzajú '
+              'prázdnou funkciou, opravil agent 16. 11. 2026 podľa K26); chýba len E2E. Podobné medzery už vedú 110, 113, 157 a 233.',
          note='E2E súbory vlastní Codex (`AGENTS.md`); agent len eviduje. Pravidlá ostávajú: testy bežia proti Railway, WebKit (desktop aj '
               'mobil) je povinný a test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Výber '
               'scenárov a poradie určí majiteľ s Codexom.',
@@ -149,7 +150,7 @@ NEW_ITEMS_NASTENKA = [
               '2026: vzhľad Nástenky zatiaľ sám neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď.',
          dec='ROZHODNUTIE R23', src=ZDROJ),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); najprv backend (K27), potom frontend',
+         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), frontend čaká na schválenie vzhľadu (R49)',
          what='Zoznam lajkujúcich dnes existuje len pre Nástenku: príspevky a komentáre (`feed/FeedLikersDialog.tsx`; backend '
                '`feed_post_likers_view` a `feed_post_comment_likers_view` v `accounts/views/feed_likes.py`, verejné aj pre '
                'neprihláseného). ROZHODNUTÉ 13. 11. 2026 (R20, variant A): urobiť pred nasadením a rozšíriť na ponuky, portfólio a '
@@ -172,9 +173,16 @@ NEW_ITEMS_NASTENKA = [
                'profil vlastnou udalosťou (256); `lib/api.ts` (912 riadkov) a `lib/feedApi.ts` (545 riadkov) sú nad 500 riadkov, '
                'takže adresy a funkcie pôjdu do nového súboru; vstupy pri karte ponuky (`OfferCardBack.tsx` a '
                '`ProfileOfferDetailMobileContent.tsx`), profile (`ProfileLikeButton.tsx`; volajúci `ProfileMobileView.tsx` 768 a '
-               '`ProfileModule.tsx` 563 riadkov sú nad 500) a portfóliu (`PortfolioLikeButton.tsx`). PLÁN: dve dávky: K27 backend '
-               '(tri koncové body na čítanie s testami súkromia, blokovania a neaktívnych účtov; karta `karty/K27.md`) a potom '
-               'frontend (dialóg, vstupy, preklady). Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), '
+               '`ProfileModule.tsx` 563 riadkov sú nad 500) a portfóliu (`PortfolioLikeButton.tsx`). PLÁN: dve dávky. BACKEND '
+               'HOTOVÝ (K27, PR #275, zlúčené 16. 11. 2026 o 19:34 UTC, merge `bf754de0`; commity `7eed510a`, `c26f314e` a '
+               '`a894dc23`): koncové body `GET skills/<id>/likes/` (aj neprihlásený), `GET portfolio/<id>/likes/` a `GET '
+               'dashboard/users/<id>/profile/likes/` (len prihlásený, inak 401) v nových súboroch `accounts/views/offer_likers.py`, '
+               '`portfolio/likers_views.py` a `accounts/views/profile_likers.py`, 69 nových testov, bez migrácie a bez zmeny '
+               'Nástenky; kolega potvrdil kroky 0 (a) až (e), pri (b) s upresnením: neprihlásený vidí aj súhrn verejných '
+               'používateľov vo vyhľadávaní a náhľad zdieľaného obsahu na Nástenke, no nie profil, portfólio ani počty lajkov. '
+               'Kandidát kolegu o neaktívnom vlastníkovi ponuky je nález 339. FRONTEND (dialóg, vstupy pri kartách, preklady) '
+               'ČAKÁ NA SCHVÁLENIE VZHĽADU MAJITEĽOM (R49): agent pripraví návrh s možnosťami a odporúčaním a až potom ide '
+               'karta kolegovi. Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), '
                'preto testy súkromných účtov, blokovania a neaktívnych účtov sú povinné. Odhad: nízky · L.',
          dec='ROZHODNUTIE R20', src=ZDROJ),
     dict(n=264, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',

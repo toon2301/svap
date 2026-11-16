@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Rozhodnutia R41 a ďalšie (od 15. 11. 2026): R41 (výnimka z pravidla 500 riadkov pre opravu 336, rozhodnuté 15. 11. 2026), R42 (opis
 hlavného vypínača aj na počítači, rozhodnuté 16. 11. 2026), R43 (E2E scenár odznaku Žiadostí sa nerobí, rozhodnuté 16. 11. 2026) a R44
-(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026).
+(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026) a R50 (poistka `--repeat-each` v staršom API scenári volieb, čaká na majiteľa).
 
 Samostatný súbor kvôli limitu 500 riadkov (`rozhodnutia_nastenka.py` má vyše 380 riadkov); `stav.py` ich pripája do `DECISIONS` za R13–R40.
 Čísla rozhodnutí sa nikdy nepoužívajú znova; nové rozhodnutie sa pridáva na koniec zoznamu.
@@ -75,4 +75,69 @@ DECISIONS_DALSIE = [
                   '(`in_app_notifications`; inak scenár nahlási majiteľovi a nič potichu nezapína), a že živé okno proti Railway '
                   'oznámi majiteľ samostatne.',
          datum='16. 11. 2026'),
+    dict(id='R45', tema='Delenie `FeedPostComments.tsx` (333): uložiť odtlačok HTML šiestich stavov na kontrolu vzhľadu?',
+         otazka='Kolega pri mapovaní K26 pýta, či sa pre zhodu vzhľadu uloží HTML šiestich stavov komponentu komentárov (kolega ich '
+                 'určí; napríklad načítavanie, zlyhanie, prázdny zoznam, zoznam s odpoveďami, úprava a potvrdenie mazania) a po '
+                 'každom kroku delenia sa porovná; v projekte je dnes 0 snapshotov. (a) Áno, ale len dočasne: odtlačok vznikne v '
+                 'kroku 0 a zmaže sa v poslednej dávke delenia. (b) Áno, natrvalo. (c) Nie, vzhľad sa overí len ručne a '
+                 'existujúcimi testami.',
+         odporucanie='(a): delenie nesmie zmeniť vzhľad, no existujúce testy čítajú hlavne texty a identifikátory `data-testid`; '
+                      'triedy a obaly strážia len na pár miestach, takže stratená trieda alebo obal by prešli. Odtlačok je dočasný, '
+                      'lebo redizajn (261) štruktúru zámerne zmení a trvalý odtlačok by sa po ňom len prepisoval.',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: podľa odporúčania agenta, teda (a): odtlačok HTML šiestich stavov sa vytvorí v kroku 0 '
+                  '(dávka 1 z 5, K28) a zmaže sa v poslednej dávke delenia.',
+         datum='16. 11. 2026'),
+    dict(id='R46', tema='Delenie `FeedPostComments.tsx` (333): deväť vetiev, alebo päť dávok s jedným ručným testom',
+         otazka='Plán kolegu z K26 má deväť krokov (0 až 8). (a) Päť dávok s jedným ručným testom majiteľa po každej (0 | 1–3 | 4 | '
+                 '5–6 | 7–8); každý krok ostane vlastným commitom a po ňom beží celý Jest. (b) Deväť krokov v deviatich vetvách '
+                 's deviatimi ručnými testami.',
+         odporucanie='(a): chybu vieme vystopovať na jeden krok aj pri dávke, no majiteľ robí päť ručných testov namiesto deviatich. '
+                      'Ak by ručný test po niektorej dávke zlyhal, rozdelí sa len tá dávka.',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: podľa odporúčania agenta, teda (a): päť dávok (0 | 1–3 | 4 | 5–6 | 7–8). Dávka 1 je K28 '
+                  '(len testy, bez ručného testu); ďalšie dostanú číslo K, keď pôjdu kolegovi.',
+         datum='16. 11. 2026'),
+    dict(id='R47', tema='Redizajn 261 (skupiny 6 a 7) a delenie `FeedPostComments.tsx` (333): kedy smie redizajn začať',
+         otazka='Smie redizajn 261 (skupiny 6 a 7: pole na text, „Zobraziť odpovede (N)“, bubliny) začať už po kroku 3 delenia, '
+                 'nad vyčlenenými komponentmi komentára a poľa na komentár? (a) Nie, až po poslednej dávke delenia. (b) Áno, '
+                 'už po kroku 3.',
+         odporucanie='(a): ručný test majiteľa po dávke je jednoduchý („musí vyzerať presne rovnako“), čo sa pri súbežnom '
+                      'redizajne stratí; najrizikovejšie kroky 4 až 7 idú až po kroku 3 a majú ísť na nemennom vzhľade; kroky 5 až '
+                      '7 menia, čo komponent komentára dostáva (úprava, odpoveď, mazanie), takže by sa redizajn s delením '
+                      'prekrýval v tých istých súboroch. Čakanie stojí málo, lebo majiteľ vzhľad Nástenky sám neupravuje. Ak by '
+                      'sa ponáhľalo, najskôr po dávke 5–6.',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: podľa odporúčania agenta, teda (a): redizajn 261 začne až po poslednej dávke delenia.',
+         datum='16. 11. 2026'),
+    dict(id='R48', tema='Nález 338 (zaseknuté „Načítavam…“ pri pridaní komentára počas prvého načítania): kedy a ako opraviť',
+         otazka='Oprava mení správanie v `FeedPostComments.tsx` (1 487 riadkov). (a) Až po kroku 6 delenia, v novom súbore '
+                 '(`useFeedCommentsLoader.ts`), ako samostatný commit s testom; výnimka z pravidla 500 riadkov netreba. (b) '
+                 'Hneď, s výnimkou z pravidla 500 riadkov pre ten súbor. (c) Neopravovať.',
+         odporucanie='(a): pravdepodobnosť je nízka (pomalá sieť a pridanie komentára skôr, než sa zoznam načíta), delenie nesmie '
+                      'meniť správanie a oprava v novom súbore výnimku nepotrebuje.',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: podľa odporúčania agenta, teda (a): oprava 338 ide po kroku 6 delenia, v novom súbore, ako '
+                  'samostatný commit s testom.',
+         datum='16. 11. 2026'),
+    dict(id='R49', tema='Trvalé pravidlo: redizajn a vzhľadové zmeny sa najprv konzultujú s majiteľom',
+         otazka='Ako sa majú riešiť zmeny vzhľadu (redizajn Nástenky a komentárov, vzhľad zoznamu lajkujúcich a podobne)? (a) '
+                 'Najprv sa vzhľad prebere s majiteľom (agent pripraví návrh s možnosťami a odporúčaním), až potom sa píše karta '
+                 'pre kolegu. (b) Kolega navrhne a urobí vzhľad sám.',
+         odporucanie='(a): vzhľad je rozhodnutie majiteľa a po zlúčení sa ťažko vracia; kolega kóduje podľa schváleného vzhľadu.',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: redizajn Nástenky, komentárov a podobné vzhľadové zmeny treba vždy najprv prekonzultovať. '
+                  'Agent to vykladá ako trvalé pravidlo: pred každou kartou so zmenou vzhľadu agent pripraví návrh (možnosti a '
+                  'odporúčanie), majiteľ ho schváli a až potom ide karta kolegovi; kolega vzhľad nemení bez schváleného vzhľadu v '
+                  'karte. Platí najmä pre frontend zoznamu lajkujúcich (262) a pre redizajn 261.',
+         datum='16. 11. 2026'),
+    dict(id='R50', tema='Poistka proti `--repeat-each` v staršom API scenári volieb (nález 340): súhlas na opravu',
+         otazka='Codex zistil, že v Playwrighte 1.63 sa voľba `--repeat-each` nepremietne do `testInfo.project.repeatEach`, takže '
+                 'starší `notification-preferences-test.ts` ju nezachytí a API scenár volieb by sa pri nesprávnom ručnom spustení '
+                 'vykonal viackrát (v lokálnej syntetickej skúške 2x, štyri simulované PATCH). Predpísaný príkaz bez opakovania '
+                 'medzeru nevyvolá. Dať Codexovi súhlas na samostatnú malú opravu poistky (len `frontend/e2e/**`)? (a) Áno, ako '
+                 'samostatná malá vetva Codexa. (b) Nie, stačí pravidlo nespúšťať scenár s `--repeat-each`.',
+         odporucanie='(a): zmena je malá a len v E2E; poistka chráni hlavný testovací účet pred nechceným opakovaným zápisom pri '
+                      'nesprávnom spustení.',
+         kedy='Pred ďalšou prácou Codexa na API scenári volieb.'),
 ]
