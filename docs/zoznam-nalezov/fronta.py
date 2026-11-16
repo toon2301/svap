@@ -20,7 +20,7 @@ o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej c
 varovaní v Upozorneniach a o načítavaní Sledovania (308, 309 a 310) a K17 (PR #254) o ôsmich natívnych `alert()` a o roli `alert`
 pri chybe Blokovaných (302 a 312) s mapovaním 311. Dávky K16 a K17 navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po
 K14: K16 začínala nálezom 319 (mapovanie, výsledok od kolegu čaká) a pokračovala zvyškami po 286 (308 až 310), K17 dopĺňala zvyšok
-nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 (PR #260) boli malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`; opravu pripomienky CodeRabbitu urobil agent vo vetve K21 s povolením majiteľa); K22 (PR #264) boli dve malé opravy z ručných testov po K21, 334 (stará chybová hláška v okne „Pridať recenziu“) a 335 (atribút `lang` na `<html>`; karta `karty/K22.md`), K23 (PR #266) bola výzva na push (etapa 3b nálezu 321; karta `karty/K23.md`), K24 (PR #269) bola oprava 336 (anglické „Network Error“ v okne recenzie, výnimka R41; karta `karty/K24.md`), K25 (PR #270) opis hlavného vypínača aj na počítači (321, R42; karta `karty/K25.md`), K26 je mapovanie delenia `FeedPostComments.tsx` (333, R23; karta `karty/K26.md`) a návrh K27 a K28: delenie `FeedPostComments.tsx` (333), zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Nález HNEĎ 318
+nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 (PR #260) boli malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`; opravu pripomienky CodeRabbitu urobil agent vo vetve K21 s povolením majiteľa); K22 (PR #264) boli dve malé opravy z ručných testov po K21, 334 (stará chybová hláška v okne „Pridať recenziu“) a 335 (atribút `lang` na `<html>`; karta `karty/K22.md`), K23 (PR #266) bola výzva na push (etapa 3b nálezu 321; karta `karty/K23.md`), K24 (PR #269) bola oprava 336 (anglické „Network Error“ v okne recenzie, výnimka R41; karta `karty/K24.md`), K25 (PR #270) opis hlavného vypínača aj na počítači (321, R42; karta `karty/K25.md`), K26 je mapovanie delenia `FeedPostComments.tsx` (333, R23; karta `karty/K26.md`), K27 je backend zoznamu lajkujúcich (262, R20; karta `karty/K27.md`) a K28 je návrh na preklady (176, najprv mapovanie). Nález HNEĎ 318
 (push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie je: čaká na majiteľa. Nález 321 (kategórie upozornení; R32 (a): pred štartom) má plán po etapách v nálezu 321: etapy 1 a 2 sú zlúčené v K19, etapa 3a v K20 a etapa 3b (výzva na push) v K23 a opis vypínača na počítači v K25, takže nález 321 je hotový; E2E zvyšok je nález 337 (Codex). Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
 PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a K14, K15 a K16, K17 a K18, no tie označenia sa použili na iné dávky, preto
 dostanú číslo K až vtedy, keď pôjdu kolegovi (pred ne pribudnú etapy nálezu 321). Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
@@ -36,7 +36,7 @@ zoznam nemôže ticho zastarať.
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED '
              'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K25 sú hotové (z K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); '
-             'vetvy agenta 167 až 174, 177, 178, 179 (PR #272) a 180 sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z '
+             'vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 (PR #273) a 181 sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z '
              '13. 11. 2026 (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť); oprava pripomienky '
              'CodeRabbitu vo vetve K21 (commit `71f9cff4`) bola druhá jednorazová výnimka majiteľa z 13. 11. 2026, lebo kolega už '
              'nemohol vetvu upraviť. Dávku K21 (331 okno recenzie, 332 jazyk pre zvyšok sveta, 330 gulička Žiadostí a 325 toast; karta '
@@ -48,7 +48,9 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
                'počítači, R42; karta `karty/K25.md`) majiteľ schválil a kolega ich dokončil (PR #269 a #270, zlúčené '
                '16. 11. 2026). Dávku K26 (mapovanie delenia `FeedPostComments.tsx`, nález 333, R23; karta '
                '`karty/K26.md`) pripravil agent 16. 11. 2026 (zlúčená v PR #272) a majiteľ ju 16. 11. 2026 posiela kolegovi; '
-               'K27 a K28 (zoznam lajkujúcich, preklady) sú návrh, každá najprv ako mapovanie. Po výsledku K26 ide jedna '
+               'Dávku K27 (backend nálezu 262: tri koncové body „kto dal lajk“; karta `karty/K27.md`) pripravil agent 16. 11. 2026 po '
+               'mapovaní nálezu 262 a čaká na schválenie majiteľa (posiela sa po K26); frontend nálezu 262 ide ako ďalšia dávka po jej '
+               'zlúčení; K28 (preklady) je návrh, najprv mapovanie. Po výsledku K26 ide jedna '
                'dokumentačná vetva agenta (údržba zoznamu; majiteľ súhlasil 16. 11. 2026); '
              'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
@@ -67,11 +69,13 @@ FRONTA = [
                'R23 je zodpovedané (13. 11. 2026): delenie po jednom súbore, každé vo vlastnej vetve s ručným testom majiteľa; výnimka z pravidla 500 riadkov '
                'sa neudeľuje a povolenie platí len pre tieto tri súbory. Prvá dávka je mapovanie `FeedPostComments.tsx`.'),
     dict(n='262', davka='K27',
-         co='Zoznam lajkujúcich pri ponukách, portfóliu a profile (R20, variant A): najprv mapovanie.',
-         preco='NEJASNÉ (najprv mapovanie, kód nemeň: ktoré koncové body a modely lajkov existujú pre ponuky, portfólio a profil '
-               'a ktoré frontendové miesta majú nad 500 riadkov). Rozhodnutie R20 je zodpovedané (13. 11. 2026): pred štartom, '
-               'viditeľnosť ako na Nástenke (verejný zoznam, súkromné a blokované účty skryté). Veľká funkcia (L), pôjde na viac '
-               'dávok.'),
+         co='Zoznam lajkujúcich pri ponukách, portfóliu a profile (R20, variant A): backendová časť, tri nové koncové body na '
+            'čítanie; frontend potom ako ďalšia dávka.',
+         preco='JASNÉ s krokom 0 (karta `karty/K27.md`; agent nález zmapoval 16. 11. 2026 čítaním kódu: tri modely lajkov rovnakého '
+               'tvaru, spoločný pomocník `_likers_response` bez zmeny, bez migrácie a bez zmeny feedu). Rozhodnutie R20 je '
+               'zodpovedané (13. 11. 2026): pred štartom, viditeľnosť ako na Nástenke (súkromné, neaktívne a blokované účty skryté). '
+               'Testy súkromia, blokovania a neaktívnych účtov sú povinné. Posiela sa kolegovi po K26. Veľká funkcia (L), frontend '
+               'pôjde ďalšou dávkou.'),
     dict(n='176', davka='K28',
          co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
          preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '

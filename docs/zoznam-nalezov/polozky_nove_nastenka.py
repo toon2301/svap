@@ -149,7 +149,7 @@ NEW_ITEMS_NASTENKA = [
               '2026: vzhľad Nástenky zatiaľ sám neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď.',
          dec='ROZHODNUTIE R23', src=ZDROJ),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A)',
+         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); najprv backend (K27), potom frontend',
          what='Zoznam lajkujúcich dnes existuje len pre Nástenku: príspevky a komentáre (`feed/FeedLikersDialog.tsx`; backend '
                '`feed_post_likers_view` a `feed_post_comment_likers_view` v `accounts/views/feed_likes.py`, verejné aj pre '
                'neprihláseného). ROZHODNUTÉ 13. 11. 2026 (R20, variant A): urobiť pred nasadením a rozšíriť na ponuky, portfólio a '
@@ -157,14 +157,25 @@ NEW_ITEMS_NASTENKA = [
                'súkromné účty (`is_public = false`) a neaktívne účty sa v ňom nezobrazia, blokovaní sa filtrujú v oboch smeroch pred '
                'stránkovaním a prihlásený vždy vidí seba (`_likers_response`, testy `test_feed_likers_api.py`); stránkovanie kurzorom '
                'po 20 (najviac 50). Agent odporúčal variant C (lajky profilu nech vidí len vlastník); majiteľ zvolil A.',
-         note='Krok 0 (mapovanie, kód sa nemení): zistiť, ktoré koncové body a modely lajkov dnes existujú pre ponuky '
-               '(`OfferedSkillLike`), profil (`ProfileLike`) a portfólio (samostatný model `*Like` agent nenašiel, lajky portfólia '
-               'treba dohľadať), ktoré dotknuté frontendové miesta majú nad 500 riadkov (karty ponúk a profilové sekcie sú v zozname '
-               'TECH) a ako sa zovšeobecní `FeedLikersDialog`. Návrh (neoverený): spoločný pomocník `_likers_response` použiť pre '
-               'všetky druhy obsahu, nové koncové body po vzore `feed_post_likers_view`, frontend zovšeobecniť dialóg a pridať vstup '
-               '„kto lajkol“ pri karte ponuky, v portfóliu a pri profile; pôjde na viac dávok (najprv backend s testami súkromia a '
-               'blokovania, potom frontend). Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), preto testy '
-               'súkromných účtov, blokovania a neaktívnych účtov sú povinné. Odhad: nízky · L.',
+         note='MAPOVANIE AGENTA (16. 11. 2026, z čítania kódu na `main` `910700ea`; nie dôkaz, kolega ho overí v kroku 0 karty '
+               '`karty/K27.md`). BACKEND: lajky majú tri modely rovnakého tvaru (cieľ, `user`, `created_at`, poradie od najnovšieho, '
+               'index na cieľ a čas): `OfferedSkillLike` (`accounts/models/reviews.py`), `ProfileLike` (`accounts/models/profile_likes.py`) '
+               'a `PortfolioItemLike` (`portfolio/models.py`; model portfólia existuje), takže `_likers_response` '
+               '(`accounts/views/feed_likes.py`) pôjde použiť bezo zmeny a migrácia netreba. Koncový bod na čítanie zoznamu neexistuje '
+               'ani pre jeden z nich; zápis lajku majú `offer_like_view`, `profile_like_view` a `portfolio_item_like_view`. Kto vidí '
+               'obsah: ponuky vidí aj neprihlásený (`search_view` je `AllowAny` a vracia počet lajkov), profil a portfólio len '
+               'prihlásený (`IsAuthenticated`), preto zoznam ponuky bude `AllowAny` a zoznamy profilu a portfólia `IsAuthenticated`; '
+               'viditeľnosť obsahu rieši `offer_hidden_from_user` (aktívneho vlastníka nekontroluje, doplní sa), '
+               '`_get_likeable_portfolio_item` a pravidlá `profile_like_view`. Číslo lajkov zahŕňa aj skrytých lajkujúcich '
+               '(súkromní, neaktívni, blokovaní), takže zoznam môže byť kratší než číslo, rovnako ako na Nástenke. FRONTEND '
+               '(predbežne): `FeedLikersDialog.tsx` (209 riadkov, test 225 riadkov) je viazaný na príspevok a komentár a otvára '
+               'profil vlastnou udalosťou (256); `lib/api.ts` (912 riadkov) a `lib/feedApi.ts` (545 riadkov) sú nad 500 riadkov, '
+               'takže adresy a funkcie pôjdu do nového súboru; vstupy pri karte ponuky (`OfferCardBack.tsx` a '
+               '`ProfileOfferDetailMobileContent.tsx`), profile (`ProfileLikeButton.tsx`; volajúci `ProfileMobileView.tsx` 768 a '
+               '`ProfileModule.tsx` 563 riadkov sú nad 500) a portfóliu (`PortfolioLikeButton.tsx`). PLÁN: dve dávky: K27 backend '
+               '(tri koncové body na čítanie s testami súkromia, blokovania a neaktívnych účtov; karta `karty/K27.md`) a potom '
+               'frontend (dialóg, vstupy, preklady). Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), '
+               'preto testy súkromných účtov, blokovania a neaktívnych účtov sú povinné. Odhad: nízky · L.',
          dec='ROZHODNUTIE R20', src=ZDROJ),
     dict(n=264, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',
          kratko='audit nedostupného obsahu: žiadosti pri zmazaní ponuky a štyri tiché miesta (správy, portfólio, upozornenia)',
