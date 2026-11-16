@@ -2,6 +2,12 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
+import cs from '../../../../../../messages/cs.json';
+import de from '../../../../../../messages/de.json';
+import en from '../../../../../../messages/en.json';
+import hu from '../../../../../../messages/hu.json';
+import pl from '../../../../../../messages/pl.json';
+import sk from '../../../../../../messages/sk.json';
 import type { Review } from '../ReviewCard';
 
 const mockApiGet = jest.fn();
@@ -86,9 +92,12 @@ import OfferReviewsView from '../OfferReviewsView';
 
 /**
  * Odoslanie recenzie v `OfferReviewsView` (nález 336): okno „Pridať recenziu“ (desktopové aj mobilné) ukáže text, ktorý
- * vyhodí `onSubmit`. Tento súbor drží cesty, ktoré sa opravou nemajú zmeniť: text zo servera (`data.error` a chyby polí
- * `rating`, `text`, `pros`, `cons`) sa ukáže v okne; pridanie volá `POST` a úprava `PATCH` s telom z formulára, po úspechu
- * sa zoznam načíta odznova od 1. strany a okno sa zatvorí. Prechádzajú pred opravou aj po nej.
+ * vyhodí `onSubmit`. Cesty, ktoré sa opravou nemali zmeniť (prechádzali pred opravou aj po nej): text zo servera
+ * (`data.error` a chyby polí `rating`, `text`, `pros`, `cons`) sa ukáže v okne; pridanie volá `POST` a úprava `PATCH` s
+ * telom z formulára, po úspechu sa zoznam načíta odznova od 1. strany a okno sa zatvorí. Oprava: pri chybe bez textu
+ * zo servera (vypnutý internet, chyba servera bez textu, zlyhané načítanie zoznamu po odoslaní) okno ukáže preložený
+ * záložný text pre pridanie alebo úpravu (`reviews.addReviewFailed`, `reviews.editReviewFailed`), nie anglické
+ * „Network Error“ ani „Request failed with status code …“.
  */
 type WindowKind = 'desktop' | 'mobile';
 
@@ -127,6 +136,33 @@ const serverError = (status: number, data: unknown) =>
     isAxiosError: true,
     response: { status, data },
   });
+
+/** Výpadok siete: chyba axiosu bez odpovede servera, ktorá nesie len anglické „Network Error“. */
+const networkError = () => Object.assign(new Error('Network Error'), { isAxiosError: true, code: 'ERR_NETWORK' });
+
+const LANGUAGES = { sk, cs, en, pl, de, hu };
+type Language = keyof typeof LANGUAGES;
+const LANGUAGE_CODES = Object.keys(LANGUAGES) as Language[];
+
+/** Preklady bloku `reviews` jedného jazyka ako ploché kľúče, také, aké dosadí `useLanguage().t`. */
+const reviewsTranslations = (language: Language): Record<string, string> =>
+  Object.fromEntries(Object.entries(LANGUAGES[language].reviews).map(([key, value]) => [`reviews.${key}`, value]));
+
+/** Sady prekladov: každý jazyk z `messages` a sada bez prekladov (vtedy platí slovenský záložný text z kódu, rovnaký ako v `sk.json`). */
+const TRANSLATION_SETS: Array<[string, Record<string, string>, Language]> = [
+  ...LANGUAGE_CODES.map((language): [string, Record<string, string>, Language] => [
+    language,
+    reviewsTranslations(language),
+    language,
+  ]),
+  ['záložný text z kódu', {}, 'sk'],
+];
+
+/** Chyby bez textu zo servera, pri ktorých okno nesmie ukázať anglickú hlášku knižnice. */
+const TEXTLESS_FAILURES: Array<[string, () => unknown, RegExp]> = [
+  ['výpadok siete („Network Error“)', networkError, /Network Error/],
+  ['chyba servera bez textu (500, „Request failed with status code 500“)', () => serverError(500, {}), /Request failed/],
+];
 
 const originalMatchMedia = window.matchMedia;
 
@@ -340,5 +376,55 @@ describe.each(KINDS)('OfferReviewsView: odoslanie recenzie, okno %s', (kind) => 
       expect(screen.getByTestId('offer-flags')).toHaveAttribute('data-already-reviewed', 'false');
       expect(mockInvalidateOffersCache).toHaveBeenCalledWith(1);
     });
+  });
+
+  describe.each(TRANSLATION_SETS)('chyba bez textu zo servera, texty: %s (oprava 336)', (_label, translations, expectedLanguage) => {
+    beforeEach(() => {
+      mockTranslations = translations;
+    });
+
+    it.each(TEXTLESS_FAILURES)('pridanie, %s: okno ukáže `reviews.addReviewFailed`, nie hlášku knižnice', async (_name, failure, english) => {
+      mockApiPost.mockRejectedValue(failure());
+      await renderView();
+      const dialog = await openWindow(kind, 'open-add');
+      rate(dialog, 4);
+
+      await submit(dialog);
+
+      expect(shownError(dialog)).toBe(LANGUAGES[expectedLanguage].reviews.addReviewFailed);
+      expect(dialog).not.toHaveTextContent(english);
+      expect(mockApiPost).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(TEXTLESS_FAILURES)('úprava, %s: okno ukáže `reviews.editReviewFailed`, nie hlášku knižnice', async (_name, failure, english) => {
+      serverReviews = [review(7, 3, 'Pôvodný text')];
+      mockApiPatch.mockRejectedValue(failure());
+      await renderView();
+      const dialog = await openWindow(kind, 'edit-7');
+
+      await submit(dialog, true);
+
+      expect(shownError(dialog)).toBe(LANGUAGES[expectedLanguage].reviews.editReviewFailed);
+      expect(dialog).not.toHaveTextContent(english);
+      expect(mockApiPatch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('odoslanie prešlo, no načítanie zoznamu zlyhalo: preložený text pre pridanie a okno ostáva otvorené (súčasné správanie)', async () => {
+    mockTranslations = reviewsTranslations('en');
+    mockApiPost.mockResolvedValue({ data: {} });
+    await renderView();
+    mockApiGet.mockImplementation(async () => {
+      throw networkError();
+    });
+    const dialog = await openWindow(kind, 'open-add');
+    rate(dialog, 4);
+
+    await submit(dialog);
+
+    expect(shownError(dialog)).toBe(en.reviews.addReviewFailed);
+    expect(dialog).not.toHaveTextContent('Network Error');
+    expect(mockApiPost).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('dialog')).toBe(dialog);
   });
 });
