@@ -654,10 +654,10 @@ export default function OfferReviewsView({
             return { success: true };
           } catch (error: unknown) {
             console.error('Chyba pri ukladaní recenzie:', error);
-            // Fallback zahŕňa error.message (zachované správanie) + lokalizovaný text.
-            const fallback =
-              (error as { message?: string })?.message ||
-              (reviewToEdit ? 'Nepodarilo sa upraviť recenziu.' : 'Nepodarilo sa pridať recenziu. Skús to znova.');
+            // Záložný text je preložený (`t`): anglické `message` chyby axiosu („Network Error“) sa užívateľovi neukáže.
+            const fallback = reviewToEdit
+              ? t('reviews.editReviewFailed', 'Nepodarilo sa upraviť recenziu. Skúste to znova.')
+              : t('reviews.addReviewFailed', 'Nepodarilo sa pridať recenziu. Skúste to znova.');
             throw new Error(getFieldErrorMessage(error, fallback));
           }
         }}
