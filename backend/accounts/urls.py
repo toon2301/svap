@@ -144,6 +144,11 @@ urlpatterns = [
         name="dashboard_user_profile_like",
     ),
     path(
+        "dashboard/users/<int:user_id>/profile/likes/",
+        views.profile_likers_view,
+        name="dashboard_user_profile_likers",
+    ),
+    path(
         "dashboard/users/<int:user_id>/skills/",
         views.dashboard_user_skills_view,
         name="dashboard_user_skills",
