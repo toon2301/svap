@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='16. 11. 2026',
-    kod='`main` `93bd8677` (po PR #271, Codex: overenie po K25 a príprava Ubuntu vo WSL; K24 je PR #269, K25 PR #270 a zoznam PR #268)',
+    kod='`main` `13a9d95b` (po PR #272: zoznam po K24 a K25 a karta K26; PR #271 je Codex, K24 je PR #269 a K25 PR #270)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,17 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('16. 11. 2026',
+      'Vetva 180 (vychádza z `main` `13a9d95b`, teda po PR #272). (1) Vetva 179 (PR #272, zlúčené 16. 11. 2026 o 13:39 UTC, '
+      'merge `13a9d95b`; commit `56d14142`) je zlúčená: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené, CodeRabbit '
+      'aj Codex review bez pripomienok a vlákna nie sú. (2) Odpoveď majiteľa na R44: (b) podľa odporúčania agenta, teda '
+      'robí sa len UI scenár zmeny kategórie upozornení (nález 337) a kontrola výzvy na push sa v E2E nerobí; implementuje '
+      'Codex v `frontend/e2e/**`, pred implementáciou skontroluje, že testovací účet má zapnuté upozornenia v aplikácii, '
+      'a živé okno proti Railway oznámi majiteľ samostatne. (3) Majiteľ súhlasil s jednou dokumentačnou vetvou agenta po '
+      'výsledku K26 (údržba zoznamu: aktuálny stav na jednom mieste, staré dáta do archívnych súborov, menej opakovaných '
+      'faktov; cieľom je menej chýb); K26 posiela majiteľ kolegovi. (4) Číselný prehľad: nálezy 1–337, zatvorené 14, hotové 132, '
+      'čakajúcich rozhodnutí 9 z 44. Dopad na E2E: Codex dostáva pokyn implementovať UI scenár kategórií (nález 337); '
+      'aplikácia sa nemení.'),
     ('16. 11. 2026',
       'Vetva 179 (vychádza z `main` `93bd8677`, teda po PR #271). (1) K24 (PR #269, zlúčené 16. 11. 2026 o 08:39 UTC, '
       'merge `fa049c61`; commity `09563623` a `7f8bc410`): hotový nález 336 (anglické „Network Error“ v okne „Pridať '
@@ -33,8 +44,8 @@ ZMENY = [
       'zlyhalo a 10 preskočených (rovnaké kľúče ako prijatý dym po K22) a API kontrakt volieb vo WebKite desktop aj mobil '
       '2 / 0 / 0 (obnova všetkých siedmich hodnôt overená); nejde o celý beh, prijatý základ ostáva 427 / 2 / 303. '
       'Mapovanie UI scenára kategórií a schopností prehliadačov pre výzvu K23 (WebKit desktop má push API a povolenie '
-      '`default`, WebKit mobil ich nemá, Chromium má povolenie `denied`) je nový nález 337 a rozhodnutie R44 (čaká na '
-      'majiteľa). R40 (a): oddelené Ubuntu vo WSL je pripravené (`Svaply-E2E-Ubuntu-24.04`, Ubuntu 24.04.5, Node 24.20.0, '
+      '`default`, WebKit mobil ich nemá, Chromium má povolenie `denied`) je nový nález 337 a rozhodnutie R44 (rozhodnuté '
+      'neskôr, pozri vetvu 180). R40 (a): oddelené Ubuntu vo WSL je pripravené (`Svaply-E2E-Ubuntu-24.04`, Ubuntu 24.04.5, Node 24.20.0, '
       'Playwright 1.63.0, WebKit 26.6); prázdna stránka bez siete prešla 1 / 1 a prostredie je zastavené; na porovnanie '
       'treba ešte izolovaný Chromium pre prihlasovanie a okno od majiteľa; nález 223 ostáva otvorený. (3) Číselný prehľad: '
       'nálezy 1–337, zatvorené 14, hotové 132 (pribudli 336 a 321), jedno nové číslo (337). (4) Karta K26 '

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Rozhodnutia R41 a ďalšie (od 15. 11. 2026): R41 (výnimka z pravidla 500 riadkov pre opravu 336, rozhodnuté 15. 11. 2026), R42 (opis
 hlavného vypínača aj na počítači, rozhodnuté 16. 11. 2026), R43 (E2E scenár odznaku Žiadostí sa nerobí, rozhodnuté 16. 11. 2026) a R44
-(E2E UI scenár kategórií a kontrola výzvy na push, čaká na majiteľa).
+(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026).
 
 Samostatný súbor kvôli limitu 500 riadkov (`rozhodnutia_nastenka.py` má vyše 380 riadkov); `stav.py` ich pripája do `DECISIONS` za R13–R40.
 Čísla rozhodnutí sa nikdy nepoužívajú znova; nové rozhodnutie sa pridáva na koniec zoznamu.
@@ -66,5 +66,13 @@ DECISIONS_DALSIE = [
                       'overuje. Výzvu na push dobre pokrývajú jednotkové testy a ručný test na iPhone prešiel; E2E by ju '
                       'videlo len v jednom projekte a pri zmene stavu účtu (zapnuté Správy). (c) je v poriadku, ak majiteľ '
                       'nechce ďalšiu prácu v E2E: nález 337 sa vtedy uzavrie rozhodnutím.',
-         kedy='Pred ďalšou prácou Codexa na týchto scenároch.'),
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: súhlas s odporúčaním agenta, teda (b): robí sa len UI scenár zmeny kategórie upozornení '
+                  '(nález 337); kontrola výzvy na push sa v E2E nerobí (ostáva jednotkovými testami a ručným testom na iPhone). '
+                  'Agent to vykladá tak, že Codex scenár implementuje v `frontend/e2e/**` podľa vlastného mapovania (zmena jednej '
+                  'voľby cez rozhranie, overenie uloženia po obnovení stránky, vrátenie všetkých siedmich hodnôt s overením, WebKit '
+                  'desktop aj mobil povinný), pred implementáciou skontroluje, že testovací účet má zapnuté upozornenia v aplikácii '
+                  '(`in_app_notifications`; inak scenár nahlási majiteľovi a nič potichu nezapína), a že živé okno proti Railway '
+                  'oznámi majiteľ samostatne.',
+         datum='16. 11. 2026'),
 ]

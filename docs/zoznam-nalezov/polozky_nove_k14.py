@@ -123,8 +123,8 @@ NEW_ITEMS_K14 = [
                'existujúce testy komentárov; E2E sa po delení spustí (Codex). Odhad: stredný · L (tri samostatné dávky).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026)'),
     dict(n=337, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
-         kratko='E2E: UI scenár zmeny kategórie upozornení s vrátením pôvodnej hodnoty (zvyšok etapy 4 nálezu 321); čaká na '
-                'rozhodnutie majiteľa (R44)',
+         kratko='E2E: UI scenár zmeny kategórie upozornení s vrátením pôvodnej hodnoty (zvyšok etapy 4 nálezu 321); rozhodnuté '
+                '(R44, 16. 11. 2026), implementuje Codex',
          what='Zvyšok etapy 4 nálezu 321 (Codex): API kontrakt siedmich volieb a kontrola atribútu `lang` sú zlúčené (PR '
                '#267) a overené naživo, no samotná zmena kategórie cez rozhranie (klik alebo ťuk, uloženie na server, '
                'obnovenie stránky a návrat hodnoty) nemá E2E scenár. MAPOVANIE CODEXA (16. 11. 2026, '
@@ -143,9 +143,12 @@ NEW_ITEMS_K14 = [
                's povolením `denied`), takže výzvu typu `enable` by v E2E videl len desktopový WebKit; scenár „Nie teraz“ '
                'by bol možný len pri už zapnutých Správach a bez kliknutia na „Povoliť“ (zápis '
                '`svaplyPushPromptDismissedV1` do úložiska prehliadača sa vráti).',
-         note='Návrh agenta (rozhodnutie R44): UI scenár kategórií robiť (je to posledná položka plánu etapy 4; zápis je '
-               'malý, návrat sa overuje a WebKit ostáva povinný), E2E pre výzvu na push nerobiť (pokrývajú ju desiatky '
-               'jednotkových testov hooku, komponentu a celého modulu, ručný test na iPhone prešiel a v E2E by ju videl '
-               'len jeden z troch projektov). Odhad: stredný · M. Dopad na aplikáciu: žiadny.',
-         dec='ROZHODNUTIE R44', src='report Codexa z 16. 11. 2026 (mapovanie UI kategórií a schopností prehliadačov) a rozhodnutie majiteľa R43'),
+         note='Rozhodnutie R44 (majiteľ, 16. 11. 2026, podľa odporúčania agenta): UI scenár kategórií robiť (je to posledná '
+               'položka plánu etapy 4; zápis je malý, návrat sa overuje a WebKit ostáva povinný), E2E pre výzvu na push '
+               'nerobiť (pokrývajú ju desiatky jednotkových testov hooku, komponentu a celého modulu, ručný test na iPhone '
+               'prešiel a v E2E by ju videl len jeden z troch projektov). Implementuje Codex; pred implementáciou '
+               'skontroluje, že testovací účet má zapnuté upozornenia v aplikácii (inak scenár nahlási majiteľovi a hlavný '
+               'vypínač potichu nezapína) a živé okno proti Railway oznámi majiteľ samostatne. Nález sa uzavrie, keď '
+               'scenár prejde naživo vo WebKite desktop aj mobil. Odhad: stredný · M. Dopad na aplikáciu: žiadny.',
+         dec='ROZHODNUTIE R44', src='report Codexa z 16. 11. 2026 (mapovanie UI kategórií a schopností prehliadačov) a rozhodnutia majiteľa R43 a R44'),
 ]
