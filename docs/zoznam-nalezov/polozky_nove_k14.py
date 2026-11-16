@@ -109,9 +109,8 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=321, bucket=P, imp=S_, eff=EL, pkg='Upozornenia a push',
          kratko='Upozornenia: kategórie a hlavný vypínač (dokončiť pred štartom, R32 a); aplikácia je hotová (server K19, '
-                'rozhranie kategórií K20, odznak Žiadostí K21, výzva na push K23), zostáva E2E (etapa 4, Codex) a otázka o vete v '
-                'opise hlavného vypínača na počítači',
-         what='ČIASTOČNE HOTOVÉ (K19, K20 a K23; zostáva E2E a jedna otázka). '
+                'rozhranie kategórií K20, odznak Žiadostí K21, výzva na push K23), zostáva E2E (etapa 4, Codex) a opis hlavného vypínača na počítači (R42, K25)',
+         what='ČIASTOČNE HOTOVÉ (K19, K20 a K23; zostáva opis vypínača na počítači a E2E). '
                'ETAPA 3b (K23, zlúčené v PR #266 dňa 15. 11. 2026 o 19:08 UTC, merge `07a72900`; dva commity `3d5ed3dc` '
                '(logika) a `34279dcc` (rozhranie), 22 súborov, 1 329 pridaných a 5 odstránených riadkov): v Nastaveniach → '
                'Upozornenia sa v obale Správ pod stavovým riadkom ukáže pomenovaná oblasť výzvy. Variant `enable` (voľba '
@@ -138,14 +137,15 @@ NEW_ITEMS_K14 = [
                '`NotificationSettingsModule.loading.test.tsx`) teraz počítajú len riadky voľby a nie všetky tlačidlá v '
                'obale Správ, lebo sú tam oprávnene aj tlačidlá výzvy. POZOROVANIE KOLEGU: na iPhone mimo aplikácie sa '
                'ukážu naraz červené existujúce varovanie „Tento prehliadač nepodporuje push notifikácie.“ a pod ním karta '
-               'výzvy s návodom; „Nie teraz“ skryje len kartu; ponechané podľa karty. NEOVERENÉ: správanie skutočného '
-               'iPhonu (Safari mimo aplikácie a aplikácia z plochy), skutočné okno povolenia a doručenie push, vzhľad vo '
-               'WebKite a Safari a jazyková kvalita prekladov v cs, pl, de a hu (rodený hovoriaci ich nečítal). KONTROLA '
+               'výzvy s návodom; „Nie teraz“ skryje len kartu; ponechané podľa karty. NEOVERENÉ KOLEGOM: správanie skutočného iPhonu (Safari mimo aplikácie a aplikácia z plochy), skutočné '
+               'okno povolenia a doručenie push (tie potom overil majiteľ ručne vrátane iPhone, pozri nižšie), vzhľad '
+               'vo WebKite a Safari a jazyková kvalita prekladov v cs, pl, de a hu (rodený hovoriaci ich nečítal; '
+               'ostáva neoverená). KONTROLA '
                'AGENTA (16. 11. 2026, z GitHubu): CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené a bez '
                'pripomienok, Codex review hlavičky `34279dcc` bola bez nálezov a vlákna na GitHube nie sú; mapovanie K23 v '
                'tomto nálezu sa po pripomienke CodeRabbitu k PR #265 opravilo (variant `ios-install` nevyžaduje podporu '
-               'push). Ručné testy majiteľa po nasadení prešli bez nového nálezu (správa z 15. 11. 2026); či zahŕňali aj '
-               'iPhone, správa nespresňuje. '
+               'push). Ručné testy majiteľa po nasadení (15. 11. 2026) prešli bez nového nálezu a zahŕňali aj iPhone '
+               '(potvrdil majiteľ 16. 11. 2026). '
                'ETAPA 3a (K20, zlúčené v PR #258 dňa 12. 11. 2026 o 21:56 UTC, merge `e26caa31`; päť commitov podľa karty `8525ce0e`, '
                '`cf22717e`, `02ea322b`, `a8f3ccf4` a `4a80caf0` a päť opráv po kontrolách botov `ddaf3a64`, `888762a4`, `6543df31`, '
                '`cd2c7fa0` a `dabf2e0b`): rozhranie je napojené na server. `useNotificationPreferences.ts` (245 riadkov po opravách) pozná '
@@ -211,8 +211,8 @@ NEW_ITEMS_K14 = [
                'počiatočná žiadosť v kategórii) test zachytil 3 z 3. Manuálne testy majiteľa po nasadení nenašli nález. '
                'ZOSTÁVA (stav 16. 11. 2026, po K23 a PR #267): (a) etapa 3b (výzva na push) je hotová v K23; (b) hotové v '
                'K21 (PR #260, nález 330): odznak Žiadostí pri vypnutej kategórii „Žiadosť o zručnosť“ sa nerozsvieti '
-               '(rozhodnutie R39, výklad potvrdil majiteľ 15. 11. 2026); (c) otázka majiteľa, či sa nová veta v opise '
-               'hlavného vypínača má ukázať aj na počítači (nie je blokujúca, bez odpovede ostáva ako dnes); (d) etapa 4 '
+               '(rozhodnutie R39, výklad potvrdil majiteľ 15. 11. 2026); (c) opis hlavného vypínača aj na počítači: majiteľ 16. 11. 2026 rozhodol, že áno (R42); ide ako K25 '
+               '(karta `karty/K25.md`); (d) etapa 4 '
                '(Codex): API kontrakt siedmich volieb a E2E kontrola atribútu `lang` (nález 335) sú zlúčené v PR #267 '
                '(`notification-preferences.api.ts`: jedna zmena kategórie `notify_likes` a návrat všetkých siedmich '
                'hodnôt; `document-language.spec.ts`: 18 variantov; živé overenie 15. 11. 2026 na `52626ab7`: jazyk 18 / 0 '
@@ -220,9 +220,8 @@ NEW_ITEMS_K14 = [
                'v troch projektoch (WebKit desktop, WebKit mobil a Chromium) a živé WebKit varianty ešte neboli spustené '
                '(potrebujú nové okno, ktoré potvrdí majiteľ); zostáva UI scenár kategórií s vrátením pôvodnej hodnoty a '
                'kontrola `mobile-settings-navigation.spec.ts` (obe sú teraz možné, K23 je nasadená), prípadne E2E pre '
-               'výzvu na push (v Playwrighte je povolenie `default`, no push API v Dockeri nemusí byť dostupné, treba '
-               'zmapovať) a scenár odznaku Žiadostí pri nálezu 330 (dva účty a upratanie; Codex ho zmapoval a nespustil, '
-               'návrh agenta je nerobiť, rozhodne majiteľ); (e) ručné testy majiteľa po K20 priniesli 330 a 331 (obe '
+               'výzvu na push (v Playwrighte je povolenie `default`, no push API v Dockeri nemusí byť dostupné, treba zmapovať); scenár odznaku Žiadostí pri nálezu 330 sa podľa rozhodnutia majiteľa nerobí (R43; '
+               'Codex ho zmapoval a nespustil); (e) ručné testy majiteľa po K20 priniesli 330 a 331 (obe '
                'hotové v K21), po K21 priniesli 334 a 335 (obe hotové v K22) a po K22 aj po K23 prešli bez nového nálezu. '
                'MAPOVANIE K23 (agent, 15. 11. 2026, len čítanie kódu na `main` `52626ab7`; návrh pred implementáciou, splnený v K23): `Notification.requestPermission()` '
                'sa v aplikácii volá na jedinom mieste, v `enablePushMessages()` (`usePushMessagesPreference.ts`, 368 riadkov, riadok 267), a '
@@ -310,10 +309,10 @@ NEW_ITEMS_K14 = [
                'zapnuté. Hlavný vypínač „Vypnúť všetko“ vypne všetky možnosti v Upozorneniach okrem Správ (kategórie ostanú viditeľne '
                'vypnuté a po návrate sa vrátia ich hodnoty); nová žiadosť o zručnosť sa pri ňom doručí do Žiadostí, no bez odznaku (R39 b, K21). '
                'Výzva na povolenie push pre nových používateľov ide do etapy 3 (R36 a). Najbližšie (16. 11. 2026): K20 (etapa '
-               '3a), K21 (odznak Žiadostí, nález 330), K22 a K23 (výzva na push, R36 a) sú zlúčené; teraz E2E (Codex, etapa 4).',
+               '3a), K21 (odznak Žiadostí, nález 330), K22 a K23 (výzva na push, R36 a) sú zlúčené; teraz K24 (oprava 336), K25 (opis vypínača na počítači) a E2E (Codex, etapa 4).',
          dec='ROZHODNUTIE R36', src='ručný test majiteľa po K14 (8. 11. 2026), kolega (K14), mapovanie agenta (10. 11. 2026) a K19 a K20 '
                                     '(kolega, 12. 11. 2026), ručný test po K20 (13. 11. 2026) s kontrolou agenta po zlúčení, mapovanie K23 (agent, 15. 11. 2026) a '
-                                    'kontrola PR #266 a #267 (agent, 16. 11. 2026)'),
+                                    'kontrola PR #266 a #267 (agent, 16. 11. 2026) a odpovede majiteľa z 16. 11. 2026 (R42 a R43)'),
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
                'vzhľadu, až potom redizajn (R23)',

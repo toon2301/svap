@@ -20,8 +20,9 @@ o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej c
 varovaní v Upozorneniach a o načítavaní Sledovania (308, 309 a 310) a K17 (PR #254) o ôsmich natívnych `alert()` a o roli `alert`
 pri chybe Blokovaných (302 a 312) s mapovaním 311. Dávky K16 a K17 navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po
 K14: K16 začínala nálezom 319 (mapovanie, výsledok od kolegu čaká) a pokračovala zvyškami po 286 (308 až 310), K17 dopĺňala zvyšok
-nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 (PR #260) boli malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`; opravu pripomienky CodeRabbitu urobil agent vo vetve K21 s povolením majiteľa); K22 (PR #264) boli dve malé opravy z ručných testov po K21, 334 (stará chybová hláška v okne „Pridať recenziu“) a 335 (atribút `lang` na `<html>`; karta `karty/K22.md`), K23 (PR #266) bola výzva na push (etapa 3b nálezu 321; karta `karty/K23.md`), K24 je oprava 336 (anglické „Network Error“ v okne recenzie, výnimka R41; karta `karty/K24.md`) a návrh K25 až K27: delenie `FeedPostComments.tsx` (333), zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Nález HNEĎ 318
-(push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie je: čaká na majiteľa. Nález 321 (kategórie upozornení; R32 (a): pred štartom) má plán po etapách v nálezu 321: etapy 1 a 2 sú zlúčené v K19, etapa 3a v K20 a etapa 3b (výzva na push) v K23; zostáva E2E (etapa 4, Codex). Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
+nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 (PR #260) boli malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`; opravu pripomienky CodeRabbitu urobil agent vo vetve K21 s povolením majiteľa); K22 (PR #264) boli dve malé opravy z ručných testov po K21, 334 (stará chybová hláška v okne „Pridať recenziu“) a 335 (atribút `lang` na `<html>`; karta `karty/K22.md`), K23 (PR #266) bola výzva na push (etapa 3b nálezu 321; karta `karty/K23.md`), K24 je oprava 336 (anglické „Network Error“ v okne recenzie, výnimka R41; karta `karty/K24.md`), K25 '
+               'opis hlavného vypínača aj na počítači (321, R42; karta `karty/K25.md`) a návrh K26 až K28: delenie `FeedPostComments.tsx` (333), zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Nález HNEĎ 318
+(push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie je: čaká na majiteľa. Nález 321 (kategórie upozornení; R32 (a): pred štartom) má plán po etapách v nálezu 321: etapy 1 a 2 sú zlúčené v K19, etapa 3a v K20 a etapa 3b (výzva na push) v K23; zostáva opis vypínača na počítači (K25) a E2E (etapa 4, Codex). Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
 PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a K14, K15 a K16, K17 a K18, no tie označenia sa použili na iné dávky, preto
 dostanú číslo K až vtedy, keď pôjdu kolegovi (pred ne pribudnú etapy nálezu 321). Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
 určuje majiteľ (`SCHVALENE`). V poradí idú všetky nálezy HNEĎ a PRED NASADENÍM pred nálezmi PO NASADENÍ. Výnimku schvaľuje majiteľ a
@@ -45,8 +46,10 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'hláška v okne recenzie a 335 atribút `lang`; karta `karty/K22.md`) navrhol agent 13. 11. 2026 po ručných testoch K21, '
              'majiteľ ju schválil a kolega ju dokončil (PR #264, zlúčené 15. 11. 2026). Dávku K23 (výzva na push, etapa 3b nálezu 321; '
              'karta `karty/K23.md`) pripravil agent 15. 11. 2026, majiteľ ju schválil a kolega ju dokončil (PR #266, zlúčené 15. 11. 2026). '
-             'Dávku K24 (oprava 336, výnimka R41; karta `karty/K24.md`) pripravil agent 16. 11. 2026 a čaká na schválenie majiteľa; K25 až '
-             'K27 (delenie `FeedPostComments.tsx`, zoznam lajkujúcich, preklady) sú návrh, každá najprv ako mapovanie; '
+             'Dávky K24 (oprava 336, výnimka R41; karta `karty/K24.md`) a K25 (opis hlavného vypínača aj na '
+               'počítači, R42; karta `karty/K25.md`; ide po K24) pripravil agent 16. 11. 2026 a čakajú na schválenie '
+               'majiteľa; K26 až K28 (delenie `FeedPostComments.tsx`, zoznam lajkujúcich, preklady) sú návrh, každá '
+               'najprv ako mapovanie; '
              'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
@@ -63,19 +66,25 @@ FRONTA = [
                '15. 11. 2026) s maximálnou opatrnosťou: vlastný commit, test, ktorý bez zmeny padá, v diffe len nevyhnutné riadky `catch` '
                'bloku v `onSubmit`, počet riadkov súboru sa nezvýši, charakterizačné testy pred zmenou a zastavenie pri akejkoľvek ďalšej '
                'potrebe zmeny v súbore; dve poznámky k tomu istému `onSubmit` výnimka nepokrýva.'),
-    dict(n='333', davka='K25',
+    dict(n='321', davka='K25',
+         co='Upozornenia: opis hlavného vypínača „Vypnúť všetko“ sa ukáže aj na počítači (časť (c) nálezu 321, R42).',
+         preco='JASNÉ (karta `karty/K25.md`; posiela sa po K24, nie spolu s ňou). Rozhodnutie R42 je zodpovedané (16. 11. 2026): veta „Vypne '
+               'všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.“ sa má ukázať '
+               'aj na počítači (na mobile už je). Texty v šiestich jazykoch existujú; mení sa `Desktop.tsx` (243 riadkov) a '
+               '`MasterToggle.tsx` (99), malá zmena bez backendu. Zvyšok nálezu 321 je E2E (etapa 4, Codex).'),
+    dict(n='333', davka='K26',
          co='Nástenka: rozdeliť `FeedPostComments.tsx` (1 487 riadkov) bez zmeny vzhľadu; potom `FeedPostCard.tsx` a '
             '`FeedPostMobileDetail.tsx` (R23).',
          preco='NEJASNÉ (najprv mapovanie hraníc, kód nemeň, kým majiteľ nepovie). Rozhodnutie R23 je zodpovedané (13. 11. '
                '2026): delenie po jednom súbore, každé vo vlastnej vetve s ručným testom majiteľa; výnimka z pravidla 500 riadkov '
                'sa neudeľuje a povolenie platí len pre tieto tri súbory. Prvá dávka je mapovanie `FeedPostComments.tsx`.'),
-    dict(n='262', davka='K26',
+    dict(n='262', davka='K27',
          co='Zoznam lajkujúcich pri ponukách, portfóliu a profile (R20, variant A): najprv mapovanie.',
          preco='NEJASNÉ (najprv mapovanie, kód nemeň: ktoré koncové body a modely lajkov existujú pre ponuky, portfólio a profil '
                'a ktoré frontendové miesta majú nad 500 riadkov). Rozhodnutie R20 je zodpovedané (13. 11. 2026): pred štartom, '
                'viditeľnosť ako na Nástenke (verejný zoznam, súkromné a blokované účty skryté). Veľká funkcia (L), pôjde na viac '
                'dávok.'),
-    dict(n='176', davka='K27',
+    dict(n='176', davka='K28',
          co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
          preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '
                'meranie z 6. 11. 2026: cs 247, pl 49, de 3 a hu 1 hodnôt zhodných so slovenčinou). R2 je zodpovedané (13. 11. 2026). '

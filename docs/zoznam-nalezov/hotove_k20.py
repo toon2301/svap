@@ -87,8 +87,8 @@ DONE_SINCE_K20 = [
                'do etapy 4 nálezu 321, Codex). Dopad na E2E: žiadny nájdený. RUČNÝ TEST MAJITEĽA A MAPOVANIE CODEXA (15. 11. 2026): '
                'majiteľ potvrdil, že pri zapnutom „Vypnúť všetko“ nepríde pri novej žiadosti žiadny odznak a tak to chce nechať; Codex '
                'scenár s dvoma účtami len zmapoval v kóde a nespustil (potrebuje nové žiadosti a ich skutočné upratanie, ktoré bežné API '
-               'nedovoľuje: zrušenie a skrytie žiadosti nezmaže riadok ani jej upozornenie). Návrh agenta: E2E pre 330 nerobiť, lebo '
-               'správanie stráži 12 backendových testov s mutáciami 9 z 9 a ručný test; čaká na rozhodnutie majiteľa.'),
+               'nedovoľuje: zrušenie a skrytie žiadosti nezmaže riadok ani jej upozornenie). Majiteľ 16. 11. 2026 podľa odporúčania agenta rozhodol, že E2E pre 330 sa nerobí (R43), lebo '
+               'správanie stráži 12 backendových testov s mutáciami 9 z 9 a ručný test.'),
     dict(n=325, vetva='K21', pr='#260', zlucene=True,
          text='HOTOVÉ (backendová časť v K18, PR #255, commit `f48d963e`; zvyšok vo vetve K21, zlúčené v PR #260 dňa 13. 11. 2026, '
                'merge `79f907bd`, commit `9d26d9c4`; výnimka R37 (b a c) z 11. 11. 2026). Po úspešnom zmazaní vlastnej recenzie sa '
