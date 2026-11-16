@@ -70,7 +70,8 @@ ZMENY = [
       '(výzva na push; čaká na schválenie majiteľa), potom návrh K24 až K26 (delenie `FeedPostComments.tsx`, zoznam '
       'lajkujúcich a preklady, každá najprv ako mapovanie). Dopad na E2E: K22 žiadny; K23 pridá výzvu pod voľbu Správy v '
       'Nastaveniach → Upozornenia (špec `mobile-settings-navigation` overuje len jej obal), etapu 4 nálezu 321 (API test siedmich '
-      'volieb a scenár odznaku žiadostí hneď, UI scenár kategórií po K23) a jednoduchú kontrolu atribútu `lang` rieši Codex.'),
+      'volieb a scenár odznaku žiadostí hneď, ten sa neskôr zrušil rozhodnutím R43, UI scenár kategórií po '
+               'K23) a jednoduchú kontrolu atribútu `lang` rieši Codex.'),
     ('13. 11. 2026',
       'Vetva 174, doplnok po K21 (vychádza z `main` `8b951cd9`, teda po PR #261; main je zlúčený do vetvy). (1) K21 (PR #260, '
       'zlúčené 13. 11. 2026 o 16:25 UTC, merge `79f907bd`; päť commitov: štyri podľa karty `59cbc04c`, `eceda277`, `c4d50bfb` '

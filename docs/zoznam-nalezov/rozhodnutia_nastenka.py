@@ -376,7 +376,7 @@ DECISIONS_NASTENKA = [
                  'nechať. Majiteľ '
                  'návrh vety pre opis hlavného vypínača nenamietal: „Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa '
                  'aj tak zobrazia v Žiadostiach, len bez odznaku.“ (na počítači hlavný vypínač opis nemá a ostáva tak). Nález 330 ide do '
-                 'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',
+                 'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom sa podľa R43 (16. 11. 2026) nerobí.',
          datum='13. 11. 2026'),
     dict(id='R40', tema='Porovnanie Windows a Docker pre nález 223: ako ďalej, keď natívny Windows WebKit nejde',
          otazka='Plánované porovnanie šiestich variantov E2E špecov (každý 3× natívne na Windows a 3× v Dockeri) sa nespustilo, lebo '
