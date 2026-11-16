@@ -66,6 +66,12 @@ const test = categoryTest.extend<{ categoryMode: CategoryMode; _syntheticCategor
             if (categoryMode === 'change-proxy') {
               await route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ private: PRIVATE }) }); return;
             }
+            if (categoryMode.startsWith('change-redirect-')) {
+              // Overuje sa prijatie prvej 3xx odpovede; nie živé presmerovanie alebo sieťový server.
+              await route.fulfill({ status: categoryMode === 'change-redirect-temporary' ? 307 : 308,
+                headers: { 'X-App-Duration-Ms': '1' }, contentType: 'application/json',
+                body: JSON.stringify({ private: PRIVATE }) }); return;
+            }
           }
         }
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...state, private: PRIVATE }) });

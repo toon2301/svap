@@ -16,6 +16,40 @@ Pred implementáciou majiteľ výslovne potvrdil, že hlavný E2E účet má
 Railway**. Scenár podmienku pri živom behu ešte overí cez GET: pri vypnutí
 zlyhá bez UI zmeny aj bez obnovovacieho PATCH. Master sa potichu nezapína.
 
+### Dodatok po kontrole Rabbitu v PR #276 — odpovede 3xx
+
+Pred opravou bol skontrolovaný najnovší main **`bf754de0`**; medzitým sa
+nemenili dotknuté E2E ani frontendové súbory. Oprava zostáva na tej istej vetve.
+Rabbit správne upozornil, že stav 307/308 môže predchádzať presmerovanému PATCH,
+ktorý route handler nevidí. Endpoint v kóde priamo nepresmerúva, no správanie
+živej proxy sa v tejto dávke neoverovalo.
+
+Zvolená úzka oprava nepovažuje presmerovaný PATCH za úspešný testový tok:
+**všetky 3xx znamenajú neistotu**, aj pri platnej `X-App-Duration-Ms`.
+Obnovovací PATCH a záverečný GET sa stále skúsia, ale neistota zostáva a
+`restored=verified` je zakázané aj po prípadnej odpovedi nesledovaného pokračovania.
+Pôvodný maxFailures=1 zastaví nasledujúci projekt, nie už dobiehajúci redirect.
+Pri takomto FAIL treba účet preveriť; samotný GET nepreukazuje trvalý návrat.
+Aplikácia, transport, timeouty,
+retry a pravidlá ochrany údajov sa nemenia.
+
+Tri nové čisté regresné kontroly najprv na pôvodnom kóde správne padli
+(42 PASS / 3 FAIL); po oprave prešli **45/45** vrátane pôvodných 20 API kontrol.
+Prehliadačové kontroly navyše synteticky vracajú prvú odpoveď 307 alebo 308
+s aplikačnou hlavičkou. Zámerne netvoria živý redirect chain: overujú, že už
+prijatie 3xx zabráni potvrdeniu obnovy, aj keď aktuálny záverečný GET sedí.
+Po oprave celá lokálna prehliadačová kontrolná sada prešla **18/18**, čas
+**262,145 s**, 0 SKIP a bez retry. Obsahuje štyri úspešné UI varianty a 28
+správne odhalených úmyselných chýb; nové 307/308 sú **4/4** v oboch WebKitoch
+a hlásia neoverený návrat aj pri zhodnom aktuálnom stave. Poistky spustenia a
+zastavenie druhého projektu po chybe obnovy prešli tiež. TypeScript aplikácie
+aj E2E a ESLint zmenených súborov: **0 chýb / 0 upozornení**. Negatívna kontrola
+ochrany textových príloh: **5/5**, obsah príloh kontrolovaný aj v browser sade.
+Skutočné účty ani Railway sa nepoužívajú. Skorší predbežný návrh termínu nie
+je potvrdeným oknom; živý beh potrebuje nové potvrdenie majiteľa.
+Novú kontrolu Rabbitom odporúčame
+pred zlúčením, lebo ide o bezpečnosť upratania nastavení účtu; vlákno rieši majiteľ.
+
 ### Čo nový samostatný scenár overuje
 
 - Pôvodných sedem booleanov drží iba v pamäti. Konkrétny viditeľný obal
@@ -42,7 +76,7 @@ Používa existujúci bezpečný transport a spoločný pomocník obnovy. Pôvod
 roundtrip má len vyčlenenú obnovu bez zamýšľanej zmeny správania; jeho doterajšie
 jednotkové aj prehliadačové kontroly prešli.
 
-### Lokálne overenie — nie výsledok živej aplikácie
+### Pôvodné lokálne overenie pred kontrolou Rabbitu — nie výsledok živej aplikácie
 
 Všetky prehliadačové skúšky tejto dávky mali **`--network=none`**, prázdny
 storageState a lokálne odpovede. Pripojené boli iba zdroje/knižnice read-only;

@@ -7,9 +7,10 @@ export const NOTIFICATION_SETTINGS_PATH = '/dashboard/settings/notifications';
 export const CATEGORY_ORIGIN = 'https://stunning-inspiration-svap.up.railway.app';
 type Phase = 'ready' | 'ui' | 'restore' | 'sealed';
 
-/** Proxy 5xx bez aplikačnej hlavičky nevylučuje neskoré dokončenie upstream zápisu. */
+/** Presmerovanie nie je koniec zápisu; ani proxy 5xx bez dôkazu ukončenia aplikácie. */
 export function categoryReplyCompleted(status: number, appDuration: unknown): boolean {
-  return (status >= 200 && status < 500) || (status >= 500 && status <= 599 && typeof parseAppDuration(appDuration) === 'number');
+  return (status >= 200 && status < 300) || (status >= 400 && status < 500)
+    || (status >= 500 && status <= 599 && typeof parseAppDuration(appDuration) === 'number');
 }
 
 /** Strážca rozlišuje jeden UI PATCH od jedného sedempoložkového návratu; hodnoty nevypisuje. */

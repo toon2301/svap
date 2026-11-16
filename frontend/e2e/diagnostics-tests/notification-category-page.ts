@@ -1,6 +1,7 @@
 export const CATEGORY_MODES = [
   'normal-on', 'normal-off', 'master-off', 'bad-payload', 'duplicate', 'change-status',
-  'change-network', 'change-proxy', 'reload-stale', 'body-failure', 'body-timeout',
+  'change-network', 'change-proxy', 'change-redirect-temporary', 'change-redirect-permanent',
+  'reload-stale', 'body-failure', 'body-timeout',
   'restore-status', 'restore-shape', 'restore-ignored',
 ] as const;
 export type CategoryMode = typeof CATEGORY_MODES[number];

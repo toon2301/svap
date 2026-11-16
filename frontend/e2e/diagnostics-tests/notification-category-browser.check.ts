@@ -93,7 +93,8 @@ for (const mode of CATEGORY_MODES.filter(mode => !mode.startsWith('normal-'))) {
       } else {
         assert.equal(state.restore, 1); assert.equal(state.seven, 1); assert.equal(state.csrfPresent, true);
         assert.ok(state.gets >= 3);
-        const unsafe = mode.startsWith('restore-') || ['change-network', 'change-proxy'].includes(mode);
+        const unsafe = mode.startsWith('restore-') || mode.startsWith('change-redirect-')
+          || ['change-network', 'change-proxy'].includes(mode);
         assert.equal(state.cleanup, unsafe ? 'failed' : 'verified');
         assert.equal(state.restored, !['restore-status', 'restore-ignored'].includes(mode));
         if (mode === 'bad-payload') { assert.equal(state.other, 1); assert.equal(state.ui, 0); }

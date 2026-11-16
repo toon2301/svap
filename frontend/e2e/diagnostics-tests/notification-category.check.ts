@@ -231,6 +231,29 @@ test('gateway 5xx bez platnej aplikačnej hlavičky zostáva neistý aj po prija
   assert.equal(audit.allow(original, {}), true); assert.throws(() => audit.assertRestoreSafe());
 });
 
+test('žiadna odpoveď 3xx nepotvrdzuje dokončenie zápisu, ani s aplikačnou hlavičkou', () => {
+  for (let status = 300; status < 400; status += 1) {
+    assert.equal(categoryReplyCompleted(status, undefined), false);
+    assert.equal(categoryReplyCompleted(status, '1'), false);
+  }
+  for (const status of [200, 299, 400, 499]) assert.equal(categoryReplyCompleted(status, undefined), true);
+});
+
+for (const status of [307, 308]) {
+  test(`odpoveď ${status} nesmie povoliť potvrdenie návratu ani po odpovedi nesledovaného pokračovania`, () => {
+    for (const duration of [undefined, '1']) {
+      const { audit, original } = auditor(); const request = {}; const redirected = {};
+      audit.arm(); assert.equal(audit.allow({ notify_likes: false }, request), true);
+      audit.responded(request, categoryReplyCompleted(status, duration)); audit.finished(request);
+      // Route nemusí vidieť pokračovanie presmerovania. Ani jeho odpoveď neodstráni neistotu.
+      audit.responded(redirected, true); audit.finished(redirected);
+      audit.beginRestore(); assert.equal(audit.allow(original, {}), true);
+      assert.throws(() => audit.assertRestoreSafe());
+      assert.match(audit.evidence(), /uncertain=true/);
+    }
+  });
+}
+
 test('neskorý nesprávny UI payload neblokuje samotný pokus vrátiť pôvodných sedem', () => {
   const { audit, original } = auditor(); audit.arm(); audit.beginRestore();
   assert.equal(audit.allow({ notify_likes: false }, {}), false);
