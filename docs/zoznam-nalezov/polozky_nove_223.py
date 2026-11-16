@@ -324,6 +324,26 @@ NEW_ITEMS_223 = [
               'rovnakých šiestich variantov, každý 3× mimo Dockeru a 3× v Dockeri, pôjde až v novom okne, ktoré majiteľ osobitne '
               'oznámi, bez zmeny testov a údajov účtov. Je to porovnanie „Linux bez Dockeru“ proti Dockeru, nie Windows proti Dockeru. '
               'Nové živé overenia 15. 11. 2026 (jazyk 18 prešlo, 0 zlyhalo; PR #267) žiadne zlyhanie siete ani odmietnutú obnovu '
-              'relácie neukázali, no sú krátke a nič nedokazujú; príčina 223 ostáva neurčená a nález otvorený.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. a 15. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20, PR #261, dym po K22, prekážka porovnania Windows a Docker a rozhodnutie R40) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              'relácie neukázali, no sú krátke a nič nedokazujú; príčina 223 ostáva neurčená a nález otvorený. '
+              'DODATOK 16. 11. 2026 (druhý; Codex, PR #271, vetva `e2e/k23-overenie-a-wsl`, zlúčené 16. 11. 2026 o 13:03 '
+              'UTC, merge `93bd8677`; kontrola agenta z GitHubu: zmenený je len `docs/playwright-odovzdanie.md`, CI a '
+              'CodeRabbit sú zelené a Codex review bola bez nálezov): živé overenie na `main` `91f58dbe` (po K24 a K25) v '
+              'potvrdenom okne (UTC 11:01 až 11:05): dym `@smoke` 41 prešlo, 0 zlyhalo a 10 preskočených (WebKit desktop '
+              '13 / 0 / 4, WebKit mobil 15 / 0 / 2, Chromium desktop 13 / 0 / 4; proces 2 min 1,4 s; rovnakých 51 kľúčov '
+              'aj výsledkov ako prijatý dym po K22; `mobile-settings-navigation.spec.ts` prešiel; upratanie zdieľania 6 z '
+              '6) a API kontrakt volieb vo WebKite desktop aj mobil 2 / 0 / 0 (13,3 s; obnova všetkých siedmich hodnôt '
+              'overená). Okno sa po behoch uvoľnilo. Nevznikol nový pád ani blok dôkazov; nejde o celý beh, prijatý základ '
+              'ostáva 427 / 2 / 303 a krátky úspešný dym príčinu 223 nevyvracia. R40 (a), kroky prípravy bez Railway: '
+              'samostatná distribúcia WSL 2 `Svaply-E2E-Ubuntu-24.04` (Ubuntu 24.04.5, Node 24.20.0, Playwright 1.63.0, '
+              'WebKit 26.6, revízia 2359; oficiálne archívy overené cez SHA-256; úložisko '
+              '`C:/Projects/svap-e2e-wsl/ubuntu-24.04`); pred importom 274,55 GiB voľného miesta a 4,35 GiB voľnej RAM; '
+              'prázdna stránka bez siete (samostatný sieťový namespace, offline kontext, 0 požiadaviek) prešla 1 / 1 '
+              '(štart WebKitu 1,0 s); po skončení sa zastavila iba nová distribúcia (predvolená ostáva `docker-desktop`; '
+              'bez `wsl --shutdown`, zmeny `.wslconfig`, nastavení Dockeru či ochrany Windows). Súbor `.env.e2e` sa do '
+              'Ubuntu nekopíroval. Na reálne porovnanie treba ešte izolovaný Linux Chromium pre prihlasovanie v '
+              '`global-setup.ts` a bezpečné spustenie pôvodnej konfigurácie bez prenosu env a relácie; porovnanie '
+              '`search-mobile-cards`, `offer-card-review-translations` a `search-panel-fixture` v šiestich variantoch (3× '
+              'mimo Dockeru a 3× v Dockeri) sa nespustilo a potrebuje samostatne oznámené okno majiteľa. WSL je Linux mimo '
+              'Dockeru, nie natívny Windows WebKit; ani úspešná prázdna stránka 223 nevyrieši.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. a 15. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20, PR #261, dym po K22, prekážka porovnania Windows a Docker, rozhodnutie R40 a PR #271: živé overenie po K25 a príprava Ubuntu vo WSL) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]

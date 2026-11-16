@@ -461,10 +461,11 @@ DONE_PR_TABLE = [
 
 # Zlúčené PR, v ktorých nie je hotový ani jeden celý nález (len časť otvoreného nálezu); pridávajú sa za riadky odvodené z `DONE_SINCE`.
 DONE_PR_TABLE_CASTOCNE = [
-    ('#257', 'K19', '321 (etapy 1 a 2 zo štyroch: server; zostáva rozhranie a E2E)'),
-    ('#258', 'K20', '321 (etapa 3a: rozhranie kategórií a hlavný vypínač; zostáva výzva na push, rozhodnutie R39 a E2E), 319 (kód; čaká na ručný test)'),
-    ('#266', 'K23', '321 (etapa 3b: výzva na povolenie push pre Správy; zostáva E2E, etapa 4)'),
-    ('#267', 'e2e/lang-a-volby-k22', '321 (etapa 4, časť: API kontrakt siedmich volieb v troch projektoch; živé WebKit varianty neboli spustené, zostáva UI scenár kategórií; scenár odznaku 330 sa podľa R43 nerobí), 335 (E2E kontrola atribútu `lang`)'),
+    ('#257', 'K19', '321 (etapy 1 a 2: server)'),
+    ('#258', 'K20', '321 (etapa 3a: rozhranie kategórií a hlavný vypínač), 319 (kód; čaká na ručný test)'),
+    ('#266', 'K23', '321 (etapa 3b: výzva na povolenie push pre Správy)'),
+    ('#267', 'e2e/lang-a-volby-k22', '321 (etapa 4, časť: API kontrakt siedmich volieb v troch projektoch), 335 (E2E kontrola atribútu `lang`)'),
+    ('#271', 'e2e/k23-overenie-a-wsl', '223 (dodatok: živé overenie po K25 a príprava Ubuntu vo WSL; nález ostáva otvorený)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.
