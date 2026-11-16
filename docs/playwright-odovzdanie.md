@@ -2,7 +2,275 @@
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálna dávka — 16. 11. 2026: overenie po K23 a oddelené Ubuntu (R40)
+## Aktuálna dávka — 16. 11. 2026: UI kategória upozornení, R44(b), nález 337
+
+Vetva **`e2e/ui-kategoria-337`** vznikla z čerstvého mainu **`910700ea`**.
+Pred commitom bola bez konfliktu posunutá na aktuálny **`bf343f0a`** (PR #274
+menil iba zoznam nálezov; aplikácia a E2E zostali totožné s overenou verziou).
+Zachováva aj predchádzajúci lokálny
+záznam prípravy WSL nižšie. Majiteľ rozhodol R44(b): **iba UI scenár kategórií**.
+Test výzvy na push sa nepridáva a **330 sa nerobí (R43)**.
+
+Pred implementáciou majiteľ výslovne potvrdil, že hlavný E2E účet má
+`in_app_notifications` zapnuté. Je to **potvrdenie majiteľa, nie nové čítanie
+Railway**. Scenár podmienku pri živom behu ešte overí cez GET: pri vypnutí
+zlyhá bez UI zmeny aj bez obnovovacieho PATCH. Master sa potichu nezapína.
+
+### Dodatok po kontrole Rabbitu v PR #276 — odpovede 3xx
+
+Pred opravou bol skontrolovaný najnovší main **`bf754de0`**; medzitým sa
+nemenili dotknuté E2E ani frontendové súbory. Oprava zostáva na tej istej vetve.
+Rabbit správne upozornil, že stav 307/308 môže predchádzať presmerovanému PATCH,
+ktorý route handler nevidí. Endpoint v kóde priamo nepresmerúva, no správanie
+živej proxy sa v tejto dávke neoverovalo.
+
+Zvolená úzka oprava nepovažuje presmerovaný PATCH za úspešný testový tok:
+**všetky 3xx znamenajú neistotu**, aj pri platnej `X-App-Duration-Ms`.
+Obnovovací PATCH a záverečný GET sa stále skúsia, ale neistota zostáva a
+`restored=verified` je zakázané aj po prípadnej odpovedi nesledovaného pokračovania.
+Pôvodný maxFailures=1 zastaví nasledujúci projekt, nie už dobiehajúci redirect.
+Pri takomto FAIL treba účet preveriť; samotný GET nepreukazuje trvalý návrat.
+Aplikácia, transport, timeouty,
+retry a pravidlá ochrany údajov sa nemenia.
+
+Tri nové čisté regresné kontroly najprv na pôvodnom kóde správne padli
+(42 PASS / 3 FAIL); po oprave prešli **45/45** vrátane pôvodných 20 API kontrol.
+Prehliadačové kontroly navyše synteticky vracajú prvú odpoveď 307 alebo 308
+s aplikačnou hlavičkou. Zámerne netvoria živý redirect chain: overujú, že už
+prijatie 3xx zabráni potvrdeniu obnovy, aj keď aktuálny záverečný GET sedí.
+Po oprave celá lokálna prehliadačová kontrolná sada prešla **18/18**, čas
+**262,145 s**, 0 SKIP a bez retry. Obsahuje štyri úspešné UI varianty a 28
+správne odhalených úmyselných chýb; nové 307/308 sú **4/4** v oboch WebKitoch
+a hlásia neoverený návrat aj pri zhodnom aktuálnom stave. Poistky spustenia a
+zastavenie druhého projektu po chybe obnovy prešli tiež. TypeScript aplikácie
+aj E2E a ESLint zmenených súborov: **0 chýb / 0 upozornení**. Negatívna kontrola
+ochrany textových príloh: **5/5**, obsah príloh kontrolovaný aj v browser sade.
+Skutočné účty ani Railway sa nepoužívajú. Skorší predbežný návrh termínu nie
+je potvrdeným oknom; živý beh potrebuje nové potvrdenie majiteľa.
+Novú kontrolu Rabbitom odporúčame
+pred zlúčením, lebo ide o bezpečnosť upratania nastavení účtu; vlákno rieši majiteľ.
+
+### Čo nový samostatný scenár overuje
+
+- Pôvodných sedem booleanov drží iba v pamäti. Konkrétny viditeľný obal
+  `notifications-category-likes-desktop` alebo `notifications-category-likes-mobile`
+  odlíši dve rozloženia v DOM. Dočasný `appLocale=sk` patrí iba kontextu prehliadača.
+- Zmení iba `notify_likes` na opačnú hodnotu: desktop skutočným `click`, mobilný
+  WebKit skutočným **`tap`**, bez `force` alebo náhradného vyvolania udalosti.
+  Strážca vyžaduje **jeden UI PATCH s jediným kľúčom** a HTTP 200; duplicitný,
+  viackľúčový alebo iný API zápis zablokuje a skúška nesmie prejsť.
+- Overí výber a cez GET všetkých sedem hodnôt. Po F5 opäť overí GET aj výber;
+  ostatných šesť hodnôt musí zostať pôvodných. Žiadne nové správy, žiadosti,
+  upozornenia ani súbory sa nevytvárajú.
+- Vo fixture teardown, aj po chybe alebo timeoute tela, pošle **jeden samostatný
+  obnovovací PATCH so všetkými siedmimi pôvodnými hodnotami** a vykoná záverečný
+  GET aj pri chybe PATCH. Tento upratovací zápis nie je druhý UI PATCH.
+  Nezhoda, nesprávny tvar, HTTP chyba alebo neistý zápis znamenajú hlasný FAIL.
+  MaxFailures=1 zastaví ďalší projekt; žiadny automatický opakovaný zápis.
+- Pri neukončenom UI requeste alebo proxy 5xx bez platnej `X-App-Duration-Ms`
+  sa návrat síce skúsi, ale **nesmie sa označiť za potvrdený**, ani keby aktuálny
+  GET sedel: upstream zápis sa ešte mohol dokončiť neskôr. Synchrónny zápis
+  nastavení v aplikácii bol preverovaný iba čítaním kódu, bez zmeny aplikácie.
+
+Používa existujúci bezpečný transport a spoločný pomocník obnovy. Pôvodný API
+roundtrip má len vyčlenenú obnovu bez zamýšľanej zmeny správania; jeho doterajšie
+jednotkové aj prehliadačové kontroly prešli.
+
+### Pôvodné lokálne overenie pred kontrolou Rabbitu — nie výsledok živej aplikácie
+
+Všetky prehliadačové skúšky tejto dávky mali **`--network=none`**, prázdny
+storageState a lokálne odpovede. Pripojené boli iba zdroje/knižnice read-only;
+`.env.e2e` sa nepripojil, `.auth` zakryl prázdny read-only tmpfs. Žiadne
+prihlásenie, volanie Railway ani zmena skutočného účtu. Playwright **1.63.0**.
+
+| Kontrola | Výsledok |
+| --- | --- |
+| Nová čistá logika + pôvodný API kontrakt | **42/42** (22 nových + 20 pôvodných), 0 SKIP |
+| Nová prehliadačová kontrolná sada | **16/16**, 251,922 s; oba WebKity |
+| Úspešné simulované UI varianty | **4/4**: oba pôvodné stavy × oba WebKity; správne trusted touch/mouse |
+| Úmyselné chyby novej sady | **24/24 odhalených**: master-off, payload, duplicita, HTTP/sieť/proxy, F5, chyba/timeout tela a tri chyby obnovy |
+| Negatívne poistky novej sady | odmietnuté workers/retry/repeat/max-failures; zlyhaná obnova zastavila druhý projekt pred API |
+| Regresia pôvodného API prehliadačového pomocníka | **3/3** kontrol; vnútorných 3 PASS + 12 úmyselných FAIL v troch projektoch |
+| Negatívna kontrola ochrany textových príloh | **5/5**; aj obsah príloh skontrolovaný vo vnútorných behoch |
+| Existujúce Jest E2E ochrany | **52/52**, 2 sady, bez zmeny Jest súborov |
+| TypeScript aplikácie aj celého E2E, ESLint nových súborov | **0 chýb, 0 upozornení** |
+
+Úmyselné pády nie sú nové chyby aplikácie ani dôvod meniť tolerancie. Kontroluje
+sa, že zostanú FAIL/timedOut a že upratanie buď overene prebehne, alebo zlyhá
+nahlas. Dlhé čakanie existuje iba v syntetickom scenári úmyselného timeoutu.
+Timeouty ani retry živej skúšky sa nezvyšovali.
+
+Screenshot, trace a video sú vypnuté. `PLAYWRIGHT_NO_COPY_PROMPT=1` zabraňuje
+automatickému čítaniu DOM do error-context. Playwright môže vytvoriť metadátový
+error-context aj tak; lokálny obal preto kontroluje **obsah**, nie len názov:
+žiadny page snapshot, YAML DOM ani syntetický súkromný marker v prílohách alebo
+výpise. Surové lokálne reporty sú len v pamäti; prílohy v dočasnom kontajneri.
+
+Nové bezpečné metadáta (bez hodnôt volieb, tiel, cookies alebo tokenov):
+
+```text
+[E2E-CATEGORY-RUN] workers=1 maxFailures=1 repeat=1 index=0 retries=0 retry=0
+[E2E-CATEGORY] restored=verified|failed fields=7
+[E2E-CATEGORY-AUDIT] ui=<počet> restore=<počet> rejected=<počet> pending=<počet> uncertain=<príznak> restoreRejected=<príznak>
+```
+
+Pri páde ostáva aj existujúci `[E2E-EVIDENCE]`. Tieto riadky nikdy nesmú
+obsahovať pôvodné ani zmenené hodnoty účtu alebo telo odpovede.
+
+Izolovaný **`--list`** bez setupu potvrdil:
+
+- pôvodný plný výber: **780 variantov**, 260 v každom z troch projektov, bez zmeny;
+- nová UI konfigurácia: **2 varianty**, WebKit desktop a mobil;
+- pôvodná samostatná API konfigurácia: **3 varianty**, bez zmeny.
+
+Nový súbor má príponu **`.ui.ts`**, preto sa nespustí v bežnom celom behu ani
+v dyme. Prijatý základ 427 / 2 / 303 ani výsledok posledného celého K19 sa nemenia.
+
+### Súbory a hranice zmeny
+
+Nové: `frontend/e2e/notification-category.ui.ts`,
+`notification-category.playwright.config.ts`; v `frontend/e2e/support/`
+`notification-category-{options,roundtrip,test,ui,writes}.ts`; v
+`frontend/e2e/diagnostics-tests/` `notification-category.check.ts`,
+`notification-category-browser.check.ts`, `notification-category.scenario.ts`,
+`notification-category.playwright.config.ts`, `notification-category-page.ts`
+a `notification-category-local-runner.mjs`.
+Zmenené iba existujúce `frontend/e2e/support/notification-preferences-roundtrip.ts`
+a tento dokument. **Žiadna zmena aplikácie, backendu, Jest testov, závislostí,
+migrácií alebo zoznamu nálezov.** Všetky nové kódové súbory sú pod 500 riadkov.
+Lokálne pomocné obaly mimo Gitu majú prefix `C:/Projects/svap-e2e-ui-337-`;
+neobsahujú účty a neprenášajú env ani reláciu. Majiteľ požiadal o commit a push
+tejto dávky; PR otvára majiteľ. Živé overenie naďalej čaká na nové potvrdené okno.
+
+### Mimo rozsahu — overená medzera staršej API poistky
+
+V Playwrighte 1.63 CLI `--repeat-each=2` nie je vo workerovi viditeľné cez
+`testInfo.project.repeatEach` tak, ako predpokladá starší
+`notification-preferences-test.ts`. Bez siete a účtov sa pôvodný syntetický
+API scenár pri tejto voľbe vykonal **2×, 4 simulované PATCH celkom**, obidva
+návraty overené. Predpísaný príkaz bez opakovania tým nie je dotknutý; ide o
+poistku proti nesprávnemu ručnému spusteniu, nie preukázanú chybu aplikácie.
+Závažnosť: **stredné prevádzkové riziko E2E pri nesprávnom opakovanom živom
+spustení**; predpísaný príkaz bez opakovania medzeru nevyvolá.
+**Neopravené v tejto dávke**, odporúčaný samostatný súhlas. Nový UI scenár
+odmieta opakovanie už v rodičovskej konfigurácii pred global setupom; overené
+negatívnym behom. Dovtedy starší API scenár nespúšťať s `--repeat-each`.
+
+### Ďalší krok — nové potvrdené okno len pre UI 337
+
+Návrh majiteľovi: **16. 11. 2026 20:00–20:15 Europe/Bratislava**, rezerva
+**15 minút**, alebo iný ním potvrdený termín. Toto je iba návrh, nie povolenie
+ani automaticky naplánovaný beh. Pred štartom znova overiť čerstvý main a
+potvrdené nasadenie; počas okna žiadne zlučovanie, nasadenie ani zmena účtu.
+Spustí sa iba samostatná UI skúška v oboch WebKitoch:
+
+```powershell
+npm run test:e2e:docker -- --config=e2e/notification-category.playwright.config.ts --workers=1 --retries=0 --max-failures=1
+```
+
+Pri chybe obnovy žiadny ďalší živý test. Porovnanie WSL/Docker k 223 potrebuje
+**iné, samostatne oznámené okno**; teraz sa nespúšťa. Výzva push a scenár 330
+zostávajú vylúčené. Živá aplikácia týmto lokálnym overením ešte nie je potvrdená.
+
+## Historická dávka — 16. 11. 2026: Linux Chromium a pôvodná konfigurácia cez `--list`
+
+Vetva **`e2e/wsl-chromium-list`** vychádza z čerstvo stiahnutého main
+**`910700ea`**. Pravidlá, E2E a konfigurácia sú oproti predošlému odovzdaniu
+nezmenené. Majiteľ zapísal správu k PR #271 do dodatku 223 (vetva 179).
+Táto dávka je **iba príprava bez Railway, prihlásenia a spustenia scenárov**.
+`frontend/e2e/**`, pôvodná konfigurácia, aplikácia a závislosti repozitára sa nemenia.
+
+**V čase tejto prípravy R44 čakalo na rozhodnutie majiteľa; rozhodnutie a aktuálny stav sú vyššie.** Žiadny nový UI scenár kategórií ani výzvy
+push sa nepridáva; odporúčanie zostáva iba UI scenár kategórií. **330 sa nerobí
+(R43)**, bez nových žiadostí, druhého účtu alebo upozornení.
+
+### Izolovaný Chromium pre pôvodný `global-setup.ts`
+
+V už schválenom Ubuntu `Svaply-E2E-Ubuntu-24.04` bol doplnený iba Linux
+Chromium **headless shell 153.0.8010.12, revision 1243** a potrebné systémové
+balíky. Playwright zostáva **1.63.0**, Node **24.20.0**, rovnaké verzie ako pri
+príprave WebKitu. Inštalácia `--only-shell --no-remove chromium` ponechala
+existujúci WebKit; jeho binárka aj binárka headless shellu boli overené pod
+vlastným `PLAYWRIGHT_BROWSERS_PATH`, nie pod cache používateľa root.
+Plný Chrome nie je potrebný pre dnešné headless `chromium.launch()`.
+
+**Prázdny Chromium PASS 1/1**, pôvodné volanie `chromium.launch()` bez vlastných
+launch argumentov: štart **730 ms**, otvorenie a overenie **1 016 ms**.
+`about:blank`, **0 požiadaviek stránky**, bez crash a predčasného disconnect.
+Neprivilegovaný Linux používateľ, vypnutá sieť, disk Windows nedostupný,
+**0 E2E premenných** a žiadny env alebo prihlásený storageState.
+
+### Pôvodná konfigurácia — iba zoznam troch špecov
+
+Použitých bolo iba **130 sledovaných zdrojových súborov / 655 297 bajtov**
+z Git mainu: E2E kód, `playwright.config.ts`, `tsconfig.json` a `package.json`.
+Ignorované súbory, `.env.e2e`, `.auth` a reporty sa neexportovali. Kópia v Ubuntu
+je read-only pre testovací proces; všetkých **130 SHA-256** sedelo s pôvodnými
+Git blobmi pred aj po listovaní. Pôvodná konfigurácia sa neupravovala a jej
+skutočný `global-setup.ts` zostal nastavený, nie nahradený prázdnym setupom.
+
+Windows export najprv zmenil konce riadkov na CRLF. Kontrola hashov správne
+odmietla kópiu ešte pred použitím. Nový export použil iba pre daný príkaz
+`git -c core.autocrlf=false -c core.eol=lf archive`; nastavenie Gitu zostalo
+nezmenené. Odmietnutá kópia kódu sa zachovala, nič z účtov alebo relácie sa nekopírovalo.
+
+Listovanie prebehlo v samostatnom sieťovom a mount priestore. Disk Windows bol
+prekrytý prázdnym read-only tmpfs **iba v tomto procese**; pôvodný mount zostal
+po skončení dostupný. Externé sieťové rozhrania: **0**. Prostredie bolo vyčistené
+(`env -i`), `.env.e2e` ani uložená relácia v kópii neexistovali. Prihlásenie sa
+nevolalo; chýbajúce povinné prihlasovacie premenné by skutočný setup odmietol.
+
+**`--list` PASS**, proces **1 631 ms**, stderr **0 bajtov**, **198 jedinečných
+kľúčov**, **0 spustených testov**:
+
+| Špec | webkit-desktop | webkit-mobile | chromium-desktop | Spolu zaradené |
+| --- | ---: | ---: | ---: | ---: |
+| `search-mobile-cards.spec.ts` | 40 | 40 | 40 | 120 |
+| `offer-card-review-translations.spec.ts` | 24 | 24 | 24 | 72 |
+| `search-panel-fixture.spec.ts` | 2 | 2 | 2 | 6 |
+| Spolu | 66 | 66 | 66 | **198** |
+
+To sú **deklarované varianty, nie PASS/SKIP výsledky scenárov**. Podmienené
+preskočenia v telách testov sa nevyhodnocovali. `results` zostali prázdne,
+setup sa nespustil a `.auth/user.json` nevznikol. Prijatý základ **427 / 2 / 303**
+ani výsledok K19 **377 / 23 / 362** sa tým nemenia; **223 ostáva otvorený**.
+
+Príkaz z priečinka `frontend` izolovanej kópie (pôvodný config, iba CLI výber
+špecov, počtu workerov/retry a bezpečného výstupu):
+
+```bash
+node /home/svaply-e2e/runtime/node_modules/playwright/cli.js test --config=playwright.config.ts --list --workers=1 --retries=0 --reporter=json --output=/home/svaply-e2e/diagnostics/list-only-output e2e/search-mobile-cards.spec.ts e2e/offer-card-review-translations.spec.ts e2e/search-panel-fixture.spec.ts
+```
+
+Lokálny obal dovolí iba `chromium-blank` a `list`, nie živý beh. Negatívna
+kontrola režimu `test` správne skončila kódom 2 ešte pred ďalšou akciou. Surový JSON
+Playwrightu zostal iba v pamäti čítača; uložený bezpečný zoznam obsahuje len main, názvy špecov,
+testov a projektov, bez dát účtu:
+`/home/svaply-e2e/diagnostics/list-910700ea-1794846053608-safe.json`.
+Kópia kódu je v
+`/opt/svaply-e2e/snapshots/910700eafd579073a47cbd10d56d2c65818b985f`.
+Pomocné skripty `C:/Projects/svap-e2e-wsl-*-20261116.*` zostali mimo Gitu.
+Po dokončení sa zastavilo iba naše Ubuntu; Docker, predvolené WSL a ochrana
+Windows sa nemenili. Kód aplikácie sa touto prípravou neoveroval a nepreukázala
+sa nová chyba aplikácie.
+
+### Ďalší krok — iba po samostatnom oznámení okna
+
+**Návrh majiteľovi:** 16. 11. 2026 **18:30–19:30 Europe/Bratislava**,
+rezerva **60 minút**, vrátane kontroly totožného mainu, nasadenia a diagnostiky.
+Je to návrh, **nie potvrdený termín alebo automaticky naplánovaný beh**.
+Presný výber variantov a počet pokusov treba pred oknom potvrdiť podľa
+odovzdania; dnešné listovanie z neho nič nepridáva ani nevyraďuje.
+
+Pred prvým živým použitím treba v schválenom okne bezpečne sprístupniť pôvodný
+env iba read-only, pripraviť súkromné zapisovateľné výstupy pre novú reláciu
+a použiť jeden štandardný prihlasovací pokus. Dnešná read-only kópia ani obal
+zatiaľ nie sú overeným prihláseným runnerom: env ani relácia sa neprenášali,
+žiadne prihlásenie sa neskúšalo. Uloženú reláciu ani refresh tokeny medzi prostrediami nezdieľať.
+Počas budúceho porovnania sa nesmie zlučovať, nasadzovať ani meniť účty;
+teraz sa **žiadne porovnanie WSL/Docker nespúšťa**.
+
+## Historická dávka — 16. 11. 2026: overenie po K23 a oddelené Ubuntu (R40)
 
 Vetva **`e2e/k23-overenie-a-wsl`** vychádza z čerstvo stiahnutého main
 **`91f58dbe`** (obsahuje aj K24 a K25, bez zmien E2E). PR #267 je zlúčený

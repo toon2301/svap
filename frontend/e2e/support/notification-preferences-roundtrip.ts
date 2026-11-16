@@ -26,7 +26,7 @@ export function parseNotificationPreferences(data: unknown): NotificationPrefere
 }
 
 /** Porovná súkromné hodnoty iba cez počet rozdielov; nikdy ich nevypisuje. */
-function requireSamePreferences(actual: NotificationPreferences, expected: NotificationPreferences): void {
+export function requireSamePreferences(actual: NotificationPreferences, expected: NotificationPreferences): void {
   const differences = NOTIFICATION_PREFERENCE_KEYS.filter(key => actual[key] !== expected[key]).length;
   if (differences) throw new Error(`Voľby nesedia; počet rozdielov: ${differences}.`);
 }
@@ -48,6 +48,26 @@ async function checkedCall(transport: PreferenceTransport, method: 'GET' | 'PATC
 /** Pozorovateľ dostane len pevný stav; jeho chyba nesmie prekryť výsledok upratania. */
 function reportCleanup(report: ((state: 'verified' | 'failed') => void) | undefined, state: 'verified' | 'failed'): void {
   try { report?.(state); } catch { /* Žiadna hodnota účtu ani surový text chyby. */ }
+}
+
+/** Čítanie zdieľané API a UI skúškou, s rovnakou validáciou a bezpečnými chybami. */
+export async function readNotificationPreferences(transport: PreferenceTransport): Promise<NotificationPreferences> {
+  return checkedCall(transport, 'GET');
+}
+
+/** Vždy skúsi oba kroky obnovy; neistý UI zápis nesmie byť označený za potvrdený návrat. */
+export async function restoreNotificationPreferences(
+  transport: PreferenceTransport,
+  original: NotificationPreferences,
+  report?: (state: 'verified' | 'failed') => void,
+  verifyWriteSafety?: () => void | Promise<void>,
+): Promise<void> {
+  let failures = 0;
+  try { requireSamePreferences(await checkedCall(transport, 'PATCH', { ...original }), original); } catch { failures += 1; }
+  try { requireSamePreferences(await checkedCall(transport, 'GET'), original); } catch { failures += 1; }
+  try { await verifyWriteSafety?.(); } catch { failures += 1; }
+  reportCleanup(report, failures ? 'failed' : 'verified');
+  if (failures) throw new Error(`ZÁVAŽNÉ: návrat siedmich volieb nebol potvrdený; neúspešné kontroly: ${failures}. Ďalší živý test nespúšťaj.`);
 }
 
 /**
@@ -77,12 +97,6 @@ export async function withNotificationPreferenceRoundTrip(
     await exercise(verifySingleChange);
     if (!attempted) throw new Error('Skúška nevykonala overenie zmeny voľby.');
   } finally {
-    if (attempted) {
-      let failures = 0;
-      try { requireSamePreferences(await checkedCall(transport, 'PATCH', { ...original }), original); } catch { failures += 1; }
-      try { requireSamePreferences(await checkedCall(transport, 'GET'), original); } catch { failures += 1; }
-      reportCleanup(report, failures ? 'failed' : 'verified');
-      if (failures) throw new Error(`ZÁVAŽNÉ: návrat siedmich volieb nebol potvrdený; neúspešné kontroly: ${failures}. Ďalší živý test nespúšťaj.`);
-    }
+    if (attempted) await restoreNotificationPreferences(transport, original, report);
   }
 }
