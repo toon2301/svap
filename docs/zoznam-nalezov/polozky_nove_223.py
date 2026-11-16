@@ -317,6 +317,13 @@ NEW_ITEMS_223 = [
               'variantov, každý 3× mimo Dockeru a 3× v Dockeri, bez zmeny testov a údajov účtov. Upozornenie Codexa: išlo by o Linux '
               'bez Dockeru verzus Docker, nie o pôvodné Windows a Docker; na presné porovnanie Windows a Docker treba samostatné '
               'Windows prostredie, kde WebKit funguje bez oslabovania ochrany. Ubuntu zatiaľ nie je nainštalované a ďalšie testy ani '
-              'systémové zmeny sa nerobia, kým majiteľ nerozhodne.',
-         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. a 15. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20, PR #261, dym po K22 a prekážka porovnania Windows a Docker) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
+              'systémové zmeny sa nerobia, kým majiteľ nerozhodne. '
+              'DODATOK 16. 11. 2026 (rozhodnutie majiteľa R40 a stav Codexa): majiteľ 15. 11. 2026 rozhodol podľa odporúčania agenta, teda '
+              'variant (a): Codex smie pripraviť samostatné Ubuntu vo WSL (ochrana Windows ostáva zapnutá, `docker-desktop` sa nemení, '
+              'rovnaký Playwright 1.63.0), najprv overí miesto a pamäť a WebKit na prázdnej stránke bez siete (bez Railway); porovnanie '
+              'rovnakých šiestich variantov, každý 3× mimo Dockeru a 3× v Dockeri, pôjde až v novom okne, ktoré majiteľ osobitne '
+              'oznámi, bez zmeny testov a údajov účtov. Je to porovnanie „Linux bez Dockeru“ proti Dockeru, nie Windows proti Dockeru. '
+              'Nové živé overenia 15. 11. 2026 (jazyk 18 prešlo, 0 zlyhalo; PR #267) žiadne zlyhanie siete ani odmietnutú obnovu '
+              'relácie neukázali, no sú krátke a nič nedokazujú; príčina 223 ostáva neurčená a nález otvorený.',
+         dec=None, src='správa Codexa z 30. 10., 1. 11., 5. 11., 9. 11., 10. 11., 12. 11. a 13. a 15. 11. 2026 (dym po K18, celý beh po K19, lokálne úpravy po K20, PR #261, dym po K22, prekážka porovnania Windows a Docker a rozhodnutie R40) a kontrola logov Railway od majiteľa (2. 11., 6. 11., 9. 11. a 10. 11.)'),
 ]

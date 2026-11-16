@@ -463,6 +463,8 @@ DONE_PR_TABLE = [
 DONE_PR_TABLE_CASTOCNE = [
     ('#257', 'K19', '321 (etapy 1 a 2 zo štyroch: server; zostáva rozhranie a E2E)'),
     ('#258', 'K20', '321 (etapa 3a: rozhranie kategórií a hlavný vypínač; zostáva výzva na push, rozhodnutie R39 a E2E), 319 (kód; čaká na ručný test)'),
+    ('#266', 'K23', '321 (etapa 3b: výzva na povolenie push pre Správy; zostáva E2E, etapa 4)'),
+    ('#267', 'e2e/lang-a-volby-k22', '321 (etapa 4, časť: API kontrakt siedmich volieb v troch projektoch; živé WebKit varianty neboli spustené, zostáva UI scenár kategórií a scenár odznaku 330), 335 (E2E kontrola atribútu `lang`)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.

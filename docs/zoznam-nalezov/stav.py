@@ -6,8 +6,8 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='15. 11. 2026',
-    kod='`main` `52626ab7` (po PR #264, K22; PR #262 a #263 sú zlúčené a K21 je PR #260)',
+    datum='16. 11. 2026',
+    kod='`main` `4c2936ae` (po PR #267, Codex: jazyk a voľby upozornení; PR #266 je K23, PR #265 zoznam a K22 je PR #264)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,33 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('16. 11. 2026',
+      'Vetva 178 (vychádza z `main` `4c2936ae`, teda po PR #267). (1) K23 (PR #266, zlúčené 15. 11. 2026 o 19:08 UTC, '
+      'merge `07a72900`; dva commity `3d5ed3dc` a `34279dcc`): etapa 3b nálezu 321 je hotová, v Nastaveniach → Upozornenia '
+      'je výzva na povolenie push pre Správy (tlačidlo „Zapnúť upozornenia na správy v tomto zariadení“, „Nie teraz“ sa '
+      'pamätá v prehliadači, na iPhone mimo aplikácie návod) a päť nových textov v šiestich jazykoch. Kontrola agenta z '
+      'GitHubu: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené a bez pripomienok, Codex review bola bez nálezov '
+      'a vlákna nie sú; samostatná strana kolegu nie je potrebná, overenie je v textoch commitov (celý Jest 599 súborov a '
+      '8 968 testov, mutácie 44 zo 44). Kolega neoveril skutočný iPhone, skutočné okno povolenia, doručenie push ani '
+      'jazykovú kvalitu prekladov v cs, pl, de a hu. Ručné testy majiteľa po nasadení prešli bez nového nálezu. Vetva 177 '
+      '(PR #265) je zlúčená; CodeRabbit mal k nej jednu platnú pripomienku (mapovanie K23 viazalo návod pre iPhone na '
+      'podporu push), opravenú v `ce74a0bf`. (2) Codex (PR #267, vetva `e2e/lang-a-volby-k22`, zlúčené 15. 11. 2026 o '
+      '21:11 UTC, merge `4c2936ae`; dva commity `e770b837` a `03b42321`, len `frontend/e2e/**` a '
+      '`docs/playwright-odovzdanie.md`): nové testy `document-language.spec.ts` (kontrola atribútu `lang` pre šesť '
+      'jazykov, 18 variantov; živé overenie 18 prešlo a 0 zlyhalo) a API kontrakt siedmich volieb upozornení '
+      '(`notification-preferences.api.ts`, samostatná konfigurácia, jedna zmena kategórie a návrat všetkých siedmich '
+      'hodnôt). CodeRabbit mal k PR #267 jednu platnú pripomienku (Minor: API test preskakoval WebKit), opravenú v '
+      '`03b42321`; API kontrakt beží v troch projektoch, no živé WebKit varianty ešte neboli spustené a vlákno ostáva na '
+      'GitHube neuzavreté (zatvára majiteľ). Codex zmapoval scenár odznaku Žiadostí (330) a nespustil ho; návrh agenta je '
+      'nerobiť, rozhodne majiteľ. (3) Rozhodnutia majiteľa z 15. 11. 2026: R39 výklad potvrdený (pri zapnutom „Vypnúť '
+      'všetko“ nepríde pri novej žiadosti žiadny odznak a tak to chce nechať); R40 podľa odporúčania agenta (a): Codex '
+      'smie pripraviť Ubuntu vo WSL a overiť WebKit bez Railway, porovnanie v novom okne osobitne oznámi majiteľ; nové '
+      'R41: výnimka z pravidla 500 riadkov pre opravu 336 v `OfferReviewsView.tsx` s maximálnou opatrnosťou. (4) Karta K24 '
+      '(`karty/K24.md`): oprava nálezu 336 (anglické „Network Error“ v okne recenzie); poradie je K24 (336) a potom návrh '
+      'K25 až K27 (delenie `FeedPostComments.tsx`, zoznam lajkujúcich a preklady, každá najprv ako mapovanie). (5) Číselný '
+      'prehľad: nálezy 1–336, zatvorené 14, hotové 130 (bez zmeny); K23 uzatvára len etapu 3b nálezu 321, ktorý ostáva '
+      'otvorený pre E2E (etapa 4). Dopad na E2E: K23 pridala výzvu pod voľbu Správy (špec `mobile-settings-navigation` '
+      'overuje len jej obal; kontrola po K23 čaká na okno); K24 žiadny.'),
     ('15. 11. 2026',
       'Vetva 177 (vychádza z `main` `52626ab7`, teda po PR #264). (1) K22 (PR #264, zlúčené 15. 11. 2026 o 07:19 UTC, merge '
       '`52626ab7`; dva commity `fecebf5c` a `eb5fd2cb`): hotové 334 (chybová hláška z neúspešného odoslania sa po zatvorení okna '
@@ -307,8 +334,8 @@ PORADIE = [
          co='Navigácia a Späť (13, 14, 174), plynulosť prechodov na mobile (283 až 285 a 289: zvyšky po 276; 286 je hotová v K14, jej zvyšky 308 až 310 sú hotové v K16 a 311 je zatvorený rozhodnutím R38; 287 a 288 '
             'idú podľa R28 po overení na iPhone), Profil a identita (81, 272; 320 je hotová v K15), Zdieľanie a obrázky '
             '(92, 207; 301 je hotová v K13), ponuky a tagy (322 a 323 sú hotové v K15), '
-            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), recenzie (336 anglické „Network Error“ v okne „Pridať recenziu“, čaká na výnimku majiteľa pre `OfferReviewsView.tsx`; 325 a 331 sú hotové v K21, 334 v K22, 326 a 327 v K18), Upozornenia a '
-            'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 dokončiť kategórie upozornení pred štartom, R32 (a): etapy 1 a 2 sú hotové v K19, etapa 3a v K20, ostáva výzva na push (K23) a E2E; 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
+            'natívne okná `alert()` namiesto toastov (302 je hotová v K17), recenzie (336 anglické „Network Error“ v okne „Pridať recenziu“ (výnimka pre `OfferReviewsView.tsx` je udelená, R41, ide v K24); 325 a 331 sú hotové v K21, 334 v K22, 326 a 327 v K18), Upozornenia a '
+            'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 dokončiť kategórie upozornení pred štartom, R32 (a): etapy 1 a 2 sú hotové v K19, etapa 3a v K20, etapa 3b (výzva na push) je hotová v K23, ostáva E2E (etapa 4, Codex) a otázka o opise vypínača na počítači; 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
             '(259 a 261; redizajn komentárov najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20) a drobnosti zo 36, živé '
