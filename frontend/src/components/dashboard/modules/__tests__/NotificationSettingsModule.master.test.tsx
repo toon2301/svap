@@ -478,8 +478,10 @@ describe('NotificationSettingsModule: opis hlavného vypínača', () => {
     render(<NotificationSettingsModule />);
     await waitForLoaded();
 
+    // Opis je od K25 aj v rozložení na počítači, preto sa hľadá len v mobilnom rozložení (tam práve jeden).
+    const mobileLayout = master('mobile').closest('.lg\\:hidden') as HTMLElement;
     expect(
-      screen.getByText(
+      within(mobileLayout).getByText(
         'Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v Žiadostiach, len bez odznaku.',
       ),
     ).toBeInTheDocument();

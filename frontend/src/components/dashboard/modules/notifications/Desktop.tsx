@@ -132,10 +132,11 @@ const CATEGORY_ICONS: Record<NotificationCategoryId, React.ReactNode> = {
 };
 
 /**
- * Rozloženie Upozornení na počítači (od lg): hlavný vypínač „Vypnúť všetko“, voľba Správy (push) a päť kategórií.
- * Dostáva už hotové texty a riadky (kategórie s hodnotou, zablokovaním a príznakom načítavania), nepozná hooky ani
- * server. Kým sa kategória načítava, namiesto jej riadkov je kostra rovnakej výšky (nález 286, 321). Pod stavovým
- * riadkom Správ, v tom istom obale, je podľa stavu výzva na povolenie upozornení v tomto zariadení (nález 321, etapa 3b).
+ * Rozloženie Upozornení na počítači (od lg): hlavný vypínač „Vypnúť všetko“ s opisom (rovnako ako na mobile, nález
+ * 321 (c)), voľba Správy (push) a päť kategórií. Dostáva už hotové texty a riadky (kategórie s hodnotou, zablokovaním
+ * a príznakom načítavania), nepozná hooky ani server. Kým sa kategória načítava, namiesto jej riadkov je kostra rovnakej
+ * výšky (nález 286, 321). Pod stavovým riadkom Správ, v tom istom obale, je podľa stavu výzva na povolenie upozornení
+ * v tomto zariadení (nález 321, etapa 3b).
  */
 export default function Desktop({
   labels,
@@ -164,6 +165,7 @@ export default function Desktop({
             onChange={master.onChange}
             loading={master.loading}
             label={labels.turnOffAll}
+            description={labels.turnOffAllDesc}
             testId="notifications-master-toggle-desktop"
           />
         </div>

@@ -20,6 +20,11 @@ interface MasterToggleProps {
   labelledBy?: string;
   /** `id` prvku mimo komponentu, ktorý opisuje vypínač. */
   describedBy?: string;
+  /**
+   * Opis pod názvom (rozloženie na počítači): vykreslí sa len pri neprázdnom `label` a vypínač naň ukazuje cez
+   * `aria-describedby`, ak rodič nezadal vlastné `describedBy`. Bez opisu sa vykreslenie ani atribúty nemenia.
+   */
+  description?: string;
 }
 
 /**
@@ -33,7 +38,9 @@ interface MasterToggleProps {
  * poloha načítava alebo je neznáma, prepínač to nie je: prepínač bez `aria-checked` vystavuje prehliadač ako vypnutý
  * (`checked: false`) a čítačka by oznámila nepravdivé „vypnuté“, preto je vtedy tlačidlo zakázané, pomenované a bez
  * stavu (PR 258). Názov preberá z viditeľného textu cez `aria-labelledby`, takže sa text nezdvojí; ak je `label`
- * prázdny, názov (a prípadný opis) sa prepoja na prvky rodiča cez `labelledBy` a `describedBy`.
+ * prázdny, názov (a prípadný opis) sa prepoja na prvky rodiča cez `labelledBy` a `describedBy`. S `description`
+ * (rozloženie na počítači, nález 321 (c)) komponent vykreslí opis pod názvom a vypínač naň ukáže cez `aria-describedby`,
+ * ak rodič nezadal `describedBy`; bez `description` sa vykreslenie nemení.
  */
 export default function MasterToggle({
   enabled,
@@ -45,8 +52,12 @@ export default function MasterToggle({
   testId,
   labelledBy,
   describedBy,
+  description,
 }: MasterToggleProps) {
   const labelId = useId();
+  const descriptionId = useId();
+  /** Opis sa vykreslí len pri neprázdnom názve: pri prázdnom (mobil) názov aj opis vykresľuje rodič. */
+  const showDescription = Boolean(label) && Boolean(description);
   const showSkeleton = useDelayedLoading(Boolean(loading));
   const unknown = enabled === null;
   /** Poloha je známa a nenačítava sa: až vtedy je tlačidlo prepínač s oznámeným stavom. */
@@ -58,27 +69,40 @@ export default function MasterToggle({
     stateClass = 'bg-gray-200 dark:bg-gray-700';
   }
 
+  const title = (
+    <span
+      id={label ? labelId : undefined}
+      className={compact ? 'text-sm font-medium text-gray-900 dark:text-white' : 'text-sm font-medium text-gray-900 dark:text-white'}
+    >
+      {label}
+    </span>
+  );
+
   return (
     <div className={`flex items-center ${compact ? 'justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800' : 'justify-between'}`}>
-      <span
-        id={label ? labelId : undefined}
-        className={compact ? 'text-sm font-medium text-gray-900 dark:text-white' : 'text-sm font-medium text-gray-900 dark:text-white'}
-      >
-        {label}
-      </span>
+      {showDescription ? (
+        <div className="min-w-0 pr-4">
+          {title}
+          <p id={descriptionId} className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {description}
+          </p>
+        </div>
+      ) : (
+        title
+      )}
       <button
         type="button"
         role={isSwitch ? 'switch' : undefined}
         aria-checked={isSwitch ? Boolean(enabled) : undefined}
         aria-labelledby={label ? labelId : labelledBy}
-        aria-describedby={describedBy}
+        aria-describedby={describedBy ?? (showDescription ? descriptionId : undefined)}
         onClick={() => onChange(!enabled)}
         disabled={disabled || loading || unknown}
         aria-busy={loading ? true : undefined}
         data-testid={testId}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed ${
           loading ? '' : 'disabled:opacity-50'
-        } ${stateClass}`}
+        } ${stateClass}${showDescription ? ' shrink-0' : ''}`}
         style={{
           transform: 'scaleY(0.8)',
           transformOrigin: 'left center',
