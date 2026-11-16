@@ -1,8 +1,183 @@
-# Playwright: odovzdanie (stav k 15. 11. 2026)
+# Playwright: odovzdanie (stav k 16. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálna dávka — 15. 11. 2026: stav po K22, jazyk a voľby upozornení
+## Aktuálna dávka — 16. 11. 2026: overenie po K23 a oddelené Ubuntu (R40)
+
+Vetva **`e2e/k23-overenie-a-wsl`** vychádza z čerstvo stiahnutého main
+**`91f58dbe`** (obsahuje aj K24 a K25, bez zmien E2E). PR #267 je zlúčený
+v `4c2936ae`; nové WebKit varianty jeho API kontraktu sú už overené aj naživo.
+Majiteľ potvrdil nasadenie `91f58dbe` a okno bez zlučovania, nasadení a zmien
+testovacích účtov. Po dvoch behoch nižšie bolo **okno výslovne uvoľnené**.
+Nasleduje iba lokálna práca; ďalší beh proti Railway potrebuje nové potvrdenie.
+Aplikácia, E2E scenáre, závislosti repozitára, timeouty, tolerancie a retry sa nemenili.
+
+### Živé výsledky — bez nového celého behu
+
+| Beh | webkit-desktop P/F/S | webkit-mobile P/F/S | chromium-desktop P/F/S | Celkom P/F/S | Čas procesu |
+| --- | --- | --- | --- | --- | --- |
+| Dym `@smoke` | 13 / 0 / 4 | 15 / 0 / 2 | 13 / 0 / 4 | **41 / 0 / 10** | 2 min 1,445 s |
+| API 321, WebKit roundtrip | 1 / 0 / 0 | 1 / 0 / 0 | — | **2 / 0 / 0** | 13,265 s |
+
+Dym: čas reportu 117,780 s; projektové úseky od prvého štartu po posledný
+koniec testu 35,531 / 49,228 / 19,743 s. API: report 9,391 s; samotné varianty
+1,192 / 1,198 s. Workers=1, retries=0, žiadny flaky výsledok. Obe prihlásenia
+uspeli na prvý pokus. Presné porovnanie s prijatým dymom po K22:
+**51 rovnakých kľúčov aj výsledkov, 0 zmien**. Mobilný scenár
+`mobile-settings-navigation.spec.ts` prešiel; overuje obal nastavenia Správy,
+nie samotné správanie novej výzvy K23. Upratanie zdieľania: **6/6 kontrol**,
+žiadna chyba upratania. Nový pád ani blok `[E2E-EVIDENCE]` nevznikol.
+
+Časy procesu v UTC: dym **11:01:38.826–11:03:40.271**; API
+**11:05:00.673–11:05:13.938** (16. 11. 2026).
+
+Pri oboch API variantoch záverečný GET potvrdil návrat **všetkých siedmich**
+pôvodných hodnôt: dva záznamy
+`[E2E-PREFERENCES] restored=verified fields=7`. Hodnoty sa nevypisujú.
+Chromium roundtrip bol overený už 15. 11. na K22 (1/1); nebol súčasťou tohto
+nového dvojvariantového behu. Žiadne nastavenie nezostalo zámerne zmenené.
+
+Príkazy z `frontend`, spustené iba v potvrdenom okne:
+
+```powershell
+npm run test:e2e:docker -- --grep '@smoke' --workers=1 --retries=0
+npm run test:e2e:docker -- --config=e2e/notification-preferences.playwright.config.ts --project=webkit-desktop --project=webkit-mobile --max-failures=1 --workers=1 --retries=0
+```
+
+Použitý bol štandardný Docker spúšťač a iba dočasný lokálny obal pre bezpečné
+výpisy a read-only pripojenie pôvodného env a knižníc. Env sa nevypisoval ani
+nekopíroval. Screenshot, trace a video boli vypnuté. Bezpečné metadáta mimo Gitu:
+`C:/Projects/svap-e2e-k23-smoke-20261116-1794826898826-details.json` a
+`C:/Projects/svap-e2e-k23-diagnostic-20261116-1794827100673-details.json`.
+
+Výsledok čaká na prijatie majiteľom; **nie je novým prijatým porovnávacím
+základom**. Základ zostáva **427 / 2 / 303**, posledný celý K19 **377 / 23 / 362**.
+**223 ostáva otvorený**; krátky úspešný dym nepreukazuje odstránenie jeho príčiny.
+
+### Mapovanie UI kategórií — bez implementácie a bez živého zápisu
+
+Overený tok v `useNotificationCategories`, `OptionRow`, `ToggleCircle` a
+`useNotificationPreferences` umožňuje tento malý scenár:
+
+1. Bežný setup, `appLocale` podľa existujúcich špecov, stránka
+   `/dashboard/settings/notifications`. Predpoklad: `in_app_notifications` je
+   zapnuté; inak sú kategórie zakázané a zobrazujú vypnutý stav bez ohľadu na
+   uloženú hodnotu. Master sa kvôli testu potichu nezapína. Potrebný vhodný stav
+   účtu alebo nové rozhodnutie majiteľa, nie falošný PASS.
+2. Pôvodných sedem booleanov držať iba v pamäti. Viditeľný obal
+   `notifications-category-likes-desktop` alebo `notifications-category-likes-mobile`
+   zúži selektory: obidve rozloženia sú v DOM. Voľby sú **tlačidlá**, nie
+   checkboxy; dnes nemajú `aria-checked` ani `aria-pressed`. Označenie sa dá
+   overiť prítomnosťou SVG fajky v konkrétnom tlačidle Zapnuté/Vypnuté,
+   nie cez všetky SVG v sekcii alebo presný zoznam CSS tried.
+3. Cez UI zmeniť iba `notify_likes`. V mobilnom WebKite použiť skutočný `tap`:
+   tento `onPointerDown` volá výber aj pri `preventDefault`, nejde o rovnaký tok
+   ako pri jazyku 225. `onClick` volá rovnakú hodnotu, ktorú hook deduplikuje.
+   Pred akciou zachytiť presnú PATCH požiadavku; očakávať jediný zmenený kľúč,
+   HTTP 200 a potvrdenie cez GET, nie len optimistické označenie.
+4. F5, pôvodné čakajúce asercie a GET: zmenená je iba zvolená kategória,
+   zvyšných šesť hodnôt ostáva pôvodných. Žiadne správy ani upozornenia sa nevytvárajú.
+5. Obnova všetkých siedmich hodnôt vo fixture teardown a záverečný GET,
+   aj po chybe tela. Chyba obnovy je hlasný FAIL a zastaví ďalšie zápisy.
+   Workers=1, retries=0, maxFailures=1; WebKit desktop aj mobil zostávajú povinné.
+
+Existujúci `withNotificationPreferenceRoundTrip` vykonáva prvý PATCH priamo,
+preto by jeho nezmenené použitie **nebolo UI testom**. Budúci malý fixture musí
+umožniť skutočnú UI akciu a zachovať rovnakú overenú obnovu. Nevypisovať hodnoty
+účtu, len úspech/počet nezhôd. Implementáciu a nové živé okno schváli majiteľ.
+
+### K23: výzva push — lokálne zmerané schopnosti, nie živý test výzvy
+
+Playwright **1.63.0**, Docker `v1.63.0-noble`, Node **24.20.0**. Čerstvé kontexty
+Desktop Safari / iPhone 15 / Desktop Chrome, bez env, účtu a uloženej relácie.
+Sieť kontajnera `none`; jedno syntetické HTTPS HTML bolo dodané cez route,
+ostatné požiadavky sa odmietli. Všetky tri kontexty boli secure, iba jedna
+lokálne vybavená požiadavka na kontext, **0 neočakávaných požiadaviek**.
+Natívne API ani povolenia sa nepodvrhovali a `requestPermission` sa nevolalo.
+
+| Projekt | Notification | PushManager | serviceWorker | Povolenie | Push podpora podľa aplikácie |
+| --- | --- | --- | --- | --- | --- |
+| webkit-desktop | áno | áno | áno | default | áno |
+| webkit-mobile | nie | nie | áno | unsupported | nie |
+| chromium-desktop | áno | áno | áno | denied | áno |
+
+Nie je teda presné predpokladať `default` vo všetkých projektoch. Pred živým
+UI scenárom treba overiť schopnosti aj povolenie pre jeho konkrétny pôvod;
+lokálna sonda nepreukazuje stav účtu ani zobrazenie výzvy na Railway.
+
+`usePushPermissionPrompt` vyžaduje dokončené načítanie, zapnuté Správy a
+neodmietnutú výzvu. Podporovaný push + `default` dá variant `enable`.
+**Výnimka:** nepodporovaný push na Apple mobile mimo nainštalovanej aplikácie
+dá variant `ios-install` (návod bez tlačidla povolenia). Mobilný WebKit sondy
+spĺňal Apple mobile a nebol standalone. Podporovaný push + `denied`/`granted`
+výzvu nedá; absencia v Chromiu s `denied` preto nie je sama osebe chyba.
+
+Budúci test bez zmeny účtu: iba s už zapnutými Správami, zúžiť viditeľný
+`notifications-push-prompt-desktop`/`notifications-push-prompt-mobile`, overiť
+príslušný variant, kliknúť **iba „Nie teraz“**, overiť zmiznutie aj po F5.
+Presne jeden lokálny kľúč `svaplyPushPromptDismissedV1` uložiť v pamäti a vrátiť
+vo `finally`; žiadny dump localStorage. Zakázať neočakávaný PATCH volieb a POST
+subscription. **Nekliknúť Povoliť:** registruje worker a môže vytvoriť serverový
+odber. Aj existujúce `granted` môže vyvolať automatickú synchronizáciu odberu,
+preto sa taký kontext na read-only pokus nepoužije. Vypnuté Správy sa kvôli
+výzve nezapínajú bez dohody. Reálny push a inštalácia na iPhone ostávajú ručne.
+
+### R40(a): oddelené Ubuntu — príprava bez Railway
+
+Majiteľ 15. 11. schválil samostatné Ubuntu vo WSL. Pred importom: **274,55 GiB**
+voľného miesta, **15,68 GiB** RAM celkom, **4,35 GiB** voľnej RAM. Pred browser
+sondou bolo voľných 3,69 GiB. Nevytváralo sa ďalšie prostredie Dockeru.
+
+- Nová distribúcia **`Svaply-E2E-Ubuntu-24.04`**, WSL 2, uloženie
+  `C:/Projects/svap-e2e-wsl/ubuntu-24.04`. Oficiálny amd64 archív Ubuntu
+  **24.04.5**, Node **24.20.0** (rovnaký ako v Docker image); oba overené SHA-256
+  z [manifestu Ubuntu](https://releases.ubuntu.com/noble/SHA256SUMS) a
+  [manifestu Node](https://nodejs.org/dist/v24.20.0/SHASUMS256.txt) pred použitím.
+- Vlastné knižnice iba v novom Ubuntu: **Playwright 1.63.0**, WebKit revision
+  **2359**, verzia **26.6**; neprivilegovaný Linux používateľ pre prehliadač.
+  Repozitár ani jeho package/lock súbory sa nepoužili na inštaláciu a nemenili.
+- **Prázdna stránka PASS 1/1**: Linux mimo Dockeru, samostatný sieťový namespace
+  bez vonkajších rozhraní, navyše offline browser context a odmietnutie všetkých
+  route. `about:blank`, **0 požiadaviek stránky**, **0 vonkajších rozhraní**,
+  bez page crash alebo predčasného browser disconnect. Štart WebKitu **1,008 s**,
+  otvorenie a overenie spolu **2,041 s** (bez času inštalácie a ukončenia).
+  Žiadny env, prihlásenie, údaje účtov ani Railway; `.env.e2e` sa do Ubuntu nekopíroval.
+- Po dokončení bolo **zastavené iba nové Ubuntu**, aby nezaberalo RAM.
+  Predvolená distribúcia zostala `docker-desktop`; nevykonal sa `wsl --shutdown`,
+  zmena `.wslconfig`, nastavenia Dockeru, ochrany Windows alebo unregister.
+
+Postup importu je podľa [oficiálneho WSL importu](https://learn.microsoft.com/en-us/windows/wsl/use-custom-distro),
+verziované prehliadače podľa [Playwright dokumentácie](https://playwright.dev/docs/browsers).
+Lokálne pomocné súbory prípravy sú mimo Gitu:
+`C:/Projects/svap-e2e-wsl-prepare-20261116.ps1`,
+`C:/Projects/svap-e2e-wsl-runtime-20261116.sh`,
+`C:/Projects/svap-e2e-wsl-blank-20261116.cjs` a
+`C:/Projects/svap-e2e-push-capabilities-20261116.cjs`.
+Nie sú to nové scenáre aplikácie. Nespúšťajú sa bežným E2E príkazom.
+
+V Ubuntu je zatiaľ iba WebKit pre schválenú sondu. Štandardný `global-setup.ts`
+používa Chromium na prihlásenie, takže pred reálnym porovnaním treba ešte
+pripraviť jeho izolovanú Linux verziu a bezpečné spustenie pôvodnej konfigurácie;
+neprenášať env ani reláciu kopírovaním. Celý prihlásený beh vo WSL sa neoveroval.
+
+Porovnanie `search-mobile-cards`, `offer-card-review-translations` a
+`search-panel-fixture` v šiestich variantoch (3× mimo Dockeru a 3× v Dockeri)
+**sa teraz nespúšťa**.
+Potrebuje samostatne oznámené okno majiteľa. WSL je Linux mimo Dockeru, nie
+natívny Windows WebKit; ani úspešná prázdna stránka nevyrieši nález 223.
+
+**Ďalšie kroky len po dohode:** schváliť implementáciu zmapovaného UI scenára
+kategórie a prípadne odmietnutia výzvy K23; samostatne potvrdiť nasadenie a okno
+pre porovnanie troch reálnych špecov vo WSL a Dockeri. Žiadny z týchto behov
+nie je spustený alebo naplánovaný automaticky.
+
+**R43 (16. 11.): scenár 330 s dvoma účtami sa nerobí.** Odstránený z aktívneho
+mapovania; žiadne overovanie druhého účtu, nové žiadosti ani upozornenia.
+
+## Historická dávka — 15. 11. 2026: stav po K22, jazyk a voľby upozornení
+
+Nasledujúci záznam opisuje vtedajší stav. Čakanie na K23 a rozhodnutie R40
+bolo nahradené aktuálnou dávkou vyššie; scenár 330 bol zrušený rozhodnutím R43.
 
 Vetva **`e2e/lang-a-volby-k22`** vychádza z čerstvého main **`52626ab7`**
 (K22; opätovne overené cez fetch). PR #261 je zlúčený (`8b951cd9`), CI a
@@ -166,46 +341,10 @@ frontend/e2e/diagnostics-tests/notification-preferences.playwright.config.ts
 docs/playwright-odovzdanie.md
 ```
 
-### 330 — iba mapovanie, žiadne vytváranie žiadostí
+### 330 — nahradené rozhodnutím R43
 
-Overené v aktuálnom kóde, **nie živým pokusom medzi účtami**:
-
-1. POST `/api/auth/skill-requests/` s existujúcou viditeľnou kartou typu Ponúkam
-   vytvorí žiadosť. Účty musia byť odlišné, aktívne, bez blokovania a nesmú byť
-   administrátorské; karta nesmie byť skrytá alebo pre žiadateľa nedostupná.
-   Existujúca aktívna žiadosť tej istej dvojice žiadateľ/karta vráti 200 a nevytvorí
-   novú udalosť. Scenár potrebuje **201 a nové ID iba v pamäti**, nie znovupoužitú
-   starú žiadosť. Po zrušenej žiadosti vytvorí ďalší POST nový záznam.
-2. Pri vypnutom `notify_skill_requests` (alebo `in_app_notifications`) žiadosť
-   príde do prijatých a jej notifikácia vznikne už prečítaná. Počet typu
-   `skill_request` sa nezvýši; opätovné zapnutie starú notifikáciu neoživí.
-   Po zapnutí oboch volieb musí ďalšia **nová** žiadosť počet zvýšiť o 1.
-3. Pred oboma krokmi odčítať východiskový počet a zostať mimo prijatých Žiadostí:
-   otvorenie ich záložky pending automaticky označuje neprečítané za prečítané.
-   Doručenie sa najprv preukáže cez GET zoznamu a odznak sa sleduje mimo Žiadostí,
-   až potom UI. Nesmie sa plošne označiť pôvodný obsah za prečítaný. Ak má scenár
-   otvoriť aj prijaté Žiadosti v UI, príjemca preto potrebuje nulový pôvodný počet
-   neprečítaných žiadostí; inak by automatika aplikácie zmenila aj staršie dáta.
-4. Zrušenie je PATCH `/api/auth/skill-requests/<id>/` s `action: 'cancel'` od
-   žiadateľa. `action: 'hide'` sa dá následne spraviť z oboch účtov. **To však iba
-   zruší/skryje, neodstráni riadok ani jeho notifikáciu.** GET počítadla pritom
-   filtruje `is_read`, nie stav zrušenia. Ani prípadné zmazanie samotnej žiadosti
-   automaticky nezmaže notifikáciu (`SET_NULL`). Bežné API nemá DELETE žiadosti.
-
-**Pred implementáciou/živým behom potrebujeme od majiteľa:** potvrdiť prístup do
-oboch vyhradených testovacích účtov (bez posielania údajov do chatu), dostupnú
-verejnú ponuku príjemcu a neprítomnosť aktívnej žiadosti tejto dvojice, súhlas na
-dve nové žiadosti a dočasnú zmenu/obnovu volieb. Posledný dym potvrdil otvorenie
-konverzácie/profilu partnera, **nie prihlásenie ako partner ani vhodnosť ponuky**.
-Dostupnosť prihlasovacích údajov druhého účtu sa ručne z `.env.e2e` nekontroluje.
-
-Treba dohodnúť **skutočné upratanie len nových záznamov vrátane ich notifikácií**
-(vlastní Claude/majiteľ), alebo výslovne schváliť, že zrušené/skryté záznamy zostanú.
-Pri požiadavke „nič po sebe nenechať“ dnešné bežné API nestačí. Plošné mazanie,
-mazanie účtov/ponúk ani úprava starých žiadostí nie sú prijateľné upratanie.
-Voľby príjemcu sa musia v každom prípade vrátiť vo `finally` a potvrdiť cez GET.
-Scenár 330, kontrola údajov živých účtov ani druhé prihlásenie sa v tejto dávke
-nespustili.
+Pôvodný návrh dvojúčtového scenára sa nerealizoval. Majiteľ ho 16. 11. zrušil
+(R43); nie je súčasťou aktívneho mapovania ani budúcich behov tejto dávky.
 
 ### Až po oznámení nasadenia K23
 
