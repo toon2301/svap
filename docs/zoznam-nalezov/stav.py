@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='16. 11. 2026',
-    kod='`main` `13a9d95b` (po PR #272: zoznam po K24 a K25 a karta K26; PR #271 je Codex, K24 je PR #269 a K25 PR #270)',
+    kod='`main` `910700ea` (po PR #273: odpoveď R44 a zlúčená vetva 179; PR #271 je Codex, K24 je PR #269 a K25 PR #270)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,19 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('16. 11. 2026',
+      'Vetva 181 (vychádza z `main` `910700ea`, teda po PR #273). (1) Vetva 180 (PR #273, zlúčené 16. 11. 2026 o 13:56 UTC, '
+      'merge `910700ea`; commit `9431c3c7`) je zlúčená: CI (`checks`, `backend-postgres`) je zelené a k PR nie sú žiadne '
+      'komentáre k riadkom ani vlákna; kontrolu CodeRabbitu majiteľ nevyžiadal (preskočená). (2) Mapovanie nálezu 262 (zoznam '
+      '„kto dal lajk“ pri ponukách, portfóliu a profile, R20) agentom z čítania kódu, kód sa nemenil: model lajku portfólia '
+      'existuje (`PortfolioItemLike`), všetky tri modely lajkov majú rovnaký tvar, takže spoločný pomocník `_likers_response` '
+      'pôjde použiť bezo zmeny a migrácia netreba; ponuky vidí aj neprihlásený (vyhľadávanie je `AllowAny`), profil a '
+      'portfólio len prihlásený; `offer_hidden_from_user` nekontroluje aktívneho vlastníka; adresy a funkcie frontendu '
+      'nemôžu ísť do `lib/api.ts` (912 riadkov) ani `lib/feedApi.ts` (545 riadkov). Podrobnosti sú v nálezu 262. (3) Karta '
+      'K27 (`karty/K27.md`): backendová časť nálezu 262 (tri nové koncové body na čítanie s testami súkromia, JASNÉ s krokom '
+      '0), posiela sa kolegovi po K26; frontend nálezu 262 ide ako ďalšia dávka po jej zlúčení; K28 (preklady) ostáva návrh, '
+      'najprv mapovanie. (4) Číselný prehľad bez zmeny: nálezy 1–337, zatvorené 14, hotové 132; čakajúcich rozhodnutí 9 z 44. '
+      'Dopad na E2E: žiadny.'),
     ('16. 11. 2026',
       'Vetva 180 (vychádza z `main` `13a9d95b`, teda po PR #272). (1) Vetva 179 (PR #272, zlúčené 16. 11. 2026 o 13:39 UTC, '
       'merge `13a9d95b`; commit `56d14142`) je zlúčená: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené, CodeRabbit '
