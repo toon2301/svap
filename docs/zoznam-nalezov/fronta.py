@@ -36,7 +36,7 @@ zoznam nemôže ticho zastarať.
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED '
              'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K25 sú hotové (z K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); '
-             'vetvy agenta 167 až 174, 177, 178 a 179 sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z '
+             'vetvy agenta 167 až 174, 177, 178, 179 (PR #272) a 180 sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z '
              '13. 11. 2026 (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť); oprava pripomienky '
              'CodeRabbitu vo vetve K21 (commit `71f9cff4`) bola druhá jednorazová výnimka majiteľa z 13. 11. 2026, lebo kolega už '
              'nemohol vetvu upraviť. Dávku K21 (331 okno recenzie, 332 jazyk pre zvyšok sveta, 330 gulička Žiadostí a 325 toast; karta '
@@ -47,8 +47,9 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'Dávky K24 (oprava 336, výnimka R41; karta `karty/K24.md`) a K25 (opis hlavného vypínača aj na '
                'počítači, R42; karta `karty/K25.md`) majiteľ schválil a kolega ich dokončil (PR #269 a #270, zlúčené '
                '16. 11. 2026). Dávku K26 (mapovanie delenia `FeedPostComments.tsx`, nález 333, R23; karta '
-               '`karty/K26.md`) pripravil agent 16. 11. 2026 a čaká na schválenie majiteľa; K27 a K28 (zoznam '
-               'lajkujúcich, preklady) sú návrh, každá najprv ako mapovanie; '
+               '`karty/K26.md`) pripravil agent 16. 11. 2026 (zlúčená v PR #272) a majiteľ ju 16. 11. 2026 posiela kolegovi; '
+               'K27 a K28 (zoznam lajkujúcich, preklady) sú návrh, každá najprv ako mapovanie. Po výsledku K26 ide jedna '
+               'dokumentačná vetva agenta (údržba zoznamu; majiteľ súhlasil 16. 11. 2026); '
              'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
