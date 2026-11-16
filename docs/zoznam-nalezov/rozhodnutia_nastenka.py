@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia R13–R40: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
+"""Rozhodnutia R13–R43: R13–R22 zo zoznamu majiteľa „Svaply — otvorené nálezy a rozpracovaná práca“ (Nástenka, PDF z 6. 11. 2026), R23
 (súbory nad 500 riadkov pri redizajne Nástenky), R24 (výnimka z pravidla 500 riadkov pre nález 271), R25 (nález 275 je zámer
 súkromného profilu), R26 (dve výnimky z pravidla 500 riadkov pre testové súbory z K8 a K9), R27 (platí pravidlo 500 riadkov aj
 pre testy?), R28 (vstupné animácie modulov na mobile), R29 (animované obrázky), R30 (starý multipart endpoint ponúk, rozhodnuté (a)), R31 (výnimka z pravidla 500 riadkov pre zvyšných osem
 `alert()`, rozhodnuté), R32 (kategórie upozornení: dokončiť, alebo skryť, rozhodnuté (a)), R33 (postupné zapínanie push upozornení
 na správy, rozhodnuté (a)) a R34 až R36 (kategórie upozornení: priradenie udalostí ku kategóriám, hlavný vypínač a žiadosti o
 zručnosť, výzva na push pre nových používateľov; rozhodnuté 10. 11. 2026) a R37 (výnimky z pravidla 500 riadkov pre opravu
-mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026) a R39 (gulička pri Žiadostiach pri vypnutej kategórii, nález 330; rozhodnuté 13. 11. 2026) a R40 (porovnanie Windows a Docker pre nález 223: čaká na majiteľa).
+mazania fotky 326 a mazania recenzie 325; rozhodnuté 11. 11. 2026) a R38 (nález 311: nechať tak a uzavrieť; rozhodnuté 12. 11. 2026) a R39 (gulička pri Žiadostiach pri vypnutej kategórii, nález 330; rozhodnuté 13. 11. 2026) a R40 (porovnanie Windows a Docker pre nález 223, rozhodnuté (a) 15. 11. 2026) a R41 (výnimka z pravidla 500 riadkov pre opravu 336, rozhodnuté 15. 11. 2026) a R42 (opis hlavného vypínača aj na počítači) a R43 (E2E scenár odznaku Žiadostí sa nerobí), obe rozhodnuté 16. 11. 2026.
 
 R13–R19 sú rozhodnutia, ktoré majiteľ vedome prijal počas práce na Nástenke a ktoré sa nemajú prehodnocovať bez nového zistenia
-(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R39 majiteľ rozhodol 13. 11. 2026 (spolu s R2); R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
+(majú `odpoved`). R20, R21, R23, R27, R28, R29 a R39 majiteľ rozhodol 13. 11. 2026 (spolu s R2; R39 výklad potvrdil 15. 11. 2026) a R40 a R41 15. 11. 2026 a R42 a R43 16. 11. 2026; R34 až R36 majiteľ rozhodol 10. 11. 2026, R37 11. 11. 2026 a R38 12. 11. 2026; R22 a R24 majiteľ rozhodol 6. 11. 2026, R25 a R26
 7. 11. 2026, R30 8. 11. 2026 a R31, R32 a R33 9. 11. 2026 (R31 výslovne udelil s podmienkou maximálnej opatrnosti, R32 zvolil (a) proti
 odporúčaniu agenta a R33 podľa odporúčania).
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Čísla rozhodnutí sa nikdy nepoužívajú znova.
@@ -372,10 +372,11 @@ DECISIONS_NASTENKA = [
                  'Prepínač „Vypnúť všetko“ je zapnutý, keď sú všetky upozornenia okrem Správ vypnuté (na serveri je '
                  '`in_app_notifications` `false`); formuláciu majiteľa „vypnuté „Vypnúť všetko““ agent vykladá ako tento stav, teda '
                  'odznak sa nezobrazí pri zapnutom prepínači „Vypnúť všetko“ (tak to implementovala K21 a tak je to aj v otázke R39 '
-                 '(b)); ak majiteľ myslel opak, dá vedieť. Majiteľ '
+                 '(b)); majiteľ to 15. 11. 2026 potvrdil: pri zapnutom „Vypnúť všetko“ nepríde pri novej žiadosti žiadny odznak a tak to chce '
+                 'nechať. Majiteľ '
                  'návrh vety pre opis hlavného vypínača nenamietal: „Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa '
                  'aj tak zobrazia v Žiadostiach, len bez odznaku.“ (na počítači hlavný vypínač opis nemá a ostáva tak). Nález 330 ide do '
-                 'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom doplní Codex po nasadení.',
+                 'dávky K21 a je hotový (PR #260, zlúčené 13. 11. 2026); E2E scenár so žiadosťou a odznakom sa podľa R43 (16. 11. 2026) nerobí.',
          datum='13. 11. 2026'),
     dict(id='R40', tema='Porovnanie Windows a Docker pre nález 223: ako ďalej, keď natívny Windows WebKit nejde',
          otazka='Plánované porovnanie šiestich variantov E2E špecov (každý 3× natívne na Windows a 3× v Dockeri) sa nespustilo, lebo '
@@ -392,5 +393,56 @@ DECISIONS_NASTENKA = [
                       'Dockeru a porovnanie oddelí vplyv Dockeru (zdieľaná pamäť, IPC, sieť) od vplyvu samotného WebKitu; vplyv Windows '
                       'nevyskúša. (c) sa neodporúča: oslabuje ochranu počítača majiteľa kvôli jednému testu. (d) je presné, no drahé. '
                       '(b) je v poriadku, ak majiteľ nechce ďalšiu prácu: nález 223 ostane otvorený a E2E sa nezhoršuje.',
-         kedy='Pred ďalšou prácou Codexa na porovnaní; dovtedy Codex nič neinštaluje ani nemení.'),
+         kedy='Rozhodnuté 15. 11. 2026.',
+         odpoved='Majiteľ 15. 11. 2026: podľa odporúčania agenta, teda variant (a). Codex smie pripraviť samostatné Ubuntu vo WSL '
+                  '(ochrana Windows ostáva zapnutá, `docker-desktop` sa nemení, rovnaký Playwright 1.63.0): najprv overí miesto a pamäť a '
+                  'WebKit na prázdnej stránke bez siete (bez Railway); porovnanie rovnakých šiestich variantov, každý 3× mimo Dockeru a 3× '
+                  'v Dockeri, pôjde až v novom okne, ktoré majiteľ osobitne oznámi, bez zmeny testov a údajov účtov. Je to porovnanie '
+                  '„Linux bez Dockeru“ proti Dockeru, nie Windows proti Dockeru; nález 223 ostáva otvorený.',
+         datum='15. 11. 2026'),
+    dict(id='R41', tema='Výnimka z pravidla 500 riadkov: oprava anglického „Network Error“ v okne recenzie (336)',
+         otazka='Oprava 336 je v `onSubmit` v `OfferReviewsView.tsx` (683 riadkov, riadky 655 až 661): záložný text sa skladá ako '
+                 '`error.message || …`, takže pri výpadku siete ukáže okno recenzie anglické „Network Error“ a pri chybe servera bez '
+                 'textu anglické „Request failed with status code …“; okná dostanú už hotovú správu, preto sa oprava bez zásahu do tohto '
+                 'súboru dá len obísť (porovnávanie anglického textu v oknách alebo zmena spoločného pomocníka), čo je horšie. Smie '
+                 'kolega túto opravu urobiť ako výnimku z pravidla 500 riadkov s podmienkami R31 a R37 (vlastný commit, test, ktorý bez '
+                 'zmeny padá, v diffe len nevyhnutné riadky `catch` bloku, počet riadkov súboru sa nezvýši)?',
+         odporucanie='Áno, s maximálnou opatrnosťou: jeden `catch` blok, záložný text cez `t()` v šiestich jazykoch bez `error.message`, '
+                      'charakterizačné testy ciest, ktoré sa nemajú zmeniť (text zo servera, chyby polí), pred zmenou, mutácie, skúška v '
+                      'prehliadači bez internetu v oboch oknách a zastavenie pri akejkoľvek ďalšej potrebe zmeny v súbore. Dve poznámky k tomu '
+                      'istému `onSubmit` (duplicitné zneplatnenie cache ponúk a načítanie zoznamu po úspešnom odoslaní) ostávajú mimo '
+                      'výnimky.',
+         kedy='Rozhodnuté 15. 11. 2026.',
+         odpoved='Majiteľ 15. 11. 2026: výnimka je udelená, s tým, že pri oprave platí maximálna opatrnosť. Agent to vykladá ako '
+                  'podmienky R31 a R37 (vlastný commit, test, ktorý bez zmeny padá, v diffe len nevyhnutné riadky `catch` bloku v '
+                  '`onSubmit`, počet riadkov súboru sa nezvýši) a navyše: charakterizačné testy pred zmenou, mutácie, skúška v prehliadači '
+                  'bez internetu v oboch oknách a zastavenie pri akejkoľvek ďalšej potrebe zmeny v súbore. Povolenie platí len pre nález '
+                  '336; poznámky k `onSubmit` sa týmto neudeľujú. Oprava ide ako K24 (karta `karty/K24.md`).',
+         datum='15. 11. 2026'),
+    dict(id='R42', tema='Opis hlavného vypínača „Vypnúť všetko“ aj na počítači (321)',
+         otazka='Veta v opise hlavného vypínača („Vypne všetky upozornenia okrem Správ. Nové žiadosti o zručnosť sa aj tak zobrazia v '
+                 'Žiadostiach, len bez odznaku.“) sa ukáže len v mobilnom rozložení; rozloženie na počítači opis nikdy nemalo (K20 a '
+                 'K21). Má sa opis ukázať aj na počítači? (a) Áno: opis sa zobrazí pod názvom vypínača aj na počítači, rovnaký text '
+                 'vo všetkých šiestich jazykoch (texty už existujú). (b) Nie: ostáva len na mobile.',
+         odporucanie='(a): bez opisu na počítači nie je vidieť, že pri zapnutom „Vypnúť všetko“ nové žiadosti o zručnosť stále prídu '
+                      'do Žiadostí (len bez odznaku, R39), takže používateľ na počítači môže čakať, že žiadosť nepríde vôbec. Zmena je '
+                      'malá (rozloženie na počítači a vypínač, žiadny nový text).',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: áno, opis sa má ukázať aj na počítači (podľa odporúčania agenta). Ide ako dávka K25 (karta '
+                  '`karty/K25.md`), po K24.',
+         datum='16. 11. 2026'),
+    dict(id='R43', tema='E2E scenár odznaku Žiadostí s dvoma účtami (330): robiť, alebo nie',
+         otazka='Codex scenár zmapoval (nová žiadosť o zručnosť medzi dvoma testovacími účtami pri vypnutej kategórii alebo zapnutom '
+                 '„Vypnúť všetko“: žiadosť je v Žiadostiach, no počet neprečítaných sa nezvýši; po zapnutí kategórie ďalšia žiadosť odznak '
+                 'rozsvieti) a nespustil ho: potrebuje dva účty, existujúcu ponuku, dve nové žiadosti a dočasnú zmenu volieb príjemcu, a '
+                 'bežné API nové žiadosti ani ich upozornenia nezmaže (zrušenie a skrytie nezmaže riadok ani upozornenie). (a) Scenár '
+                 'nerobiť. (b) Robiť a pripustiť, že zrušené žiadosti a ich upozornenia zostanú v testovacích účtoch a upratať ich by '
+                 'musel majiteľ ručne. (c) Robiť s novou backendovou funkciou na upratanie len pre testy (neodporúča sa).',
+         odporucanie='(a): správanie stráži 12 backendových testov s mutáciami 9 z 9 a majiteľ ho overil ručne (R39); E2E by pridalo '
+                      'údaje, ktoré bežné API neupracie, a testovacie účty by sa postupne znečisťovali. Ak sa odznak niekedy pokazí, '
+                      'zachytia to backendové testy.',
+         kedy='Rozhodnuté 16. 11. 2026.',
+         odpoved='Majiteľ 16. 11. 2026: podľa odporúčania agenta, teda (a): scenár sa nerobí. Nález 330 ostáva hotový (K21); Codex '
+                  'kvôli nemu nič nevytvára ani nespúšťa.',
+         datum='16. 11. 2026'),
 ]

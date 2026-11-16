@@ -83,9 +83,12 @@ DONE_SINCE_K20 = [
                'opis hlavného vypínača má vo všetkých šiestich jazykoch novú druhú vetu (na počítači vypínač opis nemá). OVERENIE '
                '(kolega): pred opravou padalo 17 zo 156 testov (10 nových a 7 upravených) a 8 z 38 pri texte vypínača; nový '
                '`test_skill_request_muted_badge.py` (12 prípadov); mutácie 9 z 9; celé testy backendu (SQLite) 2 521 prešlo, 24 '
-               'preskočených; ruff čistý; PostgreSQL sa overilo v CI. NEOVERENÉ: scenár s dvoma účtami proti skutočnému serveru (patrí '
-               'do etapy 4 nálezu 321, Codex). Dopad na E2E: žiadny nájdený; scenár so žiadosťou o zručnosť a odznakom doplní Codex v '
-               'etape 4.'),
+               'preskočených; ruff čistý; PostgreSQL sa overilo v CI. NEOVERENÉ: scenár s dvoma účtami proti skutočnému serveru (pôvodne patril do etapy 4 nálezu 321, '
+               'Codex; rozhodnutím R43 z 16. 11. 2026 sa nerobí). Dopad na E2E: žiadny nájdený. RUČNÝ TEST MAJITEĽA A MAPOVANIE CODEXA (15. 11. 2026): '
+               'majiteľ potvrdil, že pri zapnutom „Vypnúť všetko“ nepríde pri novej žiadosti žiadny odznak a tak to chce nechať; Codex '
+               'scenár s dvoma účtami len zmapoval v kóde a nespustil (potrebuje nové žiadosti a ich skutočné upratanie, ktoré bežné API '
+               'nedovoľuje: zrušenie a skrytie žiadosti nezmaže riadok ani jej upozornenie). Majiteľ 16. 11. 2026 podľa odporúčania agenta rozhodol, že E2E pre 330 sa nerobí (R43), lebo '
+               'správanie stráži 12 backendových testov s mutáciami 9 z 9 a ručný test.'),
     dict(n=325, vetva='K21', pr='#260', zlucene=True,
          text='HOTOVÉ (backendová časť v K18, PR #255, commit `f48d963e`; zvyšok vo vetve K21, zlúčené v PR #260 dňa 13. 11. 2026, '
                'merge `79f907bd`, commit `9d26d9c4`; výnimka R37 (b a c) z 11. 11. 2026). Po úspešnom zmazaní vlastnej recenzie sa '
@@ -136,7 +139,8 @@ DONE_SINCE_K20 = [
                'a ostáva aj po `router.refresh()` a klientskej navigácii; celý Jest 593 súborov a 8 884 testov prešlo. NEOVERENÉ: '
                'čítačky obrazovky, ponuka prekladu v prehliadači a kontrola pravopisu (overený je atribút `lang`). KONTROLA AGENTA a '
                'ručné testy majiteľa: ako pri 334 (CI zelené, boty bez pripomienok ku kódu, ručné testy po nasadení prešli). Dopad na E2E: '
-               'žiadny špec `lang` nekontroluje; jednoduchú kontrolu atribútu pre šesť jazykov môže doplniť Codex. Z práce vznikla '
+               'žiadny špec `lang` nekontroluje; jednoduchú kontrolu atribútu pre šesť jazykov doplnil Codex v PR #267 (`document-language.spec.ts`, 18 variantov; živé '
+               'overenie 15. 11. 2026 na `52626ab7`: 18 prešlo, 0 zlyhalo). Z práce vznikla '
                'poznámka: záložné stránky 404 a 500 majú `lang="sk"` a anglický text (`poznamky.md`).'),
     dict(n=328, vetva='e2e/223-dokazy-limit-328', pr='#261', zlucene=True,
          text='HOTOVÉ (oprava testu v PR #261, vetva `e2e/223-dokazy-limit-328`, commity `d918a8eb` a `7d387fcf`, zlúčené 13. 11. 2026 o '
