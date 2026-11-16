@@ -257,6 +257,7 @@ urlpatterns = [
         "skills/<int:offer_id>/reviews/", views.reviews_list_view, name="reviews_list"
     ),
     path("skills/<int:skill_id>/like/", views.offer_like_view, name="offer_like"),
+    path("skills/<int:skill_id>/likes/", views.offer_likers_view, name="offer_likers"),
     path("skills/<int:skill_id>/", views.skills_detail_view, name="skills_detail"),
     path("skills/<int:skill_id>/images/", views.skill_images_view, name="skill_images"),
     path(
