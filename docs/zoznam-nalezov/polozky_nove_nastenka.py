@@ -155,7 +155,8 @@ NEW_ITEMS_NASTENKA = [
                 'je schválený (R52), kód až po delení',
          what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné doladenia: komentárová textarea '
               'vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači inline len keď je text orezaný; veľmi dlhé popisky zmenšiť '
-              'fontom namiesto orezania a zrušiť „Menej“; drag handle vo fotoprehliadači zjednodušiť na šípku; väčší odstup spodného '
+              'fontom namiesto orezania a zrušiť „Menej“; (drag handle vo fotoprehliadači: prianie zjednodušiť ho na šípku je '
+              'PREKONANÉ rozhodnutím R55, majiteľ 17. 11. 2026 zvolil tenkú úchytku 40×6 px a ide ako nález 343); väčší odstup spodného '
               'riadku akcií od okraja; menu „…“ presunúť do riadku akcií; „Zobraziť odpovede (N)“ bližšie k riadku akcií; s nízkou prioritou '
               'predpripraviť ďalšiu fotku v karuseli. Skupina 7, redizajn komentárov (mobil aj desktop, detail aj karta): plochý layout v '
               'štýle Facebooku bez bublín na pozadí; odpovede vnorené a vizuálne prepojené bez vlastnej bubliny; jemný oddeľovač medzi '
