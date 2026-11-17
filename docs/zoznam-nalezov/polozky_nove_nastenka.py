@@ -233,11 +233,13 @@ NEW_ITEMS_NASTENKA = [
               '(hlavička konverzácie mimo prvej stránky, overiť a zatvoriť). Prvý krok: samostatné mapovanie (len čítanie), potom rozdeliť '
               'na malé nálezy.',
          dec=None, src=ZDROJ),
-    dict(n=265, bucket=A, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
+    dict(n=265, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
          kratko='verejné SEO stránky: anonymné prehliadanie ponúk a profilov',
          what='Anonymné prehliadanie ponúk a profilov (verejné stránky pre vyhľadávače); podľa zoznamu majiteľa zdieľa technický základ '
               's Nástenkou (feed).',
-         note='Funkcia po štarte; súvisí s N2 (doména) a so súkromím (len verejné profily, `is_public`; blokovanie). Agent nič neoveroval.',
+         note='Majiteľ 17. 11. 2026: presunuté z PO NASADENÍ do PRED NASADENÍM (pôvodne funkcia po štarte). Zatiaľ sa nemapuje a do '
+              'žiadnej vlny poradia nie je zaradené (zaradí sa pri mapovaní); dôležitosť (nízka) a odhad (veľký) sa pri presune nemenili. '
+              'Súvisí s N2 (doména) a so súkromím (len verejné profily, `is_public`; blokovanie). Agent nič neoveroval.',
          dec=None, src=ZDROJ),
     dict(n=266, bucket=P, imp=S_, eff=ES, pkg='Súkromie a krajina',
          kratko='overiť na produkcii, že obrázky správ idú cez proxy aplikácie a v S3 nie sú verejné',

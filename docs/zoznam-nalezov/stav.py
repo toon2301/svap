@@ -43,7 +43,9 @@ ZMENY = [
       'špecov komentárov. (7) Kontrola CodeRabbitu k PR #282 (jedna pripomienka, platná; druhý commit vetvy 184): v náleze 261 ostalo '
       'staré prianie „drag handle vo fotoprehliadači zjednodušiť na šípku“, ktoré rozhodnutie R55 prekonalo (majiteľ zvolil tenkú '
       'úchytku 40×6 px, nález 343; vo fotoprehliadači je jediná úchytka, tá na paneli komentárov); v zozname je prianie označené ako '
-      'prekonané a vlákno na GitHube zatvára majiteľ.'),
+      'prekonané a vlákno na GitHube zatvára majiteľ. (8) Na žiadosť majiteľa (17. 11. 2026) je nález 265 (verejné SEO stránky) '
+      'presunutý z PO NASADENÍ do PRED NASADENÍM (tretí commit vetvy 184); zatiaľ sa nemapuje, do žiadnej vlny poradia nie je zaradený '
+      'a dôležitosť (nízka) a odhad (veľký) sa nemenili; prehľad nálezov: HNEĎ 0, PRED 46, PO 130.'),
     ('17. 11. 2026',
       'Vetva 183 (vychádza z `main` `4c342f72`, teda po PR #278). (1) Vetva 182 (PR #277) je zlúčená 17. 11. 2026 o 05:33 UTC. '
       '(2) K28 (PR #278, zlúčené 17. 11. 2026 o 06:33 UTC, merge `4c342f72`; päť commitov `eb86d9a5`, `33a81b9b`, `ffcfad33`, '
