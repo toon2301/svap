@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='16. 11. 2026',
-    kod='`main` `910700ea` (po PR #273: odpoveď R44 a zlúčená vetva 179; PR #271 je Codex, K24 je PR #269 a K25 PR #270)',
+    kod='`main` `da27a931` (po PR #276: Codex, UI scenár kategórií; K27 je PR #275 a zoznam PR #274)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -15,6 +15,33 @@ STAV = dict(
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('16. 11. 2026',
+      'Vetva 182 (vychádza z `main` `da27a931`, teda po PR #276). (1) K27 (PR #275, zlúčené 16. 11. 2026 o 19:34 UTC, merge '
+      '`bf754de0`; commity `7eed510a`, `c26f314e` a `a894dc23`): hotová backendová časť nálezu 262 (tri nové koncové body na '
+      'čítanie, `GET skills/<id>/likes/`, `GET portfolio/<id>/likes/` a `GET dashboard/users/<id>/profile/likes/`; nové súbory '
+      'a 69 nových testov; bez migrácie a bez zmeny Nástenky). Kontrola agenta z GitHubu a z kódu: CI (`checks`, '
+      '`backend-postgres`) je zelené, CodeRabbit bez pripomienok, Codex review bez nálezov a vlákna nie sú; pohľady '
+      'zodpovedajú karte (ponuka `AllowAny` s kontrolou viditeľnosti a aktívneho vlastníka, portfólio a profil '
+      '`IsAuthenticated`, spoločný pomocník `_likers_response`); overenie je v textoch commitov (celý backend 2 590 prešlo a 24 '
+      'preskočených na SQLite a 2 612 prešlo a 2 preskočené na PostgreSQL; mutácie 15 z 15, 17 zo 17 a 16 zo 16 zachytených). '
+      'Kandidát kolegu o neaktívnom vlastníkovi ponuky je nový nález 339. Frontend nálezu 262 čaká na schválenie vzhľadu '
+      'majiteľom (R49). Vetvy 180 (PR #273) a 181 (PR #274) sú zlúčené. (2) Codex (PR #276, vetva `e2e/ui-kategoria-337`, '
+      'zlúčené 16. 11. 2026 o 21:39 UTC, merge `da27a931`; commity `9ccc972d` a `93b1210e`): implementovaný UI scenár zmeny '
+      'kategórie upozornení (nález 337, R44 (b)) v samostatnej konfigurácii (2 varianty, WebKit desktop aj mobil, mimo bežného '
+      'celého behu a dymu), lokálne overený bez Railway (45/45 kontrol logiky, 18/18 prehliadačových kontrol, 0 SKIP); '
+      'CodeRabbit mal jednu platnú pripomienku (odpoveď 3xx nesmie potvrdiť bezpečný návrat), opravenú v `93b1210e`. Živý beh '
+      'ešte nebol: čaká na nové okno potvrdené majiteľom (návrh z 20:00 uplynul). Codex nahlásil aj medzeru staršej poistky '
+      'proti `--repeat-each` (nález 340, rozhodnutie R50). (3) Výsledok K26 (kolega, mapovanie delenia `FeedPostComments.tsx`, '
+      'kód sa nemenil; `karty/K26_vysledok.md` a `karty/K26_podklady.md`): plán 9 krokov (0 až 8) v piatich dávkach, hlavný '
+      'súbor klesne z 1 487 na asi 420 riadkov; z 39 skúšobných pokazení kódu existujúce testy zachytili 13, preto krok 0 '
+      'pridá testy a dočasný odtlačok HTML; nový nález 338 (zaseknuté „Načítavam…“ pri pridaní komentára počas prvého '
+      'načítania, agent overil čítaním kódu); nález 257 mal zastaranú vetu (testy úpravy komentára na frontende existujú). '
+      'Odpovede majiteľa podľa odporúčaní agenta: R45 (a) odtlačok len dočasne, R46 (a) päť dávok, R47 (a) redizajn 261 až po '
+      'poslednej dávke, R48 (a) oprava 338 po kroku 6; trvalé pravidlo R49: redizajn Nástenky, komentárov a podobné '
+      'vzhľadové zmeny sa vždy najprv konzultujú s majiteľom. (4) Karta K28 (`karty/K28.md`): delenie `FeedPostComments.tsx`, '
+      'dávka 1 z 5 (krok 0, len testy a dočasný odtlačok HTML); karta a šablóna kariet nesú nové pravidlo o konzultácii '
+      'vzhľadu. (5) Číselný prehľad: nálezy 1–340 (nové 338, 339 a 340), zatvorené 14, hotové 132; čakajúcich rozhodnutí '
+      '10 z 50. Dopad na E2E: žiadny na existujúce špecy; Codex čaká na okno pre 337.'),
     ('16. 11. 2026',
       'Vetva 181 (vychádza z `main` `910700ea`, teda po PR #273). (1) Vetva 180 (PR #273, zlúčené 16. 11. 2026 o 13:56 UTC, '
       'merge `910700ea`; commit `9431c3c7`) je zlúčená: CI (`checks`, `backend-postgres`) je zelené a k PR nie sú žiadne '
@@ -300,14 +327,14 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov najprv vyžaduje delenie súborov Nástenky, nález 333 a R23, a konzultáciu vzhľadu s majiteľom, R49; 338 zaseknuté načítavanie komentárov, oprava po kroku 6 delenia; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, frontend čaká na schválenie vzhľadu) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '338', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
-         co='175, 176, 204, APP-03 a 186 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335 (atribút `lang` na `<html>`) v K22; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15)',
+         co='175, 176, 204, APP-03 a 186 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335 (atribút `lang` na `<html>`) v K22; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15) a súkromie: 339 (ponuka neaktívneho vlastníka je dostupná cez priame id)',
          preco='Všetkých šesť jazykov (sk, cs, hu, de, pl, en) musí byť pri štarte hotových (R2, 13. 11. 2026).',
-         polozky=['175', '176', '204', 'APP-03', '186']),
+         polozky=['175', '176', '204', 'APP-03', '186', '339']),
     dict(vlna='4 – keď bude aplikácia hotová',
          co='Príprava ostrého nasadenia N1–N15 (hosting, doména, právne dokumenty, server, zálohy, monitoring, smoke test), OW-06 a 180 '
             '(diagnostiku 180 možno začať už teraz)',

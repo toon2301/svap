@@ -4,7 +4,7 @@ Vyplní agent, schváli majiteľ; kolega ju číta zo zoznamu v `main` alebo z o
 
 **Druh rizika:** vzhľad / backend logika / závislosti, prihlásenie a infra (tretí druh ide vždy samostatne)
 **Vetva:** `K__` z čerstvého `main`
-**Pravidlá:** každý nález vo vlastnom commite; súbory nad 500 riadkov sa nemenia, len sa nahlásia; nové texty vo všetkých šiestich jazykoch; krátky docstring/JSDoc k novému kódu; nové nálezy len ako kandidáti (bez čísla).
+**Pravidlá:** každý nález vo vlastnom commite; súbory nad 500 riadkov sa nemenia, len sa nahlásia; nové texty vo všetkých šiestich jazykoch; krátky docstring/JSDoc k novému kódu; vzhľad sa nemení bez vzhľadu schváleného majiteľom (R49: redizajn a vzhľadové zmeny sa najprv konzultujú s majiteľom, schválený vzhľad je v karte); nové nálezy len ako kandidáti (bez čísla).
 
 ## Nález __: krátky názov  [JASNÉ | NEJASNÉ]
 

@@ -466,6 +466,8 @@ DONE_PR_TABLE_CASTOCNE = [
     ('#266', 'K23', '321 (etapa 3b: výzva na povolenie push pre Správy)'),
     ('#267', 'e2e/lang-a-volby-k22', '321 (etapa 4, časť: API kontrakt siedmich volieb v troch projektoch), 335 (E2E kontrola atribútu `lang`)'),
     ('#271', 'e2e/k23-overenie-a-wsl', '223 (dodatok: živé overenie po K25 a príprava Ubuntu vo WSL; nález ostáva otvorený)'),
+    ('#275', 'K27', '262 (časť: backend, tri koncové body „kto dal lajk“ pre ponuky, portfólio a profil; frontend čaká na schválenie vzhľadu)'),
+    ('#276', 'e2e/ui-kategoria-337', '337 (UI scenár kategórií zlúčený a lokálne overený; živý beh čaká na okno majiteľa)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.
