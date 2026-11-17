@@ -1,8 +1,139 @@
-# Playwright: odovzdanie (stav k 16. 11. 2026)
+# Playwright: odovzdanie (stav k 17. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálna dávka — 16. 11. 2026: UI kategória upozornení, R44(b), nález 337
+## Aktuálna dávka — 17. 11. 2026: živé overenie 337 a príprava komentárov 257
+
+Čerstvý `main` **`4c342f72`** bol overený pred prácou aj po skončení živého
+okna. Aplikácia, backend, závislosti, Jest ani zoznam nálezov sa nemenia.
+Táto vetva **`e2e/komentare-257`** obsahuje iba E2E komentárov a tento dokument;
+samostatná oprava 340 do nej nepatrí. PR otvára majiteľ.
+Pred commitom boli obe pripravené vetvy bez konfliktu posunuté na najnovší
+**`7134cab6`** (PR #279: iba pravidlá a zoznam nálezov, bez zmeny aplikácie,
+E2E alebo závislostí). Živý výsledok 337 naďalej patrí nasadeniu `4c342f72`.
+
+### 337 — potvrdený živý beh po príprave účtu
+
+Prvý schválený pokus v okne 09:00–09:15 Europe/Bratislava skončil na podmienke
+`in_app_notifications`: **0 PASS / 1 FAIL / 1 SKIP**, UTC
+**08:00:50.679–08:01:19.095**. Prihlásenie uspelo, prebehli iba dva GET 200,
+**žiadny PATCH** ani tiché zapnutie nastavení. Nejde o potvrdenú chybu aplikácie.
+Ďalší projekt zastavila pôvodná poistka maxFailures=1. Majiteľ potom účet
+pripravil ručne a výslovne potvrdil nové okno 09:25–09:40.
+
+Nový pokus, bez automatického retry, **2 PASS / 0 FAIL / 0 SKIP**:
+
+| Projekt | Výsledok | Trvanie testu |
+| --- | --- | ---: |
+| webkit-desktop | 1 / 0 / 0 | 4 341 ms |
+| webkit-mobile | 1 / 0 / 0 | 3 441 ms |
+
+UTC **08:25:36.882–08:26:05.793**, proces **28 911 ms**, Playwright report
+**16 512,04 ms**. V každom projekte práve jeden jednokľúčový UI PATCH a jeden
+samostatný obnovovací PATCH; záverečný GET potvrdil **všetkých sedem pôvodných
+hodnôt**. Hodnoty účtu sa nevypisovali. Oba varianty zaznamenali:
+
+```text
+[E2E-CATEGORY] restored=verified fields=7
+[E2E-CATEGORY-AUDIT] ui=1 restore=1 rejected=0 pending=0 uncertain=false restoreRejected=false
+```
+
+Okno bolo majiteľovi uvoľnené o **09:26**. Komentáre, porovnanie WSL/Docker ani
+iný živý scenár sa v ňom nespustili. Tento cielený výsledok nemení prijatý základ
+celého behu **427 / 2 / 303** ani posledný celý beh. Prijatie výsledku majiteľom
+sa nesmie zamieňať so samotným úspešným behom.
+
+### 340 — samostatná lokálna oprava poistky API opakovania, R50
+
+Vetva **`e2e/api-repeat-340`** vznikla z `4c342f72`, má šesť E2E súborov.
+CLI `--repeat-each=2` aj `--repeat-each 2` odmietne rodičovská konfigurácia
+**pred global setupom a prihlásením**; explicitné `--repeat-each=1` ostáva platné.
+Fixture navyše vyžaduje vlastnú chránenú konfiguráciu a `repeatEachIndex=0`.
+
+Lokálne: **49/49** čistých kontrol a **5/5** vonkajších browser kontrol
+(**81 651,423 ms**), TypeScript a ESLint bez chýb. Odmietnutie oboch CLI zápisov
+bolo overené aj so skutočnou API konfiguráciou bez siete; `--list` pri hodnote 1
+stále zbiera tri varianty a nič nespúšťa. Obídenie chráneného configu v oboch
+WebKitoch zlyhalo pred prvým API volaním. Bez Railway, env a účtov.
+Majiteľ **17. 11. výslovne schválil commit a push oboch pripravených vetiev**.
+Pravidlo malého samostatného rozsahu R50 zostáva zachované; PR otvára majiteľ.
+
+### 257 — iba lokálna príprava pridania a zmazania vlastného komentára
+
+Samostatný scenár **`feed-comments.ui.ts`** používa vlastnú konfiguráciu
+**`feed-comments.playwright.config.ts`**, všetky tri projekty, workers=1,
+retries=0 a maxFailures=1. Do bežnej celej sady ani dymu sa automaticky nezbiera.
+Nie je zatiaľ živým overením aplikácie.
+
+Používa nový dočasný **vlastný textový príspevok** s jedinečnou značkou, bez
+fotiek, označovania ďalších účtov alebo reakcií. V jeho detaile cez UI pridá
+jeden vlastný komentár, overí ho cez GET, cez potvrdzovací dialóg ho zmaže a
+GET overí neprítomnosť. Desktop používa click v okne detailu, mobilný WebKit
+skutočný tap v mobilnom detaile. Podklad sa uprace aj pri chybe tela testu.
+Podľa prečítaného backendu sa komentár tvrdo maže a vlastný komentár pod vlastným
+príspevkom nevytvára upozornenie inému účtu.
+
+Samostatná pomocná stránka v tom istom kontexte drží transport pre prípravu a
+upratanie; cookies ani CSRF hodnoty neopúšťajú prehliadač. Kontextový strážca
+povolí iba jeden POST podkladu, jeden UI POST komentára, jeden UI DELETE
+komentára a jeden upratovací DELETE podkladu. Pred zmazaním sa overí vlastníctvo
+aj presná jedinečná značka. Záverečný GET po DELETE sa vykoná aj pri HTTP chybe,
+ale pôvodná chyba sa nesmie zamaskovať. Žiadne opakované mazanie.
+
+Pri neukončenom alebo neisto ukončenom zápise sa rodičovský príspevok **nemaže
+naslepo** (ochrana pred neskorým zápisom a súbehom zdieľania/mazania); upratanie
+hlasno zlyhá a maxFailures=1 zastaví ďalší projekt. Prípadný zvyšok potom vyžaduje
+samostatné bezpečné preverenie so súhlasom majiteľa, nie tvrdenie o úspešnom uprataní.
+
+Bezpečné metadáta sú iba počty a príznaky, bez ID, textov, hodnôt cookies a tiel:
+
+```text
+[E2E-COMMENTS-CLEANUP] state=verified|failed|not-needed
+[E2E-COMMENTS-AUDIT] post=<počet> comment=<počet> uiDelete=<počet> cleanupDelete=<počet> rejected=<počet> pending=<počet> uncertain=<príznak>
+```
+
+Lokálne overenie, **nie živý PASS aplikácie**:
+
+| Kontrola | Výsledok |
+| --- | --- |
+| Čistá logika prípravy, vlastníctva, upratania, auditu a CLI | **20/20**, zopakované bez chyby |
+| Prehliadačová kontrolná sada | **11/11**, dvakrát; **201,780 s** a po vyčistení typov **193,534 s**, 0 vonkajších SKIP |
+| Úspešný vnútorný scenár | **3/3**: WebKit desktop, mobil a Chromium; mobil 4 trusted touch, desktopy 4 trusted mouse |
+| Úmyselné chyby | **24/24 odhalených**: chybný POST/DELETE komentára, chýbajúci riadok, timeout tela, dve chyby zmazania podkladu, neistá sieť a neoverené vlastníctvo |
+| Poistky | CLI opakovanie odmietnuté; zlyhané upratanie zastavilo ďalšie dva projekty pred API |
+| Ochrana údajov | syntetický súkromný marker chýba vo výpise aj textových prílohách; žiadny DOM snapshot, screenshot, video ani trace |
+| TypeScript aplikácie aj celého E2E, ESLint nových súborov | **0 chýb / 0 upozornení** |
+| Izolované listovanie | bežná sada nezmenená **780 (260 × 3)**; komentáre **3**; UI 337 stále **2**; 0 spustených testov |
+
+Všetky browser kontroly mali `--network=none`, iba read-only zdroje/knižnice,
+prázdny storageState a prekrytý `.auth`; bez `.env.e2e`, prihlásenia a Railway.
+Úmyselné pády sú úspešné kontroly pomocníka iba vtedy, ak vnútorný scenár
+skutočne ostal FAIL/timedOut. V samostatnej skúške maxFailures=1 sú dva vnútorné
+SKIP očakávaným dôkazom zastavenia, nie vypnutím scenárov kvôli zelenému behu.
+Živé timeouty ani retry sa nemenili. Prvý lokálny pozitívny pokus odhalil nulovú
+výšku prázdneho syntetického feedu; upravený bol iba DOM skúšobnej stránky,
+nie asercia ani aplikácia.
+
+Nových je **14 malých E2E súborov**: root spec a config `feed-comments.*`,
+šesť `support/feed-comments-{options,session,test,transport,ui,writes}.ts`
+a šesť lokálnych súborov `diagnostics-tests/feed-comments*`; upravený je iba
+tento existujúci dokument. Všetky nové kódové súbory majú menej než 500 riadkov.
+Žiadne migrácie. Commit a push majiteľ schválil 17. 11.; PR otvorí sám.
+
+Živý beh komentárov potrebuje **nové samostatné potvrdené okno a súhlas s týmto
+dočasným obsahom**, až po lokálnych kontrolách a kontrole vetvy. Návrh trvania:
+**15 minút**, presný termín potvrdí majiteľ. V okne sa nič nezlučuje, nenasadzuje
+ani nemenia testovacie účty. Pred štartom znova overiť čerstvý main a nasadenie.
+Porovnanie WSL/Docker k 223 sa teraz nespúšťa; 330 sa nerobí (R43) a push výzva
+sa nepridáva (R44(b)).
+
+Mimo rozsahu: starší lokálny browser obal UI 337 na úplne čerstvom checkout-e
+vyžaduje existujúci prázdny adresár `.auth` ako cieľ vnoreného tmpfs. Bez neho
+Docker odmietne mount ešte pred testom. Ide o nízku závažnosť lokálneho E2E
+pomocníka, nie aplikácie alebo živého behu 337. V tejto dávke sa starší obal
+nemení; nové pomocníky kontrolovane vytvoria iba prázdny cieľ, bez čítania relácie.
+
+## Historická dávka — 16. 11. 2026: UI kategória upozornení, R44(b), nález 337
 
 Vetva **`e2e/ui-kategoria-337`** vznikla z čerstvého mainu **`910700ea`**.
 Pred commitom bola bez konfliktu posunutá na aktuálny **`bf343f0a`** (PR #274
