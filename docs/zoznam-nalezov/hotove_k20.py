@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa, dávka K24: 336 a nález 321, ktorý uzavrela dávka K25).
+"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa, dávka K24: 336 a nález 321, ktorý uzavrela dávka K25; od Codexa 337 a 340).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_dalsie.py` má 496 riadkov). `hotove.py` ho pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -337,4 +337,28 @@ DONE_SINCE_K20 = [
                'aj WebKit desktop a mobil 2 / 0 / 0 (obnova všetkých siedmich hodnôt overená); dym `@smoke` po K25 (`main` '
                '`91f58dbe`) 41 / 0 / 10; scenár odznaku Žiadostí s dvoma účtami sa podľa R43 nerobí. Zvyšok E2E (UI scenár '
                'zmeny kategórie a prípadná kontrola výzvy na push) je nález 337. '),
+    dict(n=337, vetva='e2e/ui-kategoria-337', pr='#276', zlucene=True,
+         text='HOTOVÉ (Codex; scenár zlúčený v PR #276 dňa 16. 11. 2026 o 21:39 UTC, merge `da27a931`, commity `9ccc972d` a `93b1210e`; '
+               'živé overenie 17. 11. 2026). ZVYŠOK ETAPY 4 NÁLEZU 321: UI scenár zmeny jednej kategórie upozornení (`notify_likes`) cez '
+               'rozhranie s vrátením všetkých siedmich hodnôt (R44 (b); kontrola výzvy na push sa v E2E nerobí). IMPLEMENTÁCIA: samostatná '
+               'konfigurácia `notification-category.playwright.config.ts` a scenár `notification-category.ui.ts` (2 varianty, WebKit '
+               'desktop a mobil; mimo bežného celého behu a dymu). ŽIVÉ OVERENIE (Codex, `docs/playwright-odovzdanie.md`, nasadenie '
+               '`main` `4c342f72`): prvý pokus 17. 11. 2026 v okne 09:00 až 09:15 (Europe/Bratislava) skončil 0 prešlo, 1 zlyhalo a 1 '
+               'preskočené na podmienke `in_app_notifications` (prihlásenie prešlo, dva GET 200, žiadny PATCH a nič sa potichu nezapínalo; '
+               'nie chyba aplikácie); majiteľ účet pripravil ručne a potvrdil nové okno 09:25 až 09:40; nový pokus bez opakovania dal 2 '
+               'prešlo, 0 zlyhalo a 0 preskočených (WebKit desktop 1 / 0 / 0 za 4 341 ms, WebKit mobil 1 / 0 / 0 za 3 441 ms; 08:25:36 '
+               'až 08:26:05 UTC): v každom projekte práve jeden jednokľúčový UI PATCH a jeden obnovovací PATCH a záverečný GET potvrdil '
+               'všetkých sedem pôvodných hodnôt. Okno bolo uvoľnené o 09:26. Tento cielený výsledok nemení prijatý základ celého behu '
+               '427 / 2 / 303. Odovzdanie je zlúčené v PR #281. Dopad na aplikáciu: žiadny.'),
+    dict(n=340, vetva='e2e/api-repeat-340', pr='#280', zlucene=True,
+         text='HOTOVÉ (Codex; PR #280, zlúčené 17. 11. 2026 o 10:48 UTC, merge `d600b925`; commit `c511b99d`; 6 súborov v '
+               '`frontend/e2e/**`, 91 pridaných a 5 odstránených riadkov; R50). MEDZERA: v Playwrighte 1.63 sa voľba `--repeat-each` '
+               'nepremietne do `testInfo.project.repeatEach`, takže poistka staršieho API scenára volieb nezaberie. OPRAVA: rodičovská '
+               'poistka príkazového riadku (`support/notification-preferences-options.ts`, volaná z oboch konfigurácií API scenára) '
+               'odmietne obe syntaxe (`--repeat-each=2` aj `--repeat-each 2`) a každú hodnotu okrem 1 ešte pred prihlásením a prípravou '
+               'správou `E2E_PREFERENCES_REPEATS_REJECTED` bez vstupných hodnôt; explicitné `--repeat-each=1` ostáva povolené; fixture '
+               'navyše vyžaduje vlastnú chránenú konfiguráciu a `repeatEachIndex` 0. OVERENIE (Codex, lokálne bez siete, účtov a Railway): '
+               '49 z 49 čistých kontrol a 5 z 5 prehliadačových kontrol, TypeScript a ESLint bez chýb. KONTROLA AGENTA (17. 11. 2026, '
+               'z GitHubu): CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené, vlákna ani pripomienky nie sú. Dopad na aplikáciu: '
+               'žiadny.'),
 ]

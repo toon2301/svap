@@ -82,7 +82,8 @@ NEW_ITEMS_NASTENKA = [
               'ostatných miestach.',
          dec=None, src=ZDROJ),
     dict(n=257, bucket=A, imp=N, eff=EL, pkg='Nástroje a testy',
-         kratko='E2E: rozšíriť pokrytie zdieľania a ďalších tokov Nástenky (priebežný cieľ, rieši Codex)',
+         kratko='E2E: rozšíriť pokrytie zdieľania a ďalších tokov Nástenky (priebežný cieľ, rieši Codex); scenár komentárov je pripravený '
+                'lokálne (PR #281), živý beh čaká na okno',
          what='E2E infraštruktúra je hotová a dva testy zdieľania (zdieľanie vlastnej ponuky z profilu a zdieľanie priamo z karty na Nástenke; '
               '`e2e/sharing-from-profile.spec.ts` a `e2e/sharing-from-feed.spec.ts`) existujú. Zvyšok pokrytia je priebežný cieľ bez pevného '
               'konca, nie uzavretá úloha. Chýba viac scenárov zdieľania (z otvoreného detailu, z mobilných vrstiev, cudzie príspevky, Späť po '
@@ -96,7 +97,25 @@ NEW_ITEMS_NASTENKA = [
               'mobil) je povinný a test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Výber '
               'scenárov a poradie určí majiteľ s Codexom. Majiteľ 17. 11. 2026 (podľa odporúčania agenta): po živom behu 337 '
               'pripraví Codex ako prvý E2E scenár komentárov (pridať a zmazať vlastný komentár v okne detailu na desktope a v '
-              'mobilnom detaile, upratať po sebe) ako sieť pre delenie `FeedPostComments.tsx` (333).',
+              'mobilnom detaile, upratať po sebe) ako sieť pre delenie `FeedPostComments.tsx` (333). SCENÁR KOMENTÁROV (Codex, PR #281, zlúčené '
+              '17. 11. 2026 o 11:53 UTC, merge `eac245bf`; commit `7225cc82`; 14 nových súborov E2E a `docs/playwright-odovzdanie.md`): '
+              'samostatný scenár `feed-comments.ui.ts` s vlastnou konfiguráciou (WebKit desktop, WebKit mobil a Chromium desktop, '
+              'workers 1, retries 0, maxFailures 1; mimo bežného celého behu a dymu) vytvorí vlastný textový príspevok s jedinečnou '
+              'značkou, v jeho detaile cez rozhranie pridá jeden vlastný komentár, overí ho cez GET, zmaže ho cez potvrdzovací dialóg '
+              'a podklad upratá (pri neistom zápise sa príspevok nemaže naslepo a upratanie hlasno zlyhá); transport a kontextový '
+              'strážca povolia len jeden POST podkladu, jeden POST komentára, jeden DELETE komentára a jeden upratovací DELETE podkladu. '
+              'Lokálne (bez Railway a účtov, nie živý beh): 20 z 20 kontrol logiky, 11 z 11 prehliadačových kontrol dvakrát, 24 z 24 '
+              'zámerných chýb odhalených, TypeScript a ESLint bez chýb. ŽIVÝ BEH ešte nebol: potrebuje nové potvrdené okno majiteľa '
+              '(návrh 15 minút) a súhlas s dočasným obsahom. PO ZLÚČENÍ OSTALI TRI NEUZAVRETÉ PRIPOMIENKY (agent ich 17. 11. 2026 '
+              'overil v kóde a všetky platia; opraví ich Codex v malej vetve pred živým behom): (1) Codex review, P2, '
+              '`frontend/e2e/support/feed-comments-ui.ts`: scenár čaká na `feed-list` ešte pred prípravou podkladu, no `FeedList.tsx` '
+              'pri prázdnom zozname vykreslí len `feed-empty-state` (riadok 276), takže by na účte bez viditeľných príspevkov zlyhal '
+              'pred vytvorením vlastného podkladu; treba počkať na zoznam alebo prázdny stav; (2) CodeRabbit, Minor, '
+              '`docs/playwright-odovzdanie.md` (riadky 77 až 79): opis kontextového strážcu nespomína povolené POST na '
+              '`/api/token/refresh/` a `/api/auth/token/refresh/` (`feed-comments-writes.ts`, riadok 82, ich prepúšťa a nezapočítava); '
+              '(3) CodeRabbit, Minor, `diagnostics-tests/feed-comments-browser.check.ts` (riadky 80 až 85): kontrola zámerných chýb '
+              'nedokazuje, že chyba bola dosiahnutá (pri `ui-delete-status` by prešla aj vtedy, keby test skončil pred vytvorením '
+              'komentára); treba overiť počty vytvorených a zmazaných komentárov a fázu zlyhania.',
          dec=None, src=ZDROJ),
     dict(n=258, bucket=A, imp=N, eff=EM, pkg='Nástenka a zdieľanie',
          kratko='pôvodný autor zdieľaného príspevku (avatar a meno) nie je klikateľný na profil',
@@ -132,7 +151,8 @@ NEW_ITEMS_NASTENKA = [
               'stranách. Frontend súbor má 327 riadkov, takže sa smie meniť.',
          dec=None, src=ZDROJ),
     dict(n=261, bucket=P, imp=S_, eff=EL, pkg='Vzhľad Nástenky',
-         kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, tagy)',
+         kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, tagy); vzhľad komentárov '
+                'je schválený (R52), kód až po delení',
          what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné doladenia: komentárová textarea '
               'vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači inline len keď je text orezaný; veľmi dlhé popisky zmenšiť '
               'fontom namiesto orezania a zrušiť „Menej“; drag handle vo fotoprehliadači zjednodušiť na šípku; väčší odstup spodného '
@@ -149,10 +169,15 @@ NEW_ITEMS_NASTENKA = [
               'najprv rozdeliť súbory: R23 je rozhodnuté 13. 11. 2026 (nález 333, bez výnimky z pravidla 500 riadkov). Majiteľ plánoval upraviť vizuálnu '
               'stránku Nástenky aj sám (príloha D); po jeho úpravách nasleduje technická a bezpečnostná kontrola jeho zmien a jeden '
               'súhrnný audit celej Nástenky (obe strany spolu), tiež pred nasadením. Poradie dohodnúť, aby sa nerobilo dvakrát. Majiteľ 13. 11. '
-              '2026: vzhľad Nástenky zatiaľ sám neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď.',
+              '2026: vzhľad Nástenky zatiaľ sám neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď. VZHĽAD KOMENTÁROV '
+              'SCHVÁLENÝ MAJITEĽOM (R52, 17. 11. 2026; mobil aj počítač; obrázky `navrhy/mobil-komentare.png` a `navrhy/pc-komentare.png`): '
+              'plochý vzhľad bez sivých bublín, bublinka s lajkom aj pri odpovedi, „Zobraziť / Skryť odpovede“ bližšie pod riadkom akcií, '
+              'odpovede so zvislou čiarou bez bubliny a jemný oddeľovač; kôš, „Upraviť“ a pole na komentár zatiaľ ostávajú ako dnes. '
+              'Implementácia v jednej dávke až po delení `FeedPostComments.tsx` (R47, nález 333). Úchytka panela nad fotkou je '
+              'samostatný nález 343 a okno detailu na počítači nález 344.',
          dec='ROZHODNUTIE R23', src=ZDROJ),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
-         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), frontend čaká na schválenie vzhľadu (R49)',
+         kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), vzhľad schválený (R51 a R56), frontend po etapách (K34, najprv mapovanie)',
          what='Zoznam lajkujúcich dnes existuje len pre Nástenku: príspevky a komentáre (`feed/FeedLikersDialog.tsx`; backend '
                '`feed_post_likers_view` a `feed_post_comment_likers_view` v `accounts/views/feed_likes.py`, verejné aj pre '
                'neprihláseného). ROZHODNUTÉ 13. 11. 2026 (R20, variant A): urobiť pred nasadením a rozšíriť na ponuky, portfólio a '
@@ -182,9 +207,19 @@ NEW_ITEMS_NASTENKA = [
                '`portfolio/likers_views.py` a `accounts/views/profile_likers.py`, 69 nových testov, bez migrácie a bez zmeny '
                'Nástenky; kolega potvrdil kroky 0 (a) až (e), pri (b) s upresnením: neprihlásený vidí aj súhrn verejných '
                'používateľov vo vyhľadávaní a náhľad zdieľaného obsahu na Nástenke, no nie profil, portfólio ani počty lajkov. '
-               'Kandidát kolegu o neaktívnom vlastníkovi ponuky je nález 339. FRONTEND (dialóg, vstupy pri kartách, preklady) '
-               'ČAKÁ NA SCHVÁLENIE VZHĽADU MAJITEĽOM (R49): agent pripraví návrh s možnosťami a odporúčaním a až potom ide '
-               'karta kolegovi. Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), '
+               'Kandidát kolegu o neaktívnom vlastníkovi ponuky je nález 339. FRONTEND: VZHĽAD SCHVÁLENÝ MAJITEĽOM (R51 a R56, 17. 11. 2026; mobil aj počítač; obrázky v `docs/zoznam-nalezov/navrhy/`): malá '
+               'bublinka (srdiečko, pri profile palec) otvorí existujúci zoznam, len pri aspoň jednom lajku (ponuka a dopyt vždy, aj pri '
+               'nule, a pri nule sa nič neotvorí; profil pri nule bez riadku aj čiar); číslo pri srdiečku ostáva a nie je klikateľné; '
+               'miesta: príspevok a detail príspevku, okno príspevku na počítači, fotka na celú obrazovku, portfólio (karta), profil, '
+               'ponuka a dopyt (zadná strana karty a obrazovka „Popis“ na mobile; tú istú kartu používa aj vyhľadávanie, Sledovania a '
+               'Žiadosti) a komentáre a odpovede (s redizajnom 261, R52); pri skrytých lajkujúcich text „Zoznam lajkujúcich nie je '
+               'dostupný.“ (R56). PLÁN ETÁP (návrh agenta, kolega najprv mapuje): etapa A zoznam a miesta bez súborov nad 500 riadkov: '
+               '`FeedLikersDialog.tsx` (209), zadná strana karty ponuky (`OfferCardBack.tsx` 226 a `ProfileOfferDetailMobileContent.tsx` '
+               '217), portfólio (`PortfolioCard.tsx` 178, `PortfolioFeaturedCard.tsx` 32 a `PortfolioLikeButton.tsx` 71), profil '
+               '(`ProfileLikeButton.tsx` 137 a `ProfileDesktopHeader.tsx` 357; volajúci `ProfileMobileView.tsx` má 768 riadkov), fotka na '
+               'celú obrazovku (`FeedPhotoViewerChrome.tsx` 308); etapa B príspevok a detail príspevku až po delení `FeedPostCard.tsx` '
+               '(1 033) a `FeedPostMobileDetail.tsx` (594); etapa C komentáre s redizajnom 261 po delení `FeedPostComments.tsx` (R47). '
+               'Adresy a funkcie nesmú ísť do `lib/api.ts` ani `lib/feedApi.ts` (nad 500 riadkov). Dopad na súkromie: zoznam je verejný aj pri profile (rozhodnutie majiteľa), '
                'preto testy súkromných účtov, blokovania a neaktívnych účtov sú povinné. Odhad: nízky · L.',
          dec='ROZHODNUTIE R20', src=ZDROJ),
     dict(n=264, bucket=A, imp=N, eff=EM, pkg='Navigácia – drobnosti',

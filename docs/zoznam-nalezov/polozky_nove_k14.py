@@ -163,43 +163,6 @@ NEW_ITEMS_K14 = [
                'zvýraznenie sa pozná podľa triedy `bg-purple-100/80` vo viacerých testoch, ktoré sa pri redizajne 261 upravia '
                'spolu. Kandidáti kolegu sú nálezy 341 a 342. Ďalšia dávka je 2 z 5 (kroky 1 až 3; K29 s ručným testom majiteľa).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
-    dict(n=337, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
-         kratko='E2E: UI scenár zmeny kategórie upozornení s vrátením pôvodnej hodnoty (zvyšok etapy 4 nálezu 321); scenár '
-                'zlúčený (PR #276), živý beh čaká na okno majiteľa',
-         what='Zvyšok etapy 4 nálezu 321 (Codex): API kontrakt siedmich volieb a kontrola atribútu `lang` sú zlúčené (PR '
-               '#267) a overené naživo, no samotná zmena kategórie cez rozhranie (klik alebo ťuk, uloženie na server, '
-               'obnovenie stránky a návrat hodnoty) nemá E2E scenár. MAPOVANIE CODEXA (16. 11. 2026, '
-               '`docs/playwright-odovzdanie.md`, bez implementácie a bez živého zápisu): bežný setup, stránka '
-               '`/dashboard/settings/notifications` a pôvodných sedem hodnôt len v pamäti; predpoklad, že hlavný vypínač '
-               '(`in_app_notifications`) je zapnutý, inak sú kategórie zakázané a ukazujú vypnutý stav bez ohľadu na '
-               'uloženú hodnotu; viditeľný obal `notifications-category-likes-desktop` alebo '
-               '`notifications-category-likes-mobile` (obe rozloženia sú v DOM); voľby sú tlačidlá bez `aria-checked`, '
-               'označenie sa overí SVG fajkou v konkrétnom tlačidle; cez rozhranie sa zmení iba `notify_likes` (v mobilnom '
-               'WebKite skutočný `tap`), zachytí sa jediný PATCH s jediným kľúčom a stavom 200 a potvrdí sa GET; po F5 je '
-               'zmenená len zvolená kategória; v `finally` sa obnoví všetkých sedem hodnôt a záverečný GET to potvrdí '
-               '(chyba obnovy je hlasný pád); workers 1, retries 0, maxFailures 1 a WebKit desktop aj mobil povinný. '
-               'Existujúci fixture robí prvý PATCH priamo, takže treba nový malý fixture, ktorý dovolí skutočnú akciu v '
-               'rozhraní. VÝZVA NA PUSH (K23): Codex zmeral schopnosti prehliadačov (WebKit desktop má push API a '
-               'povolenie `default`, WebKit mobil, teda iPhone 15, nemá `Notification` ani `PushManager` a Chromium má API '
-               's povolením `denied`), takže výzvu typu `enable` by v E2E videl len desktopový WebKit; scenár „Nie teraz“ '
-               'by bol možný len pri už zapnutých Správach a bez kliknutia na „Povoliť“ (zápis '
-               '`svaplyPushPromptDismissedV1` do úložiska prehliadača sa vráti).',
-         note='Rozhodnutie R44 (majiteľ, 16. 11. 2026, podľa odporúčania agenta): UI scenár kategórií robiť (je to posledná '
-               'položka plánu etapy 4; zápis je malý, návrat sa overuje a WebKit ostáva povinný), E2E pre výzvu na push '
-               'nerobiť (pokrývajú ju desiatky jednotkových testov hooku, komponentu a celého modulu, ručný test na iPhone '
-               'prešiel a v E2E by ju videl len jeden z troch projektov). Implementuje Codex; pred implementáciou '
-               'skontroluje, že testovací účet má zapnuté upozornenia v aplikácii (inak scenár nahlási majiteľovi a hlavný '
-               'vypínač potichu nezapína) a živé okno proti Railway oznámi majiteľ samostatne. IMPLEMENTÁCIA (Codex, PR #276, zlúčené 16. '
-               '11. 2026 o 21:39 UTC, merge `da27a931`; commity `9ccc972d` a `93b1210e`): samostatná konfigurácia '
-               '`notification-category.playwright.config.ts` a scenár `notification-category.ui.ts` (2 varianty, WebKit desktop '
-               'aj mobil; mimo bežného celého behu a dymu), nové pomocné súbory v `frontend/e2e/support/` a '
-               '`frontend/e2e/diagnostics-tests/`; majiteľ potvrdil, že hlavný E2E účet má upozornenia v aplikácii zapnuté. '
-               'Lokálne overené bez Railway (45/45 kontrol logiky, 18/18 prehliadačových kontrol v oboch WebKitoch, 0 SKIP, bez '
-               'retry); CodeRabbit mal jednu platnú pripomienku (odpoveď 3xx nesmie potvrdiť bezpečný návrat), opravenú v '
-               '`93b1210e`. ŽIVÝ BEH ešte nebol: čaká na nové okno potvrdené majiteľom (návrh z 20:00 uplynul; počas okna sa '
-               'nezlučuje ani nenasadzuje). Nález sa uzavrie, keď scenár prejde naživo vo WebKite desktop aj mobil. Odhad: '
-               'stredný · M. Dopad na aplikáciu: žiadny.',
-         dec='ROZHODNUTIE R44', src='report Codexa z 16. 11. 2026 (mapovanie UI kategórií a schopností prehliadačov) a rozhodnutia majiteľa R43 a R44'),
     dict(n=338, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='komentáre: zoznam ostane na „Načítavam…“, keď sa počas prvého načítania úspešne pridá komentár; oprava až po '
                 'kroku 6 delenia (R48)',
@@ -231,17 +194,6 @@ NEW_ITEMS_K14 = [
                'diváka; vlastník ju vidí vždy) a testy detailu, lajku a zoznamu; po zmene skontrolovať ostatných volajúcich '
                'pomocníka (napríklad `review_hidden_from_user`). Malá backendová dávka bez ručného testu. Odhad: nízky · S.',
          dec=None, src='K27 (kolega, 16. 11. 2026)'),
-    dict(n=340, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
-         kratko='E2E: poistka proti `--repeat-each` v staršom API scenári volieb nefunguje v Playwrighte 1.63; oprava schválená (R50)',
-         what='Codex pri PR #276 (16. 11. 2026, `docs/playwright-odovzdanie.md`): v Playwrighte 1.63 sa voľba `--repeat-each=2` '
-               'nepremietne do `testInfo.project.repeatEach`, ako predpokladá starší `frontend/e2e/support/notification-preferences-test.ts`, '
-               'takže poistka proti opakovaniu API scenára volieb nezaberie: bez siete a účtov sa syntetický scenár pri tejto voľbe '
-               'vykonal 2×, štyri simulované PATCH, oba návraty overené. Predpísaný príkaz bez opakovania medzeru nevyvolá; ide o '
-               'poistku proti nesprávnemu ručnému spusteniu (stredné prevádzkové riziko E2E), nie o chybu aplikácie. Nový UI scenár '
-               '(337) opakovanie odmieta už v rodičovskej konfigurácii pred prípravou, overené negatívnym behom.',
-         note='Rozhodnutie R50 (majiteľ, 17. 11. 2026, podľa odporúčania agenta): áno, Codex ju opraví ako malú samostatnú vetvu (len '
-               '`frontend/e2e/**`, bez zásahu do aplikácie); dovtedy API scenár volieb nespúšťať s `--repeat-each`. Odhad: nízky · S.',
-         dec='ROZHODNUTIE R50', src='report Codexa z 16. 11. 2026 (PR #276)'),
     dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
          kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); lokálny build '
                 'raz skončil `SecurityFatalError`; upgrade ako samostatná dávka závislostí',
@@ -280,4 +232,39 @@ NEW_ITEMS_K14 = [
                '`reply_parent_missing` (zmena backendu); (c) rozlišovať podľa textu tela odpovede (krehké). Agent pripraví otázku '
                's odporúčaním. Odhad: nízky · S.',
          dec=None, src='K28 (kolega, 17. 11. 2026)'),
+    dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
+                'namiesto tenkej úchytky; oprava podľa R55',
+         what='Majiteľ pri návrhu vzhľadu komentárov (17. 11. 2026, snímka z mobilného zobrazenia): sivý kruh hore v paneli komentárov nad '
+               'fotkou nie je kurzor z nástrojov prehliadača, ale úchytka panela (potiahnutie nadol alebo ťuk panel zatvorí; '
+               '`feed/FeedPhotoCommentsSheet.tsx`, 126 riadkov). Agent overil čítaním kódu: úchytka je `button` s triedami '
+               '`mx-auto block h-1.5 w-10 rounded-full`, teda 6 px vysoké tlačidlo, no globálne pravidlo `button { min-height: 36px }` '
+               'v `frontend/src/app/globals.css` (riadok 263) ho natiahne na 36 px, takže vznikne sivý ovál 40×36 px, ktorý odtláča '
+               'nadpis „Komentáre“ nižšie. Platí na všetkých zariadeniach (pravidlo nemá podmienku). Jednoduché hľadanie podobný '
+               'prípad (tenké tlačidlo s pevnou výškou pod 36 px) inde nenašlo; ostatné úchytky v aplikácii sú `div`.',
+         note='ROZHODNUTÉ (R55, majiteľ 17. 11. 2026, podľa odporúčania agenta): tenká úchytka 40×6 px (možnosť A, obrázok '
+               '`navrhy/mobil-uchytka.png`), nie šípka ani bez úchytky; ťuk aj potiahnutie nadol fungujú ďalej a neviditeľná plocha na '
+               'ťuk má aspoň 44 px. Návrh (neoverený): tlačidlo s priehľadnou plochou a vnútornou tenkou čiarou, globálne pravidlo '
+               '`button` sa nemení. JASNÉ: jeden malý súbor pod 500 riadkov a test; nesúvisí s delením `FeedPostComments.tsx`, takže môže '
+               'ísť aj pred ním. Po nasadení krátky ručný test majiteľa na mobile. Odhad: nízky · S.',
+         dec='ROZHODNUTIE R55', src='majiteľ (17. 11. 2026) a kontrola agenta čítaním kódu'),
+    dict(n=344, bucket=P, imp=N, eff=EM, pkg='Vzhľad Nástenky',
+         kratko='okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch ako príspevok s fotkou a užšie okno '
+                'príspevku len s textom (R53)',
+         what='Prianie majiteľa (17. 11. 2026, po snímkach okien detailu): (a) okno zdieľanej ponuky a zdieľaného portfólia má mať '
+               'rovnaké rozloženie a logiku ako okno príspevku s fotkou: vľavo hlavička, text, karta ponuky (portfólia) a riadok s '
+               'lajkom, vpravo stĺpec „Komentáre“ s poľom na komentár dole; pevná výška okna, karta vyplní zvyšok ľavého stĺpca, riadok '
+               'akcií stále dole, text so „Viac“; klik na kartu ostáva (otvorí ponuku alebo portfólio). (b) Okno príspevku len s textom '
+               'bude užšie (asi 580 px namiesto 864 px; hore príspevok, pod ním komentáre, pole na komentár pri spodku); dva stĺpce pre '
+               'text majiteľ zamietol. STAV V KÓDE (čítanie agenta): `FeedPostDetailOverlay.tsx` (385 riadkov) volí `splitLayout = '
+               'hasPhoto && !isMobile`, kde `hasPhoto` je vlastná viditeľná fotka alebo repost foto príspevku (`sharedFeedPostPhoto`); '
+               'zdieľaná ponuka a portfólio sú jednostĺpcové (`sharedFillsColumn`, karta s vlastným posunom, v okne sa orezáva); '
+               '`FeedPostDetailSplitLayout.tsx` (144 riadkov) kreslí vľavo 56 % `FeedPostCard variant="detail" fillHeight` a vpravo 44 % '
+               'nadpis a `FeedPostComments`; šírka okna je `max-w-[54rem]` (864 px), pri dvoch stĺpcoch pevná výška `95vh`.',
+         note='Odhad dotyku (neoverený): rozšírenie podmienky `hasPhoto`, šírka okna pri texte a prípadne vzhľad karty v ľavom stĺpci; '
+               '`FeedPostCard.tsx` (1 033 riadkov) a `FeedPostComments.tsx` sú nad 500 riadkov, takže zmena ide buď bez zásahu do nich, '
+               'alebo až po ich delení; kolega najprv mapuje (NEJASNÉ). Dopad na E2E: špecy okna detailu (`feed-post-detail.spec.ts`) a '
+               'nový scenár komentárov (257) používajú okno len s textom, treba ich pozrieť. Vzhľad schválil majiteľ (R49, R53; obrázky '
+               '`navrhy/pc-okno-ponuka.png` a `navrhy/pc-okno-text.png`). Odhad: nízky · M.',
+         dec='ROZHODNUTIE R53', src='majiteľ (17. 11. 2026)'),
 ]
