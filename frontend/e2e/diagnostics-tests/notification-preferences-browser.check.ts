@@ -8,21 +8,33 @@ type Result = { status?: string; stdout?: Array<{ text?: string }>; attachments?
   errors?: Array<{ message?: string; stack?: string }> };
 type Variant = { projectName?: string; results?: Result[] };
 type Suite = { suites?: Suite[]; specs?: Array<{ tests?: Variant[] }> };
+type Report = Suite & { guardRejected?: boolean;
+  stats?: { expected?: number; unexpected?: number; skipped?: number; flaky?: number } };
 
 /** Report ostáva v pamäti; ani pri chybe sa nevypíšu jeho texty alebo prílohy. */
 function run(extra: string[] = []) {
-  const frontend = path.resolve(__dirname, '../..');
-  const libraries = fs.realpathSync(path.join(frontend, 'node_modules'));
+  const frontend = path.resolve(__dirname, '../..').replaceAll('\\', '/');
+  // Docker potrebuje existujúci cieľ vnoreného tmpfs aj na čistom checkoute; obsah relácie sa nečíta.
+  fs.mkdirSync(path.join(frontend, 'e2e/.auth'), { recursive: true });
+  const libraries = fs.realpathSync(path.join(frontend, 'node_modules')).replaceAll('\\', '/');
   const version = JSON.parse(fs.readFileSync(path.join(libraries, '@playwright/test/package.json'), 'utf8')).version;
   const child = spawnSync('docker', ['run', '--rm', '--init', '--ipc=host', '--pull=never', '--network=none',
-    '-v', `${frontend}:/work`, '-v', `${libraries}:/work/node_modules:ro`, '-w', '/work',
+    '-v', `${frontend}/e2e:/work/e2e:ro`, '-v', `${libraries}:/work/node_modules:ro`,
+    '-v', `${frontend}/package.json:/work/package.json:ro`, '-v', `${frontend}/tsconfig.json:/work/tsconfig.json:ro`,
+    '--tmpfs', '/work/e2e/.auth:ro,nosuid,nodev,noexec,size=4k,mode=000',
+    '-e', 'PLAYWRIGHT_NO_COPY_PROMPT=1', '-w', '/work',
     `mcr.microsoft.com/playwright:v${version}-noble`, 'node', 'node_modules/@playwright/test/cli.js', 'test',
     '--config=e2e/diagnostics-tests/notification-preferences.playwright.config.ts', '--workers=1', '--retries=0', ...extra],
   { encoding: 'utf8', timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
   assert.ok(!child.error, 'Kontrolný podproces sa nedokončil.');
   assert.ok(![child.stdout, child.stderr].some(output => output.includes('SYNTHETIC_PRIVATE_PREFS_NEVER_PRINT')),
     'Súkromná kontrolná hodnota nesmie byť v reporte ani v stderr.');
-  let report: Suite & { stats?: { expected?: number; unexpected?: number; skipped?: number; flaky?: number } };
+  if ((child.stdout + child.stderr).includes('E2E_PREFERENCES_REPEATS_REJECTED')) {
+    assert.equal(child.status, 1);
+    assert.ok(!(child.stdout + child.stderr).includes('[PREFERENCES-SELFTEST]'), 'Po odmietnutí sa fixture nesmie spustiť.');
+    return { code: child.status, report: { guardRejected: true } as Report, variants: [] as Variant[] };
+  }
+  let report: Report;
   try { report = JSON.parse(child.stdout); } catch { throw new Error('Kontrola nevrátila platný report.'); }
   const variants: Variant[] = [];
   const visit = (suite: Suite) => {
@@ -86,6 +98,27 @@ test('workers=2 odmietne zápis ešte pred prvým API volaním', () => {
   const observed = observation(variants[0].results![0]);
   assert.equal(observed.gets + observed.patches + observed.csrf, 0);
   assert.equal(observed.unexpected, 0);
+});
+
+test('repeat-each=2 aj repeat-each 2 sa odmietnu v rodičovi pred spustením fixture', () => {
+  for (const project of ['webkit-desktop', 'webkit-mobile', 'chromium-desktop']) {
+    for (const repeat of [['--repeat-each=2'], ['--repeat-each', '2']]) {
+      const { code, report, variants } = run([`--project=${project}`, '--grep=riadny návrat', ...repeat]);
+      assert.equal(code, 1); assert.equal(report.guardRejected, true); assert.equal(variants.length, 0);
+    }
+  }
+});
+
+test('explicitné repeat-each=1 zachová jediný riadny API roundtrip v každom projekte', () => {
+  const { code, report, variants } = run(['--repeat-each=1', '--grep=riadny návrat']);
+  assert.equal(code, 0); assert.equal(report.stats?.expected, 3); assert.equal(report.stats?.unexpected, 0);
+  assert.equal(report.stats?.skipped, 0); assert.equal(variants.length, 3);
+  for (const variant of variants) {
+    assert.equal(variant.results?.length, 1); assert.equal(variant.results[0].status, 'passed');
+    const state = observation(variant.results[0]);
+    assert.equal(state.restored, true); assert.equal(state.gets, 3); assert.equal(state.patches, 2);
+    assert.equal(state.csrf, 1); assert.equal(state.csrfPresent, true); assert.equal(state.unexpected, 0);
+  }
 });
 
 test('zlyhanie obnovy v prvom projekte zastaví ďalšie dva ešte pred prípravou API', () => {

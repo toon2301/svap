@@ -1,6 +1,9 @@
 import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 import standard from '../playwright.config';
+import { requireSinglePreferenceRun } from './support/notification-preferences-options';
+
+requireSinglePreferenceRun();
 
 const projects = ['webkit-desktop', 'webkit-mobile', 'chromium-desktop'].map(name => {
   const project = standard.projects?.find(item => item.name === name);
