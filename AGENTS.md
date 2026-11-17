@@ -5,6 +5,7 @@ Tento súbor platí pre každého agenta, ktorý v repozitári pracuje. Kód, ko
 ## Pravidlá, ktoré platia vždy
 
 - Dodrž `.cursor/rules/svaply.mdc` (trvalé pravidlá projektu: malé zmeny, veľkosť súborov, testovanie, pravidlá pre Playwright) a `AGENT_SECURITY_RULES.md`.
+- Redizajn a vzhľadové zmeny (Nástenka, komentáre, zoznam lajkujúcich a podobne) sa najprv prekonzultujú s majiteľom: agent pripraví návrh s možnosťami, majiteľ ho schváli a až potom sa vzhľad mení; bez schváleného vzhľadu v karte sa vzhľad nemení (R49, 16. 11. 2026).
 - Rob malé, logicky oddelené zmeny. Čo je mimo zadanej úlohy, len nahlás, neopravuj to potichu.
 - Produkčné súbory `.ts` a `.tsx` nad 500 riadkov sa nemenia, len sa nahlásia (zoznam je v `docs/zoznam-nalezov`, položka TECH-01…11). Novú logiku daj do nového súboru.
 - Testové súbory (`*.test.ts`, `*.test.tsx`) nad 500 riadkov sa meniť smú, ale len málo: pridaj test alebo uprav mock; nové testy daj radšej do nového súboru (rozhodnutie majiteľa R27, 13. 11. 2026).

@@ -94,7 +94,9 @@ NEW_ITEMS_NASTENKA = [
               'prázdnou funkciou, opravil agent 16. 11. 2026 podľa K26); chýba len E2E. Podobné medzery už vedú 110, 113, 157 a 233.',
          note='E2E súbory vlastní Codex (`AGENTS.md`); agent len eviduje. Pravidlá ostávajú: testy bežia proti Railway, WebKit (desktop aj '
               'mobil) je povinný a test, ktorý niečo vytvára, musí použiť existujúci testovací obsah alebo po sebe upratať. Výber '
-              'scenárov a poradie určí majiteľ s Codexom.',
+              'scenárov a poradie určí majiteľ s Codexom. Majiteľ 17. 11. 2026 (podľa odporúčania agenta): po živom behu 337 '
+              'pripraví Codex ako prvý E2E scenár komentárov (pridať a zmazať vlastný komentár v okne detailu na desktope a v '
+              'mobilnom detaile, upratať po sebe) ako sieť pre delenie `FeedPostComments.tsx` (333).',
          dec=None, src=ZDROJ),
     dict(n=258, bucket=A, imp=N, eff=EM, pkg='Nástenka a zdieľanie',
          kratko='pôvodný autor zdieľaného príspevku (avatar a meno) nie je klikateľný na profil',
