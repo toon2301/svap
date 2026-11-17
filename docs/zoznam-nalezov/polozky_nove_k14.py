@@ -109,7 +109,7 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
-               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie hotové (K26), delenie v piatich dávkach od K28',
+               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie (K26) a dávka 1 z 5 (K28) hotové, ďalšia je K29',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov rozdelia po jednom: '
                '`feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a `feed/FeedPostMobileDetail.tsx` 594 '
                '(počty agent overil 13. 11. 2026). Delenie nesmie zmeniť správanie ani vzhľad; každý súbor ide vo vlastnej vetve s '
@@ -149,7 +149,19 @@ NEW_ITEMS_K14 = [
                'aj mobilný detail), odpoveď a úprava s upratovaním, po kliku na upozornenie cieľový komentár v zornom poli; E2E '
                'nepokryje stránkovanie, polling, 3 s zvýraznenie ani iPhone. Súvislosti: 261 (skupiny 6 a 7) sa dotýka riadku '
                'komentára a poľa na komentár; 288 je vo `FeedPostCard.tsx` (po jeho delení, R28); 259 a 256 sú na delení nezávislé; '
-               'z mapovania vznikol nález 338.',
+               'z mapovania vznikol nález 338. DÁVKA 1 Z 5 HOTOVÁ (K28, PR #278, zlúčené 17. 11. 2026 o 06:33 UTC, merge `4c342f72`; '
+               'päť commitov `eb86d9a5`, `33a81b9b`, `ffcfad33`, `e8991819` a `b737a0f9`): len testy, produkčný kód nezmenený '
+               '(rovnaký kontrolný súčet, 1 487 riadkov); päť nových súborov testov (39 nových testov: `staleResponses` 12, '
+               '`mutationErrors` 8, `seekReset` 5, `commentsReady` 4 a odtlačok HTML 10 stavov) a DOČASNÝ súbor `.snap` (3 499 '
+               'riadkov), ktorý zmaže dávka 5 z 5 a ktorý sa počas delenia neupravuje ani neprepisuje. Celý Jest 608 sád a 9 133 '
+               'testov prešlo; všetkých 17 mutácií z karty zachytených (v K26 ich neodhalil žiadny existujúci test) a navyše A1, '
+               'A9 a D1. Kontrola agenta z GitHubu: CI, CodeRabbit aj Codex review bez pripomienok a vlákna nie sú. Odchýlky od '
+               'karty: odtlačok má desať stavov namiesto šiestich; pri zmiznutom príspevku kód ukáže jednu neutrálnu hlášku (karta '
+               'písala „bez toastu“) a test overuje to; chyby `markSeen` vlastného komentára a odpovede (D7 a D8) chytá len test, '
+               'ktorý vyrobí okno pred prekreslením, preto sa pri delení zápis `markSeen` v obslužných funkciách musí ponechať; '
+               'strop 20 stránok sa z komponentu neexportuje, takže ho test nezafixúva presne (mutácia K1 je mimo dávky); '
+               'zvýraznenie sa pozná podľa triedy `bg-purple-100/80` vo viacerých testoch, ktoré sa pri redizajne 261 upravia '
+               'spolu. Kandidáti kolegu sú nálezy 341 a 342. Ďalšia dávka je 2 z 5 (kroky 1 až 3; K29 s ručným testom majiteľa).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=337, bucket=A, imp=N, eff=EM, pkg='Nástroje a testy',
          kratko='E2E: UI scenár zmeny kategórie upozornení s vrátením pôvodnej hodnoty (zvyšok etapy 4 nálezu 321); scenár '
@@ -220,15 +232,47 @@ NEW_ITEMS_K14 = [
                'pomocníka (napríklad `review_hidden_from_user`). Malá backendová dávka bez ručného testu. Odhad: nízky · S.',
          dec=None, src='K27 (kolega, 16. 11. 2026)'),
     dict(n=340, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
-         kratko='E2E: poistka proti `--repeat-each` v staršom API scenári volieb nefunguje v Playwrighte 1.63 (R50)',
+         kratko='E2E: poistka proti `--repeat-each` v staršom API scenári volieb nefunguje v Playwrighte 1.63; oprava schválená (R50)',
          what='Codex pri PR #276 (16. 11. 2026, `docs/playwright-odovzdanie.md`): v Playwrighte 1.63 sa voľba `--repeat-each=2` '
                'nepremietne do `testInfo.project.repeatEach`, ako predpokladá starší `frontend/e2e/support/notification-preferences-test.ts`, '
                'takže poistka proti opakovaniu API scenára volieb nezaberie: bez siete a účtov sa syntetický scenár pri tejto voľbe '
                'vykonal 2×, štyri simulované PATCH, oba návraty overené. Predpísaný príkaz bez opakovania medzeru nevyvolá; ide o '
                'poistku proti nesprávnemu ručnému spusteniu (stredné prevádzkové riziko E2E), nie o chybu aplikácie. Nový UI scenár '
                '(337) opakovanie odmieta už v rodičovskej konfigurácii pred prípravou, overené negatívnym behom.',
-         note='Codex odporúča samostatný súhlas na opravu (malá zmena len v `frontend/e2e/**`, bez zásahu do aplikácie). Odporúčanie '
-               'agenta (R50): áno, ako malá samostatná vetva Codexa; dovtedy API scenár volieb nespúšťať s `--repeat-each`. Odhad: '
-               'nízky · S.',
+         note='Rozhodnutie R50 (majiteľ, 17. 11. 2026, podľa odporúčania agenta): áno, Codex ju opraví ako malú samostatnú vetvu (len '
+               '`frontend/e2e/**`, bez zásahu do aplikácie); dovtedy API scenár volieb nespúšťať s `--repeat-each`. Odhad: nízky · S.',
          dec='ROZHODNUTIE R50', src='report Codexa z 16. 11. 2026 (PR #276)'),
+    dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); lokálny build '
+                'raz skončil `SecurityFatalError`; upgrade ako samostatná dávka závislostí',
+         what='Kolega pri K28 (17. 11. 2026): nainštalovaný Next.js 16.4.3 (`frontend/package.json` `^16.4.3`, `package-lock.json` '
+               '16.4.3) je v rozsahu upozornenia GHSA-mfr8-8qww-v76h (stupeň moderate, rozsah 16.3.0 až 16.4.4, oprava je '
+               'dostupná). Dôkaz kolegu: `npm audit --omit=dev --json` vo `frontend` hlási pre `next` stupeň moderate (celkovo 6 '
+               'moderate, 0 high, 0 critical); prvý lokálny `npm run build` skončil po úspešnom skompilovaní výpisom Next.js '
+               '`SecurityFatalError` o zraniteľnej verzii a pri zopakovaní prešiel. Kontrola agenta: CI build na `main` (úloha '
+               '`checks`, 17. 11. 2026 o 06:22 UTC, Next.js 16.4.3) prešiel bez takého výpisu; týždenný workflow `dependency-audit` '
+               '(`.github/workflows/dependency-audit.yml`) padá až od stupňa high, takže tento nález nenahlási. Neoverené: či '
+               'build na Railway niekedy skončí rovnakou chybou (treba pozrieť log nasadenia).',
+         note='Návrh (neoverený): upgrade `next` na opravenú verziu v rámci rozsahu `^16.4.3` ako samostatná dávka závislostí '
+               '(tretí druh rizika ide vždy samostatne): `package.json` a `package-lock.json`, celý Jest, `tsc`, build, kontrola '
+               'prekladov a ručný dymový test majiteľa po nasadení. Majiteľ by mal pozrieť posledné nasadenia na Railway (zelené, '
+               'bez chyby `SecurityFatalError`); ak by nasadenie padalo, nález sa posúva na začiatok poradia. Odhad: stredný · S až M.',
+         dec=None, src='K28 (kolega, 17. 11. 2026) a kontrola agenta z logu CI'),
+    dict(n=342, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='komentáre: odpoveď, úprava a zmazanie pri zmiznutom príspevku nepoužijú spoločné spracovanie ako pridanie; oprava '
+                'po kroku 7 delenia',
+         what='Kolega pri K28 (17. 11. 2026, sonda v kópii mimo repozitára): pri chybe 404 z `createFeedPostComment` ukáže pridanie '
+               'komentára jednu neutrálnu hlášku „Tento príspevok už nie je dostupný.“ a pošle signál zmiznutia príspevku; odpoveď, '
+               'úprava aj zmazanie pri rovnakej chybe ukážu všeobecnú chybu („Odpoveď sa nepodarilo pridať.“, „Komentár sa '
+               'nepodarilo upraviť.“, „Komentár sa nepodarilo zmazať.“) a signál nepošlú, takže karta príspevku ostane v '
+               'zoznamoch. Príčina: `handleFeedPostErrorIfGone` (`feedPostGone.ts`) volá len `handleSubmit`; `handleSubmitReply`, '
+               '`handleSubmitEdit` a `handleConfirmDelete` ho nevolajú (`FeedPostComments.tsx`). Dopad: nízky, nejednotné '
+               'správanie (po zmazaní príspevku v inej relácii vidí používateľ pri týchto troch akciách zavádzajúcu všeobecnú '
+               'chybu). Pozor pri oprave: `handleFeedPostErrorIfGone` berie za zmiznutý príspevok aj 403, no pri úprave a zmazaní '
+               'komentára môže 403 znamenať „nemáš právo“, nie „príspevok zmizol“.',
+         note='Návrh: opraviť až po delení (v novom súbore `useFeedCommentMutations.ts`, krok 7, ako samostatný commit s testom), '
+               'nie počas delenia, aby sa správanie pri presune nemenilo. Pred opravou treba rozhodnúť, ktoré stavy sa pri úprave a '
+               'zmazaní považujú za zmiznutý príspevok (agent pripraví otázku s odporúčaním; návrh: len 404 a 410, 403 nie). Odhad: '
+               'nízky · S.',
+         dec=None, src='K28 (kolega, 17. 11. 2026)'),
 ]

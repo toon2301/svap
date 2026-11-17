@@ -468,6 +468,7 @@ DONE_PR_TABLE_CASTOCNE = [
     ('#271', 'e2e/k23-overenie-a-wsl', '223 (dodatok: živé overenie po K25 a príprava Ubuntu vo WSL; nález ostáva otvorený)'),
     ('#275', 'K27', '262 (časť: backend, tri koncové body „kto dal lajk“ pre ponuky, portfólio a profil; frontend čaká na schválenie vzhľadu)'),
     ('#276', 'e2e/ui-kategoria-337', '337 (UI scenár kategórií zlúčený a lokálne overený; živý beh čaká na okno majiteľa)'),
+    ('#278', 'K28', '333 (dávka 1 z 5 delenia `FeedPostComments.tsx`: charakterizačné testy a dočasný odtlačok HTML)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Rozhodnutia R41 a ďalšie (od 15. 11. 2026): R41 (výnimka z pravidla 500 riadkov pre opravu 336, rozhodnuté 15. 11. 2026), R42 (opis
 hlavného vypínača aj na počítači, rozhodnuté 16. 11. 2026), R43 (E2E scenár odznaku Žiadostí sa nerobí, rozhodnuté 16. 11. 2026) a R44
-(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026) a R50 (poistka `--repeat-each` v staršom API scenári volieb, čaká na majiteľa).
+(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026) a R50 (poistka `--repeat-each` v staršom API scenári volieb, rozhodnuté 17. 11. 2026).
 
 Samostatný súbor kvôli limitu 500 riadkov (`rozhodnutia_nastenka.py` má vyše 380 riadkov); `stav.py` ich pripája do `DECISIONS` za R13–R40.
 Čísla rozhodnutí sa nikdy nepoužívajú znova; nové rozhodnutie sa pridáva na koniec zoznamu.
@@ -129,7 +129,8 @@ DECISIONS_DALSIE = [
          odpoved='Majiteľ 16. 11. 2026: redizajn Nástenky, komentárov a podobné vzhľadové zmeny treba vždy najprv prekonzultovať. '
                   'Agent to vykladá ako trvalé pravidlo: pred každou kartou so zmenou vzhľadu agent pripraví návrh (možnosti a '
                   'odporúčanie), majiteľ ho schváli a až potom ide karta kolegovi; kolega vzhľad nemení bez schváleného vzhľadu v '
-                  'karte. Platí najmä pre frontend zoznamu lajkujúcich (262) a pre redizajn 261.',
+                  'karte. Platí najmä pre frontend zoznamu lajkujúcich (262) a pre redizajn 261. Majiteľ 17. 11. 2026 súhlasil (podľa '
+                  'odporúčania agenta) aj so zápisom pravidla do `AGENTS.md`, aby ho mali všetci agenti vrátane nových relácií.',
          datum='16. 11. 2026'),
     dict(id='R50', tema='Poistka proti `--repeat-each` v staršom API scenári volieb (nález 340): súhlas na opravu',
          otazka='Codex zistil, že v Playwrighte 1.63 sa voľba `--repeat-each` nepremietne do `testInfo.project.repeatEach`, takže '
@@ -139,5 +140,8 @@ DECISIONS_DALSIE = [
                  'samostatná malá vetva Codexa. (b) Nie, stačí pravidlo nespúšťať scenár s `--repeat-each`.',
          odporucanie='(a): zmena je malá a len v E2E; poistka chráni hlavný testovací účet pred nechceným opakovaným zápisom pri '
                       'nesprávnom spustení.',
-         kedy='Pred ďalšou prácou Codexa na API scenári volieb.'),
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (a): Codex smie opraviť poistku `--repeat-each` ako '
+                  'samostatnú malú vetvu (len `frontend/e2e/**`); dovtedy sa API scenár volieb s touto voľbou nespúšťa.',
+         datum='17. 11. 2026'),
 ]
