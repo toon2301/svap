@@ -1,5 +1,8 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { requireSinglePreferenceRun } from '../support/notification-preferences-options';
+
+requireSinglePreferenceRun();
 
 /** Riadené chyby overujú finally a izoláciu projektov, nikdy nie živú aplikáciu. */
 export default defineConfig({
