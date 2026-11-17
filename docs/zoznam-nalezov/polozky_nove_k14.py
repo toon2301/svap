@@ -268,11 +268,16 @@ NEW_ITEMS_K14 = [
                'zoznamoch. Príčina: `handleFeedPostErrorIfGone` (`feedPostGone.ts`) volá len `handleSubmit`; `handleSubmitReply`, '
                '`handleSubmitEdit` a `handleConfirmDelete` ho nevolajú (`FeedPostComments.tsx`). Dopad: nízky, nejednotné '
                'správanie (po zmazaní príspevku v inej relácii vidí používateľ pri týchto troch akciách zavádzajúcu všeobecnú '
-               'chybu). Pozor pri oprave: `handleFeedPostErrorIfGone` berie za zmiznutý príspevok aj 403, no pri úprave a zmazaní '
-               'komentára môže 403 znamenať „nemáš právo“, nie „príspevok zmizol“.',
+               'chybu). Pozor pri oprave: `handleFeedPostErrorIfGone` posudzuje len stav odpovede (404, 403 alebo 410), no pri úprave, '
+               'zmazaní a odpovedi samotný stav nestačí: backend vracia 404 aj vtedy, keď príspevok existuje a chýba len '
+               'komentár (telo „Komentar nebol najdeny.“) alebo rodičovský komentár odpovede (kód `reply_parent_missing`), a 403 '
+               'pri úprave a zmazaní znamená „nemáš právo“, nie „príspevok zmizol“; pri chýbajúcom príspevku je telo '
+               '„Prispevok nebol najdeny.“.',
          note='Návrh: opraviť až po delení (v novom súbore `useFeedCommentMutations.ts`, krok 7, ako samostatný commit s testom), '
-               'nie počas delenia, aby sa správanie pri presune nemenilo. Pred opravou treba rozhodnúť, ktoré stavy sa pri úprave a '
-               'zmazaní považujú za zmiznutý príspevok (agent pripraví otázku s odporúčaním; návrh: len 404 a 410, 403 nie). Odhad: '
-               'nízky · S.',
+               'nie počas delenia, aby sa správanie pri presune nemenilo. Pred opravou treba rozhodnúť, ako odlíšiť chýbajúci príspevok '
+               'od chýbajúceho komentára, lebo samotný HTTP stav nestačí. Možnosti: (a) po chybe overiť dostupnosť príspevku jedným '
+               'dopytom (detail príspevku); (b) doplniť do odpovede o chýbajúcom príspevku strojový kód, ako to už robí '
+               '`reply_parent_missing` (zmena backendu); (c) rozlišovať podľa textu tela odpovede (krehké). Agent pripraví otázku '
+               's odporúčaním. Odhad: nízky · S.',
          dec=None, src='K28 (kolega, 17. 11. 2026)'),
 ]
