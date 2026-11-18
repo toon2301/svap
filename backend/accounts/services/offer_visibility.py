@@ -21,9 +21,11 @@ def offer_hidden_from_user(offer, user) -> bool:
     Cudziemu divákovi je ponuka skrytá, keď je skrytá sama, keď má vlastník
     súkromný profil alebo neaktívny účet (napríklad deaktivovaný v
     administrácii; vyhľadávanie ho vynecháva cez ``searchable_user_q``) a keď
-    medzi divákom a vlastníkom existuje blok v ktoromkoľvek smere. Neaktívny
-    vlastník sa k API neprihlási, takže výnimka pre vlastníka sa ho v praxi
-    netýka.
+    medzi divákom a vlastníkom existuje blok v ktoromkoľvek smere. Výnimka pre
+    vlastníka platí vždy, aj pre neaktívny účet. Ten sa k API zvyčajne
+    neprihlási, no cache autentifikácie (predvolene 24 hodín) ho môže po
+    deaktivácii ešte pustiť, ak sa nezneplatnila (zápis mimo ``save()``, súbeh
+    pri čítaní používateľa); to rieši autentifikácia, nie táto funkcia.
     """
     if getattr(offer, "user_id", None) == getattr(user, "id", None):
         return False

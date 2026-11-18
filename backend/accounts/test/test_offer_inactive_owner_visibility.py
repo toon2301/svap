@@ -38,6 +38,7 @@ User = get_user_model()
 DETAIL_NOT_FOUND = {"error": "Zručnosť nebola nájdená"}
 LIKE_NOT_FOUND = {"error": "Ponuka nebola najdena"}
 MISSING_OFFER_ID = 987654321
+MISSING_REVIEW_ID = 987654322
 
 
 def _user(name, *, is_public=True, is_active=True):
@@ -103,7 +104,7 @@ class OfferHiddenFromUserTests(TestCase):
         self.assertTrue(offer_hidden_from_user(self._offer_from_db(), AnonymousUser()))
 
     def test_owner_is_never_restricted_even_when_inactive(self):
-        """Výnimka vlastníka ostáva; neaktívny účet sa k API aj tak neprihlási."""
+        """Výnimka vlastníka platí aj pre neaktívny účet (autentifikácia ho zvyčajne odmietne)."""
         _deactivate(self.owner)
 
         self.assertFalse(offer_hidden_from_user(self._offer_from_db(), self.owner))
@@ -232,7 +233,7 @@ class InactiveOwnerDirectAccessTests(APITestCase):
         self.assertFalse(OfferedSkillLike.objects.filter(offer=self.offer).exists())
 
     def test_owner_still_sees_the_own_offer(self):
-        """Prihlásiť sa neaktívny účet nevie, preto sa pravidlo skúša priamo."""
+        """Neaktívny účet sa zvyčajne neprihlási, preto sa výnimka skúša cez force_authenticate."""
         _deactivate(self.owner)
         self.client.force_authenticate(user=self.owner)
 
@@ -345,21 +346,35 @@ class InactiveOwnerReviewPathsTests(APITestCase):
         )
 
     def test_reviews_of_an_inactive_owner_offer_are_not_found(self):
-        """Zoznam aj detail recenzie ponuky neaktívneho vlastníka dajú 404."""
+        """Zoznam aj detail recenzie dajú 404 s rovnakým telom ako neexistujúce id."""
+        missing_list = self.client.get(
+            reverse("accounts:reviews_list", args=[MISSING_OFFER_ID])
+        )
+        missing_detail = self.client.get(
+            reverse("accounts:review_detail", args=[MISSING_REVIEW_ID])
+        )
+        self.assertEqual(missing_list.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(missing_detail.status_code, status.HTTP_404_NOT_FOUND)
         _deactivate(self.owner)
 
-        self.assertEqual(
-            self.client.get(self.list_url).status_code, status.HTTP_404_NOT_FOUND
-        )
-        self.assertEqual(
-            self.client.get(self.detail_url).status_code, status.HTTP_404_NOT_FOUND
-        )
+        listing = self.client.get(self.list_url)
+        detail = self.client.get(self.detail_url)
+
+        self.assertEqual(listing.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(listing.data, missing_list.data)
+        self.assertEqual(detail.data, missing_detail.data)
 
     def test_review_of_an_inactive_owner_offer_cannot_be_liked(self):
-        """Lajk recenzie ponuky neaktívneho vlastníka dá 404 a nič sa neuloží."""
+        """Lajk recenzie dá 404 s rovnakým telom ako neexistujúce id a nič sa neuloží."""
+        missing = self.client.post(
+            reverse("accounts:review_like", args=[MISSING_REVIEW_ID])
+        )
+        self.assertEqual(missing.status_code, status.HTTP_404_NOT_FOUND)
         _deactivate(self.owner)
 
         response = self.client.post(self.like_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data, missing.data)
         self.assertFalse(ReviewLike.objects.filter(review=self.review).exists())
