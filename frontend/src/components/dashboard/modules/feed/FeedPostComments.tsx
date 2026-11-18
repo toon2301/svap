@@ -11,23 +11,33 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
-import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
-import InitialsAvatar from '@/components/shared/InitialsAvatar';
-import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
-import FeedCommentLikeButton from './FeedCommentLikeButton';
-import FeedCommentEditComposer from './FeedCommentEditComposer';
+import FeedCommentItem from './FeedCommentItem';
+import FeedCommentComposer from './FeedCommentComposer';
+import FeedCommentsLoadingMore from './FeedCommentsLoadingMore';
+import FeedCommentsNewIndicator from './FeedCommentsNewIndicator';
 import FeedCommentReplyComposer from './FeedCommentReplyComposer';
 import FeedRepliesAutoLoader from './FeedRepliesAutoLoader';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
-import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
+import { openUserProfile } from './feedProfileNavigation';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
 import { handleFeedPostErrorIfGone } from './feedPostGone';
-import { formatRelativeTime } from './feedRelativeTime';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
+import {
+  COMMENTS_MAX_POLL_SIZE,
+  COMMENTS_PAGE_SIZE,
+  HIGHLIGHT_MAX_PAGES,
+  HIGHLIGHT_MS,
+  NEAR_TOP_PX,
+  REPLIES_PAGE_SIZE,
+  flattenComments,
+  mergeComments,
+  mergeReplyBatch,
+  repliesTotal,
+} from './feedCommentsLogic';
 import {
   FEED_COMMENT_MAX_LENGTH,
   createFeedPostComment,
@@ -37,173 +47,6 @@ import {
   listFeedPostComments,
   type FeedPostComment,
 } from '@/lib/feedApi';
-
-const COMMENTS_PAGE_SIZE = 10;
-/**
- * Strop pre jeden pollovací dopyt – zhodný s `max_page_size` vo
- * `FeedCommentCursorPagination`. BE väčšiu hodnotu ticho oreže, takže sa
- * orezáva rovno tu, nech je zrejmé, čo odpoveď pokrýva.
- */
-const COMMENTS_MAX_POLL_SIZE = 50;
-/** Do tejto vzdialenosti od vrchu sa nový komentár doscrolluje sám. */
-const NEAR_TOP_PX = 100;
-
-/** Zhodné s FEED_REPLIES_PREVIEW_LIMIT na backende. */
-const REPLIES_PREVIEW_LIMIT = 10;
-/** Koľko odpovedí sa dotiahne jedným kliknutím na „Zobraziť ďalšie". */
-const REPLIES_PAGE_SIZE = 10;
-
-/**
- * Poradie zhodné s backendom: NAJNOVŠIE HORE, teda `(-created_at, -id)`.
- *
- * Radiť len podľa id by v drvivej väčšine prípadov vyšlo rovnako (id rastie
- * s časom), ale zoznam by sa od servera rozišiel vždy, keď to neplatí. Jedno
- * pravidlo pre všetky cesty – polling, donačítanie aj vlastný komentár –
- * znamená, že poradie nezávisí od toho, ktorou z nich sa komentár dostal
- * do lokálneho stavu.
- */
-function compareNewestFirst(a: FeedPostComment, b: FeedPostComment): number {
-  if (a.created_at !== b.created_at) {
-    return a.created_at < b.created_at ? 1 : -1;
-  }
-  return b.id - a.id;
-}
-
-/** Je `item` STARŠÍ než `edge`? (V zozname teda leží pod ním.) */
-function isOlderThan(item: FeedPostComment, edge: FeedPostComment): boolean {
-  return compareNewestFirst(item, edge) > 0;
-}
-
-function sortedNewestFirst(
-  byId: Map<number, FeedPostComment>,
-): FeedPostComment[] {
-  return [...byId.values()].sort(compareNewestFirst);
-}
-
-/**
- * Zlúči NÁHĽAD odpovedí (pár NAJNOVŠÍCH) s tým, čo appka má.
- *
- * Rovnaký princíp ako `mergeComments` o úroveň vyššie: náhľad má posledné
- * slovo o svojom rozsahu – od najnovšej odpovede po tú svoju najstaršiu –
- * takže čo v ňom v tomto rozsahu chýba, bolo medzitým zmazané. Čo je STARŠIE
- * než jeho koniec, sa nezahadzuje: o tom náhľad nič nehovorí a používateľ tam
- * môže mať donačítané staršie odpovede.
- *
- * Keď je odpovedí menej než náhľadový strop, pokrýva náhľad celé vlákno, takže
- * jeho dosah je neohraničený (aj prázdny náhľad vtedy znamená „nič tam nie je").
- */
-function mergeReplyPreview(
-  current: FeedPostComment[],
-  preview: FeedPostComment[],
-  previewCoversThread: boolean,
-): FeedPostComment[] {
-  if (!preview.length) return previewCoversThread ? [] : current;
-  const oldestInPreview = preview[preview.length - 1];
-  const byId = new Map(
-    (previewCoversThread
-      ? []
-      : current.filter((reply) => isOlderThan(reply, oldestInPreview))
-    ).map((reply) => [reply.id, reply]),
-  );
-  preview.forEach((reply) => byId.set(reply.id, reply));
-  return sortedNewestFirst(byId);
-}
-
-/**
- * Pripojí ĎALŠIU dávku odpovedí za tie, čo už máme.
- *
- * Dávka nesie STARŠIE odpovede za kotvou, nie pohľad od najnovšej – nehovorí
- * teda nič o tých nad ňou a žiadna sa pri nej nezahadzuje. Prienik podľa id
- * ošetrí prípad, keď medzitým niečo pribudlo.
- */
-function mergeReplyBatch(
-  current: FeedPostComment[],
-  batch: FeedPostComment[],
-): FeedPostComment[] {
-  if (!batch.length) return current;
-  const byId = new Map(current.map((reply) => [reply.id, reply]));
-  batch.forEach((reply) => byId.set(reply.id, reply));
-  return sortedNewestFirst(byId);
-}
-
-/**
- * Zlúči čerstvú odpoveď servera do lokálneho zoznamu.
- *
- * Kľúčový predpoklad: odpoveď VŽDY začína od najnovšieho komentára (polling sa
- * pýta bez cursoru – viď `refresh`). Preto má server posledné slovo o všetkom
- * až po posledný vrátený komentár:
- *  - čo v odpovedi je → nahradí sa serverovou verziou (čerstvé počty lajkov,
- *    nové komentáre),
- *  - čo v nej chýba a spadá do jej dosahu → medzitým to niekto zmazal,
- *  - čo je STARŠIE než jej koniec → odpoveď o tom nič nehovorí, ostáva
- *    nedotknuté. Nastáva len pri okne dlhšom než COMMENTS_MAX_POLL_SIZE.
- *
- * Dosah určuje `hasNext`, nie počet položiek: keď ďalšia stránka neexistuje,
- * server vrátil celé vlákno, takže dosah je neohraničený. Tým je pravidlo
- * odolné aj voči orezaniu veľkosti stránky na strane BE – dĺžky sa
- * neporovnávajú.
- *
- * Radí sa rovnakým pravidlom ako na backende – najnovšie hore, viď
- * `compareNewestFirst`.
- */
-function mergeComments(
-  current: FeedPostComment[],
-  incoming: FeedPostComment[],
-  hasNext: boolean,
-): FeedPostComment[] {
-  // Prázdna odpoveď bez ďalšej stránky = vlákno je prázdne (zmazalo sa všetko).
-  if (!incoming.length) return hasNext ? current : [];
-
-  const oldestIncoming = incoming[incoming.length - 1];
-
-  const currentById = new Map(current.map((comment) => [comment.id, comment]));
-  const byId = new Map(
-    (hasNext
-      ? current.filter((comment) => isOlderThan(comment, oldestIncoming))
-      : []
-    ).map((comment) => [comment.id, comment]),
-  );
-  incoming.forEach((comment) => {
-    // Prišiel len NÁHĽAD odpovedí. Keby sa komentár nahradil celý, používateľ
-    // by prišiel o odpovede, ktoré si sám donačítal nad rámec náhľadu.
-    const existing = currentById.get(comment.id);
-    byId.set(comment.id, {
-      ...comment,
-      replies: mergeReplyPreview(
-        existing?.replies ?? [],
-        comment.replies ?? [],
-        (comment.replies_count ?? 0) <= REPLIES_PREVIEW_LIMIT,
-      ),
-    });
-  });
-  return sortedNewestFirst(byId);
-}
-
-/** Ako dlho ostane komentár z notifikácie zvýraznený. */
-const HIGHLIGHT_MS = 3000;
-/**
- * Strop donačítavania pri hľadaní komentára z notifikácie.
- *
- * Pri COMMENTS_PAGE_SIZE = 10 to je 200 komentárov – hlbšie vlákno je
- * v praxi výnimka a nekonečné stránkovanie by pri zlom odkaze bolo horšie
- * než sa zastaviť.
- */
-const HIGHLIGHT_MAX_PAGES = 20;
-
-/**
- * Koľko odpovedí komentár celkovo má.
- *
- * Zdroj pravdy je `replies_count` z backendu (počíta aj tie nenačítané);
- * načítané pole je len poistka, keby pole v odpovedi chýbalo.
- */
-function repliesTotal(comment: FeedPostComment): number {
-  return comment.replies_count ?? comment.replies?.length ?? 0;
-}
-
-/** Komentáre aj ich odpovede v jednom zozname – na hľadanie a počítanie. */
-function flattenComments(list: FeedPostComment[]): FeedPostComment[] {
-  return list.flatMap((comment) => [comment, ...(comment.replies ?? [])]);
-}
 
 type FeedPostCommentsProps = {
   /**
@@ -1091,140 +934,25 @@ export default function FeedPostComments({
    * (vnorenie je jednoúrovňové, na odpoveď sa už odpovedať nedá).
    */
   const renderComment = (comment: FeedPostComment, isReply = false) => (
-    <div
-      data-comment-id={comment.id}
-      className={`flex items-start gap-2.5 rounded-xl transition-colors duration-700 ${
-        highlighted === comment.id ? 'bg-purple-100/80 dark:bg-purple-900/30' : ''
-      }`}
-    >
-      {/* Avatar aj meno vedú na profil autora komentára – rovnaké pravidlo
-          ako v hlavičke príspevku, aby sa preklik správal všade rovnako. */}
-      <button
-        type="button"
-        onClick={() => openCommentAuthorProfile(comment.author)}
-        disabled={!canOpenUserProfile(comment.author)}
-        data-testid={`feed-comment-avatar-${comment.id}`}
-        aria-label={t('feed.openProfile', 'Otvoriť profil')}
-        className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
-      >
-        <InitialsAvatar
-          name={comment.author?.display_name}
-          avatarUrl={comment.author?.avatar_url}
-          size="xs"
-        />
-      </button>
-      <div
-        className={`min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ${
-          isReply ? 'text-[13px]' : ''
-        }`}
-      >
-        {/* Meno je na VLASTNOM riadku nad textom – text komentára ide pod
-            neho, nie vedľa. */}
-        <button
-          type="button"
-          onClick={() => openCommentAuthorProfile(comment.author)}
-          disabled={!canOpenUserProfile(comment.author)}
-          data-testid={`feed-comment-author-${comment.id}`}
-          className="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"
-        >
-          {comment.author?.display_name}
-        </button>
-        {editingComment === comment.id ? (
-          <FeedCommentEditComposer
-            initialText={comment.text}
-            submitting={editSubmitting}
-            onCancel={() => setEditingComment(null)}
-            onSubmit={(next) => void handleSubmitEdit(comment, next)}
-            testId={`feed-comment-edit-composer-${comment.id}`}
-          />
-        ) : (
-          <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-            {comment.text}
-            {/* „Upravené" vidí LEN autor komentára – backend pole nikomu inému
-                neposiela, takže tu netreba porovnávať identity. */}
-            {comment.is_edited ? (
-              <span
-                data-testid={`feed-comment-edited-${comment.id}`}
-                className="ml-1 align-baseline text-xs text-gray-400 dark:text-gray-500"
-              >
-                {t('feed.editedMark', '(upravené)')}
-              </span>
-            ) : null}
-          </p>
-        )}
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {showTimestamp ? (
-            <time
-              dateTime={comment.created_at}
-              data-testid={`feed-comment-time-${comment.id}`}
-              className="text-xs text-gray-500 dark:text-gray-400"
-            >
-              {formatRelativeTime(comment.created_at, t, locale)}
-            </time>
-          ) : null}
-          <FeedCommentLikeButton postId={postId} comment={comment} />
-          {/* „Upraviť" patrí do TOHTO riadku, nie ku košu vpravo: kôš je
-              deštruktívna ikona a navyše ho vidí aj autor príspevku pri cudzom
-              komentári. Upravovať smie len autor komentára (`can_edit` z BE) a
-              týka sa to aj odpovedí, ktoré vlastné „Odpovedať" nemajú. */}
-          {comment.can_edit && editingComment !== comment.id ? (
-            <button
-              type="button"
-              onClick={() => setEditingComment(comment.id)}
-              data-testid={`feed-comment-edit-${comment.id}`}
-              className="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
-            >
-              {t('feed.commentEdit', 'Upraviť')}
-            </button>
-          ) : null}
-          {isReply ? null : (
-            <button
-              type="button"
-              onClick={() => {
-                setReplyingTo((current) =>
-                  current === comment.id ? null : comment.id,
-                );
-                setReplyText('');
-              }}
-              data-testid={`feed-comment-reply-${comment.id}`}
-              className="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
-            >
-              {t('feed.reply', 'Odpovedať')}
-            </button>
-          )}
-          {/* Počet berieme z `replies_count` (celkový, nie len načítaný), takže
-              polling ho aktualizuje aj v ZBALENOM stave – sekcia sa pritom
-              sama neotvorí. */}
-          {!isReply && repliesTotal(comment) > 0 ? (
-            <button
-              type="button"
-              onClick={() => toggleReplies(comment.id)}
-              data-testid={`feed-comment-toggle-replies-${comment.id}`}
-              aria-expanded={expandedReplies.has(comment.id)}
-              className="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
-            >
-              {expandedReplies.has(comment.id)
-                ? t('feed.repliesHide', 'Skryť odpovede')
-                : t('feed.repliesShow', 'Zobraziť odpovede ({n})').replace(
-                    '{n}',
-                    String(repliesTotal(comment)),
-                  )}
-            </button>
-          ) : null}
-        </div>
-      </div>
-      {comment.can_delete ? (
-        <button
-          type="button"
-          onClick={() => setPendingDelete(comment)}
-          aria-label={t('feed.commentDelete', 'Zmazať komentár')}
-          title={t('feed.commentDelete', 'Zmazať komentár')}
-          className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
-        >
-          <TrashIcon className="h-4 w-4" />
-        </button>
-      ) : null}
-    </div>
+    <FeedCommentItem
+      comment={comment}
+      isReply={isReply}
+      postId={postId}
+      highlighted={highlighted}
+      editingComment={editingComment}
+      editSubmitting={editSubmitting}
+      expandedReplies={expandedReplies}
+      showTimestamp={showTimestamp}
+      t={t}
+      locale={locale}
+      openCommentAuthorProfile={openCommentAuthorProfile}
+      setEditingComment={setEditingComment}
+      handleSubmitEdit={handleSubmitEdit}
+      setReplyingTo={setReplyingTo}
+      setReplyText={setReplyText}
+      toggleReplies={toggleReplies}
+      setPendingDelete={setPendingDelete}
+    />
   );
 
   return (
@@ -1327,19 +1055,7 @@ export default function FeedPostComments({
             </ul>
           )}
 
-          {loadingMore ? (
-            <ul className="mt-3 space-y-3" data-testid="feed-comments-loading-more">
-              {[0, 1].map((key) => (
-                <li key={key} className="flex animate-pulse items-start gap-2.5">
-                  <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
-                  <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                    <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-                    <div className="h-3 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          {loadingMore ? <FeedCommentsLoadingMore /> : null}
 
           {/* Sentinel patrí TEJTO karte – observer je per-inštancia, takže dve
               naraz rozbalené karty si donačítavanie navzájom nespúšťajú.
@@ -1348,133 +1064,28 @@ export default function FeedPostComments({
           <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
         </div>
 
-        {/* Hlásič pre čítačky. Musí byť v DOM STÁLE a meniť sa len jeho obsah:
-            aria-live oznamuje zmeny výhradne v prvku, ktorý čítačka sledovala
-            UŽ PREDTÝM, takže na regióne, ktorý sa spolu s tlačidlom objaví a
-            zmizne, sa oznámenie nespoľahlivo stratí. Vizuálnu rolu má tlačidlo
-            nižšie, tento uzol je len pre asistenčné technológie. */}
-        <p
-          data-testid="feed-comments-new-announcer"
-          aria-live="polite"
-          className="sr-only"
-        >
-          {newCommentsCount > 0 ? newCommentsLabel : ''}
-        </p>
-
-        {/* Nenápadné upozornenie namiesto vynúteného posunu pohľadu – ukáže sa
-            len vtedy, keď používateľ číta vyššie v zozname. */}
-        {newCommentsCount > 0 ? (
-          <button
-            type="button"
-            onClick={handleNewCommentsClick}
-            data-testid="feed-comments-new-indicator"
-            className="absolute inset-x-0 bottom-2 mx-auto flex w-max items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3.5 w-3.5"
-              aria-hidden="true"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <polyline points="19 12 12 19 5 12" />
-            </svg>
-            {newCommentsLabel}
-          </button>
-        ) : null}
+        <FeedCommentsNewIndicator
+          newCommentsCount={newCommentsCount}
+          newCommentsLabel={newCommentsLabel}
+          handleNewCommentsClick={handleNewCommentsClick}
+        />
       </div>
 
       {/* Composer je MIMO scrollovateľnej časti – ostáva viditeľný bez ohľadu
           na to, kde v zozname používateľ je. */}
-      <div className="mt-3">
-        {/* Kompaktný variant: jeden riadok a ikona odoslania priamo v poli.
-            Vysunutý panel nad fotkou má na composer len úzky pruh. */}
-        <div className={compactComposer ? 'relative' : ''}>
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            rows={compactComposer ? 1 : 2}
-            placeholder={t('feed.commentPlaceholder', 'Napíš komentár...')}
-            aria-label={t('feed.commentPlaceholder', 'Napíš komentár...')}
-            className={`w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 ${
-              compactComposer ? 'resize-none pr-12' : 'resize-y'
-            }`}
-          />
-          {compactComposer ? (
-            <button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={!canSubmit}
-              data-testid="feed-comment-send"
-              aria-label={t('feed.commentSubmit', 'Pridať')}
-              className="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <line x1="10" y1="14" x2="21" y2="3" />
-                <path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z" />
-              </svg>
-            </button>
-          ) : null}
-        </div>
-        {/* Kompaktný variant odosiela ikonou v poli, takže spodný riadok
-            (emoji, počítadlo, „Pridať") by bol druhá cesta k tej istej akcii.
-            Zostáva z neho len upozornenie na prekročenú dĺžku. */}
-        {compactComposer ? (
-          tooLong ? (
-            <p
-              data-testid="feed-comment-counter"
-              className="mt-1 text-xs font-semibold tabular-nums text-red-500 dark:text-red-400"
-            >
-              {text.length}/{FEED_COMMENT_MAX_LENGTH}
-            </p>
-          ) : null
-        ) : (
-        <div className="mt-2 flex items-center justify-between gap-3">
-          {isMobile ? null : (
-            <DesktopEmojiPickerButton
-              ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
-              disabled={submitting}
-              onSelect={insertEmoji}
-              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
-            />
-          )}
-          <span
-            data-testid="feed-comment-counter"
-            className={`ml-auto text-xs tabular-nums ${
-              tooLong
-                ? 'font-semibold text-red-600 dark:text-red-400'
-                : 'text-gray-400 dark:text-gray-500'
-            }`}
-          >
-            {text.length}/{FEED_COMMENT_MAX_LENGTH}
-          </span>
-          <button
-            type="button"
-            onClick={() => void handleSubmit()}
-            disabled={!canSubmit}
-            className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting
-              ? t('common.sending', 'Odosielam...')
-              : t('feed.commentSubmit', 'Pridať')}
-          </button>
-        </div>
-        )}
-      </div>
+      <FeedCommentComposer
+        compactComposer={compactComposer}
+        textareaRef={textareaRef}
+        text={text}
+        setText={setText}
+        t={t}
+        handleSubmit={handleSubmit}
+        canSubmit={canSubmit}
+        tooLong={tooLong}
+        isMobile={isMobile}
+        submitting={submitting}
+        insertEmoji={insertEmoji}
+      />
 
       <FeedDestructiveConfirm
         open={pendingDelete !== null}
