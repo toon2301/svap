@@ -177,8 +177,8 @@ NEW_ITEMS_K14 = [
                'R23). Kandidáti kolegu: žiadni. RUČNÝ TEST MAJITEĽA (18. 11. 2026): 14 z 14 vykonaných, 12 prešlo bez novej chyby v '
                'hodnotenom rozsahu a 2 prešli čiastočne (testy 6 a 13); z nich vznikli kandidáti 345 (počítač: detail príspevku ostane '
                'otvorený po prechode na profil autora komentára) a 346 (iPhone: nový komentár nie je celý viditeľný). Ďalšia dávka je '
-               '3 z 5 (krok 4: hľadanie cieľa v hooku); karta sa pripraví po K30 a po zmapovaní kandidátov 345 a 346 (K36), ak majiteľ '
-               'nepovie inak.',
+               '3 z 5 (krok 4: hľadanie cieľa v hooku): karta K37 (`karty/K37.md`) je pripravená 18. 11. 2026 s bránou, kolega ju '
+               'začne až po výsledku K36 (mapovanie 345 a 346).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=338, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='komentáre: zoznam ostane na „Načítavam…“, keď sa počas prvého načítania úspešne pridá komentár; oprava až po '
@@ -197,21 +197,6 @@ NEW_ITEMS_K14 = [
                'netreba (oprava priamo v súbore s 1 487 riadkami by ju chcela a miešala by sa so správaním pri delení). Odhad: '
                'nízky · S.',
          dec='ROZHODNUTIE R48', src='K26 (kolega) a kontrola agenta čítaním kódu (16. 11. 2026)'),
-    dict(n=339, bucket=P, imp=S_, eff=ES, pkg='Súkromie a krajina',
-         kratko='ponuka neaktívneho vlastníka: detail aj lajk prejdú cez priame id (vyhľadávanie ju vynecháva)',
-         what='Kolega pri K27 (16. 11. 2026, sonda mimo repozitára: vlastník s `is_active=False`, prihlásený divák): '
-               '`GET skills/<id>/` vráti 200 a `POST skills/<id>/like/` vráti 201 a lajk sa uloží, kým vo vyhľadávaní ponuka nie '
-               'je. Príčina: `offer_hidden_from_user` (`accounts/services/offer_visibility.py`) nekontroluje `is_active` vlastníka, '
-               'rovnako ako ho nekontrolujú `skills_detail_view` (`accounts/views/skills.py`) ani `offer_like_view` '
-               '(`accounts/views/offer_likes.py`); vyhľadávanie ho vynecháva cez `searchable_user_q`. Pri zmazaní účtu '
-               'používateľom sa ponuky mažú (`accounts/account_deletion.py`), takže sa to týka účtov deaktivovaných inak (napríklad '
-               'administráciou). Nový pohľad zoznamu lajkujúcich ponuky (K27) aktívneho vlastníka kontroluje. Dopad: obsah ponuky '
-               'deaktivovaného účtu je cez priame id dostupný každému prihlásenému a dá sa naň dávať lajky.',
-         note='Návrh (neoverený): jedna podmienka v `offer_hidden_from_user` (neaktívny vlastník = skrytá ponuka pre cudzieho '
-               'diváka; vlastník ju vidí vždy) a testy detailu, lajku a zoznamu; po zmene skontrolovať ostatných volajúcich '
-               'pomocníka (napríklad `review_hidden_from_user`). Malá backendová dávka bez ručného testu. KARTA K30 (`karty/K30.md`, 18. 11. 2026): mapovanie si '
-               'robí kolega sám (rozhodnutie majiteľa, len pre tento raz), agent pri príprave karty kód nečítal. Odhad: nízky · S.',
-         dec=None, src='K27 (kolega, 16. 11. 2026)'),
     dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
          kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); lokálny build '
                 'pri prvom behu skončil `SecurityFatalError` (K28 raz, K29 v každom z troch krokov; druhý beh prešiel); upgrade ako samostatná '
@@ -298,8 +283,9 @@ NEW_ITEMS_K14 = [
          note='NEJASNÉ: kolega najprv mapuje (kde sa prechod na profil spúšťa, prečo sa okno nezatvorí, či ide o starší stav alebo '
               'dôsledok K29; porovnať s `main` pred PR #283, teda `8f059cf7`) a vráti zistenie; kód nemení, kým majiteľ nepovie. '
               '`FeedPostComments.tsx` má po K29 1 098 riadkov, takže oprava logiky v ňom počká na zodpovedajúci krok delenia (R23, ako '
-              'pri 338 a 342); oprava mimo neho môže ísť skôr. Po oprave sa dá doplniť E2E kontrola (Codex). Poradie: karta K36 po K30 '
-              '(návrh). Odhad (neoverený): stredný · M.',
+              'pri 338 a 342); oprava mimo neho môže ísť skôr. Po oprave sa dá doplniť E2E kontrola (Codex). KARTA K36 (`karty/K36.md`, '
+              '18. 11. 2026): mapovanie si robí kolega sám (rozhodnutie majiteľa); Codexov beh z 18. 11. 2026 túto situáciu '
+              'nepokrýval. Odhad (neoverený): stredný · M.',
          dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 6)'),
     dict(n=346, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='iPhone: nový komentár nie je celý viditeľný vrátane tlačidiel po vlastnom odoslaní ani po kliknutí na upozornenie o '
@@ -315,6 +301,59 @@ NEW_ITEMS_K14 = [
               'majiteľ nepovie. Plán delenia `FeedPostComments.tsx` (333) má krok 5 „posun a indikátor nových“ '
               '(`useFeedCommentsScroll.ts`): ak sa príčina ukáže tam, oprava ide po tomto kroku ako samostatný commit v novom súbore '
               '(ako 338 po kroku 6), nie počas presunu; súbory nad 500 riadkov sa menia len ako presun (R23). Overenie na iPhone robí '
-              'majiteľ. Poradie: karta K36 po K30 (návrh). Odhad (neoverený): stredný · M.',
+              'majiteľ. KARTA K36 (`karty/K36.md`, 18. 11. 2026): mapovanie si '
+              'robí kolega sám (rozhodnutie majiteľa); Codexov beh z 18. 11. 2026 túto situáciu nepokrýval. Odhad (neoverený): '
+              'stredný · M.',
          dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 13 a mobilné testovanie)'),
+    dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
+         kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
+                'vytvorenie žiadosti nepustí; treba rozhodnúť, či je to zámer',
+         what='Kolega pri K30 (18. 11. 2026, sonda mimo repozitára: vlastník staff aj superuser, cudzí prihlásený divák): detail ponuky '
+              'vráti 200, lajk 201 a riadok `OfferedSkillLike` sa uloží, kým vo vyhľadávaní ponuka nie je. Agent overil čítaním kódu '
+              '(18. 11. 2026): `offer_hidden_from_user` (`accounts/services/offer_visibility.py`) nemá pravidlo pre staff ani '
+              'superuser, kým `searchable_user_q` (`accounts/search_visibility.py`) vyžaduje `is_staff=False` a `is_superuser=False` '
+              'a vytvorenie žiadosti o ponuku (`accounts/views/skill_requests.py` a `accounts/skill_request_serializers.py`) takéto '
+              'účty odmieta. Rovnaký vzor ako 339 s iným dôvodom. Dopad: obsah administrátorských účtov je cez priame id dostupný a '
+              'dá sa naň dávať lajky. Sondu agent nespúšťal.',
+         note='NEJASNÉ: pred opravou treba rozhodnúť, či sa majú ponuky účtov staff a superuser skrývať aj pri priamom prístupe '
+              '(konzistentne s vyhľadávaním), alebo je to zámer (napríklad ponuky vlastného administrátorského účtu majiteľa). Agent '
+              'pripraví otázku s odporúčaním, keď nález príde na rad. Ak sa rozhodne skrývať: jedna podmienka v '
+              '`offer_hidden_from_user` v tom istom tvare ako pri 339, testy a kontrola ostatných volajúcich pomocníka. Skupina a '
+              'dôležitosť sú predbežný návrh agenta (súkromie ako 339, nízka dôležitosť, lebo ide o administrátorské účty). Odhad: '
+              'nízky · S.',
+         dec=None, src='K30 (kolega, 18. 11. 2026) a kontrola agenta čítaním kódu'),
+    dict(n=348, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
+         kratko='osirotená recenzia (ponuka zmazaná) neaktívneho hodnoteného používateľa je cez priame id viditeľná a dá sa lajkovať',
+         what='Kolega pri K30 (18. 11. 2026, sonda mimo repozitára: ponuka zmazaná, hodnotený vlastník neaktívny, cudzí prihlásený '
+              'divák): `review_hidden_from_user` vráti False, detail recenzie 200, lajk recenzie 201 a riadok `ReviewLike` sa uloží. '
+              'Agent overil čítaním kódu (18. 11. 2026): vetva pre `offer=None` v `review_hidden_from_user` '
+              '(`accounts/services/offer_visibility.py`) kontroluje súkromný profil a blok hodnoteného používateľa, ale nie '
+              '`is_active`; pri existujúcej ponuke pomocník deleguje na `offer_hidden_from_user`, ktorý od K30 neaktívneho vlastníka '
+              'skrýva. Dopad: text recenzie deaktivovaného účtu ostáva cez priame id dostupný a dá sa naň dávať lajky; prípad je '
+              'zriedkavý (ponuka musí byť zmazaná). Sondu agent nespúšťal.',
+         note='Návrh (neoverený): doplniť do vetvy `offer=None` kontrolu `is_active` hodnoteného používateľa (rovnaký tvar ako pri 339) '
+              'a testy; malá backendová oprava, môže ísť spolu s 347. Skupina a dôležitosť sú predbežný návrh agenta (súkromie ako '
+              '339, nízka dôležitosť pre zriedkavý prípad). Odhad: nízky · S.',
+         dec=None, src='K30 (kolega, 18. 11. 2026) a kontrola agenta čítaním kódu'),
+    dict(n=349, bucket=P, imp=S_, eff=EM, pkg='Bezpečnosť a produkčná odolnosť',
+         kratko='deaktivovaný účet ostáva autentifikovaný, kým platí cache autentifikácie (predvolene 24 hodín), ak sa deaktivuje bez '
+                '`save()` alebo v súbehu s vlastnou požiadavkou toho účtu',
+         what='Kolega pri K30 (18. 11. 2026, druhý commit `2f5ba6ef`, sonda mimo repozitára, len stavové kódy): po prihlásení, teplej '
+              'cache autentifikácie a `QuerySet.update(is_active=False)` bez `post_save` vráti detail vlastnej ponuky 200, hoci '
+              'databáza má `is_active=False`; to isté cez `save()` dá 401. Agent overil čítaním kódu (18. 11. 2026): '
+              '`SwaplyJWTAuthentication.get_user` (`accounts/authentication.py`) pri zásahu cache verí uloženému `is_active` a po '
+              'čítaní z databázy ho zapíše na `AUTH_USER_REDIS_CACHE_TTL_SECONDS`, predvolene 86 400 s '
+              '(`accounts/authentication_helpers.py`, riadok 53); cache sa zneplatňuje pri `save()` používateľa '
+              '(`accounts/signals.py`, `invalidate_auth_cache_after_user_save`) a výslovnými volaniami. Súbeh (čítanie z databázy '
+              'pred deaktiváciou, zápis do cache až po zneplatnení) vedie k tomu istému stavu; netestoval sa, vyplýva z poradia '
+              'riadkov. Dopad: deaktivovaný účet môže používať celé API až do vypršania cache; v kóde aplikácie sa účty deaktivujú '
+              'cez `save()` (administrácia, `anonymize_user`), takže ide o okrajové cesty (hromadný `update()`, SQL, zásah do '
+              'databázy) a súbeh. Sondu agent nespúšťal.',
+         note='NEJASNÉ: najprv rozhodnúť dôležitosť a postup; agent pripraví otázku s odporúčaním. Možnosti (neoverené): zneplatniť '
+              'cache pri každej ceste deaktivácie (hromadné operácie volajú výslovnú invalidáciu), skrátiť TTL alebo overovať '
+              '`is_active` pri každom zásahu cache (spomalí požiadavky); oprava súbehu pri zápise do cache je samostatná zmena. '
+              'Dôležitosť je predbežná (agent: stredná, lebo ide o okrajové cesty a súbeh); ak majiteľ plánuje hromadné deaktivácie '
+              'v administrácii (akcie s `update()`), zvýšiť. Súvisí s 339 (docstring v `offer_hidden_from_user` o výnimke pre '
+              'vlastníka). Odhad: stredný · M.',
+         dec=None, src='K30 (kolega, druhý commit `2f5ba6ef`, 18. 11. 2026) a kontrola agenta čítaním kódu'),
 ]

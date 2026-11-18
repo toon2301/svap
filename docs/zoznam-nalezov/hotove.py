@@ -472,6 +472,8 @@ DONE_PR_TABLE_CASTOCNE = [
      'odovzdanie nesie živé overenie 337)'),
     ('#283', 'K29', '333 (dávka 2 z 5 delenia `FeedPostComments.tsx`: kroky 1 až 3, čisté presuny do šiestich nových súborov; '
      'ručný test majiteľa 18. 11. 2026 14 z 14, dvaja kandidáti 345 a 346)'),
+    ('#284', 'e2e/komentare-257-opravy', '257 (časť: opravy po PR #281: prázdna Nástenka, výnimky obnovy tokenu v odovzdaní, presné '
+     'počty a fázy v chybových režimoch a presný stav DELETE 500; živý beh scenára komentárov 3 z 3 podľa správy Codexa)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.

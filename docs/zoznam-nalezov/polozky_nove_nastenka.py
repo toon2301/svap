@@ -83,7 +83,8 @@ NEW_ITEMS_NASTENKA = [
          dec=None, src=ZDROJ),
     dict(n=257, bucket=A, imp=N, eff=EL, pkg='Nástroje a testy',
          kratko='E2E: rozšíriť pokrytie zdieľania a ďalších tokov Nástenky (priebežný cieľ, rieši Codex); scenár komentárov je pripravený '
-                'lokálne (PR #281), opravy po ňom sú v PR #284, živý beh čaká na okno',
+                'lokálne (PR #281), opravy po ňom sú v PR #284 (zlúčené) a živý beh prešiel 3 z 3 (správa Codexa z 18. 11. 2026); šesť '
+                'variantov regresií po K29 čaká na dáta a nové okno',
          what='E2E infraštruktúra je hotová a dva testy zdieľania (zdieľanie vlastnej ponuky z profilu a zdieľanie priamo z karty na Nástenke; '
               '`e2e/sharing-from-profile.spec.ts` a `e2e/sharing-from-feed.spec.ts`) existujú. Zvyšok pokrytia je priebežný cieľ bez pevného '
               'konca, nie uzavretá úloha. Chýba viac scenárov zdieľania (z otvoreného detailu, z mobilných vrstiev, cudzie príspevky, Späť po '
@@ -115,17 +116,20 @@ NEW_ITEMS_NASTENKA = [
               '`/api/token/refresh/` a `/api/auth/token/refresh/` (`feed-comments-writes.ts`, riadok 82, ich prepúšťa a nezapočítava); '
               '(3) CodeRabbit, Minor, `diagnostics-tests/feed-comments-browser.check.ts` (riadky 80 až 85): kontrola zámerných chýb '
               'nedokazuje, že chyba bola dosiahnutá (pri `ui-delete-status` by prešla aj vtedy, keby test skončil pred vytvorením '
-              'komentára); treba overiť počty vytvorených a zmazaných komentárov a fázu zlyhania. OPRAVY PRIPRAVENÉ (Codex, PR #284, '
-              'vetva `e2e/komentare-257-opravy`, tri commity `90ee57b8`, `1e9110ae` a `e58274c4`, 7 súborov; v čase zápisu '
-              '18. 11. 2026 PR otvorený a nezlúčený, CI (`checks`, `backend-postgres`) zelené, stav zlúčenia čistý; agent '
-              'overil v kóde): (1) čakanie na `feed-list` alebo `feed-empty-state` a kontrola prázdnej Nástenky; (2) výnimky '
-              'obnovy tokenu sú v odovzdaní; (3) chybové režimy vyžadujú presné počty operácií a fázu zlyhania, nový test '
-              '`ui-delete-before-create` a presný stav DELETE 500 (503 aj chýbajúca odpoveď sa odmietnu). Podľa textu PR '
-              'lokálne 30 z 30 čistých kontrol, prehliadačová sada 13 z 13 dvakrát, TypeScript a ESLint bez chýb, bez zmeny '
-              'aplikácie a bez živého behu. Dve nové pripomienky CodeRabbitu k PR #284 (presný stav DELETE a izolácia dôvodu '
-              'odmietnutia) sú v kóde opravené neskoršími commitmi `1e9110ae` a `e58274c4`; vlákna ostávajú neuzavreté (zatvára '
-              'majiteľ). Zlúčenie PR #284 zapíše agent v ďalšej vetve. Živý beh a cielený beh špecov `feed-post-detail.spec.ts` '
-              'a `notification-click.spec.ts` po K29 čakajú na okno určené majiteľom.',
+              'komentára); treba overiť počty vytvorených a zmazaných komentárov a fázu zlyhania. OPRAVY PO PR #281 HOTOVÉ (Codex, PR #284, '
+              'vetva `e2e/komentare-257-opravy`, tri commity `90ee57b8`, `1e9110ae` a `e58274c4`, 7 súborov, zlúčené 18. 11. 2026 '
+              'o 12:29 UTC, merge `83b26a23`; agent overil v kóde, CI (`checks`, `backend-postgres`) zelené): (1) čakanie na '
+              '`feed-list` alebo `feed-empty-state` a kontrola prázdnej Nástenky; (2) výnimky obnovy tokenu sú v odovzdaní; (3) '
+              'chybové režimy vyžadujú presné počty operácií a fázu zlyhania, nový test `ui-delete-before-create` a presný stav '
+              'DELETE 500 (503 aj chýbajúca odpoveď sa odmietnu). Podľa textu PR lokálne 30 z 30 čistých kontrol, prehliadačová '
+              'sada 13 z 13 dvakrát, TypeScript a ESLint bez chýb. Dve nové pripomienky CodeRabbitu k PR #284 sú v kóde opravené '
+              'neskoršími commitmi; vlákna ostávajú neuzavreté (zatvára majiteľ). ŽIVÝ BEH (správa Codexa podľa majiteľa, '
+              '18. 11. 2026, `main` `83b26a23`, všetky tri projekty; odovzdanie je zatiaľ len lokálne, bez commitu a pushu, takže '
+              'agent nemá čo overiť): spolu 10 prešlo, 0 zlyhalo a 20 preskočených; scenár komentárov 257: 3 z 3 prešli a zmazanie '
+              'všetkých dočasných príspevkov a komentárov je overené; regresie po K29: 7 prešlo, 0 zlyhalo a 20 preskočených (14 '
+              'preskočených podľa projektu a 6 pre chýbajúce prečítané upozornenia na lajk a odpoveď v prvej dávke); nálezy 345 a '
+              '346 ostávajú otvorené, ich presné situácie beh nepokrýval; okno je uvoľnené. Ďalší krok Codexa: pripraviť '
+              'chýbajúce dáta a v novom potvrdenom okne zopakovať šesť neoverených variantov.',
          dec=None, src=ZDROJ),
     dict(n=258, bucket=A, imp=N, eff=EM, pkg='Nástenka a zdieľanie',
          kratko='pôvodný autor zdieľaného príspevku (avatar a meno) nie je klikateľný na profil',

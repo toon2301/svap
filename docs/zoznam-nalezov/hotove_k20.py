@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa, dávka K24: 336 a nález 321, ktorý uzavrela dávka K25; od Codexa 337 a 340).
+"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa, dávka K24: 336 a nález 321, ktorý uzavrela dávka K25, dávka K30: 339; od Codexa 337 a 340).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_dalsie.py` má 496 riadkov). `hotove.py` ho pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
 """
@@ -361,4 +361,24 @@ DONE_SINCE_K20 = [
                '49 z 49 čistých kontrol a 5 z 5 prehliadačových kontrol, TypeScript a ESLint bez chýb. KONTROLA AGENTA (17. 11. 2026, '
                'z GitHubu): CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené, vlákna ani pripomienky nie sú. Dopad na aplikáciu: '
                'žiadny.'),
+    dict(n=339, vetva='K30', pr='#286', zlucene=True,
+         text='HOTOVÉ (K30, PR #286, zlúčené 18. 11. 2026 o 12:22 UTC, merge `611df449`; dva commity `9fd8db45` a `2f5ba6ef`; 2 súbory, '
+               '392 pridaných a 1 odstránený riadok). MEDZERA: `offer_hidden_from_user` (`backend/accounts/services/offer_visibility.py`) '
+               'nekontroloval `is_active` vlastníka, takže ponuka účtu deaktivovaného inak než zmazaním používateľom (napríklad v '
+               'administrácii) bola cez priame id dostupná každému prihlásenému (detail 200, lajk 201 a uložený riadok), hoci vo '
+               'vyhľadávaní nie je. OPRAVA: jedna podmienka v pomocníkovi (neaktívny vlastník = skrytá ponuka pre cudzieho diváka, '
+               'výnimka pre vlastníka ostáva prvá); detail, lajk (obe kontroly, pred zámkom aj pod zámkom) a recenzie ponuky dávajú '
+               '404 rovnakého tvaru ako pri neexistujúcom id, skrytej ponuke, súkromnom profile a blokovaní, takže sa neprezradí '
+               'dôvod; `skills.py` a `offer_likes.py` sa nemenili; bez migrácie. TESTY: nový súbor '
+               '`backend/accounts/test/test_offer_inactive_owner_visibility.py` (380 riadkov, 17 testov, z toho 10 padalo na pôvodnom '
+               'kóde a 7 je strážnych), mutácie 8 z 8 zachytených a po kontrole PR ďalšie tri (telá 404 pri recenziách) 3 z 3; podľa '
+               'textov commitov celý backend na SQLite 2 607 prešlo a 24 preskočených a na PostgreSQL 16 lokálne 2 629 prešlo a 2 '
+               'preskočené, `ruff` a `black` čisté na zmenených súboroch. Druhý commit po kontrole PR: CodeRabbit mal 3 nálezy, z '
+               'toho 2 platili (docstring o neaktívnom vlastníkovi bol príliš silný, lebo cache autentifikácie ho môže ešte pustiť; '
+               'telá 404 v testoch recenzií) a 1 neplatil (DELETE lajku bez opätovnej kontroly pod zámkom: kolega vysvetlil, že obe '
+               'poradia súbehu sú prípustné); Codex review bez nálezov. KONTROLA AGENTA (18. 11. 2026, z GitHubu): CI (`checks`, '
+               '`backend-postgres`) zelené; vlákno CodeRabbitu k docstringu je opravené druhým commitom a ostáva neuzavreté (zatvára '
+               'majiteľ). Mapovanie si urobil kolega sám (rozhodnutie majiteľa 18. 11. 2026, len tentoraz). RUČNÝ TEST MAJITEĽA '
+               '(18. 11. 2026): bez chýb. Dopad na E2E: žiadny. Z K30 vznikli nálezy 347, 348 a 349 (agent overil citované miesta '
+               'čítaním kódu, sondy nespúšťal).'),
 ]
