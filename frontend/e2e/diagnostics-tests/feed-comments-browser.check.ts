@@ -117,7 +117,14 @@ for (const mode of ['ui-delete-status-503', 'ui-delete-status-no-response'] as c
     assert.equal(state.csrf, 1); assert.equal(state.writesWithCsrf, missing ? 3 : 4); assert.equal(state.unexpected, 0);
     assert.equal(state.touch, project === 'webkit-mobile' ? 4 : 0); assert.equal(state.mouse, project === 'webkit-mobile' ? 0 : 4);
     assert.deepEqual(state.phases, missing ? ['zmazanie vlastného komentára', 'upratanie podkladu'] : ['zmazanie vlastného komentára']);
-    assert.throws(() => assertCommentFault('ui-delete-status', state));
+    // Skutočné upratanie ostáva overené vyššie; tu izolujeme výhradne klasifikáciu HTTP stavu.
+    const classification = { ...state, phases: ['zmazanie vlastného komentára'], exists: false, comments: 0,
+      postsDeleted: 1, writesWithCsrf: 4, cleanup: 'verified', commentDeleteStatus: 500 };
+    assert.doesNotThrow(() => assertCommentFault('ui-delete-status', classification));
+    assert.throws(() => assertCommentFault('ui-delete-status', { ...classification, commentDeleteStatus: state.commentDeleteStatus }),
+      error => error instanceof assert.AssertionError && error.operator === 'strictEqual'
+        && error.expected === 500 && error.actual === state.commentDeleteStatus
+        && error.message.startsWith('DELETE komentára musí potvrdiť presne HTTP 500.'));
   }
 });
 

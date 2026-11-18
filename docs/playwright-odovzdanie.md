@@ -105,6 +105,41 @@ Zmenené iba päť existujúcich E2E diagnostických súborov
 dokument. Nové súbory ani migrácie nepribudli. Majiteľ výslovne schválil commit
 a push na tú istú vetvu; vlákno na GitHube neuzatvárame. Žiadny Railway beh.
 
+### Druhá pripomienka v PR #284 — izolácia dôvodu odmietnutia chýbajúceho stavu
+
+Na hlave **`1e9110ae`** bola nová Minor pripomienka platná. Skutočný pokus bez
+odpovede mal aj neoverené upratanie a dve fázy pádu. Browser kontrola preto
+odmietla pozorovanie ešte pred porovnaním HTTP stavu. Predošlá výhrada k 500/503
+už bola opravená; jej stále otvorené vlákno neznamenalo novú chybu tejto poistky.
+
+Všetky kontroly **skutočného** stavu, operácií a upratania zostávajú zachované.
+Iba samostatná kontrola klasifikácie vytvorí inak platný porovnávací snímok pre
+DELETE 500 a najprv overí, že s číslom 500 prejde. Potom zmení **len** toto pole
+na stav zachytený z browser behu. Očakáva `AssertionError` z HTTP poistky:
+`strictEqual`, očakávané číslo 500, skutočný browser stav a pevný prefix chyby.
+Odmietnutie pre zlú fázu alebo upratanie tak už nestačí. Porovnávací snímok sa
+nevypisuje a nikdy nenahrádza dôkaz o skutočnom uprataní.
+
+Overené aj priamou lokálnou mutáciou jedinej HTTP poistky v pomocníkovi:
+
+- pôvodný browser test po jej dočasnom odstránení **nesprávne prešiel 1/1**,
+  všetky tri projekty, **34,405 s**;
+- upravený browser test tú istú mutáciu **správne zachytil** hneď v prvom
+  projekte (0/1, **8,009 s**, chýbajúca očakávaná HTTP výnimka);
+- poistka bola po oboch sondách automaticky vrátená cez `finally`; jej súbor
+  nemá žiadnu zmenu proti schválenému kódu.
+
+Mení sa iba `diagnostics-tests/feed-comments-browser.check.ts` a tento dokument.
+Žiadna zmena aplikácie, živého scenára, timeoutov, retry ani pravidiel upratania.
+Bez Railway, env, účtov a relácie; rovnaká lokálna kontrola súkromných príloh.
+Aktuálny main naďalej **`a9d0fc0c`**. S vrátenou poistkou prešlo **33/33** čistých
+kontrol a cielená browser sada **2/2**, **47,265 s**, spolu **6/6 variantov**
+(503 aj chýbajúca odpoveď × tri projekty), 0 SKIP a bez retry. TypeScript celého
+E2E, ESLint a kontrola diffu: **0 chýb / 0 upozornení**. Posledný celý lokálny
+beh 15/15 patrí predošlému dodatku; teraz sa znovu overili iba oba zmenené
+browser scenáre vo všetkých troch projektoch. Oprava sa odošle na tú istú vetvu
+a PR; vlákna uzatvára majiteľ.
+
 ### Ďalší živý krok — až po novom potvrdení majiteľa
 
 Majiteľ určí samostatné okno a potvrdí nasadený čerstvý main aj súhlas s dočasným
