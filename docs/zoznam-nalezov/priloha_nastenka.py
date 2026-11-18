@@ -99,7 +99,7 @@ RIADKY = [
          ids=['261'], kde='poznámka pri nálezu'),
     dict(pdf='SkillRequest audit a UX audit nedostupného obsahu',
          stav='Nový nález, nezmapované.', ids=['264', '74', '18']),
-    dict(pdf='Verejné SEO stránky', stav='Nový nález (funkcia po štarte).', ids=['265']),
+    dict(pdf='Verejné SEO stránky', stav='Nový nález; 17. 11. 2026 presunuté z PO NASADENÍ do PRED NASADENÍM na žiadosť majiteľa, zatiaľ nemapované.', ids=['265']),
     dict(pdf='CI s PostgreSQL (testy súbehu sa na SQLite potichu preskakovali)',
          stav='Hotové: job `backend-postgres` (PostgreSQL 17) beží v CI od vetvy 157.', ids=['212']),
     dict(pdf='Rozdelenie veľkých FE súborov',

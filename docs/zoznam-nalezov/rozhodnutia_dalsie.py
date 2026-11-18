@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Rozhodnutia R41 a ďalšie (od 15. 11. 2026): R41 (výnimka z pravidla 500 riadkov pre opravu 336, rozhodnuté 15. 11. 2026), R42 (opis
 hlavného vypínača aj na počítači, rozhodnuté 16. 11. 2026), R43 (E2E scenár odznaku Žiadostí sa nerobí, rozhodnuté 16. 11. 2026) a R44
-(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026) a R50 (poistka `--repeat-each` v staršom API scenári volieb, rozhodnuté 17. 11. 2026).
+(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026), R50 (poistka `--repeat-each` v staršom API scenári volieb, rozhodnuté 17. 11. 2026) a R51 až R56 (vzhľad lajkov a komentárov, okná detailu, prehliadač fotky zo zdieľania, úchytka panela a text pri skrytých lajkujúcich, rozhodnuté 17. 11. 2026; obrázky v `navrhy/`).
 
 Samostatný súbor kvôli limitu 500 riadkov (`rozhodnutia_nastenka.py` má vyše 380 riadkov); `stav.py` ich pripája do `DECISIONS` za R13–R40.
 Čísla rozhodnutí sa nikdy nepoužívajú znova; nové rozhodnutie sa pridáva na koniec zoznamu.
@@ -143,5 +143,99 @@ DECISIONS_DALSIE = [
          kedy='Rozhodnuté 17. 11. 2026.',
          odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (a): Codex smie opraviť poistku `--repeat-each` ako '
                   'samostatnú malú vetvu (len `frontend/e2e/**`); dovtedy sa API scenár volieb s touto voľbou nespúšťa.',
+         datum='17. 11. 2026'),
+    dict(id='R51', tema='Vzhľad bubliny so zoznamom lajkujúcich na všetkých miestach, mobil aj počítač (nález 262)',
+         otazka='Ako má vyzerať otvorenie zoznamu „Páči sa im to“ pri príspevku, portfóliu, profile, ponuke, dopyte a komentári (R49: '
+                 'vzhľad sa najprv konzultuje s majiteľom)? Agent kreslil návrhy na snímkach majiteľa z mobilu aj z počítača a majiteľ ich '
+                 'upravoval po jednom mieste.',
+         odporucanie='Jedna malá bublinka s ikonou lajku pri každom mieste, ktorá otvorí ten istý existujúci zoznam; pravidlá viditeľnosti '
+                      'ostávajú podľa R20 (variant A). Pri komentároch agent najprv odporúčal ponechať dnešné klikateľné číslo; majiteľ '
+                      'chcel bublinku aj tam (R52).',
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026 schválil tieto pravidlá (obrázky v `docs/zoznam-nalezov/navrhy/`). SPOLOČNE: bublinka otvorí '
+                  'existujúci zoznam (vzhľad zoznamu sa nemení); zobrazí sa len pri aspoň jednom lajku, aj keď ho dal niekto iný; číslo pri '
+                  'srdiečku ostáva a nie je klikateľné; farba srdiečka sa nemení; svetlý režim: bublinka (237, 233, 254) s okrajom (221, '
+                  '214, 254) a srdiečko (147, 51, 234), tmavý režim: bublinka (52, 55, 64) a srdiečko (217, 179, 254); štítok pre čítačky je '
+                  'existujúci text „Páči sa im to“ (`feed.likersTitle`); preklik na profil z avatara a mena ostáva všade. MOBIL: príspevok a '
+                  'detail príspevku (text, text s fotkou, zdieľané portfólio a ponuka): bublinka úplne vpravo v riadku s ikonami, v osi s '
+                  'menu „…“ hore, číslo je bližšie k srdiečku (`mobil-prispevok.png`); fotka na celú obrazovku: bublinka dole vpravo na '
+                  'mieste „…“, ktoré sa presunie hore naľavo od krížika (`mobil-fotka.png`); portfólio: bublinka vpravo dole v riadku s '
+                  'názvom, pravý okraj presne pod pravým okrajom lajku hore, dlhý názov sa skráti trojbodkou len pri zobrazenej bublinke, '
+                  'vlastný aj cudzí profil rovnako, detail položky sa nemení (`mobil-portfolio.png`); profil: palec s číslom spolu v jednej '
+                  'bublinke, len zobrazenie (nie tlačidlo lajku, to ostáva na cudzom profile bezo zmeny), pri nule NIE JE ani bublinka, ani '
+                  'čiara, celý riadok zmizne (platí aj na počítači; agent to berie tak, že aj s miestom) (`mobil-profil.png`); ponuka a '
+                  'dopyt (obrazovka „Popis“): srdiečko s číslom spolu v bublinke, väčšia a trochu vyššie, ťuk na text „Páči sa mi to“ aj na '
+                  'bublinku otvorí zoznam, text sa nepodčiarkuje, zobrazuje sa vždy aj pri nule a pri nule sa nič neotvorí; platí aj vo '
+                  'výsledkoch vyhľadávania, lebo ide o tú istú kartu a obrazovku (`mobil-ponuka.png`). POČÍTAČ: karta na Nástenke a okná '
+                  'príspevku (len text, s fotkou): rovnako ako na mobile, v osi s menu „…“ (`pc-prispevok.png`); portfólio: veľká aj malá '
+                  'karta rovnako, rozloženie portfólií sa nemení (`pc-portfolio.png`); profil: celý prvok „Palec hore • N“ v jednej '
+                  'bublinke, čiary po stranách ostávajú (`pc-profil.png`); ponuka a dopyt (zadná strana karty): bublinka okolo srdiečka a '
+                  'čísla bez zväčšovania a posúvania, aj pri nule (`pc-ponuka.png`); rovnakú kartu ponuky používa profil, vyhľadávanie, '
+                  'Sledovania aj Žiadosti, takže bublinka bude vo všetkých. KOMENTÁRE a odpovede: pozri R52; text pri skrytých lajkujúcich: '
+                  'pozri R56.',
+         datum='17. 11. 2026'),
+    dict(id='R52', tema='Vzhľad komentárov a odpovedí vrátane bubliny pri lajkoch (nález 261, skupina 7), mobil aj počítač',
+         otazka='Pôvodné priania majiteľa (nález 261, skupina 7): plochý vzhľad komentárov bez sivých bublín, vnorené a prepojené '
+                 'odpovede, jemný oddeľovač, „Zobraziť odpovede (N)“ bližšie k riadku akcií. Majiteľ 17. 11. 2026 chcel k nim pridať '
+                 'bublinku pri lajkoch komentárov a odpovedí a návrh vzhľadu prebrať hneď (R49), kód až po delení (R47). Ako majú '
+                 'komentáre vyzerať?',
+         odporucanie='Jeden vzhľad pre všetky miesta (komentáre kreslí vždy ten istý komponent `FeedPostComments`): plochý riadok bez sivej '
+                      'bubliny a bublinka s lajkom rovnako ako pri príspevku. Agent pôvodne odporúčal komentáre nechať, kým majiteľ '
+                      'nezvolil bublinku.',
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026 schválil návrh („presne tak som si to predstavoval“): plochý vzhľad bez sivých bublín (avatar, '
+                  'meno, text a pod nimi riadok akcií); bublinka s lajkom (bez čísla) vpravo v riadku akcií, aj pri odpovedi, len pri aspoň '
+                  'jednom lajku, číslo pri srdiečku ostáva a nie je klikateľné (zoznam otvára bublinka); „Zobraziť / Skryť odpovede“ bližšie '
+                  'pod riadkom akcií ako jemný text s čiarkou; odpovede so zvislou čiarou z avatara, menší avatar, bez bubliny; jemný '
+                  'oddeľovač medzi komentármi najvyššej úrovne; kôš, „Upraviť“ a pole na komentár zatiaľ ostávajú ako dnes; čas pri '
+                  'komentári ostáva ako dnes (mobil áno, počítač nie); preklik na profil z avatara a mena ostáva pri komentári aj pri '
+                  'odpovedi. Obrázky `mobil-komentare.png` (miesto pri príspevku a miesto nad fotkou, oba rovnaký vzhľad) a '
+                  '`pc-komentare.png` (pravý stĺpec okna). Zoznam lajkujúcich pri komentároch a odpovediach už funguje (číslo vedľa '
+                  'srdiečka), nová je bublinka. Implementácia v jednej dávke až po delení `FeedPostComments.tsx` (R47); kolega vzhľad '
+                  'nemení bez tohto schváleného vzhľadu v karte (R49).',
+         datum='17. 11. 2026'),
+    dict(id='R53', tema='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch, okno len s textom užšie (nález 344)',
+         otazka='Dnes sú dva stĺpce (hlavička, text, fotka a akcie vľavo, komentáre vpravo) len pri príspevku s fotkou; zdieľaná ponuka '
+                 'a portfólio majú jeden stĺpec, v ktorom sa karta orezáva, a okno len s textom je široké 864 px, takže krátky text aj '
+                 'komentáre sú roztiahnuté. Aké rozloženie majú mať? (a) Zdieľaná ponuka a portfólio v dvoch stĺpcoch ako pri fotke. '
+                 '(b) Okno len s textom užšie (asi 580 px) alebo (c) tiež v dvoch stĺpcoch.',
+         odporucanie='(a) podľa želania majiteľa; pri texte (b): je to najmenšia zmena, text ani komentáre nie sú roztiahnuté a bublinka s '
+                      'lajkom je blízko textu; (c) zjednocuje rozloženie, no pri krátkom texte by bol ľavý stĺpec prázdny a zmena je väčšia '
+                      '(jednostĺpcové rozloženie by sa zrušilo).',
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026: (a) zdieľaná ponuka a portfólio v dvoch stĺpcoch s rovnakou logikou ako pri fotke (pevná výška '
+                  'okna, karta vyplní zvyšok ľavého stĺpca, riadok akcií stále dole, text so „Viac“, komentáre vpravo s poľom dole); klik '
+                  'na kartu ostáva (otvorí ponuku alebo portfólio); zdieľaný príspevok sa nemení; a (b) okno len s textom užšie (asi 580 '
+                  'px, hore príspevok, pod ním komentáre, pole na komentár pri spodku); okno s fotkou, ponukou a portfóliom ostáva 864 px. '
+                  'Obrázky `pc-okno-ponuka.png` a `pc-okno-text.png` (možnosť A). Ide ako nález 344.',
+         datum='17. 11. 2026'),
+    dict(id='R54', tema='Prehliadač fotky otvorený zo zdieľaného príspevku na mobile ukazuje komentáre pôvodného príspevku',
+         otazka='Majiteľ otvoril fotku zo zdieľaného príspevku a panel komentárov nad fotkou bol prázdny, hoci zdieľanie malo 11 '
+                 'komentárov. Agent overil čítaním kódu: ťuk na fotku v zdieľanom príspevku otvorí `FeedSharedPhotoViewer`, ktorý dotiahne '
+                 'PÔVODNÝ príspevok, takže lajky, komentáre a zdieľanie vo vrstve patria originálu (ten mal 0 komentárov). Nie je to chyba '
+                 'načítania. (a) Nechať: komentáre, lajky a zdieľanie patria v prehliadači fotky pôvodnému príspevku (ako na Facebooku; '
+                 'jeden príspevok = jeden prehliadač). (b) Ukázať komentáre zdieľania.',
+         odporucanie='(a): vo vrstve by sa inak miešali dva príspevky (fotka a hlavička originálu, komentáre zdieľania).',
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (a): ostáva ako dnes. Nevzniká nález.',
+         datum='17. 11. 2026'),
+    dict(id='R55', tema='Úchytka panela komentárov nad fotkou na mobile (nález 343)',
+         otazka='Sivý kruh hore v paneli komentárov nad fotkou je úchytka (potiahnutie nadol alebo ťuk panel zatvorí); kvôli globálnemu '
+                 'pravidlu `button { min-height: 36px }` je z pôvodne 6 px vysokej úchytky ovál 40×36 px. Čo s ním? (a) Tenká úchytka '
+                 '40×6 px, ako sa pôvodne mala zobrazovať. (b) Šípka nadol (staršie prianie z nálezu 261). (c) Bez úchytky.',
+         odporucanie='(a): obvyklý znak „potiahni nadol“; ťuk aj potiahnutie fungujú ďalej a neviditeľná plocha na ťuk má aspoň 44 px.',
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (a): tenká úchytka 40×6 px (`mobil-uchytka.png`). Ide ako nález 343.',
+         datum='17. 11. 2026'),
+    dict(id='R56', tema='Zoznam lajkujúcich, keď sú všetci lajkujúci skrytí (súkromné, blokované alebo neaktívne účty)',
+         otazka='Číslo pri srdiečku zahŕňa aj skrytých lajkujúcich, takže zoznam môže byť prázdny, hoci číslo je väčšie ako nula; dnes sa '
+                 'ukáže „Zatiaľ nikto.“ Čo má zoznam ukázať? (a) Nechať „Zatiaľ nikto.“ (b) Neutrálny text „Zoznam lajkujúcich nie je '
+                 'dostupný.“, ktorý nehovorí prečo (R25: neprezradiť súkromie). (c) Divákovi bublinku nezobraziť (server by musel povedať '
+                 'počet viditeľných lajkujúcich).',
+         odporucanie='(b): pri čísle 2 by „Zatiaľ nikto.“ pôsobilo ako chyba; (c) je väčšia zmena na serveri. Pri nule sa zoznam podľa '
+                      'R51 neotvára, takže „Zatiaľ nikto.“ ostáva len pre výnimočný prípad.',
+         kedy='Rozhodnuté 17. 11. 2026.',
+         odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (b): text „Zoznam lajkujúcich nie je dostupný.“ (preklad do šiestich '
+                  'jazykov pri implementácii nálezu 262).',
          datum='17. 11. 2026'),
 ]
