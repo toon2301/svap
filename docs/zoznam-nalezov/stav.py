@@ -36,8 +36,12 @@ ZMENY = [
       'že stav okna vlastní `FeedPostDetailOverlay.tsx`. (4) Nové rozhodnutie R57 (oprava 345) čaká na majiteľa. (5) '
       'Pripravené dve dávky dopredu bez mapovania agentom (rozhodnutie majiteľa): K38 (delenie, dávka 4 z 5: kroky 5 a 6) a '
       'K39 (oprava 345 podľa odporúčania R57); oprava 346 (K40) ide po K38. S Codexom ešte prebieha dlhšia práca; cielený beh '
-      'po K37 čaká na nové okno. (6) Prehľad: nálezy 1–350 (nový 350), zatvorené 14, hotové 135, PRED 51, PO 130; čakajúcich '
-      'rozhodnutí 10 z 57. Dopad na E2E: žiadny na špecy; po oprave 345 a 346 doplní Codex kontroly (pozri nálezy).'),
+      'po K37 čaká na nové okno. (6) Kontrola CodeRabbitu k PR #290 (1 pripomienka, platná): karta K39 tvrdila, že pri ceste '
+      'cez kartu listener nič neurobí; listener však môže v tej istej obsluhe kliknutia vidieť zastaraný cieľ a okno zavrieť '
+      'druhýkrát (predčasné zhasnutie príznaku `closing` v `feedOverlayHistory.ts`); karta teraz vyžaduje čítanie aktuálneho '
+      'stavu a test sekvencie so zatvorením s `keepHistory` aj bez neho, doplnené aj pri nálezu 345 a v R57; vlákno zatvára '
+      'majiteľ. (7) Prehľad: nálezy 1–350 (nový 350), zatvorené 14, hotové 135, PRED 51, PO 130; čakajúcich rozhodnutí 10 z '
+      '57. Dopad na E2E: žiadny na špecy; po oprave 345 a 346 doplní Codex kontroly (pozri nálezy).'),
     ('18. 11. 2026',
       'Vetva 186 (vychádza z `main` `83b26a23`, teda po PR #284; po zlúčení PR #287 doplnená o jeho zápis a opravená po '
       'kontrole CodeRabbitu k PR #288). (1) Zlúčené: PR #285 (vetva 185; 18. 11. 2026 o 11:27 UTC, merge `701b7808`), PR #286 '

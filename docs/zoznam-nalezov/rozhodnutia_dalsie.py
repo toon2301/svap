@@ -250,6 +250,8 @@ DECISIONS_DALSIE = [
                       '(nález 350) a budúce miesta; prototyp kolegu prešiel (7 súvisiacich sád, 220 testov a celý Jest bez zmeny testov). '
                       '(b) rieši príčinu, no nerieši zoznam lajkujúcich a vyžaduje úpravu testu v súbore nad 500 riadkov; ak sa neskôr '
                       'ukáže potreba, ide samostatne. Riziko (a): po „Späť“ z profilu sa má okno znova otvoriť z adresy ako pri hlavičke '
-                      '(podľa kódu, sondou neoverené), preto je v karte K39 ručný test aj na túto cestu.',
+                      '(podľa kódu, sondou neoverené), preto je v karte K39 ručný test aj na túto cestu. Druhé riziko (a): listener môže v tej istej obsluhe kliknutia '
+                      'vidieť zastaraný cieľ a zavrieť okno druhýkrát (predčasné zhasnutie príznaku `closing` v histórii), preto karta K39 '
+                      'vyžaduje čítanie aktuálneho stavu a test sekvencie.',
          kedy='Pred poslaním karty K39 kolegovi; karta je napísaná podľa odporúčania.'),
 ]
