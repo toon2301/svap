@@ -476,6 +476,8 @@ DONE_PR_TABLE_CASTOCNE = [
      'počty a fázy v chybových režimoch a presný stav DELETE 500; výsledok živého behu je pri PR #287)'),
     ('#287', 'e2e/komentare-257-overenie', '257 (časť: zapísané živé overenie na `main` `83b26a23`: komentáre 3 z 3 s overeným '
      'uprataním a regresie po K29 7 / 0 / 20; len dokumentácia Codexa)'),
+    ('#289', 'K37', '333 (dávka 3 z 5 delenia `FeedPostComments.tsx`: krok 4, hľadanie cieľa do `useFeedCommentsSeek.ts`; ručný '
+     'test majiteľa bez nových nálezov)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.

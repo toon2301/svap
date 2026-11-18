@@ -1,10 +1,60 @@
 # -*- coding: utf-8 -*-
-"""Starší denník zmien dokumentu (12. 11. 2026 až 12. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
+"""Starší denník zmien dokumentu (12. 11. 2026 až 13. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_STARSIE` (z `zmeny_starsie.py`). Nový záznam sa pridáva na začiatok `stav.ZMENY`.
 """
 
 ZMENY_STARSIE_2 = [
+    ('13. 11. 2026',
+      'Vetva 174 (vychádza z `main` `203e8d14`, teda po PR #259; main je zlúčený do vetvy). (1) K20 (PR #258, zlúčené 12. '
+      '11. 2026 o 21:56 UTC; päť commitov podľa karty a päť opráv po kontrolách botov): etapa 3a nálezu 321 je hotová vo '
+      'frontende (sedem volieb zo servera, kategórie bez lokálneho stavu s kostrou počas načítania, hlavný vypínač podľa '
+      'R35, premenovaná kategória podľa R34, preklady) spolu s kódom opravy 319 a štyrmi docstringami; nález 321 ostáva '
+      'otvorený pre výzvu na push (etapa 3b), rozhodnutie R39 a E2E (etapa 4), nález 319 pre ručný test na iPhone. Kontrola '
+      'agenta po zlúčení z GitHubu a z histórie: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené na hlavičke PR, '
+      'štyri platné pripomienky botov sú opravené a tri vlákna na GitHube ostali neuzavreté (jedno je chybné tvrdenie Codex '
+      'P1, že autorom je Codex, hoci všetkých desať commitov má autora Claude). Samostatná strana kolegu sa k agentovi '
+      'nedostala (krok 0 mapovania 319), preto príčina pôvodného pozorovania pri 319 ostáva nezdokumentovaná. (2) Oprava '
+      'vyhľadávania (nový nález 329, vetva 175, PR #259, zlúčené 13. 11. 2026): hlásenie majiteľa „používateľ A sa nenájde '
+      'vo vyhľadávaní“ spôsobil superuser (zámer: administrátorské účty sa vo vyhľadávaní nezobrazujú), no pri mapovaní sa '
+      'našla iná chyba na PostgreSQL: mená s písmenami ł, ß, đ, ø, æ a œ sa nenašli ani pri presnom zadaní; opravené jedným '
+      'výrazom a testami, nasadené, kontrola CodeRabbitu prešla. (3) Ručné testy majiteľa po K20 (13. 11. 2026, počítač aj '
+      'mobil, ešte prebiehajú) našli dve chyby, obe zmapované bez zmeny kódu: nový nález 330 (pri vypnutej kategórii '
+      '„Žiadosť o zručnosť“ sa pri novej žiadosti stále rozsvieti číselná gulička pri Žiadostiach; podľa kódu to zodpovedá '
+      'rozhodnutiu R35, majiteľ očakáva inak, preto nové rozhodnutie R39) a nový nález 331 (po úspešnom pridaní recenzie '
+      'ostane pri ďalšom otvorení okna „Pridať recenziu“ tlačidlo zakázané na „Načítavam…“; reprodukované testom v '
+      'oddelenej kópii v mobilnom aj desktopovom okne, oprava je jeden riadok v dvoch súboroch). (4) Správa Codexa z 13. '
+      '11. 2026 (lokálne úpravy na vetve `e2e/223-dokazy-limit-328`, nič nespustené proti Railway, prijatý základ ostáva '
+      '427 / 2 / 303): dôkazový fixture v piatich špecoch, nové údaje pri obnove relácie a opravený test 328; podrobnosti v '
+      '223 (dodatok 13. 11.) a v 328. (5) Poradie: K21 navrhuje agent ako malé opravy 331, 325 a (po R39) 330; výzvu na '
+      'push (etapa 3b nálezu 321) navrhuje posunúť do K22. Dopad na E2E: K20 zmenila štruktúru Nastavení → Upozornenia '
+      '(nové `data-testid` kategórií sú pre Codexa k dispozícii); oprava 331 mení stav tlačidla v okne recenzie.'),
+    ('12. 11. 2026',
+      'Vetva 174 (vychádza z `main` `73173920`, teda po PR #257, K19). (1) K19 (PR #257, zlúčené 12. 11. 2026 o 13:02 UTC; '
+      'štyri commity a dve opravy po CodeRabbite): etapy 1 a 2 nálezu 321 sú hotové na serveri (päť predvolene zapnutých '
+      'polí s migráciou `0126`, sedem volieb v API, tabuľka typ → kategória a kontrola v `create_notification`); nález 321 '
+      'ostáva otvorený pre rozhranie (etapa 3) a E2E (etapa 4). Majiteľ PR zlúčil po kontrole CodeRabbitu ešte pred '
+      'kontrolou agenta; agent ju urobil po zlúčení: CI (`checks`, `backend-postgres`) je zelené na PR aj na `main` (beh č. '
+      '1184), Codex bez nálezov, CodeRabbit mal v prvom kole tri pripomienky (dve kolega opravil, tretia o docstringoch v '
+      'štyroch upravených testoch ostáva otvorená a je dôsledok karty K19, ktorá zakazovala inú úpravu existujúcich '
+      'testov), druhé kolo bez pripomienok; kód sedí na kartu aj na R34; lokálne prešlo 325 testov, `makemigrations '
+      '--check` bez zmien a tri vlastné mutácie tabuľky test zachytil 3 z 3. Samostatná strana kolegu nebola potrebná '
+      '(nález JASNÝ, overenie je v commitoch) a nové číslované nálezy z dávky vznikli 0. Manuálne testy majiteľa po '
+      'nasadení nenašli nález. (2) Výsledok Codexa (celý beh na `main` `73173920`, 14:33 až 15:11 UTC): 377 prešlo, 23 '
+      'padlo a 362 preskočených; beh nie je prijatý (základ ostáva 427 / 2 / 303). Dva pády sú známe (č. 1 a č. 3), 21 je '
+      'nových voči základu; pri trojnásobnom opakovaní dalo týchto 21 pádov 47 prešlo, 4 padli a 12 preskočených. Väčšina '
+      'pádov je príprava, v ktorej požiadavka na API ostala bez odpovede do konca testu, päť špecov nemá pôvodný blok '
+      'dôkazov a päť odmietnutých obnov 403 v troch testových pokusoch patrí k nálezu 223 (dodatok 12. 11.). Agent z čísel '
+      'v správe zistil, že údaj „zlyhanie po 22 až 24 s“ je len spodná hranica (požiadavka sa označí za zlyhanú až '
+      'zatvorením stránky na konci testu), a overil v kóde, že K19 žiadny z dotknutých koncových bodov nemenila. Aplikácia '
+      'ani testy sa nemenili; Codex nenašiel dôkaz chyby aplikácie. (3) Nový nález 328: pád č. 16 '
+      '(`offer-watch-pagination-errors`, mobilný variant) je medzera E2E testu pri limite piatich sledovaní, nie chyba '
+      'aplikácie (agent overil v `OfferWatchMobileListScreen.tsx`); opravu navrhuje Codex a čaká na súhlas majiteľa. '
+      'Ostatné návrhy Codexa (dôkazový fixture do piatich špecov, porovnanie Windows a Docker, API test siedmich volieb) sú '
+      'v 223 a čakajú na súhlas. (4) Nový krok pri 223: kontrola logov služby frontend (Next) v oknách pádov. (5) Poradie: '
+      'K20 je etapa 3a nálezu 321 spolu s 319 a štyrmi docstringami (karta `karty/K20.md`), K21 toast pri 325 a výzva na '
+      'push (R36 a, etapa 3b). Dopad na E2E: K19 žiadny; K20 zmení štruktúru Nastavení → Upozornenia a Codex po jej '
+      'nasadení doplní E2E (etapa 4).'),
     ('12. 11. 2026',
       'Vetva 173, doplnok po kontrole CodeRabbitu (PR #256, hlavička `8f5ada90`; CI `checks` a `backend-postgres` zelené, '
       'Codex bez nálezov, názov PR „173“ je len neurčitá kontrola). (1) Tri pripomienky CodeRabbitu sú platné a opravené: '

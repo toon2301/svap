@@ -140,7 +140,9 @@ NEW_ITEMS_NASTENKA = [
               '346 ostávajú otvorené: scenáre neotvárajú profil autora komentára a nekontrolujú celý komentár vo viewporte; beh '
               'nebol cielený test K30 (339). Ďalšie overenie šiestich variantov potrebuje dohodnutú prípravu dát a nové potvrdené '
               'okno majiteľa. Odovzdanie zaznamenáva aj trvalý pokyn majiteľa z 18. 11. 2026: Codex po dokončení práce a '
-              'úspešných kontrolách sám commitne a pushne na pracovnú vetvu (PR, zlúčenie a nasadenie ostávajú majiteľovi).',
+              'úspešných kontrolách sám commitne a pushne na pracovnú vetvu (PR, zlúčenie a nasadenie ostávajú majiteľovi). Beh z PR #287 platí pre `main` '
+              '`83b26a23` (po K29 a K30, pred K37); po K37 (hľadanie cieľa) a ďalších dávkach delenia treba cielený beh zopakovať v '
+              'novom okne. S Codexom ešte prebieha dlhšia práca (majiteľ 18. 11. 2026); nová práca pre neho zatiaľ nie je.',
          dec=None, src=ZDROJ),
     dict(n=258, bucket=A, imp=N, eff=EM, pkg='Nástenka a zdieľanie',
          kratko='pôvodný autor zdieľaného príspevku (avatar a meno) nie je klikateľný na profil',
