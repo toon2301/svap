@@ -109,7 +109,7 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
-               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie (K26), dávka 1 z 5 (K28) a dávka 2 z 5 (K29) hotové, ďalšia je dávka 3 z 5 (krok 4)',
+               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29) a dávka 3 z 5 (K37) hotové, ďalšia je dávka 4 z 5 (kroky 5 a 6; K38)',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov rozdelia po jednom: '
                '`feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a `feed/FeedPostMobileDetail.tsx` 594 '
                '(počty agent overil 13. 11. 2026). Delenie nesmie zmeniť správanie ani vzhľad; každý súbor ide vo vlastnej vetve s '
@@ -176,9 +176,26 @@ NEW_ITEMS_K14 = [
                'HTML ani existujúce testy sa v PR nemenili; dotknutý je jediný súbor nad 500 riadkov (`FeedPostComments.tsx`, výnimka '
                'R23). Kandidáti kolegu: žiadni. RUČNÝ TEST MAJITEĽA (18. 11. 2026): 14 z 14 vykonaných, 12 prešlo bez novej chyby v '
                'hodnotenom rozsahu a 2 prešli čiastočne (testy 6 a 13); z nich vznikli kandidáti 345 (počítač: detail príspevku ostane '
-               'otvorený po prechode na profil autora komentára) a 346 (iPhone: nový komentár nie je celý viditeľný). Ďalšia dávka je '
-               '3 z 5 (krok 4: hľadanie cieľa v hooku): karta K37 (`karty/K37.md`) je pripravená 18. 11. 2026 s bránou, kolega ju '
-               'začne až po výsledku K36 (mapovanie 345 a 346).',
+               'otvorený po prechode na profil autora komentára) a 346 (iPhone: nový komentár nie je celý viditeľný). MAPOVANIE KANDIDÁTOV K36 (18. 11. 2026): '
+               'oba sú starší stav, nie dôsledok K29; príčiny sú v nálezoch 345 a 346 (`karty/K36_vysledok.md`), 345 sa opraví mimo '
+               '`FeedPostComments.tsx`, 346 patrí do kroku 5. DÁVKA 3 Z 5 HOTOVÁ (K37, PR #289, zlúčené 18. 11. 2026 o 17:51 UTC, '
+               'merge `e10a2256`; commit `c1480fae`; 2 súbory, 292 pridaných a 219 odstránených riadkov): krok 4 plánu, hľadanie '
+               'cieľa z upozornenia sa presunulo do nového hooku `useFeedCommentsSeek.ts` (287 riadkov), `FeedPostComments.tsx` '
+               '1 098 → 884 riadkov (presunuté 224 riadkov v štyroch blokoch); čistý presun, správanie, DOM, `data-testid` ani '
+               'vzhľad sa nemenia. PODĽA TEXTU COMMITU: skript poskladal pôvodný súbor bajt po bajte (jediný rozdiel je jedna '
+               'pridaná závislosť), celý Jest 609 sád a 9 167 testov prešlo pred zmenou aj po nej, odtlačok HTML 10 z 10 bezo zmeny, '
+               '`tsc`, ESLint a kontrola prekladov čisté, lokálny build pri prvom behu opäť `SecurityFatalError` a druhý prešiel '
+               '(pozri 341); mutácie 24, zachytených 21 a prežili 3 (C9 len zdržanie; W4 a W5, `loadingMore` vždy false a '
+               '`loadingRepliesFor` vždy null, prežili aj v pôvodnom kóde, takže ide o existujúcu medzeru v testoch: poistky proti '
+               'súbehu pri hľadaní nestráži žiadny test). Odchýlky od karty: v efekte hľadania pribudla 13. závislosť '
+               '`setExpandedReplies` (stabilný setter, vyžaduje ju `react-hooks/exhaustive-deps`), nový súbor má 287 riadkov '
+               'namiesto odhadovaných 255 a komentár nad `commentsRef` stojí priamo nad ním. Brána K37 splnená (výsledok K36 '
+               'prečítaný). KONTROLA AGENTA z GitHubu a z `main`: CI (`checks`, `backend-postgres`) aj CodeRabbit zelené, vlákna '
+               'nie sú; počty riadkov na `main` sedia (884 a 287); odtlačok HTML ani existujúce testy sa v PR nemenili; dotknutý je '
+               'jediný súbor nad 500 riadkov (`FeedPostComments.tsx`, výnimka R23); prvý riadok commitu má 69 znakov. Kandidáti '
+               'kolegu: žiadni. RUČNÝ TEST MAJITEĽA po K37 (18. 11. 2026): bez nových nálezov. Ďalšia dávka je 4 z 5 (kroky 5 a 6: '
+               'posun a indikátor nových, načítanie a polling): karta K38 (`karty/K38.md`) je pripravená 18. 11. 2026, mapovanie si '
+               'robí kolega sám; opravy 346 (po kroku 5) a 338 (po kroku 6) idú samostatne po nej.',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=338, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='komentáre: zoznam ostane na „Načítavam…“, keď sa počas prvého načítania úspešne pridá komentár; oprava až po '
@@ -199,7 +216,7 @@ NEW_ITEMS_K14 = [
          dec='ROZHODNUTIE R48', src='K26 (kolega) a kontrola agenta čítaním kódu (16. 11. 2026)'),
     dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
          kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); lokálny build '
-                'pri prvom behu skončil `SecurityFatalError` (K28 raz, K29 v každom z troch krokov; druhý beh prešiel); upgrade ako samostatná '
+                'pri prvom behu skončil `SecurityFatalError` (K28 raz, K29 v každom z troch krokov, K37 raz; druhý beh vždy prešiel); upgrade ako samostatná '
                 'dávka závislostí',
          what='Kolega pri K28 (17. 11. 2026): nainštalovaný Next.js 16.4.3 (`frontend/package.json` `^16.4.3`, `package-lock.json` '
                '16.4.3) je v rozsahu upozornenia GHSA-mfr8-8qww-v76h (stupeň moderate, rozsah 16.3.0 až 16.4.4, oprava je '
@@ -210,7 +227,8 @@ NEW_ITEMS_K14 = [
                '(`.github/workflows/dependency-audit.yml`) padá až od stupňa high, takže tento nález nenahlási. Neoverené: či '
                'build na Railway niekedy skončí rovnakou chybou (treba pozrieť log nasadenia). Opakovanie v K29 (18. 11. 2026, podľa textov '
                'commitov kolegu): v každom z troch krokov skončil prvý lokálny `npm run build` rovnakým výpisom `SecurityFatalError` a '
-               'druhý beh prešiel, takže sa to opakuje pri prvom builde.',
+               'druhý beh prešiel, takže sa to opakuje pri prvom builde. Opakovanie v K37 (18. 11. 2026): prvý lokálny build znova '
+               '`SecurityFatalError`, druhý prešiel.',
          note='Návrh (neoverený): upgrade `next` na opravenú verziu v rámci rozsahu `^16.4.3` ako samostatná dávka závislostí '
                '(tretí druh rizika ide vždy samostatne): `package.json` a `package-lock.json`, celý Jest, `tsc`, build, kontrola '
                'prekladov a ručný dymový test majiteľa po nasadení. Majiteľ by mal pozrieť posledné nasadenia na Railway (zelené, '
@@ -273,38 +291,83 @@ NEW_ITEMS_K14 = [
                'nový scenár komentárov (257) používajú okno len s textom, treba ich pozrieť. Vzhľad schválil majiteľ (R49, R53; obrázky '
                '`navrhy/pc-okno-ponuka.png` a `navrhy/pc-okno-text.png`). Odhad: nízky · M.',
          dec='ROZHODNUTIE R53', src='majiteľ (17. 11. 2026)'),
-    dict(n=345, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
-         kratko='okno detailu príspevku na počítači ostane otvorené po prechode na profil autora komentára (kandidát z ručného testu '
-                'K29, kolega mapuje)',
+    dict(n=345, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='okno detailu príspevku na počítači ostane otvorené po prechode na profil autora komentára, keď bolo otvorené z upozornenia '
+                'alebo z adresy; príčina nájdená (K36): dve kópie stavu okna; oprava ide ako K39 po odpovedi na R57',
          what='Majiteľ pri ručnom teste K29 (18. 11. 2026, test 6, počítač): po kliknutí na meno alebo avatar autora komentára sa otvorí '
               'správny profil, ale okno detailu pôvodného príspevku ostane otvorené. Očakávanie: detail príspevku sa po prechode na '
-              'profil zatvorí. Agent nemapoval: majiteľ 18. 11. 2026 určil, že si to tentoraz zmapuje kolega sám. Neznáme je, či sa to '
-              'dialo aj pred K29 (K29 boli čisté presuny a odtlačok HTML sa nezmenil, no zatváranie okna ho nekryje).',
-         note='NEJASNÉ: kolega najprv mapuje (kde sa prechod na profil spúšťa, prečo sa okno nezatvorí, či ide o starší stav alebo '
-              'dôsledok K29; porovnať s `main` pred PR #283, teda `8f059cf7`) a vráti zistenie; kód nemení, kým majiteľ nepovie. '
-              '`FeedPostComments.tsx` má po K29 1 098 riadkov, takže oprava logiky v ňom počká na zodpovedajúci krok delenia (R23, ako '
-              'pri 338 a 342); oprava mimo neho môže ísť skôr. Po oprave sa dá doplniť E2E kontrola (Codex). KARTA K36 (`karty/K36.md`, '
-              '18. 11. 2026): mapovanie si robí kolega sám (rozhodnutie majiteľa); Codexov beh z 18. 11. 2026 túto situáciu '
-              'nepokrýval. Odhad (neoverený): stredný · M.',
-         dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 6)'),
+              'profil zatvorí. MAPOVANIE (kolega, K36, 18. 11. 2026; agent overil kľúčové tvrdenia čítaním kódu na `main` `60c28963`, '
+              'sondy nespúšťal; celé znenie je v `karty/K36_vysledok.md`): STARŠÍ STAV, nie dôsledok K29 (kód aj merania sú pred K29 a po '
+              'nej rovnaké; strážca je v dnešnom tvare od 10. 9. 2026 a dvojitý stav od 30. 8. 2026). CESTA: klik na avatar alebo meno '
+              '(`FeedCommentItem.tsx`), potom `openCommentAuthorProfile` (`FeedPostComments.tsx`) a `openUserProfile` '
+              '(`feedProfileNavigation.ts`): najprv `beforeNavigate`, potom udalosť `goToUserProfile`, ktorú okno nezatvára. PRÍČINA: '
+              'stav okna nevlastní `FeedPostDetailOverlay`, ale hook `useFeedOverlayTarget.ts` (65 riadkov; vykresľuje ho '
+              '`DashboardContentView.tsx`). Kontext okna (`FeedPostOverlayContext.tsx`) drží druhú kópiu cieľa a len tú číta strážca '
+              'komentárov `if (postOverlay?.target)`. Kópiu plní iba otvorenie cez kontext (karta príspevku). Okno otvorené z upozornenia '
+              '(`useNotificationNavigation.ts`) alebo priamo z adresy (`usePathModuleEffects.ts`) volá funkcie hooku, kontext o ňom '
+              'nevie, strážca je nepravdivý a okno sa nezavrie. Krížik, Escape a klik mimo okna čistia len hook, takže v kontexte ostane '
+              'zastaraný cieľ. Hlavička príspevku sa zatvára vždy, lebo rozhoduje podľa `isDetail`, nie podľa kontextu. DÔKAZ (sonda '
+              'kolegu, `8f059cf7` aj `main` rovnako): okno otvorené kartou po prekliku zmizne; otvorené upozornením alebo adresou ostane; '
+              'po karte, krížiku a upozornení zmizne len omylom (zastaraný cieľ).',
+         note='MAPOVANIE HOTOVÉ (K36). OPRAVA (návrh kolegu, všetko pod 500 riadkov; `FeedPostComments.tsx` ani `DashboardContent.tsx` '
+              'netreba). MOŽNOSŤ A (odporúčaná kolegom aj agentom): `useFeedOverlayTarget.ts`, efekt, ktorý pri otvorenom okne na '
+              '`goToUserProfile` (a `goToMyProfile`) okno zavrie s `keepHistory`; zavrie ho aj pri prekliku zo zoznamu lajkujúcich (350) '
+              'a z budúcich miest; prototyp: sonda zatvorí okno pri všetkých troch spôsoboch otvorenia, 7 súvisiacich sád (220 testov) '
+              'aj celý Jest prešli bez zmeny testov. MOŽNOSŤ B (oprava príčiny): kontext okna dostane nepovinný riadený `target` '
+              '(`FeedPostOverlayContext.tsx` 104 riadkov, `DashboardContentView.tsx` 414 riadkov, jeden riadok); prototyp opraví aj '
+              'komentáre a zastaraný cieľ, no zlyhá jeden existujúci test (presná sada vlastností poskytovateľa, '
+              '`DashboardContentView.test.tsx`, 895 riadkov, treba upraviť jednu aserciu) a nerieši zoznam lajkujúcich. RIZIKÁ A: '
+              'všeobecné pravidlo (každý preklik na profil pri otvorenom okne ho zavrie), zastaraný cieľ v kontexte ostane; po „Späť“ '
+              'z profilu by sa okno malo znova otvoriť z adresy ako pri hlavičke (podľa kódu, sondou neoverené). Strážca '
+              '`postOverlay?.target` sa neodstraňuje (komentáre sa kreslia aj mimo okna). ROZHODNUTIE MAJITEĽA ČAKÁ (R57): možnosť a, b '
+              'alebo obe a či má okno zavrieť aj `goToMyProfile`; agent odporúča a s `goToMyProfile`. Karta K39 (`karty/K39.md`, '
+              '18. 11. 2026) je pripravená podľa odporúčania; mapovanie si robí kolega sám (rozhodnutie majiteľa). Test (návrh): nový '
+              'súbor pri hooku. Dopad na E2E: žiadny špec dnes nekliká na autora komentára; po oprave Codex doplní v '
+              '`notification-click.spec.ts` (desktop, okno z upozornenia) klik na avatar alebo meno komentára a kontrolu, že '
+              '`feed-post-overlay` zmizne a adresa je profil; kartová cesta (`feed-post-detail.spec.ts`) funguje už dnes. Ručne po '
+              'oprave: tri spôsoby otvorenia okna a klik na autora komentára, zoznam lajkujúcich a „Späť“ z profilu. Odhad: nízky · S.',
+         dec='ROZHODNUTIE R57', src='majiteľ (ručný test K29, 18. 11. 2026, test 6) a mapovanie K36 (kolega)'),
     dict(n=346, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='iPhone: nový komentár nie je celý viditeľný vrátane tlačidiel po vlastnom odoslaní ani po kliknutí na upozornenie o '
-                'nových komentároch (kandidát z ručného testu K29, kolega mapuje)',
+                'nových komentároch; príčina nájdená a zmeraná (K36): posun na vrch plochy namiesto na prvý komentár; oprava patrí do '
+                'kroku 5 delenia',
          what='Majiteľ pri ručnom teste K29 (18. 11. 2026, iPhone; zistené počas mobilného testovania a pri teste 13; problém bol '
               'zohľadnený aj pri teste 12, ktorý inak prešiel): (1) po vlastnom odoslaní komentára sa klávesnica zatvorí, ale komentár '
               'ostane čiastočne skrytý; (2) keď príde komentár z druhého účtu a majiteľ klikne na upozornenie o nových komentároch, '
               'zoznam sa posunie, ale komentár opäť nie je celý viditeľný. Očakávanie: v oboch prípadoch sa zobrazí celý nový komentár '
-              'vrátane tlačidiel. Agent nemapoval: majiteľ 18. 11. 2026 určil, že si to tentoraz zmapuje kolega sám. Neznáme je, či sa '
-              'to dialo aj pred K29 (K29 boli čisté presuny a odtlačok HTML sa nezmenil, no posun zoznamu a klávesnicu ho nekryjú).',
-         note='NEJASNÉ: kolega najprv mapuje (ktorý posun a ktorá výška sa tu uplatňujú, rozdiel medzi prípadmi (1) a (2), či ide o '
-              'starší stav alebo dôsledok K29; porovnať s `main` pred PR #283, teda `8f059cf7`) a vráti zistenie; kód nemení, kým '
-              'majiteľ nepovie. Plán delenia `FeedPostComments.tsx` (333) má krok 5 „posun a indikátor nových“ '
-              '(`useFeedCommentsScroll.ts`): ak sa príčina ukáže tam, oprava ide po tomto kroku ako samostatný commit v novom súbore '
-              '(ako 338 po kroku 6), nie počas presunu; súbory nad 500 riadkov sa menia len ako presun (R23). Overenie na iPhone robí '
-              'majiteľ. KARTA K36 (`karty/K36.md`, 18. 11. 2026): mapovanie si '
-              'robí kolega sám (rozhodnutie majiteľa); Codexov beh z 18. 11. 2026 túto situáciu nepokrýval. Odhad (neoverený): '
-              'stredný · M.',
-         dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 13 a mobilné testovanie)'),
+              'vrátane tlačidiel. MAPOVANIE (kolega, K36, 18. 11. 2026; agent overil kľúčové tvrdenia čítaním kódu na `main` '
+              '`60c28963`, merania nespúšťal; celé znenie je v `karty/K36_vysledok.md`): STARŠÍ STAV, nie dôsledok K29 (šesť funkcií '
+              'posunu je na `8f059cf7` a `main` textovo rovnaké, odtlačok HTML sa nezmenil a zmerané čísla sú rovnaké; posun je od '
+              '28. 8. 2026, hlavička nad zoznamom od 2. 9. 2026, indikátor od 13. 8. 2026). PRÍČINA: oba prípady volajú rovnaký posun '
+              'na VRCH PLOCHY (`scrollListToTop`, `scrollTo({ top: 0 })` vo `FeedPostComments.tsx`): po odoslaní cez efekt okamžite, '
+              'po kliknutí na indikátor v `handleNewCommentsClick` plynulo. Na mobilnej obrazovke je však NAD zoznamom hlavička (text, '
+              'fotka, akcie) vo vnútri toho istého scrollovateľného boxu (`{listHeader}`; posiela ju len `FeedPostMobileDetail.tsx`). '
+              'Najnovší komentár je prvý v zozname, teda pod hlavičkou: pri `scrollTop` 0 leží o výšku hlavičky nižšie (fotka je pevných '
+              '320 px, hlavička vychádza 454 až 538 px), takže či sa zmestí, závisí od výšky obrazovky. DÔKAZ (Chromium, reálne '
+              'komponenty a CSS aplikácie, vymyslené údaje; podľa kolegu): pri 393×659 (emulovaný iPhone 15 z E2E, plocha 517 px) a '
+              'príspevku s fotkou je vlastný komentár vidno 63 zo 112 px (krátky text) a 3 zo 112 px (päťriadkový text); komentár z '
+              'indikátora 63 zo 152 a 3 zo 152; pri 390×700: 104 a 44 zo 112; pri 390×750: 112 a 94; pri 375×553: 0 px; pri 390×844 sa '
+              'zmestí; textový príspevok bez fotky (hlavička 122 px) je v poriadku. S odsadením prvého komentára namiesto 0 je celý '
+              'viditeľný vo všetkých meraných kombináciách.',
+         note='MAPOVANIE HOTOVÉ (K36). OPRAVA patrí presne do plánovaného kroku 5 delenia (`useFeedCommentsScroll.ts`: '
+              '`scrollListToTop`, `announceNewComments`, efekt posunu, `handleListScroll`, `handleNewCommentsClick`). Podľa R23 sa '
+              '`FeedPostComments.tsx` a `FeedPostMobileDetail.tsx` menia len ako presun, preto oprava ide až po kroku 5 (dávka 4 z 5, '
+              'K38) ako samostatný commit alebo samostatná dávka v novom súbore, rovnako ako 338. NÁVRH (kolega, prototyp): cieľ posunu '
+              '= odsadenie prvého komentára od vrchu plochy (s malou rezervou) a rovnaká vzdialenosť pre „je pri vrchu“ v '
+              '`announceNewComments` (`NEAR_TOP_PX`) a v `handleListScroll`; uplatniť len keď existuje `listHeader`; prototyp: komentár '
+              'celý viditeľný pri 393×659 aj 375×553, 14 sád a 155 testov komentárov a mobilného detailu prešlo bezo zmeny, odtlačok '
+              'HTML tiež; naivná verzia (bez zúženia na `listHeader`) zhodí 6 existujúcich testov. RIZIKO stredné: mení sa správanie '
+              'indikátora; desktop a panel nad fotkou sa nemenia (bez hlavičky ostáva cieľ 0). PRED OPRAVOU TREBA ROZHODNÚŤ (agent '
+              'pripraví otázku s odporúčaním, keď oprava príde na rad): zarovnanie (komentár na vrch plochy, alebo len doscrollovať, '
+              'aby bol celý vidieť) a čo má robiť indikátor, keď je čitateľ na začiatku komentárov (dnes sa tam zobrazí, lebo „vrch“ je '
+              'vrch hlavičky; s opravou by sa nový komentár mohol posunúť do zorného poľa sám). Test (návrh): nový súbor po kroku 5 s '
+              'mockom `getBoundingClientRect` a hlavičkou; skutočnú viditeľnosť jsdom nezmeria, tú overí E2E (Codex) a iPhone '
+              '(majiteľ). Dopad na E2E: `webkit-mobile` (iPhone 15, 393×659) by chybu reprodukoval s FOTOPRÍSPEVKOM (alebo zdieľaným '
+              'náhľadom): `toBeInViewport({ ratio: 1 })` na novom komentári po odoslaní; dnešný scenár komentárov používa textový '
+              'podklad (hlavička asi 122 px), ktorý chybu neukáže, treba existujúci fotopríspevok v testovacom obsahu; klávesnicu E2E '
+              'nepokryje. Ručne po oprave na iPhone: odoslať komentár a ťuknúť na „N nových komentárov“ (uviesť model, prehliadač alebo '
+              'aplikáciu na ploche a dĺžku textu). Klávesnica sa po odoslaní nezatvára kódom (ide o správanie iOS). Odhad: stredný · M.',
+         dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 13 a mobilné testovanie) a mapovanie K36 (kolega)'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
                 'vytvorenie žiadosti nepustí; treba rozhodnúť, či je to zámer',
@@ -360,4 +423,17 @@ NEW_ITEMS_K14 = [
               'v administrácii (akcie s `update()`), zvýšiť. Súvisí s 339 (docstring v `offer_hidden_from_user` o výnimke pre '
               'vlastníka). Odhad: stredný · M.',
          dec=None, src='K30 (kolega, druhý commit `2f5ba6ef`, 18. 11. 2026) a kontrola agenta čítaním kódu'),
+    dict(n=350, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='zoznam lajkujúcich v okne detailu príspevku na počítači: preklik na profil zavrie len dialóg, okno ostane otvorené '
+                '(kandidát z K36)',
+         what='Kolega pri mapovaní K36 (18. 11. 2026): `FeedLikersDialog.tsx` pri prekliku na používateľa zavolá `onClose()` a pošle '
+              'udalosť `goToUserProfile` (dialóg nepozná okno) a `FeedPostCard.tsx` mu `closeOverlayOnLeave` nedáva (dostáva len `open`, '
+              '`onClose` a `postId`). Agent overil čítaním kódu na `main` `60c28963`. Dôkaz kolegu: sonda s reálnym hookom a dialógom, '
+              '`8f059cf7` aj `main`: po prekliku okno otvorené, dialóg zatvorený, udalosť odoslaná. Dopad: rovnaký príznak ako 345 (okno '
+              'visí nad profilom); súvisí s K34 (frontend zoznamu lajkujúcich).',
+         note='Opraví ho možnosť a z R57 (efekt v `useFeedOverlayTarget.ts` zavrie okno pri `goToUserProfile`), takže samostatná oprava '
+              'netreba; pri možnosti b (riadený cieľ v kontexte) by sa musel doplniť (napríklad `closeOverlayOnLeave` pre dialóg). Pri '
+              'frontende zoznamu lajkujúcich (262, K34) sa pozrieť, či preklik pri otvorenom okne funguje. Ručne po oprave 345: v okne '
+              'otvoriť zoznam lajkujúcich a kliknúť na používateľa. Odhad: nízky · S (v rámci 345).',
+         dec='ROZHODNUTIE R57', src='K36 (kolega, 18. 11. 2026) a kontrola agenta čítaním kódu'),
 ]

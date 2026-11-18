@@ -7,15 +7,37 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='18. 11. 2026',
-    kod='`main` `60c28963` (po PR #287: Codex, zápis živého overenia komentárov a K29; PR #286 je K30, PR #285 je zoznam, PR #284 Codex, PR #283 je K29)',
+    kod='`main` `044a748e` (po PR #288: zoznam; PR #289 je K37, PR #287 Codex, PR #286 je K30)',
     register='21. 10. 2026 + PR #193',
 )
 
-# Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo). Záznamy do 12. 11. 2026 sú v `zmeny_starsie_2.py` a `zmeny_starsie.py`.
+# Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo). Záznamy do 13. 11. 2026 sú v `zmeny_starsie_2.py` a `zmeny_starsie.py`.
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
+    ('18. 11. 2026',
+      'Vetva 187 (vychádza z `main` `044a748e`, teda po PR #288). (1) Zlúčené: PR #289 (K37; 18. 11. 2026 o 17:51 UTC, merge '
+      '`e10a2256`) a PR #288 (vetva 186; o 17:54 UTC, merge `044a748e`). (2) K37 (PR #289): dávka 3 z 5 delenia '
+      '`FeedPostComments.tsx` (nález 333), krok 4: hľadanie cieľa do hooku `useFeedCommentsSeek.ts` (287 riadkov), '
+      '`FeedPostComments.tsx` 1 098 → 884 riadkov; jeden commit `c1480fae`, 2 súbory (292 pridaných a 219 odstránených '
+      'riadkov); podľa textu commitu celý Jest 609 sád a 9 167 testov pred zmenou aj po nej, odtlačok HTML 10 z 10 bezo '
+      'zmeny, mutácie zachytených 21 z 24 (prežili C9 a dve staré medzery W4 a W5), build pri prvom behu opäť '
+      '`SecurityFatalError`. Kontrola agenta z GitHubu a z `main`: CI (`checks`, `backend-postgres`) aj CodeRabbit zelené, '
+      'vlákna nie sú; počty riadkov sedia (884 a 287); odtlačok HTML ani existujúce testy sa nemenili; prvý riadok commitu 69 '
+      'znakov; brána K37 splnená (kolega čítal kartu z vetvy 186 s prísnejším znením brány). Kandidáti kolegu: žiadni; ručný '
+      'test majiteľa bez nových nálezov. (3) K36 (mapovanie 345 a 346 bez vetvy; výsledok uložený v `karty/K36_vysledok.md`): '
+      'oba nálezy sú starší stav, nie dôsledok K29. 345: stav okna vlastní hook `useFeedOverlayTarget.ts`, kontext okna drží '
+      'druhú kópiu cieľa a strážca komentárov číta len tú, takže okno otvorené z upozornenia alebo z adresy ostane; oprava je '
+      'mimo súborov nad 500 riadkov, dve možnosti (rozhodnutie R57, odporúčanie a). 346: posun na vrch plochy namiesto na '
+      'prvý komentár, na mobile je nad komentármi hlavička; oprava patrí do kroku 5 delenia. Nový kandidát 350 (zoznam '
+      'lajkujúcich v okne: preklik zavrie len dialóg). Agent overil kľúčové tvrdenia čítaním kódu na `main` `60c28963` (stav '
+      'okna v hooku, druhá kópia v kontexte, strážca, posun a `listHeader`), merania nespúšťal; karta K36 mala nesprávny tip, '
+      'že stav okna vlastní `FeedPostDetailOverlay.tsx`. (4) Nové rozhodnutie R57 (oprava 345) čaká na majiteľa. (5) '
+      'Pripravené dve dávky dopredu bez mapovania agentom (rozhodnutie majiteľa): K38 (delenie, dávka 4 z 5: kroky 5 a 6) a '
+      'K39 (oprava 345 podľa odporúčania R57); oprava 346 (K40) ide po K38. S Codexom ešte prebieha dlhšia práca; cielený beh '
+      'po K37 čaká na nové okno. (6) Prehľad: nálezy 1–350 (nový 350), zatvorené 14, hotové 135, PRED 51, PO 130; čakajúcich '
+      'rozhodnutí 10 z 57. Dopad na E2E: žiadny na špecy; po oprave 345 a 346 doplní Codex kontroly (pozri nálezy).'),
     ('18. 11. 2026',
       'Vetva 186 (vychádza z `main` `83b26a23`, teda po PR #284; po zlúčení PR #287 doplnená o jeho zápis a opravená po '
       'kontrole CodeRabbitu k PR #288). (1) Zlúčené: PR #285 (vetva 185; 18. 11. 2026 o 11:27 UTC, merge `701b7808`), PR #286 '
@@ -292,56 +314,6 @@ ZMENY = [
       'zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Dopad na E2E: K21 mení stav tlačidla v okne '
       'recenzie a výber jazyka pri neznámom jazyku (špecy nastavujú `appLocale` ručne); po K21 Codex doplní scenár žiadosti '
       'o zručnosť s odznakom.'),
-    ('13. 11. 2026',
-      'Vetva 174 (vychádza z `main` `203e8d14`, teda po PR #259; main je zlúčený do vetvy). (1) K20 (PR #258, zlúčené 12. '
-      '11. 2026 o 21:56 UTC; päť commitov podľa karty a päť opráv po kontrolách botov): etapa 3a nálezu 321 je hotová vo '
-      'frontende (sedem volieb zo servera, kategórie bez lokálneho stavu s kostrou počas načítania, hlavný vypínač podľa '
-      'R35, premenovaná kategória podľa R34, preklady) spolu s kódom opravy 319 a štyrmi docstringami; nález 321 ostáva '
-      'otvorený pre výzvu na push (etapa 3b), rozhodnutie R39 a E2E (etapa 4), nález 319 pre ručný test na iPhone. Kontrola '
-      'agenta po zlúčení z GitHubu a z histórie: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené na hlavičke PR, '
-      'štyri platné pripomienky botov sú opravené a tri vlákna na GitHube ostali neuzavreté (jedno je chybné tvrdenie Codex '
-      'P1, že autorom je Codex, hoci všetkých desať commitov má autora Claude). Samostatná strana kolegu sa k agentovi '
-      'nedostala (krok 0 mapovania 319), preto príčina pôvodného pozorovania pri 319 ostáva nezdokumentovaná. (2) Oprava '
-      'vyhľadávania (nový nález 329, vetva 175, PR #259, zlúčené 13. 11. 2026): hlásenie majiteľa „používateľ A sa nenájde '
-      'vo vyhľadávaní“ spôsobil superuser (zámer: administrátorské účty sa vo vyhľadávaní nezobrazujú), no pri mapovaní sa '
-      'našla iná chyba na PostgreSQL: mená s písmenami ł, ß, đ, ø, æ a œ sa nenašli ani pri presnom zadaní; opravené jedným '
-      'výrazom a testami, nasadené, kontrola CodeRabbitu prešla. (3) Ručné testy majiteľa po K20 (13. 11. 2026, počítač aj '
-      'mobil, ešte prebiehajú) našli dve chyby, obe zmapované bez zmeny kódu: nový nález 330 (pri vypnutej kategórii '
-      '„Žiadosť o zručnosť“ sa pri novej žiadosti stále rozsvieti číselná gulička pri Žiadostiach; podľa kódu to zodpovedá '
-      'rozhodnutiu R35, majiteľ očakáva inak, preto nové rozhodnutie R39) a nový nález 331 (po úspešnom pridaní recenzie '
-      'ostane pri ďalšom otvorení okna „Pridať recenziu“ tlačidlo zakázané na „Načítavam…“; reprodukované testom v '
-      'oddelenej kópii v mobilnom aj desktopovom okne, oprava je jeden riadok v dvoch súboroch). (4) Správa Codexa z 13. '
-      '11. 2026 (lokálne úpravy na vetve `e2e/223-dokazy-limit-328`, nič nespustené proti Railway, prijatý základ ostáva '
-      '427 / 2 / 303): dôkazový fixture v piatich špecoch, nové údaje pri obnove relácie a opravený test 328; podrobnosti v '
-      '223 (dodatok 13. 11.) a v 328. (5) Poradie: K21 navrhuje agent ako malé opravy 331, 325 a (po R39) 330; výzvu na '
-      'push (etapa 3b nálezu 321) navrhuje posunúť do K22. Dopad na E2E: K20 zmenila štruktúru Nastavení → Upozornenia '
-      '(nové `data-testid` kategórií sú pre Codexa k dispozícii); oprava 331 mení stav tlačidla v okne recenzie.'),
-    ('12. 11. 2026',
-      'Vetva 174 (vychádza z `main` `73173920`, teda po PR #257, K19). (1) K19 (PR #257, zlúčené 12. 11. 2026 o 13:02 UTC; '
-      'štyri commity a dve opravy po CodeRabbite): etapy 1 a 2 nálezu 321 sú hotové na serveri (päť predvolene zapnutých '
-      'polí s migráciou `0126`, sedem volieb v API, tabuľka typ → kategória a kontrola v `create_notification`); nález 321 '
-      'ostáva otvorený pre rozhranie (etapa 3) a E2E (etapa 4). Majiteľ PR zlúčil po kontrole CodeRabbitu ešte pred '
-      'kontrolou agenta; agent ju urobil po zlúčení: CI (`checks`, `backend-postgres`) je zelené na PR aj na `main` (beh č. '
-      '1184), Codex bez nálezov, CodeRabbit mal v prvom kole tri pripomienky (dve kolega opravil, tretia o docstringoch v '
-      'štyroch upravených testoch ostáva otvorená a je dôsledok karty K19, ktorá zakazovala inú úpravu existujúcich '
-      'testov), druhé kolo bez pripomienok; kód sedí na kartu aj na R34; lokálne prešlo 325 testov, `makemigrations '
-      '--check` bez zmien a tri vlastné mutácie tabuľky test zachytil 3 z 3. Samostatná strana kolegu nebola potrebná '
-      '(nález JASNÝ, overenie je v commitoch) a nové číslované nálezy z dávky vznikli 0. Manuálne testy majiteľa po '
-      'nasadení nenašli nález. (2) Výsledok Codexa (celý beh na `main` `73173920`, 14:33 až 15:11 UTC): 377 prešlo, 23 '
-      'padlo a 362 preskočených; beh nie je prijatý (základ ostáva 427 / 2 / 303). Dva pády sú známe (č. 1 a č. 3), 21 je '
-      'nových voči základu; pri trojnásobnom opakovaní dalo týchto 21 pádov 47 prešlo, 4 padli a 12 preskočených. Väčšina '
-      'pádov je príprava, v ktorej požiadavka na API ostala bez odpovede do konca testu, päť špecov nemá pôvodný blok '
-      'dôkazov a päť odmietnutých obnov 403 v troch testových pokusoch patrí k nálezu 223 (dodatok 12. 11.). Agent z čísel '
-      'v správe zistil, že údaj „zlyhanie po 22 až 24 s“ je len spodná hranica (požiadavka sa označí za zlyhanú až '
-      'zatvorením stránky na konci testu), a overil v kóde, že K19 žiadny z dotknutých koncových bodov nemenila. Aplikácia '
-      'ani testy sa nemenili; Codex nenašiel dôkaz chyby aplikácie. (3) Nový nález 328: pád č. 16 '
-      '(`offer-watch-pagination-errors`, mobilný variant) je medzera E2E testu pri limite piatich sledovaní, nie chyba '
-      'aplikácie (agent overil v `OfferWatchMobileListScreen.tsx`); opravu navrhuje Codex a čaká na súhlas majiteľa. '
-      'Ostatné návrhy Codexa (dôkazový fixture do piatich špecov, porovnanie Windows a Docker, API test siedmich volieb) sú '
-      'v 223 a čakajú na súhlas. (4) Nový krok pri 223: kontrola logov služby frontend (Next) v oknách pádov. (5) Poradie: '
-      'K20 je etapa 3a nálezu 321 spolu s 319 a štyrmi docstringami (karta `karty/K20.md`), K21 toast pri 325 a výzva na '
-      'push (R36 a, etapa 3b). Dopad na E2E: K19 žiadny; K20 zmení štruktúru Nastavení → Upozornenia a Codex po jej '
-      'nasadení doplní E2E (etapa 4).'),
 ] + ZMENY_STARSIE_2 + ZMENY_STARSIE
 
 # Nálezy opravené po prvom vydaní (`DONE_SINCE`), tabuľka PR (`DONE_PR_TABLE`) a popis série Upozornenia (`SERIA_UPOZORNENIA`) sú v
@@ -376,10 +348,10 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52) a najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; 338 zaseknuté načítavanie komentárov, oprava po kroku 6 delenia, a 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní, oprava po kroku 7; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 a kandidáti z ručného testu K29, ktorých kolega najprv mapuje: 345 detail príspevku po prechode na profil a 346 viditeľnosť nového komentára na iPhone) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52) a najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; 338 zaseknuté načítavanie komentárov, oprava po kroku 6 delenia, a 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní, oprava po kroku 7; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 a nálezy z ručného testu K29 zmapované v K36 (starší stav, nie dôsledok K29): 345 detail príspevku po prechode na profil (oprava K39 po odpovedi na R57), 346 viditeľnosť nového komentára na iPhone (oprava po kroku 5 delenia) a 350 zoznam lajkujúcich v okne detailu (rovnaká oprava ako 345)) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '338', '342', '343', '344', '345', '346', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '338', '342', '343', '344', '345', '346', '350', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, APP-03 a 186 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335 (atribút `lang` na `<html>`) v K22; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15) a súkromie: 347 (ponuky účtov staff a superuser cez priame id; najprv rozhodnúť, či je to zámer), 348 (osirotená recenzia '
             'neaktívneho hodnoteného používateľa) a 349 (deaktivovaný účet a cache autentifikácie; najprv rozhodnúť dôležitosť); 339 je hotová v K30',

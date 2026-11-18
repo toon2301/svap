@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Rozhodnutia R41 a ďalšie (od 15. 11. 2026): R41 (výnimka z pravidla 500 riadkov pre opravu 336, rozhodnuté 15. 11. 2026), R42 (opis
 hlavného vypínača aj na počítači, rozhodnuté 16. 11. 2026), R43 (E2E scenár odznaku Žiadostí sa nerobí, rozhodnuté 16. 11. 2026) a R44
-(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026), R50 (poistka `--repeat-each` v staršom API scenári volieb, rozhodnuté 17. 11. 2026) a R51 až R56 (vzhľad lajkov a komentárov, okná detailu, prehliadač fotky zo zdieľania, úchytka panela a text pri skrytých lajkujúcich, rozhodnuté 17. 11. 2026; obrázky v `navrhy/`).
+(E2E UI scenár kategórií a kontrola výzvy na push, rozhodnuté 16. 11. 2026), R45 až R48 (delenie `FeedPostComments.tsx`, rozhodnuté 16. 11. 2026), R49 (trvalé pravidlo: vzhľad sa najprv konzultuje s majiteľom, 16. 11. 2026), R50 (poistka `--repeat-each` v staršom API scenári volieb, rozhodnuté 17. 11. 2026) a R51 až R56 (vzhľad lajkov a komentárov, okná detailu, prehliadač fotky zo zdieľania, úchytka panela a text pri skrytých lajkujúcich, rozhodnuté 17. 11. 2026; obrázky v `navrhy/`). R57 (oprava nálezu 345: zatváranie okna detailu pri prekliku na profil, čaká na odpoveď majiteľa).
 
 Samostatný súbor kvôli limitu 500 riadkov (`rozhodnutia_nastenka.py` má vyše 380 riadkov); `stav.py` ich pripája do `DECISIONS` za R13–R40.
 Čísla rozhodnutí sa nikdy nepoužívajú znova; nové rozhodnutie sa pridáva na koniec zoznamu.
@@ -238,4 +238,18 @@ DECISIONS_DALSIE = [
          odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (b): text „Zoznam lajkujúcich nie je dostupný.“ (preklad do šiestich '
                   'jazykov pri implementácii nálezu 262).',
          datum='17. 11. 2026'),
+    dict(id='R57', tema='Oprava nálezu 345: ako zavrieť okno detailu príspevku pri prekliku na profil (počítač)',
+         otazka='Okno detailu príspevku ostane otvorené nad profilom, keď sa na profil prejde z komentára (a zo zoznamu lajkujúcich) a okno '
+                'bolo otvorené z upozornenia alebo z adresy. K36: stav okna vlastní hook `useFeedOverlayTarget.ts`, kontext okna drží '
+                'druhú kópiu cieľa a strážca komentárov číta len tú. Ako to opraviť? (a) Všeobecné pravidlo v '
+                '`useFeedOverlayTarget.ts` (65 riadkov): pri otvorenom okne a udalosti `goToUserProfile` okno zavrieť. (b) Oprava '
+                'príčiny: kontext okna dostane riadený cieľ z hooku (`FeedPostOverlayContext.tsx`, `DashboardContentView.tsx`; zlyhá '
+                'jeden existujúci test v súbore s 895 riadkami, treba upraviť jednu aserciu). (c) Obe. Druhá otázka: má okno zavrieť '
+                'aj preklik na „Môj profil“ (`goToMyProfile`)?',
+         odporucanie='(a) a zavrieť aj pri `goToMyProfile`: najmenšia zmena v jednom malom súbore, rieši aj preklik zo zoznamu lajkujúcich '
+                      '(nález 350) a budúce miesta; prototyp kolegu prešiel (7 súvisiacich sád, 220 testov a celý Jest bez zmeny testov). '
+                      '(b) rieši príčinu, no nerieši zoznam lajkujúcich a vyžaduje úpravu testu v súbore nad 500 riadkov; ak sa neskôr '
+                      'ukáže potreba, ide samostatne. Riziko (a): po „Späť“ z profilu sa má okno znova otvoriť z adresy ako pri hlavičke '
+                      '(podľa kódu, sondou neoverené), preto je v karte K39 ručný test aj na túto cestu.',
+         kedy='Pred poslaním karty K39 kolegovi; karta je napísaná podľa odporúčania.'),
 ]
