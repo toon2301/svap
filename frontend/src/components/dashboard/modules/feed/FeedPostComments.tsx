@@ -22,6 +22,7 @@ import FeedCommentReplyComposer from './FeedCommentReplyComposer';
 import FeedRepliesAutoLoader from './FeedRepliesAutoLoader';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
+import { useFeedCommentsScroll } from './useFeedCommentsScroll';
 import { useFeedCommentsSeek } from './useFeedCommentsSeek';
 import { openUserProfile } from './feedProfileNavigation';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
@@ -30,7 +31,6 @@ import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 import {
   COMMENTS_MAX_POLL_SIZE,
   COMMENTS_PAGE_SIZE,
-  NEAR_TOP_PX,
   REPLIES_PAGE_SIZE,
   flattenComments,
   mergeComments,
@@ -184,18 +184,20 @@ export default function FeedPostComments({
   );
   const [loadingRepliesFor, setLoadingRepliesFor] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
-  // Ohraničený scrollovateľný zoznam + požadované správanie doscrollovania po
-  // commite (null = nescrollovať). Nový komentár ide na koniec, takže by inak
-  // pribudol pod zlomom boxu a pôsobil by, akoby sa vôbec nepridal.
-  // 'auto' = vlastný komentár (okamžite), 'smooth' = cudzí z pollingu.
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const {
+    scrollRef,
+    scrollToTopRef,
+    newCommentsCount,
+    setNewCommentsCount,
+    scrollListToTop,
+    announceNewComments,
+    handleListScroll,
+    handleNewCommentsClick,
+  } = useFeedCommentsScroll();
   /** Signál „zoznam je vykreslený" padne raz na príspevok. */
   const commentsReadyRef = useRef(false);
   const onCommentsReadyRef = useRef(onCommentsReady);
   onCommentsReadyRef.current = onCommentsReady;
-  const scrollToTopRef = useRef<ScrollBehavior | null>(null);
-  /** Počet komentárov, ktoré prišli, kým používateľ čítal vyššie v zozname. */
-  const [newCommentsCount, setNewCommentsCount] = useState(0);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -331,35 +333,6 @@ export default function FeedPostComments({
     return true;
   }, [postId, markSeen]);
 
-  /** Doscrolluje zoznam navrch; `scrollTo` jsdom nemá, preto fallback. */
-  const scrollListToTop = useCallback((behavior: ScrollBehavior) => {
-    const node = scrollRef.current;
-    if (!node) return;
-    if (typeof node.scrollTo === 'function') {
-      node.scrollTo({ top: 0, behavior });
-    } else {
-      node.scrollTop = 0;
-    }
-  }, []);
-
-  /**
-   * Reakcia na komentáre, ktoré priniesol polling – podľa toho, kde
-   * používateľ práve je. Volá sa PRED commitom nového zoznamu, takže rozmery
-   * uzla ešte popisujú stav spred pridania; presne to nás zaujíma.
-   */
-  const announceNewComments = useCallback((added: number) => {
-    const node = scrollRef.current;
-    // Nové komentáre pribúdajú NAVRCH. Kto je pri vrchu, má ich rovno pred
-    // sebou – vtedy stačí dorovnať pohľad, indikátor by len prekážal.
-    const distanceToTop = node ? node.scrollTop : 0;
-    if (distanceToTop <= NEAR_TOP_PX) {
-      scrollToTopRef.current = 'smooth';
-      return;
-    }
-    // Číta staršie nižšie → pohľad mu netrháme, len ho upozorníme.
-    setNewCommentsCount((current) => current + added);
-  }, []);
-
   /**
    * Tichá obnova na pozadí – bez loading stavu a s MERGE namiesto prepísania.
    *
@@ -442,7 +415,7 @@ export default function FeedPostComments({
     if (commentsReadyRef.current || loading || failed) return;
     commentsReadyRef.current = true;
     onCommentsReadyRef.current?.(scrollRef.current);
-  }, [loading, failed]);
+  }, [loading, failed, scrollRef]);
 
   // Rootom observera je ohraničený box, nie viewport – donačítanie tak reaguje
   // na scroll VNÚTRI zoznamu. Menší rootMargin než v hlavnom feede: predsávka
@@ -464,7 +437,7 @@ export default function FeedPostComments({
     scrollListToTop(behavior);
     // Doscrollovaním sa upozornenie vyčerpalo.
     setNewCommentsCount((current) => (current === 0 ? current : 0));
-  }, [comments, scrollListToTop]);
+  }, [comments, scrollListToTop, scrollToTopRef, setNewCommentsCount]);
 
   /**
    * Dotiahne ďalšiu dávku odpovedí jedného komentára.
@@ -537,21 +510,6 @@ export default function FeedPostComments({
     refresh,
     loadMoreReplies,
   });
-
-  // Keď sa používateľ dostane navrch sám, indikátor už nemá čo hlásiť.
-  const handleListScroll = useCallback(() => {
-    const node = scrollRef.current;
-    if (!node) return;
-    if (node.scrollTop <= NEAR_TOP_PX) {
-      setNewCommentsCount((current) => (current === 0 ? current : 0));
-    }
-  }, []);
-
-  const handleNewCommentsClick = useCallback(() => {
-    scrollToTopRef.current = null;
-    scrollListToTop('smooth');
-    setNewCommentsCount(0);
-  }, [scrollListToTop]);
 
   const trimmed = text.trim();
   const tooLong = text.length > FEED_COMMENT_MAX_LENGTH;
