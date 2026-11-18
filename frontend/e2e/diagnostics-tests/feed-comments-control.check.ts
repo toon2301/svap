@@ -19,7 +19,8 @@ for (const item of cases) test(`kontrola ${item.mode} vyžaduje správne operác
     exists: uncertain, comments: item.mode === 'comment-network' ? 1 : 0, postsCreated: 1, commentsCreated: item.created,
     commentsDeleted: item.deleted, postsDeleted: item.cleanup, csrf: 1,
     writesWithCsrf: 1 + item.created + item.deleted + item.cleanup, touch: 0, mouse: 2 * (item.created + item.deleted),
-    unexpected: 0, cleanup: uncertain ? 'failed' : 'verified' };
+    unexpected: 0, cleanup: uncertain ? 'failed' : 'verified',
+    commentDeleteStatus: item.deleted ? (item.mode === 'ui-delete-status' ? 500 : 204) : null };
   assert.doesNotThrow(() => assertCommentFault(item.mode, state));
   for (const field of ['postsCreated', 'commentsCreated', 'commentsDeleted', 'postsDeleted', 'csrf', 'writesWithCsrf',
     'unexpected', 'comments', 'touch', 'mouse'] as const) {
@@ -30,6 +31,14 @@ for (const item of cases) test(`kontrola ${item.mode} vyžaduje správne operác
   assert.throws(() => assertCommentFault(item.mode, { ...state, status: 'passed' }));
   assert.throws(() => assertCommentFault(item.mode, { ...state, exists: !state.exists }));
   assert.throws(() => assertCommentFault(item.mode, { ...state, cleanup: state.cleanup === 'failed' ? 'verified' : 'failed' }));
+});
+
+for (const wrongStatus of [503, null, undefined]) test(`HTTP stav DELETE nesmie byť ${wrongStatus === undefined ? 'nezaznamenaný' : wrongStatus}`, () => {
+  const state: CommentObservation = { status: 'failed', phases: ['zmazanie vlastného komentára'], exists: false,
+    comments: 0, postsCreated: 1, commentsCreated: 1, commentsDeleted: 1, postsDeleted: 1, csrf: 1,
+    writesWithCsrf: 4, touch: 0, mouse: 4, unexpected: 0, cleanup: 'verified', commentDeleteStatus: 500 };
+  assert.doesNotThrow(() => assertCommentFault('ui-delete-status', state));
+  assert.throws(() => assertCommentFault('ui-delete-status', { ...state, commentDeleteStatus: wrongStatus }));
 });
 
 test('výber fázy nevracia súkromný text ani neznámu chybu', () => {

@@ -35,7 +35,7 @@ Po oprave sa predčasný pád musí odmietnuť aj vtedy, keď sa podklad bezpeč
 nemenia. Celá dávka je **lokálna bez Railway**; `.env.e2e` sa nečíta ani
 nekopíruje, testovacie účty ani relácia sa nepoužívajú.
 
-### Výsledky lokálnych kontrol — nie živý PASS aplikácie
+### Pôvodné lokálne kontroly pred review PR #284 — nie živý PASS aplikácie
 
 | Kontrola | Výsledok |
 | --- | --- |
@@ -65,6 +65,45 @@ Nové sú len `diagnostics-tests/feed-comments-control.ts` a jeho
 relatívny k `frontend/e2e/`. Migrácie: **žiadne**. Majiteľ **18. 11. schválil
 commit a push tejto vetvy**; PR otvorí a review vlákna uzavrie sám. Živý beh
 týmto schválený nie je.
+
+### Dodatok po kontrole Rabbitu v PR #284 — presný HTTP stav DELETE
+
+Čerstvý main je naďalej **`a9d0fc0c`**, hlava PR pred opravou **`90ee57b8`**.
+Jediná otvorená pripomienka Rabbitu (Minor) platila: počet pokusov a fáza pádu
+nerozlišovali skutočnú odpoveď DELETE 500 od 503. Tri nové čisté regresné kontroly
+na pôvodnom kóde správne zlyhali **0/3**: 503, chýbajúca odpoveď a nezaznamenaný
+údaj sa prijali aj pri inak správnych počtoch, fáze a potvrdenom uprataní.
+
+Lokálna syntetická fixture teraz z udalosti `context.on('response')` zachytí
+**iba číselný stav odpovede DELETE vlastného komentára**. Nečíta telo, cookies
+ani hlavičky a nezaznamenáva URL alebo ID. Stav ostáva `null`, ak odpoveď neprišla;
+v bezpečných metadátach je to pevné `none`:
+
+```text
+[COMMENTS-SELFTEST] ... commentDeleteStatus=<číselný HTTP stav|none>
+```
+
+`assertCommentFault('ui-delete-status', ...)` vyžaduje **presne číslo 500**.
+Neistý zápis sa naďalej nemaže naslepo; upratanie hlasno zlyhá. Samotný živý
+scenár, jeho strážca, `[E2E-EVIDENCE]`, aplikácia, timeouty a retry sa nemenia.
+Pozitívne lokálne scenáre navyše overujú zachytené 204, predčasný pád pred
+DELETE musí mať `null`. Dve nové syntetické skúšky vracajú 503 alebo prerušia
+DELETE bez odpovede; obe sa musia odmietnuť ako náhrada skúšky 500.
+
+Po oprave čisté kontroly **33/33**. Cielená browser regresia **2/2**,
+**62,110 s**, spolu **6/6 variantov** (503 aj bez odpovede × tri projekty), bez
+retry a účtov. TypeScript aplikácie aj E2E a ESLint: **0 chýb / 0 upozornení**.
+Celá lokálna browser sada prešla **15/15**, **270,115 s**, 0 vonkajších SKIP:
+pozitívne scenáre **6/6** a všetky pôvodné aj nové riadené chyby ostali správne
+odhalené. Nových šesť variantov je zahrnutých aj v tomto celom behu. Kontrola
+obsahu textových príloh a súkromného markera prešla tiež. Izolované listovanie
+potvrdilo nezmenených **780** bežných variantov a **3** samostatné komentárové
+varianty, 0 spustených scenárov. Docker mal vždy `--network=none`, bez env a relácie.
+
+Zmenené iba päť existujúcich E2E diagnostických súborov
+`feed-comments-{control,control.check,page,scenario,browser.check}.ts` a tento
+dokument. Nové súbory ani migrácie nepribudli. Majiteľ výslovne schválil commit
+a push na tú istú vetvu; vlákno na GitHube neuzatvárame. Žiadny Railway beh.
 
 ### Ďalší živý krok — až po novom potvrdení majiteľa
 

@@ -6,7 +6,8 @@ export type CommentFaultMode = typeof COMMENT_FAULT_MODES[number];
 export type CommentResult = { status?: string; stdout?: Array<{ text?: string }>; errors?: Array<{ message?: string }> };
 export type CommentObservation = { status?: string; phases: string[]; exists: boolean; comments: number;
   postsCreated: number; commentsCreated: number; commentsDeleted: number; postsDeleted: number;
-  csrf: number; writesWithCsrf: number; touch: number; mouse: number; unexpected: number; cleanup?: string };
+  csrf: number; writesWithCsrf: number; touch: number; mouse: number; unexpected: number; cleanup?: string;
+  commentDeleteStatus?: number | null };
 
 /** Z pôvodných chýb vyberie iba pevné fázy, nikdy nevracia text servera alebo stránky. */
 export function commentFailurePhases(result: CommentResult): string[] {
@@ -38,6 +39,7 @@ export function assertCommentFault(mode: CommentFaultMode, state: CommentObserva
   assert.deepEqual(state.phases, expected.phases, 'Chyba nevznikla v očakávanej fáze.');
   assert.equal(state.postsCreated, 1); assert.equal(state.csrf, 1);
   assert.equal(state.commentsCreated, expected.created); assert.equal(state.commentsDeleted, expected.deleted);
+  if (mode === 'ui-delete-status') assert.equal(state.commentDeleteStatus, 500, 'DELETE komentára musí potvrdiť presne HTTP 500.');
   assert.equal(state.postsDeleted, expected.cleanupDeletes);
   assert.equal(state.writesWithCsrf, 1 + expected.created + expected.deleted + expected.cleanupDeletes);
   assert.equal(state.touch + state.mouse, 2 * (expected.created + expected.deleted));

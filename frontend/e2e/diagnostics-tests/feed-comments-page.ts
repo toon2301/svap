@@ -1,6 +1,7 @@
 export const COMMENTS_PRIVATE_MARKER = 'SYNTHETIC_PRIVATE_FEED_NEVER_PRINT';
 export const COMMENT_MODES = ['normal', 'empty-feed', 'ui-create-status', 'ui-delete-status', 'missing-row', 'body-timeout',
-  'post-delete-status', 'post-delete-ignored', 'comment-network', 'post-create-invalid', 'ui-delete-before-create'] as const;
+  'post-delete-status', 'post-delete-ignored', 'comment-network', 'post-create-invalid', 'ui-delete-before-create',
+  'ui-delete-status-503', 'ui-delete-status-no-response'] as const;
 export type CommentMode = typeof COMMENT_MODES[number];
 
 /** Iba DOM kontrakt helpera, nie kópia aplikácie; živé UI sa overí až v dohodnutom okne. */

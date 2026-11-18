@@ -11,6 +11,12 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
     let postsCreated = 0; let commentsCreated = 0; let commentsDeleted = 0; let postsDeleted = 0;
     let csrf = 0; let unexpected = 0; let writesWithCsrf = 0; let touch = 0; let mouse = 0;
     let initialEmptyVisible = false; let initialListCount = -1;
+    let commentDeleteStatus: number | null = null;
+    context.on('response', response => {
+      const url = new URL(response.url());
+      if (response.request().method() === 'DELETE' && url.origin === COMMENTS_ORIGIN
+        && url.pathname === `${POSTS_PATH}101/comments/201/`) commentDeleteStatus = response.status();
+    });
     await page.exposeFunction('recordCommentPointer', (trusted: boolean, pointer: string) => {
       if (trusted && pointer === 'touch') touch += 1;
       if (trusted && pointer === 'mouse') mouse += 1;
@@ -48,6 +54,8 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
       } else if (url.pathname === `${POSTS_PATH}101/comments/201/` && method === 'DELETE') {
         commentsDeleted += 1;
         if (['ui-delete-status', 'ui-delete-before-create'].includes(commentMode)) { await reply(500, { private: PRIVATE }); return; }
+        if (commentMode === 'ui-delete-status-503') { await reply(503, { private: PRIVATE }); return; }
+        if (commentMode === 'ui-delete-status-no-response') { await route.abort(); return; }
         comments = []; await reply(204);
       } else if (url.pathname === `${POSTS_PATH}101/` && method === 'DELETE') {
         postsDeleted += 1;
@@ -61,7 +69,7 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
     });
     try { await runFixture(); } finally {
       if (commentMode === 'empty-feed') console.log(`[COMMENTS-EMPTY-FEED] visible=${initialEmptyVisible} lists=${initialListCount}`);
-      console.log(`[COMMENTS-SELFTEST] mode=${commentMode} postExists=${post !== null} commentsLeft=${comments.length} postsCreated=${postsCreated} commentsCreated=${commentsCreated} commentsDeleted=${commentsDeleted} postsDeleted=${postsDeleted} csrf=${csrf} writesWithCsrf=${writesWithCsrf} touch=${touch} mouse=${mouse} unexpected=${unexpected}`);
+      console.log(`[COMMENTS-SELFTEST] mode=${commentMode} postExists=${post !== null} commentsLeft=${comments.length} postsCreated=${postsCreated} commentsCreated=${commentsCreated} commentsDeleted=${commentsDeleted} postsDeleted=${postsDeleted} csrf=${csrf} writesWithCsrf=${writesWithCsrf} touch=${touch} mouse=${mouse} unexpected=${unexpected} commentDeleteStatus=${commentDeleteStatus ?? 'none'}`);
     }
   }, { auto: true }],
 });
