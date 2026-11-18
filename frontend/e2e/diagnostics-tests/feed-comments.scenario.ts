@@ -10,6 +10,13 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
     let comments: Array<{ id: number; text: string; can_edit: boolean; can_delete: boolean }> = [];
     let postsCreated = 0; let commentsCreated = 0; let commentsDeleted = 0; let postsDeleted = 0;
     let csrf = 0; let unexpected = 0; let writesWithCsrf = 0; let touch = 0; let mouse = 0;
+    let initialEmptyVisible = false; let initialListCount = -1;
+    let commentDeleteStatus: number | null = null;
+    context.on('response', response => {
+      const url = new URL(response.url());
+      if (response.request().method() === 'DELETE' && url.origin === COMMENTS_ORIGIN
+        && url.pathname === `${POSTS_PATH}101/comments/201/`) commentDeleteStatus = response.status();
+    });
     await page.exposeFunction('recordCommentPointer', (trusted: boolean, pointer: string) => {
       if (trusted && pointer === 'touch') touch += 1;
       if (trusted && pointer === 'mouse') mouse += 1;
@@ -26,6 +33,10 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
       } else if (method === 'GET' && url.pathname === '/dashboard') {
         await route.fulfill({ status: 200, contentType: 'text/html', body: syntheticCommentsPage(commentMode) });
       } else if (url.pathname === POSTS_PATH && method === 'POST') {
+        if (commentMode === 'empty-feed') {
+          initialEmptyVisible = await page.getByTestId('feed-empty-state').isVisible();
+          initialListCount = await page.getByTestId('feed-list').count();
+        }
         postsCreated += 1; const payload = request.postDataJSON();
         post = { id: 101, caption: payload.caption, can_manage: true };
         await reply(201, { ...post, can_manage: commentMode !== 'post-create-invalid', private: PRIVATE });
@@ -42,7 +53,9 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
         await reply(200, { results: comments, count: comments.length, next: null, private: PRIVATE });
       } else if (url.pathname === `${POSTS_PATH}101/comments/201/` && method === 'DELETE') {
         commentsDeleted += 1;
-        if (commentMode === 'ui-delete-status') { await reply(500, { private: PRIVATE }); return; }
+        if (['ui-delete-status', 'ui-delete-before-create'].includes(commentMode)) { await reply(500, { private: PRIVATE }); return; }
+        if (commentMode === 'ui-delete-status-503') { await reply(503, { private: PRIVATE }); return; }
+        if (commentMode === 'ui-delete-status-no-response') { await route.abort(); return; }
         comments = []; await reply(204);
       } else if (url.pathname === `${POSTS_PATH}101/` && method === 'DELETE') {
         postsDeleted += 1;
@@ -55,7 +68,8 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
       else { unexpected += 1; await route.abort(); }
     });
     try { await runFixture(); } finally {
-      console.log(`[COMMENTS-SELFTEST] mode=${commentMode} postExists=${post !== null} commentsLeft=${comments.length} postsCreated=${postsCreated} commentsCreated=${commentsCreated} commentsDeleted=${commentsDeleted} postsDeleted=${postsDeleted} csrf=${csrf} writesWithCsrf=${writesWithCsrf} touch=${touch} mouse=${mouse} unexpected=${unexpected}`);
+      if (commentMode === 'empty-feed') console.log(`[COMMENTS-EMPTY-FEED] visible=${initialEmptyVisible} lists=${initialListCount}`);
+      console.log(`[COMMENTS-SELFTEST] mode=${commentMode} postExists=${post !== null} commentsLeft=${comments.length} postsCreated=${postsCreated} commentsCreated=${commentsCreated} commentsDeleted=${commentsDeleted} postsDeleted=${postsDeleted} csrf=${csrf} writesWithCsrf=${writesWithCsrf} touch=${touch} mouse=${mouse} unexpected=${unexpected} commentDeleteStatus=${commentDeleteStatus ?? 'none'}`);
     }
   }, { auto: true }],
 });
@@ -64,6 +78,9 @@ for (const mode of COMMENT_MODES) test.describe(`[${mode}]`, () => {
   test.use({ commentMode: mode });
   test('vlastný komentár a bezpečné upratanie podkladu', async ({ page, createAndDeleteOwnComment }) => {
     await createAndDeleteOwnComment();
-    if (mode === 'body-timeout') await page.waitForTimeout(20000); // Výhradne lokálny úmyselný timeout.
+    if (mode === 'body-timeout') {
+      console.log('[COMMENTS-SELFTEST-PHASE] body-timeout');
+      await page.waitForTimeout(20000); // Výhradne lokálny úmyselný timeout.
+    }
   });
 });
