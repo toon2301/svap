@@ -1,8 +1,83 @@
-# Playwright: odovzdanie (stav k 17. 11. 2026)
+# Playwright: odovzdanie (stav k 18. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálna dávka — 17. 11. 2026: živé overenie 337 a príprava komentárov 257
+## Aktuálna dávka — 18. 11. 2026: tri opravy po kontrole PR #281
+
+Vetva **`e2e/komentare-257-opravy`** vznikla z čerstvého mainu **`a9d0fc0c`**
+(už aj PR #283, K29). PR #280 a #281 sú zlúčené; **340 aj 337 majiteľ prijal
+ako hotové**. Komentáre 257 zostávajú pripraveným scenárom, nie živým overením.
+Vlákna na GitHube uzatvára majiteľ, agent ich nemení.
+
+Všetky tri pripomienky boli overené v aktuálnom kóde a platili:
+
+1. `FeedList.tsx` pri prázdnej Nástenke vykreslí `feed-empty-state` namiesto
+   `feed-list`. UI helper teraz štandardnou čakajúcou aserciou prijme jeden
+   z týchto dvoch stavov a až potom vytvorí vlastný podklad. Nezvyšuje timeout,
+   neskrýva chybu načítania a nepotrebuje starší obsah účtu. Nový lokálny režim
+   `empty-feed` pred prípravou vôbec nemá zoznam; zaznamená viditeľný prázdny
+   stav a 0 zoznamov, po vytvorení podkladu a F5 už musí fungovať celý scenár.
+2. Opis strážcu nižšie výslovne uvádza aj výnimku pre dva rovnakopôvodové
+   prihlasovacie POST. Samotný strážca a rozsah jeho povolení sa nemenia.
+3. Každý z ôsmich chybových režimov overuje presný počet vytvorení a mazaní,
+   CSRF volaní, zápisov aj počet skutočných vstupov a očakávané fázy pádu.
+   `ui-delete-status` musí dosiahnuť **1 vytvorený komentár a 1 pokus o jeho
+   DELETE**, nie iba ľubovoľný FAIL s úspešným uprataním. Skúška timeoutu navyše
+   potvrdí, že telo dosiahlo úmyselné čakanie až po dokončení UI operácií.
+
+Pred opravou dve nové regresné kontroly na pôvodnej logike **správne zlyhali
+(0 PASS / 2 FAIL)**: prázdna Nástenka zastavila prípravu pred prvým POST a
+predčasný pád pri chýbajúcom tlačidle Pridať pôvodná kontrola chybne prijala
+ako skúšku DELETE 500. Ide o preukázané chyby E2E, nie nové chyby aplikácie.
+Po oprave sa predčasný pád musí odmietnuť aj vtedy, keď sa podklad bezpečne uprace.
+
+Žiadna aplikácia, backend, Jest, závislosti, migrácie ani zoznam nálezov sa
+nemenia. Celá dávka je **lokálna bez Railway**; `.env.e2e` sa nečíta ani
+nekopíruje, testovacie účty ani relácia sa nepoužívajú.
+
+### Výsledky lokálnych kontrol — nie živý PASS aplikácie
+
+| Kontrola | Výsledok |
+| --- | --- |
+| Čistá logika | **30/30**, 20 pôvodných + 10 nových kontrol; navyše 120 pozmenených neplatných dôkazov správne odmietnutých |
+| Celá browser kontrolná sada | **13/13 dvakrát**, **244,867 s** a po zjednotení bezpečného výberu fáz **233,664 s**; 0 vonkajších SKIP |
+| Pozitívne varianty | **6/6**: dva počiatočné DOM stavy × WebKit desktop, WebKit mobil a Chromium; mobil skutočné trusted touch |
+| Vložené chyby | **24/24**: pri všetkých ôsmich režimoch overené operácie, fáza aj FAIL/timedOut a výsledok upratania |
+| Regresia predčasného pádu | **3/3**: chýbajúce tlačidlo pred POST nesmie nahradiť DELETE 500, hoci sa podklad uprace; záverečná cielená kontrola tiež **1/1**, **23,640 s** |
+| Poistky | opakovanie odmietnuté pred fixture; chyba upratania zastavila ďalšie dva projekty pred API |
+| TypeScript aplikácie aj celého E2E, ESLint, kontrola diffu | **0 chýb / 0 upozornení** |
+| Izolované listovanie | bežná sada nezmenená **780 (260 × 3)**, samostatné komentáre **3**; 0 spustených testov |
+
+Playwright **1.63.0**, Docker `--network=none`, iba read-only zdroje a knižnice,
+prázdny storageState a prekrytý `.auth`. Žiadne prihlásenie ani živá požiadavka.
+Surový lokálny report ostáva v pamäti; kontrolujú sa aj textové prílohy: žiadny
+DOM snapshot, screenshot, video, trace ani syntetický súkromný marker vo výpise.
+Výber fázy vracia iba pevné názvy, nie pôvodné chybové správy. Dlhé čakanie
+existuje iba v pôvodnom lokálnom scenári úmyselného timeoutu; timeouty, tolerancie
+a retry živej skúšky zostávajú nezmenené. Dva vnútorné SKIP pri skúške maxFailures
+sú očakávaným dôkazom zastavenia po chybe, nie vypnutím testov pre zelený výsledok.
+Prijatý základ celého behu **427 / 2 / 303** sa tým nemení.
+
+Zmenených je päť existujúcich súborov: `support/feed-comments-ui.ts`, lokálne
+`diagnostics-tests/feed-comments-{browser.check,page,scenario}.ts` a tento dokument.
+Nové sú len `diagnostics-tests/feed-comments-control.ts` a jeho
+`feed-comments-control.check.ts` (oba pod 500 riadkov). Výpis kódových ciest je
+relatívny k `frontend/e2e/`. Migrácie: **žiadne**. Majiteľ **18. 11. schválil
+commit a push tejto vetvy**; PR otvorí a review vlákna uzavrie sám. Živý beh
+týmto schválený nie je.
+
+### Ďalší živý krok — až po novom potvrdení majiteľa
+
+Majiteľ určí samostatné okno a potvrdí nasadený čerstvý main aj súhlas s dočasným
+vlastným textovým obsahom. Pôvodný návrh **15 minút** je pre scenár komentárov;
+ak sa pridajú regresie K29, majiteľ výslovne potvrdí aj ich rozsah a trvanie.
+Počas behu žiadne zlučovanie, nasadzovanie ani zmena účtov. Pred štartom znovu
+overiť main a nasadenie K29. Po potvrdení overiť cielene `feed-post-detail.spec.ts`,
+`notification-click.spec.ts` (nie sú v `@smoke`) a samostatný scenár komentárov.
+Tento lokálny krok takéto okno neotvára. Budúce zmeny vzhľadu 262, 344 a 261 sa do týchto opráv nepridávajú;
+ich konkrétny dopad na E2E sa preberie až zo schválených vetiev aplikácie.
+
+## Historická dávka — 17. 11. 2026: živé overenie 337 a príprava komentárov 257
 
 Čerstvý `main` **`4c342f72`** bol overený pred prácou aj po skončení živého
 okna. Aplikácia, backend, závislosti, Jest ani zoznam nálezov sa nemenia.
@@ -75,8 +150,12 @@ príspevkom nevytvára upozornenie inému účtu.
 
 Samostatná pomocná stránka v tom istom kontexte drží transport pre prípravu a
 upratanie; cookies ani CSRF hodnoty neopúšťajú prehliadač. Kontextový strážca
-povolí iba jeden POST podkladu, jeden UI POST komentára, jeden UI DELETE
-komentára a jeden upratovací DELETE podkladu. Pred zmazaním sa overí vlastníctvo
+povolí z obsahových zápisov iba jeden POST podkladu, jeden UI POST komentára,
+jeden UI DELETE komentára a jeden upratovací DELETE podkladu. **Samostatne
+prepúšťa aj POST na `/api/token/refresh/` a `/api/auth/token/refresh/` na tom
+istom pôvode pre obnovu prihlásenia; tie sa do štyroch obsahových zápisov
+nezapočítavajú ani sa v tejto dávke nemenia.** GET, HEAD a OPTIONS tiež prepúšťa;
+ostatné zachytené API zápisy blokuje. Pred zmazaním sa overí vlastníctvo
 aj presná jedinečná značka. Záverečný GET po DELETE sa vykoná aj pri HTTP chybe,
 ale pôvodná chyba sa nesmie zamaskovať. Žiadne opakované mazanie.
 

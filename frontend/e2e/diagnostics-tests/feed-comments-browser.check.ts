@@ -3,9 +3,10 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { COMMENT_MODES, type CommentMode } from './feed-comments-page';
+import type { CommentMode } from './feed-comments-page';
+import { assertCommentFault, COMMENT_FAULT_MODES, commentFailurePhases } from './feed-comments-control';
+import type { CommentResult as Result } from './feed-comments-control';
 
-type Result = { status?: string; stdout?: Array<{ text?: string }>; errors?: Array<{ message?: string }> };
 type Variant = { projectName?: string; results?: Result[] };
 type Suite = { suites?: Suite[]; specs?: Array<{ tests?: Variant[] }> };
 type Report = Suite & { privacySafe?: boolean; guardRejected?: boolean;
@@ -35,9 +36,7 @@ function run(mode: CommentMode, extra: string[] = []) {
   visit(report);
   if (report.stats?.unexpected) for (const variant of variants) for (const result of variant.results ?? []) {
     const errors = (result.errors ?? []).map(item => item.message ?? '').join('');
-    const phases = ['otvorenie Nástenky', 'príprava vlastného podkladu', 'otvorenie detailu', 'pridanie vlastného komentára',
-      'GET po pridaní', 'zmazanie vlastného komentára', 'GET po zmazaní'];
-    const phase = phases.find(value => errors.includes(`krok: ${value}.`)) ?? 'nezistené';
+    const phase = commentFailurePhases(result).join('|') || 'nezistené';
     const known = errors.includes('chránenú konfiguráciu') ? 'config' : errors.includes('workers=1') ? 'options'
       : errors.includes('upratanie komentárovej') ? 'cleanup' : errors.includes('Príprava CSRF') ? 'csrf' : 'ui';
     console.log(`[COMMENTS-LOCAL-FAILURE] project=${variant.projectName} status=${result.status} category=${known} phase=${phase}`);
@@ -52,19 +51,22 @@ function observation(result: Result) {
   const output = (result.stdout ?? []).map(row => row.text ?? '').join('');
   const match = /\[COMMENTS-SELFTEST\] mode=([a-z-]+) postExists=(true|false) commentsLeft=(\d+) postsCreated=(\d+) commentsCreated=(\d+) commentsDeleted=(\d+) postsDeleted=(\d+) csrf=(\d+) writesWithCsrf=(\d+) touch=(\d+) mouse=(\d+) unexpected=(\d+)/.exec(output);
   assert.ok(match, 'Chýba stav po uprataní.');
-  return { exists: match[2] === 'true', comments: +match[3], postsCreated: +match[4], commentsCreated: +match[5],
+  return { status: result.status, phases: commentFailurePhases(result), exists: match[2] === 'true', comments: +match[3], postsCreated: +match[4], commentsCreated: +match[5],
     commentsDeleted: +match[6], postsDeleted: +match[7], csrf: +match[8], writesWithCsrf: +match[9],
     touch: +match[10], mouse: +match[11], unexpected: +match[12],
     cleanup: /\[E2E-COMMENTS-CLEANUP\] state=(verified|failed|not-needed)/.exec(output)?.[1] };
 }
 
-test('riadne UI pridanie a zmazanie plus upratanie podkladu v troch projektoch', () => {
-  const { code, report, variants } = run('normal');
+for (const mode of ['normal', 'empty-feed'] as const) test(mode === 'normal'
+  ? 'riadne UI pridanie a zmazanie plus upratanie podkladu v troch projektoch'
+  : 'prázdna Nástenka nevyžaduje staršie príspevky pred prípravou vlastného podkladu', () => {
+  const { code, report, variants } = run(mode);
   assert.equal(code, 0); assert.equal(report.stats?.expected, 3); assert.equal(report.stats?.unexpected, 0);
   assert.equal(report.stats?.skipped, 0); assert.equal(variants.length, 3);
   for (const variant of variants) {
     assert.equal(variant.results?.length, 1); const result = variant.results[0]; assert.equal(result.status, 'passed');
     const state = observation(result);
+    if (mode === 'empty-feed') assert.ok((result.stdout ?? []).some(row => row.text?.includes('[COMMENTS-EMPTY-FEED] visible=true lists=0')));
     assert.equal(state.exists, false); assert.equal(state.comments, 0); assert.equal(state.cleanup, 'verified');
     assert.equal(state.postsCreated, 1); assert.equal(state.commentsCreated, 1); assert.equal(state.commentsDeleted, 1);
     assert.equal(state.postsDeleted, 1); assert.equal(state.csrf, 1); assert.equal(state.writesWithCsrf, 4);
@@ -74,18 +76,29 @@ test('riadne UI pridanie a zmazanie plus upratanie podkladu v troch projektoch',
   }
 });
 
-for (const mode of COMMENT_MODES.filter(value => value !== 'normal')) test(`riadená chyba ${mode} nezmení výsledok na PASS`, () => {
+for (const mode of COMMENT_FAULT_MODES) test(`riadená chyba ${mode} nezmení výsledok na PASS`, () => {
   for (const project of ['webkit-desktop', 'webkit-mobile', 'chromium-desktop']) {
     const { code, report, variants } = run(mode, [`--project=${project}`]);
     assert.equal(code, 1); assert.equal(report.stats?.unexpected, 1); assert.equal(variants.length, 1);
     const result = variants[0].results?.[0]; assert.ok(result); const state = observation(result);
-    assert.equal(state.unexpected, 0);
-    const uncertain = ['post-delete-status', 'post-delete-ignored', 'comment-network', 'post-create-invalid'].includes(mode);
-    assert.equal(state.cleanup, uncertain ? 'failed' : 'verified'); assert.equal(state.exists, uncertain);
-    assert.equal(state.comments, mode === 'comment-network' ? 1 : 0);
-    if (mode === 'body-timeout') assert.equal(result.status, 'timedOut');
-    if (['comment-network', 'post-create-invalid'].includes(mode)) assert.equal(state.postsDeleted, 0);
+    assertCommentFault(mode, state);
     console.log(`[COMMENTS-CONTROL] mode=${mode} project=${project} verified=true`);
+  }
+});
+
+test('predčasný pád pred komentárom nesmie nahradiť skúšku DELETE 500', () => {
+  for (const project of ['webkit-desktop', 'webkit-mobile', 'chromium-desktop']) {
+    const { code, report, variants } = run('ui-delete-before-create', [`--project=${project}`]);
+    assert.equal(code, 1); assert.equal(report.stats?.unexpected, 1); assert.equal(variants.length, 1);
+    const state = observation(variants[0].results![0]);
+    assert.equal(state.status, 'failed'); assert.equal(state.cleanup, 'verified'); assert.equal(state.exists, false);
+    assert.equal(state.postsCreated, 1); assert.equal(state.commentsCreated, 0); assert.equal(state.commentsDeleted, 0);
+    assert.equal(state.postsDeleted, 1); assert.equal(state.comments, 0); assert.equal(state.csrf, 1);
+    assert.equal(state.writesWithCsrf, 2); assert.equal(state.unexpected, 0);
+    assert.equal(state.touch, project === 'webkit-mobile' ? 1 : 0);
+    assert.equal(state.mouse, project === 'webkit-mobile' ? 0 : 1);
+    assert.deepEqual(state.phases, ['otvorenie detailu']);
+    assert.throws(() => assertCommentFault('ui-delete-status', state));
   }
 });
 
@@ -98,7 +111,7 @@ test('zlyhané upratanie zastaví zostávajúce projekty pred zápisom', () => {
   const { code, report, variants } = run('post-delete-status');
   assert.equal(code, 1); assert.equal(report.stats?.unexpected, 1); assert.equal(variants.length, 3);
   const first = variants.find(item => item.projectName === 'webkit-desktop');
-  assert.equal(first?.results?.[0]?.status, 'failed'); assert.equal(observation(first!.results![0]).cleanup, 'failed');
+  assert.equal(first?.results?.[0]?.status, 'failed'); assertCommentFault('post-delete-status', observation(first!.results![0]));
   for (const variant of variants.filter(item => item !== first)) for (const result of variant.results ?? []) {
     assert.equal(result.status, 'skipped');
     assert.ok(!(result.stdout ?? []).some(row => row.text?.includes('[COMMENTS-SELFTEST]')));

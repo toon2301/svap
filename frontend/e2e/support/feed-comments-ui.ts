@@ -14,7 +14,7 @@ export async function exerciseOwnFeedComment(
   try {
     await page.addInitScript(() => { localStorage.setItem('appLocale', 'sk'); });
     await page.goto('/dashboard');
-    await expect(page.getByTestId('feed-list')).toBeVisible();
+    await expect(page.getByTestId('feed-list').or(page.getByTestId('feed-empty-state'))).toBeVisible();
     phase = 'príprava vlastného podkladu';
     await session.prepare();
     await page.reload();
