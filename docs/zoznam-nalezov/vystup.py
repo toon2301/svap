@@ -381,8 +381,8 @@ def _udrzba(d, m):
         'oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.')
     d.w(f'- **Čísla:** nový nález dostane ďalšie voľné číslo ({m.posledne_cislo + 1}); čísla sa nikdy nemenia ani nepoužívajú znova. '
         'Úlohy na prípravu nasadenia majú vlastné číslovanie N1…, rozhodnutia R1….')
-    d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_nove_dalsie.py`, `polozky_nove_nastenka.py`, `polozky_povodne.py`, `polozky_priprava.py`, '
-        '`register.py`, `stav.py`, `zmeny_starsie.py`, `rozhodnutia_nastenka.py`, `rozhodnutia_dalsie.py`, `hotove.py`, `hotove_dalsie.py`, `hotove_k20.py`, `zatvorene_dalsie.py`, `fronta.py`, `priloha_nastenka.py`), spustiť z koreňa repozitára '
+    d.w('- **Ako:** upraviť dáta (`polozky_nove.py`, `polozky_nove_dalsie.py`, `polozky_nove_nastenka.py`, `polozky_nove_223.py`, `polozky_nove_k14.py`, `polozky_povodne.py`, `polozky_priprava.py`, '
+        '`register.py`, `stav.py`, `zmeny_starsie.py`, `zmeny_starsie_2.py`, `rozhodnutia_nastenka.py`, `rozhodnutia_dalsie.py`, `hotove.py`, `hotove_dalsie.py`, `hotove_k20.py`, `zatvorene_dalsie.py`, `fronta.py`, `priloha_nastenka.py`), spustiť z koreňa repozitára '
         '`python docs/zoznam-nalezov/build.py` a pridať do commitu aj `ZOZNAM.md`. Skript overí úplnosť: čísla nálezov a ID z registra sú práve raz, '
         'súčty sedia, odkazy na rozhodnutia a balíky existujú a vlny v časti 2 nespomínajú hotové položky.')
     d.w('- **Oprava nálezu:** položku odstrániť z `ORIG_OPEN` / `NEW_ITEMS` a pridať do `DONE_SINCE_K20` v `hotove_k20.py` (číslo vetvy, PR keď je známe, '

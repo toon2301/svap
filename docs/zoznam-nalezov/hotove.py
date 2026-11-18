@@ -468,10 +468,14 @@ DONE_PR_TABLE_CASTOCNE = [
     ('#271', 'e2e/k23-overenie-a-wsl', '223 (dodatok: živé overenie po K25 a príprava Ubuntu vo WSL; nález ostáva otvorený)'),
     ('#275', 'K27', '262 (časť: backend, tri koncové body „kto dal lajk“ pre ponuky, portfólio a profil; frontend má od 17. 11. 2026 schválený vzhľad, R51 a R56, a ide po etapách ako K34)'),
     ('#278', 'K28', '333 (dávka 1 z 5 delenia `FeedPostComments.tsx`: charakterizačné testy a dočasný odtlačok HTML)'),
-    ('#281', 'e2e/komentare-257', '257 (časť: bezpečný scenár pridania a zmazania vlastného komentára pripravený lokálne, živý beh čaká na okno; '
-     'odovzdanie nesie živé overenie 337)'),
+    ('#281', 'e2e/komentare-257', '257 (časť: bezpečný scenár pridania a zmazania vlastného komentára pripravený lokálne; živý beh vtedy čakal na '
+     'okno, jeho výsledok 3 z 3 je pri PR #287; odovzdanie nesie živé overenie 337)'),
     ('#283', 'K29', '333 (dávka 2 z 5 delenia `FeedPostComments.tsx`: kroky 1 až 3, čisté presuny do šiestich nových súborov; '
      'ručný test majiteľa 18. 11. 2026 14 z 14, dvaja kandidáti 345 a 346)'),
+    ('#284', 'e2e/komentare-257-opravy', '257 (časť: opravy po PR #281: prázdna Nástenka, výnimky obnovy tokenu v odovzdaní, presné '
+     'počty a fázy v chybových režimoch a presný stav DELETE 500; výsledok živého behu je pri PR #287)'),
+    ('#287', 'e2e/komentare-257-overenie', '257 (časť: zapísané živé overenie na `main` `83b26a23`: komentáre 3 z 3 s overeným '
+     'uprataním a regresie po K29 7 / 0 / 20; len dokumentácia Codexa)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.
