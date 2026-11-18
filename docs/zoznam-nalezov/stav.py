@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='18. 11. 2026',
-    kod='`main` `83b26a23` (po PR #284: Codex, opravy kontrol komentárov; PR #286 je K30, PR #285 je zoznam, PR #283 je K29)',
+    kod='`main` `60c28963` (po PR #287: Codex, zápis živého overenia komentárov a K29; PR #286 je K30, PR #285 je zoznam, PR #284 Codex, PR #283 je K29)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -17,26 +17,34 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
     ('18. 11. 2026',
-      'Vetva 186 (vychádza z `main` `83b26a23`, teda po PR #284). (1) Zlúčené: PR #285 (vetva 185; 18. 11. 2026 o 11:27 UTC, '
-      'merge `701b7808`), PR #286 (K30; o 12:22 UTC, merge `611df449`) a PR #284 (Codex; o 12:29 UTC, merge `83b26a23`). (2) '
-      'K30 (PR #286): oprava nálezu 339, jedna podmienka v `offer_hidden_from_user`, dva commity `9fd8db45` a `2f5ba6ef` '
-      '(druhý po kontrole PR: 2 z 3 pripomienok CodeRabbitu platili, jedna nie), 2 súbory (392 pridaných a 1 odstránený '
-      'riadok), 17 nových testov (10 padalo pred opravou), mutácie 8 z 8 a po úprave ďalšie 3 z 3, celý backend zelený na '
-      'SQLite aj PostgreSQL 16 (podľa textov commitov); CI (`checks`, `backend-postgres`) zelené, Codex review bez nálezov. '
-      'Mapovanie si kolega urobil sám (rozhodnutie majiteľa 18. 11. 2026, len tentoraz); ručný test majiteľa bez chýb; nález '
-      '339 je hotový. Z K30 tri nové nálezy, ktorých citované miesta agent overil čítaním kódu (sondy nespúšťal): 347 (ponuky '
-      'účtov staff a superuser cez priame id; najprv rozhodnúť, či je to zámer), 348 (osirotená recenzia neaktívneho '
-      'hodnoteného používateľa) a 349 (deaktivovaný účet ostáva autentifikovaný, kým platí cache autentifikácie); skupinu a '
-      'dôležitosť navrhol agent predbežne. (3) Codex (PR #284, tri commity, 7 súborov): opravy po PR #281 (agent overil v '
-      'kóde), CI zelené, dve nové pripomienky CodeRabbitu opravené neskoršími commitmi, vlákna neuzavreté. Správa Codexa '
-      'podľa majiteľa (18. 11. 2026, `main` `83b26a23`, všetky tri projekty; odovzdanie je zatiaľ len lokálne, bez commitu a '
-      'pushu, takže agent nemá čo overiť): živý beh 10 prešlo, 0 zlyhalo a 20 preskočených; scenár komentárov 257 prešiel 3 z '
-      '3 a upratanie je overené; regresie po K29 7 / 0 / 20 (14 preskočených podľa projektu a 6 pre chýbajúce prečítané '
-      'upozornenia na lajk a odpoveď); 345 a 346 beh nepokrýval; Codex pripraví dáta a v novom potvrdenom okne zopakuje šesť '
-      'neoverených variantov. (4) Pripravené dve dávky dopredu bez mapovania agentom (rozhodnutie majiteľa): K36 (mapovanie '
-      '345 a 346) a K37 (delenie, dávka 3 z 5, s bránou po K36). (5) Prehľad: nálezy 1–349 (nové 347 až 349), zatvorené 14, '
-      'hotové 135 (pribudol 339), PRED 50, PO 130; čakajúcich rozhodnutí 9 z 56. Dopad na E2E: žiadny na špecy; Codex '
-      'pokračuje podľa vlastného plánu (okno určí majiteľ).'),
+      'Vetva 186 (vychádza z `main` `83b26a23`, teda po PR #284; po zlúčení PR #287 doplnená o jeho zápis a opravená po '
+      'kontrole CodeRabbitu k PR #288). (1) Zlúčené: PR #285 (vetva 185; 18. 11. 2026 o 11:27 UTC, merge `701b7808`), PR #286 '
+      '(K30; o 12:22 UTC, merge `611df449`), PR #284 (Codex; o 12:29 UTC, merge `83b26a23`) a PR #287 (Codex, zápis živého '
+      'overenia; o 14:35 UTC, merge `60c28963`; commit `7fdd5718`, jediný súbor `docs/playwright-odovzdanie.md`). (2) K30 (PR '
+      '#286): oprava nálezu 339, jedna podmienka v `offer_hidden_from_user`, dva commity `9fd8db45` a `2f5ba6ef` (druhý po '
+      'kontrole PR: 2 z 3 pripomienok CodeRabbitu platili, jedna nie), 2 súbory (392 pridaných a 1 odstránený riadok), 17 '
+      'nových testov (10 padalo pred opravou), mutácie 8 z 8 a po úprave ďalšie 3 z 3, celý backend zelený na SQLite aj '
+      'PostgreSQL 16 (podľa textov commitov); CI (`checks`, `backend-postgres`) zelené, Codex review bez nálezov. Mapovanie '
+      'si kolega urobil sám (rozhodnutie majiteľa 18. 11. 2026, len tentoraz); ručný test majiteľa bez chýb; nález 339 je '
+      'hotový. Z K30 tri nové nálezy, ktorých citované miesta agent overil čítaním kódu (sondy nespúšťal): 347 (ponuky účtov '
+      'staff a superuser cez priame id; najprv rozhodnúť, či je to zámer), 348 (osirotená recenzia neaktívneho hodnoteného '
+      'používateľa) a 349 (deaktivovaný účet ostáva autentifikovaný, kým platí cache autentifikácie); skupinu a dôležitosť '
+      'navrhol agent predbežne. (3) Codex: PR #284 (tri commity, 7 súborov) opravil všetky tri pripomienky z PR #281 (agent '
+      'overil v kóde), CI zelené, dve nové pripomienky CodeRabbitu sú opravené neskoršími commitmi, vlákna neuzavreté. PR '
+      '#287: živý beh 18. 11. 2026 na `main` `83b26a23` (obsahuje K29 aj K30), všetky tri projekty, oba živé behy bez pádu: '
+      '10 prešlo, 0 zlyhalo a 20 preskočených; scenár komentárov 257 prešiel 3 z 3 a upratanie je overené; regresie po K29 7 '
+      '/ 0 / 20 (14 preskočených podľa projektu a 6 pre chýbajúce prečítané upozornenia na lajk a odpoveď); 345 a 346 beh '
+      'nepokrýval; agent overil čísla v odovzdaní na `main`. Codex pripraví dáta a v novom potvrdenom okne zopakuje šesť '
+      'neoverených variantov; podľa trvalého pokynu majiteľa Codex dokončenú overenú prácu sám commitne a pushne (bez PR, '
+      'zlúčenia a nasadenia). (4) Pripravené dve dávky dopredu bez mapovania agentom (rozhodnutie majiteľa): K36 (mapovanie '
+      '345 a 346) a K37 (delenie, dávka 3 z 5, s bránou po K36). (5) Kontrola CodeRabbitu k PR #288 (9 pripomienok, v jadre '
+      'platné; v nálezu 349 bol nesprávny príklad) je opravená v druhom commite vetvy: jednotná podmienka brány K37 (zastaviť '
+      'pri príčine v kroku 4, pri nerozhodnom alebo chýbajúcom výsledku K36; príčina v krokoch 5 a 6 K37 neblokuje), oddelená '
+      'kontrola PR od ručného testu v K37, rozsah dopadu nálezu 349 (nie celé API), nález 257 (pokryté a otvorené, historický '
+      'stav po PR #281), riadok PR #281, úvod fronty (K29 a K30 hotové) a návod generátora (`polozky_nove_223.py` a '
+      '`polozky_nove_k14.py`); vlákna zatvára majiteľ. (6) Prehľad: nálezy 1–349 (nové 347 až 349), zatvorené 14, hotové 135 '
+      '(pribudol 339), PRED 50, PO 130; čakajúcich rozhodnutí 9 z 56. Dopad na E2E: žiadny na špecy; Codex pokračuje podľa '
+      'vlastného plánu (okno určí majiteľ).'),
     ('18. 11. 2026',
       'Vetva 185 (vychádza z `main` `a9d0fc0c`, teda po PR #283). (1) Vetva 184 (PR #282, zlúčené 18. 11. 2026 o 06:11 UTC, '
       'merge `8f059cf7`; tri commity `550de6f1`, `0416caf3` a `96b48163`) je zlúčená: pripomienka CodeRabbitu k nej (nález '
