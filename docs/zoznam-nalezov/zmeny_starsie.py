@@ -1,10 +1,31 @@
 # -*- coding: utf-8 -*-
-"""Starší denník zmien dokumentu (do 10. 11. 2026): `ZMENY_STARSIE`, najnovšie hore.
+"""Starší denník zmien dokumentu (do 11. 11. 2026): `ZMENY_STARSIE`, najnovšie hore.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája na koniec `ZMENY`. Nový záznam sa pridáva na začiatok `stav.ZMENY`.
 """
 
 ZMENY_STARSIE = [
+    ('11. 11. 2026',
+      'Vetva 173, doplnok po odpovedi majiteľa na R37 (všetky tri áno). (a) Výnimka pre jeden riadok v '
+      '`SkillsModuleRouter.tsx` (326) s podmienkami R31, takže 326 už nečaká na rozhodnutie. (b) Výnimka pre frontendovú '
+      'časť 325 (`OfferReviewsView.tsx`, 692 riadkov) po nasadení backendovej opravy a ručnom overení; nová logika do '
+      'nového súboru, pôvodný nesmie narásť. (c) Toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (nový kľúč v šiestich '
+      'jazykoch). Agent odpoveď vykladá tak, že toast ide v každom prípade a ošetrenie zlyhania načítania len ak príznaky '
+      'po oprave backendu ostanú. Karta K18 je upravená (326 bez čakania); frontendová časť 325 ide samostatnou kartou po '
+      'overení. Nová vetva sa nezakladá: zápis ide do vetvy 173. Dopad na E2E: žiadny.'),
+    ('11. 11. 2026',
+      'Vetva 173, doplnok z 11. 11. 2026 (vychádza z `main` `f9b2a1d4`, teda po PR #254). (1) Ručné testy majiteľa po K17 '
+      'našli tri chyby: po vymazaní recenzie ostane okno aj recenzia a ukáže sa chybový toast (325), zmazanie jednej fotky '
+      'v mobilnej úprave ponuky zmaže z editora vizuálne všetky (326) a plus či mínus v recenzii sa na mobile nedá potvrdiť '
+      '(327). Agent ich zmapoval v kóde a žiadna nie je regresia z K17 (K17 menila len chybové vetvy a tieto miesta sú '
+      'staršie). Príčiny: 325 odpoveď 204 s telom pri mazaní recenzie (jediná v backende), po ktorej zlyhá nasledujúca '
+      'požiadavka cez proxy Next.js (agent reprodukoval mechanizmus s gunicornom 23 a Node 22; v produkcii nepotvrdené), '
+      '326 `return data?.images || []` pri odpovedi 204 bez tela (hook nahradí fotky prázdnym poľom), 327 pridanie položky '
+      'len klávesom Enter a zahodenie nepotvrdeného textu. (2) Nová dávka K18 (327, backendová časť 325, potom 326; karta '
+      '`karty/K18.md`) predbieha etapy 321, ktoré sa presúvajú na K19 (karta `karty/K19.md`). (3) Nové rozhodnutie R37: '
+      'výnimky z pravidla 500 riadkov pre jeden riadok v `SkillsModuleRouter.tsx` (326) a pre prípadnú frontendovú časť 325 '
+      'a otázka, či má po vymazaní recenzie pribudnúť toast. (4) Nový balík „Recenzie“ v skupine PRED NASADENÍM. Dopad na '
+      'E2E tejto vetvy: žiadny; špecy neovládajú mazanie recenzie ani fotky, ani plusy a mínusy.'),
     ('10. 11. 2026',
      'Vetva 173, doplnok z večera 10. 11. 2026 (vychádza z `main` `f9b2a1d4`, teda po PR #254; main je zlúčený do vetvy). '
      '(1) Rozhodnutia majiteľa: R34 (priradenie typov ku kategóriám podľa návrhu s dvoma úpravami: lajky odpovedí na '
