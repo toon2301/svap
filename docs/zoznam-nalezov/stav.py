@@ -6,15 +6,40 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='17. 11. 2026',
-    kod='`main` `eac245bf` (po PR #281: Codex, scenár komentárov 257; PR #280 Codex, poistka 340; PR #279 je zoznam; K28 je PR #278)',
+    datum='18. 11. 2026',
+    kod='`main` `a9d0fc0c` (po PR #283: K29, delenie komentárov, dávka 2 z 5; PR #282 je zoznam; PR #281 a #280 sú Codex; PR #284 Codex čaká na zlúčenie)',
     register='21. 10. 2026 + PR #193',
 )
 
-# Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo). Záznamy do 10. 11. 2026 sú v `zmeny_starsie.py`.
+# Denník zmien dokumentu, najnovšie hore: (dátum, čo sa zmenilo). Záznamy do 11. 11. 2026 sú v `zmeny_starsie.py`.
 from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 
 ZMENY = [
+    ('18. 11. 2026',
+      'Vetva 185 (vychádza z `main` `a9d0fc0c`, teda po PR #283). (1) Vetva 184 (PR #282, zlúčené 18. 11. 2026 o 06:11 UTC, '
+      'merge `8f059cf7`; tri commity `550de6f1`, `0416caf3` a `96b48163`) je zlúčená: pripomienka CodeRabbitu k nej (nález '
+      '261: prianie o šípke je prekonané R55) bola platná a je opravená a nález 265 je na žiadosť majiteľa presunutý z PO do '
+      'PRED. (2) K29 (PR #283, zlúčené 18. 11. 2026 o 07:21 UTC, merge `a9d0fc0c`; tri commity `a042993f`, `9b5a5f89` a '
+      '`eca1e650`; 7 súborov): dávka 2 z 5 delenia `FeedPostComments.tsx` (nález 333), čisté presuny: 1 487 → 1 098 riadkov a '
+      'šesť nových súborov (`feedCommentsLogic.ts` 178, `FeedCommentItem.tsx` 206, `FeedCommentComposer.tsx` 135, '
+      '`FeedCommentsNewIndicator.tsx` 70, `FeedCommentsLoadingMore.tsx` 25 a nový súbor testov 319 riadkov). Podľa textov '
+      'commitov: celý Jest po každom kroku 609 sád a 9 167 testov prešlo, odtlačok HTML bezo zmeny, mutácie 19 z 19, 8 z 9 a '
+      '10 z 11 (dve prežili ako staré medzery v testoch), lokálny build pri prvom behu v každom kroku `SecurityFatalError` '
+      '(pozri 341). Kontrola agenta z GitHubu a z `main`: CI (`checks`, `backend-postgres`) aj CodeRabbit zelené, vlákna nie '
+      'sú; počty riadkov na `main` sedia s commitmi; odtlačok HTML ani existujúce testy sa v PR nemenili; dotknutý je jediný '
+      'súbor nad 500 riadkov (`FeedPostComments.tsx`, R23). Kandidáti kolegu: žiadni. (3) Ručný test majiteľa 18. 11. 2026: '
+      '14 z 14 vykonaných, 12 prešlo bez novej chyby v hodnotenom rozsahu a 2 čiastočne (testy 6 a 13). Nové nálezy podľa '
+      'opisu majiteľa, bez mapovania agentom: 345 (počítač: detail príspevku ostane otvorený po prechode na profil autora '
+      'komentára) a 346 (iPhone: nový komentár nie je celý viditeľný po vlastnom odoslaní ani po kliknutí na upozornenie o '
+      'nových komentároch); či ide o starší stav alebo dôsledok K29, zistí kolega. (4) Rozhodnutie majiteľa 18. 11. 2026: '
+      'mapovanie si tentoraz robí kolega sám, agent kód nečíta. (5) Codex (PR #284, vetva `e2e/komentare-257-opravy`, tri '
+      'commity `90ee57b8`, `1e9110ae` a `e58274c4`, 7 súborov; v čase zápisu otvorený a nezlúčený, CI zelené): opravuje '
+      'všetky tri pripomienky z PR #281 a dve nové pripomienky CodeRabbitu sú v kóde opravené neskoršími commitmi; vlákna sú '
+      'na GitHube neuzavreté (zatvára majiteľ). (6) Fronta: karta K30 (oprava 339; mapovanie robí kolega), potom návrh K36 '
+      '(mapovanie 345 a 346), dávka 3 z 5 delenia a K31 až K35. (7) Prehľad: nálezy 1–346 (nové 345 a 346), zatvorené 14, '
+      'hotové 134, PRED 48, PO 130; čakajúcich rozhodnutí 9 z 56. Dopad na E2E: žiadny; po zlúčení PR #284 ostáva Codexovi '
+      'živý beh scenára komentárov a po K29 cielený beh špecov `feed-post-detail.spec.ts` a `notification-click.spec.ts` v '
+      'okne dohodnutom s majiteľom.'),
     ('17. 11. 2026',
       'Vetva 184 (vychádza z `main` `eac245bf`, teda po PR #281). (1) Vetva 183 (PR #279, zlúčené 17. 11. 2026 o 09:56 UTC, merge '
       '`7134cab6`; dva commity `3e417e56` a `9de4d792`) je zlúčená; dve pripomienky CodeRabbitu k nej agent opravil v `9de4d792` a ich '
@@ -318,27 +343,6 @@ ZMENY = [
       'backend) je ďalšia, K20 bude etapa 3 spolu s 319 a K21 toast pri 325. (4) Postup od K15: nové číslované nálezy z '
       'dávky 0 (325 až 327 vznikli z ručných testov po K17), samostatná strana nebola potrebná, chyby zachytené dymovým '
       'testom 0; odporúčanie agenta je postup ponechať. Dopad na E2E: žiadny.'),
-    ('11. 11. 2026',
-      'Vetva 173, doplnok po odpovedi majiteľa na R37 (všetky tri áno). (a) Výnimka pre jeden riadok v '
-      '`SkillsModuleRouter.tsx` (326) s podmienkami R31, takže 326 už nečaká na rozhodnutie. (b) Výnimka pre frontendovú '
-      'časť 325 (`OfferReviewsView.tsx`, 692 riadkov) po nasadení backendovej opravy a ručnom overení; nová logika do '
-      'nového súboru, pôvodný nesmie narásť. (c) Toast „Recenzia bola vymazaná.“ po úspešnom zmazaní (nový kľúč v šiestich '
-      'jazykoch). Agent odpoveď vykladá tak, že toast ide v každom prípade a ošetrenie zlyhania načítania len ak príznaky '
-      'po oprave backendu ostanú. Karta K18 je upravená (326 bez čakania); frontendová časť 325 ide samostatnou kartou po '
-      'overení. Nová vetva sa nezakladá: zápis ide do vetvy 173. Dopad na E2E: žiadny.'),
-    ('11. 11. 2026',
-      'Vetva 173, doplnok z 11. 11. 2026 (vychádza z `main` `f9b2a1d4`, teda po PR #254). (1) Ručné testy majiteľa po K17 '
-      'našli tri chyby: po vymazaní recenzie ostane okno aj recenzia a ukáže sa chybový toast (325), zmazanie jednej fotky '
-      'v mobilnej úprave ponuky zmaže z editora vizuálne všetky (326) a plus či mínus v recenzii sa na mobile nedá potvrdiť '
-      '(327). Agent ich zmapoval v kóde a žiadna nie je regresia z K17 (K17 menila len chybové vetvy a tieto miesta sú '
-      'staršie). Príčiny: 325 odpoveď 204 s telom pri mazaní recenzie (jediná v backende), po ktorej zlyhá nasledujúca '
-      'požiadavka cez proxy Next.js (agent reprodukoval mechanizmus s gunicornom 23 a Node 22; v produkcii nepotvrdené), '
-      '326 `return data?.images || []` pri odpovedi 204 bez tela (hook nahradí fotky prázdnym poľom), 327 pridanie položky '
-      'len klávesom Enter a zahodenie nepotvrdeného textu. (2) Nová dávka K18 (327, backendová časť 325, potom 326; karta '
-      '`karty/K18.md`) predbieha etapy 321, ktoré sa presúvajú na K19 (karta `karty/K19.md`). (3) Nové rozhodnutie R37: '
-      'výnimky z pravidla 500 riadkov pre jeden riadok v `SkillsModuleRouter.tsx` (326) a pre prípadnú frontendovú časť 325 '
-      'a otázka, či má po vymazaní recenzie pribudnúť toast. (4) Nový balík „Recenzie“ v skupine PRED NASADENÍM. Dopad na '
-      'E2E tejto vetvy: žiadny; špecy neovládajú mazanie recenzie ani fotky, ani plusy a mínusy.'),
 ] + ZMENY_STARSIE
 
 # Nálezy opravené po prvom vydaní (`DONE_SINCE`), tabuľka PR (`DONE_PR_TABLE`) a popis série Upozornenia (`SERIA_UPOZORNENIA`) sú v
@@ -373,10 +377,10 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52) a najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; 338 zaseknuté načítavanie komentárov, oprava po kroku 6 delenia, a 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní, oprava po kroku 7; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343 a okno detailu na počítači 344) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52) a najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; 338 zaseknuté načítavanie komentárov, oprava po kroku 6 delenia, a 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní, oprava po kroku 7; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 a kandidáti z ručného testu K29, ktorých kolega najprv mapuje: 345 detail príspevku po prechode na profil a 346 viditeľnosť nového komentára na iPhone) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '338', '342', '343', '344', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '338', '342', '343', '344', '345', '346', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, APP-03 a 186 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335 (atribút `lang` na `<html>`) v K22; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15) a súkromie: 339 (ponuka neaktívneho vlastníka je dostupná cez priame id)',
          preco='Všetkých šesť jazykov (sk, cs, hu, de, pl, en) musí byť pri štarte hotových (R2, 13. 11. 2026).',

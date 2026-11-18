@@ -109,7 +109,7 @@ NEW_ITEMS_K14 = [
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx`) bez zmeny '
-               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie (K26) a dávka 1 z 5 (K28) hotové, ďalšia je K29',
+               'vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: mapovanie (K26), dávka 1 z 5 (K28) a dávka 2 z 5 (K29) hotové, ďalšia je dávka 3 z 5 (krok 4)',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov rozdelia po jednom: '
                '`feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a `feed/FeedPostMobileDetail.tsx` 594 '
                '(počty agent overil 13. 11. 2026). Delenie nesmie zmeniť správanie ani vzhľad; každý súbor ide vo vlastnej vetve s '
@@ -161,7 +161,24 @@ NEW_ITEMS_K14 = [
                'ktorý vyrobí okno pred prekreslením, preto sa pri delení zápis `markSeen` v obslužných funkciách musí ponechať; '
                'strop 20 stránok sa z komponentu neexportuje, takže ho test nezafixúva presne (mutácia K1 je mimo dávky); '
                'zvýraznenie sa pozná podľa triedy `bg-purple-100/80` vo viacerých testoch, ktoré sa pri redizajne 261 upravia '
-               'spolu. Kandidáti kolegu sú nálezy 341 a 342. Ďalšia dávka je 2 z 5 (kroky 1 až 3; K29 s ručným testom majiteľa).',
+               'spolu. Kandidáti kolegu sú nálezy 341 a 342. DÁVKA 2 Z 5 HOTOVÁ (K29, PR #283, zlúčené 18. 11. 2026 o 07:21 UTC, merge `a9d0fc0c`; '
+               'tri commity `a042993f`, `9b5a5f89` a `eca1e650`; 7 súborov): kroky 1 až 3 plánu ako čisté presuny (správanie, DOM, '
+               '`data-testid` ani vzhľad sa nemenia). `FeedPostComments.tsx` 1 487 → 1 332 → 1 213 → 1 098 riadkov (stále nad 500); nové '
+               'súbory `feedCommentsLogic.ts` 178, `FeedCommentItem.tsx` 206, `FeedCommentComposer.tsx` 135, '
+               '`FeedCommentsNewIndicator.tsx` 70, `FeedCommentsLoadingMore.tsx` 25 a nový súbor testov '
+               '`__tests__/feedCommentsLogic.test.ts` 319 riadkov (34 testov čistých funkcií). PODĽA TEXTOV COMMITOV: celý Jest po '
+               'každom kroku 609 sád a 9 167 testov prešlo; odtlačok HTML (10 stavov) aj existujúce testy bezo zmeny; `tsc`, ESLint a '
+               'kontrola prekladov čisté; mutácie 19 z 19 (krok 1), 8 z 9 (krok 2) a 10 z 11 (krok 3), pričom dve prežili ako '
+               'existujúce medzery v testoch (nie dôsledok presunu): `disabled` na avatare autora bez profilu a zvýraznenie počítadla pri '
+               'prekročení dĺžky v bežnom poli; lokálny `npm run build` skončil v každom z troch krokov pri prvom behu výpisom '
+               '`SecurityFatalError` a druhý beh prešiel (pozri 341). KONTROLA AGENTA z GitHubu a z `main`: CI (`checks`, '
+               '`backend-postgres`) aj CodeRabbit zelené, vlákna nie sú; počty riadkov na `main` sedia s textami commitov; odtlačok '
+               'HTML ani existujúce testy sa v PR nemenili; dotknutý je jediný súbor nad 500 riadkov (`FeedPostComments.tsx`, výnimka '
+               'R23). Kandidáti kolegu: žiadni. RUČNÝ TEST MAJITEĽA (18. 11. 2026): 14 z 14 vykonaných, 12 prešlo bez novej chyby v '
+               'hodnotenom rozsahu a 2 prešli čiastočne (testy 6 a 13); z nich vznikli kandidáti 345 (počítač: detail príspevku ostane '
+               'otvorený po prechode na profil autora komentára) a 346 (iPhone: nový komentár nie je celý viditeľný). Ďalšia dávka je '
+               '3 z 5 (krok 4: hľadanie cieľa v hooku); karta sa pripraví po K30 a po zmapovaní kandidátov 345 a 346 (K36), ak majiteľ '
+               'nepovie inak.',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=338, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='komentáre: zoznam ostane na „Načítavam…“, keď sa počas prvého načítania úspešne pridá komentár; oprava až po '
@@ -192,11 +209,13 @@ NEW_ITEMS_K14 = [
                'deaktivovaného účtu je cez priame id dostupný každému prihlásenému a dá sa naň dávať lajky.',
          note='Návrh (neoverený): jedna podmienka v `offer_hidden_from_user` (neaktívny vlastník = skrytá ponuka pre cudzieho '
                'diváka; vlastník ju vidí vždy) a testy detailu, lajku a zoznamu; po zmene skontrolovať ostatných volajúcich '
-               'pomocníka (napríklad `review_hidden_from_user`). Malá backendová dávka bez ručného testu. Odhad: nízky · S.',
+               'pomocníka (napríklad `review_hidden_from_user`). Malá backendová dávka bez ručného testu. KARTA K30 (`karty/K30.md`, 18. 11. 2026): mapovanie si '
+               'robí kolega sám (rozhodnutie majiteľa, len pre tento raz), agent pri príprave karty kód nečítal. Odhad: nízky · S.',
          dec=None, src='K27 (kolega, 16. 11. 2026)'),
     dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
          kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); lokálny build '
-                'raz skončil `SecurityFatalError`; upgrade ako samostatná dávka závislostí',
+                'pri prvom behu skončil `SecurityFatalError` (K28 raz, K29 v každom z troch krokov; druhý beh prešiel); upgrade ako samostatná '
+                'dávka závislostí',
          what='Kolega pri K28 (17. 11. 2026): nainštalovaný Next.js 16.4.3 (`frontend/package.json` `^16.4.3`, `package-lock.json` '
                '16.4.3) je v rozsahu upozornenia GHSA-mfr8-8qww-v76h (stupeň moderate, rozsah 16.3.0 až 16.4.4, oprava je '
                'dostupná). Dôkaz kolegu: `npm audit --omit=dev --json` vo `frontend` hlási pre `next` stupeň moderate (celkovo 6 '
@@ -204,7 +223,9 @@ NEW_ITEMS_K14 = [
                '`SecurityFatalError` o zraniteľnej verzii a pri zopakovaní prešiel. Kontrola agenta: CI build na `main` (úloha '
                '`checks`, 17. 11. 2026 o 06:22 UTC, Next.js 16.4.3) prešiel bez takého výpisu; týždenný workflow `dependency-audit` '
                '(`.github/workflows/dependency-audit.yml`) padá až od stupňa high, takže tento nález nenahlási. Neoverené: či '
-               'build na Railway niekedy skončí rovnakou chybou (treba pozrieť log nasadenia).',
+               'build na Railway niekedy skončí rovnakou chybou (treba pozrieť log nasadenia). Opakovanie v K29 (18. 11. 2026, podľa textov '
+               'commitov kolegu): v každom z troch krokov skončil prvý lokálny `npm run build` rovnakým výpisom `SecurityFatalError` a '
+               'druhý beh prešiel, takže sa to opakuje pri prvom builde.',
          note='Návrh (neoverený): upgrade `next` na opravenú verziu v rámci rozsahu `^16.4.3` ako samostatná dávka závislostí '
                '(tretí druh rizika ide vždy samostatne): `package.json` a `package-lock.json`, celý Jest, `tsc`, build, kontrola '
                'prekladov a ručný dymový test majiteľa po nasadení. Majiteľ by mal pozrieť posledné nasadenia na Railway (zelené, '
@@ -267,4 +288,33 @@ NEW_ITEMS_K14 = [
                'nový scenár komentárov (257) používajú okno len s textom, treba ich pozrieť. Vzhľad schválil majiteľ (R49, R53; obrázky '
                '`navrhy/pc-okno-ponuka.png` a `navrhy/pc-okno-text.png`). Odhad: nízky · M.',
          dec='ROZHODNUTIE R53', src='majiteľ (17. 11. 2026)'),
+    dict(n=345, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
+         kratko='okno detailu príspevku na počítači ostane otvorené po prechode na profil autora komentára (kandidát z ručného testu '
+                'K29, kolega mapuje)',
+         what='Majiteľ pri ručnom teste K29 (18. 11. 2026, test 6, počítač): po kliknutí na meno alebo avatar autora komentára sa otvorí '
+              'správny profil, ale okno detailu pôvodného príspevku ostane otvorené. Očakávanie: detail príspevku sa po prechode na '
+              'profil zatvorí. Agent nemapoval: majiteľ 18. 11. 2026 určil, že si to tentoraz zmapuje kolega sám. Neznáme je, či sa to '
+              'dialo aj pred K29 (K29 boli čisté presuny a odtlačok HTML sa nezmenil, no zatváranie okna ho nekryje).',
+         note='NEJASNÉ: kolega najprv mapuje (kde sa prechod na profil spúšťa, prečo sa okno nezatvorí, či ide o starší stav alebo '
+              'dôsledok K29; porovnať s `main` pred PR #283, teda `8f059cf7`) a vráti zistenie; kód nemení, kým majiteľ nepovie. '
+              '`FeedPostComments.tsx` má po K29 1 098 riadkov, takže oprava logiky v ňom počká na zodpovedajúci krok delenia (R23, ako '
+              'pri 338 a 342); oprava mimo neho môže ísť skôr. Po oprave sa dá doplniť E2E kontrola (Codex). Poradie: karta K36 po K30 '
+              '(návrh). Odhad (neoverený): stredný · M.',
+         dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 6)'),
+    dict(n=346, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
+         kratko='iPhone: nový komentár nie je celý viditeľný vrátane tlačidiel po vlastnom odoslaní ani po kliknutí na upozornenie o '
+                'nových komentároch (kandidát z ručného testu K29, kolega mapuje)',
+         what='Majiteľ pri ručnom teste K29 (18. 11. 2026, iPhone; zistené počas mobilného testovania a pri teste 13; problém bol '
+              'zohľadnený aj pri teste 12, ktorý inak prešiel): (1) po vlastnom odoslaní komentára sa klávesnica zatvorí, ale komentár '
+              'ostane čiastočne skrytý; (2) keď príde komentár z druhého účtu a majiteľ klikne na upozornenie o nových komentároch, '
+              'zoznam sa posunie, ale komentár opäť nie je celý viditeľný. Očakávanie: v oboch prípadoch sa zobrazí celý nový komentár '
+              'vrátane tlačidiel. Agent nemapoval: majiteľ 18. 11. 2026 určil, že si to tentoraz zmapuje kolega sám. Neznáme je, či sa '
+              'to dialo aj pred K29 (K29 boli čisté presuny a odtlačok HTML sa nezmenil, no posun zoznamu a klávesnicu ho nekryjú).',
+         note='NEJASNÉ: kolega najprv mapuje (ktorý posun a ktorá výška sa tu uplatňujú, rozdiel medzi prípadmi (1) a (2), či ide o '
+              'starší stav alebo dôsledok K29; porovnať s `main` pred PR #283, teda `8f059cf7`) a vráti zistenie; kód nemení, kým '
+              'majiteľ nepovie. Plán delenia `FeedPostComments.tsx` (333) má krok 5 „posun a indikátor nových“ '
+              '(`useFeedCommentsScroll.ts`): ak sa príčina ukáže tam, oprava ide po tomto kroku ako samostatný commit v novom súbore '
+              '(ako 338 po kroku 6), nie počas presunu; súbory nad 500 riadkov sa menia len ako presun (R23). Overenie na iPhone robí '
+              'majiteľ. Poradie: karta K36 po K30 (návrh). Odhad (neoverený): stredný · M.',
+         dec=None, src='majiteľ (ručný test K29, 18. 11. 2026, test 13 a mobilné testovanie)'),
 ]

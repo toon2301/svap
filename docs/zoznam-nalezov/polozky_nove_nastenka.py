@@ -83,7 +83,7 @@ NEW_ITEMS_NASTENKA = [
          dec=None, src=ZDROJ),
     dict(n=257, bucket=A, imp=N, eff=EL, pkg='Nástroje a testy',
          kratko='E2E: rozšíriť pokrytie zdieľania a ďalších tokov Nástenky (priebežný cieľ, rieši Codex); scenár komentárov je pripravený '
-                'lokálne (PR #281), živý beh čaká na okno',
+                'lokálne (PR #281), opravy po ňom sú v PR #284, živý beh čaká na okno',
          what='E2E infraštruktúra je hotová a dva testy zdieľania (zdieľanie vlastnej ponuky z profilu a zdieľanie priamo z karty na Nástenke; '
               '`e2e/sharing-from-profile.spec.ts` a `e2e/sharing-from-feed.spec.ts`) existujú. Zvyšok pokrytia je priebežný cieľ bez pevného '
               'konca, nie uzavretá úloha. Chýba viac scenárov zdieľania (z otvoreného detailu, z mobilných vrstiev, cudzie príspevky, Späť po '
@@ -115,7 +115,17 @@ NEW_ITEMS_NASTENKA = [
               '`/api/token/refresh/` a `/api/auth/token/refresh/` (`feed-comments-writes.ts`, riadok 82, ich prepúšťa a nezapočítava); '
               '(3) CodeRabbit, Minor, `diagnostics-tests/feed-comments-browser.check.ts` (riadky 80 až 85): kontrola zámerných chýb '
               'nedokazuje, že chyba bola dosiahnutá (pri `ui-delete-status` by prešla aj vtedy, keby test skončil pred vytvorením '
-              'komentára); treba overiť počty vytvorených a zmazaných komentárov a fázu zlyhania.',
+              'komentára); treba overiť počty vytvorených a zmazaných komentárov a fázu zlyhania. OPRAVY PRIPRAVENÉ (Codex, PR #284, '
+              'vetva `e2e/komentare-257-opravy`, tri commity `90ee57b8`, `1e9110ae` a `e58274c4`, 7 súborov; v čase zápisu '
+              '18. 11. 2026 PR otvorený a nezlúčený, CI (`checks`, `backend-postgres`) zelené, stav zlúčenia čistý; agent '
+              'overil v kóde): (1) čakanie na `feed-list` alebo `feed-empty-state` a kontrola prázdnej Nástenky; (2) výnimky '
+              'obnovy tokenu sú v odovzdaní; (3) chybové režimy vyžadujú presné počty operácií a fázu zlyhania, nový test '
+              '`ui-delete-before-create` a presný stav DELETE 500 (503 aj chýbajúca odpoveď sa odmietnu). Podľa textu PR '
+              'lokálne 30 z 30 čistých kontrol, prehliadačová sada 13 z 13 dvakrát, TypeScript a ESLint bez chýb, bez zmeny '
+              'aplikácie a bez živého behu. Dve nové pripomienky CodeRabbitu k PR #284 (presný stav DELETE a izolácia dôvodu '
+              'odmietnutia) sú v kóde opravené neskoršími commitmi `1e9110ae` a `e58274c4`; vlákna ostávajú neuzavreté (zatvára '
+              'majiteľ). Zlúčenie PR #284 zapíše agent v ďalšej vetve. Živý beh a cielený beh špecov `feed-post-detail.spec.ts` '
+              'a `notification-click.spec.ts` po K29 čakajú na okno určené majiteľom.',
          dec=None, src=ZDROJ),
     dict(n=258, bucket=A, imp=N, eff=EM, pkg='Nástenka a zdieľanie',
          kratko='pôvodný autor zdieľaného príspevku (avatar a meno) nie je klikateľný na profil',

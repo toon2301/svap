@@ -470,6 +470,8 @@ DONE_PR_TABLE_CASTOCNE = [
     ('#278', 'K28', '333 (dávka 1 z 5 delenia `FeedPostComments.tsx`: charakterizačné testy a dočasný odtlačok HTML)'),
     ('#281', 'e2e/komentare-257', '257 (časť: bezpečný scenár pridania a zmazania vlastného komentára pripravený lokálne, živý beh čaká na okno; '
      'odovzdanie nesie živé overenie 337)'),
+    ('#283', 'K29', '333 (dávka 2 z 5 delenia `FeedPostComments.tsx`: kroky 1 až 3, čisté presuny do šiestich nových súborov; '
+     'ručný test majiteľa 18. 11. 2026 14 z 14, dvaja kandidáti 345 a 346)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.
