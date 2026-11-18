@@ -13,9 +13,11 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
-import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedCommentItem from './FeedCommentItem';
+import FeedCommentComposer from './FeedCommentComposer';
+import FeedCommentsLoadingMore from './FeedCommentsLoadingMore';
+import FeedCommentsNewIndicator from './FeedCommentsNewIndicator';
 import FeedCommentReplyComposer from './FeedCommentReplyComposer';
 import FeedRepliesAutoLoader from './FeedRepliesAutoLoader';
 import { useEmojiInsertion } from './useEmojiInsertion';
@@ -1053,19 +1055,7 @@ export default function FeedPostComments({
             </ul>
           )}
 
-          {loadingMore ? (
-            <ul className="mt-3 space-y-3" data-testid="feed-comments-loading-more">
-              {[0, 1].map((key) => (
-                <li key={key} className="flex animate-pulse items-start gap-2.5">
-                  <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
-                  <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                    <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-                    <div className="h-3 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          {loadingMore ? <FeedCommentsLoadingMore /> : null}
 
           {/* Sentinel patrí TEJTO karte – observer je per-inštancia, takže dve
               naraz rozbalené karty si donačítavanie navzájom nespúšťajú.
@@ -1074,133 +1064,28 @@ export default function FeedPostComments({
           <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
         </div>
 
-        {/* Hlásič pre čítačky. Musí byť v DOM STÁLE a meniť sa len jeho obsah:
-            aria-live oznamuje zmeny výhradne v prvku, ktorý čítačka sledovala
-            UŽ PREDTÝM, takže na regióne, ktorý sa spolu s tlačidlom objaví a
-            zmizne, sa oznámenie nespoľahlivo stratí. Vizuálnu rolu má tlačidlo
-            nižšie, tento uzol je len pre asistenčné technológie. */}
-        <p
-          data-testid="feed-comments-new-announcer"
-          aria-live="polite"
-          className="sr-only"
-        >
-          {newCommentsCount > 0 ? newCommentsLabel : ''}
-        </p>
-
-        {/* Nenápadné upozornenie namiesto vynúteného posunu pohľadu – ukáže sa
-            len vtedy, keď používateľ číta vyššie v zozname. */}
-        {newCommentsCount > 0 ? (
-          <button
-            type="button"
-            onClick={handleNewCommentsClick}
-            data-testid="feed-comments-new-indicator"
-            className="absolute inset-x-0 bottom-2 mx-auto flex w-max items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3.5 w-3.5"
-              aria-hidden="true"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <polyline points="19 12 12 19 5 12" />
-            </svg>
-            {newCommentsLabel}
-          </button>
-        ) : null}
+        <FeedCommentsNewIndicator
+          newCommentsCount={newCommentsCount}
+          newCommentsLabel={newCommentsLabel}
+          handleNewCommentsClick={handleNewCommentsClick}
+        />
       </div>
 
       {/* Composer je MIMO scrollovateľnej časti – ostáva viditeľný bez ohľadu
           na to, kde v zozname používateľ je. */}
-      <div className="mt-3">
-        {/* Kompaktný variant: jeden riadok a ikona odoslania priamo v poli.
-            Vysunutý panel nad fotkou má na composer len úzky pruh. */}
-        <div className={compactComposer ? 'relative' : ''}>
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            rows={compactComposer ? 1 : 2}
-            placeholder={t('feed.commentPlaceholder', 'Napíš komentár...')}
-            aria-label={t('feed.commentPlaceholder', 'Napíš komentár...')}
-            className={`w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 ${
-              compactComposer ? 'resize-none pr-12' : 'resize-y'
-            }`}
-          />
-          {compactComposer ? (
-            <button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={!canSubmit}
-              data-testid="feed-comment-send"
-              aria-label={t('feed.commentSubmit', 'Pridať')}
-              className="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <line x1="10" y1="14" x2="21" y2="3" />
-                <path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z" />
-              </svg>
-            </button>
-          ) : null}
-        </div>
-        {/* Kompaktný variant odosiela ikonou v poli, takže spodný riadok
-            (emoji, počítadlo, „Pridať") by bol druhá cesta k tej istej akcii.
-            Zostáva z neho len upozornenie na prekročenú dĺžku. */}
-        {compactComposer ? (
-          tooLong ? (
-            <p
-              data-testid="feed-comment-counter"
-              className="mt-1 text-xs font-semibold tabular-nums text-red-500 dark:text-red-400"
-            >
-              {text.length}/{FEED_COMMENT_MAX_LENGTH}
-            </p>
-          ) : null
-        ) : (
-        <div className="mt-2 flex items-center justify-between gap-3">
-          {isMobile ? null : (
-            <DesktopEmojiPickerButton
-              ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
-              disabled={submitting}
-              onSelect={insertEmoji}
-              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
-            />
-          )}
-          <span
-            data-testid="feed-comment-counter"
-            className={`ml-auto text-xs tabular-nums ${
-              tooLong
-                ? 'font-semibold text-red-600 dark:text-red-400'
-                : 'text-gray-400 dark:text-gray-500'
-            }`}
-          >
-            {text.length}/{FEED_COMMENT_MAX_LENGTH}
-          </span>
-          <button
-            type="button"
-            onClick={() => void handleSubmit()}
-            disabled={!canSubmit}
-            className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting
-              ? t('common.sending', 'Odosielam...')
-              : t('feed.commentSubmit', 'Pridať')}
-          </button>
-        </div>
-        )}
-      </div>
+      <FeedCommentComposer
+        compactComposer={compactComposer}
+        textareaRef={textareaRef}
+        text={text}
+        setText={setText}
+        t={t}
+        handleSubmit={handleSubmit}
+        canSubmit={canSubmit}
+        tooLong={tooLong}
+        isMobile={isMobile}
+        submitting={submitting}
+        insertEmoji={insertEmoji}
+      />
 
       <FeedDestructiveConfirm
         open={pendingDelete !== null}
