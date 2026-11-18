@@ -2,7 +2,99 @@
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
-## Aktuálna dávka — 18. 11. 2026: tri opravy po kontrole PR #281
+**Trvalý pokyn majiteľa z 18. 11. 2026:** po dokončení práce a primeraných
+úspešných kontrolách Codex svoje zmeny automaticky commitne a pushne na pracovnú
+vetvu, bez ďalšieho pýtania, pokiaľ majiteľ výslovne neurčí inak. Platí iba pre
+zmeny danej úlohy vo vlastnej oblasti; nikdy nie pre env, reláciu, reportové
+artefakty alebo cudzie zmeny. PR, zlučovanie do mainu a nasadenie zostávajú
+majiteľovi. Ak nevznikli zmeny, nevytvára sa prázdny commit.
+
+## Aktuálna dávka — 18. 11. 2026: živé komentáre 257 a cielená regresia po K29
+
+PR **#284 je zlúčený**, testovaný čerstvý main **`83b26a23`** (obsahuje aj K29
+a K30). Majiteľ výslovne potvrdil dokončené nasadenie, okno bez zlučovania,
+nasadzovania a zmien účtov aj dočasný vlastný obsah s uprataním. Vetva z tohto
+mainu: **`e2e/komentare-257-overenie`**. Výsledok čaká na prijatie majiteľom;
+prijatý základ celého behu **427 / 2 / 303** ani posledný celý beh sa nemenia.
+
+**Oba živé behy skončili bez pádu. Okno bolo uvoľnené po skončení o 13:45
+Europe/Bratislava (12:45 UTC); ďalší živý beh sa nespúšťa.**
+
+| Špec | Prešlo | Zlyhalo | Preskočené |
+| --- | ---: | ---: | ---: |
+| `feed-comments.ui.ts` | **3** | **0** | **0** |
+| `feed-post-detail.spec.ts` | **4** | **0** | **5** |
+| `notification-click.spec.ts` | **3** | **0** | **15** |
+| **Spolu** | **10** | **0** | **20** |
+
+| Projekt | Prešlo / zlyhalo / preskočené | Rozpätie komentárov | Rozpätie cielených regresií |
+| --- | --- | ---: | ---: |
+| webkit-desktop | **3 / 0 / 7** | 10,048 s | 17,530 s |
+| webkit-mobile | **4 / 0 / 6** | 5,745 s | 21,173 s |
+| chromium-desktop | **3 / 0 / 7** | 3,895 s | 9,231 s |
+
+Rozpätie projektu je od štartu prvého testu po koniec posledného v danom behu,
+nie čas prihlásenia ani súčet CPU. Workers **1**, retries **0**, maxFailures **1**,
+žiadne automatické opakovanie alebo diagnostický opakovaný živý pokus.
+
+### Komentáre 257 — 3/3 a overené upratanie
+
+UTC **12:41:37.246–12:42:30.791**; proces **53 545 ms**, Playwright report
+**39 991,291 ms**. Desktopový WebKit, mobilný WebKit aj Chromium prešli po jednom.
+V každom projekte vznikol iba vlastný textový podklad a jeden vlastný komentár;
+UI pridanie aj zmazanie sa overili aj cez GET, potom sa zmazal podklad a GET
+potvrdil neprítomnosť. Všetky tri fixture zaznamenali:
+
+```text
+[E2E-COMMENTS-CLEANUP] state=verified
+[E2E-COMMENTS-AUDIT] post=1 comment=1 uiDelete=1 cleanupDelete=1 rejected=0 pending=0 uncertain=false
+```
+
+Spolu boli zmazané **3 dočasné príspevky a 3 komentáre**. Žiadny neistý,
+odmietnutý alebo otvorený zápis v audite. Nenastalo neoverené upratanie.
+
+### Regresie po K29 — 7/0/20, presný význam SKIP
+
+UTC **12:44:04.940–12:45:04.488**; proces **59 548 ms**, Playwright report
+**55 606,506 ms**. Všetky štyri projektovo určené testy detailu príspevku prešli.
+V upozorneniach prešiel návrat z prečítaného upozornenia na **komentár** vo
+všetkých troch projektoch.
+
+- **14 SKIP** je pôvodné rozdelenie mobilných a desktopových scenárov medzi
+  projektmi, nie nový problém alebo vypnutie testu.
+- **6 SKIP** je dátová medzera: v prvej dávke 15 upozornení chýbali vhodné
+  **prečítané upozornenia na lajk a odpoveď**, dva scenáre v každom projekte.
+  Tie nie sú PASS ani dokázaná chyba aplikácie. Kvôli behu sa žiadne upozornenie
+  nevytváralo ani neoznačovalo za prečítané. Ďalšie overenie týchto šiestich
+  variantov potrebuje dohodnutú prípravu dát a nové potvrdené okno.
+
+Starší bezpečný čítač mal 14 projektových SKIP označených iba ako
+`other_or_unclassified_skip`; roztriedenie bolo samostatne overené podľa
+deklarácie mobil/desktop a projektu, bez použitia osobných údajov.
+
+### Hranice overenia a ochrana údajov
+
+Nové pády ani bloky `[E2E-EVIDENCE]` nevznikli. Nálezy **345 a 346 sa týmto
+neuzatvárajú**: tieto scenáre neotvárajú profil autora komentára a nekontrolujú
+celý komentár vo viewporte; základná viditeľnosť riadka nie je dôkaz plnej
+viditeľnosti. Kolega ich naďalej mapuje. Toto tiež nie je cielený test K30/339.
+
+Prihlásenie v oboch behoch uspelo pôvodným global setupom. Pôvodný `.env.e2e`
+bol pripojený iba read-only, nevypisoval sa ani nekopíroval. Screenshot, trace,
+video a automatický DOM snapshot boli vypnuté. Pri dvoch starších read-only
+špecoch to zaistil lokálny konfiguračný obal mimo Gitu; menil iba výber
+dohodnutých súborov, umiestnenie artefaktov a ich ochranu, nie testy, asercie,
+časovanie alebo navigáciu. Surové lokálne reporty nie sú určené na zdieľanie;
+bezpečné číselné výsledky a audit sú v odovzdaní.
+
+Pred prvým skutočným štartom obal odmietol Windows cestu s inými oddeľovačmi
+ešte pred Dockerom. Oprava a preflight prebehli iba mimo Gitu, bez prihlásenia
+alebo API; nejde o pád E2E a do súčtov sa nezapočítava. Následné dva skutočné
+behy prešli bez retry. Mení sa iba tento dokument; aplikácia, E2E zdroje,
+závislosti, migrácie ani zoznam nálezov sa nemenili. Majiteľ schválil commit
+a push dokumentácie; PR otvorí sám.
+
+## Historická dávka — 18. 11. 2026: tri opravy po kontrole PR #281
 
 Vetva **`e2e/komentare-257-opravy`** vznikla z čerstvého mainu **`a9d0fc0c`**
 (už aj PR #283, K29). PR #280 a #281 sú zlúčené; **340 aj 337 majiteľ prijal
