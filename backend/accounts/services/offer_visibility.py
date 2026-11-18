@@ -16,11 +16,22 @@ def offer_owner_blocked_from_user(offer, user) -> bool:
 
 
 def offer_hidden_from_user(offer, user) -> bool:
-    """Apply direct offer visibility without restricting the owner."""
+    """Apply direct offer visibility without restricting the owner.
+
+    Cudziemu divákovi je ponuka skrytá, keď je skrytá sama, keď má vlastník
+    súkromný profil alebo neaktívny účet (napríklad deaktivovaný v
+    administrácii; vyhľadávanie ho vynecháva cez ``searchable_user_q``) a keď
+    medzi divákom a vlastníkom existuje blok v ktoromkoľvek smere. Výnimka pre
+    vlastníka platí vždy, aj pre neaktívny účet. Ten sa k API zvyčajne
+    neprihlási, no cache autentifikácie (predvolene 24 hodín) ho môže po
+    deaktivácii ešte pustiť, ak sa nezneplatnila (zápis mimo ``save()``, súbeh
+    pri čítaní používateľa); to rieši autentifikácia, nie táto funkcia.
+    """
     if getattr(offer, "user_id", None) == getattr(user, "id", None):
         return False
     return bool(
         offer.is_hidden
+        or not getattr(offer.user, "is_active", True)
         or not getattr(offer.user, "is_public", True)
         or offer_owner_blocked_from_user(offer, user)
     )
