@@ -12,9 +12,16 @@
  * `mergeComments` by pomocou odpovede spred pridania vlastný komentár odstránilo ako „zmazaný“); zoznam je po
  * novom načítaní zhodný so serverom, vrátane vlastného komentára a čerstvého počtu.
  *
+ * Druhá časť (nálezy CodeRabbitu na PR #295): odmontovaná inštancia nespúšťa opakované načítanie ani nevolá
+ * `onTotalChange`. Rodič počet zapíše a rozošle všetkým miestam s rovnakým `postId` bez kontroly aktuálnosti,
+ * takže zastaraná odpoveď odmontovaného zoznamu by mohla prepísať novší počet z iného miesta. Stav Reactu po
+ * odmontovaní zastaví React sám, volanie callbacku nie, preto je kontrola v hooku (cesty: prvé načítanie,
+ * opakované načítanie, polling).
+ *
  * Testy používajú len verejné rozhranie komponentu (props, DOM) a mockujú len vonkajšie moduly.
  */
 
+import { StrictMode } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
@@ -347,5 +354,141 @@ describe('FeedPostComments – komentár pridaný počas prvého načítania (n�
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('FeedPostComments – odmontovaná inštancia nič nepublikuje (PR #295)', () => {
+  beforeEach(() => {
+    mockedList.mockReset();
+    mockedCreate.mockReset();
+    mockedGone.mockClear();
+  });
+
+  it('does not publish the count when the first load finishes after unmount', async () => {
+    const firstLoad = deferred<FeedCommentPage>();
+    mockedList.mockReturnValueOnce(firstLoad.promise);
+    const onTotalChange = jest.fn();
+
+    const { unmount } = render(
+      <FeedPostComments postId={5} onTotalChange={onTotalChange} />,
+    );
+    unmount();
+    await act(async () => {
+      firstLoad.resolve(page([comment(1, 'Starý')], 9));
+    });
+
+    expect(onTotalChange).not.toHaveBeenCalled();
+  });
+
+  it('does not repeat the load nor publish its count after unmount', async () => {
+    const firstLoad = deferred<FeedCommentPage>();
+    mockedList
+      .mockReturnValueOnce(firstLoad.promise)
+      .mockResolvedValueOnce(page([comment(2, 'Môj nový'), comment(1, 'Starý')], 12));
+    const onTotalChange = jest.fn();
+
+    const { unmount } = render(
+      <FeedPostComments postId={5} onTotalChange={onTotalChange} />,
+    );
+    await submitDuringLoad('Môj nový', comment(2, 'Môj nový'));
+    unmount();
+    await act(async () => {
+      firstLoad.resolve(page([comment(1, 'Starý')], 1));
+    });
+
+    // Zastaranú odpoveď zahodila mutácia, no zoznam už neexistuje: nič sa nenačíta znova a nič sa nepublikuje.
+    expect(mockedList).toHaveBeenCalledTimes(1);
+    expect(onTotalChange).not.toHaveBeenCalled();
+  });
+
+  it('does not publish the count of a polling response that finishes after unmount', async () => {
+    jest.useFakeTimers();
+    try {
+      const poll = deferred<FeedCommentPage>();
+      mockedList
+        .mockResolvedValueOnce(page([comment(1, 'Starý')], 3))
+        .mockReturnValueOnce(poll.promise);
+      const onTotalChange = jest.fn();
+
+      const { unmount } = render(
+        <FeedPostComments postId={5} onTotalChange={onTotalChange} />,
+      );
+      expect(await screen.findByText('Starý')).toBeInTheDocument();
+      onTotalChange.mockClear();
+      await act(async () => {
+        jest.advanceTimersByTime(COMMENTS_POLL_INTERVAL_MS + 50);
+      });
+      expect(mockedList).toHaveBeenCalledTimes(2);
+      unmount();
+      await act(async () => {
+        poll.resolve(page([comment(1, 'Starý')], 4));
+      });
+
+      expect(onTotalChange).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('still publishes the count of the first load and of a poll while mounted', async () => {
+    jest.useFakeTimers();
+    try {
+      mockedList
+        .mockResolvedValueOnce(page([comment(1, 'Starý')], 3))
+        .mockResolvedValueOnce(page([comment(2, 'Nový'), comment(1, 'Starý')], 4));
+      const onTotalChange = jest.fn();
+
+      render(<FeedPostComments postId={5} onTotalChange={onTotalChange} />);
+      expect(await screen.findByText('Starý')).toBeInTheDocument();
+      expect(onTotalChange).toHaveBeenLastCalledWith(3);
+
+      await act(async () => {
+        jest.advanceTimersByTime(COMMENTS_POLL_INTERVAL_MS + 50);
+      });
+
+      await waitFor(() => expect(onTotalChange).toHaveBeenLastCalledWith(4));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('works under React StrictMode, where effects run twice', async () => {
+    mockedList.mockResolvedValue(page([comment(1, 'Starý')], 7));
+    const onTotalChange = jest.fn();
+
+    render(
+      <StrictMode>
+        <FeedPostComments postId={5} onTotalChange={onTotalChange} />
+      </StrictMode>,
+    );
+
+    expect(await screen.findByText('Starý')).toBeInTheDocument();
+    expect(onTotalChange).toHaveBeenLastCalledWith(7);
+  });
+
+  it('repeats the load for the CURRENT post after the post changed', async () => {
+    const loadOfSecondPost = deferred<FeedCommentPage>();
+    mockedList
+      .mockResolvedValueOnce(page([comment(10, 'Z prvého príspevku')]))
+      .mockReturnValueOnce(loadOfSecondPost.promise)
+      .mockResolvedValueOnce(
+        page([comment(21, 'Môj nový'), comment(20, 'Z druhého príspevku')]),
+      );
+    mockedCreate.mockResolvedValueOnce(comment(21, 'Môj nový'));
+
+    const { rerender } = render(<FeedPostComments postId={5} />);
+    expect(await screen.findByText('Z prvého príspevku')).toBeInTheDocument();
+    rerender(<FeedPostComments postId={6} />);
+    await userEvent.type(screen.getByRole('textbox'), 'Môj nový');
+    await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    await waitFor(() => expect(mockedCreate).toHaveBeenCalledWith(6, 'Môj nový'));
+    await act(async () => {
+      loadOfSecondPost.resolve(page([comment(20, 'Z druhého príspevku')]));
+    });
+
+    expect(await screen.findByText('Z druhého príspevku')).toBeInTheDocument();
+    expect(screen.getByText('Môj nový')).toBeInTheDocument();
+    // Opakovanie patrí AKTUÁLNEMU príspevku, nie tomu z prvého vykreslenia.
+    expect(mockedList).toHaveBeenNthCalledWith(3, 6, { pageSize: 10 });
   });
 });

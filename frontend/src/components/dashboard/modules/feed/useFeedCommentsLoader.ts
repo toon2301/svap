@@ -16,6 +16,11 @@
  *
  * Nález 338 (K41, R48): odpoveď prvého načítania, ktorú zahodilo pridanie komentára, nechávala zoznam na
  * „Načítavam…“ (`loading` zhasínal len pri zhode poradia). Teraz sa v takom prípade načíta znova (viď `load`).
+ *
+ * PR #295 (nálezy CodeRabbitu): odmontovaná inštancia nespúšťa opakované načítanie ani nevolá `onTotalChange`
+ * (rodič počet rozošle všetkým miestam s rovnakým `postId`, takže by zastaraná odpoveď mohla prepísať novší
+ * počet z iného miesta): stav Reactu po odmontovaní zastaví React, volanie callbacku nie, preto kontrola
+ * `mountedRef`. `loadRef` sa zapisuje v efekte po commite, nie pri vykresľovaní.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -96,6 +101,11 @@ export function useFeedCommentsLoader({
   const latestLoadRef = useRef(0);
   /** Najnovší `load`, aby sa vedel zopakovať aj z vlastného `finally` (nález 338). */
   const loadRef = useRef<() => Promise<void>>(async () => undefined);
+  /**
+   * Je inštancia ešte namontovaná? Stav Reactu po odmontovaní zastaví React sám, no volanie `onTotalChange`
+   * (rodič ho rozošle všetkým miestam s rovnakým `postId`) a opakované načítanie nie, preto kontrola tu.
+   */
+  const mountedRef = useRef(true);
   // Aktuálne načítané okno pre `refresh` – cez ref (nie závislosť), aby sa
   // pollovací callback pri každom novom komentári nepreskladal.
   const commentsRef = useRef(comments);
@@ -138,8 +148,8 @@ export function useFeedCommentsLoader({
       setHasMore(Boolean(page.next));
       // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
       // inak by po realtime obnovení ukazoval staré číslo. `count` z BE
-      // je celkový, nie len veľkosť stránky.
-      if (typeof page.count === 'number') {
+      // je celkový, nie len veľkosť stránky. Odmontovaná inštancia ho nepublikuje (PR #295).
+      if (mountedRef.current && typeof page.count === 'number') {
         onTotalChangeRef.current?.(page.count);
       }
     } catch (error) {
@@ -154,16 +164,31 @@ export function useFeedCommentsLoader({
     } finally {
       if (seq === loadSeqRef.current) {
         setLoading(false);
-      } else if (call === latestLoadRef.current) {
+      } else if (call === latestLoadRef.current && mountedRef.current) {
         // Odpoveď zahodila mutácia (napríklad pridaný komentár), nie novšie načítanie: `loading` by už nezhasol
         // nikto a zoznam by ostal na „Načítavam…“ (nález 338). Načíta sa znova nad aktuálnym stavom. Zastaranú
         // odpoveď nezlučujeme, lebo je spred mutácie: `mergeComments` by z nej vlastný komentár odstránil ako
         // „zmazaný“. Slučka nehrozí: opakovanie zneplatní len ďalšia mutácia, teda ďalšia akcia používateľa.
+        // Odmontovaný zoznam už nemá čo načítať (PR #295).
         void loadRef.current();
       }
     }
   }, [postId, markSeen]);
-  loadRef.current = load;
+
+  // Zápis až po commite: render sa môže zahodiť a ref nesmie ukazovať na `load` z nezapísaného stavu (nález
+  // CodeRabbitu na PR #295). Efekty `loadRef` a `mountedRef` idú pred efektmi `gone`, `load` a pollingu, takže ich
+  // vzájomné poradie nemenia a obe sú nastavené, kým sa spustí prvé načítanie.
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
+
+  useEffect(() => {
+    // Aj `true`: React vo vývoji efekt spustí, odmontuje a spustí znova.
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Nový príspevok začína s čistým štítom – „zmizol" patrí konkrétnemu id.
   useEffect(() => {
@@ -271,8 +296,8 @@ export function useFeedCommentsLoader({
     setComments((current) => mergeComments(current, page.results, hasNext));
     markSeen(flattenComments(page.results));
     // Počet pri ikone drží krok so zoznamom aj vtedy, keď nové komentáre
-    // pribudli za hranicou toho, čo má používateľ načítané.
-    if (typeof page.count === 'number') {
+    // pribudli za hranicou toho, čo má používateľ načítané. Odmontovaná inštancia ho nepublikuje (PR #295).
+    if (mountedRef.current && typeof page.count === 'number') {
       onTotalChangeRef.current?.(page.count);
     }
 
