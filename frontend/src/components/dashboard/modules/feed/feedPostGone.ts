@@ -18,9 +18,13 @@
  *  4. Žiadny reload a žiadne odhlásenie: 404/403/410 nie sú autentifikačné
  *     chyby a interceptor v `lib/api.ts` na ne nesiaha (obnovu tokenu rieši
  *     výhradne 401).
+ *  5. Pri akciách nad komentárom (odpoveď, úprava, zmazanie) stav chyby sám
+ *     nestačí, preto sa príspevok najprv overí dopytom na jeho detail
+ *     (`handleCommentActionErrorIfPostGone`, nález 342).
  */
 
 import toast from 'react-hot-toast';
+import { getFeedPost } from '@/lib/feedApi';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 
 /**
@@ -75,6 +79,33 @@ export function handleFeedPostErrorIfGone(
   if (!isFeedPostGoneError(error)) return false;
   handleGoneFeedPost(postId, t);
   return true;
+}
+
+/**
+ * Ako `handleFeedPostErrorIfGone`, ale pre akcie nad komentárom: odpoveď, úpravu a zmazanie (nález 342).
+ *
+ * Pri nich stav chyby sám nestačí: server vracia 404 aj vtedy, keď príspevok existuje a chýba len komentár alebo
+ * rodič odpovede, a 403 pri úprave a zmazaní znamená „nemáš právo“, nie „príspevok zmizol“. Preto sa po 404, 403
+ * a 410 najprv overí príspevok dopytom na jeho detail. Až keď aj ten zlyhá rovnakým stavom, príspevok zmizol a
+ * spracuje sa ako pri pridaní komentára (`handleGoneFeedPost`: hláška najviac raz a signál zmiznutia).
+ *
+ * Vráti `true`, keď príspevok zmizol a volajúci už nemá hlásiť vlastnú chybu. Inak vráti `false`: pôvodná chyba má
+ * iný stav (vtedy sa detail ani nepýta), detail prešiel, alebo zlyhal inak než „zmizol“ (sieť, 5xx).
+ */
+export async function handleCommentActionErrorIfPostGone(
+  error: unknown,
+  postId: number,
+  t: (key: string, fallback?: string) => string,
+): Promise<boolean> {
+  if (!isFeedPostGoneError(error)) return false;
+  try {
+    await getFeedPost(postId);
+  } catch (detailError) {
+    if (!isFeedPostGoneError(detailError)) return false;
+    handleGoneFeedPost(postId, t);
+    return true;
+  }
+  return false;
 }
 
 /** Len pre testy – medzi prípadmi treba začínať s čistou pamäťou. */

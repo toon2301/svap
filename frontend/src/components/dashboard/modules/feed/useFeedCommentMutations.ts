@@ -13,13 +13,17 @@
  * poradie efektov komponentu nemení.
  *
  * `submitting`, `trimmed` a `canSubmit` ostávajú v komponente: odvodzujú sa od poľa na komentár (`text`), ktoré
- * používa aj composer. Nález 342 (obsluhy úpravy, odpovede a zmazania nevolajú `handleFeedPostErrorIfGone`,
- * pridanie ho volá) sa tu neopravuje, oprava ide v K43.
+ * používa aj composer.
+ *
+ * Nález 342 (K43, R60): odpoveď, úprava a zmazanie pri zmiznutom príspevku ukazovali len všeobecnú chybu a
+ * príspevok ostával v zoznamoch. Po chybe 404, 403 alebo 410 sa teraz najprv overí príspevok dopytom na detail
+ * (`handleCommentActionErrorIfPostGone`) a ak zmizol, spracuje sa ako pri pridaní. Pridanie komentára ostáva pri
+ * `handleFeedPostErrorIfGone`: tam 404 jednoznačne patrí príspevku, takže overovací dopyt netreba.
  */
 
 import { useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import toast from 'react-hot-toast';
-import { handleFeedPostErrorIfGone } from './feedPostGone';
+import { handleCommentActionErrorIfPostGone, handleFeedPostErrorIfGone } from './feedPostGone';
 import { repliesTotal } from './feedCommentsLogic';
 import {
   createFeedPostComment,
@@ -121,11 +125,14 @@ export function useFeedCommentMutations({
       );
       setEditingComment(null);
     } catch (err) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error ||
-        t('feed.commentUpdateError', 'Komentár sa nepodarilo upraviť.');
-      toast.error(message);
+      // Príspevok mohol medzitým zmiznúť (nález 342): po 404, 403 a 410 sa najprv overí dopytom na detail.
+      if (!(await handleCommentActionErrorIfPostGone(err, postId, t))) {
+        const message =
+          (err as { response?: { data?: { error?: string } } })?.response?.data
+            ?.error ||
+          t('feed.commentUpdateError', 'Komentár sa nepodarilo upraviť.');
+        toast.error(message);
+      }
     } finally {
       setEditSubmitting(false);
     }
@@ -160,10 +167,13 @@ export function useFeedCommentMutations({
       setExpandedReplies((current) => new Set(current).add(parentId));
       onCountChange?.(1);
     } catch (err) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error || t('feed.replyCreateError', 'Odpoveď sa nepodarilo pridať.');
-      toast.error(message);
+      // Príspevok mohol medzitým zmiznúť (nález 342): po 404, 403 a 410 sa najprv overí dopytom na detail.
+      if (!(await handleCommentActionErrorIfPostGone(err, postId, t))) {
+        const message =
+          (err as { response?: { data?: { error?: string } } })?.response?.data
+            ?.error || t('feed.replyCreateError', 'Odpoveď sa nepodarilo pridať.');
+        toast.error(message);
+      }
     } finally {
       setReplySubmitting(false);
     }
@@ -199,8 +209,11 @@ export function useFeedCommentMutations({
       onCountChange?.(-(1 + repliesTotal(comment)));
       toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));
       setPendingDelete(null);
-    } catch {
-      toast.error(t('feed.commentDeleteError', 'Komentár sa nepodarilo zmazať.'));
+    } catch (err) {
+      // Príspevok mohol medzitým zmiznúť (nález 342): po 404, 403 a 410 sa najprv overí dopytom na detail.
+      if (!(await handleCommentActionErrorIfPostGone(err, postId, t))) {
+        toast.error(t('feed.commentDeleteError', 'Komentár sa nepodarilo zmazať.'));
+      }
     } finally {
       setDeleting(false);
     }
