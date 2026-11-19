@@ -17,8 +17,40 @@ export const COMMENTS_PAGE_SIZE = 10;
  * orezáva rovno tu, nech je zrejmé, čo odpoveď pokrýva.
  */
 export const COMMENTS_MAX_POLL_SIZE = 50;
-/** Do tejto vzdialenosti od vrchu sa nový komentár doscrolluje sám. */
+/**
+ * Do tejto vzdialenosti od vrchu sa nový komentár doscrolluje sám. Ak je nad komentármi hlavička (mobilný
+ * detail), počíta sa od prvého komentára, nie od vrchu zoznamu (`isNearCommentsStart`).
+ */
 export const NEAR_TOP_PX = 100;
+/**
+ * Rezerva nad prvým komentárom, keď sa zoznam doscrolluje na začiatok komentárov (nález 346, R58): komentár
+ * sa nezlepí s horným okrajom plochy. Nezávisí od výšky plochy ani komentára, takže platí aj s otvorenou
+ * klávesnicou.
+ */
+export const FIRST_COMMENT_MARGIN_PX = 8;
+
+/**
+ * Kam doscrollovať, aby bol prvý komentár navrchu viditeľnej plochy s malou rezervou.
+ *
+ * `commentsStart` je odstup prvého komentára od začiatku obsahu zoznamu, teda výška hlavičky nad komentármi
+ * (0 = nad komentármi nič nie je alebo sa to nedá zmerať). Bez hlavičky ostáva cieľ 0, ako bol.
+ */
+export function commentsScrollTarget(commentsStart: number): number {
+  return Math.max(0, commentsStart - FIRST_COMMENT_MARGIN_PX);
+}
+
+/**
+ * Je čitateľ pri začiatku komentárov, takže nový komentár uvidí hneď?
+ *
+ * S hlavičkou sa meria od prvého komentára, nie od vrchu zoznamu: nad komentármi leží text a fotka, takže kto
+ * číta komentáre, je ďaleko od vrchu zoznamu, no tesne pri ich začiatku. Meria sa na obe strany, takže kto je
+ * v hlavičke vyššie než NEAR_TOP_PX nad komentármi, pri nich nie je. Bez hlavičky (`commentsStart` 0) platí
+ * pravidlo ako doteraz: pri vrchu je každý do NEAR_TOP_PX od neho, aj so záporným `scrollTop` (odraz na iOS).
+ */
+export function isNearCommentsStart(scrollTop: number, commentsStart: number): boolean {
+  const distance = scrollTop - commentsStart;
+  return (commentsStart > 0 ? Math.abs(distance) : distance) <= NEAR_TOP_PX;
+}
 
 /** Zhodné s FEED_REPLIES_PREVIEW_LIMIT na backende. */
 export const REPLIES_PREVIEW_LIMIT = 10;
