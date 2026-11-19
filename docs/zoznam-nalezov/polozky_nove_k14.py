@@ -483,17 +483,17 @@ NEW_ITEMS_K14 = [
               'nezlúčia (inde v aplikácii má chyba pri offline jeden spoločný toast, napríklad chyba ukladania '
               'volieb upozornení v Nastaveniach); (3) súbežné donačítania bez stráže súbehu; (4) iná cesta '
               '(napríklad polling po 8 s) toast opakuje.',
-         note='NEJASNÉ: najprv mapovanie (K41, kolega; kód pre 351 sa nemení, kým majiteľ nepovie). Mapovanie má '
-              'zistiť: ktorý kód toast vyvoláva a prečo ich je veľa, či ide o slučku pokusov, o súbežné volania '
-              'alebo o opakovaný toast bez spoločného `id`, ktoré iné cesty (donačítanie odpovedí, hľadanie cieľa, '
-              'polling) sa správajú rovnako, či je to starší stav (porovnať s `main` pred K37 a K38) a kam patrí '
-              'oprava (`useFeedCommentsLoader.ts` má 349 riadkov, `FeedPostComments.tsx` 573 a mení sa len ako '
-              'presun, R23). Možná oprava (návrh agenta, neoverený): jeden toast s pevným `id` a zastavenie '
-              'automatických opakovaní po zlyhaní, kým používateľ sám nezačne znova (napríklad ďalším posunom); ak '
-              'by to vyžadovalo viditeľnú zmenu (napríklad tlačidlo „Skúsiť znova“ pri konci zoznamu a nové texty v '
-              'šiestich jazykoch), vzhľad sa najprv konzultuje s majiteľom (R49). Skupina a dôležitosť sú predbežný '
-              'návrh agenta (stredná, lebo príčinou môže byť slučka požiadaviek pri výpadku; ak ide len o opakovaný '
-              'toast, klesne na nízku). Dopad na E2E: neznámy, offline scenár komentárov E2E dnes nepokrýva. Odhad: '
-              'stredný · S.',
+         note='NEJASNÉ: najprv mapovanie (K41, kolega; kód pre 351 sa nemení, kým majiteľ nepovie); oprava potom ide '
+              'v dávke K43 spolu s 342 (R59). Mapovanie má zistiť: ktorý kód toast vyvoláva a prečo ich je veľa, či '
+              'ide o slučku pokusov, o súbežné volania alebo o opakovaný toast bez spoločného `id`, ktoré iné cesty '
+              '(donačítanie odpovedí, hľadanie cieľa, polling) sa správajú rovnako, či je to starší stav (porovnať s '
+              '`main` pred K37 a K38) a kam patrí oprava (`useFeedCommentsLoader.ts` má 349 riadkov, '
+              '`FeedPostComments.tsx` 573 a mení sa len ako presun, R23). Možná oprava (návrh agenta, neoverený): '
+              'jeden toast s pevným `id` a zastavenie automatických opakovaní po zlyhaní, kým používateľ sám nezačne '
+              'znova (napríklad ďalším posunom); ak by to vyžadovalo viditeľnú zmenu (napríklad tlačidlo „Skúsiť '
+              'znova“ pri konci zoznamu a nové texty v šiestich jazykoch), vzhľad sa najprv konzultuje s majiteľom '
+              '(R49). Skupina a dôležitosť sú predbežný návrh agenta (stredná, lebo príčinou môže byť slučka '
+              'požiadaviek pri výpadku; ak ide len o opakovaný toast, klesne na nízku). Dopad na E2E: neznámy, '
+              'offline scenár komentárov E2E dnes nepokrýva. Odhad: stredný · S.',
          dec=None, src='majiteľ (ručný test po K38 a K39, 19. 11. 2026, test 13) a kontrola agenta z textov commitov K38'),
 ]

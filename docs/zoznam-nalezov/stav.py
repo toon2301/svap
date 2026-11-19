@@ -55,10 +55,13 @@ ZMENY = [
       '`close({ keepHistory: true })` a to `forgetFeedOverlayHistory()`, ktoré môže v milisekundách po zatvorení okna (kým '
       'beží krok späť) predčasne zhasnúť príznak `closing`; zatvorenie v hooku (`handleFeedOverlayTargetChange`) `targetRef` '
       'neskúma. Pravdepodobnosť je veľmi nízka. Opravené je znenie v poznámkach a v nálezu 345, pribudol nález 352 (po '
-      'nasadení, nízka); kód sa nemení a vlákno zatvára majiteľ. CodeRabbit posledné dva commity nekontroloval (limit jednej '
-      'kontroly za hodinu). (9) Prehľad: nálezy 1–352 (nové 351 a 352), zatvorené 14, hotové 137 (pribudli 345 a 350), PRED '
-      '50, PO 131; čakajúcich rozhodnutí 10 z 59. Dopad na E2E: žiadny na špecy; po oprave 345 doplní Codex kontrolu prekliku '
-      'z komentára, po oprave 346 kontrolu viditeľnosti nového komentára na `webkit-mobile` s fotopríspevkom.'),
+      'nasadení, nízka); kód sa nemení a vlákno zatvára majiteľ. Druhá kontrola CodeRabbitu (po commite f8c98af2, 1 '
+      'pripomienka, platná): zaradenie opravy 351 sa rozchádzalo (nález 261 a R59 mali opravu v K43, vo fronte mala K43 len '
+      '342 a pri 351 stála „samostatná dávka“); zosúladené: oprava 351 ide v dávke K43 spolu s 342, až po mapovaní v K41 a po '
+      'rozhodnutí majiteľa, a ak by čakala na rozhodnutie, agent sa opýta majiteľa, či redizajn komentárov na ňu počká. (9) '
+      'Prehľad: nálezy 1–352 (nové 351 a 352), zatvorené 14, hotové 137 (pribudli 345 a 350), PRED 50, PO 131; čakajúcich '
+      'rozhodnutí 10 z 59. Dopad na E2E: žiadny na špecy; po oprave 345 doplní Codex kontrolu prekliku z komentára, po oprave '
+      '346 kontrolu viditeľnosti nového komentára na `webkit-mobile` s fotopríspevkom.'),
     ('18. 11. 2026',
       'Vetva 187 (vychádza z `main` `044a748e`, teda po PR #288). (1) Zlúčené: PR #289 (K37; 18. 11. 2026 o 17:51 UTC, merge '
       '`e10a2256`) a PR #288 (vetva 186; o 17:54 UTC, merge `044a748e`). (2) K37 (PR #289): dávka 3 z 5 delenia '

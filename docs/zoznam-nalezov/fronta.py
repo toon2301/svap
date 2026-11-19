@@ -103,8 +103,9 @@ FRONTA = [
          preco='NEJASNÉ (karta `karty/K41.md`: len mapovanie, kód pre 351 nemeň, kým majiteľ nepovie; výsledok ako '
                'samostatná strana podľa `sablony/vysledok_davky.md`). Podozrivé miesta: `loadMore` v '
                '`useFeedCommentsLoader.ts` a stránkovanie vo `FeedPostComments.tsx`; kolega najprv zistí príčinu, či '
-               'je to starší stav a kam patrí oprava (súbory nad 500 riadkov sa nemenia). Oprava ide ako samostatná '
-               'dávka po mapovaní.'),
+               'je to starší stav a kam patrí oprava (súbory nad 500 riadkov sa nemenia). Oprava ide v dávke K43 '
+               'spolu s 342, až po mapovaní a po rozhodnutí majiteľa (R59); ak by po mapovaní čakala na rozhodnutie '
+               '(napríklad o vzhľade), agent sa majiteľa opýta, či redizajn komentárov (K44) na ňu počká.'),
     dict(n='333', davka='K42',
          co='Nástenka: delenie `FeedPostComments.tsx` (573 riadkov po K38) bez zmeny vzhľadu: dávka 5 z 5 (kroky 7 a '
             '8: mutácie, typ vlastností a importy), posledná; potom `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` '
@@ -120,10 +121,13 @@ FRONTA = [
                'povolenie platí len pre delenie troch súborov Nástenky.'),
     dict(n='342', davka='K43',
          co='Komentáre: odpoveď, úprava a zmazanie pri zmiznutom príspevku nepoužijú spoločné spracovanie ako '
-            'pridanie.',
+            'pridanie (342); dávka K43 zahŕňa aj opravu 351 (opakované chybové toasty pri donačítavaní bez '
+            'internetu).',
          preco='NEJASNÉ (až po kroku 7 delenia, K42; najprv majiteľ rozhodne, ako odlíšiť chýbajúci príspevok od '
                'chýbajúceho komentára, lebo samotný stav odpovede nestačí: agent pripraví otázku s odporúčaním). '
-               'Potom oprava v `useFeedCommentMutations.ts` ako samostatný commit s testom.'),
+               'Potom oprava v `useFeedCommentMutations.ts` ako samostatný commit s testom. Dávka K43 zahŕňa aj '
+               'opravu 351 (po mapovaní v K41 a po rozhodnutí majiteľa), tiež vo vlastnom commite s testom; kolega '
+               'ju neurobí, kým majiteľ nepovie.'),
     dict(n='341', davka='K31',
          co='Upgrade Next.js 16.4.3 na opravenú verziu (bezpečnostné upozornenie GHSA-mfr8-8qww-v76h, stredná '
             'závažnosť).',
