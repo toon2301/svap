@@ -9,8 +9,7 @@
  * otvorených naraz sa navzájom neovplyvňuje.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import toast from 'react-hot-toast';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
@@ -24,79 +23,15 @@ import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsLoader } from './useFeedCommentsLoader';
 import { useFeedCommentsScroll } from './useFeedCommentsScroll';
 import { useFeedCommentsSeek } from './useFeedCommentsSeek';
+import { useFeedCommentMutations } from './useFeedCommentMutations';
 import { openUserProfile } from './feedProfileNavigation';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import { handleFeedPostErrorIfGone } from './feedPostGone';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 import {
-  repliesTotal,
-} from './feedCommentsLogic';
-import {
   FEED_COMMENT_MAX_LENGTH,
-  createFeedPostComment,
-  deleteFeedPostComment,
-  updateFeedPostComment,
   type FeedPostComment,
 } from '@/lib/feedApi';
-
-type FeedPostCommentsProps = {
-  /**
-   * Sekcia vyplní výšku rodiča namiesto vlastného stropu.
-   *
-   * V karte je zoznam ohraničený pevným stropom, aby stovky komentárov
-   * nenaťahovali stránku. V okne detailu je to naopak: pevný blok nad ním má
-   * svoju výšku a komentáre majú dostať PRESNE zvyšok – strop by tam nechal
-   * prázdne miesto alebo by okno prerástol.
-   */
-  fillHeight?: boolean;
-  /**
-   * Ukázať čas pri komentári.
-   *
-   * Zapína to mobilný prehliadač fotky, kde je meta riadok jediné miesto, kde
-   * sa čas dá zobraziť. Na karte a v okne detailu ostáva riadok zámerne
-   * strohý (čas nesie samotný príspevok nad nimi).
-   */
-  showTimestamp?: boolean;
-  /**
-   * Jednoriadkové pole na komentár s ikonou odoslania namiesto tlačidla.
-   *
-   * Pre vysunutý panel nad fotkou, kde má byť composer čo najnižší. Emoji
-   * tlačidlo tam nie je tak či tak – to appka na mobile skrýva všade.
-   */
-  compactComposer?: boolean;
-  /**
-   * Obsah vložený NAD zoznam, do tej istej scrollovateľnej plochy.
-   *
-   * Mobilná obrazovka detailu tým dosiahne, že text, fotka aj riadok akcií
-   * scrollujú SPOLU s komentármi ako jeden súvislý povrch, a pole na nový
-   * komentár im pritom ostáva pevne na spodku. Bez toho by mala obrazovka dva
-   * nezávislé scrolly nad sebou.
-   *
-   * Musí byť VNÚTRI scrollovateľného boxu, nie nad ním – inak by donačítavanie
-   * (sentinel) aj doscrollovanie na komentár merali inú plochu, než ktorou
-   * používateľ naozaj hýbe.
-   */
-  listHeader?: ReactNode;
-  /**
-   * Prvé načítanie dobehlo a zoznam je VYKRESLENÝ; nesie svoju scrollovaciu
-   * plochu.
-   *
-   * Volajúci, ktorý chce po otvorení niekam doscrollovať, to nesmie robiť
-   * skôr: kým je zoznam v stave „Načítavam…", je obsah plochy KRATŠÍ než ona
-   * sama, takže sa scroll nemá kam pohnúť a ticho sa zahodí.
-   *
-   * Signál je jednorazový na príspevok a zámerne EXPLICITNÝ – pasívne
-   * sledovanie `loading` zvonka by volajúceho nechalo hádať, či už je čo
-   * merať.
-   */
-  onCommentsReady?: (scroller: HTMLElement | null) => void;
-  postId: number;
-  /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
-  highlightCommentId?: number | null;
-  onCountChange?: (delta: number) => void;
-  /** Skutočný počet zo servera – drží číslo pri ikone v súlade so zoznamom. */
-  onTotalChange?: (total: number) => void;
-};
+import type { FeedPostCommentsProps } from './FeedPostComments.types';
 
 export default function FeedPostComments({
   postId,
@@ -142,18 +77,11 @@ export default function FeedPostComments({
     [postOverlay],
   );
 
-  const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [replySubmitting, setReplySubmitting] = useState(false);
   // Rozbalenie je LOKÁLNE per komentár – jedno vlákno môže mať naraz
   // rozbalené jedny odpovede a zbalené druhé.
-  const [editingComment, setEditingComment] = useState<number | null>(null);
-  const [editSubmitting, setEditSubmitting] = useState(false);
   const [expandedReplies, setExpandedReplies] = useState<Set<number>>(
     () => new Set(),
   );
-  const [deleting, setDeleting] = useState(false);
   const {
     scrollRef,
     scrollToTopRef,
@@ -257,35 +185,37 @@ export default function FeedPostComments({
         : t('feed.newCommentsMany', 'nových komentárov')
   }`;
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    try {
-      const created = await createFeedPostComment(postId, trimmed);
-      // Zneplatní prebiehajúci load() – jeho odpoveď by tento komentár
-      // prepísala stavom spred vytvorenia.
-      loadSeqRef.current += 1;
-      // Najnovší prvý (poradie z BE) → vlastný komentár ide NAVRCH. Composer
-      // je pod zoznamom, takže pri dlhšom vlákne je vrch mimo dohľadu –
-      // pohľad sa tam dorovná bez animácie (používateľ práve odoslal, čakať
-      // na dojazd nemá zmysel).
-      scrollToTopRef.current = 'auto';
-      setComments((current) => [created, ...current]);
-      // Vlastný komentár sa nesmie vrátiť ako „nový" v najbližšom polle.
-      markSeen([created]);
-      setText('');
-      onCountChange?.(1);
-    } catch (err) {
-      if (!handleFeedPostErrorIfGone(err, postId, t)) {
-        const message =
-          (err as { response?: { data?: { error?: string } } })?.response?.data
-            ?.error || t('feed.commentCreateError', 'Komentár sa nepodarilo pridať.');
-        toast.error(message);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // Mutácie komentárov (pridanie, úprava, odpoveď, zmazanie s potvrdením): krok 7 delenia, viď hook.
+  const {
+    pendingDelete,
+    setPendingDelete,
+    replyingTo,
+    setReplyingTo,
+    replyText,
+    setReplyText,
+    replySubmitting,
+    editingComment,
+    setEditingComment,
+    editSubmitting,
+    deleting,
+    handleSubmit,
+    handleSubmitEdit,
+    handleSubmitReply,
+    handleConfirmDelete,
+  } = useFeedCommentMutations({
+    postId,
+    t,
+    trimmed,
+    canSubmit,
+    setSubmitting,
+    setText,
+    onCountChange,
+    loadSeqRef,
+    markSeen,
+    setComments,
+    scrollToTopRef,
+    setExpandedReplies,
+  });
 
   const toggleReplies = (commentId: number) => {
     setExpandedReplies((current) => {
@@ -294,113 +224,6 @@ export default function FeedPostComments({
       else next.add(commentId);
       return next;
     });
-  };
-
-  const handleSubmitEdit = async (comment: FeedPostComment, text: string) => {
-    if (editSubmitting || !text) return;
-    setEditSubmitting(true);
-    try {
-      const updated = await updateFeedPostComment(postId, comment.id, text);
-      // Zneplatní prebiehajúci load() – rovnako ako pri vytvorení komentára.
-      loadSeqRef.current += 1;
-      // Preberá sa LEN text a príznak úpravy. Celý objekt by prepísal odpovede
-      // náhľadom zo serverovej odpovede, takže by používateľ prišiel o tie,
-      // ktoré si sám donačítal.
-      const patch = (item: FeedPostComment): FeedPostComment =>
-        item.id === comment.id
-          ? { ...item, text: updated.text, is_edited: updated.is_edited }
-          : item;
-      setComments((current) =>
-        current.map((item) => ({
-          ...patch(item),
-          replies: item.replies?.map(patch),
-        })),
-      );
-      setEditingComment(null);
-    } catch (err) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error ||
-        t('feed.commentUpdateError', 'Komentár sa nepodarilo upraviť.');
-      toast.error(message);
-    } finally {
-      setEditSubmitting(false);
-    }
-  };
-
-  const handleSubmitReply = async (parentId: number) => {
-    const trimmedReply = replyText.trim();
-    if (!trimmedReply || replySubmitting) return;
-    setReplySubmitting(true);
-    try {
-      const created = await createFeedPostComment(postId, trimmedReply, parentId);
-      // Zneplatní prebiehajúci load() – rovnako ako pri bežnom komentári.
-      loadSeqRef.current += 1;
-      markSeen([created]);
-      setComments((current) =>
-        current.map((comment) =>
-          comment.id === parentId
-            ? {
-                ...comment,
-                // Najnovšia odpoveď je prvá – rovnaký smer ako komentáre.
-                replies: [created, ...(comment.replies ?? [])],
-                // Počet drží tlačidlo „Zobraziť odpovede (N)" – bez neho by
-                // sa vlastná odpoveď po zbalení už nedala otvoriť.
-                replies_count: repliesTotal(comment) + 1,
-              }
-            : comment,
-        ),
-      );
-      setReplyText('');
-      setReplyingTo(null);
-      // Vlastnú odpoveď má autor hneď vidieť, aj keď mal sekciu zbalenú.
-      setExpandedReplies((current) => new Set(current).add(parentId));
-      onCountChange?.(1);
-    } catch (err) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error || t('feed.replyCreateError', 'Odpoveď sa nepodarilo pridať.');
-      toast.error(message);
-    } finally {
-      setReplySubmitting(false);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    const comment = pendingDelete;
-    if (!comment) return;
-    setDeleting(true);
-    try {
-      await deleteFeedPostComment(postId, comment.id);
-      loadSeqRef.current += 1;
-      // Zmazaný môže byť vrcholový komentár aj odpoveď – odpoveď žije
-      // vnorená, takže sa musí odstrániť z rodiča.
-      setComments((current) =>
-        current
-          .filter((item) => item.id !== comment.id)
-          .map((item) =>
-            item.replies?.some((reply) => reply.id === comment.id)
-              ? {
-                  ...item,
-                  replies: item.replies.filter((reply) => reply.id !== comment.id),
-                  replies_count: Math.max(repliesTotal(item) - 1, 0),
-                }
-              : item,
-          ),
-      );
-      // Backend maže vrcholový komentár aj jeho odpovede naraz (CASCADE),
-      // takže číslo pri ikone musí klesnúť o celý podstrom – nie o jedno.
-      // Odpoveď žiadne vlastné odpovede nemá, takže tam ostáva -1.
-      // Ráta sa CELKOVÝ počet odpovedí, nie len načítaný – zbalené vlákno má
-      // v appke nanajvýš náhľad, backend však zmaže všetky.
-      onCountChange?.(-(1 + repliesTotal(comment)));
-      toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));
-      setPendingDelete(null);
-    } catch {
-      toast.error(t('feed.commentDeleteError', 'Komentár sa nepodarilo zmazať.'));
-    } finally {
-      setDeleting(false);
-    }
   };
 
   /**
