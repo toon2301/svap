@@ -192,7 +192,7 @@ async function openComments(onCountChange: jest.Mock = jest.fn()) {
 
 describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', (scenario) => {
   it.each([404, 403, 410])(
-    'treats %i as a vanished post when the post detail fails the same way',
+    '%i berie ako zmiznutý príspevok, keď detail príspevku zlyhá rovnako',
     async (status) => {
       const onCountChange = await openComments();
       scenario.fail(apiError(status));
@@ -213,7 +213,7 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
   );
 
   it.each([404, 403])(
-    'keeps the specific error when %i comes but the post still exists',
+    'ponechá špecifickú chybu, keď príde %i, no príspevok ešte existuje',
     async (status) => {
       await openComments();
       scenario.fail(apiError(status));
@@ -230,7 +230,7 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
     },
   );
 
-  it('keeps the usual wording of the error when the post still exists', async () => {
+  it('ponechá obvyklé znenie chyby, keď príspevok ešte existuje', async () => {
     await openComments();
     scenario.fail(apiError(404, 'Komentár nebol nájdený.'));
     mockedGetPost.mockResolvedValue({ id: POST_ID } as never);
@@ -244,7 +244,7 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
     expect(removedPosts).toEqual([]);
   });
 
-  it('keeps the specific error when the post detail fails for another reason than a vanished post', async () => {
+  it('ponechá špecifickú chybu, keď detail príspevku zlyhá z iného dôvodu než zmiznutia príspevku', async () => {
     await openComments();
     scenario.fail(apiError(404));
     // Výpadok siete a chyba servera sú dočasné: príspevok z nich zmiznutý nie je.
@@ -258,7 +258,7 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
     expect(removedPosts).toEqual([]);
   });
 
-  it('keeps the specific error when the post detail answers with a server error', async () => {
+  it('ponechá špecifickú chybu, keď detail príspevku odpovie chybou servera', async () => {
     await openComments();
     scenario.fail(apiError(403));
     mockedGetPost.mockRejectedValue(apiError(500));
@@ -271,10 +271,10 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
   });
 
   it.each([
-    [500, 'a server error'],
-    [400, 'a rejected input'],
-    [401, 'a missing login'],
-  ])('does not ask for the post detail after %i (%s)', async (status) => {
+    [500, 'chyba servera'],
+    [400, 'odmietnutý vstup'],
+    [401, 'chýbajúce prihlásenie'],
+  ])('po %i (%s) sa na detail príspevku nepýta', async (status) => {
     await openComments();
     scenario.fail(apiError(status));
 
@@ -286,7 +286,7 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
     expect(removedPosts).toEqual([]);
   });
 
-  it('does not ask for the post detail after a network error without a response', async () => {
+  it('po sieťovej chybe bez odpovede sa na detail príspevku nepýta', async () => {
     await openComments();
     scenario.fail(new Error('offline'));
 
@@ -299,7 +299,7 @@ describe.each(SCENARIOS)('FeedPostComments – $name pri zmiznutom príspevku', 
 });
 
 describe('FeedPostComments – zmiznutý príspevok a viac akcií', () => {
-  it('announces the vanished post once, but keeps signalling removal on the next action', async () => {
+  it('zmiznutý príspevok ohlási raz, no pri ďalšej akcii naďalej pošle signál odstránenia', async () => {
     await openComments();
     mockedDelete.mockRejectedValue(apiError(404));
     mockedGetPost.mockRejectedValue(apiError(404));
@@ -316,7 +316,7 @@ describe('FeedPostComments – zmiznutý príspevok a viac akcií', () => {
     expect(mockedToastError).toHaveBeenCalledTimes(1);
   });
 
-  it('shares the announcement with the add-comment path: no second message for the same post', async () => {
+  it('ohlásenie zdieľa s cestou pridania komentára: pre ten istý príspevok žiadna druhá hláška', async () => {
     await openComments();
     mockedCreate.mockRejectedValue(apiError(404));
     mockedDelete.mockRejectedValue(apiError(404));
@@ -332,7 +332,7 @@ describe('FeedPostComments – zmiznutý príspevok a viac akcií', () => {
     expect(mockedToastError).toHaveBeenCalledTimes(1);
   });
 
-  it('does not touch the add-comment path: it still trusts the status and asks for nothing', async () => {
+  it('cestu pridania komentára nemení: stále verí stavu a na nič sa nepýta', async () => {
     await openComments();
     mockedCreate.mockRejectedValue(apiError(404));
 
@@ -346,7 +346,7 @@ describe('FeedPostComments – zmiznutý príspevok a viac akcií', () => {
     expect(mockedGetPost).not.toHaveBeenCalled();
   });
 
-  it('keeps the buttons busy until the verification answers, so the action cannot be repeated meanwhile', async () => {
+  it('tlačidlá ostávajú zaneprázdnené, kým overenie neodpovie, takže sa akcia medzitým nedá zopakovať', async () => {
     await openComments();
     mockedDelete.mockRejectedValue(apiError(404));
     let rejectDetail: (error: unknown) => void = () => undefined;
@@ -370,7 +370,7 @@ describe('FeedPostComments – zmiznutý príspevok a viac akcií', () => {
     expect(mockedDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('survives the list being closed before the verification answers', async () => {
+  it('prežije zatvorenie zoznamu skôr, než overenie odpovie', async () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     mockedList.mockResolvedValue(page([comment(1, 'Môj komentár')]));
     const { unmount } = render(<FeedPostComments postId={POST_ID} />);

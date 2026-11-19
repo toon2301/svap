@@ -244,7 +244,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver = originalObserver;
   });
 
-  it('stops after one failed attempt: one request and one message, however long the end stays in view', async () => {
+  it('po jednom neúspešnom pokuse sa zastaví: jeden dopyt a jedna hláška, nech je koniec zoznamu vo výhľade akokoľvek dlho', async () => {
     await openList();
     connection.cursorPage = 'down';
 
@@ -257,7 +257,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledWith(LOAD_ERROR);
   });
 
-  it('starts nothing when the reader leaves the end and comes back while the connection is down', async () => {
+  it('nespustí nič, keď čitateľ odíde od konca zoznamu a vráti sa, kým je internet vypnutý', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -273,7 +273,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('creates no new observers while paused', async () => {
+  it('počas pozastavenia nevytvára nové observery', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -286,7 +286,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(registrations.filter((entry) => entry.live)).toHaveLength(0);
   });
 
-  it('resumes by itself after a successful poll and loads the next page', async () => {
+  it('po úspešnom pollingu sa samo obnoví a donačíta ďalšiu stranu', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -303,7 +303,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('does not resume after a failed poll', async () => {
+  it('po zlyhanom pollingu sa neobnoví', async () => {
     await openList();
     connection.cursorPage = 'down';
     connection.feed = 'down';
@@ -321,7 +321,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('does not resume on the answer of a poll that a new comment has already invalidated', async () => {
+  it('neobnoví sa na odpoveď pollingu, ktorú už zneplatnil nový komentár', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -355,7 +355,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(screen.getByText('K90')).toBeInTheDocument();
   });
 
-  it('resumes at once when the browser reports that the connection is back', async () => {
+  it('obnoví sa hneď, keď prehliadač ohlási návrat spojenia', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -374,7 +374,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('loads nothing after the connection returns until the reader is at the end of the list again', async () => {
+  it('po návrate spojenia nič nedonačíta, kým čitateľ nie je znova na konci zoznamu', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -396,7 +396,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(screen.getByText('K90')).toBeInTheDocument();
   });
 
-  it('retries at most once per poll interval when only the page request keeps failing', async () => {
+  it('opakuje pokus najviac raz za interval pollingu, keď zlyháva len dopyt na ďalšiu stranu', async () => {
     await openList();
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -413,7 +413,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledTimes(cursorRequests());
   });
 
-  it('does not pause when the background search for a notification target fails silently', async () => {
+  it('nepozastaví sa, keď tiché hľadanie cieľa z upozornenia na pozadí zlyhá', async () => {
     render(<FeedPostComments postId={5} highlightCommentId={55} />);
     connection.cursorPage = 'down';
     await frames(2);
@@ -433,7 +433,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(cursorRequests()).toBe(2);
   });
 
-  it('neither reports nor pauses a failure of a request that a new comment has already invalidated', async () => {
+  it('zlyhanie dopytu, ktorý už zneplatnil nový komentár, nehlási ani nepozastaví', async () => {
     await openList();
     connection.cursorPage = 'hang';
     await scrollToEnd();
@@ -463,7 +463,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it('starts a new post without the pause of the previous one', async () => {
+  it('nový príspevok začína bez pozastavenia z predchádzajúceho', async () => {
     const { rerender } = await openList(5);
     connection.cursorPage = 'down';
     await scrollToEnd();
@@ -481,7 +481,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(screen.getByText('K90')).toBeInTheDocument();
   });
 
-  it('keeps the usual single error in the list when the first load fails without internet', async () => {
+  it('ponechá obvyklú jedinú chybu v zozname, keď prvé načítanie zlyhá bez internetu', async () => {
     connection.feed = 'down';
     render(<FeedPostComments postId={5} />);
     await frames(10);
@@ -493,7 +493,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(mockedList).toHaveBeenCalledTimes(1);
   });
 
-  it('pages through the whole list as before when the connection works', async () => {
+  it('prejde celým zoznamom ako predtým, keď spojenie funguje', async () => {
     await openList();
 
     await scrollToEnd();
@@ -508,7 +508,7 @@ describe('FeedPostComments – donačítavanie komentárov bez internetu', () =>
     expect(cursorRequests()).toBe(1);
   });
 
-  it('removes its listener for the online event when the list is closed', async () => {
+  it('po zatvorení zoznamu odstráni svojho poslucháča udalosti online', async () => {
     const added = jest.spyOn(window, 'addEventListener');
     const removed = jest.spyOn(window, 'removeEventListener');
     const { unmount } = await openList();
