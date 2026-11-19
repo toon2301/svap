@@ -1,10 +1,63 @@
 # -*- coding: utf-8 -*-
-"""Starší denník zmien dokumentu (12. 11. 2026 až 13. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
+"""Starší denník zmien dokumentu (12. 11. 2026 až 15. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_STARSIE` (z `zmeny_starsie.py`). Nový záznam sa pridáva na začiatok `stav.ZMENY`.
 """
 
 ZMENY_STARSIE_2 = [
+    ('15. 11. 2026',
+      'Vetva 177 (vychádza z `main` `52626ab7`, teda po PR #264). (1) K22 (PR #264, zlúčené 15. 11. 2026 o 07:19 UTC, merge '
+      '`52626ab7`; dva commity `fecebf5c` a `eb5fd2cb`): hotové 334 (chybová hláška z neúspešného odoslania sa po zatvorení okna '
+      '„Pridať recenziu“ vynuluje; jeden riadok v každom z dvoch súborov okna) a 335 (atribút `lang` na `<html>` sleduje jazyk '
+      'aplikácie; efekt v `LanguageProvider`). Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) a CodeRabbit sú '
+      'zelené, CodeRabbit nemal pripomienky ku kódu (jediná poznámka: názov PR „K22“ je len kód), Codex review hlavičky '
+      '`eb5fd2cb` bola bez nálezov a vlákna na GitHube nie sú. Ručné testy majiteľa po nasadení prešli bez nových nálezov. '
+      'Samostatná strana kolegu prišla (jeden kandidát a štyri poznámky): kandidát o anglickom „Network Error“ v okne recenzie '
+      '(kolega ho uvádza od K15 a v K22 ho potvrdil v prehliadači) je nový nález 336 (oprava je v `OfferReviewsView.tsx`, '
+      '683 riadkov, a vyžaduje výnimku z pravidla 500 riadkov, preto nie je vo fronte); záložné stránky 404 a 500 s `lang="sk"` '
+      'a anglickým textom, prípad „odoslanie prešlo a načítanie zoznamu zlyhalo“, nadbytočné `lang` v `app/page.tsx` a '
+      'opakované varovanie Jestu sú poznámky v `poznamky.md`. (2) Zlúčené sú aj vetvy agenta 174 (PR #262, zoznam po K21 a '
+      'opravy pripomienok botov) a 176 (PR #263: `AGENTS.md` a `.cursor/rules/svaply.mdc`, R27). (3) Správa Codexa z 15. 11. '
+      '2026 (kód ani testy sa nemenili, nový commit ani push nevznikol): dymová sada na `main` `52626ab7` dala 41 prešlo, 0 '
+      'zlyhalo a 10 preskočených (WebKit desktop 13 / 0 / 4, WebKit mobil 15 / 0 / 2, Chromium desktop 13 / 0 / 4; zhoduje sa s '
+      'prijatým dymom po K18); živé overenie 328 prešlo 2 z 2 pri účte s limitom 5 z 5 sledovaní (stav pod limitom ostáva '
+      'naživo neoverený), preto je nález 328 hotový; porovnanie Windows a Docker sa nespustilo, lebo natívny Windows WebKit '
+      'blokuje Smart App Control (knižnica `ngtcp2_crypto_quictls.dll` bez podpisu, udalosti 3077 a 3033); nález 223 ostáva '
+      'otvorený a Codex navrhuje Ubuntu vo WSL (Linux bez Dockeru proti Dockeru), čo čaká na majiteľa: nové rozhodnutie R40 '
+      '(podrobnosti sú v 223, dodatok 15. 11.). (4) Karta K23 (`karty/K23.md`): výzva na povolenie push pre Správy (etapa 3b '
+      'nálezu 321, R36 a) s mapovaním agenta v nálezu 321; je to JASNÉ, správanie na iPhone overí majiteľ ručne. (5) Číselný '
+      'prehľad: nálezy 1–336, zatvorené 14, hotové 130 (pribudli 334, 335 a 328), jedno nové číslo (336). (6) Poradie: K23 '
+      '(výzva na push; čaká na schválenie majiteľa), potom návrh K24 až K26 (delenie `FeedPostComments.tsx`, zoznam '
+      'lajkujúcich a preklady, každá najprv ako mapovanie). Dopad na E2E: K22 žiadny; K23 pridá výzvu pod voľbu Správy v '
+      'Nastaveniach → Upozornenia (špec `mobile-settings-navigation` overuje len jej obal), etapu 4 nálezu 321 (API test siedmich '
+      'volieb a scenár odznaku žiadostí hneď, ten sa neskôr zrušil rozhodnutím R43, UI scenár kategórií po '
+               'K23) a jednoduchú kontrolu atribútu `lang` rieši Codex.'),
+    ('13. 11. 2026',
+      'Vetva 174, doplnok po K21 (vychádza z `main` `8b951cd9`, teda po PR #261; main je zlúčený do vetvy). (1) K21 (PR #260, '
+      'zlúčené 13. 11. 2026 o 16:25 UTC, merge `79f907bd`; päť commitov: štyri podľa karty `59cbc04c`, `eceda277`, `c4d50bfb` '
+      'a `9d26d9c4` a oprava po CodeRabbite `71f9cff4`): hotové 331 (okno „Pridať recenziu“ po úspešnom pridaní), 332 (jazyk '
+      'pre zvyšok sveta je angličtina, R2), 330 (odznak Žiadostí pri vypnutej kategórii alebo zapnutom „Vypnúť všetko“, R39 b) a 325 '
+      '(toast po zmazaní recenzie, výnimka R37 b a c; `OfferReviewsView.tsx` 692 → 683 riadkov). Kontrola agenta z GitHubu: '
+      'CI (`checks`, `backend-postgres`) je zelené na hlavičke PR, CodeRabbit mal jednu pripomienku (Minor: pri 331 sa po '
+      'zatvorení okna počas odosielania dala poslať druhá požiadavka) a Codex review hlavičky `71f9cff4` bola bez '
+      'pripomienok. Kolega už vetvu nemohol upraviť, preto opravu (príznak odosielania sa vracia po dokončení požiadavky a '
+      'počas odosielania sa okno nedá zavrieť; osem nových testov, mutácie 10 z 10) urobil agent vo vetve K21 s výslovným '
+      'povolením majiteľa (commit `71f9cff4`; celý Jest 592 súborov a 8 854 testov); vlákno CodeRabbitu ostalo neuzavreté '
+      '(zatvára majiteľ). Samostatná strana kolegu prišla (kandidáti na nové nálezy). (2) Ručné testy majiteľa po nasadení '
+      'K21 (13. 11. 2026) našli dve chyby, obe uvedené aj ako kandidáti kolegu a zmapované bez zmeny kódu: nový nález 334 '
+      '(chybová hláška z neúspešného odoslania ostane v okne recenzie po zatvorení a opätovnom otvorení, mobil aj počítač; '
+      'oprava je jeden riadok v dvoch súboroch) a nový nález 335 (atribút `lang` na `<html>` je vždy „sk“ pri všetkých '
+      'jazykoch; oprava je efekt v `LanguageProvider`). Tretí kandidát kolegu (zablikanie slovenčiny pri prvej návšteve) je '
+      'doplnok k 186 a R7, maďarské pomenovanie sekcie Žiadosti je doplnok k 176 a ďalšie poznámky sú v `poznamky.md`. (3) '
+      'Správa Codexa z 13. 11. 2026 (PR #261, zlúčené o 19:19 UTC, merge `8b951cd9`, nasadené; 22 súborov): dôkazový fixture '
+      'v piatich špecoch, nové údaje pri obnove relácie, opravený test 328 a platná pripomienka Codex review (P2: test '
+      'nepočítal s obnovou prihlásenia; pred opravou 9 z 9 variantov zlyhalo, po oprave Node 124 z 124, prehliadač 42 z 42, '
+      'Jest 52 z 52); príčina 223 ostáva otvorená, 328 čaká na živé overenie; podrobnosti sú v 223 (dodatok 13. 11. večer) a '
+      'v 328. (4) Číselný prehľad: nálezy 1–335, zatvorené 14, hotové 127 (pribudli 330, 331, 332 a 325). (5) Poradie: K22 '
+      'navrhuje agent ako dve malé opravy 334 a 335 (karta `karty/K22.md`) pred výzvou na push (K23, etapa 3b nálezu 321) a '
+      'návrhom K24 až K26 (delenie `FeedPostComments.tsx`, zoznam lajkujúcich, preklady, každá najprv ako mapovanie); poradie '
+      'čaká na schválenie majiteľa. Dopad na E2E: K21 žiadny; K22 žiadny (špecy `lang` nekontrolujú; Codex môže po nasadení '
+      'doplniť jednoduchú kontrolu atribútu).'),
     ('13. 11. 2026',
       'Vetva 174, doplnok po rozhodnutiach majiteľa z 13. 11. 2026. (1) Rozhodnuté: R39 (b): nová žiadosť o zručnosť príde '
       'do Žiadostí ako odznak a pri zapnutom „Vypnúť všetko“ (všetky upozornenia vypnuté) alebo vypnutej kategórii „Žiadosť o zručnosť“ odznak nepríde '
