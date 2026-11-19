@@ -111,9 +111,12 @@ FRONTA = [
             '(R23).',
          preco='JASNÉ (karta sa pripraví po zlúčení K41; mapovanie si robí kolega sám). Čisté presuny kódu, '
                'správanie ani vzhľad sa nemenia; po dávke má byť `FeedPostComments.tsx` pod 500 riadkov a zmaže sa '
-               'dočasný odtlačok HTML z K28 (R45). Redizajn 261 až po tejto dávke (R47), vzhľad sa nemení bez '
-               'schválenia majiteľa (R49); oprava 342 po kroku 7. Výnimka z pravidla 500 riadkov sa neudeľuje, '
-               'povolenie platí len pre delenie troch súborov Nástenky.'),
+               'dočasný odtlačok HTML z K28 (R45). Redizajn komentárov (261, skupina 7; vzhľad je schválený v R52) '
+               'ide až po tejto dávke (R47) ako samostatná dávka a nečaká na delenie `FeedPostCard.tsx` a '
+               '`FeedPostMobileDetail.tsx` (ak by kolega pri mapovaní zistil, že treba zasiahnuť aj do nich, tá časť '
+               'počká na ich delenie); tagy a ostatné mobilné doladenia (261, skupiny 8 a 6) čakajú aj na tieto '
+               'delenia; vzhľad sa nemení bez schválenia majiteľa (R49); oprava 342 po kroku 7. Výnimka z pravidla '
+               '500 riadkov sa neudeľuje, povolenie platí len pre delenie troch súborov Nástenky.'),
     dict(n='342', davka='K43',
          co='Komentáre: odpoveď, úprava a zmazanie pri zmiznutom príspevku nepoužijú spoločné spracovanie ako '
             'pridanie.',
@@ -135,12 +138,13 @@ FRONTA = [
                'komentárov; vzhľad je schválený (R55, obrázok `navrhy/mobil-uchytka.png`), globálne pravidlo `button` sa nemení. Po '
                'nasadení krátky ručný test majiteľa na mobile (potiahnutie nadol aj ťuk panel zatvorí).'),
     dict(n='262', davka='K34',
-         co='Zoznam „kto lajkol“: frontend, etapa A (zoznam a bublinka pri ponuke a dopyte, portfóliu, profile a fotke na celú obrazovku; '
-            'text pri skrytých lajkujúcich).',
-         preco='NEJASNÉ (najprv mapovanie etapy A podľa R51 a R56, kód nemeň, kým majiteľ nepovie; plán etáp je v nálezu 262). Vzhľad je '
-               'schválený (R51 a R56, obrázky v `navrhy/`), takže R49 je splnené. Etapa B (príspevok a detail príspevku) a etapa C '
-               '(komentáre s redizajnom 261) idú až po delení `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx` a `FeedPostComments.tsx`; '
-               'súbory nad 500 riadkov sa nemenia.'),
+         co='Zoznam „kto lajkol“: frontend, etapa A (zoznam a bublinka pri ponuke a dopyte, portfóliu, profile a '
+            'fotke na celú obrazovku; text pri skrytých lajkujúcich).',
+         preco='NEJASNÉ (najprv mapovanie etapy A podľa R51 a R56, kód nemeň, kým majiteľ nepovie; plán etáp je v '
+               'nálezu 262). Vzhľad je schválený (R51 a R56, obrázky v `navrhy/`), takže R49 je splnené. Etapa B '
+               '(príspevok a detail príspevku) ide až po delení `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`, '
+               'etapa C (komentáre s redizajnom 261) až po delení `FeedPostComments.tsx` (R47); súbory nad 500 '
+               'riadkov sa nemenia.'),
     dict(n='344', davka='K35',
          co='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch a užšie okno len s textom (R53).',
          preco='NEJASNÉ (najprv mapovanie: dotyk `FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx` a či treba zásah do '

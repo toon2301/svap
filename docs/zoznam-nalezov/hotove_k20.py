@@ -408,11 +408,11 @@ DONE_SINCE_K20 = [
               '(`checks`, `backend-postgres`) aj CodeRabbit zelené, vlákna nie sú; počty riadkov sedia (115 a 571); '
               'v PR sa menili len tieto dva súbory (existujúce testy, odtlačok HTML ani `frontend/e2e/**` nie); prvý '
               'riadok commitu 65 znakov. RUČNÝ TEST MAJITEĽA (19. 11. 2026, spolu s K38, 16 testov): oprava nebola v '
-              'správe majiteľa uvedená ako chybná; výsledok bodu 3 karty (Späť z profilu) majiteľ výslovne '
-              'neuviedol, takže ak sa okno po „Späť“ správa inak, ide o nový nález. Dopad na E2E: žiadny existujúci '
-              'špec sa nemení; Codex doplní v `notification-click.spec.ts` (desktop) klik na avatar alebo meno '
-              'autora komentára a kontrolu, že `feed-post-overlay` zmizne a adresa je profil (úloha pre Codexa, stav '
-              'je v `docs/playwright-odovzdanie.md`).'),
+              'správe majiteľa uvedená ako chybná a bod 3 karty (Späť z profilu) majiteľ na otázku agenta potvrdil '
+              'ako v poriadku. Dopad na E2E: žiadny existujúci špec sa nemení; Codex doplní v '
+              '`notification-click.spec.ts` (desktop) klik na avatar alebo meno autora komentára a kontrolu, že '
+              '`feed-post-overlay` zmizne a adresa je profil (úloha pre Codexa, stav je v '
+              '`docs/playwright-odovzdanie.md`).'),
     dict(n=350, vetva='K39', pr='#292', zlucene=True,
          text='HOTOVÉ rovnakou opravou ako 345 (K39, PR #292, zlúčené 19. 11. 2026, merge `dd6ca703`). MEDZERA '
               '(kandidát z K36): zoznam lajkujúcich v okne detailu príspevku na počítači pri prekliku na používateľa '
