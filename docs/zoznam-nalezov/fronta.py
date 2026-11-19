@@ -66,12 +66,12 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'PR #291, K39: PR #292; zlúčené 18. a 19. 11. 2026); mapovanie si robil kolega sám. Ručný test majiteľa po K38 a K39 '
              '(19. 11. 2026, 16 testov): 346 pretrváva a vznikol kandidát 351. Dávky K40 (oprava 346 podľa odporúčania R58; karta '
              '`karty/K40.md`) a K41 (oprava 338 a mapovanie 351; karta `karty/K41.md`) pripravil agent 19. 11. 2026; mapovanie si '
-             'robí kolega sám. Posledná dávka delenia (5 z 5, K42) sa pripraví po zlúčení predchádzajúcej; K31 (upgrade Next.js, '
-             '341), K32 (preklady, najprv mapovanie) a nové K33 (úchytka panela nad fotkou, 343), K34 (frontend zoznamu lajkujúcich '
-             '262, etapa A, najprv mapovanie) a K35 (okno detailu na počítači, 344, najprv mapovanie) sú návrh. Údržba zoznamu '
-             '(jedna dokumentačná vetva agenta; majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje '
-             'poslednú dávku kolegu; dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu '
-             'kolegovi.')
+             'robí kolega sám. Posledná dávka delenia (5 z 5, K42) sa pripraví po zlúčení predchádzajúcej; redizajn komentárov (261, '
+             'K44) začne podľa R59 až po piatich krokoch (K40, K41, K42, K43 a K31); K31 (upgrade Next.js, 341), K32 (preklady, '
+             'najprv mapovanie) a nové K33 (úchytka panela nad fotkou, 343), K34 (frontend zoznamu lajkujúcich 262, etapa A, najprv '
+             'mapovanie) a K35 (okno detailu na počítači, 344, najprv mapovanie) sú návrh. Údržba zoznamu (jedna dokumentačná vetva '
+             'agenta; majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky '
+             'PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
 STAV_CAKA = 'čaká na zlúčenie'
@@ -112,11 +112,12 @@ FRONTA = [
          preco='JASNÉ (karta sa pripraví po zlúčení K41; mapovanie si robí kolega sám). Čisté presuny kódu, '
                'správanie ani vzhľad sa nemenia; po dávke má byť `FeedPostComments.tsx` pod 500 riadkov a zmaže sa '
                'dočasný odtlačok HTML z K28 (R45). Redizajn komentárov (261, skupina 7; vzhľad je schválený v R52) '
-               'ide až po tejto dávke (R47) ako samostatná dávka a nečaká na delenie `FeedPostCard.tsx` a '
-               '`FeedPostMobileDetail.tsx` (ak by kolega pri mapovaní zistil, že treba zasiahnuť aj do nich, tá časť '
-               'počká na ich delenie); tagy a ostatné mobilné doladenia (261, skupiny 8 a 6) čakajú aj na tieto '
-               'delenia; vzhľad sa nemení bez schválenia majiteľa (R49); oprava 342 po kroku 7. Výnimka z pravidla '
-               '500 riadkov sa neudeľuje, povolenie platí len pre delenie troch súborov Nástenky.'),
+               'ide podľa R47 najskôr po tejto dávke a podľa R59 až po piatich krokoch (K40, K41, K42, K43 a K31) '
+               'ako samostatná dávka a nečaká na delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (ak by '
+               'kolega pri mapovaní zistil, že treba zasiahnuť aj do nich, tá časť počká na ich delenie); tagy a '
+               'ostatné mobilné doladenia (261, skupiny 8 a 6) čakajú aj na tieto delenia; vzhľad sa nemení bez '
+               'schválenia majiteľa (R49); oprava 342 po kroku 7. Výnimka z pravidla 500 riadkov sa neudeľuje, '
+               'povolenie platí len pre delenie troch súborov Nástenky.'),
     dict(n='342', davka='K43',
          co='Komentáre: odpoveď, úprava a zmazanie pri zmiznutom príspevku nepoužijú spoločné spracovanie ako '
             'pridanie.',
@@ -124,9 +125,23 @@ FRONTA = [
                'chýbajúceho komentára, lebo samotný stav odpovede nestačí: agent pripraví otázku s odporúčaním). '
                'Potom oprava v `useFeedCommentMutations.ts` ako samostatný commit s testom.'),
     dict(n='341', davka='K31',
-         co='Upgrade Next.js 16.4.3 na opravenú verziu (bezpečnostné upozornenie GHSA-mfr8-8qww-v76h, stredná závažnosť).',
-         preco='JASNÉ (karta sa pripraví po K43; osem z osmich hlásených prvých lokálnych buildov skončilo `SecurityFatalError`; dávka závislostí ide samostatne). Najprv majiteľ pozrie posledné nasadenia na '
-               'Railway: ak padajú, nález ide na začiatok poradia. Po nasadení ručný dymový test majiteľa.'),
+         co='Upgrade Next.js 16.4.3 na opravenú verziu (bezpečnostné upozornenie GHSA-mfr8-8qww-v76h, stredná '
+            'závažnosť).',
+         preco='JASNÉ (karta sa pripraví po K43; osem z osmich hlásených prvých lokálnych buildov skončilo '
+               '`SecurityFatalError`; dávka závislostí ide samostatne; je posledný z piatich krokov pred redizajnom '
+               'komentárov, R59). Najprv majiteľ pozrie posledné nasadenia na Railway: ak padajú, nález ide na '
+               'začiatok poradia. Po nasadení ručný dymový test majiteľa.'),
+    dict(n='261', davka='K44',
+         co='Nástenka: redizajn komentárov (skupina 7, vzhľad schválený v R52): plochý vzhľad bez sivých bublín, '
+            'bublinka s lajkom, odpovede so zvislou čiarou; pri ňom sa rieši aj pole na text pri odpovedi na '
+            'komentár.',
+         preco='NEJASNÉ (až po piatich krokoch K40, K41, K42, K43 a K31, R59; kartu pripraví agent, keď príde na '
+               'rad). Vzhľad komentárov je schválený (R52, obrázky `navrhy/mobil-komentare.png` a '
+               '`navrhy/pc-komentare.png`), no pole na text pri odpovedi na komentár sa musí doriešiť: majiteľ dodá, '
+               'čo je s ním (R49: najprv návrh vzhľadu s možnosťami a odporúčaním, potom karta). Ide v jednej dávke '
+               'po poslednej dávke delenia `FeedPostComments.tsx` (R47) a zahŕňa aj bublinku s lajkom pri '
+               'komentároch (etapa C nálezu 262); vzhľadové chyby, ktoré majiteľ zámerne nenahlásil, sa po redizajne '
+               'overia.'),
     dict(n='176', davka='K32',
          co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
          preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '

@@ -279,4 +279,23 @@ DECISIONS_DALSIE = [
                      'indikátor, hoci nový komentár je hneď pod ním. Riziko stredné: mení sa správanie indikátora; '
                      'platí len pri mobilnej hlavičke, desktop a panel nad fotkou sa nemenia.',
          kedy='Pred poslaním karty K40 kolegovi; karta je napísaná podľa odporúčania.'),
+    dict(id='R59', tema='Kedy začať redizajn komentárov (261, skupina 7) a čo sa pri ňom musí vyriešiť navyše',
+         otazka='Redizajn komentárov (261, skupina 7, vzhľad schválený v R52) smie podľa R47 začať po poslednej '
+                'dávke delenia `FeedPostComments.tsx` (K42). Majiteľ navrhol (19. 11. 2026) nič nesiliť a začať ho '
+                'až po piatich najbližších krokoch: K40 (oprava 346), K41 (oprava 338 a mapovanie 351), K42 '
+                '(posledná dávka delenia), K43 (opravy 342 a 351) a K31 (upgrade Next.js, 341). (a) Hneď po K42. (b) '
+                'Až po piatich krokoch.',
+         odporucanie='(b), agent súhlasí: upgrade Next.js je dávka závislostí a ide vždy samostatne, takže je '
+                     'lepšie, aby prebehol pred redizajnom a nezmiešal sa s vizuálnymi zmenami; opravy 338, 342 a '
+                     '351 menia načítanie a obsluhu zmien, nie vzhľad, takže je čistejšie mať ich hotové a '
+                     'otestované skôr, ako sa začnú meniť riadky komentárov; majiteľ vzhľad Nástenky sám neupravuje, '
+                     'takže čakanie stojí málo, a medzitým sa dá s majiteľom prebrať vzhľad poľa na text pri '
+                     'odpovedi (R49).',
+         kedy='Rozhodnuté 19. 11. 2026.',
+         odpoved='Majiteľ 19. 11. 2026: (b): redizajn komentárov začne až po piatich najbližších krokoch (K40, K41, '
+                 'K42, K43 a K31); nič sa nesilí. Pri redizajne sa musí vyriešiť aj pole na text pri odpovedi na '
+                 'komentár (R52 ho nechával ako dnes); čo presne treba zmeniť, dodá majiteľ pri príprave vzhľadu, '
+                 'ktorý sa podľa R49 najprv prebere. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
+                 'nenahlásil, lebo ich redizajn zmení.',
+         datum='19. 11. 2026'),
 ]

@@ -42,12 +42,15 @@ ZMENY = [
       'agentom (rozhodnutie majiteľa): K40 (oprava 346 podľa R58) a K41 (oprava 338 podľa R48 a mapovanie 351); posledná '
       'dávka delenia (5 z 5, K42) a oprava 342 po kroku 7 sa pripravia po zlúčení predchádzajúcej. Nález 341 doplnený: '
       '`SecurityFatalError` pri prvom lokálnom builde sa opakuje (osem z osmich hlásených prvých buildov). (7) Odpovede '
-      'majiteľa 19. 11. 2026: bod 3 karty K39 (Späť z profilu) je v poriadku; fotografiu z iPhonu ku K40 netreba prikladať; '
-      'na otázku, či ide redizajn komentárov až po delení súboru, platí R47: áno, po poslednej dávke delenia '
-      '`FeedPostComments.tsx` (K42), ako samostatná dávka s už schváleným vzhľadom (R52); nečaká na delenie '
-      '`FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`, no tagy a ostatné mobilné doladenia (261, skupiny 8 a 6) čakajú aj na '
-      'ne; vyjasnené vo fronte (K34 a K42). (8) Prehľad: nálezy 1–351 (nový 351), zatvorené 14, hotové 137 (pribudli 345 a '
-      '350), PRED 50, PO 130; čakajúcich rozhodnutí 10 z 58. Dopad na E2E: žiadny na špecy; po oprave 345 doplní Codex '
+      'majiteľa 19. 11. 2026: bod 3 karty K39 (Späť z profilu) je v poriadku; fotografiu z iPhonu ku K40 netreba prikladať. '
+      'Redizajn komentárov podľa R47 smie začať po poslednej dávke delenia `FeedPostComments.tsx` (K42) a nečaká na delenie '
+      '`FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (tagy a ostatné mobilné doladenia, 261 skupiny 8 a 6, čakajú aj na '
+      'ne), no majiteľ rozhodol (nové rozhodnutie R59, zodpovedané), že sa nebude siliť a redizajn začne až po piatich '
+      'najbližších krokoch (K40, K41, K42, K43 a K31). Pri redizajne treba vyriešiť aj pole na text pri odpovedi na komentár '
+      '(podrobnosti dodá majiteľ, vzhľad sa najprv prebere, R49) a majiteľ v komentároch objavil vzhľadové chyby, ktoré '
+      'zámerne nenahlásil, lebo ich redizajn zmení. Vo fronte pribudol záznam K44 (redizajn komentárov) a upravené sú K34, '
+      'K31 a K42, v nálezu 261 je poznámka. (8) Prehľad: nálezy 1–351 (nový 351), zatvorené 14, hotové 137 (pribudli 345 a '
+      '350), PRED 50, PO 130; čakajúcich rozhodnutí 10 z 59. Dopad na E2E: žiadny na špecy; po oprave 345 doplní Codex '
       'kontrolu prekliku z komentára, po oprave 346 kontrolu viditeľnosti nového komentára na `webkit-mobile` s '
       'fotopríspevkom.'),
     ('18. 11. 2026',
@@ -370,7 +373,7 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52) a najprv vyžaduje delenie súborov Nástenky, nález 333 a R23; 338 zaseknuté načítavanie komentárov, oprava K41, a 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní, oprava po kroku 7; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344, 346 viditeľnosť nového komentára na iPhone (zmapovaná v K36 ako starší stav; po K38 pretrváva, oprava K40 po odpovedi na R58) a 351 opakované chybové toasty pri donačítaní komentárov bez internetu (najprv mapovanie v K41); 345 a 350 sú hotové v K39) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52), najprv vyžaduje delenie `FeedPostComments.tsx` (nález 333, R23 a R47) a podľa R59 začne až po piatich krokoch K40, K41, K42, K43 a K31; rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov, oprava K41, a 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní, oprava po kroku 7; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344, 346 viditeľnosť nového komentára na iPhone (zmapovaná v K36 ako starší stav; po K38 pretrváva, oprava K40 po odpovedi na R58) a 351 opakované chybové toasty pri donačítaní komentárov bez internetu (najprv mapovanie v K41); 345 a 350 sú hotové v K39) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
          polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '338', '342', '343', '344', '346', '351', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
