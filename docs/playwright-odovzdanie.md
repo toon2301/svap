@@ -1,4 +1,4 @@
-# Playwright: odovzdanie (stav k 18. 11. 2026)
+# Playwright: odovzdanie (stav k 19. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
@@ -9,7 +9,65 @@ zmeny danej úlohy vo vlastnej oblasti; nikdy nie pre env, reláciu, reportové
 artefakty alebo cudzie zmeny. PR, zlučovanie do mainu a nasadenie zostávajú
 majiteľovi. Ak nevznikli zmeny, nevytvára sa prázdny commit.
 
-## Aktuálna dávka — 18. 11. 2026: živé komentáre 257 a cielená regresia po K29
+## Aktuálna dávka — 19. 11. 2026: šesť preklikov upozornení po príprave dát
+
+Majiteľ pripravil testovacie údaje a potvrdil nové okno bez zmien a nasadzovania.
+Pred behom bol stiahnutý čerstvý main **`bc4391dc`** (K43, PR #298).
+Read-only kontrola Railway potvrdila úspešné nasadenie tejto revízie všetkých
+piatich aplikačných služieb ešte pred štartom. Vlastná vetva z tohto mainu je
+**`e2e/notifikacie-prekliky`**; mení sa iba tento dokument.
+
+Overených je práve **šesť pôvodných dátových SKIP z 18. 11.** v
+`notification-click.spec.ts`: prečítané upozornenie na lajk príspevku a na
+odpoveď na komentár v troch projektoch. Pôvodné scenáre, asercie, gestá,
+časové limity ani dátové podmienky sa nemenili. Každý variant bežal raz,
+workers **1**, retries **0**, maxFailures **1**.
+
+| Projekt | Prešlo | Zlyhalo | Preskočené | Rozpätie pokusov |
+| --- | ---: | ---: | ---: | ---: |
+| webkit-desktop | **2** | **0** | **0** | 14,309 s |
+| webkit-mobile | **2** | **0** | **0** | 11,646 s |
+| chromium-desktop | **2** | **0** | **0** | 4,387 s |
+| **Spolu** | **6** | **0** | **0** | proces **46,380 s** |
+
+UTC **22:09:41.607–22:10:27.987**, Playwright report **41,964947 s**.
+Rozpätie projektu znamená čas od prvého po posledný jeho pokus, nie čas
+prihlásenia ani súčet trvaní samotných testov. Prihlásenie uspelo na prvý
+pokus, bez diagnostického opakovania. Žiadny nový pád, flaky výsledok ani
+blok `[E2E-EVIDENCE]` nevznikol.
+
+Na desktope sa pri oboch typoch overilo otvorenie príspevku v prekryvnom okne,
+správna cieľová adresa a návrat Späť bez výmeny hlavného obsahu. Mobilný WebKit
+použil pôvodný **tap**: otvoril stránku príspevku a Späť sa vrátil do upozornení
+s novým hlavným elementom. Odpoveď niesla aj cieľový komentár v adrese.
+
+Pred živým behom izolovaný Docker `--list` s **`--network=none`**, bez env,
+prihlásenia a Railway potvrdil presne **2 varianty na projekt, spolu 6**.
+Lokálny konfiguračný obal mimo Gitu vybral iba príslušnú mobilnú alebo
+desktopovú vetvu a typy `like`/`reply`. Projektovo nepoužiteľné varianty tak
+vôbec nevybral; nulový SKIP nie je odstránenie pôvodných dátových strážcov.
+Obal zároveň vypol screenshot, trace, video a automatický DOM snapshot.
+
+Testy použili existujúce dostupné príspevky a už prečítané upozornenia.
+Žiadny testovací príspevok, komentár, lajk ani upozornenie sa kvôli behu
+nevytváral alebo nemazal a neprečítané upozornenia sa neotvárali. Prípravu
+urobil majiteľ vopred; tento beh overuje preklik a históriu, **nie vznik alebo
+doručenie upozornenia**. Pôvodný `.env.e2e` bol pripojený iba read-only,
+nevypisoval sa ani nekopíroval. Relácia, surové reporty a lokálne pomocné
+súbory ostávajú mimo commitu; bezpečné výstupy obsahujú iba statické názvy,
+stavy, počty a časy.
+
+**Okno bolo po skončení uvoľnené o 23:10 Europe/Bratislava (22:10 UTC).**
+Ďalší živý beh sa nespúšťa. Výsledok čaká na prijatie majiteľom. Historický
+beh 18. 11. sa spätne neprepisuje; jeho šesť dátových SKIP má teraz samostatné
+úspešné overenie. Toto nie je celý beh, dym ani cielené overenie ďalších opráv
+komentárov. Prijatý celý základ **427 / 2 / 303** zostáva nezmenený.
+
+Ďalší odporúčaný krok po dohode s majiteľom: dym `@smoke` na vtedy aktuálnom
+a potvrdene nasadenom main v novom okne. Porovnanie WSL/Docker k 223 je stále
+samostatná úloha; tento beh ho nenahrádza a nepotvrdzuje príčinu 223.
+
+## Historická dávka — 18. 11. 2026: živé komentáre 257 a cielená regresia po K29
 
 PR **#284 je zlúčený**, testovaný čerstvý main **`83b26a23`** (obsahuje aj K29
 a K30). Majiteľ výslovne potvrdil dokončené nasadenie, okno bez zlučovania,
