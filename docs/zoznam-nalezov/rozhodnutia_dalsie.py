@@ -278,7 +278,13 @@ DECISIONS_DALSIE = [
                      'plochu, čitateľ ju vráti posunom späť. (2) Bez toho by čitateľ na začiatku komentárov dostal '
                      'indikátor, hoci nový komentár je hneď pod ním. Riziko stredné: mení sa správanie indikátora; '
                      'platí len pri mobilnej hlavičke, desktop a panel nad fotkou sa nemenia.',
-         kedy='Pred poslaním karty K40 kolegovi; karta je napísaná podľa odporúčania.'),
+         kedy='Rozhodnuté 19. 11. 2026.',
+         odpoved='Majiteľ 19. 11. 2026: podľa odporúčania agenta (kartu K40 napísanú podľa neho poslal kolegovi), '
+                 'teda (a) a (a): po vlastnom komentári aj po ťuknutí na indikátor sa zoznam posunie tak, aby bol '
+                 'prvý komentár na vrchu viditeľnej plochy s malou rezervou (8 px), a „pri vrchu“ sa počíta od '
+                 'prvého komentára. Oprava je zlúčená v PR #294 (K40); ručný test majiteľa na iPhone 19. 11. 2026 '
+                 'prešiel.',
+         datum='19. 11. 2026'),
     dict(id='R59', tema='Kedy začať redizajn komentárov (261, skupina 7) a čo sa pri ňom musí vyriešiť navyše',
          otazka='Redizajn komentárov (261, skupina 7, vzhľad schválený v R52) smie podľa R47 začať po poslednej '
                 'dávke delenia `FeedPostComments.tsx` (K42). Majiteľ navrhol (19. 11. 2026) nič nesiliť a začať ho '
@@ -298,4 +304,37 @@ DECISIONS_DALSIE = [
                  'ktorý sa podľa R49 najprv prebere. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
                  'nenahlásil, lebo ich redizajn zmení.',
          datum='19. 11. 2026'),
+    dict(id='R60', tema='Oprava nálezu 342: ako po chybe pri odpovedi, úprave a zmazaní komentára poznať, že príspevok zmizol',
+         otazka='Pri pridaní komentára kód pri chybe 404, 403 alebo 410 ukáže neutrálnu hlášku „Tento príspevok už '
+                'nie je dostupný.“ a pošle signál zmiznutia príspevku. Pri odpovedi, úprave a zmazaní ukáže '
+                'všeobecnú chybu a signál nepošle, takže karta príspevku ostane v zoznamoch. Samotný stav odpovede '
+                'nestačí: server vracia 404 aj vtedy, keď príspevok existuje a chýba len komentár alebo rodič '
+                'odpovede, a 403 pri úprave a zmazaní znamená „nemáš právo“. Ako to opraviť? (a) Po chybe overiť '
+                'dostupnosť príspevku jedným dopytom na detail príspevku: ak aj ten zlyhá s 404, 403 alebo 410, '
+                'príspevok zmizol (rovnaké spracovanie ako pri pridaní), inak ostane doterajšia chyba; len frontend. '
+                '(b) Doplniť do odpovede servera o chýbajúcom príspevku strojový kód (ako `reply_parent_missing`); '
+                'zmena servera aj frontendu. (c) Rozlišovať podľa textu odpovede (krehké).',
+         odporucanie='(a): rovnaká myšlienka ako pri načítaní okna detailu (príspevok zmizol = detail zlyhá s 404, '
+                     '403 alebo 410); len frontend, bez zmeny servera a bez čítania textov; dodatočný dopyt ide len '
+                     'pri už zlyhanej akcii a ak zlyhá sieťou, ostane doterajšia chyba. (b) je presnejšia a ušetrí '
+                     'dopyt, no mení server a kontrakt kvôli zriedkavému prípadu; (c) sa neodporúča.',
+         kedy='Pred poslaním karty K43 kolegovi; karta je napísaná podľa odporúčania.'),
+    dict(id='R61', tema='Oprava nálezu 351: ako zastaviť slučku dopytov a chybových hlásení pri donačítavaní komentárov a odpovedí bez internetu',
+         otazka='Mapovanie K41: po zlyhaní donačítania ostáva sentinel (koniec zoznamu) vo výhľade a zapne sa znova, '
+                'takže sa dopyt a chybová hláška opakujú samy desiatky ráz za sekundu (Chromium s atrapou siete: 21 '
+                'dopytov a 21 hlásení za 1 s), kým používateľ neodíde z konca zoznamu alebo sa nevráti internet; '
+                'hlavný feed a profil majú proti tomu ochranu, komentáre a odpovede nie. Rovnaká slučka je pri '
+                'donačítaní odpovedí. Ako to opraviť? (a) Pozastaviť automatické doťahovanie po zlyhaní a obnoviť ho '
+                'samo po úspešnom pollingu (do 8 s) alebo po udalosti prehliadača `online`; bez viditeľnej zmeny; '
+                'komentáre aj odpovede v dávke K43. (b) Obnoviť až pri ďalšom posune používateľa. (c) Pridať na '
+                'koniec zoznamu tlačidlo „Skúsiť znova“ ako majú feed a profil (viditeľná zmena a nové texty v '
+                'šiestich jazykoch; vzhľad by sa podľa R49 najprv schválil).',
+         odporucanie='(a): bez viditeľnej zmeny; prototyp kolegu z K41: offline na konci zoznamu = 1 dopyt a 1 '
+                     'hláška, odchod a návrat nič nespustí, po návrate internetu sa doťahovanie obnoví samo (hneď po '
+                     '`online`, inak do 8 s); rieši komentáre aj odpovede jednou myšlienkou. Riziko: ak zlyháva len '
+                     'stránka s kurzorom a polling prechádza, pokus sa opakuje každých 8 s (hláška znova), čo je '
+                     'oproti dnešným desiatkam za sekundu zanedbateľné. (b) by chcelo zásah do posunu zoznamu a '
+                     'nechá slučku, kým používateľ neposunie; (c) je viditeľná zmena a patrí skôr k redizajnu '
+                     'komentárov, ak ju majiteľ chce.',
+         kedy='Pred poslaním karty K43 kolegovi; karta je napísaná podľa odporúčania.'),
 ]
