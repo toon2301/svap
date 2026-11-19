@@ -17,6 +17,10 @@
  * možnosti dostať sa k zvyšku. Len vtedy – a nikde inde – pribudne tlačidlo
  * na ručné donačítanie. Detekcia je tá istá jednoduchá kontrola, akú appka
  * používa v `useFeedInfiniteScroll` aj `useCardInViewport`.
+ *
+ * Po zlyhaní donačítania rodič sentinel pozastaví (`paused`, nález 351, K43): koniec vlákna je stále vo výhľade a nový
+ * observer po obnove `enabled` by hneď zopakoval ten istý neúspech, v slučke. Pozastavenie vypína LEN sentinel;
+ * záložné tlačidlo ostáva použiteľné, lebo slučku nemá a je jediná cesta k zvyšku vlákna.
  */
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
@@ -26,6 +30,8 @@ import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 type FeedRepliesAutoLoaderProps = {
   /** False počas prebiehajúcej dávky – nech sa nespustí druhá. */
   enabled: boolean;
+  /** Automatické donačítavanie je pozastavené po zlyhaní (vypína len sentinel, nie záložné tlačidlo). */
+  paused?: boolean;
   loading: boolean;
   /** Scrollovateľný box zoznamu komentárov. */
   root: RefObject<HTMLElement | null>;
@@ -35,6 +41,7 @@ type FeedRepliesAutoLoaderProps = {
 
 export default function FeedRepliesAutoLoader({
   enabled,
+  paused = false,
   loading,
   root,
   onLoadMore,
@@ -74,7 +81,7 @@ export default function FeedRepliesAutoLoader({
 
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: requestMore,
-    enabled,
+    enabled: enabled && !paused,
     root,
     // Rovnaká predsávka ako pri komentároch – v nízkom boxe by 400px z hlavného
     // feedu znamenalo „vždy blízko".

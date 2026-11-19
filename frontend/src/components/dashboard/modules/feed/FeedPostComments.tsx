@@ -106,6 +106,7 @@ export default function FeedPostComments({
     hasMore,
     loadMorePaused,
     loadingRepliesFor,
+    repliesPaused,
     loadSeqRef,
     markSeen,
     loadMore,
@@ -330,6 +331,7 @@ export default function FeedPostComments({
                     (comment.replies_count ?? 0) ? (
                     <FeedRepliesAutoLoader
                       enabled={loadingRepliesFor !== comment.id}
+                      paused={repliesPaused}
                       loading={loadingRepliesFor === comment.id}
                       root={scrollRef}
                       onLoadMore={() => void loadMoreReplies(comment.id)}

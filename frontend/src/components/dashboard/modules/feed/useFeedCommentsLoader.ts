@@ -27,7 +27,9 @@
  * znova: desiatky dopytov a toastov za sekundu, kým bol koniec zoznamu vo výhľade. Po zlyhaní `loadMore` (nie
  * `silent` hľadania) sa preto doťahovanie pozastaví (`loadMorePaused`) a samo obnoví: po úspešnej obnove
  * pollingom, po udalosti `online` a po novom načítaní. `hasMore` sa nemení, takže hľadanie komentára z upozornenia
- * (`useFeedCommentsSeek`) sa správa ako doteraz.
+ * (`useFeedCommentsSeek`) sa správa ako doteraz. Rovnako sa správa donačítavanie odpovedí: po zlyhaní
+ * `loadMoreReplies` (nie `silent`) sa pozastaví (`repliesPaused`, spoločné pre všetky vlákna a nezávislé od
+ * komentárov) a obnoví sa tými istými spúšťačmi.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -93,6 +95,12 @@ export function useFeedCommentsLoader({
    * sa pozastavenie zruší samo (viď hlavička súboru). Sentinel v komponente ho berie ako ďalšiu podmienku `enabled`.
    */
   const [loadMorePaused, setLoadMorePaused] = useState(false);
+  /**
+   * To isté pre donačítavanie odpovedí (nález 351, K43, R61): po zlyhaní `loadMoreReplies` sa sentinely vlákien vypnú
+   * a samy sa obnovia. Spoločné pre všetky rozbalené vlákna, lebo výpadok sa týka všetkých, a nezávislé od
+   * `loadMorePaused`: zlyhanie jedného druhé nezastaví.
+   */
+  const [repliesPaused, setRepliesPaused] = useState(false);
 
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -147,6 +155,7 @@ export function useFeedCommentsLoader({
     setFailed(false);
     // Nové načítanie (iný príspevok, opakovanie po mutácii) začína s čistým štítom (nález 351).
     setLoadMorePaused(false);
+    setRepliesPaused(false);
     loadingMoreRef.current = false;
     const call = (latestLoadRef.current += 1);
     const seq = (loadSeqRef.current += 1);
@@ -297,9 +306,10 @@ export function useFeedCommentsLoader({
     const page = await listFeedPostComments(postId, { pageSize });
     // Medzitým prebehla mutácia → táto odpoveď je spred nej, zahoď ju.
     if (seq !== loadSeqRef.current) return;
-    // Odpoveď prišla, takže spojenie funguje: pozastavené doťahovanie sa obnoví (nález 351). Zahodená odpoveď
-    // nemá žiadny účinok, preto je to až za kontrolou; ďalší polling to dobehne.
+    // Odpoveď prišla, takže spojenie funguje: pozastavené doťahovanie komentárov aj odpovedí sa obnoví (nález 351).
+    // Zahodená odpoveď nemá žiadny účinok, preto je to až za kontrolou; ďalší polling to dobehne.
     setLoadMorePaused(false);
+    setRepliesPaused(false);
     // Odčítané hneď po awaite: `loadMore` posúva `nextUrlRef` synchrónne, ešte
     // pred prekreslením, takže je to spoľahlivejší ukazovateľ než dĺžka
     // zoznamu (tú drží ref zosynchronizovaný až pri rendri).
@@ -391,6 +401,9 @@ export function useFeedCommentsLoader({
               'Odpovede sa nepodarilo načítať.',
             ),
           );
+          // Rovnako ako pri komentároch: koniec vlákna je stále vo výhľade a sentinel by hneď zopakoval ten istý
+          // neúspech (nález 351). Tiché hľadanie (`silent`) nič nepozastavuje.
+          setRepliesPaused(true);
         }
         return false;
       } finally {
@@ -400,10 +413,13 @@ export function useFeedCommentsLoader({
     [postId, markSeen],
   );
 
-  // Spojenie sa vrátilo: pozastavené doťahovanie sa obnoví hneď, nie až pri najbližšom pollingu (nález 351).
-  // Efekt je zámerne posledný v hooku, takže poradie existujúcich efektov sa nemení.
+  // Spojenie sa vrátilo: pozastavené doťahovanie komentárov aj odpovedí sa obnoví hneď, nie až pri najbližšom
+  // pollingu (nález 351). Efekt je zámerne posledný v hooku, takže poradie existujúcich efektov sa nemení.
   useEffect(() => {
-    const resume = () => setLoadMorePaused(false);
+    const resume = () => {
+      setLoadMorePaused(false);
+      setRepliesPaused(false);
+    };
     window.addEventListener('online', resume);
     return () => window.removeEventListener('online', resume);
   }, []);
@@ -417,6 +433,7 @@ export function useFeedCommentsLoader({
     hasMore,
     loadMorePaused,
     loadingRepliesFor,
+    repliesPaused,
     loadSeqRef,
     markSeen,
     loadMore,
