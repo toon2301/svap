@@ -8,6 +8,7 @@ PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, pre
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova.
+Nález 352 (zostatok po oprave 345, z kontroly CodeRabbitu k PR #293) je tu, lebo `polozky_nove_k14.py` je plný (499 riadkov).
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -460,4 +461,37 @@ NEW_ITEMS_NASTENKA = [
               'skutočnú politiku (JSON bez názvu bucketu a čísla účtu); README sa prepíše na politiku po prefixoch s tabuľkou, ktorý prefix je '
               'verejný a ktorý nie, a odkáže sa naň z prípravy nasadenia (úlohy N) a z overenia súkromia obrázkov (266). Odhad: stredný · S.',
          dec=None, src='agent pri mapovaní nálezu 301'),
+    dict(n=352, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='okno detailu príspevku: po zatvorení krížikom, Escape alebo klikom mimo ostáva v kontexte okna '
+                'zastaraný cieľ, takže klik na autora komentára mimo okna volá zbytočné zatvorenie, ktoré môže v '
+                'milisekundách po zatvorení predčasne zhasnúť príznak `closing` v histórii (zostatok po oprave 345, '
+                'možnosť a z R57)',
+         what='Kolega pri oprave 345 (K39, PR #292, 19. 11. 2026) poznamenal, že kontext okna '
+              '(`FeedPostOverlayContext.tsx`) naďalej drží zastaraný cieľ po zatvorení krížikom, Escape alebo klikom '
+              'mimo (tieto cesty čistia len hook `useFeedOverlayTarget.ts`, možnosť b z R57 sa nerobila) a že to na '
+              'správanie nemá dosah. CodeRabbit pri kontrole PR #293 (19. 11. 2026) upozornil, že to neplatí presne, '
+              'a agent to overil čítaním kódu: strážca `postOverlay?.target` v `openCommentAuthorProfile` '
+              '(`FeedPostComments.tsx`) číta kópiu v kontexte, takže po zatvorení okna klik na avatar alebo meno '
+              'autora komentára mimo okna (napríklad v komentároch rozbalených v karte) zavolá `postOverlay.close({ '
+              'keepHistory: true })`; to cez `onTargetChange` skončí v `handleFeedOverlayTargetChange(null, { '
+              'keepHistory: true })` a vo `forgetFeedOverlayHistory()`, ktoré zhasne príznaky `pushed`, `closing` a '
+              '`adopted`, a obsluha zatvorenia v hooku `targetRef` neskúma. Kým nebeží krok späť po predchádzajúcom '
+              'zatvorení, je to bezvýznamné. Ak by klik prišiel v milisekundách medzi zatvorením '
+              '(`popFeedOverlayHistory()` nastaví `closing`) a `popstate`, ochrana v `feedOverlayHistory.ts` '
+              '(`isFeedOverlayHistoryBusy()`) by predčasne zanikla a appka by pod zavretým oknom mohla otvoriť '
+              'celoobrazovkovú stránku príspevku. Pravidlo prekliku na profil z K39 (listener v hooku s `targetRef`) '
+              'tento prípad nekryje, lebo zatvorenie ide cez kontext skôr, než sa pošle udalosť `goToUserProfile`. '
+              'Dopad: veľmi nízka pravdepodobnosť (okno milisekúnd), sondou sa neoverilo.',
+         note='Návrh opravy (neoverený, kolega ho overí): (a) najmenšia: v `handleFeedOverlayTargetChange` pri '
+              'zatvorení (`target` je null) nerobiť nič, ak je okno už zavreté (`targetRef.current` je null; '
+              'kontrola pred zápisom refu), rovnako ako to od K39 robí listener prekliku na profil: zatvorenie '
+              'zavretého okna nemá meniť účtovníctvo histórie; zmena v `useFeedOverlayTarget.ts` (115 riadkov) a '
+              'test sekvencie v novom súbore (R27): zatvorenie krížikom, kým beží krok späť, a hneď `close({ '
+              'keepHistory: true })` cez kontext; očakáva sa, že `isFeedOverlayHistoryBusy()` ostane true až do '
+              '`popstate`; (b) dôkladnejšia: možnosť b z R57, riadený cieľ v kontexte (jeden zdroj pravdy; '
+              '`FeedPostOverlayContext.tsx` 104 riadkov, `DashboardContentView.tsx` 414 riadkov a jeden existujúci '
+              'test v `DashboardContentView.test.tsx` s 895 riadkami). Skupina a dôležitosť sú predbežný návrh '
+              'agenta (po nasadení, nízka, lebo ide o okno milisekúnd bez preukázaného dopadu); ak by sa zaradil do '
+              'dávky, môže ísť s opravou 342 alebo samostatne. Odhad: nízky · S.',
+         dec=None, src='CodeRabbit (kontrola PR #293, 19. 11. 2026), poznámka kolegu v PR #292 a kontrola agenta čítaním kódu'),
 ]

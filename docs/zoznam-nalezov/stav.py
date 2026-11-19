@@ -49,10 +49,16 @@ ZMENY = [
       'najbližších krokoch (K40, K41, K42, K43 a K31). Pri redizajne treba vyriešiť aj pole na text pri odpovedi na komentár '
       '(podrobnosti dodá majiteľ, vzhľad sa najprv prebere, R49) a majiteľ v komentároch objavil vzhľadové chyby, ktoré '
       'zámerne nenahlásil, lebo ich redizajn zmení. Vo fronte pribudol záznam K44 (redizajn komentárov) a upravené sú K34, '
-      'K31 a K42, v nálezu 261 je poznámka. (8) Prehľad: nálezy 1–351 (nový 351), zatvorené 14, hotové 137 (pribudli 345 a '
-      '350), PRED 50, PO 130; čakajúcich rozhodnutí 10 z 59. Dopad na E2E: žiadny na špecy; po oprave 345 doplní Codex '
-      'kontrolu prekliku z komentára, po oprave 346 kontrolu viditeľnosti nového komentára na `webkit-mobile` s '
-      'fotopríspevkom.'),
+      'K31 a K42, v nálezu 261 je poznámka. (8) Kontrola CodeRabbitu k PR #293 (1 pripomienka k prvému commitu, v jadre '
+      'platná, závažnosť Minor): tvrdenie z K39, že zastaraná kópia cieľa v kontexte okna nemá dosah, neplatí presne. Strážca '
+      '`postOverlay?.target` vo `FeedPostComments.tsx` ju číta, takže klik na autora komentára mimo okna zavolá zbytočné '
+      '`close({ keepHistory: true })` a to `forgetFeedOverlayHistory()`, ktoré môže v milisekundách po zatvorení okna (kým '
+      'beží krok späť) predčasne zhasnúť príznak `closing`; zatvorenie v hooku (`handleFeedOverlayTargetChange`) `targetRef` '
+      'neskúma. Pravdepodobnosť je veľmi nízka. Opravené je znenie v poznámkach a v nálezu 345, pribudol nález 352 (po '
+      'nasadení, nízka); kód sa nemení a vlákno zatvára majiteľ. CodeRabbit posledné dva commity nekontroloval (limit jednej '
+      'kontroly za hodinu). (9) Prehľad: nálezy 1–352 (nové 351 a 352), zatvorené 14, hotové 137 (pribudli 345 a 350), PRED '
+      '50, PO 131; čakajúcich rozhodnutí 10 z 59. Dopad na E2E: žiadny na špecy; po oprave 345 doplní Codex kontrolu prekliku '
+      'z komentára, po oprave 346 kontrolu viditeľnosti nového komentára na `webkit-mobile` s fotopríspevkom.'),
     ('18. 11. 2026',
       'Vetva 187 (vychádza z `main` `044a748e`, teda po PR #288). (1) Zlúčené: PR #289 (K37; 18. 11. 2026 o 17:51 UTC, merge '
       '`e10a2256`) a PR #288 (vetva 186; o 17:54 UTC, merge `044a748e`). (2) K37 (PR #289): dávka 3 z 5 delenia '
