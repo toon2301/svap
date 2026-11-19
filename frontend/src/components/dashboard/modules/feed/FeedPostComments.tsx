@@ -9,7 +9,7 @@
  * otvorených naraz sa navzájom neovplyvňuje.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
@@ -31,65 +31,7 @@ import {
   FEED_COMMENT_MAX_LENGTH,
   type FeedPostComment,
 } from '@/lib/feedApi';
-
-type FeedPostCommentsProps = {
-  /**
-   * Sekcia vyplní výšku rodiča namiesto vlastného stropu.
-   *
-   * V karte je zoznam ohraničený pevným stropom, aby stovky komentárov
-   * nenaťahovali stránku. V okne detailu je to naopak: pevný blok nad ním má
-   * svoju výšku a komentáre majú dostať PRESNE zvyšok – strop by tam nechal
-   * prázdne miesto alebo by okno prerástol.
-   */
-  fillHeight?: boolean;
-  /**
-   * Ukázať čas pri komentári.
-   *
-   * Zapína to mobilný prehliadač fotky, kde je meta riadok jediné miesto, kde
-   * sa čas dá zobraziť. Na karte a v okne detailu ostáva riadok zámerne
-   * strohý (čas nesie samotný príspevok nad nimi).
-   */
-  showTimestamp?: boolean;
-  /**
-   * Jednoriadkové pole na komentár s ikonou odoslania namiesto tlačidla.
-   *
-   * Pre vysunutý panel nad fotkou, kde má byť composer čo najnižší. Emoji
-   * tlačidlo tam nie je tak či tak – to appka na mobile skrýva všade.
-   */
-  compactComposer?: boolean;
-  /**
-   * Obsah vložený NAD zoznam, do tej istej scrollovateľnej plochy.
-   *
-   * Mobilná obrazovka detailu tým dosiahne, že text, fotka aj riadok akcií
-   * scrollujú SPOLU s komentármi ako jeden súvislý povrch, a pole na nový
-   * komentár im pritom ostáva pevne na spodku. Bez toho by mala obrazovka dva
-   * nezávislé scrolly nad sebou.
-   *
-   * Musí byť VNÚTRI scrollovateľného boxu, nie nad ním – inak by donačítavanie
-   * (sentinel) aj doscrollovanie na komentár merali inú plochu, než ktorou
-   * používateľ naozaj hýbe.
-   */
-  listHeader?: ReactNode;
-  /**
-   * Prvé načítanie dobehlo a zoznam je VYKRESLENÝ; nesie svoju scrollovaciu
-   * plochu.
-   *
-   * Volajúci, ktorý chce po otvorení niekam doscrollovať, to nesmie robiť
-   * skôr: kým je zoznam v stave „Načítavam…", je obsah plochy KRATŠÍ než ona
-   * sama, takže sa scroll nemá kam pohnúť a ticho sa zahodí.
-   *
-   * Signál je jednorazový na príspevok a zámerne EXPLICITNÝ – pasívne
-   * sledovanie `loading` zvonka by volajúceho nechalo hádať, či už je čo
-   * merať.
-   */
-  onCommentsReady?: (scroller: HTMLElement | null) => void;
-  postId: number;
-  /** Komentár z notifikácie – doscrolluje sa naň a krátko sa zvýrazní. */
-  highlightCommentId?: number | null;
-  onCountChange?: (delta: number) => void;
-  /** Skutočný počet zo servera – drží číslo pri ikone v súlade so zoznamom. */
-  onTotalChange?: (total: number) => void;
-};
+import type { FeedPostCommentsProps } from './FeedPostComments.types';
 
 export default function FeedPostComments({
   postId,
