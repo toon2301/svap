@@ -372,6 +372,9 @@ export function useFeedCommentsLoader({
         (comment) => comment.id === parentId,
       );
       const loaded = parent?.replies ?? [];
+      // Generácia načítania pri odoslaní dopytu, ako v `loadMore`: nové načítanie (iný príspevok) alebo mutácia ju
+      // zvýši a zlyhanie staršieho dopytu potom nesmie pozastaviť donačítavanie nad novým stavom (PR #298).
+      const seq = loadSeqRef.current;
       setLoadingRepliesFor(parentId);
       try {
         const page = await listFeedCommentReplies(postId, parentId, {
@@ -402,8 +405,9 @@ export function useFeedCommentsLoader({
             ),
           );
           // Rovnako ako pri komentároch: koniec vlákna je stále vo výhľade a sentinel by hneď zopakoval ten istý
-          // neúspech (nález 351). Tiché hľadanie (`silent`) nič nepozastavuje.
-          setRepliesPaused(true);
+          // neúspech (nález 351). Tiché hľadanie (`silent`) nič nepozastavuje a zastaraný dopyt tiež nie: ak ešte
+          // treba, sentinel to skúsi znova a pozastaví až aktuálne zlyhanie (PR #298).
+          if (seq === loadSeqRef.current) setRepliesPaused(true);
         }
         return false;
       } finally {
