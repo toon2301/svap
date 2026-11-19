@@ -478,6 +478,8 @@ DONE_PR_TABLE_CASTOCNE = [
      'uprataním a regresie po K29 7 / 0 / 20; len dokumentácia Codexa)'),
     ('#289', 'K37', '333 (dávka 3 z 5 delenia `FeedPostComments.tsx`: krok 4, hľadanie cieľa do `useFeedCommentsSeek.ts`; ručný '
      'test majiteľa bez nových nálezov)'),
+    ('#291', 'K38', '333 (dávka 4 z 5 delenia `FeedPostComments.tsx`: kroky 5 a 6, posun a indikátor do `useFeedCommentsScroll.ts` '
+     'a načítanie a polling do `useFeedCommentsLoader.ts`; ručný test majiteľa: 346 pretrváva a kandidát 351)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.
