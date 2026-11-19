@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa, dávka K24: 336 a nález 321, ktorý uzavrela dávka K25, dávka K30: 339; od Codexa 337 a 340).
+"""Nálezy opravené od 13. 11. 2026 (po K20): `DONE_SINCE_K20` (329, dávka K21: 331, 332, 330 a 325, dávka K22: 334 a 335 a oprava testu 328 od Codexa, dávka K24: 336 a nález 321, ktorý uzavrela dávka K25, dávka K30: 339, dávky K39 až K41: 345, 350, 346 a 338; od Codexa 337 a 340; novšie opravy sú v `hotove_k40.py`).
 
-Samostatný súbor kvôli limitu 500 riadkov (`hotove_dalsie.py` má 496 riadkov). `hotove.py` ho pripája do `DONE_SINCE`. Nový opravený nález sa pridáva sem.
+Samostatný súbor kvôli limitu 500 riadkov (`hotove_dalsie.py` má 496 riadkov). `hotove.py` ho pripája do `DONE_SINCE`. Nový opravený nález sa od PR #297 (19. 11. 2026) pridáva do `hotove_k40.py`, lebo tento súbor má 481 riadkov.
 """
 
 DONE_SINCE_K20 = [
