@@ -6,6 +6,22 @@ Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_
 
 ZMENY_STARSIE_2 = [
     ('13. 11. 2026',
+      'Vetva 174, doplnok po rozhodnutiach majiteľa z 13. 11. 2026. (1) Rozhodnuté: R39 (b): nová žiadosť o zručnosť príde '
+      'do Žiadostí ako odznak a pri zapnutom „Vypnúť všetko“ (všetky upozornenia vypnuté) alebo vypnutej kategórii „Žiadosť o zručnosť“ odznak nepríde '
+      '(nález 330 je tým jasný a ide do K21); R2: všetkých šesť jazykov (sk, cs, hu, de, pl, en) má byť pri štarte plne '
+      'preložených (majiteľ najprv odpovedal na inú vec: výber jazyka podľa krajiny; agent zistil, že ho aplikácia už robí, '
+      'a rozdiel, že zvyšok sveta dostane slovenčinu namiesto angličtiny, je nový nález 332; jazyk prehliadača ostáva '
+      'druhým signálom); R20 (A): zoznam lajkujúcich ako na Nástenke pre ponuky, portfólio aj profil, pred nasadením (nález '
+      '262 ide do skupiny PRED NASADENÍM); R21: krajina ostáva len pri radení (263 zatvorený); R23: najprv sa delia súbory '
+      'Nástenky po jednom (nový nález 333; majiteľ vzhľad Nástenky zatiaľ sám neupravuje); R27: malé zmeny testových '
+      'súborov nad 500 riadkov sa povoľujú (úprava `AGENTS.md` a `svaply.mdc` vo vetve 176); R28: vstupné animácie sa '
+      'zjednotia po overení na iPhone; R29: animované obrázky sa nepodporujú (298 a 299 zatvorené). (2) Číselný prehľad: '
+      'nálezy 1–333, zatvorené 14 (pribudli 263, 298 a 299). (3) Fronta: K21 sú malé opravy 331, 332, 330 a 325 (karta '
+      '`karty/K21.md`), K22 výzva na push (etapa 3b nálezu 321) a návrh K23 až K25: delenie `FeedPostComments.tsx` (333), '
+      'zoznam lajkujúcich (262) a preklady (176), každá najprv ako mapovanie. Dopad na E2E: K21 mení stav tlačidla v okne '
+      'recenzie a výber jazyka pri neznámom jazyku (špecy nastavujú `appLocale` ručne); po K21 Codex doplní scenár žiadosti '
+      'o zručnosť s odznakom.'),
+    ('13. 11. 2026',
       'Vetva 174 (vychádza z `main` `203e8d14`, teda po PR #259; main je zlúčený do vetvy). (1) K20 (PR #258, zlúčené 12. '
       '11. 2026 o 21:56 UTC; päť commitov podľa karty a päť opráv po kontrolách botov): etapa 3a nálezu 321 je hotová vo '
       'frontende (sedem volieb zo servera, kategórie bez lokálneho stavu s kostrou počas načítania, hlavný vypínač podľa '

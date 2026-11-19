@@ -11,7 +11,7 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K30, K36 a K37 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K30 a K36 až K39 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
@@ -20,7 +20,7 @@ o obrazovke Popis ponuky na mobile, farbách polí pri zmene hesla a sieťovej c
 varovaní v Upozorneniach a o načítavaní Sledovania (308, 309 a 310) a K17 (PR #254) o ôsmich natívnych `alert()` a o roli `alert`
 pri chybe Blokovaných (302 a 312) s mapovaním 311. Dávky K16 a K17 navrhol agent 8. a 9. 11. 2026 podľa ručných testov majiteľa po
 K14: K16 začínala nálezom 319 (mapovanie, výsledok od kolegu čaká) a pokračovala zvyškami po 286 (308 až 310), K17 dopĺňala zvyšok
-nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 (PR #260) boli malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`; opravu pripomienky CodeRabbitu urobil agent vo vetve K21 s povolením majiteľa); K22 (PR #264) boli dve malé opravy z ručných testov po K21, 334 (stará chybová hláška v okne „Pridať recenziu“) a 335 (atribút `lang` na `<html>`; karta `karty/K22.md`), K23 (PR #266) bola výzva na push (etapa 3b nálezu 321; karta `karty/K23.md`), K24 (PR #269) bola oprava 336 (anglické „Network Error“ v okne recenzie, výnimka R41; karta `karty/K24.md`), K25 (PR #270) opis hlavného vypínača aj na počítači (321, R42; karta `karty/K25.md`), K26 (mapovanie delenia `FeedPostComments.tsx`, 333, R23; karta `karty/K26.md`) a K27 (PR #275: backend zoznamu lajkujúcich, 262, R20; karta `karty/K27.md`) sú hotové, K28 (PR #278) je dávka 1 z 5 delenia `FeedPostComments.tsx` (333; karta `karty/K28.md`: len testy a dočasný odtlačok HTML) a hotová, K29 (PR #283) je dávka 2 z 5 delenia (333; karta `karty/K29.md`) a K30 (PR #286) oprava 339 (karta `karty/K30.md`), obe hotové, K36 (mapovanie 345 a 346; karta `karty/K36.md`) a K37 (PR #289: dávka 3 z 5 delenia, 333; karta `karty/K37.md`) sú hotové, K38 je dávka 4 z 5 delenia (333; karta `karty/K38.md`) a K39 oprava 345 (karta `karty/K39.md`; obe sú návrh pre kolegu a mapovanie si robí kolega sám), K31 na upgrade Next.js (341) a K32 na preklady (176, najprv mapovanie), K33 na úchytku panela nad fotkou (343), K34 na frontend zoznamu lajkujúcich (262, etapa A, najprv mapovanie) a K35 na okno detailu na počítači (344, najprv mapovanie). Nález HNEĎ 318
+nálezov PRED NASADENÍM (302 s výnimkou R31, 311) a končila nálezom PO NASADENÍ 312 (karta `karty/K17.md`); K18 (PR #255) opravila tri chyby z ručných testov po K17 (327, 325 a 326; karta `karty/K18.md`; z 325 zostáva toast), K19 (PR #257) boli etapy 1 a 2 nálezu 321 (backend; karta `karty/K19.md`) a K20 (PR #258) etapa 3a nálezu 321 spolu s kódom opravy 319 (karta `karty/K20.md`); K21 (PR #260) boli malé opravy 331 (okno recenzie), 332 (jazyk pre zvyšok sveta), 330 (gulička Žiadostí, R39) a 325 (toast; karta `karty/K21.md`; opravu pripomienky CodeRabbitu urobil agent vo vetve K21 s povolením majiteľa); K22 (PR #264) boli dve malé opravy z ručných testov po K21, 334 (stará chybová hláška v okne „Pridať recenziu“) a 335 (atribút `lang` na `<html>`; karta `karty/K22.md`), K23 (PR #266) bola výzva na push (etapa 3b nálezu 321; karta `karty/K23.md`), K24 (PR #269) bola oprava 336 (anglické „Network Error“ v okne recenzie, výnimka R41; karta `karty/K24.md`), K25 (PR #270) opis hlavného vypínača aj na počítači (321, R42; karta `karty/K25.md`), K26 (mapovanie delenia `FeedPostComments.tsx`, 333, R23; karta `karty/K26.md`) a K27 (PR #275: backend zoznamu lajkujúcich, 262, R20; karta `karty/K27.md`) sú hotové, K28 (PR #278) je dávka 1 z 5 delenia `FeedPostComments.tsx` (333; karta `karty/K28.md`: len testy a dočasný odtlačok HTML) a hotová, K29 (PR #283) je dávka 2 z 5 delenia (333; karta `karty/K29.md`) a K30 (PR #286) oprava 339 (karta `karty/K30.md`), obe hotové, K36 (mapovanie 345 a 346; karta `karty/K36.md`), K37 (PR #289: dávka 3 z 5 delenia, 333; karta `karty/K37.md`), K38 (PR #291: dávka 4 z 5 delenia, 333; karta `karty/K38.md`) a K39 (PR #292: oprava 345 a 350; karta `karty/K39.md`) sú hotové, K40 je oprava 346 (karta `karty/K40.md`) a K41 oprava 338 s mapovaním 351 (karta `karty/K41.md`; obe sú návrh pre kolegu a mapovanie si robí kolega sám), K31 na upgrade Next.js (341) a K32 na preklady (176, najprv mapovanie), K33 na úchytku panela nad fotkou (343), K34 na frontend zoznamu lajkujúcich (262, etapa A, najprv mapovanie) a K35 na okno detailu na počítači (344, najprv mapovanie). Nález HNEĎ 318
 (push na iPhone) je zatvorený: príčinou bolo nastavenie v Railway (rollout 5 %), nie kód (R33). Zvyšok nálezu 245 (overenie v logoch Railway, prípadný `api.ts` s výnimkou) v poradí nie je: čaká na majiteľa. Nález 321 (kategórie upozornení; R32 (a): pred štartom) má plán po etapách v nálezu 321: etapy 1 a 2 sú zlúčené v K19, etapa 3a v K20 a etapa 3b (výzva na push) v K23 a opis vypínača na počítači v K25, takže nález 321 je hotový; E2E zvyšok je nález 337 (Codex). Dávky PO-A a PO-B sú pôvodne navrhnuté dávky zo 6. 11. 2026 (24, 22, 23, 26 a 247, 248, 250, 256) z nálezov
 PO NASADENÍ; v zozname sa volali K9 a K10, potom K13 a K14, K15 a K16, K17 a K18, no tie označenia sa použili na iné dávky, preto
 dostanú číslo K až vtedy, keď pôjdu kolegovi (pred ne pribudnú etapy nálezu 321). Kľúč `davka` je len označenie dávky pre čitateľa. Poradie dávok
@@ -34,39 +34,44 @@ Kontrola v `model.py` zlyhá, ak záznam odkazuje na nález, ktorý už nie je o
 zoznam nemôže ticho zastarať.
 """
 
-SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy PRED '
-             'NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K30, K36 a K37 sú hotové (z K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); '
-             'vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 (PR #273), 181 (PR #274), 182 (PR #277), 183 (PR #279), 184 (PR #282), 185 (PR #285), 186 (PR #288) a 187 sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z '
-             '13. 11. 2026 (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť); oprava pripomienky '
-             'CodeRabbitu vo vetve K21 (commit `71f9cff4`) bola druhá jednorazová výnimka majiteľa z 13. 11. 2026, lebo kolega už '
-             'nemohol vetvu upraviť. Dávku K21 (331 okno recenzie, 332 jazyk pre zvyšok sveta, 330 gulička Žiadostí a 325 toast; karta '
-             '`karty/K21.md`) majiteľ schválil a kolega ju dokončil (PR #260, zlúčené 13. 11. 2026). Dávku K22 (334 stará chybová '
-             'hláška v okne recenzie a 335 atribút `lang`; karta `karty/K22.md`) navrhol agent 13. 11. 2026 po ručných testoch K21, '
-             'majiteľ ju schválil a kolega ju dokončil (PR #264, zlúčené 15. 11. 2026). Dávku K23 (výzva na push, etapa 3b nálezu 321; '
-             'karta `karty/K23.md`) pripravil agent 15. 11. 2026, majiteľ ju schválil a kolega ju dokončil (PR #266, zlúčené 15. 11. 2026). '
-             'Dávky K24 (oprava 336, výnimka R41; karta `karty/K24.md`) a K25 (opis hlavného vypínača aj na '
-               'počítači, R42; karta `karty/K25.md`) majiteľ schválil a kolega ich dokončil (PR #269 a #270, zlúčené '
-               '16. 11. 2026). Dávku K26 (mapovanie delenia `FeedPostComments.tsx`, nález 333, R23; karta '
-               '`karty/K26.md`) pripravil agent 16. 11. 2026 (PR #272), kolega ju dokončil a výsledok je zapísaný v nálezu 333 '
-               '(`karty/K26_vysledok.md`). Dávku K27 (backend nálezu 262: tri koncové body „kto dal lajk“; karta `karty/K27.md`) '
-               'majiteľ schválil a kolega ju dokončil (PR #275, zlúčené 16. 11. 2026); vzhľad frontendu nálezu 262 majiteľ schválil '
-               '17. 11. 2026 (R51 a R56) a ide ako K34 (návrh). Dávku K28 (delenie `FeedPostComments.tsx`, dávka 1 z 5: krok 0, len '
-               'testy a dočasný odtlačok HTML; karta `karty/K28.md`; R45 a R46) majiteľ schválil a kolega ju dokončil (PR #278, '
-               'zlúčené 17. 11. 2026). Dávku K29 (delenie, dávka 2 z 5: kroky 1 až 3; karta `karty/K29.md`) majiteľ schválil '
-               '17. 11. 2026 a kolega ju dokončil (PR #283, zlúčené 18. 11. 2026); ručný test majiteľa 18. 11. 2026: 14 z 14 vykonaných, '
-               '12 prešlo a 2 čiastočne, kandidáti sú nálezy 345 a 346. Dávku K30 (oprava 339; karta `karty/K30.md`) majiteľ '
-               'schválil a kolega ju dokončil (PR #286, zlúčené 18. 11. 2026); mapovanie si urobil kolega sám (rozhodnutie '
-               'majiteľa, len pre tento raz) a ručný test majiteľa bol bez chýb; z K30 vznikli nálezy 347 až 349. Dávky K36 '
-               '(mapovanie 345 a 346; karta `karty/K36.md`, výsledok `karty/K36_vysledok.md`) a K37 (delenie, dávka 3 z 5, krok 4; '
-               'karta `karty/K37.md`) majiteľ schválil a kolega ich dokončil (K37: PR #289, zlúčené 18. 11. 2026; ručný test '
-               'majiteľa bez nových nálezov); mapovanie si robil kolega sám (rozhodnutie majiteľa). Dávky K38 (delenie, dávka 4 z 5: '
-               'kroky 5 a 6; karta `karty/K38.md`) a K39 (oprava 345; karta `karty/K39.md`, čaká na R57) pripravil agent '
-               '18. 11. 2026; mapovanie si robí kolega sám. Oprava 346 (K40) ide po K38 a posledná dávka delenia (5 z 5) sa '
-               'pripraví po zlúčení predchádzajúcej; K31 (upgrade '
-               'Next.js, 341), K32 (preklady, najprv mapovanie) a nové K33 (úchytka panela nad fotkou, 343), K34 (frontend zoznamu '
-               'lajkujúcich 262, etapa A, najprv mapovanie) a K35 (okno detailu na počítači, 344, najprv mapovanie) sú návrh. '
-               'Údržba zoznamu (jedna dokumentačná vetva agenta; majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; '
-             'dávky PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
+SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy '
+             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K30 a K36 až K39 sú hotové (z K16 '
+             'čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 (PR '
+             '#273), 181 (PR #274), 182 (PR #277), 183 (PR #279), 184 (PR #282), 185 (PR #285), 186 (PR #288), 187 (PR #290) a 188 '
+             'sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) a vetva 175 (oprava vyhľadávania, PR #259) bola '
+             'jednorazová výnimka majiteľa z 13. 11. 2026 (majiteľ 7. 11. 2026: opravy nálezov agentom sa odkladajú, kým majiteľ '
+             'nedá vedieť); oprava pripomienky CodeRabbitu vo vetve K21 (commit `71f9cff4`) bola druhá jednorazová výnimka majiteľa '
+             'z 13. 11. 2026, lebo kolega už nemohol vetvu upraviť. Dávku K21 (331 okno recenzie, 332 jazyk pre zvyšok sveta, 330 '
+             'gulička Žiadostí a 325 toast; karta `karty/K21.md`) majiteľ schválil a kolega ju dokončil (PR #260, zlúčené 13. 11. '
+             '2026). Dávku K22 (334 stará chybová hláška v okne recenzie a 335 atribút `lang`; karta `karty/K22.md`) navrhol agent '
+             '13. 11. 2026 po ručných testoch K21, majiteľ ju schválil a kolega ju dokončil (PR #264, zlúčené 15. 11. 2026). Dávku '
+             'K23 (výzva na push, etapa 3b nálezu 321; karta `karty/K23.md`) pripravil agent 15. 11. 2026, majiteľ ju schválil a '
+             'kolega ju dokončil (PR #266, zlúčené 15. 11. 2026). Dávky K24 (oprava 336, výnimka R41; karta `karty/K24.md`) a K25 '
+             '(opis hlavného vypínača aj na počítači, R42; karta `karty/K25.md`) majiteľ schválil a kolega ich dokončil (PR #269 a '
+             '#270, zlúčené 16. 11. 2026). Dávku K26 (mapovanie delenia `FeedPostComments.tsx`, nález 333, R23; karta '
+             '`karty/K26.md`) pripravil agent 16. 11. 2026 (PR #272), kolega ju dokončil a výsledok je zapísaný v nálezu 333 '
+             '(`karty/K26_vysledok.md`). Dávku K27 (backend nálezu 262: tri koncové body „kto dal lajk“; karta `karty/K27.md`) '
+             'majiteľ schválil a kolega ju dokončil (PR #275, zlúčené 16. 11. 2026); vzhľad frontendu nálezu 262 majiteľ schválil '
+             '17. 11. 2026 (R51 a R56) a ide ako K34 (návrh). Dávku K28 (delenie `FeedPostComments.tsx`, dávka 1 z 5: krok 0, len '
+             'testy a dočasný odtlačok HTML; karta `karty/K28.md`; R45 a R46) majiteľ schválil a kolega ju dokončil (PR #278, '
+             'zlúčené 17. 11. 2026). Dávku K29 (delenie, dávka 2 z 5: kroky 1 až 3; karta `karty/K29.md`) majiteľ schválil 17. 11. '
+             '2026 a kolega ju dokončil (PR #283, zlúčené 18. 11. 2026); ručný test majiteľa 18. 11. 2026: 14 z 14 vykonaných, 12 '
+             'prešlo a 2 čiastočne, kandidáti sú nálezy 345 a 346. Dávku K30 (oprava 339; karta `karty/K30.md`) majiteľ schválil a '
+             'kolega ju dokončil (PR #286, zlúčené 18. 11. 2026); mapovanie si urobil kolega sám (rozhodnutie majiteľa, len pre '
+             'tento raz) a ručný test majiteľa bol bez chýb; z K30 vznikli nálezy 347 až 349. Dávky K36 (mapovanie 345 a 346; karta '
+             '`karty/K36.md`, výsledok `karty/K36_vysledok.md`) a K37 (delenie, dávka 3 z 5, krok 4; karta `karty/K37.md`) majiteľ '
+             'schválil a kolega ich dokončil (K37: PR #289, zlúčené 18. 11. 2026; ručný test majiteľa bez nových nálezov); mapovanie '
+             'si robil kolega sám (rozhodnutie majiteľa). Dávky K38 (delenie, dávka 4 z 5: kroky 5 a 6; karta `karty/K38.md`) a K39 '
+             '(oprava 345 a 350 podľa odpovede R57; karta `karty/K39.md`) pripravil agent 18. 11. 2026 a kolega ich dokončil (K38: '
+             'PR #291, K39: PR #292; zlúčené 18. a 19. 11. 2026); mapovanie si robil kolega sám. Ručný test majiteľa po K38 a K39 '
+             '(19. 11. 2026, 16 testov): 346 pretrváva a vznikol kandidát 351. Dávky K40 (oprava 346 podľa odporúčania R58; karta '
+             '`karty/K40.md`) a K41 (oprava 338 a mapovanie 351; karta `karty/K41.md`) pripravil agent 19. 11. 2026; mapovanie si '
+             'robí kolega sám. Posledná dávka delenia (5 z 5, K42) sa pripraví po zlúčení predchádzajúcej; redizajn komentárov (261, '
+             'K44) začne podľa R59 až po piatich krokoch (K40, K41, K42, K43 a K31); K31 (upgrade Next.js, 341), K32 (preklady, '
+             'najprv mapovanie) a nové K33 (úchytka panela nad fotkou, 343), K34 (frontend zoznamu lajkujúcich 262, etapa A, najprv '
+             'mapovanie) a K35 (okno detailu na počítači, 344, najprv mapovanie) sú návrh. Údržba zoznamu (jedna dokumentačná vetva '
+             'agenta; majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky '
+             'PO-A a PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
 
 STAV_ROZROBENE = 'rozrobené'
 STAV_CAKA = 'čaká na zlúčenie'
@@ -76,34 +81,71 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA = [
-    dict(n='333', davka='K38',
-         co='Nástenka: delenie `FeedPostComments.tsx` (884 riadkov po K37) bez zmeny vzhľadu: dávka 4 z 5 (kroky 5 a 6: posun a '
-            'indikátor nových, načítanie a polling); potom dávka 5 a `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (R23).',
-         preco='JASNÉ (karta `karty/K38.md`, pripravená 18. 11. 2026; mapovanie si robí kolega sám; krok 6 má vysoké riziko). Čisté '
-               'presuny kódu, správanie ani vzhľad sa nemenia; posun na vrch plochy (príčina 346) sa v nich nemení; dočasný odtlačok '
-               'HTML z K28 sa neprepisuje a po dávke robí majiteľ ručný test. Zvyšná dávka: 5 = kroky 7 a 8 (R46); redizajn 261 až po '
-               'poslednej dávke (R47), vzhľad sa nemení bez schválenia majiteľa (R49), oprava 338 po kroku 6 (R48), oprava 346 po '
-               'kroku 5 a oprava 342 po kroku 7. Výnimka z pravidla 500 riadkov sa neudeľuje, povolenie platí len pre delenie troch '
-               'súborov Nástenky.'),
-    dict(n='345', davka='K39',
-         co='Okno detailu príspevku na počítači ostane otvorené po prechode na profil autora komentára (príčina nájdená v K36; '
-            'rovnaká oprava vyrieši aj 350).',
-         preco='JASNÉ (karta `karty/K39.md`, pripravená 18. 11. 2026 podľa odporúčania; čaká na odpoveď majiteľa R57: možnosť a, b '
-               'alebo obe a či zavrieť aj pri `goToMyProfile`). Mapovanie je hotové (K36, starší stav, nie dôsledok K29); kolega si ho '
-               'overí sám. Malá oprava v `useFeedOverlayTarget.ts` (65 riadkov) a nový súbor testov, mimo `FeedPostComments.tsx`; '
-               'ručný test majiteľa: tri spôsoby otvorenia okna, zoznam lajkujúcich a „Späť“. Dá sa poslať kolegovi aj medzi dávkami '
-               'delenia.'),
     dict(n='346', davka='K40',
-         co='iPhone: nový komentár nie je celý viditeľný vrátane tlačidiel po vlastnom odoslaní ani po kliknutí na upozornenie o '
-            'nových komentároch (príčina nájdená a zmeraná v K36).',
-         preco='JASNÉ (po dávke 4 a po rozhodnutí majiteľa; karta sa pripraví po K38). Príčina: posun na vrch plochy namiesto na '
-               'prvý komentár, na mobile je nad komentármi hlavička; oprava patrí do kroku 5 delenia (`useFeedCommentsScroll.ts`) ako '
-               'samostatný commit alebo dávka, nie počas presunu (R23). Pred opravou agent pripraví otázku o zarovnaní a o správaní '
-               'indikátora s odporúčaním. Overenie na iPhone robí majiteľ, E2E (Codex) len s fotopríspevkom.'),
+         co='iPhone: nový komentár nie je celý viditeľný vrátane tlačidiel po vlastnom odoslaní ani po kliknutí na '
+            'upozornenie o nových komentároch (príčina nájdená a zmeraná v K36; po K38 pretrváva).',
+         preco='JASNÉ (karta `karty/K40.md`, pripravená 19. 11. 2026 podľa odporúčania R58; odoslanie karty kolegovi '
+               'je súhlas s odporúčaním; mapovanie si robí kolega sám). Krok 5 delenia je hotový (K38), takže oprava '
+               'ide len do `useFeedCommentsScroll.ts` (82 riadkov): prvý komentár na vrch viditeľnej plochy s malou '
+               'rezervou namiesto posunu na vrch plochy a „pri vrchu“ počítané od prvého komentára; len pri mobilnej '
+               'hlavičke (desktop a panel nad fotkou sa nemenia). `FeedPostComments.tsx` a '
+               '`FeedPostMobileDetail.tsx` sa nemenia. Ručný test majiteľa na iPhone, E2E (Codex) len s '
+               'fotopríspevkom.'),
+    dict(n='338', davka='K41',
+         co='Komentáre: zoznam ostane na „Načítavam…“, keď sa počas prvého načítania úspešne pridá komentár.',
+         preco='JASNÉ (karta `karty/K41.md`, pripravená 19. 11. 2026; mapovanie si robí kolega sám). Krok 6 delenia '
+               'je hotový (K38), takže oprava ide podľa R48 do `useFeedCommentsLoader.ts` (349 riadkov) ako '
+               'samostatný commit s testom v novom súbore; mutácie A5 až A7 z K38 majú byť po oprave zachytené. Ide '
+               'spolu s mapovaním 351, lebo oba nálezy sú v tom istom hooku.'),
+    dict(n='351', davka='K41',
+         co='Komentáre: pri výpadku internetu sa pri donačítavaní starších komentárov ukáže veľa rovnakých chybových '
+            'toastov namiesto jedného.',
+         preco='NEJASNÉ (karta `karty/K41.md`: len mapovanie, kód pre 351 nemeň, kým majiteľ nepovie; výsledok ako '
+               'samostatná strana podľa `sablony/vysledok_davky.md`). Podozrivé miesta: `loadMore` v '
+               '`useFeedCommentsLoader.ts` a stránkovanie vo `FeedPostComments.tsx`; kolega najprv zistí príčinu, či '
+               'je to starší stav a kam patrí oprava (súbory nad 500 riadkov sa nemenia). Oprava ide v dávke K43 '
+               'spolu s 342, až po mapovaní a po rozhodnutí majiteľa (R59); ak by po mapovaní čakala na rozhodnutie '
+               '(napríklad o vzhľade), agent sa majiteľa opýta, či redizajn komentárov (K44) na ňu počká.'),
+    dict(n='333', davka='K42',
+         co='Nástenka: delenie `FeedPostComments.tsx` (573 riadkov po K38) bez zmeny vzhľadu: dávka 5 z 5 (kroky 7 a '
+            '8: mutácie, typ vlastností a importy), posledná; potom `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` '
+            '(R23).',
+         preco='JASNÉ (karta sa pripraví po zlúčení K41; mapovanie si robí kolega sám). Čisté presuny kódu, '
+               'správanie ani vzhľad sa nemenia; po dávke má byť `FeedPostComments.tsx` pod 500 riadkov a zmaže sa '
+               'dočasný odtlačok HTML z K28 (R45). Redizajn komentárov (261, skupina 7; vzhľad je schválený v R52) '
+               'ide podľa R47 najskôr po tejto dávke a podľa R59 až po piatich krokoch (K40, K41, K42, K43 a K31) '
+               'ako samostatná dávka a nečaká na delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (ak by '
+               'kolega pri mapovaní zistil, že treba zasiahnuť aj do nich, tá časť počká na ich delenie); tagy a '
+               'ostatné mobilné doladenia (261, skupiny 8 a 6) čakajú aj na tieto delenia; vzhľad sa nemení bez '
+               'schválenia majiteľa (R49); oprava 342 po kroku 7. Výnimka z pravidla 500 riadkov sa neudeľuje, '
+               'povolenie platí len pre delenie troch súborov Nástenky.'),
+    dict(n='342', davka='K43',
+         co='Komentáre: odpoveď, úprava a zmazanie pri zmiznutom príspevku nepoužijú spoločné spracovanie ako '
+            'pridanie (342); dávka K43 zahŕňa aj opravu 351 (opakované chybové toasty pri donačítavaní bez '
+            'internetu).',
+         preco='NEJASNÉ (až po kroku 7 delenia, K42; najprv majiteľ rozhodne, ako odlíšiť chýbajúci príspevok od '
+               'chýbajúceho komentára, lebo samotný stav odpovede nestačí: agent pripraví otázku s odporúčaním). '
+               'Potom oprava v `useFeedCommentMutations.ts` ako samostatný commit s testom. Dávka K43 zahŕňa aj '
+               'opravu 351 (po mapovaní v K41 a po rozhodnutí majiteľa), tiež vo vlastnom commite s testom; kolega '
+               'ju neurobí, kým majiteľ nepovie.'),
     dict(n='341', davka='K31',
-         co='Upgrade Next.js 16.4.3 na opravenú verziu (bezpečnostné upozornenie GHSA-mfr8-8qww-v76h, stredná závažnosť).',
-         preco='JASNÉ (karta sa pripraví po K30; dávka závislostí ide samostatne). Najprv majiteľ pozrie posledné nasadenia na '
-               'Railway: ak padajú, nález ide na začiatok poradia. Po nasadení ručný dymový test majiteľa.'),
+         co='Upgrade Next.js 16.4.3 na opravenú verziu (bezpečnostné upozornenie GHSA-mfr8-8qww-v76h, stredná '
+            'závažnosť).',
+         preco='JASNÉ (karta sa pripraví po K43; osem z osmich hlásených prvých lokálnych buildov skončilo '
+               '`SecurityFatalError`; dávka závislostí ide samostatne; je posledný z piatich krokov pred redizajnom '
+               'komentárov, R59). Najprv majiteľ pozrie posledné nasadenia na Railway: ak padajú, nález ide na '
+               'začiatok poradia. Po nasadení ručný dymový test majiteľa.'),
+    dict(n='261', davka='K44',
+         co='Nástenka: redizajn komentárov (skupina 7, vzhľad schválený v R52): plochý vzhľad bez sivých bublín, '
+            'bublinka s lajkom, odpovede so zvislou čiarou; pri ňom sa rieši aj pole na text pri odpovedi na '
+            'komentár.',
+         preco='NEJASNÉ (až po piatich krokoch K40, K41, K42, K43 a K31, R59; kartu pripraví agent, keď príde na '
+               'rad). Vzhľad komentárov je schválený (R52, obrázky `navrhy/mobil-komentare.png` a '
+               '`navrhy/pc-komentare.png`), no pole na text pri odpovedi na komentár sa musí doriešiť: majiteľ dodá, '
+               'čo je s ním (R49: najprv návrh vzhľadu s možnosťami a odporúčaním, potom karta). Ide v jednej dávke '
+               'po poslednej dávke delenia `FeedPostComments.tsx` (R47) a zahŕňa aj bublinku s lajkom pri '
+               'komentároch (etapa C nálezu 262); vzhľadové chyby, ktoré majiteľ zámerne nenahlásil, sa po redizajne '
+               'overia.'),
     dict(n='176', davka='K32',
          co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
          preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '
@@ -115,12 +157,13 @@ FRONTA = [
                'komentárov; vzhľad je schválený (R55, obrázok `navrhy/mobil-uchytka.png`), globálne pravidlo `button` sa nemení. Po '
                'nasadení krátky ručný test majiteľa na mobile (potiahnutie nadol aj ťuk panel zatvorí).'),
     dict(n='262', davka='K34',
-         co='Zoznam „kto lajkol“: frontend, etapa A (zoznam a bublinka pri ponuke a dopyte, portfóliu, profile a fotke na celú obrazovku; '
-            'text pri skrytých lajkujúcich).',
-         preco='NEJASNÉ (najprv mapovanie etapy A podľa R51 a R56, kód nemeň, kým majiteľ nepovie; plán etáp je v nálezu 262). Vzhľad je '
-               'schválený (R51 a R56, obrázky v `navrhy/`), takže R49 je splnené. Etapa B (príspevok a detail príspevku) a etapa C '
-               '(komentáre s redizajnom 261) idú až po delení `FeedPostCard.tsx`, `FeedPostMobileDetail.tsx` a `FeedPostComments.tsx`; '
-               'súbory nad 500 riadkov sa nemenia.'),
+         co='Zoznam „kto lajkol“: frontend, etapa A (zoznam a bublinka pri ponuke a dopyte, portfóliu, profile a '
+            'fotke na celú obrazovku; text pri skrytých lajkujúcich).',
+         preco='NEJASNÉ (najprv mapovanie etapy A podľa R51 a R56, kód nemeň, kým majiteľ nepovie; plán etáp je v '
+               'nálezu 262). Vzhľad je schválený (R51 a R56, obrázky v `navrhy/`), takže R49 je splnené. Etapa B '
+               '(príspevok a detail príspevku) ide až po delení `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`, '
+               'etapa C (komentáre s redizajnom 261) až po delení `FeedPostComments.tsx` (R47); súbory nad 500 '
+               'riadkov sa nemenia.'),
     dict(n='344', davka='K35',
          co='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch a užšie okno len s textom (R53).',
          preco='NEJASNÉ (najprv mapovanie: dotyk `FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx` a či treba zásah do '

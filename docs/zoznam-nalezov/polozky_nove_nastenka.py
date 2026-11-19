@@ -8,6 +8,7 @@ PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, pre
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova.
+Nález 352 (zostatok po oprave 345, z kontroly CodeRabbitu k PR #293) je tu, lebo `polozky_nove_k14.py` je plný (499 riadkov).
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -178,32 +179,47 @@ NEW_ITEMS_NASTENKA = [
               'stranách. Frontend súbor má 327 riadkov, takže sa smie meniť.',
          dec=None, src=ZDROJ),
     dict(n=261, bucket=P, imp=S_, eff=EL, pkg='Vzhľad Nástenky',
-         kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, tagy); vzhľad komentárov '
-                'je schválený (R52), kód až po delení',
-         what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné doladenia: komentárová textarea '
-              'vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači inline len keď je text orezaný; veľmi dlhé popisky zmenšiť '
-              'fontom namiesto orezania a zrušiť „Menej“; (drag handle vo fotoprehliadači: prianie zjednodušiť ho na šípku je '
-              'PREKONANÉ rozhodnutím R55, majiteľ 17. 11. 2026 zvolil tenkú úchytku 40×6 px a ide ako nález 343); väčší odstup spodného '
-              'riadku akcií od okraja; menu „…“ presunúť do riadku akcií; „Zobraziť odpovede (N)“ bližšie k riadku akcií; s nízkou prioritou '
-              'predpripraviť ďalšiu fotku v karuseli. Skupina 7, redizajn komentárov (mobil aj desktop, detail aj karta): plochý layout v '
-              'štýle Facebooku bez bublín na pozadí; odpovede vnorené a vizuálne prepojené bez vlastnej bubliny; jemný oddeľovač medzi '
-              'komentármi najvyššej úrovne; rozbalenie „Zobraziť odpovede“ má automaticky doscrollovať na prvú odpoveď s kúskom kontextu '
-              'rodiča. Skupina 8, redizajn tagov (všade, kde sa zobrazujú): zrušiť farebné čipy a nahradiť ich obyčajným textom `@Meno`, '
-              'ktorý rešpektuje svetlý a tmavý režim; tagy na vlastný riadok pod textom, ktoré sa balia a rozbaľujú spolu s „Viac“.',
-         note='Majiteľ 6. 11. 2026: všetky vzhľadové veci sú pred nasadením. Dizajnové priania, nie chyby; stav v kóde sa neoveroval okrem '
-              'komentárov: komentár aj odpoveď majú dnes sivú bublinu (`rounded-2xl bg-gray-100`, v tmavom režime `bg-gray-800/60`) '
-              'v `FeedPostComments.tsx`, takže redizajn skupiny 7 je stále otvorený. Dotýka sa súborov nad 500 riadkov '
-              '(`FeedPostComments.tsx` 1 487, `FeedPostCard.tsx` 1 033, `FeedPostMobileDetail.tsx` 594), takže pred štartom práce '
-              'najprv rozdeliť súbory: R23 je rozhodnuté 13. 11. 2026 (nález 333, bez výnimky z pravidla 500 riadkov). Majiteľ plánoval upraviť vizuálnu '
-              'stránku Nástenky aj sám (príloha D); po jeho úpravách nasleduje technická a bezpečnostná kontrola jeho zmien a jeden '
-              'súhrnný audit celej Nástenky (obe strany spolu), tiež pred nasadením. Poradie dohodnúť, aby sa nerobilo dvakrát. Majiteľ 13. 11. '
-              '2026: vzhľad Nástenky zatiaľ sám neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď. VZHĽAD KOMENTÁROV '
-              'SCHVÁLENÝ MAJITEĽOM (R52, 17. 11. 2026; mobil aj počítač; obrázky `navrhy/mobil-komentare.png` a `navrhy/pc-komentare.png`): '
-              'plochý vzhľad bez sivých bublín, bublinka s lajkom aj pri odpovedi, „Zobraziť / Skryť odpovede“ bližšie pod riadkom akcií, '
-              'odpovede so zvislou čiarou bez bubliny a jemný oddeľovač; kôš, „Upraviť“ a pole na komentár zatiaľ ostávajú ako dnes. '
-              'Implementácia v jednej dávke až po delení `FeedPostComments.tsx` (R47, nález 333). Úchytka panela nad fotkou je '
-              'samostatný nález 343 a okno detailu na počítači nález 344.',
-         dec='ROZHODNUTIE R23', src=ZDROJ),
+         kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, '
+                'tagy); vzhľad komentárov je schválený (R52), kód až po delení a po piatich krokoch (R59)',
+         what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné '
+              'doladenia: komentárová textarea vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači '
+              'inline len keď je text orezaný; veľmi dlhé popisky zmenšiť fontom namiesto orezania a zrušiť „Menej“; '
+              '(drag handle vo fotoprehliadači: prianie zjednodušiť ho na šípku je PREKONANÉ rozhodnutím R55, '
+              'majiteľ 17. 11. 2026 zvolil tenkú úchytku 40×6 px a ide ako nález 343); väčší odstup spodného riadku '
+              'akcií od okraja; menu „…“ presunúť do riadku akcií; „Zobraziť odpovede (N)“ bližšie k riadku akcií; s '
+              'nízkou prioritou predpripraviť ďalšiu fotku v karuseli. Skupina 7, redizajn komentárov (mobil aj '
+              'desktop, detail aj karta): plochý layout v štýle Facebooku bez bublín na pozadí; odpovede vnorené a '
+              'vizuálne prepojené bez vlastnej bubliny; jemný oddeľovač medzi komentármi najvyššej úrovne; '
+              'rozbalenie „Zobraziť odpovede“ má automaticky doscrollovať na prvú odpoveď s kúskom kontextu rodiča. '
+              'Skupina 8, redizajn tagov (všade, kde sa zobrazujú): zrušiť farebné čipy a nahradiť ich obyčajným '
+              'textom `@Meno`, ktorý rešpektuje svetlý a tmavý režim; tagy na vlastný riadok pod textom, ktoré sa '
+              'balia a rozbaľujú spolu s „Viac“.',
+         note='Majiteľ 6. 11. 2026: všetky vzhľadové veci sú pred nasadením. Dizajnové priania, nie chyby; stav v '
+              'kóde sa neoveroval okrem komentárov: komentár aj odpoveď majú dnes sivú bublinu (`rounded-2xl '
+              'bg-gray-100`, v tmavom režime `bg-gray-800/60`) v `FeedPostComments.tsx`, takže redizajn skupiny 7 je '
+              'stále otvorený. Dotýka sa súborov nad 500 riadkov (`FeedPostComments.tsx` 1 487, `FeedPostCard.tsx` 1 '
+              '033, `FeedPostMobileDetail.tsx` 594), takže pred štartom práce najprv rozdeliť súbory: R23 je '
+              'rozhodnuté 13. 11. 2026 (nález 333, bez výnimky z pravidla 500 riadkov). Majiteľ plánoval upraviť '
+              'vizuálnu stránku Nástenky aj sám (príloha D); po jeho úpravách nasleduje technická a bezpečnostná '
+              'kontrola jeho zmien a jeden súhrnný audit celej Nástenky (obe strany spolu), tiež pred nasadením. '
+              'Poradie dohodnúť, aby sa nerobilo dvakrát. Majiteľ 13. 11. 2026: vzhľad Nástenky zatiaľ sám '
+              'neupravuje, takže po rozdelení súborov (333) môže redizajn ísť hneď. VZHĽAD KOMENTÁROV SCHVÁLENÝ '
+              'MAJITEĽOM (R52, 17. 11. 2026; mobil aj počítač; obrázky `navrhy/mobil-komentare.png` a '
+              '`navrhy/pc-komentare.png`): plochý vzhľad bez sivých bublín, bublinka s lajkom aj pri odpovedi, '
+              '„Zobraziť / Skryť odpovede“ bližšie pod riadkom akcií, odpovede so zvislou čiarou bez bubliny a jemný '
+              'oddeľovač; kôš, „Upraviť“ a pole na komentár zatiaľ ostávajú ako dnes. Implementácia v jednej dávke '
+              'až po delení `FeedPostComments.tsx` (R47, nález 333). Úchytka panela nad fotkou je samostatný nález '
+              '343 a okno detailu na počítači nález 344. ROZHODNUTIE MAJITEĽA (R59, 19. 11. 2026): redizajn '
+              'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40 oprava 346, K41 oprava 338 a '
+              'mapovanie 351, K42 posledná dávka delenia, K43 opravy 342 a 351 a K31 upgrade Next.js); nič sa '
+              'nesilí. Pri redizajne treba vyriešiť aj pole na text pri odpovedi na komentár (R52 ho nechal ako '
+              'dnes); čo presne má byť inak, dodá majiteľ pri príprave vzhľadu, ktorý sa podľa R49 najprv prebere '
+              '(agent pripraví návrh s možnosťami a odporúčaním) a až potom ide karta. Možná súvislosť (neoverené): '
+              'staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená na spodok); agent sa pri '
+              'príprave vzhľadu opýta, či ide o to isté. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré '
+              'zámerne nenahlásil, lebo ich redizajn zmení; agent ich nezapisuje a po redizajne navrhuje, aby '
+              'majiteľ overil, ktoré ostali, a tie nahlásil.',
+         dec='ROZHODNUTIE R23', src='zoznam majiteľa (príloha D; PDF z 6. 11. 2026, stav k 29. 9. 2026)'),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
          kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), vzhľad schválený (R51 a R56), frontend po etapách (K34, najprv mapovanie)',
          what='Zoznam lajkujúcich dnes existuje len pre Nástenku: príspevky a komentáre (`feed/FeedLikersDialog.tsx`; backend '
@@ -445,4 +461,37 @@ NEW_ITEMS_NASTENKA = [
               'skutočnú politiku (JSON bez názvu bucketu a čísla účtu); README sa prepíše na politiku po prefixoch s tabuľkou, ktorý prefix je '
               'verejný a ktorý nie, a odkáže sa naň z prípravy nasadenia (úlohy N) a z overenia súkromia obrázkov (266). Odhad: stredný · S.',
          dec=None, src='agent pri mapovaní nálezu 301'),
+    dict(n=352, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='okno detailu príspevku: po zatvorení krížikom, Escape alebo klikom mimo ostáva v kontexte okna '
+                'zastaraný cieľ, takže klik na autora komentára mimo okna volá zbytočné zatvorenie, ktoré môže v '
+                'milisekundách po zatvorení predčasne zhasnúť príznak `closing` v histórii (zostatok po oprave 345, '
+                'možnosť a z R57)',
+         what='Kolega pri oprave 345 (K39, PR #292, 19. 11. 2026) poznamenal, že kontext okna '
+              '(`FeedPostOverlayContext.tsx`) naďalej drží zastaraný cieľ po zatvorení krížikom, Escape alebo klikom '
+              'mimo (tieto cesty čistia len hook `useFeedOverlayTarget.ts`, možnosť b z R57 sa nerobila) a že to na '
+              'správanie nemá dosah. CodeRabbit pri kontrole PR #293 (19. 11. 2026) upozornil, že to neplatí presne, '
+              'a agent to overil čítaním kódu: strážca `postOverlay?.target` v `openCommentAuthorProfile` '
+              '(`FeedPostComments.tsx`) číta kópiu v kontexte, takže po zatvorení okna klik na avatar alebo meno '
+              'autora komentára mimo okna (napríklad v komentároch rozbalených v karte) zavolá `postOverlay.close({ '
+              'keepHistory: true })`; to cez `onTargetChange` skončí v `handleFeedOverlayTargetChange(null, { '
+              'keepHistory: true })` a vo `forgetFeedOverlayHistory()`, ktoré zhasne príznaky `pushed`, `closing` a '
+              '`adopted`, a obsluha zatvorenia v hooku `targetRef` neskúma. Kým nebeží krok späť po predchádzajúcom '
+              'zatvorení, je to bezvýznamné. Ak by klik prišiel v milisekundách medzi zatvorením '
+              '(`popFeedOverlayHistory()` nastaví `closing`) a `popstate`, ochrana v `feedOverlayHistory.ts` '
+              '(`isFeedOverlayHistoryBusy()`) by predčasne zanikla a appka by pod zavretým oknom mohla otvoriť '
+              'celoobrazovkovú stránku príspevku. Pravidlo prekliku na profil z K39 (listener v hooku s `targetRef`) '
+              'tento prípad nekryje, lebo zatvorenie ide cez kontext skôr, než sa pošle udalosť `goToUserProfile`. '
+              'Dopad: veľmi nízka pravdepodobnosť (okno milisekúnd), sondou sa neoverilo.',
+         note='Návrh opravy (neoverený, kolega ho overí): (a) najmenšia: v `handleFeedOverlayTargetChange` pri '
+              'zatvorení (`target` je null) nerobiť nič, ak je okno už zavreté (`targetRef.current` je null; '
+              'kontrola pred zápisom refu), rovnako ako to od K39 robí listener prekliku na profil: zatvorenie '
+              'zavretého okna nemá meniť účtovníctvo histórie; zmena v `useFeedOverlayTarget.ts` (115 riadkov) a '
+              'test sekvencie v novom súbore (R27): zatvorenie krížikom, kým beží krok späť, a hneď `close({ '
+              'keepHistory: true })` cez kontext; očakáva sa, že `isFeedOverlayHistoryBusy()` ostane true až do '
+              '`popstate`; (b) dôkladnejšia: možnosť b z R57, riadený cieľ v kontexte (jeden zdroj pravdy; '
+              '`FeedPostOverlayContext.tsx` 104 riadkov, `DashboardContentView.tsx` 414 riadkov a jeden existujúci '
+              'test v `DashboardContentView.test.tsx` s 895 riadkami). Skupina a dôležitosť sú predbežný návrh '
+              'agenta (po nasadení, nízka, lebo ide o okno milisekúnd bez preukázaného dopadu); ak by sa zaradil do '
+              'dávky, môže ísť s opravou 342 alebo samostatne. Odhad: nízky · S.',
+         dec=None, src='CodeRabbit (kontrola PR #293, 19. 11. 2026), poznámka kolegu v PR #292 a kontrola agenta čítaním kódu'),
 ]

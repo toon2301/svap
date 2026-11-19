@@ -253,5 +253,49 @@ DECISIONS_DALSIE = [
                       '(podľa kódu, sondou neoverené), preto je v karte K39 ručný test aj na túto cestu. Druhé riziko (a): listener môže v tej istej obsluhe kliknutia '
                       'vidieť zastaraný cieľ a zavrieť okno druhýkrát (predčasné zhasnutie príznaku `closing` v histórii), preto karta K39 '
                       'vyžaduje čítanie aktuálneho stavu a test sekvencie.',
-         kedy='Pred poslaním karty K39 kolegovi; karta je napísaná podľa odporúčania.'),
+         kedy='Rozhodnuté 18. 11. 2026.',
+         odpoved='Majiteľ 18. 11. 2026: podľa odporúčania agenta (kartu K39 napísanú podľa neho poslal kolegovi), '
+                 'teda (a): všeobecné pravidlo v `useFeedOverlayTarget.ts`, ktoré zatvorí okno pri `goToUserProfile` '
+                 'aj pri `goToMyProfile`; možnosť b (riadený cieľ v kontexte okna) sa nerobí. Oprava je zlúčená v PR '
+                 '#292 (K39) a vyrieši aj nález 350.',
+         datum='18. 11. 2026'),
+    dict(id='R58', tema='Oprava nálezu 346: kam posunúť nový komentár na iPhone a čo má robiť indikátor nových komentárov',
+         otazka='Po vlastnom odoslaní komentára aj po ťuknutí na „N nových komentárov“ sa zoznam na iPhone posunie '
+                'na vrch plochy, kde je nad komentármi hlavička príspevku (text, fotka, akcie), takže nový komentár '
+                'je čiastočne zakrytý poľom na písanie (K36: pri 393×659 a príspevku s fotkou vidno 63 zo 112 px; '
+                'ručný test majiteľa po K38 a K39 to potvrdil). Prvá otázka: kam sa má zoznam posunúť? (a) Nový '
+                '(prvý) komentár na vrch viditeľnej plochy s malou rezervou; hlavička príspevku sa posunie nad '
+                'plochu. (b) Len doscrollovať, aby bol komentár celý vidieť; hlavička ostane čiastočne viditeľná. '
+                'Druhá otázka: čo má robiť indikátor, keď je čitateľ už na začiatku komentárov (dnes sa „vrch“ '
+                'počíta od vrchu hlavičky, takže sa mu indikátor ukáže, hoci nové komentáre sú hneď pod ním)? (a) '
+                '„Pri vrchu“ počítať od prvého komentára: čitateľ na začiatku komentárov uvidí nový komentár hneď '
+                '(posun sa vykoná sám) a indikátor sa mu neukáže; čitateľ nižšie v zozname dostane indikátor ako '
+                'dnes. (b) Nechať ako dnes.',
+         odporucanie='Obe (a): (1) prvý komentár na vrchu plochy je odolný voči výške viditeľnej plochy, ktorá sa na '
+                     'iPhone mení s klávesnicou a lištou Safari (prototyp kolegu v K36: komentár celý viditeľný vo '
+                     'všetkých meraných rozmeroch od 375×553 do 390×844, krátky aj päťriadkový text); „len '
+                     'doscrollovať“ závisí od výšky plochy v čase posunu. Hlavička príspevku sa pri tom posunie nad '
+                     'plochu, čitateľ ju vráti posunom späť. (2) Bez toho by čitateľ na začiatku komentárov dostal '
+                     'indikátor, hoci nový komentár je hneď pod ním. Riziko stredné: mení sa správanie indikátora; '
+                     'platí len pri mobilnej hlavičke, desktop a panel nad fotkou sa nemenia.',
+         kedy='Pred poslaním karty K40 kolegovi; karta je napísaná podľa odporúčania.'),
+    dict(id='R59', tema='Kedy začať redizajn komentárov (261, skupina 7) a čo sa pri ňom musí vyriešiť navyše',
+         otazka='Redizajn komentárov (261, skupina 7, vzhľad schválený v R52) smie podľa R47 začať po poslednej '
+                'dávke delenia `FeedPostComments.tsx` (K42). Majiteľ navrhol (19. 11. 2026) nič nesiliť a začať ho '
+                'až po piatich najbližších krokoch: K40 (oprava 346), K41 (oprava 338 a mapovanie 351), K42 '
+                '(posledná dávka delenia), K43 (opravy 342 a 351) a K31 (upgrade Next.js, 341). (a) Hneď po K42. (b) '
+                'Až po piatich krokoch.',
+         odporucanie='(b), agent súhlasí: upgrade Next.js je dávka závislostí a ide vždy samostatne, takže je '
+                     'lepšie, aby prebehol pred redizajnom a nezmiešal sa s vizuálnymi zmenami; opravy 338, 342 a '
+                     '351 menia načítanie a obsluhu zmien, nie vzhľad, takže je čistejšie mať ich hotové a '
+                     'otestované skôr, ako sa začnú meniť riadky komentárov; majiteľ vzhľad Nástenky sám neupravuje, '
+                     'takže čakanie stojí málo, a medzitým sa dá s majiteľom prebrať vzhľad poľa na text pri '
+                     'odpovedi (R49).',
+         kedy='Rozhodnuté 19. 11. 2026.',
+         odpoved='Majiteľ 19. 11. 2026: (b): redizajn komentárov začne až po piatich najbližších krokoch (K40, K41, '
+                 'K42, K43 a K31); nič sa nesilí. Pri redizajne sa musí vyriešiť aj pole na text pri odpovedi na '
+                 'komentár (R52 ho nechával ako dnes); čo presne treba zmeniť, dodá majiteľ pri príprave vzhľadu, '
+                 'ktorý sa podľa R49 najprv prebere. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
+                 'nenahlásil, lebo ich redizajn zmení.',
+         datum='19. 11. 2026'),
 ]
