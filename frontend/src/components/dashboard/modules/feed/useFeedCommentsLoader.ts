@@ -12,8 +12,10 @@
  * Poradie efektov sa nesmie meniť: najprv reset `gone`, potom `load`, potom polling (hook sa volá na mieste
  * pôvodných refov a `load`, pred efektmi signálu, sentinelu a posunu). Do závislostí sa nesmie dostať `t`
  * (mock `useLanguage` vracia pri každom volaní novú funkciu, `load` by sa spúšťal pri každom rendri): drží ho
- * `tRef`. Nález 338 (zaseknuté „Načítavam…“ pri pridaní komentára počas prvého načítania) sa tu zámerne
- * neopravuje.
+ * `tRef`.
+ *
+ * Nález 338 (K41, R48): odpoveď prvého načítania, ktorú zahodilo pridanie komentára, nechávala zoznam na
+ * „Načítavam…“ (`loading` zhasínal len pri zhode poradia). Teraz sa v takom prípade načíta znova (viď `load`).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -86,6 +88,14 @@ export function useFeedCommentsLoader({
   // odpoveď staršieho `load()`, ktorá dobehne až potom, sa zahodí – inak by
   // prepísala čerstvo pridaný komentár serverovým stavom spred mutácie.
   const loadSeqRef = useRef(0);
+  /**
+   * Číslo posledného volania `load()`. Samotné `loadSeqRef` nestačí: zvyšujú ho aj mutácie, takže z rozdielu sa
+   * nedá poznať, či odpoveď zahodila mutácia (a `loading` by už nezhasol nikto), alebo novšie načítanie
+   * (napríklad pri zmene príspevku), ktoré si `loading` zhasne samo.
+   */
+  const latestLoadRef = useRef(0);
+  /** Najnovší `load`, aby sa vedel zopakovať aj z vlastného `finally` (nález 338). */
+  const loadRef = useRef<() => Promise<void>>(async () => undefined);
   // Aktuálne načítané okno pre `refresh` – cez ref (nie závislosť), aby sa
   // pollovací callback pri každom novom komentári nepreskladal.
   const commentsRef = useRef(comments);
@@ -112,6 +122,7 @@ export function useFeedCommentsLoader({
     setLoading(true);
     setFailed(false);
     loadingMoreRef.current = false;
+    const call = (latestLoadRef.current += 1);
     const seq = (loadSeqRef.current += 1);
     try {
       const page = await listFeedPostComments(postId, {
@@ -141,9 +152,18 @@ export function useFeedCommentsLoader({
       }
       setFailed(true);
     } finally {
-      if (seq === loadSeqRef.current) setLoading(false);
+      if (seq === loadSeqRef.current) {
+        setLoading(false);
+      } else if (call === latestLoadRef.current) {
+        // Odpoveď zahodila mutácia (napríklad pridaný komentár), nie novšie načítanie: `loading` by už nezhasol
+        // nikto a zoznam by ostal na „Načítavam…“ (nález 338). Načíta sa znova nad aktuálnym stavom. Zastaranú
+        // odpoveď nezlučujeme, lebo je spred mutácie: `mergeComments` by z nej vlastný komentár odstránil ako
+        // „zmazaný“. Slučka nehrozí: opakovanie zneplatní len ďalšia mutácia, teda ďalšia akcia používateľa.
+        void loadRef.current();
+      }
     }
   }, [postId, markSeen]);
+  loadRef.current = load;
 
   // Nový príspevok začína s čistým štítom – „zmizol" patrí konkrétnemu id.
   useEffect(() => {
