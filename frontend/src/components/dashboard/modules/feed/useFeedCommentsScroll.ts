@@ -23,6 +23,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
   NEAR_TOP_PX,
   commentsScrollTarget,
+  isAtPostTop,
   isNearCommentsStart,
 } from './feedCommentsLogic';
 
@@ -79,15 +80,16 @@ export function useFeedCommentsScroll() {
     const node = scrollRef.current;
     const scrollTop = node ? node.scrollTop : 0;
     const commentsStart = node ? measureCommentsStart(node) : 0;
+    // Kto je úplne navrchu príspevku, nad komentármi s hlavičkou, tomu sa nič nehýbe a nič nehlási,
+    // rovnako ako doteraz. Pri krátkej hlavičke sa toto pásmo prekrýva s pásmom začiatku komentárov, preto
+    // ide prvé.
+    if (isAtPostTop(scrollTop, commentsStart)) return;
     // Nové komentáre pribúdajú NAVRCH zoznamu komentárov. Kto je pri ich začiatku, má ich rovno pred
     // sebou – vtedy stačí dorovnať pohľad, indikátor by len prekážal.
     if (isNearCommentsStart(scrollTop, commentsStart)) {
       scrollToTopRef.current = 'smooth';
       return;
     }
-    // Kto je úplne navrchu príspevku, nad komentármi s hlavičkou, tomu sa nič nehýbe a nič nehlási,
-    // rovnako ako doteraz. Bez hlavičky sem nikto z tejto oblasti nedôjde, ten je „pri vrchu“ už vyššie.
-    if (scrollTop <= NEAR_TOP_PX) return;
     // Číta staršie nižšie → pohľad mu netrháme, len ho upozorníme.
     setNewCommentsCount((current) => current + added);
   }, []);

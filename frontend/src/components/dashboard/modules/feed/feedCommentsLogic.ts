@@ -52,6 +52,19 @@ export function isNearCommentsStart(scrollTop: number, commentsStart: number): b
   return (commentsStart > 0 ? Math.abs(distance) : distance) <= NEAR_TOP_PX;
 }
 
+/**
+ * Je čitateľ úplne navrchu príspevku, teda nad komentármi s hlavičkou? Taký čitateľ nečíta komentáre, takže
+ * cudzí komentár ho nemá ani posunúť, ani upozorniť (rovnako ako doteraz).
+ *
+ * Má prednosť pred `isNearCommentsStart`: pri krátkej hlavičke (príspevok bez fotky) sa obe pásma prekrývajú
+ * a bez prednosti by sa čitateľ do 100 px od vrchu posunul ku komentárom. Kto je už za začiatkom komentárov
+ * (hlavička pod NEAR_TOP_PX), nový komentár nad sebou nevidí, preto sa mu uplatní pravidlo začiatku komentárov.
+ * Bez hlavičky (`commentsStart` 0) taký čitateľ neexistuje: komentáre začínajú navrchu.
+ */
+export function isAtPostTop(scrollTop: number, commentsStart: number): boolean {
+  return commentsStart > 0 && scrollTop <= Math.min(NEAR_TOP_PX, commentsStart);
+}
+
 /** Zhodné s FEED_REPLIES_PREVIEW_LIMIT na backende. */
 export const REPLIES_PREVIEW_LIMIT = 10;
 /** Koľko odpovedí sa dotiahne jedným kliknutím na „Zobraziť ďalšie". */

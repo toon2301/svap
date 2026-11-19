@@ -16,6 +16,10 @@
  * Súbor pokrýva aj mutácie K38, ktoré prežili pri čistom presune: hranica `NEAR_TOP_PX` (S5, S13), chýbajúci
  * `return` pri vrchu (S7), pripočítanie `added` (S8), zrušenie čakajúceho posunu pri kliku (S14) a efekt posunu
  * v komponente (S18, S19).
+ *
+ * Úplne navrchu príspevku (do 100 px od vrchu) sa pri cudzom komentári nič nehýbe a nič nehlási. Táto výnimka
+ * má prednosť pred „pri začiatku komentárov“, lebo pri krátkej hlavičke (príspevok bez fotky) sa obe pásma
+ * prekrývajú (nález CodeRabbitu na PR #294: hlavička 160 px a `scrollTop` 100 posunuli zoznam na 152 px).
  */
 
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
@@ -27,6 +31,7 @@ import { useFeedCommentsScroll } from '../useFeedCommentsScroll';
 import {
   FIRST_COMMENT_MARGIN_PX,
   commentsScrollTarget,
+  isAtPostTop,
   isNearCommentsStart,
 } from '../feedCommentsLogic';
 import { listFeedPostComments, type FeedPostComment } from '@/lib/feedApi';
@@ -219,6 +224,27 @@ describe('feedCommentsLogic – začiatok komentárov', () => {
     // iOS pri pretiahnutí navrch vráti záporný scrollTop: stále „pri vrchu“.
     expect(isNearCommentsStart(-150, 0)).toBe(true);
   });
+
+  it('knows a reader at the very top of the post, 100 px at most', () => {
+    expect(isAtPostTop(0, 454)).toBe(true);
+    expect(isAtPostTop(100, 454)).toBe(true);
+    expect(isAtPostTop(101, 454)).toBe(false);
+    // Odraz na iOS pri pretiahnutí navrch (záporný scrollTop) je stále navrchu.
+    expect(isAtPostTop(-150, 454)).toBe(true);
+  });
+
+  it('stops at the first comment when the header is shorter than 100 px', () => {
+    // Kto je už za začiatkom komentárov, nový komentár nad sebou nevidí, takže navrchu príspevku už nie je.
+    expect(isAtPostTop(60, 60)).toBe(true);
+    expect(isAtPostTop(61, 60)).toBe(false);
+    expect(isAtPostTop(90, 60)).toBe(false);
+  });
+
+  it('is never at the top of the post when nothing sits above the comments', () => {
+    expect(isAtPostTop(0, 0)).toBe(false);
+    expect(isAtPostTop(50, 0)).toBe(false);
+    expect(isAtPostTop(-150, 0)).toBe(false);
+  });
 });
 
 describe('useFeedCommentsScroll – kam sa doscrolluje', () => {
@@ -404,6 +430,48 @@ describe('useFeedCommentsScroll – komentár od iného používateľa', () => {
     expect(result.current.scrollToTopRef.current).toBeNull();
     expect(result.current.newCommentsCount).toBe(0);
   });
+
+  it.each([
+    // [výška hlavičky, scrollTop]: pásmo „navrchu príspevku“ (do 100 px) sa prekrýva s pásmom „pri začiatku komentárov“.
+    [160, 0],
+    [160, 60],
+    [160, 100],
+    [122, 22],
+    [122, 100],
+    [200, 99],
+    [200, 100],
+    [60, 60],
+  ])(
+    'leaves a reader at the top of a short header alone (header %d px, scrollTop %d)',
+    (header, scrollTop) => {
+      const { result, setScrollTop } = setUpHook({ commentsStart: header });
+      setScrollTop(scrollTop);
+
+      announce(result);
+
+      expect(result.current.scrollToTopRef.current).toBeNull();
+      expect(result.current.newCommentsCount).toBe(0);
+    },
+  );
+
+  it.each([
+    [160, 101],
+    [122, 101],
+    [200, 101],
+    [60, 61],
+    [60, 90],
+  ])(
+    'scrolls it in for a reader just below that top zone (header %d px, scrollTop %d)',
+    (header, scrollTop) => {
+      const { result, setScrollTop } = setUpHook({ commentsStart: header });
+      setScrollTop(scrollTop);
+
+      announce(result);
+
+      expect(result.current.scrollToTopRef.current).toBe('smooth');
+      expect(result.current.newCommentsCount).toBe(0);
+    },
+  );
 
   it('adds up what arrived for a reader lower down', () => {
     const { result, setScrollTop } = setUpHook();
@@ -728,7 +796,10 @@ describe('FeedPostComments s mobilnou hlavičkou – komentár od iného použí
   });
 
   /** Otvorí sekciu, nastaví polohu čitateľa a nechá prísť cudzí komentár cez polling. */
-  async function openAndReceiveRemote(scrollTop: number, withHeader = true) {
+  async function openAndReceiveRemote(
+    scrollTop: number,
+    { withHeader = true, headerHeight = HEADER_HEIGHT } = {},
+  ) {
     mockedList
       .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
       .mockResolvedValue(page([comment(2, 'Od iného'), comment(1, 'Prvý')], 2));
@@ -736,7 +807,7 @@ describe('FeedPostComments s mobilnou hlavičkou – komentár od iného použí
     await screen.findByText('Prvý');
     const layout = installChainLayout(
       screen.getByTestId('feed-comments-scroll'),
-      withHeader ? HEADER_HEIGHT : 0,
+      withHeader ? headerHeight : 0,
     );
     layout.setScrollTop(scrollTop);
 
@@ -775,8 +846,23 @@ describe('FeedPostComments s mobilnou hlavičkou – komentár od iného použí
     expect(layout.scrollTo).not.toHaveBeenCalled();
   });
 
+  it('leaves a reader at the top of a short-header post alone (header 160 px, scrollTop 100)', async () => {
+    const layout = await openAndReceiveRemote(100, { headerHeight: 160 });
+
+    expect(screen.queryByTestId('feed-comments-new-indicator')).not.toBeInTheDocument();
+    expect(layout.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('scrolls it in for a reader one pixel below that top zone (header 160 px, scrollTop 101)', async () => {
+    const layout = await openAndReceiveRemote(101, { headerHeight: 160 });
+
+    expect(screen.queryByTestId('feed-comments-new-indicator')).not.toBeInTheDocument();
+    expect(layout.scrollTo).toHaveBeenCalledTimes(1);
+    expect(layout.scrollTo).toHaveBeenCalledWith({ top: 152, behavior: 'smooth' });
+  });
+
   it('without a header a reader at the top still gets the old scroll to 0', async () => {
-    const layout = await openAndReceiveRemote(0, false);
+    const layout = await openAndReceiveRemote(0, { withHeader: false });
 
     expect(screen.queryByTestId('feed-comments-new-indicator')).not.toBeInTheDocument();
     expect(layout.scrollTo).toHaveBeenCalledTimes(1);
@@ -784,7 +870,7 @@ describe('FeedPostComments s mobilnou hlavičkou – komentár od iného použí
   });
 
   it('without a header the tap still goes to the very top', async () => {
-    const layout = await openAndReceiveRemote(700, false);
+    const layout = await openAndReceiveRemote(700, { withHeader: false });
 
     fireEvent.click(await screen.findByTestId('feed-comments-new-indicator'));
 
