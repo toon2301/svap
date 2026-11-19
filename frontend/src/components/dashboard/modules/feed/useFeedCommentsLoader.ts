@@ -21,6 +21,15 @@
  * (rodič počet rozošle všetkým miestam s rovnakým `postId`, takže by zastaraná odpoveď mohla prepísať novší
  * počet z iného miesta): stav Reactu po odmontovaní zastaví React, volanie callbacku nie, preto kontrola
  * `mountedRef`. `loadRef` sa zapisuje v efekte po commite, nie pri vykresľovaní.
+ *
+ * Nález 351 (K43, R61): po zlyhaní donačítania ostávalo `hasMore` pravdivé a kurzor sa neposúval, takže sentinel
+ * (nový observer pri každom prepnutí `enabled`, s okamžitým začiatočným oznámením) o chvíľu spustil ten istý dopyt
+ * znova: desiatky dopytov a toastov za sekundu, kým bol koniec zoznamu vo výhľade. Po zlyhaní `loadMore` (nie
+ * `silent` hľadania) sa preto doťahovanie pozastaví (`loadMorePaused`) a samo obnoví: po úspešnej obnove
+ * pollingom, po udalosti `online` a po novom načítaní. `hasMore` sa nemení, takže hľadanie komentára z upozornenia
+ * (`useFeedCommentsSeek`) sa správa ako doteraz. Rovnako sa správa donačítavanie odpovedí: po zlyhaní
+ * `loadMoreReplies` (nie `silent`) sa pozastaví (`repliesPaused`, spoločné pre všetky vlákna a nezávislé od
+ * komentárov) a obnoví sa tými istými spúšťačmi.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -79,6 +88,19 @@ export function useFeedCommentsLoader({
   // Rovnaký vzor ako loadingMoreRef v useFeedInfiniteScroll.
   const loadingMoreRef = useRef(false);
   const [loadingRepliesFor, setLoadingRepliesFor] = useState<number | null>(null);
+  /**
+   * Automatické doťahovanie starších komentárov je pozastavené po zlyhaní (nález 351, K43, R61).
+   *
+   * Hlavný feed a profil ho po chybe vypínajú cez `!error` a ručné tlačidlo; komentáre žiadne tlačidlo nemajú, preto
+   * sa pozastavenie zruší samo (viď hlavička súboru). Sentinel v komponente ho berie ako ďalšiu podmienku `enabled`.
+   */
+  const [loadMorePaused, setLoadMorePaused] = useState(false);
+  /**
+   * To isté pre donačítavanie odpovedí (nález 351, K43, R61): po zlyhaní `loadMoreReplies` sa sentinely vlákien vypnú
+   * a samy sa obnovia. Spoločné pre všetky rozbalené vlákna, lebo výpadok sa týka všetkých, a nezávislé od
+   * `loadMorePaused`: zlyhanie jedného druhé nezastaví.
+   */
+  const [repliesPaused, setRepliesPaused] = useState(false);
 
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -131,6 +153,9 @@ export function useFeedCommentsLoader({
   const load = useCallback(async () => {
     setLoading(true);
     setFailed(false);
+    // Nové načítanie (iný príspevok, opakovanie po mutácii) začína s čistým štítom (nález 351).
+    setLoadMorePaused(false);
+    setRepliesPaused(false);
     loadingMoreRef.current = false;
     const call = (latestLoadRef.current += 1);
     const seq = (loadSeqRef.current += 1);
@@ -243,6 +268,10 @@ export function useFeedCommentsLoader({
         toast.error(
           tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
         );
+        // Pozastav automatické doťahovanie, kým sa nevráti spojenie: koniec zoznamu je stále vo výhľade a
+        // sentinel by hneď zopakoval ten istý neúspech (nález 351). Hľadanie (`silent`) ani zastaraný pokus
+        // nepozastavujú nič.
+        setLoadMorePaused(true);
       }
       return false;
     } finally {
@@ -277,6 +306,10 @@ export function useFeedCommentsLoader({
     const page = await listFeedPostComments(postId, { pageSize });
     // Medzitým prebehla mutácia → táto odpoveď je spred nej, zahoď ju.
     if (seq !== loadSeqRef.current) return;
+    // Odpoveď prišla, takže spojenie funguje: pozastavené doťahovanie komentárov aj odpovedí sa obnoví (nález 351).
+    // Zahodená odpoveď nemá žiadny účinok, preto je to až za kontrolou; ďalší polling to dobehne.
+    setLoadMorePaused(false);
+    setRepliesPaused(false);
     // Odčítané hneď po awaite: `loadMore` posúva `nextUrlRef` synchrónne, ešte
     // pred prekreslením, takže je to spoľahlivejší ukazovateľ než dĺžka
     // zoznamu (tú drží ref zosynchronizovaný až pri rendri).
@@ -339,6 +372,9 @@ export function useFeedCommentsLoader({
         (comment) => comment.id === parentId,
       );
       const loaded = parent?.replies ?? [];
+      // Generácia načítania pri odoslaní dopytu, ako v `loadMore`: nové načítanie (iný príspevok) alebo mutácia ju
+      // zvýši a zlyhanie staršieho dopytu potom nesmie pozastaviť donačítavanie nad novým stavom (PR #298).
+      const seq = loadSeqRef.current;
       setLoadingRepliesFor(parentId);
       try {
         const page = await listFeedCommentReplies(postId, parentId, {
@@ -368,6 +404,10 @@ export function useFeedCommentsLoader({
               'Odpovede sa nepodarilo načítať.',
             ),
           );
+          // Rovnako ako pri komentároch: koniec vlákna je stále vo výhľade a sentinel by hneď zopakoval ten istý
+          // neúspech (nález 351). Tiché hľadanie (`silent`) nič nepozastavuje a zastaraný dopyt tiež nie: ak ešte
+          // treba, sentinel to skúsi znova a pozastaví až aktuálne zlyhanie (PR #298).
+          if (seq === loadSeqRef.current) setRepliesPaused(true);
         }
         return false;
       } finally {
@@ -377,6 +417,17 @@ export function useFeedCommentsLoader({
     [postId, markSeen],
   );
 
+  // Spojenie sa vrátilo: pozastavené doťahovanie komentárov aj odpovedí sa obnoví hneď, nie až pri najbližšom
+  // pollingu (nález 351). Efekt je zámerne posledný v hooku, takže poradie existujúcich efektov sa nemení.
+  useEffect(() => {
+    const resume = () => {
+      setLoadMorePaused(false);
+      setRepliesPaused(false);
+    };
+    window.addEventListener('online', resume);
+    return () => window.removeEventListener('online', resume);
+  }, []);
+
   return {
     comments,
     setComments,
@@ -384,7 +435,9 @@ export function useFeedCommentsLoader({
     loadingMore,
     failed,
     hasMore,
+    loadMorePaused,
     loadingRepliesFor,
+    repliesPaused,
     loadSeqRef,
     markSeen,
     loadMore,

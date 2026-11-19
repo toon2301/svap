@@ -104,7 +104,9 @@ export default function FeedPostComments({
     loadingMore,
     failed,
     hasMore,
+    loadMorePaused,
     loadingRepliesFor,
+    repliesPaused,
     loadSeqRef,
     markSeen,
     loadMore,
@@ -137,9 +139,11 @@ export default function FeedPostComments({
   // Rootom observera je ohraničený box, nie viewport – donačítanie tak reaguje
   // na scroll VNÚTRI zoznamu. Menší rootMargin než v hlavnom feede: predsávka
   // 400px by v ~26rem vysokom boxe znamenala, že sentinel je "blízko" vždy.
+  // Po zlyhaní donačítania je sentinel vypnutý (`loadMorePaused`), inak by sa dopyt v slučke opakoval (nález 351);
+  // hlavný feed a profil to robia cez `!error`.
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
-    enabled: hasMore && !loading && !loadingMore,
+    enabled: hasMore && !loading && !loadingMore && !loadMorePaused,
     root: scrollRef,
     rootMargin: '80px',
   });
@@ -327,6 +331,7 @@ export default function FeedPostComments({
                     (comment.replies_count ?? 0) ? (
                     <FeedRepliesAutoLoader
                       enabled={loadingRepliesFor !== comment.id}
+                      paused={repliesPaused}
                       loading={loadingRepliesFor === comment.id}
                       root={scrollRef}
                       onLoadMore={() => void loadMoreReplies(comment.id)}
