@@ -7,7 +7,7 @@ nálezy (270, 271, 273, 274, 276, 277, 279, 281, 282, 286, 291, 292, 293, 296, 2
 PDF poslal majiteľ 6. 11. 2026; zostavené je z konverzácie k 29. 9. 2026, preto sa každá položka porovnala s týmto zoznamom a s
 kódom na `main` `ea9fb101` (celé mapovanie je v prílohe D). Sem prišli len položky, ktoré v zozname ešte neboli a nie sú zastarané.
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
-po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova.
+po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova.
 Nález 352 (zostatok po oprave 345, z kontroly CodeRabbitu k PR #293) je tu, lebo `polozky_nove_k14.py` je plný (499 riadkov).
 """
 
@@ -210,15 +210,16 @@ NEW_ITEMS_NASTENKA = [
               'oddeľovač; kôš, „Upraviť“ a pole na komentár zatiaľ ostávajú ako dnes. Implementácia v jednej dávke '
               'až po delení `FeedPostComments.tsx` (R47, nález 333). Úchytka panela nad fotkou je samostatný nález '
               '343 a okno detailu na počítači nález 344. ROZHODNUTIE MAJITEĽA (R59, 19. 11. 2026): redizajn '
-              'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40 a K41 sú hotové; zostávajú K42 '
-              'posledná dávka delenia, K43 opravy 342 a 351 a K31 upgrade Next.js); nič sa nesilí. Pri redizajne '
-              'treba vyriešiť aj pole na text pri odpovedi na komentár (R52 ho nechal ako dnes); čo presne má byť '
-              'inak, dodá majiteľ pri príprave vzhľadu, ktorý sa podľa R49 najprv prebere (agent pripraví návrh s '
-              'možnosťami a odporúčaním) a až potom ide karta. Možná súvislosť (neoverené): staršie prianie skupiny '
-              '6 (komentárová textarea vyššia a väčšia, neprilepená na spodok); agent sa pri príprave vzhľadu opýta, '
-              'či ide o to isté. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne nenahlásil, lebo '
-              'ich redizajn zmení; agent ich nezapisuje a po redizajne navrhuje, aby majiteľ overil, ktoré ostali, a '
-              'tie nahlásil.',
+              'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40, K41, K42, K43 a K31); nič sa '
+              'nesilí. STAV 19. 11. 2026: K40 až K43 sú hotové a delenie `FeedPostComments.tsx` je hotové; podľa '
+              'dohody s majiteľom ostávajú pred redizajnom ešte dva kroky: K31 (upgrade Next.js) a K45 (príprava, '
+              'návrh agenta: testy pre medzery z K42 a mapovanie 344, bez zmeny produkčného kódu). Pri redizajne treba vyriešiť aj pole na text pri odpovedi na komentár (R52 '
+              'ho nechal ako dnes); čo presne má byť inak, dodá majiteľ pri príprave vzhľadu, ktorý sa podľa R49 '
+              'najprv prebere (agent pripraví návrh s možnosťami a odporúčaním) a až potom ide karta. Možná '
+              'súvislosť (neoverené): staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená '
+              'na spodok); agent sa pri príprave vzhľadu opýta, či ide o to isté. Majiteľ v komentároch objavil aj '
+              'vzhľadové chyby, ktoré zámerne nenahlásil, lebo ich redizajn zmení; agent ich nezapisuje a po '
+              'redizajne navrhuje, aby majiteľ overil, ktoré ostali, a tie nahlásil.',
          dec='ROZHODNUTIE R23', src='zoznam majiteľa (príloha D; PDF z 6. 11. 2026, stav k 29. 9. 2026)'),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
          kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), vzhľad schválený (R51 a R56), frontend po etapách (K34, najprv mapovanie)',

@@ -1,10 +1,66 @@
 # -*- coding: utf-8 -*-
-"""Starší denník zmien dokumentu (12. 11. 2026 až 15. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
+"""Starší denník zmien dokumentu (12. 11. 2026 až 16. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_STARSIE` (z `zmeny_starsie.py`). Nový záznam sa pridáva na začiatok `stav.ZMENY`.
 """
 
 ZMENY_STARSIE_2 = [
+    ('16. 11. 2026',
+      'Vetva 179 (vychádza z `main` `93bd8677`, teda po PR #271). (1) K24 (PR #269, zlúčené 16. 11. 2026 o 08:39 UTC, '
+      'merge `fa049c61`; commity `09563623` a `7f8bc410`): hotový nález 336 (anglické „Network Error“ v okne „Pridať '
+      'recenziu“; výnimka R41: v `OfferReviewsView.tsx` sa zmenili len riadky 657 až 660, súbor má 683 riadkov pred aj '
+      'po). K25 (PR #270, zlúčené o 10:36 UTC, merge `91f58dbe`; commit `f022161b`): opis hlavného vypínača „Vypnúť '
+      'všetko“ aj na počítači (R42); tým je aplikačná časť nálezu 321 hotová, nález 321 je v časti Hotové a E2E zvyšok je '
+      'nový nález 337. Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) a CodeRabbit sú pri oboch zelené a bez '
+      'pripomienok; Codex review K24 mala jednu neplatnú pripomienku P1 (zákaz úprav súboru nad 500 riadkov; výnimka R41, '
+      'majiteľ na vlákno odpovedal), pri K25 bola bez nálezov; samostatná strana kolegu nebola potrebná, overenie je v '
+      'textoch commitov (K24: 601 súborov a 9 062 testov, mutácie 10 z 10 a 11 z 11; K25: 603 súborov a 9 094 testov, '
+      'mutácie 14 zo 14). Ručné testy majiteľa po nasadení K24 a K25 prešli bez nového nálezu. Karta K25 nepoznala päť '
+      'ďalších používateľov `MasterToggle`; kolega ich kryl referenčnými testami (`poznamky.md`). Vetva 178 (PR #268) je '
+      'zlúčená; CodeRabbit k nej mal dve platné pripomienky (zastaraný prísľub scenára 330 a zlé číslo dávky v karte K24), '
+      'obe opravené. (2) Codex (PR #271, vetva `e2e/k23-overenie-a-wsl`, zlúčené o 13:03 UTC, merge `93bd8677`; len '
+      '`docs/playwright-odovzdanie.md`): živé overenie na `main` `91f58dbe` (po K24 a K25): dym `@smoke` 41 prešlo, 0 '
+      'zlyhalo a 10 preskočených (rovnaké kľúče ako prijatý dym po K22) a API kontrakt volieb vo WebKite desktop aj mobil '
+      '2 / 0 / 0 (obnova všetkých siedmich hodnôt overená); nejde o celý beh, prijatý základ ostáva 427 / 2 / 303. '
+      'Mapovanie UI scenára kategórií a schopností prehliadačov pre výzvu K23 (WebKit desktop má push API a povolenie '
+      '`default`, WebKit mobil ich nemá, Chromium má povolenie `denied`) je nový nález 337 a rozhodnutie R44 (rozhodnuté '
+      'neskôr, pozri vetvu 180). R40 (a): oddelené Ubuntu vo WSL je pripravené (`Svaply-E2E-Ubuntu-24.04`, Ubuntu 24.04.5, Node 24.20.0, '
+      'Playwright 1.63.0, WebKit 26.6); prázdna stránka bez siete prešla 1 / 1 a prostredie je zastavené; na porovnanie '
+      'treba ešte izolovaný Chromium pre prihlasovanie a okno od majiteľa; nález 223 ostáva otvorený. (3) Číselný prehľad: '
+      'nálezy 1–337, zatvorené 14, hotové 132 (pribudli 336 a 321), jedno nové číslo (337). (4) Karta K26 '
+      '(`karty/K26.md`): mapovanie delenia `FeedPostComments.tsx` (1 487 riadkov, R23; NEJASNÉ, kód sa nemení); poradie je '
+      'K26 (333) a potom návrh K27 a K28 (zoznam lajkujúcich a preklady, každá najprv ako mapovanie). Dopad na E2E: K24 a '
+      'K25 žiadny, mapovanie K26 žiadny.'),
+    ('16. 11. 2026',
+      'Vetva 178 (vychádza z `main` `4c2936ae`, teda po PR #267). (1) K23 (PR #266, zlúčené 15. 11. 2026 o 19:08 UTC, '
+      'merge `07a72900`; dva commity `3d5ed3dc` a `34279dcc`): etapa 3b nálezu 321 je hotová, v Nastaveniach → Upozornenia '
+      'je výzva na povolenie push pre Správy (tlačidlo „Zapnúť upozornenia na správy v tomto zariadení“, „Nie teraz“ sa '
+      'pamätá v prehliadači, na iPhone mimo aplikácie návod) a päť nových textov v šiestich jazykoch. Kontrola agenta z '
+      'GitHubu: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené a bez pripomienok, Codex review bola bez nálezov '
+      'a vlákna nie sú; samostatná strana kolegu nie je potrebná, overenie je v textoch commitov (celý Jest 599 súborov a '
+      '8 968 testov, mutácie 44 zo 44). Kolega neoveril skutočný iPhone, skutočné okno povolenia, doručenie push ani jazykovú kvalitu '
+               'prekladov v cs, pl, de a hu; ručné testy majiteľa po nasadení prešli bez nového nálezu a zahŕňali aj '
+               'iPhone (potvrdil majiteľ 16. 11. 2026), jazykovú kvalitu prekladov nikto neoveril. Vetva 177 '
+      '(PR #265) je zlúčená; CodeRabbit mal k nej jednu platnú pripomienku (mapovanie K23 viazalo návod pre iPhone na '
+      'podporu push), opravenú v `ce74a0bf`. (2) Codex (PR #267, vetva `e2e/lang-a-volby-k22`, zlúčené 15. 11. 2026 o '
+      '21:11 UTC, merge `4c2936ae`; dva commity `e770b837` a `03b42321`, len `frontend/e2e/**` a '
+      '`docs/playwright-odovzdanie.md`): nové testy `document-language.spec.ts` (kontrola atribútu `lang` pre šesť '
+      'jazykov, 18 variantov; živé overenie 18 prešlo a 0 zlyhalo) a API kontrakt siedmich volieb upozornení '
+      '(`notification-preferences.api.ts`, samostatná konfigurácia, jedna zmena kategórie a návrat všetkých siedmich '
+      'hodnôt). CodeRabbit mal k PR #267 jednu platnú pripomienku (Minor: API test preskakoval WebKit), opravenú v '
+      '`03b42321`; API kontrakt beží v troch projektoch, no živé WebKit varianty ešte neboli spustené a vlákno ostáva na '
+      'GitHube neuzavreté (zatvára majiteľ). Codex zmapoval scenár odznaku Žiadostí (330) a nespustil ho; majiteľ 16. 11. 2026 podľa odporúčania '
+               'agenta rozhodol, že sa nerobí (R43). (3) Rozhodnutia majiteľa z 15. 11. 2026: R39 výklad potvrdený (pri zapnutom „Vypnúť '
+      'všetko“ nepríde pri novej žiadosti žiadny odznak a tak to chce nechať); R40 podľa odporúčania agenta (a): Codex '
+      'smie pripraviť Ubuntu vo WSL a overiť WebKit bez Railway, porovnanie v novom okne osobitne oznámi majiteľ; nové R41: výnimka z pravidla 500 riadkov pre opravu 336 v `OfferReviewsView.tsx` s maximálnou '
+               'opatrnosťou. Z 16. 11. 2026: R42 (opis hlavného vypínača „Vypnúť všetko“ sa ukáže aj na počítači: '
+               'áno, ide ako K25) a R43 (E2E scenár odznaku Žiadostí s dvoma účtami sa nerobí). (4) Karty K24 a K25: K24 (`karty/K24.md`) je oprava nálezu 336 (anglické „Network Error“ v okne '
+               'recenzie) a K25 (`karty/K25.md`) opis hlavného vypínača „Vypnúť všetko“ aj na počítači (R42, časť '
+               'nálezu 321); poradie je K24, K25 a potom návrh K26 až K28 (delenie `FeedPostComments.tsx`, zoznam '
+               'lajkujúcich a preklady, každá najprv ako mapovanie). (5) Číselný '
+      'prehľad: nálezy 1–336, zatvorené 14, hotové 130 (bez zmeny); K23 uzatvára len etapu 3b nálezu 321, ktorý ostáva '
+      'otvorený pre E2E (etapa 4). Dopad na E2E: K23 pridala výzvu pod voľbu Správy (špec `mobile-settings-navigation` '
+      'overuje len jej obal; kontrola po K23 čaká na okno); K24 a K25 žiadny.'),
     ('15. 11. 2026',
       'Vetva 177 (vychádza z `main` `52626ab7`, teda po PR #264). (1) K22 (PR #264, zlúčené 15. 11. 2026 o 07:19 UTC, merge '
       '`52626ab7`; dva commity `fecebf5c` a `eb5fd2cb`): hotové 334 (chybová hláška z neúspešného odoslania sa po zatvorení okna '

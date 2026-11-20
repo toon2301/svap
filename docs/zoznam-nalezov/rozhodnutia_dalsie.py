@@ -318,23 +318,55 @@ DECISIONS_DALSIE = [
                      '403 alebo 410); len frontend, bez zmeny servera a bez čítania textov; dodatočný dopyt ide len '
                      'pri už zlyhanej akcii a ak zlyhá sieťou, ostane doterajšia chyba. (b) je presnejšia a ušetrí '
                      'dopyt, no mení server a kontrakt kvôli zriedkavému prípadu; (c) sa neodporúča.',
-         kedy='Pred poslaním karty K43 kolegovi; karta je napísaná podľa odporúčania.'),
+         kedy='Rozhodnuté 19. 11. 2026.',
+         odpoved='Majiteľ 19. 11. 2026: podľa odporúčania agenta (kartu K43 napísanú podľa neho poslal kolegovi), '
+                 'teda (a): po chybe 404, 403 alebo 410 pri odpovedi, úprave a zmazaní komentára sa dostupnosť '
+                 'príspevku overí jedným dopytom na jeho detail; len keď aj ten zlyhá s 404, 403 alebo 410, '
+                 'príspevok zmizol a spracuje sa ako pri pridaní. Oprava je zlúčená v PR #298 (K43); ručný test '
+                 'majiteľa 19. 11. 2026 prešiel.',
+         datum='19. 11. 2026'),
     dict(id='R61', tema='Oprava nálezu 351: ako zastaviť slučku dopytov a chybových hlásení pri donačítavaní komentárov a odpovedí bez internetu',
          otazka='Mapovanie K41: po zlyhaní donačítania ostáva sentinel (koniec zoznamu) vo výhľade a zapne sa znova, '
                 'takže sa dopyt a chybová hláška opakujú samy desiatky ráz za sekundu (Chromium s atrapou siete: 21 '
                 'dopytov a 21 hlásení za 1 s), kým používateľ neodíde z konca zoznamu alebo sa nevráti internet; '
                 'hlavný feed a profil majú proti tomu ochranu, komentáre a odpovede nie. Rovnaká slučka je pri '
                 'donačítaní odpovedí. Ako to opraviť? (a) Pozastaviť automatické doťahovanie po zlyhaní a obnoviť ho '
-                'samo po úspešnom pollingu (do 8 s) alebo po udalosti prehliadača `online`; bez viditeľnej zmeny; '
+                'samo po úspešnom pollingu (jeho interval je 8 s a beží len pri viditeľnej karte a činnosti '
+                'používateľa) alebo po udalosti prehliadača `online`; bez viditeľnej zmeny; '
                 'komentáre aj odpovede v dávke K43. (b) Obnoviť až pri ďalšom posune používateľa. (c) Pridať na '
                 'koniec zoznamu tlačidlo „Skúsiť znova“ ako majú feed a profil (viditeľná zmena a nové texty v '
                 'šiestich jazykoch; vzhľad by sa podľa R49 najprv schválil).',
          odporucanie='(a): bez viditeľnej zmeny; prototyp kolegu z K41: offline na konci zoznamu = 1 dopyt a 1 '
                      'hláška, odchod a návrat nič nespustí, po návrate internetu sa doťahovanie obnoví samo (hneď po '
-                     '`online`, inak do 8 s); rieši komentáre aj odpovede jednou myšlienkou. Riziko: ak zlyháva len '
+                     '`online`, inak pri najbližšom pollingu: ten beží každých 8 s, no len pri viditeľnej karte a do '
+                     'piatich minút od poslednej činnosti); rieši komentáre aj odpovede jednou myšlienkou. Riziko: '
+                     'ak zlyháva len '
                      'stránka s kurzorom a polling prechádza, pokus sa opakuje každých 8 s (hláška znova), čo je '
                      'oproti dnešným desiatkam za sekundu zanedbateľné. (b) by chcelo zásah do posunu zoznamu a '
                      'nechá slučku, kým používateľ neposunie; (c) je viditeľná zmena a patrí skôr k redizajnu '
                      'komentárov, ak ju majiteľ chce.',
-         kedy='Pred poslaním karty K43 kolegovi; karta je napísaná podľa odporúčania.'),
+         kedy='Rozhodnuté 19. 11. 2026.',
+         odpoved='Majiteľ 19. 11. 2026: podľa odporúčania agenta (kartu K43 napísanú podľa neho poslal kolegovi), '
+                 'teda (a): po zlyhaní netichého donačítania komentárov aj odpovedí sa automatické doťahovanie '
+                 'pozastaví a obnoví sa samo po úspešnom pollingu alebo po udalosti `online`, bez viditeľnej zmeny '
+                 '(tlačidlo „Skúsiť znova“ sa nerobí). Oprava je zlúčená v PR #298 (K43); ručný test majiteľa 19. '
+                 '11. 2026 prešiel.',
+         datum='19. 11. 2026'),
+    dict(id='R62', tema='Popisy nových testov po slovensky (pravidlo v AGENTS.md)',
+         otazka='Codex pri PR #298 (K43) vyhodnotil anglické popisy nových testov (`it(...)`) ako porušenie '
+                'pravidla, že kód, komentáre a commity sú po slovensky (AGENTS.md, riadok 3); kolega ich preložil '
+                '(42 popisov a 3 pomenovania v troch súboroch). V repozitári sú obe podoby (podľa hrubého počítania '
+                'kolegu zhruba 2 275 popisov s diakritikou a 3 593 bez nej). Má sa do AGENTS.md doplniť jasné '
+                'pravidlo? (a) Áno, pre nové testy: popisy po slovensky, staré sa neprekladajú. (b) Áno, a staré sa '
+                'preložia postupne pri ich úprave. (c) Nie, popisy testov môžu byť po anglicky a Codex to nemá '
+                'hlásiť.',
+         odporucanie='(a): jedna veta v AGENTS.md zabráni opakovaným pripomienkam pri každom PR s novými testami a '
+                     'nespôsobí hromadnú zmenu tisícok existujúcich popisov (R27: existujúce testové súbory sa menia '
+                     'len málo); (b) by zbytočne zväčšovalo zmeny testov pri nesúvisiacich opravách; (c) by bola '
+                     'výnimka z pravidla, ktoré inak platí pre všetko.',
+         kedy='Rozhodnuté 20. 11. 2026.',
+         odpoved='Majiteľ 20. 11. 2026: podľa odporúčania agenta, teda (a): popisy nových testov (`describe`, `it`, '
+                 '`test`, pomenovania v `it.each`) sa píšu po slovensky, staré sa neprekladajú. Veta je doplnená do '
+                 '`AGENTS.md` a do `.cursor/rules/svaply.mdc` (vetva 190, PR #299).',
+         datum='20. 11. 2026'),
 ]

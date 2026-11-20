@@ -446,6 +446,11 @@ from hotove_k20 import DONE_SINCE_K20  # noqa: E402
 
 DONE_SINCE.extend(DONE_SINCE_K20)
 
+# Nálezy opravené od PR #297 (19. 11. 2026) sú v `hotove_k40.py` (kvôli limitu 500 riadkov); do `DONE_SINCE` sa pridávajú tu.
+from hotove_k40 import DONE_SINCE_K40  # noqa: E402
+
+DONE_SINCE.extend(DONE_SINCE_K40)
+
 # Tabuľka „PR → vetva → položky“ pre položky, ktoré boli hotové už pri prvom vydaní.
 DONE_PR_TABLE = [
     ('#177', '126', '128, 137, 141 (prvá polovica), 155'),
@@ -480,6 +485,8 @@ DONE_PR_TABLE_CASTOCNE = [
      'test majiteľa bez nových nálezov)'),
     ('#291', 'K38', '333 (dávka 4 z 5 delenia `FeedPostComments.tsx`: kroky 5 a 6, posun a indikátor do `useFeedCommentsScroll.ts` '
      'a načítanie a polling do `useFeedCommentsLoader.ts`; ručný test majiteľa: 346 pretrváva a kandidát 351)'),
+    ('#297', 'K42', '333 (dávka 5 z 5 delenia `FeedPostComments.tsx`: mutácie do `useFeedCommentMutations.ts`, typ vlastností do '
+     '`FeedPostComments.types.ts` a zmazanie dočasného odtlačku HTML; ostáva `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`)'),
 ]
 
 # Popis série Upozornenia (nečíslované nálezy), zobrazí sa pod tabuľkou PR.

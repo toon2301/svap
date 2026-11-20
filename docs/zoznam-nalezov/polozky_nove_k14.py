@@ -3,7 +3,7 @@
 z 9. 11. 2026 (322 až 324) a ručné testy majiteľa po K17 s mapovaním agenta z 11. 11. 2026 (325 až 327; 325, 326 a 327 sú hotové v K18 a K21) a report Codexa po K19 (328) a ručné testy majiteľa po K20 s mapovaním agenta z 13. 11. 2026 (330 a 331; hotové 329, 330, 331 a 332 sú v `hotove_k20.py`), pravidlo majiteľa pri R2 (332), rozhodnutie R23 (333) a ručné testy majiteľa po K21 s kandidátmi kolegu (334 a 335; obe hotové v K22) a kandidát kolegu z K15 a K22 (336); hotové 328, 334 a 335 sú v `hotove_k20.py`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
-po oprave odstráni odtiaľto a zapíše do `hotove_k20.DONE_SINCE_K20`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
+po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
 `alert()` v súboroch nad 500 riadkov) je v nálezu 302, kandidát L (`require()` v `csrf.test.ts`) v nálezu 206 a kandidát N (kategórie
 upozornení nie sú napojené na server) je spolu s nálezom majiteľa v 321.
 """
@@ -110,8 +110,9 @@ NEW_ITEMS_K14 = [
     dict(n=333, bucket=P, imp=N, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: rozdeliť veľké súbory (`FeedPostComments.tsx`, `FeedPostCard.tsx`, '
                 '`FeedPostMobileDetail.tsx`) bez zmeny vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: '
-                'mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29), dávka 3 z 5 (K37) a dávka 4 z 5 (K38) hotové '
-                '(573 riadkov), ďalšia je dávka 5 z 5 (kroky 7 a 8; K42)',
+                'mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29), dávka 3 z 5 (K37), dávka 4 z 5 (K38) a dávka '
+                '5 z 5 (K42) hotové: `FeedPostComments.tsx` je rozdelený (1 487 → 401 riadkov po K43); zostávajú '
+                '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594)',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov '
               'rozdelia po jednom: `feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a '
               '`feed/FeedPostMobileDetail.tsx` 594 (počty agent overil 13. 11. 2026). Delenie nesmie zmeniť '
@@ -238,16 +239,37 @@ NEW_ITEMS_K14 = [
               'predpovedala karta K38) a test 13 (kandidát, z ktorého vznikol nález 351: opakované chybové toasty '
               'pri donačítaní starších komentárov bez internetu); ďalšie chyby majiteľ nenahlásil. SAMOSTATNÉ OPRAVY '
               'PO DÁVKE 4 (19. 11. 2026): K40 (PR #294, oprava 346) a K41 (PR #295, oprava 338 a mapovanie 351) sú '
-              'hotové a `FeedPostComments.tsx` nezmenili (ostáva 573 riadkov); ručný test majiteľa prešiel. Ďalšia '
-              'dávka je 5 z 5 (kroky 7 a 8: mutácie, typ vlastností a importy; posledná, zmaže aj dočasný odtlačok '
-              'HTML): karta K42 (`karty/K42.md`) je pripravená 19. 11. 2026, mapovanie si robí kolega sám; po nej je '
-              '`FeedPostComments.tsx` asi 420 riadkov.',
+              'hotové a `FeedPostComments.tsx` nezmenili (ostáva 573 riadkov); ručný test majiteľa prešiel. DÁVKA 5 '
+              'Z 5 HOTOVÁ (K42, PR #297, zlúčené 19. 11. 2026 o 19:19 UTC, merge `33d2b8cc`; tri commity `ad599700` '
+              '(krok 7), `3fd8fc0c` (krok 8) a `e6527f31` (zmazanie odtlačku); 5 súborov, +328 a −4 046 riadkov): '
+              'krok 7: obsluhy pridania, úpravy, odpovede a zmazania s potvrdením a sedem stavov, ktoré používajú '
+              'len tie obsluhy, sú v novom hooku `useFeedCommentMutations.ts` (226 riadkov), `FeedPostComments.tsx` '
+              '573 → 454; krok 8: typ `FeedPostCommentsProps` je v novom `FeedPostComments.types.ts` (68 riadkov), '
+              '`FeedPostComments.tsx` 454 → 396; posledný commit zmazal dočasný odtlačok HTML z K28 (336 riadkov '
+              'testu a 3 499 riadkov `.snap`), takže v repozitári už nie je žiadny súbor `.snap`. Po piatich dávkach '
+              '(K28, K29, K37, K38, K42) je `FeedPostComments.tsx` na 396 riadkoch z pôvodných 1 487 (po K43 401). '
+              'PODĽA TEXTOV COMMITOV A VÝSLEDKU: čistý presun: skript poskladal pôvodný súbor bajt po bajte po oboch '
+              'krokoch, poradie efektov je pred krokom 7 aj po ňom rovnaké (sonda, 325 registrácií), zápisy '
+              '`loadSeqRef`, `markSeen` a `scrollToTopRef`, na ktorých stojí oprava 338, ostali na tých istých '
+              'miestach; celý Jest po krokoch 7 a 8 612 sád a 9 289 testov, odtlačok HTML 10 z 10 bezo zmeny po '
+              'oboch krokoch, po zmazaní 611 sád a 9 279 testov, `tsc`, ESLint a preklady čisté, build pri prvom '
+              'behu v každom kroku `SecurityFatalError` (pozri 341); mutácie v kroku 7: 70, zachytených 40 a prežilo '
+              '30 (existujúce medzery v testoch, rovnaké v pôvodnom komponente); testy sa nepridávali. Odchýlky od '
+              'karty: `submitting`, `trimmed` a `canSubmit` ostali v komponente (hook dostáva `setSubmitting`, '
+              '`trimmed`, `canSubmit` a `setText`), hook vlastní aj sedem stavov obsluh, `toggleReplies` ostal v '
+              'komponente, hlavný súbor je pod 500 riadkov už po kroku 7. KONTROLA AGENTA (19. 11. 2026, z GitHubu a '
+              'z `main`): CI aj CodeRabbit zelené, vlákna nie sú; počty riadkov po K42 sedia (396, 226 a 68; po '
+              'K43 401 a 239); odtlačok HTML bol zmazaný až posledným commitom a existujúce testy sa nemenili; prvé riadky '
+              'commitov 71, 68 a 54 znakov. Kandidáti kolegu: žiadni. RUČNÝ TEST MAJITEĽA po K42 a K43 (19. 11. '
+              '2026): prešlo všetko v poriadku. Delenie `FeedPostComments.tsx` je tým hotové; podľa R23 ostáva '
+              '`FeedPostCard.tsx` (1 033 riadkov) a `FeedPostMobileDetail.tsx` (594), každý najprv mapovanie a '
+              'vlastné dávky; prežívajúce mutácie z K42 sú v poznámkach a v karte K45.',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
          kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); '
                 'lokálny build pri prvom behu skončil `SecurityFatalError` (K28 raz, K29 v každom z troch krokov, '
-                'K37 raz, K38 v oboch krokoch, K39, K40 a K41 po jednom; druhý beh vždy prešiel); upgrade ako '
-                'samostatná dávka závislostí',
+                'K37 raz, K38 v oboch krokoch, K39, K40 a K41 po jednom, K42 v každom zo svojich troch krokov a K43 '
+                'raz; druhý beh vždy prešiel); upgrade ako samostatná dávka závislostí',
          what='Kolega pri K28 (17. 11. 2026): nainštalovaný Next.js 16.4.3 (`frontend/package.json` `^16.4.3`, '
               '`package-lock.json` 16.4.3) je v rozsahu upozornenia GHSA-mfr8-8qww-v76h (stupeň moderate, rozsah '
               '16.3.0 až 16.4.4, oprava je dostupná). Dôkaz kolegu: `npm audit --omit=dev --json` vo `frontend` '
@@ -264,42 +286,17 @@ NEW_ITEMS_K14 = [
               'lokálny build znova `SecurityFatalError`, druhý vždy prešiel; spolu osem hlásených prvých buildov z '
               'osmich (K28 1, K29 3, K37 1, K38 2 a K39 1). Opakovanie v K40 a K41 (19. 11. 2026): prvý lokálny '
               'build znova `SecurityFatalError`, druhý prešiel; spolu desať hlásených prvých buildov z desiatich '
-              '(K28 1, K29 3, K37 1, K38 2, K39 1, K40 1 a K41 1).',
+              '(K28 1, K29 3, K37 1, K38 2, K39 1, K40 1 a K41 1). Opakovanie v K42 (po každom zo troch krokov) a v '
+              'K43 (19. 11. 2026): prvý lokálny build znova `SecurityFatalError`, druhý prešiel; spolu štrnásť '
+              'hlásených prvých buildov zo štrnástich.',
          note='Návrh (neoverený): upgrade `next` na opravenú verziu v rámci rozsahu `^16.4.3` ako samostatná dávka '
               'závislostí (tretí druh rizika ide vždy samostatne): `package.json` a `package-lock.json`, celý Jest, '
               '`tsc`, build, kontrola prekladov a ručný dymový test majiteľa po nasadení. Majiteľ by mal pozrieť '
               'posledné nasadenia na Railway (zelené, bez chyby `SecurityFatalError`); ak by nasadenie padalo, nález '
-              'sa posúva na začiatok poradia. Odhad: stredný · S až M. OPAKOVANIE: desať z desiatich hlásených '
-              'prvých lokálnych buildov (K28 až K41) skončilo týmto výpisom, preto agent navrhuje zaradiť K31 hneď '
-              'po K43 (päť krokov pred redizajnom komentárov je vo fronte); majiteľ môže nasadenia na Railway '
-              'pozrieť hneď.',
+              'sa posúva na začiatok poradia. Odhad: stredný · S až M. OPAKOVANIE: štrnásť zo štrnástich hlásených '
+              'prvých lokálnych buildov (K28 až K43) skončilo týmto výpisom; K31 je teraz najbližší krok (karta '
+              '`karty/K31.md`, 19. 11. 2026); majiteľ môže nasadenia na Railway pozrieť hneď.',
          dec=None, src='K28 (kolega, 17. 11. 2026) a kontrola agenta z logu CI'),
-    dict(n=342, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
-         kratko='komentáre: odpoveď, úprava a zmazanie pri zmiznutom príspevku nepoužijú spoločné spracovanie ako '
-                'pridanie; oprava ide v K43 po delení (R60)',
-         what='Kolega pri K28 (17. 11. 2026, sonda v kópii mimo repozitára): pri chybe 404 z `createFeedPostComment` '
-              'ukáže pridanie komentára jednu neutrálnu hlášku „Tento príspevok už nie je dostupný.“ a pošle signál '
-              'zmiznutia príspevku; odpoveď, úprava aj zmazanie pri rovnakej chybe ukážu všeobecnú chybu („Odpoveď '
-              'sa nepodarilo pridať.“, „Komentár sa nepodarilo upraviť.“, „Komentár sa nepodarilo zmazať.“) a signál '
-              'nepošlú, takže karta príspevku ostane v zoznamoch. Príčina: `handleFeedPostErrorIfGone` '
-              '(`feedPostGone.ts`) volá len `handleSubmit`; `handleSubmitReply`, `handleSubmitEdit` a '
-              '`handleConfirmDelete` ho nevolajú (`FeedPostComments.tsx`). Dopad: nízky, nejednotné správanie (po '
-              'zmazaní príspevku v inej relácii vidí používateľ pri týchto troch akciách zavádzajúcu všeobecnú '
-              'chybu). Pozor pri oprave: `handleFeedPostErrorIfGone` posudzuje len stav odpovede (404, 403 alebo '
-              '410), no pri úprave, zmazaní a odpovedi samotný stav nestačí: backend vracia 404 aj vtedy, keď '
-              'príspevok existuje a chýba len komentár (telo „Komentar nebol najdeny.“) alebo rodičovský komentár '
-              'odpovede (kód `reply_parent_missing`), a 403 pri úprave a zmazaní znamená „nemáš právo“, nie '
-              '„príspevok zmizol“; pri chýbajúcom príspevku je telo „Prispevok nebol najdeny.“.',
-         note='Návrh: opraviť až po delení (v novom súbore `useFeedCommentMutations.ts`, krok 7, ako samostatný '
-              'commit s testom), nie počas delenia, aby sa správanie pri presune nemenilo. ROZHODNUTIE MAJITEĽA ČAKÁ '
-              '(R60): samotný HTTP stav nestačí, preto (a) po chybe overiť dostupnosť príspevku jedným dopytom na '
-              'detail (`getFeedPost` v `lib/feedApi.ts`; ak aj ten zlyhá s 404, 403 alebo 410, príspevok zmizol a '
-              'spracuje sa ako pri pridaní, inak ostane doterajšia chyba), (b) strojový kód v odpovedi servera ako '
-              '`reply_parent_missing` (zmena backendu), (c) rozlišovanie podľa textu odpovede (krehké); agent '
-              'odporúča (a): rovnaká myšlienka ako pri načítaní okna detailu, len frontend. Karta K43 '
-              '(`karty/K43.md`, 19. 11. 2026) je napísaná podľa odporúčania; oprava ide v K43 po K42 spolu s 351, '
-              'každá vo vlastnom commite s testom. Odhad: nízky · S.',
-         dec='ROZHODNUTIE R60', src='K28 (kolega, 17. 11. 2026)'),
     dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
                 'namiesto tenkej úchytky; oprava podľa R55',
@@ -317,23 +314,28 @@ NEW_ITEMS_K14 = [
                'ísť aj pred ním. Po nasadení krátky ručný test majiteľa na mobile. Odhad: nízky · S.',
          dec='ROZHODNUTIE R55', src='majiteľ (17. 11. 2026) a kontrola agenta čítaním kódu'),
     dict(n=344, bucket=P, imp=N, eff=EM, pkg='Vzhľad Nástenky',
-         kratko='okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch ako príspevok s fotkou a užšie okno '
-                'príspevku len s textom (R53)',
-         what='Prianie majiteľa (17. 11. 2026, po snímkach okien detailu): (a) okno zdieľanej ponuky a zdieľaného portfólia má mať '
-               'rovnaké rozloženie a logiku ako okno príspevku s fotkou: vľavo hlavička, text, karta ponuky (portfólia) a riadok s '
-               'lajkom, vpravo stĺpec „Komentáre“ s poľom na komentár dole; pevná výška okna, karta vyplní zvyšok ľavého stĺpca, riadok '
-               'akcií stále dole, text so „Viac“; klik na kartu ostáva (otvorí ponuku alebo portfólio). (b) Okno príspevku len s textom '
-               'bude užšie (asi 580 px namiesto 864 px; hore príspevok, pod ním komentáre, pole na komentár pri spodku); dva stĺpce pre '
-               'text majiteľ zamietol. STAV V KÓDE (čítanie agenta): `FeedPostDetailOverlay.tsx` (385 riadkov) volí `splitLayout = '
-               'hasPhoto && !isMobile`, kde `hasPhoto` je vlastná viditeľná fotka alebo repost foto príspevku (`sharedFeedPostPhoto`); '
-               'zdieľaná ponuka a portfólio sú jednostĺpcové (`sharedFillsColumn`, karta s vlastným posunom, v okne sa orezáva); '
-               '`FeedPostDetailSplitLayout.tsx` (144 riadkov) kreslí vľavo 56 % `FeedPostCard variant="detail" fillHeight` a vpravo 44 % '
-               'nadpis a `FeedPostComments`; šírka okna je `max-w-[54rem]` (864 px), pri dvoch stĺpcoch pevná výška `95vh`.',
-         note='Odhad dotyku (neoverený): rozšírenie podmienky `hasPhoto`, šírka okna pri texte a prípadne vzhľad karty v ľavom stĺpci; '
-               '`FeedPostCard.tsx` (1 033 riadkov) a `FeedPostComments.tsx` sú nad 500 riadkov, takže zmena ide buď bez zásahu do nich, '
-               'alebo až po ich delení; kolega najprv mapuje (NEJASNÉ). Dopad na E2E: špecy okna detailu (`feed-post-detail.spec.ts`) a '
-               'nový scenár komentárov (257) používajú okno len s textom, treba ich pozrieť. Vzhľad schválil majiteľ (R49, R53; obrázky '
-               '`navrhy/pc-okno-ponuka.png` a `navrhy/pc-okno-text.png`). Odhad: nízky · M.',
+         kratko='okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch ako príspevok s '
+                'fotkou a užšie okno príspevku len s textom (R53)',
+         what='Prianie majiteľa (17. 11. 2026, po snímkach okien detailu): (a) okno zdieľanej ponuky a zdieľaného '
+              'portfólia má mať rovnaké rozloženie a logiku ako okno príspevku s fotkou: vľavo hlavička, text, karta '
+              'ponuky (portfólia) a riadok s lajkom, vpravo stĺpec „Komentáre“ s poľom na komentár dole; pevná výška '
+              'okna, karta vyplní zvyšok ľavého stĺpca, riadok akcií stále dole, text so „Viac“; klik na kartu '
+              'ostáva (otvorí ponuku alebo portfólio). (b) Okno príspevku len s textom bude užšie (asi 580 px '
+              'namiesto 864 px; hore príspevok, pod ním komentáre, pole na komentár pri spodku); dva stĺpce pre text '
+              'majiteľ zamietol. STAV V KÓDE (čítanie agenta): `FeedPostDetailOverlay.tsx` (385 riadkov) volí '
+              '`splitLayout = hasPhoto && !isMobile`, kde `hasPhoto` je vlastná viditeľná fotka alebo repost foto '
+              'príspevku (`sharedFeedPostPhoto`); zdieľaná ponuka a portfólio sú jednostĺpcové (`sharedFillsColumn`, '
+              'karta s vlastným posunom, v okne sa orezáva); `FeedPostDetailSplitLayout.tsx` (144 riadkov) kreslí '
+              'vľavo 56 % `FeedPostCard variant="detail" fillHeight` a vpravo 44 % nadpis a `FeedPostComments`; '
+              'šírka okna je `max-w-[54rem]` (864 px), pri dvoch stĺpcoch pevná výška `95vh`.',
+         note='Odhad dotyku (neoverený): rozšírenie podmienky `hasPhoto`, šírka okna pri texte a prípadne vzhľad '
+              'karty v ľavom stĺpci; `FeedPostCard.tsx` má 1 033 riadkov (nad 500), takže zmena ide buď bez zásahu '
+              'do nej, alebo až po jej delení (`FeedPostComments.tsx` je po delení 401 riadkov); kolega najprv '
+              'mapuje (NEJASNÉ): mapovanie je časť 2 karty K45 (`karty/K45.md`, pripravená 19. 11. 2026) a o poradí '
+              'voči redizajnu komentárov a deleniu `FeedPostCard.tsx` rozhodne majiteľ po mapovaní. Dopad na E2E: '
+              'špecy okna detailu (`feed-post-detail.spec.ts`) a nový scenár komentárov (257) používajú okno len s '
+              'textom, treba ich pozrieť. Vzhľad schválil majiteľ (R49, R53; obrázky `navrhy/pc-okno-ponuka.png` a '
+              '`navrhy/pc-okno-text.png`). Odhad: nízky · M.',
          dec='ROZHODNUTIE R53', src='majiteľ (17. 11. 2026)'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
@@ -390,68 +392,25 @@ NEW_ITEMS_K14 = [
               'v administrácii (akcie s `update()`), zvýšiť. Súvisí s 339 (docstring v `offer_hidden_from_user` o výnimke pre '
               'vlastníka). Odhad: stredný · M.',
          dec=None, src='K30 (kolega, druhý commit `2f5ba6ef`, 18. 11. 2026) a kontrola agenta čítaním kódu'),
-    dict(n=351, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
-         kratko='komentáre a odpovede: pri výpadku internetu sa pri donačítavaní starších komentárov (a odpovedí) v '
-                'slučke opakujú dopyty a chybové toasty „Komentáře se nepodařilo načíst.“ namiesto jedného; príčina '
-                'zmapovaná v K41 (starší stav); oprava v K43 po odpovedi na R61',
-         what='Majiteľ pri ručnom teste po K38 a K39 (19. 11. 2026, test 13 zo 16, kandidát na nový nález): pri '
-              'vypnutom internete a pokuse o donačítanie starších komentárov sa zobrazilo veľké množstvo rovnakých '
-              'hlásení „Komentáře se nepodařilo načíst.“ namiesto jediného. Prvé načítanie komentárov bez internetu '
-              'prešlo správne. Problém potvrdený iba pri donačítavaní starších komentárov; ostatné cesty (polling, '
-              'donačítanie odpovedí, hľadanie cieľa z upozornenia) majiteľ neskúšal. Text hlášky je český, test teda '
-              'bežal v češtine; zariadenie ani počet hlásení majiteľ neuviedol. Agent kód nečítal a príčinu nepozná '
-              '(mapovanie robí kolega, rozhodnutie majiteľa 18. 11. 2026). Podľa textov commitov K38 je donačítanie '
-              '(`loadMore`) od 18. 11. 2026 v `useFeedCommentsLoader.ts`, má chybový toast a voľbu `silent` a '
-              'presunulo sa bez zmeny (skript poskladal pôvodný súbor bajt po bajte), takže nejde o dôsledok K38; '
-              'stránkovanie spúšťa podľa plánu K26 efekt „sentinel“ vo `FeedPostComments.tsx` (neoverené čítaním '
-              'kódu); mutácia LM2 z K38 (chýbajúca stráž súbehu v `loadMore`) prežila aj v pôvodnom kóde, takže '
-              'stráž súbehu nemá test. HYPOTÉZY NA OVERENIE (nie zistenia): (1) po zlyhaní sa donačítanie spustí '
-              'znova, kým je koniec zoznamu vo výhľade, a každý pokus dá vlastný toast (slučka opakovaní, ktorá by '
-              'pri výpadku servera zaťažovala aj server); (2) toast nemá spoločné `id`, takže sa opakované chyby '
-              'nezlúčia (inde v aplikácii má chyba pri offline jeden spoločný toast, napríklad chyba ukladania '
-              'volieb upozornení v Nastaveniach); (3) súbežné donačítania bez stráže súbehu; (4) iná cesta '
-              '(napríklad polling po 8 s) toast opakuje. MAPOVANIE (kolega, K41, 19. 11. 2026; agent overil kľúčové '
-              'tvrdenia čítaním kódu na `main` `561aaa8f`, merania nespúšťal; celé znenie je v '
-              '`karty/K41_vysledok.md`): STARŠÍ STAV (rovnaké čísla na `main` pred K37). Z hypotéz vyššie sa '
-              'potvrdila prvá (slučka); toast bez `id`, súbežné donačítania a polling príčinou nie sú. PRÍČINA: '
-              'toast `feed.commentsLoadError` je len v `loadMore` (`useFeedCommentsLoader.ts`); po zlyhaní ostáva '
-              '`hasMore` pravdivé a kurzor sa neposúva; sentinel sa zapína cez `enabled: hasMore && !loading && '
-              '!loadingMore` (`FeedPostComments.tsx`) a `useInfiniteScrollSentinel` (`useFeedInfiniteScroll.ts`) pri '
-              'každom prepnutí `enabled` vytvorí nový `IntersectionObserver`, ktorý hneď doručí začiatočné '
-              'oznámenie, takže kým je koniec zoznamu vo výhľade, platí: zlyhanie, nový observer, `loadMore()`, '
-              'zlyhanie… Slučka beží sama bez zásahu používateľa; hlavný feed a profil ju majú ošetrenú (`enabled: … '
-              '&& !error`, ručné tlačidlo), komentáre nie. DÔKAZ (kolega, kópia mimo repozitára, Chromium 393×659, '
-              'atrapa siete so zlyhaním po 25 ms): jeden posun na koniec zoznamu = 21 dopytov a 21 toastov za 1 s a '
-              '102 za 5 s, naraz vo výhľade 20 toastov (strop `react-hot-toast`); odchod z konca slučku zastaví, '
-              'návrat ju spustí znova; keď sa internet vráti, jedno načítanie prejde a slučka skončí; pri '
-              'nedostupnom serveri by zaťažovala aj server. ODPOVEDE: rovnakú slučku má donačítanie odpovedí '
-              '(`FeedRepliesAutoLoader.tsx`, `enabled={loadingRepliesFor !== comment.id}`, toast '
-              '`feed.repliesLoadError`; Jest sonda: 20 toastov a 21 dopytov za 60 snímok); majiteľ ju neskúšal, '
-              'kolega ju navrhol ako kandidáta a je zahrnutá v tomto náleze. Polling je bez toastu a hľadanie cieľa '
-              'je `silent` bez slučky; prvé načítanie dá jednu chybu v zozname.',
-         note='MAPOVANIE HOTOVÉ (K41). ROZHODNUTIE MAJITEĽA ČAKÁ (R61): pravidlo obnovenia po zlyhaní a že oprava '
-              'pokryje aj odpovede; agent odporúča (a): `useFeedCommentsLoader.ts` po zlyhaní donačítania vracia '
-              '`hasMore: false`, kým sa nevráti spojenie (úspešný polling alebo udalosť `online`), takže sentinel sa '
-              'nezapne. Prototyp kolegu (kópia mimo repozitára, necommitnutý, bez celej sady testov): offline na '
-              'konci zoznamu = 1 dopyt a 1 toast, odchod a návrat nič nespustí, po návrate internetu sa doťahovanie '
-              'obnoví samo (hneď po `online`, inak do 8 s pollingom). Odpovede len v hooku nejdú (`enabled` sa '
-              'počíta vo `FeedPostComments.tsx` z `loadingRepliesFor`; jeho udržanie by nechalo kostru načítavania '
-              'navždy), preto ich oprava patrí do K43 po K42, keď je `FeedPostComments.tsx` pod 500 riadkov, alebo '
-              'do `FeedRepliesAutoLoader.tsx` (117 riadkov) so zmenou volania v komponente; spoločný '
-              '`useInfiniteScrollSentinel` (používa ho aj feed, profil, upozornenia a správy) sa nemení. RIZIKÁ: ak '
-              'zlyháva len stránka s kurzorom a polling prechádza, pokus sa opakuje každých 8 s (toast znova); '
-              'obnova pri ďalšom posune používateľa sa v hooku nedá (chcela by `handleListScroll`); `online` '
-              'listener je nový efekt na konci hooku (poradie existujúcich sa nemení). Fixné `id` toastu netreba, ak '
-              'sa slučka zastaví; testy `FeedPostComments.scoped` a `repliesPaging` kontrolujú `toast.error` s '
-              'jediným argumentom. Viditeľná zmena (tlačidlo „Skúsiť znova“ ako majú feed a profil, nové texty v '
-              'šiestich jazykoch) sa nerobí; ak by ju majiteľ chcel, vzhľad sa podľa R49 najprv schváli. Test (návrh '
-              'kolega): zlyhanie po `setTimeout` a atrapa observera so začiatočným oznámením (okamžité zamietnutie '
-              '`mockRejectedValue` React zlúči a slučku nevidí); pred opravou desiatky dopytov a toastov po jednom '
-              'posune, po oprave najviac 1 dopyt a 1 toast a obnova po úspešnom pollingu a po `online`. Súbory: '
-              '`useFeedCommentsLoader.ts` 394 (po oprave asi 420), `FeedRepliesAutoLoader.tsx` 117, '
-              '`FeedPostComments.tsx` 573 (po K42 asi 420). Karta K43 (`karty/K43.md`, 19. 11. 2026) je napísaná '
-              'podľa odporúčania; oprava ide v K43 spolu s 342, každá vo vlastnom commite s testom. Dopad na E2E: '
-              'žiadny, offline scenár komentárov E2E nepokrýva. Skupina a dôležitosť: predbežne stredná (slučka '
-              'zaťažuje server pri výpadku). Odhad: stredný · M.',
-         dec='ROZHODNUTIE R61', src='majiteľ (ručný test po K38 a K39, 19. 11. 2026, test 13) a kontrola agenta z textov commitov K38'),
+    dict(n=353, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='komentáre: chybová hláška pri donačítaní odpovedí (`feed.repliesLoadError`) sa ukáže aj pre dopyt, '
+                'ktorý zneplatnila mutácia alebo zmena príspevku (zastaraný pokus), na rozdiel od donačítania '
+                'komentárov; jedna zbytočná hláška po pridaní komentára počas donačítavania odpovedí',
+         what='Kolega pri K43 (19. 11. 2026): v `useFeedCommentsLoader.ts`, `loadMoreReplies` (vetva `catch`) sa '
+              '`toast.error` s `feed.repliesLoadError` ukáže aj pre dopyt, ktorý zneplatnila mutácia alebo zmena '
+              'príspevku, kým `loadMore` pri komentároch v takom prípade nehlási (kontrola `seq === '
+              'loadSeqRef.current`). Dôkaz (Jest sonda, `FeedPostComments.repliesPauseStale.test.tsx`, druhý test): '
+              'po pridaní komentára počas dopytu na odpovede a jeho zlyhaní sa ukázali 2 hlášky (zastaraná a '
+              'následný aktuálny pokus) namiesto 1. Dopad: jedna zbytočná hláška po pridaní komentára počas '
+              'donačítavania odpovedí; slučku nespôsobuje. Existovalo pred K43. Agent overil čítaním kódu na `main` '
+              '`bc4391dc`: `loadMore` podmieňuje kontrolou `seq === loadSeqRef.current` aj hlášku, aj pozastavenie, '
+              'kým `loadMoreReplies` len pozastavenie (hláška je len pod `!options?.silent`); sondu agent nespúšťal.',
+         note='Návrh (neoverený): rovnaká kontrola aktuálnosti ako pri `loadMore` aj pri hláške v `loadMoreReplies`; '
+              'malá oprava v `useFeedCommentsLoader.ts` (447 riadkov) a test v novom súbore (R27); existujúce sady '
+              '`repliesPaging`, `scoped` a `repliesPauseStale` musia prejsť bezo zmeny. Skupina (PRED NASADENÍM ako '
+              '342 a 351 v tom istom kóde) a dôležitosť sú predbežný návrh agenta (nízka, jedna hláška). Zaradenie: '
+              'do malej dávky drobných opráv spolu s 352, nie pred redizajnom komentárov; hlavný súbor komentárov a '
+              'hook sa pri redizajne tiež budú meniť, takže oprava môže ísť aj spolu s ním, ak o tom rozhodne '
+              'majiteľ. Odhad: nízky · S.',
+         dec=None, src='K43 (kolega, 19. 11. 2026)'),
 ]
