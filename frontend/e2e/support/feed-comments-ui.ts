@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { FeedCommentsSession } from './feed-comments-session';
 import type { FeedCommentsWriteAudit } from './feed-comments-writes';
+import { findCommentFixtureCard, revealCommentFixturePhoto } from './feed-comment-source';
 
 /** Mobil používa skutočný ťuk, desktop klik; bez force a bez nahrádzania UI volaním API. */
 async function activate(target: Locator, mobile: boolean): Promise<void> {
@@ -20,8 +21,7 @@ export async function exerciseOwnFeedComment(
     await page.reload();
     const cards = page.getByTestId('feed-list').getByTestId('feed-post-card');
     const source = session.sourceImageId === null ? cards.filter({ hasText: session.postCaption })
-      : cards.and(page.locator('[data-post-type="free_post"]'))
-        .filter({ has: page.getByTestId(`feed-image-open-${session.sourceImageId}`) });
+      : await findCommentFixtureCard(page, session.sourceImageId, mobile);
     await expect(source).toHaveCount(1);
     await expect(source).toHaveAttribute('data-post-type', 'free_post');
     phase = 'otvorenie detailu';
@@ -29,7 +29,11 @@ export async function exerciseOwnFeedComment(
     const detail = page.getByTestId(mobile ? 'feed-mobile-detail' : 'feed-post-overlay');
     await expect(detail).toBeVisible();
     if (session.reusesPhotoPost) {
-      const photo = detail.getByTestId('feed-mobile-detail-photo').locator('img').first();
+      const media = detail.getByTestId('feed-mobile-detail-photo');
+      if (session.sourceImageId === null || !await revealCommentFixturePhoto(media, session.sourceImageId, mobile)) {
+        throw new Error('Detail neobsahuje overenú dostupnú fotku podkladu.');
+      }
+      const photo = media.locator('img').first();
       await expect(photo).toBeVisible();
       await expect.poll(() => photo.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0), {
         message: 'Podklad musí mať skutočne načítanú fotku, nie pokazený obrázok.',

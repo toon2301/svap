@@ -75,7 +75,7 @@ pôvodné komentáre**; riadená chyba orezania potvrdila rovnaké bezpečné up
 
 `feed-post-detail.spec.ts` sa iba prepojil na existujúci diagnostický fixture:
 asercie a scenáre sa nemenia, prípadný pád dostane `[E2E-EVIDENCE]` a nevznikne
-automatický screenshot alebo DOM snapshot so súkromným obsahom. Nové sú len
+automatický screenshot alebo DOM snapshot so súkromným obsahom. Pred prvým review pribudli
 `support/comment-author-profile.ts` a `diagnostics-tests/feed-comments-reuse.check.ts`;
 ostatné úpravy sú v existujúcich E2E pomocníkoch a tomto dokumente. Dotknuté
 testové/pomocné TS súbory sú pod 500 riadkami. Prijatý základ **427 / 2 / 303**
@@ -133,6 +133,46 @@ Znovu overené izolované listovanie: **783 / 45** v hlavnej sade a **6**
 v komentárovej konfigurácii; počet ani kľúče živých scenárov sa touto opravou
 nemenia. Žiadny beh proti Railway ani nový PR; oprava sa pushne do tej istej
 vetvy. Vlákna review ponecháva agent majiteľovi. Živé okno zostáva nepotvrdené.
+
+### Ďalšie review PR #301 — dostupné fotky a počet vrcholových komentárov
+
+Na commite **`250cb167`** pribudli dva platné nálezy: Minor od CodeRabbitu
+k výberu dostupnej fotky a P2 od Codex review k výberu fotografického podkladu.
+Oba sú problémy prípravy E2E: môžu falošne zastaviť test pred overením UI,
+**nie sú to produkčné chyby Svaply ani dôkaz poškodenia dát**.
+
+- Backendový `comments_count` ráta aj odpovede. Príprava už neberie iba
+  prvého kandidáta: po overení vlastníctva a fotky cez GET skontroluje počet
+  skutočných vrcholových komentárov a pri platnom počte pod 3 pokračuje
+  ďalším kandidátom. HTTP chyby, chýbajúci alebo necelý počet a neplatný
+  kontrakt zostávajú tvrdé zlyhania; nepreskakujú sa kvôli ďalšiemu príspevku.
+- Výber fotky vyžaduje súčasne nezamietnutý stav, platné ID a neprázdnu URL.
+  Rozpracovaná prvá fotka tak neodmietne celý príspevok, keď ďalšia už má URL.
+  Samotná zmena `find` by nestačila: carousel vykresľuje iba aktívnu fotku.
+  Nový malý helper `support/feed-comment-source.ts` preto podľa potreby
+  zobrazí overenú fotku cez skutočné šípky carousela, na mobile cez `tap`,
+  bez force, API zápisu alebo zmeny aplikácie. Počet krokov je ohraničený
+  existujúcim limitom 5 fotiek. Pred otvorením komentárov sa stále vyžaduje
+  jediná karta `free_post` s fotkou overenou voči konkrétnemu `postId`.
+  Fotka sa takto pripraví aj v detaile, **pred** pridaním komentára; po
+  pridaní zostáva prísne `toBeInViewport({ ratio: 1 })` pred ďalšou akciou.
+- Pokryté je aj schválenie prvej fotky počas prípravy: nájdenie overenej
+  fotky nie je závislé od toho, či má karta ešte indikátor spracovania.
+  Prepínanie fotiek mení iba lokálne UI, nie pôvodné príspevky alebo fotky.
+
+Prvé cielené browser overenie **4/4** prešlo vrátane orezaného riadka, ktorý
+musel správne zlyhať a upratať iba nový vlastný komentár. Čisté kontroly
+prešli **55/55**; navyše overujú pokračovanie k ďalšiemu vhodnému príspevku
+aj zastavenie pri HTTP 500, neplatnom kontrakte a necelom počte. Aplikácia,
+závislosti, asercie UI, časové limity, retry a pravidlá upratania sa nemenia.
+Celá lokálna browser regresia následne prešla **30/30**, **0 zlyhaní,
+0 preskočení**, za **420,424 s**. Zahŕňa oba WebKity aj Chromium,
+tri nové fotografické prípady a pôvodné kontroly riadených chýb a upratania.
+Kontrola typov projektu aj všetkých E2E a ESLint dotknutých súborov prešli
+bez chýb. Offline kolekcia naďalej obsahuje **783 variantov / 45 súborov**
+v hlavnej konfigurácii a **6 variantov** v komentárovej konfigurácii.
+Žiadny beh proti Railway ani nový PR, oprava ide do tej istej vetvy; po tejto
+zmene výberu podkladu sa odporúča ďalšie review pred živým oknom.
 
 ### Ďalší krok — tri špecy až v novom potvrdenom okne
 

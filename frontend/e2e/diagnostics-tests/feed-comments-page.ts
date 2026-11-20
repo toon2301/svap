@@ -1,7 +1,8 @@
 export const COMMENTS_PRIVATE_MARKER = 'SYNTHETIC_PRIVATE_FEED_NEVER_PRINT';
 export const COMMENT_MODES = ['normal', 'empty-feed', 'ui-create-status', 'ui-delete-status', 'missing-row', 'body-timeout',
   'post-delete-status', 'post-delete-ignored', 'comment-network', 'post-create-invalid', 'ui-delete-before-create',
-  'ui-delete-status-503', 'ui-delete-status-no-response', 'photo-reuse', 'photo-clipped', 'photo-reordered'] as const;
+  'ui-delete-status-503', 'ui-delete-status-no-response', 'photo-reuse', 'photo-clipped', 'photo-reordered',
+  'photo-pending-first', 'photo-pending-ready', 'photo-root-candidate'] as const;
 export const AUTHOR_MODES = ['author-ok', 'author-overlay-stuck', 'author-wrong-url', 'author-other-profile'] as const;
 export const AUTHOR_PRECHECK_MODES = ['author-deleted-comment', 'author-next-candidate', 'author-post-gone',
   'author-http-error', 'author-bad-data'] as const;
@@ -13,7 +14,7 @@ export function syntheticCommentsPage(mode: CommentMode): string {
   <style>button,textarea{display:block;min-height:44px;margin:5px}textarea{width:280px}[data-testid="feed-list"]{min-height:1px}</style>
   <p>${COMMENTS_PRIVATE_MARKER}</p><div id="feed-root"></div><div id="layers"></div>
   <script>
-  const mode=${JSON.stringify(mode)}; const photoMode=mode.startsWith('photo-'); let post=null; let comment=null;
+  const mode=${JSON.stringify(mode)}; const photoMode=mode.startsWith('photo-'); let post=null; let comment=null;let detailImageIndex=0;
   const track = element => element.addEventListener('pointerdown', event => {
     void window.recordCommentPointer(event.isTrusted, event.pointerType);
   });
@@ -23,12 +24,27 @@ export function syntheticCommentsPage(mode: CommentMode): string {
       body:body?JSON.stringify(body):undefined});
   };
   const commentsPath = () => '/api/auth/feed/posts/'+post.id+'/comments/';
+  function paintPhoto(area,images,current,setIndex,full){
+    area.replaceChildren();area.style.position='relative';if(!full)area.style.minHeight=images.length>1?'120px':'44px';const active=images[current];
+    if(active.thumbnail_url||active.large_url){
+      const image=document.createElement('button');image.setAttribute('data-testid','feed-image-open-'+active.id);
+      if(full){const img=document.createElement('img');img.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';img.width=200;img.height=500;image.append(img);}
+      else image.textContent='Fotka';area.append(image);
+    }else{const pending=document.createElement('div');pending.setAttribute('data-testid','feed-image-status');pending.textContent='Spracúva sa';area.append(pending);}
+    if(images.length>1){
+      const next=document.createElement('button');next.setAttribute('data-testid','feed-image-next');next.textContent='Ďalšia fotka';
+      next.style.cssText='position:absolute;right:0;top:10px';track(next);
+      next.onclick=()=>{const at=(current+1)%images.length;setIndex(at);paintPhoto(area,images,at,setIndex,full);};area.append(next);
+      const dots=document.createElement('div');dots.setAttribute('data-testid','feed-image-dots');dots.style.cssText='position:absolute;bottom:0';
+      for(let i=0;i<images.length;i++){const dot=document.createElement('button');dot.setAttribute('aria-current',String(i===current));dot.textContent=String(i+1);dots.append(dot);}area.append(dots);
+    }
+  }
   function paintRow() {
     const list=document.querySelector('[data-testid="feed-comments-scroll"]'); list.replaceChildren();
     if(photoMode){
       list.style.cssText='height:200px;overflow:auto';
       const header=document.createElement('div');header.style.height='500px';header.setAttribute('data-testid','feed-mobile-detail-photo');
-      const img=document.createElement('img');img.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';img.width=200;img.height=500;header.append(img);list.append(header);
+      paintPhoto(header,post.images,detailImageIndex,at=>{detailImageIndex=at;},true);list.append(header);
     }
     if(photoMode)for(let i=1;i<=3;i++){const old=document.createElement('div');old.setAttribute('data-comment-id',i);old.textContent='Pôvodný komentár';old.style.height='100px';list.append(old);}
     if(!comment||mode==='missing-row')return;
@@ -48,6 +64,7 @@ export function syntheticCommentsPage(mode: CommentMode): string {
     layer.append(action);document.getElementById('layers').append(layer);
   }
   function openDetail() {
+    detailImageIndex=0;
     const mobile=innerWidth<1024;const detail=document.createElement('div');
     detail.setAttribute('data-testid',mobile?'feed-mobile-detail':'feed-post-overlay');
     const wrap=document.createElement('div');if(!mobile)wrap.setAttribute('data-testid','feed-post-overlay-comments');
@@ -70,7 +87,7 @@ export function syntheticCommentsPage(mode: CommentMode): string {
     for(const item of data.results){
     const card=document.createElement('article');card.setAttribute('data-testid','feed-post-card');card.setAttribute('data-post-type','free_post');
     const caption=document.createElement('p');caption.textContent=item.caption;card.append(caption);
-    if(item.images?.[0]){const image=document.createElement('button');image.setAttribute('data-testid','feed-image-open-'+item.images[0].id);image.textContent='Fotka';card.append(image);}
+    if(item.images?.[0]){const media=document.createElement('div');paintPhoto(media,item.images,0,()=>{},false);card.append(media);}
     const open=document.createElement('button');open.setAttribute('data-testid','feed-comments-button');open.textContent='Komentáre';
     track(open);open.onclick=()=>{post=item;openDetail();};card.append(open);feed.append(card);}
   });

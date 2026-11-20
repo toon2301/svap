@@ -12,7 +12,10 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
     const photoMode = commentMode.startsWith('photo-');
     let post: { id: number; caption: string; can_manage: boolean; post_type?: string; images?: unknown[]; comments_count?: number } | null =
       photoMode ? { id: 101, caption: 'Pôvodný podklad', can_manage: true, post_type: 'free_post',
-        images: [{ id: 301, thumbnail_url: '/synteticka-fotka.png' }], comments_count: 3 } : null;
+        images: [...(['photo-pending-first', 'photo-pending-ready'].includes(commentMode) ? [{ id: 300, status: 'pending' }] : []),
+          { id: 301, thumbnail_url: '/synteticka-fotka.png' }], comments_count: 3 } : null;
+    const rootsCandidate = { id: 103, caption: 'Príspevok s odpoveďami', can_manage: true, post_type: 'free_post',
+      images: [{ id: 303, thumbnail_url: '/ina-fotka.png' }], comments_count: 3 };
     let comments: Array<{ id: number; text: string; can_edit: boolean; can_delete: boolean }> = photoMode
       ? [1, 2, 3].map(id => ({ id, text: 'Pôvodný komentár', can_edit: false, can_delete: false })) : [];
     let postsCreated = 0; let commentsCreated = 0; let commentsDeleted = 0; let postsDeleted = 0;
@@ -51,8 +54,15 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
         await reply(201, { ...post, can_manage: commentMode !== 'post-create-invalid', private: PRIVATE });
       } else if (url.pathname === POSTS_PATH && method === 'GET') {
         const reordered = commentMode === 'photo-reordered' && dashboardLoads > 1 && post;
+        const readyPost = commentMode === 'photo-pending-ready' && dashboardLoads > 1 && post
+          ? { ...post, images: [{ id: 300, thumbnail_url: '/prave-schvalena-fotka.png' }, { id: 301, thumbnail_url: '/synteticka-fotka.png' }] } : post;
         await reply(200, { results: reordered ? [{ ...post, id: 102, can_manage: false,
-          images: [{ id: 302, thumbnail_url: '/ina-synteticka-fotka.png' }] }, post] : post ? [post] : [], next: null });
+          images: [{ id: 302, thumbnail_url: '/ina-synteticka-fotka.png' }] }, post]
+          : commentMode === 'photo-root-candidate' ? [rootsCandidate, post] : readyPost ? [readyPost] : [], next: null });
+      } else if (commentMode === 'photo-root-candidate' && url.pathname === `${POSTS_PATH}103/` && method === 'GET') {
+        await reply(200, rootsCandidate);
+      } else if (commentMode === 'photo-root-candidate' && url.pathname === `${POSTS_PATH}103/comments/` && method === 'GET') {
+        await reply(200, { results: [{ id: 1, replies: [{ id: 2 }, { id: 3 }] }], count: 3 });
       } else if (url.pathname === `${POSTS_PATH}101/comments/` && method === 'POST') {
         commentsCreated += 1; const payload = request.postDataJSON();
         const created = { id: 201, text: payload.text, can_edit: true, can_delete: true };

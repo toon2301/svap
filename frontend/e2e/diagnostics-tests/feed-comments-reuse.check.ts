@@ -108,3 +108,29 @@ test('audit pri existujúcom príspevku vyžaduje presne jedno UI pridanie a zma
   audit.responded(remove, true); audit.assertUIComplete(); audit.beginCleanup(); audit.assertCleanupComplete();
   assert.match(audit.evidence(), /post=0 comment=1 uiDelete=1 cleanupDelete=0 rejected=0 pending=0 uncertain=false$/);
 });
+
+for (const [name, first] of [
+  ['málo koreňov', { status: 200, data: { rootCount: 1 } }],
+  ['chyba HTTP', { status: 500, data: null }],
+  ['neplatný kontrakt', { status: 200, data: { rootCount: null } }],
+  ['necelý počet', { status: 200, data: { rootCount: 2.5 } }],
+] as const) test(`výber medzi viacerými fotografickými podkladmi: ${name}`, async () => {
+  const calls: string[] = [];
+  const api: CommentTransport = async (method, path) => {
+    calls.push(`${method} ${path}`);
+    if (path === POSTS_PATH) return { status: 200, data: { candidates: [{ id: 11, imageId: 31 }, { id: 12, imageId: 32 }] } };
+    if (path.endsWith('/comments/')) return path.includes('/11/') ? first : { status: 200, data: { rootCount: 3 } };
+    const id = path.includes('/11/') ? 11 : 12;
+    return { status: 200, data: { id, can_manage: true, hasPhoto: true, commentsCount: 3, imageIds: [id + 20] } };
+  };
+  const session = new FeedCommentsSession(api, 'synteticky-vyber', {
+    begin: () => {}, beforeDelete: () => {}, afterDelete: () => {}, report: () => {},
+  }, true);
+  if (name === 'málo koreňov') {
+    await session.prepare(); assert.equal(session.postId, 12); assert.equal(session.sourceImageId, 32);
+    assert.ok(calls.includes(`GET ${POSTS_PATH}12/comments/`));
+  } else {
+    await assert.rejects(session.prepare()); assert.ok(!calls.some(call => call.includes('/12/')));
+  }
+  await session.cleanup(); assert.ok(calls.every(call => call.startsWith('GET ')));
+});

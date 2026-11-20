@@ -144,8 +144,11 @@ test('zlyhané upratanie zastaví zostávajúce projekty pred zápisom', () => {
   }
 });
 
-for (const mode of ['photo-reuse', 'photo-reordered', 'photo-clipped'] as const) test(mode === 'photo-reordered'
+for (const mode of ['photo-reuse', 'photo-reordered', 'photo-clipped', 'photo-pending-first', 'photo-pending-ready', 'photo-root-candidate'] as const) test(mode === 'photo-reordered'
   ? 'nový príspevok nad podkladom po obnovení stránky nezmení zvolenú kartu'
+  : mode === 'photo-pending-first' ? 'rozpracovaná prvá fotka nevylúči dostupnú ďalšiu fotku ani podklad'
+  : mode === 'photo-pending-ready' ? 'schválenie prvej fotky počas prípravy nezmení identitu vybraného podkladu'
+  : mode === 'photo-root-candidate' ? 'súčet s odpoveďami nebráni výberu ďalšieho podkladu s tromi koreňmi'
   : mode === 'photo-reuse' ? 'fotka a tri pôvodné komentáre ostanú po mobilnom UI pridaní a zmazaní zachované'
   : 'čiastočne orezaný nový komentár musí zlyhať pred ďalším klikom a stále sa upratať', () => {
   const { code, report, variants } = run(mode, ['--project=webkit-mobile']);
@@ -157,7 +160,7 @@ for (const mode of ['photo-reuse', 'photo-reordered', 'photo-clipped'] as const)
   assert.equal(state.postsCreated, 0); assert.equal(state.postsDeleted, 0);
   assert.equal(state.commentsCreated, 1); assert.equal(state.commentsDeleted, 1);
   assert.equal(state.writesWithCsrf, 2); assert.equal(state.unexpected, 0);
-  assert.equal(state.touch, mode !== 'photo-clipped' ? 4 : 2); assert.equal(state.mouse, 0);
+  assert.equal(state.touch, ['photo-pending-first', 'photo-pending-ready'].includes(mode) ? 6 : mode !== 'photo-clipped' ? 4 : 2); assert.equal(state.mouse, 0);
   if (mode === 'photo-clipped') assert.deepEqual(state.phases, ['pridanie vlastného komentára']);
 });
 

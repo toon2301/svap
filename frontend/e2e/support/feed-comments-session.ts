@@ -50,20 +50,26 @@ export class FeedCommentsSession {
     if (this.reusesPhotoPost) {
       const reply = await this.call('GET', POSTS_PATH);
       const data = reply.data as { candidates?: Array<{ id?: number; imageId?: number }> } | null;
-      const candidate = data?.candidates?.[0];
-      if (reply.status !== 200 || !candidate || !Number.isSafeInteger(candidate.id) || Number(candidate.id) <= 0
-        || !Number.isSafeInteger(candidate.imageId) || Number(candidate.imageId) <= 0) {
-        throw new Error('Chýba existujúci vlastný príspevok s fotkou a aspoň tromi komentármi v prvej dávke Nástenky.');
+      if (reply.status !== 200 || !Array.isArray(data?.candidates)) {
+        throw new Error('Príprava podkladu nevrátila platný zoznam kandidátov.');
       }
-      this.postId = Number(candidate.id); this.sourceImageId = Number(candidate.imageId);
-      await this.verifyReusablePost();
-      const comments = await this.call('GET', this.commentsPath());
-      const roots = (comments.data as { rootCount?: unknown } | null)?.rootCount;
-      if (comments.status !== 200 || typeof roots !== 'number' || !Number.isSafeInteger(roots) || roots < 3) {
-        throw new Error('Podklad potrebuje aspoň tri existujúce vrcholové komentáre.');
+      for (const candidate of data.candidates) {
+        if (!candidate || !Number.isSafeInteger(candidate.id) || Number(candidate.id) <= 0
+          || !Number.isSafeInteger(candidate.imageId) || Number(candidate.imageId) <= 0) {
+          throw new Error('Príprava podkladu obsahuje neplatného kandidáta.');
+        }
+        this.postId = Number(candidate.id); this.sourceImageId = Number(candidate.imageId);
+        await this.verifyReusablePost();
+        const comments = await this.call('GET', this.commentsPath());
+        const roots = (comments.data as { rootCount?: unknown } | null)?.rootCount;
+        if (comments.status !== 200 || typeof roots !== 'number' || !Number.isSafeInteger(roots) || roots < 0) {
+          throw new Error('Overenie vrcholových komentárov nevrátilo platnú odpoveď.');
+        }
+        if (roots < 3) continue; // Súhrnný comments_count zahŕňa aj odpovede, tie tri korene nenahrádzajú.
+        this.originalRootCount = roots;
+        return;
       }
-      this.originalRootCount = roots;
-      return;
+      throw new Error('Chýba existujúci vlastný fotografický podklad s aspoň tromi vrcholovými komentármi.');
     }
     const reply = await this.call('POST', POSTS_PATH, { post_type: 'free_post', caption: this.postCaption,
       tagged_user_ids: [], will_attach_photo: false });

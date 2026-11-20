@@ -32,7 +32,10 @@ export function feedCommentsTransport(page: Page, timeoutMs: number, includeCapt
               images?: Array<{ id?: unknown; status?: unknown; thumbnail_url?: unknown; large_url?: unknown }>;
               comments_count?: unknown;
             }) => {
-              const image = Array.isArray(post?.images) ? post.images.find(photo => photo?.status !== 'rejected') : null;
+              const image = Array.isArray(post?.images) ? post.images.find(photo => photo?.status !== 'rejected'
+                && Number.isSafeInteger(photo?.id) && Number(photo.id) > 0
+                && (typeof photo.thumbnail_url === 'string' && photo.thumbnail_url.length > 0
+                  || typeof photo.large_url === 'string' && photo.large_url.length > 0)) : null;
               return post?.can_manage === true && post.post_type === 'free_post'
                 && Number.isSafeInteger(post.id) && Number(post.id) > 0 && typeof post.comments_count === 'number'
                 && post.comments_count >= 3 && Number.isSafeInteger(image?.id) && Number(image?.id) > 0
