@@ -401,7 +401,7 @@ DECISIONS_DALSIE = [
                      'skúša vzhľad len v dvoch šírkach (okolo 380 a 576 px), nie ešte aj v starých 864 px, a 344 '
                      'nečaká na podrobnosti k poľu pri odpovedi. (5c) by miešala dve vzhľadové zmeny v jednom '
                      'nasadení a sťažila by hľadanie príčiny, keby niečo vyzeralo zle.',
-         kedy='Pred kartou K47 (344); karta sa pripraví po odpovedi.'),
+         kedy='Pri rekapitulácii s vizuálnym návrhom po kroku kolegu (majiteľ 20. 11. 2026: najprv rekapitulácia a vizuál s odporúčaním, až potom rozhodnutie); karta pre kolegu sa nepíše, mapovanie a implementáciu robí agent (R64).'),
     dict(id='R64', tema='Rozdelenie práce pri redizajne: kto navrhuje vzhľad, kto mapuje kód, kto píše kód a kto kontroluje',
          otazka='Pri otázke k mapovaniu 344 (20. 11. 2026) sa ukázalo, že rozdelenie práce nie je zapísané ako jedno '
                 'rozhodnutie. Dnešný stav podľa zápisov: vzhľad navrhuje agent a schvaľuje majiteľ (R49; návrhy v '
@@ -420,5 +420,12 @@ DECISIONS_DALSIE = [
                      'píše, agent kontroluje z GitHubu a z kódu), čo je poistka, o ktorú ide pri „čo '
                      'najbezpečnejšie“. Návrhy vzhľadu a karty ostávajú na agentovi, takže sa nič nestráca. (b) '
                      'alebo (c) sa dajú, ak majiteľ chce, no vtedy treba dnešnú kontrolu nahradiť inou.',
-         kedy='Pred kartou K47 alebo K44; nie je naliehavé.'),
+         kedy='Rozhodnuté 20. 11. 2026.',
+         odpoved='Majiteľ 20. 11. 2026: keď sa na 100 % dohodne, čo a ako bude vyzerať (najprv rekapitulácia a '
+                 'vizuálny návrh s odporúčaním od agenta, nie hneď; vzhľad schvaľuje majiteľ podľa R49), mapovanie '
+                 '(znova) aj implementáciu redizajnu komentárov (261, K44) a rozloženia okna príspevkov na počítači '
+                 '(344: ponuka, portfólio a text) robí agent, nie kolega, teda možnosti (b) aj (c). Ak má agent '
+                 'nejasnosť alebo si je istý, že niečomu nerozumie, pýta sa majiteľa. Pri nálezoch HNEĎ ostáva '
+                 'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz.',
+         datum='20. 11. 2026'),
 ]

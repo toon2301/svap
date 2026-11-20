@@ -212,14 +212,15 @@ NEW_ITEMS_NASTENKA = [
               '343 a okno detailu na počítači nález 344. ROZHODNUTIE MAJITEĽA (R59, 19. 11. 2026): redizajn '
               'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40, K41, K42, K43 a K31); nič sa '
               'nesilí. STAV 20. 11. 2026: K40 až K43 a K45 sú hotové a delenie `FeedPostComments.tsx` je hotové; K31 '
-              '(upgrade Next.js) je vo vetve a čaká na PR a zlúčenie; podľa odporúčania agenta (R63) ide pred '
-              'redizajnom ešte 344 (K47). Pri redizajne treba vyriešiť aj pole na text pri odpovedi na komentár (R52 '
-              'ho nechal ako dnes); čo presne má byť inak, dodá majiteľ pri príprave vzhľadu, ktorý sa podľa R49 '
-              'najprv prebere (agent pripraví návrh s možnosťami a odporúčaním) a až potom ide karta. Možná '
-              'súvislosť (neoverené): staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená '
-              'na spodok); agent sa pri príprave vzhľadu opýta, či ide o to isté. Majiteľ v komentároch objavil aj '
-              'vzhľadové chyby, ktoré zámerne nenahlásil, lebo ich redizajn zmení; agent ich nezapisuje a po '
-              'redizajne navrhuje, aby majiteľ overil, ktoré ostali, a tie nahlásil.',
+              'čaká na PR; majiteľ 20. 11. 2026: pred redizajnom ešte jeden krok kolegu, potom rekapitulácia a '
+              'vizuál s odporúčaním; po 100 % dohode mapuje a implementuje agent (R64). Pri redizajne treba vyriešiť '
+              'aj pole na text pri odpovedi na komentár (R52 ho nechal ako dnes); čo presne má byť inak, dodá '
+              'majiteľ pri príprave vzhľadu, ktorý sa podľa R49 najprv prebere (agent pripraví návrh s možnosťami a '
+              'odporúčaním) a až potom ide karta. Možná súvislosť (neoverené): staršie prianie skupiny 6 '
+              '(komentárová textarea vyššia a väčšia, neprilepená na spodok); agent sa pri príprave vzhľadu opýta, '
+              'či ide o to isté. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne nenahlásil, lebo '
+              'ich redizajn zmení; agent ich nezapisuje a po redizajne navrhuje, aby majiteľ overil, ktoré ostali, a '
+              'tie nahlásil.',
          dec='ROZHODNUTIE R23', src='zoznam majiteľa (príloha D; PDF z 6. 11. 2026, stav k 29. 9. 2026)'),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
          kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), vzhľad schválený (R51 a R56), frontend po etapách (K34, najprv mapovanie)',
