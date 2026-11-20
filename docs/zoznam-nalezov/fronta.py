@@ -100,8 +100,10 @@ FRONTA = [
                'v `FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx` bez zásahu do `FeedPostCard.tsx`, '
                'dva commity (najprv ponuka a portfólio v dvoch stĺpcoch, potom užšie okno len s textom), nový súbor '
                'testov a úprava štyroch existujúcich testov v `FeedPostDetailOverlay.test.tsx` (R27). Vzhľad je '
-               'schválený (R53). Podľa odporúčania ide pred redizajnom komentárov (K44). Po nasadení kontrola '
-               'rozloženia od Codexu a ručný test majiteľa v prehliadači (výška, šírka a posun sa overia len tam).'),
+               'schválený (R53); natiahnutie fotky karty ponuky a portfólia ako pri príspevku s foto vyžaduje zásah '
+               'do `FeedPostCard.tsx`, preto podľa odporúčania ide až po vyčlenení zdieľaného bloku z neho (bod 3 v '
+               'R63). Podľa odporúčania ide pred redizajnom komentárov (K44). Po nasadení kontrola rozloženia od '
+               'Codexu a ručný test majiteľa v prehliadači (výška, šírka a posun sa overia len tam).'),
     dict(n='261', davka='K44',
          co='Nástenka: redizajn komentárov (skupina 7, vzhľad schválený v R52): plochý vzhľad bez sivých bublín, '
             'bublinka s lajkom, odpovede so zvislou čiarou; pri ňom sa rieši aj pole na text pri odpovedi na '
