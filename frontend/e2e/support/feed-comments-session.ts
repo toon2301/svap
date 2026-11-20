@@ -14,7 +14,7 @@ export class FeedCommentsSession {
   readonly commentText: string;
   postId: number | null = null;
   commentId: number | null = null;
-  sourceIndex: number | null = null;
+  sourceImageId: number | null = null;
   private attempted = false;
   private commentAttempted = false;
   private originalRootCount: number | null = null;
@@ -49,13 +49,13 @@ export class FeedCommentsSession {
     this.attempted = true;
     if (this.reusesPhotoPost) {
       const reply = await this.call('GET', POSTS_PATH);
-      const data = reply.data as { candidates?: Array<{ id?: number; index?: number }> } | null;
+      const data = reply.data as { candidates?: Array<{ id?: number; imageId?: number }> } | null;
       const candidate = data?.candidates?.[0];
       if (reply.status !== 200 || !candidate || !Number.isSafeInteger(candidate.id) || Number(candidate.id) <= 0
-        || !Number.isSafeInteger(candidate.index) || Number(candidate.index) < 0) {
+        || !Number.isSafeInteger(candidate.imageId) || Number(candidate.imageId) <= 0) {
         throw new Error('Chýba existujúci vlastný príspevok s fotkou a aspoň tromi komentármi v prvej dávke Nástenky.');
       }
-      this.postId = Number(candidate.id); this.sourceIndex = Number(candidate.index);
+      this.postId = Number(candidate.id); this.sourceImageId = Number(candidate.imageId);
       await this.verifyReusablePost();
       const comments = await this.call('GET', this.commentsPath());
       const roots = (comments.data as { rootCount?: unknown } | null)?.rootCount;
@@ -74,9 +74,10 @@ export class FeedCommentsSession {
 
   private async verifyReusablePost(): Promise<void> {
     const reply = await this.call('GET', `${POSTS_PATH}${this.postId}/`);
-    const post = reply.data as { id?: unknown; can_manage?: unknown; hasPhoto?: unknown; commentsCount?: unknown } | null;
+    const post = reply.data as { id?: unknown; can_manage?: unknown; hasPhoto?: unknown; commentsCount?: unknown; imageIds?: unknown } | null;
     if (reply.status !== 200 || post?.id !== this.postId || post.can_manage !== true || post.hasPhoto !== true
-      || typeof post.commentsCount !== 'number' || post.commentsCount < 3) {
+      || typeof post.commentsCount !== 'number' || post.commentsCount < 3 || !Array.isArray(post.imageIds)
+      || !post.imageIds.includes(this.sourceImageId)) {
       throw new Error('Existujúci fotografický podklad nepotvrdil vlastníctvo, fotku a tri komentáre.');
     }
   }

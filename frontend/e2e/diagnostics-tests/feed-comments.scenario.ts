@@ -2,8 +2,8 @@ import { test as commentsTest } from '../support/feed-comments-test';
 import { COMMENT_MODES, COMMENTS_PRIVATE_MARKER as PRIVATE, syntheticCommentsPage, type CommentMode } from './feed-comments-page';
 import { COMMENTS_ORIGIN, POSTS_PATH } from '../support/feed-comments-session';
 import { test as readTest } from '../support/diagnostic-test';
-import { openCommentAuthorProfileFromOverlay } from '../support/comment-author-profile';
-import { AUTHOR_MODES } from './feed-comments-page';
+import { findNotificationCommentAuthor, openCommentAuthorProfileFromOverlay } from '../support/comment-author-profile';
+import { AUTHOR_MODES, AUTHOR_PRECHECK_MODES } from './feed-comments-page';
 
 /** Účty, env aj skutočná sieť chýbajú. Vlastný podklad aj komentár sú iba v pamäti tejto fixture. */
 const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: void }>({
@@ -12,12 +12,13 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
     const photoMode = commentMode.startsWith('photo-');
     let post: { id: number; caption: string; can_manage: boolean; post_type?: string; images?: unknown[]; comments_count?: number } | null =
       photoMode ? { id: 101, caption: 'Pôvodný podklad', can_manage: true, post_type: 'free_post',
-        images: [{ thumbnail_url: '/synteticka-fotka.png' }], comments_count: 3 } : null;
+        images: [{ id: 301, thumbnail_url: '/synteticka-fotka.png' }], comments_count: 3 } : null;
     let comments: Array<{ id: number; text: string; can_edit: boolean; can_delete: boolean }> = photoMode
       ? [1, 2, 3].map(id => ({ id, text: 'Pôvodný komentár', can_edit: false, can_delete: false })) : [];
     let postsCreated = 0; let commentsCreated = 0; let commentsDeleted = 0; let postsDeleted = 0;
     let csrf = 0; let unexpected = 0; let writesWithCsrf = 0; let touch = 0; let mouse = 0;
     let initialEmptyVisible = false; let initialListCount = -1;
+    let dashboardLoads = 0;
     let commentDeleteStatus: number | null = null;
     context.on('response', response => {
       const url = new URL(response.url());
@@ -38,6 +39,7 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
         csrf += 1; await route.fulfill({ status: 200, contentType: 'application/json',
           headers: { 'Set-Cookie': `csrftoken=${PRIVATE}; Path=/; Secure; SameSite=Lax` }, body: JSON.stringify({ csrf_token: PRIVATE }) });
       } else if (method === 'GET' && url.pathname === '/dashboard') {
+        dashboardLoads += 1;
         await route.fulfill({ status: 200, contentType: 'text/html', body: syntheticCommentsPage(commentMode) });
       } else if (url.pathname === POSTS_PATH && method === 'POST') {
         if (commentMode === 'empty-feed') {
@@ -48,7 +50,9 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
         post = { id: 101, caption: payload.caption, can_manage: true };
         await reply(201, { ...post, can_manage: commentMode !== 'post-create-invalid', private: PRIVATE });
       } else if (url.pathname === POSTS_PATH && method === 'GET') {
-        await reply(200, { results: post ? [post] : [], next: null });
+        const reordered = commentMode === 'photo-reordered' && dashboardLoads > 1 && post;
+        await reply(200, { results: reordered ? [{ ...post, id: 102, can_manage: false,
+          images: [{ id: 302, thumbnail_url: '/ina-synteticka-fotka.png' }] }, post] : post ? [post] : [], next: null });
       } else if (url.pathname === `${POSTS_PATH}101/comments/` && method === 'POST') {
         commentsCreated += 1; const payload = request.postDataJSON();
         const created = { id: 201, text: payload.text, can_edit: true, can_delete: true };
@@ -88,11 +92,42 @@ for (const mode of AUTHOR_MODES) readTest.describe(`[${mode}]`, () => {
       <!doctype html><meta charset="utf-8"><div data-testid="feed-post-overlay">
       <button data-testid="feed-comment-author-201">${PRIVATE}</button></div><script>
       document.querySelector('button').onclick=()=>{
-        history.pushState({},'',${JSON.stringify(mode === 'author-wrong-url' ? '/dashboard' : '/dashboard/users/skusobny-profil')});
+        history.pushState({},'',${JSON.stringify(mode === 'author-wrong-url' ? '/dashboard'
+          : mode === 'author-other-profile' ? '/dashboard/users/iny-skusobny-profil' : '/dashboard/users/skusobny-profil')});
         ${mode === 'author-overlay-stuck' ? '' : "document.querySelector('[data-testid=feed-post-overlay]').remove();"}
       };</script>` }));
     await page.goto('/dashboard/feed/101');
-    await openCommentAuthorProfileFromOverlay(page);
+    await openCommentAuthorProfileFromOverlay(page, { commentId: 201, identifier: 'skusobny-profil' });
+  });
+});
+
+for (const mode of AUTHOR_PRECHECK_MODES) readTest.describe(`[${mode}]`, () => {
+  readTest('výber autora rozlišuje zaniknuté dáta od chyby servera', async ({ context, page }) => {
+    await context.route('**/*', async route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === '/dashboard') { await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><p>Skúška</p>' }); return; }
+      const post = /^\/api\/auth\/feed\/posts\/(101|102)\/$/.exec(path);
+      const comments = /^\/api\/auth\/feed\/posts\/(101|102)\/comments\/$/.exec(path);
+      const id = comments?.[1];
+      const status = post && mode === 'author-post-gone' ? 404 : comments && mode === 'author-http-error' ? 500 : 200;
+      const data = post ? {} : mode === 'author-bad-data' ? { private: PRIVATE }
+        : { results: mode === 'author-next-candidate' && id === '102'
+          ? [{ id: 202, author: { id: 10, slug: 'skusobny-profil' } }] : [] };
+      await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
+    });
+    await page.goto('/dashboard');
+    const select = () => findNotificationCommentAuthor(page, ['/dashboard/feed/101?comment=201', '/dashboard/feed/102?comment=202']);
+    if (mode === 'author-http-error' || mode === 'author-bad-data') {
+      let error: unknown; try { await select(); } catch (caught) { error = caught; }
+      if (!(error instanceof Error) || !error.message.includes(mode === 'author-http-error' ? 'HTTP 500' : 'neplatný zoznam')) {
+        throw new Error('Chyba servera alebo kontraktu sa nesmie zameniť za chýbajúce dáta.');
+      }
+    } else {
+      const target = await select();
+      const correct = mode === 'author-next-candidate'
+        ? target?.index === 1 && target.commentId === 202 && target.identifier === 'skusobny-profil' : target === null;
+      if (!correct) throw new Error('Výber dostupného autora nezodpovedá dátam.');
+    }
   });
 });
 

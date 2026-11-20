@@ -23,8 +23,8 @@ migrácie a zoznam nálezov sa nemenia.
 `notification-click.spec.ts` má nový samostatný desktopový scenár, aby sa
 nezmenil pôvodný test návratu Späť. Otvorí existujúce **prečítané** upozornenie
 na komentár a skutočne klikne na aktívne meno autora komentára v okne.
-Tvrdé čakajúce asercie požadujú skryté `feed-post-overlay` a profilovú adresu
-`/dashboard/users/<identifikátor>`. Do dôkazu nejde identifikátor ani meno.
+Tvrdé čakajúce asercie požadujú skryté `feed-post-overlay` a presnú profilovú
+adresu vybraného autora. Do dôkazu nejde identifikátor ani meno.
 Overenie patrí desktopovému WebKitu a Chromiu; mobil má pôvodný projektový
 SKIP, nie predstieraný PASS. Tento scenár iba číta existujúci obsah.
 
@@ -52,7 +52,7 @@ Pôvodný textový scenár 257 zostáva zachovaný vo všetkých troch projektoc
 jeho pôvodný vlastný dočasný príspevok sa naďalej zmaže. Nový fotografický
 variant má dva projektové SKIP mimo mobilu, ešte pred CSRF alebo zápisom.
 
-### Lokálne kontroly — nie živý PASS aplikácie
+### Pôvodné lokálne kontroly pred review PR #301 — nie živý PASS aplikácie
 
 | Kontrola | Výsledok |
 | --- | --- |
@@ -80,6 +80,59 @@ automatický screenshot alebo DOM snapshot so súkromným obsahom. Nové sú len
 ostatné úpravy sú v existujúcich E2E pomocníkoch a tomto dokumente. Dotknuté
 testové/pomocné TS súbory sú pod 500 riadkami. Prijatý základ **427 / 2 / 303**
 ani živé výsledky z 19. 11. sa touto lokálnou dávkou nemenia.
+
+### Dodatok po kontrole CodeRabbitu v PR #301 — tri platné pripomienky
+
+Pred opravou bol znovu stiahnutý main, stále **`1c454330`**; vzdialená vetva
+zodpovedala kontrolovanému commitu **`04f34f5b`**. Všetky tri pripomienky sú
+platné chyby E2E, nie nové potvrdené chyby aplikácie. Nevyžadujú zmenu logiky
+Svaply, aplikácie, dát alebo opráv 345/346.
+
+1. **Upozornenie môže prežiť komentár.** Backend v
+   `feed_post_comment_detail_view` zmaže iba komentár; `get_target_url` skladá
+   feedovú adresu z uložených `post_id`/`comment_id` bez overenia komentára.
+   Nový test prekliku autora preto cez čisté GET vyberá živý príspevok
+   s vrcholovým komentárom a identifikovateľným autorom. Ak prvý kandidát už
+   nemá vhodný komentár, hľadá ďalší. Až skutočná neprítomnosť dát vedie na
+   pevný dátový SKIP **`E2E_SKIP_NO_LIVE_COMMENT_AUTHOR`**, nie PASS. HTTP 500,
+   401, neplatný zoznam alebo neplatný komentár zostávajú FAIL. Ak backend
+   autora potvrdí, ale UI jeho meno chýba alebo je neaktívne, test zlyhá.
+   **Pôvodný `liveReadNotificationOrSkip` a testy návratu Späť sa nemenia**:
+   na návrat z príspevku nepotrebujú živého komentujúceho.
+2. **Tvar adresy nestačí.** Pomocník dostane konkrétne ID komentára a očakávaný
+   identifikátor jeho autora (slug, inak číselné ID, podľa aplikácie). Klikne
+   práve jeho meno a čakajúca asercia porovná dekódovaný segment profilovej
+   adresy s týmto identifikátorom. Navonok ide iba boolean a pevná fáza chyby,
+   nikdy identifikátor. Platná profilová adresa iného autora už nemôže prejsť.
+3. **Index feedu nie je identita príspevku.** Karta nemá `data-post-id`, ale
+   zobrazovaná fotka má stabilné `feed-image-open-<image.id>`. Backendový model
+   `FeedPostImage` patrí cez FK presne jednému príspevku. Skúška si preto uloží
+   ID prvej zobraziteľnej fotky a cez detail **konkrétneho `session.postId`**
+   overí aj jej príslušnosť. Po F5 vyberie jedinú kartu typu `free_post`
+   obsahujúcu túto fotku; starý `sourceIndex` sa vôbec nepoužíva. Cudzí repost
+   tej istej fotky nie je voľný príspevok. Nový príspevok nad podkladom už
+   nezmení výber a nevznikne pokus o POST cudziemu príspevku. Aplikácia sa
+   kvôli novému identifikátoru v DOM nemenila.
+
+Po opravách **51/51** čistých kontrol a **8/8** cielených browser kontrol,
+bez vonkajších SKIP. Cielené kontroly obsahujú vložený príspevok pred podklad,
+nesprávny profil s inak platným tvarom adresy (oba desktopové projekty),
+zaniknutý komentár, výber ďalšieho kandidáta, zaniknutý príspevok, HTTP 500
+a chybný kontrakt. Pridaná je aj čistá poistka, že fotka iného príspevku
+nesmie potvrdiť podklad. Pôvodný riadený pád orezaného komentára, hlasné chyby
+upratania a ochrana súkromných údajov zostávajú.
+
+Následne celá rozšírená browser kontrolná sada prešla **27/27**, **391,062 s**,
+bez vonkajších pádov, SKIP alebo retry. Zámerné vnútorné chyby museli naďalej
+zlyhať a potvrdiť očakávanú fázu a upratanie. Znovu prešli TypeScript frontendu,
+striktný TypeScript celej E2E oblasti, ESLint dotknutých súborov a kontrola
+diffu, **0 chýb / 0 upozornení**. Starší výsledok 50/50 a 20/20 vyššie patrí
+verzii pred review, neprepisuje sa na nový výsledok.
+
+Znovu overené izolované listovanie: **783 / 45** v hlavnej sade a **6**
+v komentárovej konfigurácii; počet ani kľúče živých scenárov sa touto opravou
+nemenia. Žiadny beh proti Railway ani nový PR; oprava sa pushne do tej istej
+vetvy. Vlákna review ponecháva agent majiteľovi. Živé okno zostáva nepotvrdené.
 
 ### Ďalší krok — tri špecy až v novom potvrdenom okne
 

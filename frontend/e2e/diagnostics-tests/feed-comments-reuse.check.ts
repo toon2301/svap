@@ -8,13 +8,14 @@ const PRIVATE = 'SYNTHETIC_PRIVATE_REUSE_NEVER_PRINT';
 /** Existujúci príspevok a tri cudzie pôvodné komentáre sa nikdy nemenia. */
 function harness() {
   let own = false; let owned = true; let deleteStatus = 204; let ignoreDelete = false; let duplicate = false;
-  let candidates: unknown = [{ id: 11, index: 0 }]; let photo = true; let manage = true; let roots = 3; let safe = true;
+  let candidates: unknown = [{ id: 11, imageId: 31 }]; let photo = true; let manage = true; let roots = 3; let safe = true;
+  let imageIds = [31];
   const calls: string[] = []; const reports: string[] = [];
   const api: CommentTransport = async (method, path, _body, expected) => {
     calls.push(`${method} ${path}`);
     if (path === POSTS_PATH) return { status: 200, data: { candidates, private: PRIVATE } };
     if (path === `${POSTS_PATH}11/`) return { status: 200, data: { id: 11, can_manage: manage,
-      hasPhoto: photo, commentsCount: 3, private: PRIVATE } };
+      hasPhoto: photo, commentsCount: 3, imageIds, private: PRIVATE } };
     if (method === 'DELETE') {
       if (deleteStatus === 204 && !ignoreDelete) own = false;
       return { status: deleteStatus, data: null };
@@ -33,18 +34,19 @@ function harness() {
     if (register) session.takeComment({ id: 21, text: session.commentText, can_edit: true, can_delete: true });
   }, remove: () => { own = false; }, exists: () => own,
   change(value: { candidates?: unknown; photo?: boolean; manage?: boolean; roots?: number; safe?: boolean;
-    owned?: boolean; duplicate?: boolean; deleteStatus?: number; ignoreDelete?: boolean }) {
+    owned?: boolean; duplicate?: boolean; deleteStatus?: number; ignoreDelete?: boolean; imageIds?: readonly number[] }) {
     if ('candidates' in value) candidates = value.candidates;
     if ('photo' in value) photo = value.photo!; if ('manage' in value) manage = value.manage!;
     if ('roots' in value) roots = value.roots!; if ('safe' in value) safe = value.safe!;
     if ('owned' in value) owned = value.owned!; if ('duplicate' in value) duplicate = value.duplicate!;
     if ('deleteStatus' in value) deleteStatus = value.deleteStatus!; if ('ignoreDelete' in value) ignoreDelete = value.ignoreDelete!;
+    if ('imageIds' in value) imageIds = [...value.imageIds!];
   } };
 }
 
 test('fotografický podklad sa iba číta a po UI zmazaní sa pôvodný príspevok nemaže', async () => {
   const h = harness(); await h.session.prepare(); h.add(); h.remove(); await h.session.cleanup();
-  assert.equal(h.session.sourceIndex, 0); assert.deepEqual(h.reports, ['verified']);
+  assert.equal(h.session.sourceImageId, 31); assert.deepEqual(h.reports, ['verified']);
   assert.ok(h.calls.every(call => call.startsWith('GET ')));
 });
 
@@ -60,8 +62,9 @@ test('chybná odpoveď vytvorenia nezabráni identifikácii vlastnej jedinečnej
 });
 
 for (const [name, invalid] of [
-  ['prázdny zoznam', { candidates: [] }], ['neplatné ID', { candidates: [{ id: -1, index: 0 }] }],
-  ['neplatné poradie', { candidates: [{ id: 11, index: -1 }] }], ['chýbajúca fotka', { photo: false }],
+  ['prázdny zoznam', { candidates: [] }], ['neplatné ID', { candidates: [{ id: -1, imageId: 31 }] }],
+  ['neplatné ID fotky', { candidates: [{ id: 11, imageId: -1 }] }], ['chýbajúca fotka', { photo: false }],
+  ['fotka iného príspevku', { imageIds: [32] }],
   ['cudzí príspevok', { manage: false }], ['málo komentárov', { roots: 2 }],
 ] as const) {
   test(`neplatný podklad sa odmietne pred zápisom: ${name}`, async () => {

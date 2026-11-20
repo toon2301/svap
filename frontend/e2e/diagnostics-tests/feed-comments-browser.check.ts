@@ -144,23 +144,24 @@ test('zlyhané upratanie zastaví zostávajúce projekty pred zápisom', () => {
   }
 });
 
-for (const mode of ['photo-reuse', 'photo-clipped'] as const) test(mode === 'photo-reuse'
-  ? 'fotka a tri pôvodné komentáre ostanú po mobilnom UI pridaní a zmazaní zachované'
+for (const mode of ['photo-reuse', 'photo-reordered', 'photo-clipped'] as const) test(mode === 'photo-reordered'
+  ? 'nový príspevok nad podkladom po obnovení stránky nezmení zvolenú kartu'
+  : mode === 'photo-reuse' ? 'fotka a tri pôvodné komentáre ostanú po mobilnom UI pridaní a zmazaní zachované'
   : 'čiastočne orezaný nový komentár musí zlyhať pred ďalším klikom a stále sa upratať', () => {
   const { code, report, variants } = run(mode, ['--project=webkit-mobile']);
   assert.equal(variants.length, 1); assert.equal(report.stats?.skipped, 0);
-  assert.equal(code, mode === 'photo-reuse' ? 0 : 1);
+  assert.equal(code, mode !== 'photo-clipped' ? 0 : 1);
   const result = variants[0].results![0]; const state = observation(result);
-  assert.equal(state.status, mode === 'photo-reuse' ? 'passed' : 'failed');
+  assert.equal(state.status, mode !== 'photo-clipped' ? 'passed' : 'failed');
   assert.equal(state.exists, true); assert.equal(state.comments, 3); assert.equal(state.cleanup, 'verified');
   assert.equal(state.postsCreated, 0); assert.equal(state.postsDeleted, 0);
   assert.equal(state.commentsCreated, 1); assert.equal(state.commentsDeleted, 1);
   assert.equal(state.writesWithCsrf, 2); assert.equal(state.unexpected, 0);
-  assert.equal(state.touch, mode === 'photo-reuse' ? 4 : 2); assert.equal(state.mouse, 0);
+  assert.equal(state.touch, mode !== 'photo-clipped' ? 4 : 2); assert.equal(state.mouse, 0);
   if (mode === 'photo-clipped') assert.deepEqual(state.phases, ['pridanie vlastného komentára']);
 });
 
-for (const mode of ['author-ok', 'author-overlay-stuck', 'author-wrong-url'] as const) {
+for (const mode of ['author-ok', 'author-overlay-stuck', 'author-wrong-url', 'author-other-profile'] as const) {
   test(`desktopový preklik autora rozlišuje stav ${mode}`, () => {
     for (const project of ['webkit-desktop', 'chromium-desktop']) {
       const { code, report, variants } = run(mode, [`--project=${project}`]);
@@ -173,5 +174,13 @@ for (const mode of ['author-ok', 'author-overlay-stuck', 'author-wrong-url'] as 
         assert.ok(errors.includes(mode === 'author-overlay-stuck' ? 'zatvorenie detailu nad profilom' : 'adresa profilu'));
       }
     }
+  });
+}
+
+for (const mode of ['author-deleted-comment', 'author-next-candidate', 'author-post-gone', 'author-http-error', 'author-bad-data'] as const) {
+  test(`výber autora správne vyhodnotí stav ${mode}`, () => {
+    const { code, report, variants } = run(mode, ['--project=webkit-desktop']);
+    assert.equal(code, 0); assert.equal(report.stats?.expected, 1); assert.equal(report.stats?.skipped, 0);
+    assert.equal(variants.length, 1); assert.equal(variants[0].results?.[0]?.status, 'passed');
   });
 }

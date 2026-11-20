@@ -1,9 +1,11 @@
 export const COMMENTS_PRIVATE_MARKER = 'SYNTHETIC_PRIVATE_FEED_NEVER_PRINT';
 export const COMMENT_MODES = ['normal', 'empty-feed', 'ui-create-status', 'ui-delete-status', 'missing-row', 'body-timeout',
   'post-delete-status', 'post-delete-ignored', 'comment-network', 'post-create-invalid', 'ui-delete-before-create',
-  'ui-delete-status-503', 'ui-delete-status-no-response', 'photo-reuse', 'photo-clipped'] as const;
-export const AUTHOR_MODES = ['author-ok', 'author-overlay-stuck', 'author-wrong-url'] as const;
-export type CommentMode = typeof COMMENT_MODES[number] | typeof AUTHOR_MODES[number];
+  'ui-delete-status-503', 'ui-delete-status-no-response', 'photo-reuse', 'photo-clipped', 'photo-reordered'] as const;
+export const AUTHOR_MODES = ['author-ok', 'author-overlay-stuck', 'author-wrong-url', 'author-other-profile'] as const;
+export const AUTHOR_PRECHECK_MODES = ['author-deleted-comment', 'author-next-candidate', 'author-post-gone',
+  'author-http-error', 'author-bad-data'] as const;
+export type CommentMode = typeof COMMENT_MODES[number] | typeof AUTHOR_MODES[number] | typeof AUTHOR_PRECHECK_MODES[number];
 
 /** Iba DOM kontrakt helpera, nie kópia aplikácie; živé UI sa overí až v dohodnutom okne. */
 export function syntheticCommentsPage(mode: CommentMode): string {
@@ -65,10 +67,12 @@ export function syntheticCommentsPage(mode: CommentMode): string {
     feed.setAttribute('data-testid',mode==='empty-feed'&&!post?'feed-empty-state':'feed-list');
     if(mode==='empty-feed'&&!post)feed.textContent='Prázdna skúšobná Nástenka';
     document.getElementById('feed-root').append(feed);if(!post)return;
+    for(const item of data.results){
     const card=document.createElement('article');card.setAttribute('data-testid','feed-post-card');card.setAttribute('data-post-type','free_post');
-    const caption=document.createElement('p');caption.textContent=post.caption;card.append(caption);
+    const caption=document.createElement('p');caption.textContent=item.caption;card.append(caption);
+    if(item.images?.[0]){const image=document.createElement('button');image.setAttribute('data-testid','feed-image-open-'+item.images[0].id);image.textContent='Fotka';card.append(image);}
     const open=document.createElement('button');open.setAttribute('data-testid','feed-comments-button');open.textContent='Komentáre';
-    track(open);open.onclick=openDetail;card.append(open);feed.append(card);
+    track(open);open.onclick=()=>{post=item;openDetail();};card.append(open);feed.append(card);}
   });
   </script>`;
 }

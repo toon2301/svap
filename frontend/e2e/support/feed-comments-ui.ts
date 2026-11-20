@@ -19,7 +19,9 @@ export async function exerciseOwnFeedComment(
     await session.prepare();
     await page.reload();
     const cards = page.getByTestId('feed-list').getByTestId('feed-post-card');
-    const source = session.sourceIndex === null ? cards.filter({ hasText: session.postCaption }) : cards.nth(session.sourceIndex);
+    const source = session.sourceImageId === null ? cards.filter({ hasText: session.postCaption })
+      : cards.and(page.locator('[data-post-type="free_post"]'))
+        .filter({ has: page.getByTestId(`feed-image-open-${session.sourceImageId}`) });
     await expect(source).toHaveCount(1);
     await expect(source).toHaveAttribute('data-post-type', 'free_post');
     phase = 'otvorenie detailu';

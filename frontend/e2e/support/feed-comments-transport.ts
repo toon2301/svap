@@ -28,14 +28,18 @@ export function feedCommentsTransport(page: Page, timeoutMs: number, includeCapt
           if (method === 'GET' && path === '/api/auth/feed/posts/') {
             const valid = raw && Array.isArray(raw.results);
             return { status: response.status, data: valid ? { candidates: raw.results.flatMap((post: {
-              id?: unknown; can_manage?: unknown; post_type?: unknown; images?: Array<{ thumbnail_url?: unknown; large_url?: unknown }>;
+              id?: unknown; can_manage?: unknown; post_type?: unknown;
+              images?: Array<{ id?: unknown; status?: unknown; thumbnail_url?: unknown; large_url?: unknown }>;
               comments_count?: unknown;
-            }, index: number) => post?.can_manage === true && post.post_type === 'free_post'
-              && Number.isSafeInteger(post.id) && Number(post.id) > 0 && typeof post.comments_count === 'number'
-              && post.comments_count >= 3 && Array.isArray(post.images)
-              && post.images.some(photo => typeof photo?.thumbnail_url === 'string' && photo.thumbnail_url.length > 0
-                || typeof photo?.large_url === 'string' && photo.large_url.length > 0)
-              ? [{ id: post.id, index }] : []) } : null };
+            }) => {
+              const image = Array.isArray(post?.images) ? post.images.find(photo => photo?.status !== 'rejected') : null;
+              return post?.can_manage === true && post.post_type === 'free_post'
+                && Number.isSafeInteger(post.id) && Number(post.id) > 0 && typeof post.comments_count === 'number'
+                && post.comments_count >= 3 && Number.isSafeInteger(image?.id) && Number(image?.id) > 0
+                && (typeof image?.thumbnail_url === 'string' && image.thumbnail_url.length > 0
+                  || typeof image?.large_url === 'string' && image.large_url.length > 0)
+                ? [{ id: post.id, imageId: image!.id }] : [];
+            }) } : null };
           }
           if (method === 'GET' && path.endsWith('/comments/') && !expected) {
             return { status: response.status, data: { rootCount: Array.isArray(raw?.results) ? raw.results.length : null } };
@@ -54,7 +58,10 @@ export function feedCommentsTransport(page: Page, timeoutMs: number, includeCapt
           return { status: response.status, data: valid ? { id: raw.id, ...(includeCaption ? { caption: raw.caption } : {}), can_manage: raw.can_manage,
             hasPhoto: Array.isArray(raw.images) && raw.images.some((photo: { thumbnail_url?: unknown; large_url?: unknown }) =>
               typeof photo?.thumbnail_url === 'string' && photo.thumbnail_url.length > 0
-              || typeof photo?.large_url === 'string' && photo.large_url.length > 0), commentsCount: raw.comments_count } : null };
+              || typeof photo?.large_url === 'string' && photo.large_url.length > 0), commentsCount: raw.comments_count,
+            imageIds: Array.isArray(raw.images) ? raw.images.filter((photo: { id?: unknown; status?: unknown }) =>
+              Number.isSafeInteger(photo?.id) && Number(photo.id) > 0 && photo.status !== 'rejected')
+              .map((photo: { id: number }) => photo.id) : [] } : null };
         } catch { return { status: 0, data: null }; }
         finally { window.clearTimeout(timer); }
       }, { method, path, body, expected, timeoutMs, includeCaption });
