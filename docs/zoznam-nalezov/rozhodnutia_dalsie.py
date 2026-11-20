@@ -331,13 +331,16 @@ DECISIONS_DALSIE = [
                 'dopytov a 21 hlásení za 1 s), kým používateľ neodíde z konca zoznamu alebo sa nevráti internet; '
                 'hlavný feed a profil majú proti tomu ochranu, komentáre a odpovede nie. Rovnaká slučka je pri '
                 'donačítaní odpovedí. Ako to opraviť? (a) Pozastaviť automatické doťahovanie po zlyhaní a obnoviť ho '
-                'samo po úspešnom pollingu (do 8 s) alebo po udalosti prehliadača `online`; bez viditeľnej zmeny; '
+                'samo po úspešnom pollingu (jeho interval je 8 s a beží len pri viditeľnej karte a činnosti '
+                'používateľa) alebo po udalosti prehliadača `online`; bez viditeľnej zmeny; '
                 'komentáre aj odpovede v dávke K43. (b) Obnoviť až pri ďalšom posune používateľa. (c) Pridať na '
                 'koniec zoznamu tlačidlo „Skúsiť znova“ ako majú feed a profil (viditeľná zmena a nové texty v '
                 'šiestich jazykoch; vzhľad by sa podľa R49 najprv schválil).',
          odporucanie='(a): bez viditeľnej zmeny; prototyp kolegu z K41: offline na konci zoznamu = 1 dopyt a 1 '
                      'hláška, odchod a návrat nič nespustí, po návrate internetu sa doťahovanie obnoví samo (hneď po '
-                     '`online`, inak do 8 s); rieši komentáre aj odpovede jednou myšlienkou. Riziko: ak zlyháva len '
+                     '`online`, inak pri najbližšom pollingu: ten beží každých 8 s, no len pri viditeľnej karte a do '
+                     'piatich minút od poslednej činnosti); rieši komentáre aj odpovede jednou myšlienkou. Riziko: '
+                     'ak zlyháva len '
                      'stránka s kurzorom a polling prechádza, pokus sa opakuje každých 8 s (hláška znova), čo je '
                      'oproti dnešným desiatkam za sekundu zanedbateľné. (b) by chcelo zásah do posunu zoznamu a '
                      'nechá slučku, kým používateľ neposunie; (c) je viditeľná zmena a patrí skôr k redizajnu '
@@ -361,5 +364,9 @@ DECISIONS_DALSIE = [
                      'nespôsobí hromadnú zmenu tisícok existujúcich popisov (R27: existujúce testové súbory sa menia '
                      'len málo); (b) by zbytočne zväčšovalo zmeny testov pri nesúvisiacich opravách; (c) by bola '
                      'výnimka z pravidla, ktoré inak platí pre všetko.',
-         kedy='Pred ďalšou dávkou s novými testami (K45); po odpovedi agent doplní vetu do AGENTS.md.'),
+         kedy='Rozhodnuté 20. 11. 2026.',
+         odpoved='Majiteľ 20. 11. 2026: podľa odporúčania agenta, teda (a): popisy nových testov (`describe`, `it`, '
+                 '`test`, pomenovania v `it.each`) sa píšu po slovensky, staré sa neprekladajú. Veta je doplnená do '
+                 '`AGENTS.md` a do `.cursor/rules/svaply.mdc` (vetva 190, PR #299).',
+         datum='20. 11. 2026'),
 ]
