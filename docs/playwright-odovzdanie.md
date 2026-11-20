@@ -174,6 +174,46 @@ v hlavnej konfigurácii a **6 variantov** v komentárovej konfigurácii.
 Žiadny beh proti Railway ani nový PR, oprava ide do tej istej vetvy; po tejto
 zmene výberu podkladu sa odporúča ďalšie review pred živým oknom.
 
+### Review PR #301 po `630a5f56` — zmena počtu fotiek počas navigácie
+
+Ďalší Minor je platný: `usePendingFeedImages` môže pri pollingu zamietnuť
+rozpracovanú fotku a `feedSlideImages` ju odstráni. Pri prechode z dvoch
+slidov na jeden zmiznú aj bodky. Pôvodný pomocník potom čakal na neexistujúcu
+bodku, hoci overená cieľová fotka už bola zobrazená. Ide o falošný pád
+prípravy E2E, nie novú chybu aplikácie alebo poškodenie údajov.
+
+Regresná skúška bola najprv spustená na pôvodnom pomocníkovi a **zlyhala**
+vo WebKite desktop pri presne vloženom zamietnutí. Oprava číta prítomnosť
+cieľa, počet bodiek aj aktívny index v jednej snímke DOM a pred každým
+ďalším krokom ich načíta znovu. Synchronizácia uzná overený cieľ alebo zmenu
+počtu; bez zmeny počtu naďalej vyžaduje správny nasledujúci index. Ak pri
+samotnom ťuku zmizne šípka, akceptuje sa iba už prítomná konkrétna cieľová
+fotka, nie ľubovoľný obrázok. Limit ostáva **4 navigačné akcie pre najviac
+5 fotiek**, bez force, dlhšieho timeoutu alebo opakovania testu.
+
+Nové `diagnostics-tests/feed-comment-source-cases.ts` a
+`feed-comment-source.scenario.ts` pridávajú **11 hraničných stavov × 3
+projekty**: oba WebKity a Chromium, na mobile skutočný `tap`. Zahŕňajú
+zamietnutie počas kliknutia aj pointerdown, pokračovanie po zmene počtu,
+cyklické prechádzanie, neprítomný cieľ, nefunkčnú či opačnú šípku, prekročený
+limit a chýbajúci aktívny slide. Negatívne prípady musia potvrdiť správny
+dôvod chyby aj presný počet skutočných navigačných pokusov. Sú len
+v izolovanej lokálnej konfigurácii, nie v živom behu ani dyme.
+
+Po oprave prešla celá lokálna browser sada **41/41**, **0 zlyhaní,
+0 preskočení**, za **536,894 s**, vrátane všetkých 33 nových projektových
+variantov a pôvodných kontrol upratania. Čistá logika prešla **55/55**,
+TypeScript projektu aj celej E2E oblasti a ESLint celého rozdielu PR majú
+**0 chýb / 0 upozornení**. Izolované listovanie znovu potvrdilo **783 / 45**
+v hlavnej sade a **6** samostatných komentárových variantov, bez prihlásenia.
+
+Vlastná kontrola prešla celý aktuálny rozdiel PR vrátane volajúcich,
+overenia autora a podkladu, prísnej kontroly celého nového riadka, strážcu
+zápisov, upratania a ochrany výstupov. Ďalší konkrétny problém sa pri nej
+nepotvrdil. Aplikácia, závislosti, migrácie, pôvodné asercie a pravidlá
+upratania sa nemenia; žiadne účty, env ani relácia sa nečítali či nekopírovali
+a proti Railway sa nič nespúšťalo.
+
 ### Ďalší krok — tri špecy až v novom potvrdenom okne
 
 Návrh: **15 minút** v termíne určenom majiteľom, bez zlučovania, nasadení

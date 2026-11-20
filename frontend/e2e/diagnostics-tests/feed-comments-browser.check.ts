@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import type { CommentMode } from './feed-comments-page';
+import { CAROUSEL_CASES, type CarouselMode } from './feed-comment-source-cases';
 import { assertCommentFault, COMMENT_FAULT_MODES, commentFailurePhases } from './feed-comments-control';
 import type { CommentResult as Result } from './feed-comments-control';
 
@@ -13,7 +14,7 @@ type Report = Suite & { privacySafe?: boolean; guardRejected?: boolean;
   stats?: { expected?: number; unexpected?: number; skipped?: number; flaky?: number } };
 
 /** Bez siete, env, relácie alebo zápisov na hostiteľský zdrojový strom. */
-function run(mode: CommentMode, extra: string[] = []) {
+function run(mode: CommentMode | CarouselMode, extra: string[] = []) {
   const root = path.resolve(__dirname, '../..').replaceAll('\\', '/');
   fs.mkdirSync(path.join(root, 'e2e/.auth'), { recursive: true });
   const libraries = fs.realpathSync(path.join(root, 'node_modules')).replaceAll('\\', '/');
@@ -46,6 +47,15 @@ function run(mode: CommentMode, extra: string[] = []) {
   }
   return { code: child.status, report, variants };
 }
+
+for (const scenario of CAROUSEL_CASES) test(`karusel podkladu: ${scenario.name}`, () => {
+  const { code, report, variants } = run(scenario.mode);
+  assert.equal(code, 0); assert.equal(report.stats?.expected, 3); assert.equal(report.stats?.unexpected, 0);
+  assert.equal(report.stats?.skipped, 0); assert.equal(variants.length, 3);
+  for (const variant of variants) {
+    assert.equal(variant.results?.length, 1); assert.equal(variant.results[0].status, 'passed');
+  }
+});
 
 function observation(result: Result) {
   const output = (result.stdout ?? []).map(row => row.text ?? '').join('');
