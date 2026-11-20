@@ -1,8 +1,9 @@
 export const COMMENTS_PRIVATE_MARKER = 'SYNTHETIC_PRIVATE_FEED_NEVER_PRINT';
 export const COMMENT_MODES = ['normal', 'empty-feed', 'ui-create-status', 'ui-delete-status', 'missing-row', 'body-timeout',
   'post-delete-status', 'post-delete-ignored', 'comment-network', 'post-create-invalid', 'ui-delete-before-create',
-  'ui-delete-status-503', 'ui-delete-status-no-response'] as const;
-export type CommentMode = typeof COMMENT_MODES[number];
+  'ui-delete-status-503', 'ui-delete-status-no-response', 'photo-reuse', 'photo-clipped'] as const;
+export const AUTHOR_MODES = ['author-ok', 'author-overlay-stuck', 'author-wrong-url'] as const;
+export type CommentMode = typeof COMMENT_MODES[number] | typeof AUTHOR_MODES[number];
 
 /** Iba DOM kontrakt helpera, nie kópia aplikácie; živé UI sa overí až v dohodnutom okne. */
 export function syntheticCommentsPage(mode: CommentMode): string {
@@ -10,7 +11,7 @@ export function syntheticCommentsPage(mode: CommentMode): string {
   <style>button,textarea{display:block;min-height:44px;margin:5px}textarea{width:280px}[data-testid="feed-list"]{min-height:1px}</style>
   <p>${COMMENTS_PRIVATE_MARKER}</p><div id="feed-root"></div><div id="layers"></div>
   <script>
-  const mode=${JSON.stringify(mode)}; let post=null; let comment=null;
+  const mode=${JSON.stringify(mode)}; const photoMode=mode.startsWith('photo-'); let post=null; let comment=null;
   const track = element => element.addEventListener('pointerdown', event => {
     void window.recordCommentPointer(event.isTrusted, event.pointerType);
   });
@@ -22,11 +23,19 @@ export function syntheticCommentsPage(mode: CommentMode): string {
   const commentsPath = () => '/api/auth/feed/posts/'+post.id+'/comments/';
   function paintRow() {
     const list=document.querySelector('[data-testid="feed-comments-scroll"]'); list.replaceChildren();
+    if(photoMode){
+      list.style.cssText='height:200px;overflow:auto';
+      const header=document.createElement('div');header.style.height='500px';header.setAttribute('data-testid','feed-mobile-detail-photo');
+      const img=document.createElement('img');img.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';img.width=200;img.height=500;header.append(img);list.append(header);
+    }
+    if(photoMode)for(let i=1;i<=3;i++){const old=document.createElement('div');old.setAttribute('data-comment-id',i);old.textContent='Pôvodný komentár';old.style.height='100px';list.append(old);}
     if(!comment||mode==='missing-row')return;
     const row=document.createElement('div');row.setAttribute('data-comment-id',comment.id);
+    if(photoMode)row.style.height='100px';
     const text=document.createElement('p');text.textContent=comment.text;row.append(text);
     const remove=document.createElement('button');remove.textContent='Zmazať komentár';remove.setAttribute('aria-label','Zmazať komentár');
-    track(remove);remove.onclick=confirmDelete;row.append(remove);list.append(row);
+    track(remove);remove.onclick=confirmDelete;row.append(remove);
+    if(photoMode){list.children[1].before(row);list.scrollTop=mode==='photo-clipped'?350:500;}else list.append(row);
   }
   function confirmDelete() {
     const layer=document.createElement('div');layer.setAttribute('data-testid','feed-comment-delete-confirm');
@@ -49,6 +58,7 @@ export function syntheticCommentsPage(mode: CommentMode): string {
     send.onclick=async()=>{try{const reply=await api('POST',commentsPath(),{text:input.value});
       if(reply.status===201){comment=await reply.json();input.value='';send.disabled=true;paintRow();}}catch{}};
     area.append(send);wrap.append(area);detail.append(wrap);document.getElementById('layers').append(detail);
+    if(photoMode)paintRow();
   }
   void api('GET','/api/auth/feed/posts/').then(reply=>reply.json()).then(data=>{
     post=data.results[0];const feed=document.createElement('div');

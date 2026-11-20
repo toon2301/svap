@@ -143,3 +143,35 @@ test('zlyhané upratanie zastaví zostávajúce projekty pred zápisom', () => {
     assert.ok(!(result.stdout ?? []).some(row => row.text?.includes('[COMMENTS-SELFTEST]')));
   }
 });
+
+for (const mode of ['photo-reuse', 'photo-clipped'] as const) test(mode === 'photo-reuse'
+  ? 'fotka a tri pôvodné komentáre ostanú po mobilnom UI pridaní a zmazaní zachované'
+  : 'čiastočne orezaný nový komentár musí zlyhať pred ďalším klikom a stále sa upratať', () => {
+  const { code, report, variants } = run(mode, ['--project=webkit-mobile']);
+  assert.equal(variants.length, 1); assert.equal(report.stats?.skipped, 0);
+  assert.equal(code, mode === 'photo-reuse' ? 0 : 1);
+  const result = variants[0].results![0]; const state = observation(result);
+  assert.equal(state.status, mode === 'photo-reuse' ? 'passed' : 'failed');
+  assert.equal(state.exists, true); assert.equal(state.comments, 3); assert.equal(state.cleanup, 'verified');
+  assert.equal(state.postsCreated, 0); assert.equal(state.postsDeleted, 0);
+  assert.equal(state.commentsCreated, 1); assert.equal(state.commentsDeleted, 1);
+  assert.equal(state.writesWithCsrf, 2); assert.equal(state.unexpected, 0);
+  assert.equal(state.touch, mode === 'photo-reuse' ? 4 : 2); assert.equal(state.mouse, 0);
+  if (mode === 'photo-clipped') assert.deepEqual(state.phases, ['pridanie vlastného komentára']);
+});
+
+for (const mode of ['author-ok', 'author-overlay-stuck', 'author-wrong-url'] as const) {
+  test(`desktopový preklik autora rozlišuje stav ${mode}`, () => {
+    for (const project of ['webkit-desktop', 'chromium-desktop']) {
+      const { code, report, variants } = run(mode, [`--project=${project}`]);
+      assert.equal(code, mode === 'author-ok' ? 0 : 1); assert.equal(variants.length, 1);
+      assert.equal(report.stats?.skipped, 0);
+      const result = variants[0].results![0];
+      assert.equal(result.status, mode === 'author-ok' ? 'passed' : 'failed');
+      if (mode !== 'author-ok') {
+        const errors = (result.errors ?? []).map(error => error.message ?? '').join('');
+        assert.ok(errors.includes(mode === 'author-overlay-stuck' ? 'zatvorenie detailu nad profilom' : 'adresa profilu'));
+      }
+    }
+  });
+}

@@ -1,13 +1,20 @@
 import { test as commentsTest } from '../support/feed-comments-test';
 import { COMMENT_MODES, COMMENTS_PRIVATE_MARKER as PRIVATE, syntheticCommentsPage, type CommentMode } from './feed-comments-page';
 import { COMMENTS_ORIGIN, POSTS_PATH } from '../support/feed-comments-session';
+import { test as readTest } from '../support/diagnostic-test';
+import { openCommentAuthorProfileFromOverlay } from '../support/comment-author-profile';
+import { AUTHOR_MODES } from './feed-comments-page';
 
 /** Účty, env aj skutočná sieť chýbajú. Vlastný podklad aj komentár sú iba v pamäti tejto fixture. */
 const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: void }>({
   commentMode: ['normal', { option: true }],
   _syntheticFeed: [async ({ context, page, commentMode }, runFixture) => {
-    let post: { id: number; caption: string; can_manage: boolean } | null = null;
-    let comments: Array<{ id: number; text: string; can_edit: boolean; can_delete: boolean }> = [];
+    const photoMode = commentMode.startsWith('photo-');
+    let post: { id: number; caption: string; can_manage: boolean; post_type?: string; images?: unknown[]; comments_count?: number } | null =
+      photoMode ? { id: 101, caption: 'Pôvodný podklad', can_manage: true, post_type: 'free_post',
+        images: [{ thumbnail_url: '/synteticka-fotka.png' }], comments_count: 3 } : null;
+    let comments: Array<{ id: number; text: string; can_edit: boolean; can_delete: boolean }> = photoMode
+      ? [1, 2, 3].map(id => ({ id, text: 'Pôvodný komentár', can_edit: false, can_delete: false })) : [];
     let postsCreated = 0; let commentsCreated = 0; let commentsDeleted = 0; let postsDeleted = 0;
     let csrf = 0; let unexpected = 0; let writesWithCsrf = 0; let touch = 0; let mouse = 0;
     let initialEmptyVisible = false; let initialListCount = -1;
@@ -56,7 +63,7 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
         if (['ui-delete-status', 'ui-delete-before-create'].includes(commentMode)) { await reply(500, { private: PRIVATE }); return; }
         if (commentMode === 'ui-delete-status-503') { await reply(503, { private: PRIVATE }); return; }
         if (commentMode === 'ui-delete-status-no-response') { await route.abort(); return; }
-        comments = []; await reply(204);
+        comments = comments.filter(item => item.id !== 201); await reply(204);
       } else if (url.pathname === `${POSTS_PATH}101/` && method === 'DELETE') {
         postsDeleted += 1;
         if (commentMode === 'post-delete-status') { await reply(500, { private: PRIVATE }); return; }
@@ -74,8 +81,23 @@ const test = commentsTest.extend<{ commentMode: CommentMode; _syntheticFeed: voi
   }, { auto: true }],
 });
 
+for (const mode of AUTHOR_MODES) readTest.describe(`[${mode}]`, () => {
+  readTest('meno komentujúceho otvorí profil bez prekrývajúceho detailu', async ({ context, page }, testInfo) => {
+    readTest.skip(testInfo.project.name === 'webkit-mobile', 'Preklik z okna je desktopový scenár.');
+    await context.route('**/*', route => route.fulfill({ status: 200, contentType: 'text/html', body: `
+      <!doctype html><meta charset="utf-8"><div data-testid="feed-post-overlay">
+      <button data-testid="feed-comment-author-201">${PRIVATE}</button></div><script>
+      document.querySelector('button').onclick=()=>{
+        history.pushState({},'',${JSON.stringify(mode === 'author-wrong-url' ? '/dashboard' : '/dashboard/users/skusobny-profil')});
+        ${mode === 'author-overlay-stuck' ? '' : "document.querySelector('[data-testid=feed-post-overlay]').remove();"}
+      };</script>` }));
+    await page.goto('/dashboard/feed/101');
+    await openCommentAuthorProfileFromOverlay(page);
+  });
+});
+
 for (const mode of COMMENT_MODES) test.describe(`[${mode}]`, () => {
-  test.use({ commentMode: mode });
+  test.use({ commentMode: mode, reusePhotoPost: mode.startsWith('photo-') });
   test('vlastný komentár a bezpečné upratanie podkladu', async ({ page, createAndDeleteOwnComment }) => {
     await createAndDeleteOwnComment();
     if (mode === 'body-timeout') {

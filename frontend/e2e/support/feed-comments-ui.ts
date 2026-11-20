@@ -18,13 +18,24 @@ export async function exerciseOwnFeedComment(
     phase = 'príprava vlastného podkladu';
     await session.prepare();
     await page.reload();
-    const source = page.getByTestId('feed-list').getByTestId('feed-post-card').filter({ hasText: session.postCaption });
+    const cards = page.getByTestId('feed-list').getByTestId('feed-post-card');
+    const source = session.sourceIndex === null ? cards.filter({ hasText: session.postCaption }) : cards.nth(session.sourceIndex);
     await expect(source).toHaveCount(1);
     await expect(source).toHaveAttribute('data-post-type', 'free_post');
     phase = 'otvorenie detailu';
     await activate(source.getByTestId('feed-comments-button'), mobile);
     const detail = page.getByTestId(mobile ? 'feed-mobile-detail' : 'feed-post-overlay');
     await expect(detail).toBeVisible();
+    if (session.reusesPhotoPost) {
+      const photo = detail.getByTestId('feed-mobile-detail-photo').locator('img').first();
+      await expect(photo).toBeVisible();
+      await expect.poll(() => photo.evaluate(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0), {
+        message: 'Podklad musí mať skutočne načítanú fotku, nie pokazený obrázok.',
+      }).toBe(true);
+      await expect.poll(() => detail.locator('[data-comment-id]').count(), {
+        message: 'Pred pridaním musia byť načítané aspoň tri existujúce komentáre.',
+      }).toBeGreaterThanOrEqual(3);
+    }
     const comments = mobile ? detail.getByTestId('feed-post-comments')
       : detail.getByTestId('feed-post-overlay-comments').getByTestId('feed-post-comments');
     const input = comments.getByRole('textbox', { name: 'Napíš komentár...', exact: true });
@@ -39,11 +50,13 @@ export async function exerciseOwnFeedComment(
         const data = await reply.json().catch(() => null);
         session.takeComment(data); return reply.status();
       }).catch(() => 0);
+    session.noteCommentAttempt();
     await activate(send, mobile);
     if (await created !== 201 || session.commentId === null) throw new Error('Vytvorenie komentára nebolo potvrdené.');
     const row = comments.locator(`[data-comment-id="${session.commentId}"]`);
     await expect(row).toHaveCount(1);
     await expect(row).toBeVisible();
+    if (mobile) await expect(row).toBeInViewport({ ratio: 1 });
     await expect(row.locator('p').first()).toHaveText(session.commentText);
     await expect(input).toHaveValue('');
     phase = 'GET po pridaní';

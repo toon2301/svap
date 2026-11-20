@@ -1,4 +1,4 @@
-# Playwright: odovzdanie (stav k 19. 11. 2026)
+# Playwright: odovzdanie (stav k 20. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
@@ -9,7 +9,104 @@ zmeny danej úlohy vo vlastnej oblasti; nikdy nie pre env, reláciu, reportové
 artefakty alebo cudzie zmeny. PR, zlučovanie do mainu a nasadenie zostávajú
 majiteľovi. Ak nevznikli zmeny, nevytvára sa prázdny commit.
 
-## Aktuálna dávka — 19. 11. 2026: šesť preklikov upozornení po príprave dát
+## Aktuálna dávka — 20. 11. 2026: E2E regresie komentárov 345 a 346
+
+Vetva **`e2e/komentare-345-346`** z čerstvého main **`1c454330`** (PR #300;
+aplikácia obsahuje aj K37 až K43). Fetch bol pred dokončením zopakovaný,
+main sa nezmenil. Dodržané aj nové pravidlo R62: nové názvy testov sú po
+slovensky, pôvodné sa neprekladajú. **V tejto dávke neprebehol žiadny živý
+test, prihlásenie ani požiadavka na Railway.** Aplikácia, Jest, závislosti,
+migrácie a zoznam nálezov sa nemenia.
+
+### 345 — meno komentujúceho v okne otvorenom z upozornenia
+
+`notification-click.spec.ts` má nový samostatný desktopový scenár, aby sa
+nezmenil pôvodný test návratu Späť. Otvorí existujúce **prečítané** upozornenie
+na komentár a skutočne klikne na aktívne meno autora komentára v okne.
+Tvrdé čakajúce asercie požadujú skryté `feed-post-overlay` a profilovú adresu
+`/dashboard/users/<identifikátor>`. Do dôkazu nejde identifikátor ani meno.
+Overenie patrí desktopovému WebKitu a Chromiu; mobil má pôvodný projektový
+SKIP, nie predstieraný PASS. Tento scenár iba číta existujúci obsah.
+
+### 346 — celý nový komentár na iPhone 15
+
+Hneď za pôvodným `expect(row).toBeVisible()` je pri mobile prísne
+`expect(row).toBeInViewport({ ratio: 1 })`, **pred ďalšou akciou**, ktorá by
+mohla riadok automaticky doscrollovať. Časové limity ani tolerancie sa nemenia.
+Samostatný nový scenár v `feed-comments.ui.ts` používa presne mobilný WebKit,
+iPhone 15 **393 × 659** a existujúci vlastný voľný príspevok s načítanou
+fotkou a aspoň tromi pôvodnými vrcholovými komentármi.
+
+Podklad musí byť v prvej dávke Nástenky. Test pred zápisom overí cez backend
+vlastníctvo (`can_manage`), fotku aj komentáre; chýbajúce údaje sú neúspešná
+príprava pred POST, nie tichý SKIP alebo automatické vyrábanie fotky a komentárov.
+UI vytvorí a zmaže iba **jeden vlastný komentár s jedinečnou značkou**.
+Strážca v tomto režime zakazuje vytvorenie aj DELETE príspevku a DELETE cudzích
+komentárov. `finally` overí zmiznutie nového komentára, zachovanie podkladu
+a pôvodného počtu vrcholových komentárov. Po chybe tela môže spraviť najviac
+jeden overený cleanup DELETE tohto nového komentára; pôvodný pád ostáva FAIL.
+Neistý zápis alebo neoverené upratanie ostáva hlasná chyba a ďalší živý test
+sa nespustí. Fotky ani pôvodný obsah sa nenahrávajú, neupravujú a nemažú.
+
+Pôvodný textový scenár 257 zostáva zachovaný vo všetkých troch projektoch;
+jeho pôvodný vlastný dočasný príspevok sa naďalej zmaže. Nový fotografický
+variant má dva projektové SKIP mimo mobilu, ešte pred CSRF alebo zápisom.
+
+### Lokálne kontroly — nie živý PASS aplikácie
+
+| Kontrola | Výsledok |
+| --- | --- |
+| Čistá logika relácie, strážcov a riadených chýb | **50/50 PASS**, bez SKIP |
+| Celá browser kontrolná sada | **20/20 PASS**, **335,247 s**, bez vonkajších SKIP |
+| Pozitívne browser varianty | pôvodný aj prázdny textový podklad v 3 projektoch; fotografický podklad na mobilnom WebKite; preklik mena v oboch desktopových projektoch |
+| Vložené regresie | orezaný mobilný riadok musí zlyhať a upratať iba nový komentár; otvorené okno nad profilom a nesprávna URL musia zlyhať v oboch desktopových projektoch |
+| TypeScript frontendu aj explicitný striktný TypeScript celej E2E oblasti | **0 chýb** |
+| ESLint dotknutých súborov, kontrola diffu | **0 chýb / 0 upozornení** |
+| Izolovaný `--list` hlavnej sady | **783 variantov / 45 súborov**, predtým 780; pribudol jeden test × 3 projekty |
+| Izolovaný `--list` samostatných komentárov | **6 variantov**, z toho 4 projektovo použiteľné a 2 projektové SKIP |
+
+Playwright **1.63.0**, Docker **`--network=none`**, zdroje a knižnice read-only,
+prázdna prekrytá `.auth`, bez `.env.e2e` a skutočných účtov. Kontroluje sa aj
+neprítomnosť súkromného syntetického markera, DOM snapshotov, screenshotov,
+trace a videa v zdieľateľných výstupoch. Zámerné vnútorné FAIL v kontrolnej
+sade nie sú pády aplikácie. Lokálna pozitívna skúška fotky potvrdila **0 nových
+príspevkov, 0 zmazaných príspevkov, 1 nový a 1 zmazaný komentár, 3 zachované
+pôvodné komentáre**; riadená chyba orezania potvrdila rovnaké bezpečné upratanie.
+
+`feed-post-detail.spec.ts` sa iba prepojil na existujúci diagnostický fixture:
+asercie a scenáre sa nemenia, prípadný pád dostane `[E2E-EVIDENCE]` a nevznikne
+automatický screenshot alebo DOM snapshot so súkromným obsahom. Nové sú len
+`support/comment-author-profile.ts` a `diagnostics-tests/feed-comments-reuse.check.ts`;
+ostatné úpravy sú v existujúcich E2E pomocníkoch a tomto dokumente. Dotknuté
+testové/pomocné TS súbory sú pod 500 riadkami. Prijatý základ **427 / 2 / 303**
+ani živé výsledky z 19. 11. sa touto lokálnou dávkou nemenia.
+
+### Ďalší krok — tri špecy až v novom potvrdenom okne
+
+Návrh: **15 minút** v termíne určenom majiteľom, bez zlučovania, nasadení
+a zmien testovacích účtov. Pred štartom znovu fetch main a potvrdenie nasadenia.
+Hlavný E2E účet potrebuje dostupný vlastný príspevok s fotkou a aspoň tromi
+vrcholovými komentármi v prvej dávke Nástenky; v prvých 15 upozorneniach
+prečítané živé upozornenia na lajk, komentár a odpoveď. Nová kontrola 345
+potrebuje v otvorenom detaile aspoň jedno aktívne meno komentujúceho.
+
+Dva po sebe idúce príkazy z `frontend` (nie súbeh, žiadne retry; druhý iba
+po úspešnom prvom a bez chyby prihlásenia/obnovy):
+
+```powershell
+npm run test:e2e:docker -- e2e/feed-post-detail.spec.ts e2e/notification-click.spec.ts --workers=1 --retries=0 --max-failures=1
+npm run test:e2e:docker -- --config=e2e/feed-comments.playwright.config.ts --workers=1 --retries=0 --max-failures=1
+```
+
+Pri splnených dátach sa plánuje **19 PASS / 0 FAIL / 17 projektových SKIP**
+(36 variantov spolu); nejde o vykonaný výsledok. Zápisový komentárový scenár
+je zámerne oddelený chránenou konfiguráciou od bežného behu a dymu.
+Prípadné pády sa hlásia podľa `AGENTS.md`, nie úpravou testu na zelený.
+Ďalší plný beh, WSL/Docker 223 ani vytváranie dát pre iné scenáre sa týmto
+pokynom nespúšťajú. Majiteľ podľa trvalého pokynu dostane commit a push
+lokálne overenej E2E vetvy; PR otvorí sám.
+
+## Historická dávka — 19. 11. 2026: šesť preklikov upozornení po príprave dát
 
 Majiteľ pripravil testovacie údaje a potvrdil nové okno bez zmien a nasadzovania.
 Pred behom bol stiahnutý čerstvý main **`bc4391dc`** (K43, PR #298).

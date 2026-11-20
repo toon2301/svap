@@ -7,9 +7,16 @@ import { FeedCommentsWriteAudit, guardFeedCommentWrites } from './feed-comments-
 import { exerciseOwnFeedComment } from './feed-comments-ui';
 
 /** Samostatná API stránka ostáva stabilná aj keď sa testované UI zatvorí alebo naviguje. */
-export const test = base.extend<{ createAndDeleteOwnComment: () => Promise<void> }>({
+export const test = base.extend<{ createAndDeleteOwnComment: () => Promise<void>; reusePhotoPost: boolean }>({
   serviceWorkers: 'block',
-  createAndDeleteOwnComment: async ({ page, context, baseURL, isMobile, browserName }, runFixture, testInfo) => {
+  reusePhotoPost: [false, { option: true }],
+  createAndDeleteOwnComment: async ({ page, context, baseURL, isMobile, browserName, reusePhotoPost }, runFixture, testInfo) => {
+    // Pred API stránkou a zápismi: druhý scenár patrí iba presnému mobilnému rozloženiu.
+    if (reusePhotoPost) {
+      base.skip(testInfo.project.name !== 'webkit-mobile', 'Celý komentár na iPhone 15 – iba mobilný WebKit.');
+      const viewport = page.viewportSize();
+      if (viewport?.width !== 393 || viewport.height !== 659) throw new Error('Skúška 346 vyžaduje iPhone 15, 393 × 659.');
+    }
     const projects = { 'webkit-desktop': 'webkit', 'webkit-mobile': 'webkit', 'chromium-desktop': 'chromium' };
     const configs = ['../feed-comments.playwright.config.ts', '../diagnostics-tests/feed-comments.playwright.config.ts']
       .map(file => path.resolve(__dirname, file));
@@ -25,10 +32,10 @@ export const test = base.extend<{ createAndDeleteOwnComment: () => Promise<void>
       throw new Error('Komentárová skúška vyžaduje dohodnutý pôvod a pôvodný konečný actionTimeout.');
     }
     const apiPage = await context.newPage();
-    const session: FeedCommentsSession = new FeedCommentsSession(feedCommentsTransport(apiPage, timeout), randomUUID(), {
+    const session: FeedCommentsSession = new FeedCommentsSession(feedCommentsTransport(apiPage, timeout, !reusePhotoPost), randomUUID(), {
       begin: () => audit.beginCleanup(), beforeDelete: () => audit.assertSafe(), afterDelete: () => audit.assertCleanupComplete(),
       report: state => { console.log(`[E2E-COMMENTS-CLEANUP] state=${state}`); },
-    });
+    }, reusePhotoPost);
     const audit: FeedCommentsWriteAudit = new FeedCommentsWriteAudit(session);
     await guardFeedCommentWrites(context, audit);
     try {
