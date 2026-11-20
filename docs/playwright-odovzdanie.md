@@ -1,4 +1,4 @@
-# Playwright: odovzdanie (stav k 19. 11. 2026)
+# Playwright: odovzdanie (stav k 20. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
@@ -9,7 +9,237 @@ zmeny danej úlohy vo vlastnej oblasti; nikdy nie pre env, reláciu, reportové
 artefakty alebo cudzie zmeny. PR, zlučovanie do mainu a nasadenie zostávajú
 majiteľovi. Ak nevznikli zmeny, nevytvára sa prázdny commit.
 
-## Aktuálna dávka — 19. 11. 2026: šesť preklikov upozornení po príprave dát
+## Aktuálna dávka — 20. 11. 2026: E2E regresie komentárov 345 a 346
+
+Vetva **`e2e/komentare-345-346`** z čerstvého main **`1c454330`** (PR #300;
+aplikácia obsahuje aj K37 až K43). Fetch bol pred dokončením zopakovaný,
+main sa nezmenil. Dodržané aj nové pravidlo R62: nové názvy testov sú po
+slovensky, pôvodné sa neprekladajú. **V tejto dávke neprebehol žiadny živý
+test, prihlásenie ani požiadavka na Railway.** Aplikácia, Jest, závislosti,
+migrácie a zoznam nálezov sa nemenia.
+
+### 345 — meno komentujúceho v okne otvorenom z upozornenia
+
+`notification-click.spec.ts` má nový samostatný desktopový scenár, aby sa
+nezmenil pôvodný test návratu Späť. Otvorí existujúce **prečítané** upozornenie
+na komentár a skutočne klikne na aktívne meno autora komentára v okne.
+Tvrdé čakajúce asercie požadujú skryté `feed-post-overlay` a presnú profilovú
+adresu vybraného autora. Do dôkazu nejde identifikátor ani meno.
+Overenie patrí desktopovému WebKitu a Chromiu; mobil má pôvodný projektový
+SKIP, nie predstieraný PASS. Tento scenár iba číta existujúci obsah.
+
+### 346 — celý nový komentár na iPhone 15
+
+Hneď za pôvodným `expect(row).toBeVisible()` je pri mobile prísne
+`expect(row).toBeInViewport({ ratio: 1 })`, **pred ďalšou akciou**, ktorá by
+mohla riadok automaticky doscrollovať. Časové limity ani tolerancie sa nemenia.
+Samostatný nový scenár v `feed-comments.ui.ts` používa presne mobilný WebKit,
+iPhone 15 **393 × 659** a existujúci vlastný voľný príspevok s načítanou
+fotkou a aspoň tromi pôvodnými vrcholovými komentármi.
+
+Podklad musí byť v prvej dávke Nástenky. Test pred zápisom overí cez backend
+vlastníctvo (`can_manage`), fotku aj komentáre; chýbajúce údaje sú neúspešná
+príprava pred POST, nie tichý SKIP alebo automatické vyrábanie fotky a komentárov.
+UI vytvorí a zmaže iba **jeden vlastný komentár s jedinečnou značkou**.
+Strážca v tomto režime zakazuje vytvorenie aj DELETE príspevku a DELETE cudzích
+komentárov. `finally` overí zmiznutie nového komentára, zachovanie podkladu
+a pôvodného počtu vrcholových komentárov. Po chybe tela môže spraviť najviac
+jeden overený cleanup DELETE tohto nového komentára; pôvodný pád ostáva FAIL.
+Neistý zápis alebo neoverené upratanie ostáva hlasná chyba a ďalší živý test
+sa nespustí. Fotky ani pôvodný obsah sa nenahrávajú, neupravujú a nemažú.
+
+Pôvodný textový scenár 257 zostáva zachovaný vo všetkých troch projektoch;
+jeho pôvodný vlastný dočasný príspevok sa naďalej zmaže. Nový fotografický
+variant má dva projektové SKIP mimo mobilu, ešte pred CSRF alebo zápisom.
+
+### Pôvodné lokálne kontroly pred review PR #301 — nie živý PASS aplikácie
+
+| Kontrola | Výsledok |
+| --- | --- |
+| Čistá logika relácie, strážcov a riadených chýb | **50/50 PASS**, bez SKIP |
+| Celá browser kontrolná sada | **20/20 PASS**, **335,247 s**, bez vonkajších SKIP |
+| Pozitívne browser varianty | pôvodný aj prázdny textový podklad v 3 projektoch; fotografický podklad na mobilnom WebKite; preklik mena v oboch desktopových projektoch |
+| Vložené regresie | orezaný mobilný riadok musí zlyhať a upratať iba nový komentár; otvorené okno nad profilom a nesprávna URL musia zlyhať v oboch desktopových projektoch |
+| TypeScript frontendu aj explicitný striktný TypeScript celej E2E oblasti | **0 chýb** |
+| ESLint dotknutých súborov, kontrola diffu | **0 chýb / 0 upozornení** |
+| Izolovaný `--list` hlavnej sady | **783 variantov / 45 súborov**, predtým 780; pribudol jeden test × 3 projekty |
+| Izolovaný `--list` samostatných komentárov | **6 variantov**, z toho 4 projektovo použiteľné a 2 projektové SKIP |
+
+Playwright **1.63.0**, Docker **`--network=none`**, zdroje a knižnice read-only,
+prázdna prekrytá `.auth`, bez `.env.e2e` a skutočných účtov. Kontroluje sa aj
+neprítomnosť súkromného syntetického markera, DOM snapshotov, screenshotov,
+trace a videa v zdieľateľných výstupoch. Zámerné vnútorné FAIL v kontrolnej
+sade nie sú pády aplikácie. Lokálna pozitívna skúška fotky potvrdila **0 nových
+príspevkov, 0 zmazaných príspevkov, 1 nový a 1 zmazaný komentár, 3 zachované
+pôvodné komentáre**; riadená chyba orezania potvrdila rovnaké bezpečné upratanie.
+
+`feed-post-detail.spec.ts` sa iba prepojil na existujúci diagnostický fixture:
+asercie a scenáre sa nemenia, prípadný pád dostane `[E2E-EVIDENCE]` a nevznikne
+automatický screenshot alebo DOM snapshot so súkromným obsahom. Pred prvým review pribudli
+`support/comment-author-profile.ts` a `diagnostics-tests/feed-comments-reuse.check.ts`;
+ostatné úpravy sú v existujúcich E2E pomocníkoch a tomto dokumente. Dotknuté
+testové/pomocné TS súbory sú pod 500 riadkami. Prijatý základ **427 / 2 / 303**
+ani živé výsledky z 19. 11. sa touto lokálnou dávkou nemenia.
+
+### Dodatok po kontrole CodeRabbitu v PR #301 — tri platné pripomienky
+
+Pred opravou bol znovu stiahnutý main, stále **`1c454330`**; vzdialená vetva
+zodpovedala kontrolovanému commitu **`04f34f5b`**. Všetky tri pripomienky sú
+platné chyby E2E, nie nové potvrdené chyby aplikácie. Nevyžadujú zmenu logiky
+Svaply, aplikácie, dát alebo opráv 345/346.
+
+1. **Upozornenie môže prežiť komentár.** Backend v
+   `feed_post_comment_detail_view` zmaže iba komentár; `get_target_url` skladá
+   feedovú adresu z uložených `post_id`/`comment_id` bez overenia komentára.
+   Nový test prekliku autora preto cez čisté GET vyberá živý príspevok
+   s vrcholovým komentárom a identifikovateľným autorom. Ak prvý kandidát už
+   nemá vhodný komentár, hľadá ďalší. Až skutočná neprítomnosť dát vedie na
+   pevný dátový SKIP **`E2E_SKIP_NO_LIVE_COMMENT_AUTHOR`**, nie PASS. HTTP 500,
+   401, neplatný zoznam alebo neplatný komentár zostávajú FAIL. Ak backend
+   autora potvrdí, ale UI jeho meno chýba alebo je neaktívne, test zlyhá.
+   **Pôvodný `liveReadNotificationOrSkip` a testy návratu Späť sa nemenia**:
+   na návrat z príspevku nepotrebujú živého komentujúceho.
+2. **Tvar adresy nestačí.** Pomocník dostane konkrétne ID komentára a očakávaný
+   identifikátor jeho autora (slug, inak číselné ID, podľa aplikácie). Klikne
+   práve jeho meno a čakajúca asercia porovná dekódovaný segment profilovej
+   adresy s týmto identifikátorom. Navonok ide iba boolean a pevná fáza chyby,
+   nikdy identifikátor. Platná profilová adresa iného autora už nemôže prejsť.
+3. **Index feedu nie je identita príspevku.** Karta nemá `data-post-id`, ale
+   zobrazovaná fotka má stabilné `feed-image-open-<image.id>`. Backendový model
+   `FeedPostImage` patrí cez FK presne jednému príspevku. Skúška si preto uloží
+   ID prvej zobraziteľnej fotky a cez detail **konkrétneho `session.postId`**
+   overí aj jej príslušnosť. Po F5 vyberie jedinú kartu typu `free_post`
+   obsahujúcu túto fotku; starý `sourceIndex` sa vôbec nepoužíva. Cudzí repost
+   tej istej fotky nie je voľný príspevok. Nový príspevok nad podkladom už
+   nezmení výber a nevznikne pokus o POST cudziemu príspevku. Aplikácia sa
+   kvôli novému identifikátoru v DOM nemenila.
+
+Po opravách **51/51** čistých kontrol a **8/8** cielených browser kontrol,
+bez vonkajších SKIP. Cielené kontroly obsahujú vložený príspevok pred podklad,
+nesprávny profil s inak platným tvarom adresy (oba desktopové projekty),
+zaniknutý komentár, výber ďalšieho kandidáta, zaniknutý príspevok, HTTP 500
+a chybný kontrakt. Pridaná je aj čistá poistka, že fotka iného príspevku
+nesmie potvrdiť podklad. Pôvodný riadený pád orezaného komentára, hlasné chyby
+upratania a ochrana súkromných údajov zostávajú.
+
+Následne celá rozšírená browser kontrolná sada prešla **27/27**, **391,062 s**,
+bez vonkajších pádov, SKIP alebo retry. Zámerné vnútorné chyby museli naďalej
+zlyhať a potvrdiť očakávanú fázu a upratanie. Znovu prešli TypeScript frontendu,
+striktný TypeScript celej E2E oblasti, ESLint dotknutých súborov a kontrola
+diffu, **0 chýb / 0 upozornení**. Starší výsledok 50/50 a 20/20 vyššie patrí
+verzii pred review, neprepisuje sa na nový výsledok.
+
+Znovu overené izolované listovanie: **783 / 45** v hlavnej sade a **6**
+v komentárovej konfigurácii; počet ani kľúče živých scenárov sa touto opravou
+nemenia. Žiadny beh proti Railway ani nový PR; oprava sa pushne do tej istej
+vetvy. Vlákna review ponecháva agent majiteľovi. Živé okno zostáva nepotvrdené.
+
+### Ďalšie review PR #301 — dostupné fotky a počet vrcholových komentárov
+
+Na commite **`250cb167`** pribudli dva platné nálezy: Minor od CodeRabbitu
+k výberu dostupnej fotky a P2 od Codex review k výberu fotografického podkladu.
+Oba sú problémy prípravy E2E: môžu falošne zastaviť test pred overením UI,
+**nie sú to produkčné chyby Svaply ani dôkaz poškodenia dát**.
+
+- Backendový `comments_count` ráta aj odpovede. Príprava už neberie iba
+  prvého kandidáta: po overení vlastníctva a fotky cez GET skontroluje počet
+  skutočných vrcholových komentárov a pri platnom počte pod 3 pokračuje
+  ďalším kandidátom. HTTP chyby, chýbajúci alebo necelý počet a neplatný
+  kontrakt zostávajú tvrdé zlyhania; nepreskakujú sa kvôli ďalšiemu príspevku.
+- Výber fotky vyžaduje súčasne nezamietnutý stav, platné ID a neprázdnu URL.
+  Rozpracovaná prvá fotka tak neodmietne celý príspevok, keď ďalšia už má URL.
+  Samotná zmena `find` by nestačila: carousel vykresľuje iba aktívnu fotku.
+  Nový malý helper `support/feed-comment-source.ts` preto podľa potreby
+  zobrazí overenú fotku cez skutočné šípky carousela, na mobile cez `tap`,
+  bez force, API zápisu alebo zmeny aplikácie. Počet krokov je ohraničený
+  existujúcim limitom 5 fotiek. Pred otvorením komentárov sa stále vyžaduje
+  jediná karta `free_post` s fotkou overenou voči konkrétnemu `postId`.
+  Fotka sa takto pripraví aj v detaile, **pred** pridaním komentára; po
+  pridaní zostáva prísne `toBeInViewport({ ratio: 1 })` pred ďalšou akciou.
+- Pokryté je aj schválenie prvej fotky počas prípravy: nájdenie overenej
+  fotky nie je závislé od toho, či má karta ešte indikátor spracovania.
+  Prepínanie fotiek mení iba lokálne UI, nie pôvodné príspevky alebo fotky.
+
+Prvé cielené browser overenie **4/4** prešlo vrátane orezaného riadka, ktorý
+musel správne zlyhať a upratať iba nový vlastný komentár. Čisté kontroly
+prešli **55/55**; navyše overujú pokračovanie k ďalšiemu vhodnému príspevku
+aj zastavenie pri HTTP 500, neplatnom kontrakte a necelom počte. Aplikácia,
+závislosti, asercie UI, časové limity, retry a pravidlá upratania sa nemenia.
+Celá lokálna browser regresia následne prešla **30/30**, **0 zlyhaní,
+0 preskočení**, za **420,424 s**. Zahŕňa oba WebKity aj Chromium,
+tri nové fotografické prípady a pôvodné kontroly riadených chýb a upratania.
+Kontrola typov projektu aj všetkých E2E a ESLint dotknutých súborov prešli
+bez chýb. Offline kolekcia naďalej obsahuje **783 variantov / 45 súborov**
+v hlavnej konfigurácii a **6 variantov** v komentárovej konfigurácii.
+Žiadny beh proti Railway ani nový PR, oprava ide do tej istej vetvy; po tejto
+zmene výberu podkladu sa odporúča ďalšie review pred živým oknom.
+
+### Review PR #301 po `630a5f56` — zmena počtu fotiek počas navigácie
+
+Ďalší Minor je platný: `usePendingFeedImages` môže pri pollingu zamietnuť
+rozpracovanú fotku a `feedSlideImages` ju odstráni. Pri prechode z dvoch
+slidov na jeden zmiznú aj bodky. Pôvodný pomocník potom čakal na neexistujúcu
+bodku, hoci overená cieľová fotka už bola zobrazená. Ide o falošný pád
+prípravy E2E, nie novú chybu aplikácie alebo poškodenie údajov.
+
+Regresná skúška bola najprv spustená na pôvodnom pomocníkovi a **zlyhala**
+vo WebKite desktop pri presne vloženom zamietnutí. Oprava číta prítomnosť
+cieľa, počet bodiek aj aktívny index v jednej snímke DOM a pred každým
+ďalším krokom ich načíta znovu. Synchronizácia uzná overený cieľ alebo zmenu
+počtu; bez zmeny počtu naďalej vyžaduje správny nasledujúci index. Ak pri
+samotnom ťuku zmizne šípka, akceptuje sa iba už prítomná konkrétna cieľová
+fotka, nie ľubovoľný obrázok. Limit ostáva **4 navigačné akcie pre najviac
+5 fotiek**, bez force, dlhšieho timeoutu alebo opakovania testu.
+
+Nové `diagnostics-tests/feed-comment-source-cases.ts` a
+`feed-comment-source.scenario.ts` pridávajú **11 hraničných stavov × 3
+projekty**: oba WebKity a Chromium, na mobile skutočný `tap`. Zahŕňajú
+zamietnutie počas kliknutia aj pointerdown, pokračovanie po zmene počtu,
+cyklické prechádzanie, neprítomný cieľ, nefunkčnú či opačnú šípku, prekročený
+limit a chýbajúci aktívny slide. Negatívne prípady musia potvrdiť správny
+dôvod chyby aj presný počet skutočných navigačných pokusov. Sú len
+v izolovanej lokálnej konfigurácii, nie v živom behu ani dyme.
+
+Po oprave prešla celá lokálna browser sada **41/41**, **0 zlyhaní,
+0 preskočení**, za **536,894 s**, vrátane všetkých 33 nových projektových
+variantov a pôvodných kontrol upratania. Čistá logika prešla **55/55**,
+TypeScript projektu aj celej E2E oblasti a ESLint celého rozdielu PR majú
+**0 chýb / 0 upozornení**. Izolované listovanie znovu potvrdilo **783 / 45**
+v hlavnej sade a **6** samostatných komentárových variantov, bez prihlásenia.
+
+Vlastná kontrola prešla celý aktuálny rozdiel PR vrátane volajúcich,
+overenia autora a podkladu, prísnej kontroly celého nového riadka, strážcu
+zápisov, upratania a ochrany výstupov. Ďalší konkrétny problém sa pri nej
+nepotvrdil. Aplikácia, závislosti, migrácie, pôvodné asercie a pravidlá
+upratania sa nemenia; žiadne účty, env ani relácia sa nečítali či nekopírovali
+a proti Railway sa nič nespúšťalo.
+
+### Ďalší krok — tri špecy až v novom potvrdenom okne
+
+Návrh: **15 minút** v termíne určenom majiteľom, bez zlučovania, nasadení
+a zmien testovacích účtov. Pred štartom znovu fetch main a potvrdenie nasadenia.
+Hlavný E2E účet potrebuje dostupný vlastný príspevok s fotkou a aspoň tromi
+vrcholovými komentármi v prvej dávke Nástenky; v prvých 15 upozorneniach
+prečítané živé upozornenia na lajk, komentár a odpoveď. Nová kontrola 345
+potrebuje v otvorenom detaile aspoň jedno aktívne meno komentujúceho.
+
+Dva po sebe idúce príkazy z `frontend` (nie súbeh, žiadne retry; druhý iba
+po úspešnom prvom a bez chyby prihlásenia/obnovy):
+
+```powershell
+npm run test:e2e:docker -- e2e/feed-post-detail.spec.ts e2e/notification-click.spec.ts --workers=1 --retries=0 --max-failures=1
+npm run test:e2e:docker -- --config=e2e/feed-comments.playwright.config.ts --workers=1 --retries=0 --max-failures=1
+```
+
+Pri splnených dátach sa plánuje **19 PASS / 0 FAIL / 17 projektových SKIP**
+(36 variantov spolu); nejde o vykonaný výsledok. Zápisový komentárový scenár
+je zámerne oddelený chránenou konfiguráciou od bežného behu a dymu.
+Prípadné pády sa hlásia podľa `AGENTS.md`, nie úpravou testu na zelený.
+Ďalší plný beh, WSL/Docker 223 ani vytváranie dát pre iné scenáre sa týmto
+pokynom nespúšťajú. Majiteľ podľa trvalého pokynu dostane commit a push
+lokálne overenej E2E vetvy; PR otvorí sám.
+
+## Historická dávka — 19. 11. 2026: šesť preklikov upozornení po príprave dát
 
 Majiteľ pripravil testovacie údaje a potvrdil nové okno bez zmien a nasadzovania.
 Pred behom bol stiahnutý čerstvý main **`bc4391dc`** (K43, PR #298).

@@ -19,7 +19,7 @@ export class FeedCommentsWriteAudit {
     let allowed = false;
     try {
       const data = payload as Record<string, unknown> | null;
-      if (this.phase === 'ui' && method === 'POST' && path === POSTS_PATH) {
+      if (this.phase === 'ui' && !this.session.reusesPhotoPost && method === 'POST' && path === POSTS_PATH) {
         this.posts += 1;
         allowed = this.posts === 1 && Boolean(data && !Array.isArray(data) && Object.keys(data).length === 4
           && data.post_type === 'free_post' && data.caption === this.session.postCaption
@@ -33,7 +33,9 @@ export class FeedCommentsWriteAudit {
         && path === `${this.session.commentsPath()}${this.session.commentId}/`) {
         this.uiDeletes += 1; allowed = this.uiDeletes === 1;
       } else if (this.phase === 'cleanup' && this.session.postId !== null && method === 'DELETE'
-        && path === `${POSTS_PATH}${this.session.postId}/`) {
+        && path === (this.session.reusesPhotoPost && this.session.commentId !== null
+          ? `${this.session.commentsPath()}${this.session.commentId}/` : `${POSTS_PATH}${this.session.postId}/`)
+        && (!this.session.reusesPhotoPost || this.session.commentId !== null)) {
         this.cleanups += 1; allowed = this.cleanups === 1;
       }
     } catch { /* Do chyby sa nesmie dostať payload. */ }
@@ -53,13 +55,15 @@ export class FeedCommentsWriteAudit {
   }
   assertUIComplete(): void {
     this.assertSafe();
-    if (this.posts !== 1 || this.comments !== 1 || this.uiDeletes !== 1 || this.rejected) {
+    if (this.posts !== (this.session.reusesPhotoPost ? 0 : 1) || this.comments !== 1 || this.uiDeletes !== 1 || this.rejected) {
       throw new Error('UI nevykonalo presne očakávané zápisy komentárovej skúšky.');
     }
   }
   assertCleanupComplete(): void {
     this.assertSafe();
-    if (this.cleanups !== 1 || this.cleanupRejected) throw new Error('Upratanie podkladu neprebehlo jediným bezpečným zápisom.');
+    if ((this.session.reusesPhotoPost ? this.cleanups > 1 : this.cleanups !== 1) || this.cleanupRejected) {
+      throw new Error('Upratanie podkladu neprebehlo jediným bezpečným zápisom.');
+    }
   }
   evidence(): string {
     return `[E2E-COMMENTS-AUDIT] post=${this.posts} comment=${this.comments} uiDelete=${this.uiDeletes} cleanupDelete=${this.cleanups} rejected=${this.rejected} pending=${this.pending.size} uncertain=${this.uncertain}`;

@@ -12,6 +12,7 @@ import {
   sideNav,
 } from './support/dashboard';
 import { FEED_HOME_PATHS } from './support/feed';
+import { findNotificationCommentAuthor, openCommentAuthorProfileFromOverlay } from './support/comment-author-profile';
 
 // Klik na upozornenie vedie na príspevok, Späť sa vráti. Klikajú sa VÝLUČNE prečítané upozornenia –
 // klik na neprečítané by do produkcie zapísal „prečítané". Bez takého upozornenia sa test preskočí.
@@ -144,6 +145,20 @@ test.describe('desktop', () => {
     test.skip(testInfo.project.name === 'webkit-mobile', 'Panel upozornení a overlay sú len na desktope.');
     await recordMainInstance(page);
     await gotoDashboardHome(page);
+  });
+
+  test('meno autora komentára v detaile otvorenom z upozornenia zavrie okno a otvorí profil', async ({ page }) => {
+    await sideNav(page, 'Upozornenia').click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Upozornenia' }).first()).toBeVisible();
+    const targets = await readNotificationTargets(page, 'feed_post_commented');
+    const target = await findNotificationCommentAuthor(page, targets);
+    test.skip(target === null, 'E2E_SKIP_NO_LIVE_COMMENT_AUTHOR: chýba prečítané upozornenie s dostupným autorom komentára.');
+    const item = readNotifications(page, 'Komentár k príspevku').nth(target!.index);
+    await expect(item).toBeVisible();
+    await item.click();
+    await expect(page.getByTestId('feed-post-overlay')).toBeVisible();
+    expectPostTarget(page, true);
+    await openCommentAuthorProfileFromOverlay(page, target!);
   });
 
   for (const { name, type, title, commentTarget } of FEED_NOTIFICATIONS) {

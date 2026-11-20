@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import type { CommentMode } from './feed-comments-page';
+import { CAROUSEL_CASES, type CarouselMode } from './feed-comment-source-cases';
 import { assertCommentFault, COMMENT_FAULT_MODES, commentFailurePhases } from './feed-comments-control';
 import type { CommentResult as Result } from './feed-comments-control';
 
@@ -13,7 +14,7 @@ type Report = Suite & { privacySafe?: boolean; guardRejected?: boolean;
   stats?: { expected?: number; unexpected?: number; skipped?: number; flaky?: number } };
 
 /** Bez siete, env, relácie alebo zápisov na hostiteľský zdrojový strom. */
-function run(mode: CommentMode, extra: string[] = []) {
+function run(mode: CommentMode | CarouselMode, extra: string[] = []) {
   const root = path.resolve(__dirname, '../..').replaceAll('\\', '/');
   fs.mkdirSync(path.join(root, 'e2e/.auth'), { recursive: true });
   const libraries = fs.realpathSync(path.join(root, 'node_modules')).replaceAll('\\', '/');
@@ -46,6 +47,15 @@ function run(mode: CommentMode, extra: string[] = []) {
   }
   return { code: child.status, report, variants };
 }
+
+for (const scenario of CAROUSEL_CASES) test(`karusel podkladu: ${scenario.name}`, () => {
+  const { code, report, variants } = run(scenario.mode);
+  assert.equal(code, 0); assert.equal(report.stats?.expected, 3); assert.equal(report.stats?.unexpected, 0);
+  assert.equal(report.stats?.skipped, 0); assert.equal(variants.length, 3);
+  for (const variant of variants) {
+    assert.equal(variant.results?.length, 1); assert.equal(variant.results[0].status, 'passed');
+  }
+});
 
 function observation(result: Result) {
   const output = (result.stdout ?? []).map(row => row.text ?? '').join('');
@@ -143,3 +153,47 @@ test('zlyhané upratanie zastaví zostávajúce projekty pred zápisom', () => {
     assert.ok(!(result.stdout ?? []).some(row => row.text?.includes('[COMMENTS-SELFTEST]')));
   }
 });
+
+for (const mode of ['photo-reuse', 'photo-reordered', 'photo-clipped', 'photo-pending-first', 'photo-pending-ready', 'photo-root-candidate'] as const) test(mode === 'photo-reordered'
+  ? 'nový príspevok nad podkladom po obnovení stránky nezmení zvolenú kartu'
+  : mode === 'photo-pending-first' ? 'rozpracovaná prvá fotka nevylúči dostupnú ďalšiu fotku ani podklad'
+  : mode === 'photo-pending-ready' ? 'schválenie prvej fotky počas prípravy nezmení identitu vybraného podkladu'
+  : mode === 'photo-root-candidate' ? 'súčet s odpoveďami nebráni výberu ďalšieho podkladu s tromi koreňmi'
+  : mode === 'photo-reuse' ? 'fotka a tri pôvodné komentáre ostanú po mobilnom UI pridaní a zmazaní zachované'
+  : 'čiastočne orezaný nový komentár musí zlyhať pred ďalším klikom a stále sa upratať', () => {
+  const { code, report, variants } = run(mode, ['--project=webkit-mobile']);
+  assert.equal(variants.length, 1); assert.equal(report.stats?.skipped, 0);
+  assert.equal(code, mode !== 'photo-clipped' ? 0 : 1);
+  const result = variants[0].results![0]; const state = observation(result);
+  assert.equal(state.status, mode !== 'photo-clipped' ? 'passed' : 'failed');
+  assert.equal(state.exists, true); assert.equal(state.comments, 3); assert.equal(state.cleanup, 'verified');
+  assert.equal(state.postsCreated, 0); assert.equal(state.postsDeleted, 0);
+  assert.equal(state.commentsCreated, 1); assert.equal(state.commentsDeleted, 1);
+  assert.equal(state.writesWithCsrf, 2); assert.equal(state.unexpected, 0);
+  assert.equal(state.touch, ['photo-pending-first', 'photo-pending-ready'].includes(mode) ? 6 : mode !== 'photo-clipped' ? 4 : 2); assert.equal(state.mouse, 0);
+  if (mode === 'photo-clipped') assert.deepEqual(state.phases, ['pridanie vlastného komentára']);
+});
+
+for (const mode of ['author-ok', 'author-overlay-stuck', 'author-wrong-url', 'author-other-profile'] as const) {
+  test(`desktopový preklik autora rozlišuje stav ${mode}`, () => {
+    for (const project of ['webkit-desktop', 'chromium-desktop']) {
+      const { code, report, variants } = run(mode, [`--project=${project}`]);
+      assert.equal(code, mode === 'author-ok' ? 0 : 1); assert.equal(variants.length, 1);
+      assert.equal(report.stats?.skipped, 0);
+      const result = variants[0].results![0];
+      assert.equal(result.status, mode === 'author-ok' ? 'passed' : 'failed');
+      if (mode !== 'author-ok') {
+        const errors = (result.errors ?? []).map(error => error.message ?? '').join('');
+        assert.ok(errors.includes(mode === 'author-overlay-stuck' ? 'zatvorenie detailu nad profilom' : 'adresa profilu'));
+      }
+    }
+  });
+}
+
+for (const mode of ['author-deleted-comment', 'author-next-candidate', 'author-post-gone', 'author-http-error', 'author-bad-data'] as const) {
+  test(`výber autora správne vyhodnotí stav ${mode}`, () => {
+    const { code, report, variants } = run(mode, ['--project=webkit-desktop']);
+    assert.equal(code, 0); assert.equal(report.stats?.expected, 1); assert.equal(report.stats?.skipped, 0);
+    assert.equal(variants.length, 1); assert.equal(variants[0].results?.[0]?.status, 'passed');
+  });
+}

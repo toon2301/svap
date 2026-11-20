@@ -9,7 +9,7 @@ if (fs.existsSync(path.resolve(__dirname, '../../.env.e2e')) || fs.existsSync(pa
   throw new Error('Lokálna komentárová kontrola odmieta env alebo uloženú reláciu.');
 }
 export default defineConfig({
-  testDir: __dirname, testMatch: 'feed-comments.scenario.ts', outputDir: '/tmp/feed-comments-selftest',
+  testDir: __dirname, testMatch: ['feed-comments.scenario.ts', 'feed-comment-source.scenario.ts'], outputDir: '/tmp/feed-comments-selftest',
   timeout: 5000, expect: { timeout: 1000 }, workers: 1, retries: 0, maxFailures: 1, reporter: [['json']],
   use: { baseURL: 'https://stunning-inspiration-svap.up.railway.app', storageState: { cookies: [], origins: [] },
     actionTimeout: 1000, navigationTimeout: 1000, serviceWorkers: 'block', trace: 'off', screenshot: 'off', video: 'off' },
