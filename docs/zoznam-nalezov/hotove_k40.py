@@ -68,4 +68,54 @@ DONE_SINCE_K40 = [
               'päť minút nečinnosti) a od udalosti '
               '`online`. RUČNÝ TEST MAJITEĽA (19. 11. 2026): všetko prešlo v poriadku. Dopad na E2E: žiadny. '
               'Kandidát z K43: nález 353.'),
+    dict(n=341, vetva='K31', pr=None, zlucene=False,
+         text='HOTOVÉ VO VETVE K31 (commit `906f7c32` nad `main` `1c454330`, nahraté 20. 11. 2026; PR ešte nie je, '
+              'CI nebežalo a vetva nie je v `main`, takže čaká na PR a zlúčenie; kolega ju urobil podľa karty '
+              '`karty/K31.md`, výsledok `karty/K31_vysledok.md`). MEDZERA: nainštalovaný Next.js 16.4.3 bol v '
+              'rozsahu upozornenia GHSA-mfr8-8qww-v76h a prvý lokálny build po kompilácii vypisoval '
+              '`SecurityFatalError` (štrnásť zo štrnástich hlásených prvých buildov K28 až K43). OPRAVA: `next` '
+              '`^16.4.3` → `^16.4.5` vo `frontend/package.json` a zámok upravený príkazom `npm install next@16.4.5` '
+              '(10 balíkov: `next`, `@next/env` a osem `@next/swc-*`, všetko 16.4.3 → 16.4.5; nič sa nepridalo ani '
+              'neodstránilo); kód aplikácie, `next.config.js`, `eslint-config-next`, `react` ani `overrides` sa '
+              'nemenili a nová hlavná verzia ani zmena kódu netreba. Verzia 16.4.5 je najnižšia opravená v rámci '
+              '`^16`: karta uvádza jedno upozornenie, `npm audit` ich pre `next` hlási sedem (rozsahy končia na '
+              '16.4.4) a 16.4.5 opravuje všetky; verzia `latest` (16.4.6) sa nebrala, lebo karta žiada najnižšiu '
+              'opravenú a 16.4.6 navyše mení správanie (kompresia odpovedí route handlerov). OVERENIE (podľa '
+              'výsledku): celý Jest 615 sád a 9 352 testov prešlo pred upgradom aj po ňom; `tsc` a '
+              '`check:missing-translations` (0 a 0) čisté; ESLint celého `frontend` pred aj po rovnaký (326 chýb a '
+              '429 varovaní, existujú už na `main`, CI ESLint nespúšťa); `npm audit --omit=dev`: pre `next` sedem '
+              'upozornení pred a žiadne po; `npm run build` dvakrát z čistého `.next`: pred upgradom prvý beh '
+              '`SecurityFatalError` (kód 1), druhý kódom 0, po upgrade oba behy kódom 0 a bez toho výpisu; zoznam '
+              'ciest pred a po rovnaký (48 riadkov); produkčný beh v Chromiu bez backendu (`/`, `/login`, `/about`, '
+              '`/faq` a `/contact` v sk aj en, 10 načítaní) pred aj po rovnaký, rozdiel 0. Riziko nízke: 16.4.4 '
+              '(zmeny Turbopacku, `fast-jwt` namiesto `jsonwebtoken` vo vnútri Next.js) a 16.4.5 (len bezpečnostné '
+              'opravy), produkčný build beží cez webpack; aplikácia nepoužíva `use cache`, `unstable_cache`, Cache '
+              'Components, PPR, Edge runtime, middleware, route handlery ani `draftMode`. Odchýlky od karty: karta '
+              'hovorí o jednom upozornení, ide o sedem; veľkosti ciest sa neporovnávali (výpis buildu Next.js 16 ich '
+              'neuvádza), porovnal sa zoznam ciest; `eslint-config-next` ostáva 16.4.3 (nemá peer závislosť na '
+              '`next`); ESLint sa spustil nad celým `frontend`, lebo sa žiadny súbor nezmenil. KONTROLA AGENTA (20. '
+              '11. 2026, z gitu a z npm): vetva má jediný commit nad `1c454330`, mení len `frontend/package.json` '
+              '(jeden riadok) a `frontend/package-lock.json` (80 riadkov: 10 balíkov, všetky odkazy `resolved` z '
+              '`registry.npmjs.org`, verzia 16.4.5, kontrolný súčet sha512, žiadna iná zmena); oproti `main` '
+              '`f0c4b789` bez konfliktu; vlastný `npm audit --omit=dev` nad zámkom: `main` 6 záznamov (z toho `next` '
+              'so siedmimi upozorneniami), vetva K31 5 záznamov bez `next` (`@sentry/bundler-plugins`, '
+              '`@sentry/nextjs`, `@sentry/webpack-plugin`, `glob` a `minimatch`, nález 229). ČAKÁ: PR a zlúčenie '
+              'mimo behu Playwrightu, kontrola logu nasadenia na Railway (build už nemá končiť výpisom o zraniteľnej '
+              'verzii), ručný dymový test majiteľa (`sablony/dymovy_test.md` aj bod 8) a dym `@smoke` od Codexu. '
+              'Dopad na E2E: DOM ani `data-testid` sa nemenia, framework sa mení pre celú aplikáciu. Kandidát z K31: '
+              'nález 354.'),
+]
+
+# Zlúčené PR, v ktorých nie je hotový celý nález (len časť otvoreného nálezu alebo nález nemá číslo); `hotove.py` ich pripája do
+# `DONE_PR_TABLE_CASTOCNE`.
+DONE_PR_TABLE_CASTOCNE_K40 = [
+    ('#297', 'K42', '333 (dávka 5 z 5 delenia `FeedPostComments.tsx`: mutácie do `useFeedCommentMutations.ts`, typ vlastností do '
+     '`FeedPostComments.types.ts` a zmazanie dočasného odtlačku HTML; ostáva `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`)'),
+    ('#300', 'e2e/notifikacie-prekliky', 'bez nálezu (Codex, len dokumentácia): živé overenie šiestich preklikov upozornení '
+     'z 18. 11. (lajk a odpoveď na komentár v troch projektoch) z 19. 11. 2026 na `main` `bc4391dc`: 6 prešlo, 0 zlyhalo, 0 '
+     'preskočených'),
+    ('#301', 'e2e/komentare-345-346', '345 a 346 (časť: E2E regresie od Codexu: preklik mena autora komentára z okna otvoreného '
+     'z upozornenia na desktope a celý nový komentár na iPhone 15 s fotopríspevkom; lokálne overené, živý beh zatiaľ nebehol)'),
+    ('#302', 'K45', 'bez nálezu (príprava redizajnu komentárov: päť nových súborov testov so 34 testami pre medzery z K38 až '
+     'K42; mapovanie 344 je zapísané v náleze 344)'),
 ]

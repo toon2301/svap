@@ -414,7 +414,9 @@ DONE_SINCE_K20 = [
               'majiteľa uvedená ako chybná a bod 3 karty (Späť z profilu) majiteľ na otázku agenta potvrdil ako v '
               'poriadku. Dopad na E2E: žiadny existujúci špec sa nemení; Codex doplní v `notification-click.spec.ts` '
               '(desktop) klik na avatar alebo meno autora komentára a kontrolu, že `feed-post-overlay` zmizne a '
-              'adresa je profil (úloha pre Codexa, stav je v `docs/playwright-odovzdanie.md`).'),
+              'adresa je profil (úloha pre Codexa, stav je v `docs/playwright-odovzdanie.md`). STAV E2E (20. 11. 2026): '
+              'kontrolu doplnil Codex v PR #301 (nový desktopový scenár v `notification-click.spec.ts`: preklik mena '
+              'autora komentára z okna otvoreného z upozornenia); lokálne overené, živý beh zatiaľ nebehol.'),
     dict(n=350, vetva='K39', pr='#292', zlucene=True,
          text='HOTOVÉ rovnakou opravou ako 345 (K39, PR #292, zlúčené 19. 11. 2026, merge `dd6ca703`). MEDZERA '
               '(kandidát z K36): zoznam lajkujúcich v okne detailu príspevku na počítači pri prekliku na používateľa '
@@ -452,7 +454,9 @@ DONE_SINCE_K20 = [
               'počty riadkov sedia (125 a 223), v PR sa menili len tieto tri súbory (odtlačok HTML ani existujúce '
               'testy nie). RUČNÝ TEST MAJITEĽA na iPhone (19. 11. 2026): všetko prešlo v poriadku. Dopad na E2E: '
               'Codex doplní pre `webkit-mobile` (iPhone 15, 393×659) po `expect(row).toBeVisible()` kontrolu '
-              '`toBeInViewport({ ratio: 1 })` s príspevkom s fotkou a aspoň tromi komentármi.'),
+              '`toBeInViewport({ ratio: 1 })` s príspevkom s fotkou a aspoň tromi komentármi. STAV E2E (20. 11. 2026): '
+              'kontrolu doplnil Codex v PR #301 (`toBeInViewport({ ratio: 1 })` po `toBeVisible()` v scenári komentárov a '
+              'nový mobilný variant s fotopríspevkom); lokálne overené, živý beh zatiaľ nebehol.'),
     dict(n=338, vetva='K41', pr='#295', zlucene=True,
          text='HOTOVÉ (K41, PR #295, zlúčené 19. 11. 2026 o 16:31 UTC, merge `561aaa8f`; dva commity `45591279` a '
               '`3ab691ca`, druhý po dvoch pripomienkach CodeRabbitu; 2 súbory, +546 a −7 riadkov). MEDZERA (K26): ak '

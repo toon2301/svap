@@ -369,4 +369,48 @@ DECISIONS_DALSIE = [
                  '`test`, pomenovania v `it.each`) sa píšu po slovensky, staré sa neprekladajú. Veta je doplnená do '
                  '`AGENTS.md` a do `.cursor/rules/svaply.mdc` (vetva 190, PR #299).',
          datum='20. 11. 2026'),
+    dict(id='R63', tema='Okno detailu príspevku na počítači (344): päť drobností pred implementáciou a poradie voči redizajnu komentárov',
+         otazka='Mapovanie 344 (K45) ukázalo, že obe zmeny (ponuka a portfólio v dvoch stĺpcoch, užšie okno len s '
+                'textom) sa dajú urobiť bez zásahu do `FeedPostCard.tsx`: dve malé úpravy v '
+                '`FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx`, jedna dávka v dvoch commitoch '
+                '(najprv ponuka a portfólio, potom úzke okno). Vzhľad je schválený (R53, obrázky '
+                '`navrhy/pc-okno-ponuka.png` a `navrhy/pc-okno-text.png`); pred kartou treba rozhodnúť päť '
+                'drobností. (1) Pri otvorení okna sa príspevok najprv načíta (kostra) a šírka okna sa dozvie až '
+                'potom. Ako má vyzerať kostra? (a) Úzka (576 px): textový príspevok sa nehýbe, ponuka, portfólio a '
+                'fotka sa po načítaní rozšíria na 864 px. (b) Široká ako dnes: textový príspevok sa po načítaní '
+                'zúži. (c) Plynulá zmena šírky (nový vizuálny prvok, podľa R49 by sa musel najprv schváliť). (2) '
+                'Repost textového príspevku (zdieľaný príspevok bez fotky): (a) úzke okno, (b) široké. (3) Fotka '
+                'karty ponuky v ľavom stĺpci: (a) ostáva 256 px ako v návrhu (pri vysokom okne ostane pod kartou '
+                'voľné miesto), (b) natiahne sa na zvyšok stĺpca (zmena aj v `SharedContentPreviewCard.tsx`, 355 '
+                'riadkov). (4) Šírka úzkeho okna: (a) 576 px (štandardná hodnota `max-w-xl`), (b) presne 580 px. (5) '
+                'Poradie: (a) 344 (nová dávka K47) pred redizajnom komentárov (K44), (b) K44 pred 344, (c) obe v '
+                'jednej dávke.',
+         odporucanie='(1a), (2a), (3a), (4a) a (5a). (1a): žiadny nový vizuálny prvok a najčastejší textový '
+                     'príspevok sa nehýbe; druh príspevku vopred vedela povedať až karta vo feede, na čo by sa '
+                     'najprv musel rozdeliť `FeedPostCard.tsx` (K46). (2a): ide len o text. (3a): zodpovedá '
+                     'schválenému návrhu („obsah karty sa nemení“) a je najmenší zásah. (4a): rozdiel je 4 px a '
+                     'štandardná hodnota drží kód jednoduchý. (5a): menšia a nezávislá zmena sa vyskúša v '
+                     'prehliadači skôr, než príde väčší redizajn; K44 potom skúša vzhľad len v dvoch šírkach (okolo '
+                     '380 a 576 px), nie ešte aj v starých 864 px, a 344 nečaká na podrobnosti k poľu pri odpovedi. '
+                     '(5c) by miešala dve vzhľadové zmeny v jednom nasadení a sťažila by hľadanie príčiny, keby '
+                     'niečo vyzeralo zle.',
+         kedy='Pred kartou K47 (344); karta sa pripraví po odpovedi.'),
+    dict(id='R64', tema='Rozdelenie práce pri redizajne: kto navrhuje vzhľad, kto mapuje kód, kto píše kód a kto kontroluje',
+         otazka='Pri otázke k mapovaniu 344 (20. 11. 2026) sa ukázalo, že rozdelenie práce nie je zapísané ako jedno '
+                'rozhodnutie. Dnešný stav podľa zápisov: vzhľad navrhuje agent a schvaľuje majiteľ (R49; návrhy v '
+                '`navrhy/`, schválené v R52 a R53); mapovanie kódu robí kolega (pokyn majiteľa z 18. 11. 2026: pri '
+                'K30 „iba pre tento raz“, pri ďalších krokoch „nech si ich kolega zmapuje sám“ a „si ešte stále sám '
+                'mapuje“; od vtedy sa tak robí); kód a testy píše kolega vo vetvách K… podľa kariet od agenta; agent '
+                'vedie zoznam, píše karty a kontroluje práce kolegu z GitHubu a z kódu, kód aplikácie nepíše (od 7. '
+                '11. 2026 sa opravy agentom odkladajú, kým majiteľ nedá vedieť); E2E robí Codex. Má to tak ostať? '
+                '(a) Áno, platí to aj pre redizajn komentárov (K44) a okno na počítači (344). (b) Mapovanie robí '
+                'agent (karta s presnými riadkami hneď, ale bez skúšky zmeny v kópii kódu a bez behu testov), kolega '
+                'píše kód. (c) Kód redizajnu píše agent (vyžaduje výslovný pokyn majiteľa; kontrolu by robil kolega '
+                'alebo Codex).',
+         odporucanie='(a): mapovanie kolegu je dôkaz, nie len čítanie: pri 344 si kolega vyskúšal zmenu v kópii a '
+                     'zistil presne štyri testy, ktoré by padli; autor kódu a kontrolór sú dve rôzne relácie (kolega '
+                     'píše, agent kontroluje z GitHubu a z kódu), čo je poistka, o ktorú ide pri „čo '
+                     'najbezpečnejšie“. Návrhy vzhľadu a karty ostávajú na agentovi, takže sa nič nestráca. (b) '
+                     'alebo (c) sa dajú, ak majiteľ chce, no vtedy treba dnešnú kontrolu nahradiť inou.',
+         kedy='Pred kartou K47 alebo K44; nie je naliehavé.'),
 ]

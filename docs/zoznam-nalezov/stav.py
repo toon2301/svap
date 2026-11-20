@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='20. 11. 2026',
-    kod='`main` `bc4391dc` (po PR #298: K43; PR #297 je K42, PR #296 zoznam 189, PR #295 je K41)',
+    kod='`main` `f0c4b789` (po PR #302: K45; PR #301 a #300 sú Codex, PR #299 zoznam 190, PR #298 je K43)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -16,6 +16,35 @@ from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
+    ('20. 11. 2026',
+      'Vetva 191 (vychádza z `main` `f0c4b789`, teda po PR #302). (1) Zlúčené: PR #299 (vetva 190; 20. 11. 2026 o 06:10 UTC, '
+      'merge `77204a57`), PR #300 (Codex, `e2e/notifikacie-prekliky`; o 06:37 UTC, merge `1c454330`; len dokumentácia: živé '
+      'overenie šiestich preklikov upozornení z 19. 11. na `main` `bc4391dc`, 6 prešlo, 0 zlyhalo, 0 preskočených), PR #301 '
+      '(Codex, `e2e/komentare-345-346`; o 10:54 UTC, merge `7481c4e4`; 18 súborov, +876 a −33 riadkov: E2E regresie 345 a '
+      '346, lokálne overené, živý beh zatiaľ nebehol; kontrola CodeRabbitu a Codexu mala 6 pripomienok, riešené v troch '
+      'ďalších commitoch, štyri vlákna ostali formálne otvorené, no sú zastarané; CI zelené) a PR #302 (K45; o 11:12 UTC, '
+      'merge `f0c4b789`; päť nových súborov testov, +1 198 riadkov; CI zelené, CodeRabbit nebehol (repozitár nemá automatické '
+      'kontroly), Codex bez väčších problémov). (2) K45 (PR #302): časť 1: päť nových súborov testov (34 testov: poradie '
+      'zápisu pri mutáciách, výsledky a stav „odosiela sa“, ochrany hooku, medzery načítania), celý Jest 620 sád a 9 386 '
+      'testov, z 47 mutácií zachytených 42 (pred novými testami 9), prežilo 5 nepozorovateľných (W7, R3, R6, R7, LR1; agent '
+      'overil čítaním servera, že LR1 je nepozorovateľná: náhľad vkladá 10 najnovších odpovedí a donačítavanie berie len '
+      'staršie); produkčný kód ani existujúce testy sa nemenili. Časť 2: mapovanie 344 (výsledok `karty/K45_vysledok.md`, '
+      'zapísané v náleze 344): obe zmeny sa dajú urobiť bez zásahu do `FeedPostCard.tsx` (dve malé úpravy v '
+      '`FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx`, jedna dávka v dvoch commitoch), prototyp v kópii zlomil '
+      'presne 4 existujúce testy, žiadny špec E2E nepadne; agent overil kľúčové tvrdenia čítaním kódu na `main` (riadky v '
+      'piatich súboroch, štyri testy a E2E odkazy sedia). Delenie `FeedPostCard.tsx` nie je podmienkou. Odporúčané poradie: '
+      '344 pred redizajnom komentárov; päť drobností na rozhodnutie je nové R63. (3) K31 (Next.js 16.4.5, nález 341): vetva '
+      '`K31` (commit `906f7c32` nad `1c454330`) je nahratá, PR k nej ešte nie je a v `main` nie je (CI nebežalo); agent '
+      'overil obsah (2 súbory, 10 balíkov v zámku, všetko z `registry.npmjs.org`, bez konfliktu s `main`) a vlastným `npm '
+      'audit --omit=dev`: `main` 6 záznamov (`next` so siedmimi upozorneniami), vetva 5 záznamov bez `next` (nález 229). '
+      'Nález 341 je zapísaný ako opravený, čaká na PR a zlúčenie. (4) Ručné testy majiteľa (20. 11. 2026): otestované, čo '
+      'išlo, bez nálezov (K45 nemení produkčný kód a K31 nie je zlúčená, takže sa nenasadila). (5) Kandidát z K31: nový nález '
+      '354 (prázdny koreňový `package-lock.json`, varovanie pri zostavení). K nálezu 229 pribudol doplnok (po K31 ostáva 5 '
+      'záznamov, `npm audit` ponúka `@sentry/nextjs` 11.15.0, nová hlavná verzia). (6) Otázky majiteľa 20. 11. 2026: čo ešte '
+      'treba pred redizajnom komentárov a oknom na počítači a prečo mapoval kolega: odpoveď v správe; rozdelenie práce (kto '
+      'navrhuje vzhľad, kto mapuje, kto píše kód, kto kontroluje) je nové rozhodnutie R64. (7) Prehľad: nálezy 1–354, '
+      'zatvorené 14, hotové 141 (+1 čaká na zlúčenie: 341), PRED 46, PO 132; čakajúcich rozhodnutí 11 z 64. Dopad na E2E: '
+      'Codex po zlúčení a nasadení K31 spustí dym `@smoke`; živý beh nových regresií 345 a 346 čaká na okno a údaje.'),
     ('20. 11. 2026',
       'Doplnok vetvy 190 (PR #299; `main` ostáva `bc4391dc`). (1) Kontrola PR #299 (20. 11. 2026): CodeRabbit 1 pripomienka '
       '(Minor, platná), Codex bez nálezov, CI (`checks`, `backend-postgres`) zelené. Pripomienka: údaj „najneskôr do 8 s“ pri '
@@ -300,17 +329,6 @@ ZMENY = [
       '0), posiela sa kolegovi po K26; frontend nálezu 262 ide ako ďalšia dávka po jej zlúčení; K28 (preklady) ostáva návrh, '
       'najprv mapovanie. (4) Číselný prehľad bez zmeny: nálezy 1–337, zatvorené 14, hotové 132; čakajúcich rozhodnutí 9 z 44. '
       'Dopad na E2E: žiadny.'),
-    ('16. 11. 2026',
-      'Vetva 180 (vychádza z `main` `13a9d95b`, teda po PR #272). (1) Vetva 179 (PR #272, zlúčené 16. 11. 2026 o 13:39 UTC, '
-      'merge `13a9d95b`; commit `56d14142`) je zlúčená: CI (`checks`, `backend-postgres`) a CodeRabbit sú zelené, CodeRabbit '
-      'aj Codex review bez pripomienok a vlákna nie sú. (2) Odpoveď majiteľa na R44: (b) podľa odporúčania agenta, teda '
-      'robí sa len UI scenár zmeny kategórie upozornení (nález 337) a kontrola výzvy na push sa v E2E nerobí; implementuje '
-      'Codex v `frontend/e2e/**`, pred implementáciou skontroluje, že testovací účet má zapnuté upozornenia v aplikácii, '
-      'a živé okno proti Railway oznámi majiteľ samostatne. (3) Majiteľ súhlasil s jednou dokumentačnou vetvou agenta po '
-      'výsledku K26 (údržba zoznamu: aktuálny stav na jednom mieste, staré dáta do archívnych súborov, menej opakovaných '
-      'faktov; cieľom je menej chýb); K26 posiela majiteľ kolegovi. (4) Číselný prehľad: nálezy 1–337, zatvorené 14, hotové 132, '
-      'čakajúcich rozhodnutí 9 z 44. Dopad na E2E: Codex dostáva pokyn implementovať UI scenár kategórií (nález 337); '
-      'aplikácia sa nemení.'),
 ] + ZMENY_STARSIE_2 + ZMENY_STARSIE
 
 # Nálezy opravené po prvom vydaní (`DONE_SINCE`), tabuľka PR (`DONE_PR_TABLE`) a popis série Upozornenia (`SERIA_UPOZORNENIA`) sú v
@@ -324,9 +342,9 @@ PORADIE = [
          co='Rýchle upgrady z 183 a 184 bez veľkého rizika: backend (Pillow, gunicorn, requests, DRF, simplejwt, daphne, python-dotenv, bleach, '
             'Django 4.2.30, odstránenie allauth) je hotový a zlúčený (vetva 143, PR #203), frontend (`npm audit fix`, odstránený `next-intl`) je '
             'zlúčený (vetva 142). Skok `next` 14 → 16 je hotový vo vetve 159; Django 5.2 je zlúčený (vetva 154, PR #214), protobuf opravený '
-            '(vetva 158, PR #217) a zo 183 ostáva len vývojový `pytest` (skupina po nasadení); nový je upgrade `next` 16.4.3 na opravenú verziu (341, bezpečnostné upozornenie)',
+            '(vetva 158, PR #217) a zo 183 ostáva len vývojový `pytest` (skupina po nasadení); upgrade `next` na 16.4.5 (341, bezpečnostné upozornenie) je hotový vo vetve K31 a čaká na PR a zlúčenie',
          preco='Malé a bezpečné. Zraniteľné verzie zmiznú skôr, než pribudne ďalší kód.',
-         polozky=['183', '341']),
+         polozky=['183']),
     dict(vlna='1 – základ, kým sa aplikácia dokončuje',
          co='Veľké skoky verzií sú hotové (Django 5.2 LTS s DRF 3.18.3 vo vetve 154, `google-cloud-vision` s protobuf vo vetve 158, '
             'Next 16 s Reactom 19 vo vetve 159) a balík „Produkčná odolnosť aplikácie“ (179, 234, 33, 9, 52 vo vetve 161; 214, 236 a 232 '
@@ -345,7 +363,7 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie `FeedPostComments.tsx` je hotové (nález 333, K28 až K42; ostáva delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`), K40 až K43 sú hotové a podľa R59 a dohody s majiteľom (19. 11. 2026) redizajn začne po K31 a K45; rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 (najprv mapovanie v K45); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie `FeedPostComments.tsx` je hotové (nález 333, K28 až K42; ostáva delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`), K40 až K43 a K45 sú hotové, K31 čaká na PR a zlúčenie a podľa R59, dohody s majiteľom (19. 11. 2026) a odporúčania v R63 ide redizajn až po okne na počítači (344, K47); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 (mapovanie hotové v K45, implementácia K47 po odpovedi na R63); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
          polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '343', '344', '353', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
