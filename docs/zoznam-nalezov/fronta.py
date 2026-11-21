@@ -92,7 +92,8 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              '(výsledky sú v nálezu 333, ručný test netreba). Ďalšie dávky (K50 až K55 presuny, K56 opravy nálezov 355 a 356) '
              'pripraví po zlúčení predchádzajúcej a na pokyn majiteľa; podľa R66 (a) (21. 11. 2026) ide opravy 355 a 356 v K56 a '
              'redizajn začne až po nej; majiteľ chce ísť postupne, jedna vec naraz, a agent bez jeho pokynu nič nemapuje ani '
-             'nepripravuje; ďalšia dávka je K50. Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
+             'nepripravuje; ďalšia dávka je K50 (karta `karty/K50.md` je napísaná na pokyn majiteľa; majiteľ ju pošle kolegovi po zlúčení '
+             'vetvy 193). Pri každej dávke má kolega doplniť aj manuál ručných testov `sablony/dymovy_test.md`, ak dávka ručné testy má. Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
              'upozornení a E2E regresie 345 a 346 (zatiaľ len lokálne overené). Údržba zoznamu (jedna dokumentačná vetva agenta; '
              'majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky PO-A a '
              'PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
@@ -110,8 +111,9 @@ FRONTA = [
             'vzhľadu (R23); delenie `FeedPostComments.tsx` je hotové (K28 až K42, 1 487 → 401 riadkov). Dvojité mapovanie '
             'K46 a ochrana testami (K48 karta, K49 mobilný detail) sú hotové a zlúčené; ďalej presuny K50 až K55.',
          preco='JASNÉ (ďalšia dávka K50: kroky a, g a b delenia karty, čisté presuny `FeedPostActionButton.tsx`, typu '
-               'vlastností `FeedPostCard.types.ts` a riadku akcií `FeedPostActionsRow.tsx`; karta po nej asi 860 riadkov; '
-               'karta `karty/K50.md` sa napíše na pokyn majiteľa a bez nej sa kód nemení. K48 (PR #306) a K49 (PR #307) sú '
+               'vlastností `FeedPostCard.types.ts` a riadku akcií `FeedPostActions.tsx`; karta po nej asi 860 riadkov; '
+               'karta `karty/K50.md` je napísaná (21. 11. 2026, na pokyn majiteľa) a majiteľ ju pošle kolegovi po zlúčení vetvy '
+               '193; kolega pri nej doplní aj manuál ručných testov (`sablony/dymovy_test.md`, pokyn majiteľa 21. 11. 2026). K48 (PR #306) a K49 (PR #307) sú '
                'zlúčené a agent ich overil, výsledky sú v nálezu 333; ich dočasné odtlačky HTML a sonda poradia efektov sa '
                'pri delení nikdy neaktualizujú (`-u`) a zmaže ich K55. Ďalšie dávky pripraví agent po zlúčení '
                'predchádzajúcej a na pokyn majiteľa: K51 zdieľaný blok (asi 785), K52 vrstvy a dialógy (asi 700), K53 '

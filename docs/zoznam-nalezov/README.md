@@ -63,6 +63,9 @@ Dohoda s majiteľom z 5. 11. 2026, upravená 6., 7. a 21. 11. 2026; platí, kým
 - **Postupne, jedna vec naraz** (majiteľ 21. 11. 2026, výslovne: toto treba rešpektovať): kolegovi ide vždy len jedna karta a ďalšia až po
   zlúčení predchádzajúcej; agent bez pokynu majiteľa nemapuje, nepripravuje ďalšie karty ani rekapituláciu či návrh vzhľadu dopredu a robí
   len to, o čo ho majiteľ práve požiadal.
+- **Manuál ručných testov** (majiteľ 21. 11. 2026): v každej karte aj v každom texte pre kolegu je pokyn, aby ručné testy dávky (ak existujú)
+  doplnil aj do manuálu `sablony/dymovy_test.md` (nový podmienený krok „Len po dávke …“ alebo úprava existujúceho; samostatný posledný
+  commit dávky); iný manuál ručných testov v repozitári nie je.
 - **Striedanie 2 : 1** (od 6. 11. 2026): dve dávky kolegu (aspoň tri nálezy, každý vo vlastnom commite v jednej vetve), potom jedna vetva
   agenta, a tak ďalej. Kolega smie robiť aj nálezy PRED NASADENÍM a HNEĎ (predtým len PO NASADENÍ). Majiteľ môže pomer dočasne zmeniť
   (napr. na 1 : 1) a dá to agentovi vedieť. Predtým platilo striedanie 1 : 1; prvá práca kolegu bola skúšobná a mala jediný nález (192).
