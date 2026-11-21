@@ -125,4 +125,7 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
      'mobilného detailu)'),
     ('#307', 'K49', '333 (dávka 0m delenia `FeedPostMobileDetail.tsx`, len testy: šesť súborov testov správania (42 testov) a '
      'dočasný odtlačok HTML (5 stavov); produkčný kód sa nemenil)'),
+    ('#309', 'K50', '333 (dávka 1 delenia `FeedPostCard.tsx`, čisté presuny: `ActionButton`, typ vlastností a riadok akcií do '
+     '`FeedPostActionButton.tsx`, `FeedPostCard.types.ts` a `FeedPostActions.tsx`; karta 1 033 → 852 riadkov; ostáva delenie '
+     'zdieľaného bloku, vrstiev, hlavičky, efektov a mobilného detailu; spolu s krokom 9 v manuáli ručných testov)'),
 ]

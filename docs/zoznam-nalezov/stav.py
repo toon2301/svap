@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='21. 11. 2026',
-    kod='`main` `c16b97df` (po PR #307: K49; PR #306 je K48, PR #305 je zoznam 192, PR #304 je K31, PR #303 zoznam 191, PR #302 je K45, PR #301 a #300 sú Codex)',
+    kod='`main` `1c054479` (po PR #309: K50; PR #308 je zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 je zoznam 192, PR #304 je K31, PR #303 zoznam 191, PR #302 je K45)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -16,6 +16,23 @@ from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
+    ('21. 11. 2026',
+      'Vetva 194 (vychádza z `main` `1c054479`, teda po PR #309). (1) Zlúčené: PR #308 (vetva 193; 21. 11. 2026 o 20:40 UTC, '
+      'merge `6a059c14`; zápis K48 a K49, karta K50 a pokyn o manuáli ručných testov; CodeRabbit dal jednu platnú pripomienku, '
+      'ručný test komentárov na počítači, opravenú pred zlúčením; vlákno zatvára majiteľ) a PR #309 (K50; o 21:35 UTC, merge '
+      '`1c054479`). (2) K50 (PR #309): kroky a, g a b delenia karty, prvé presuny kódu: 4 commity, 5 súborov (tri nové: '
+      '`FeedPostActionButton.tsx` 94, `FeedPostCard.types.ts` 58 a `FeedPostActions.tsx` 121 riadkov; `FeedPostCard.tsx` 1 033 '
+      '→ 852; `sablony/dymovy_test.md` +6 riadkov, nový krok 9); podľa textov commitov čisté presuny (pôvodná karta poskladaná '
+      'späť bajt po bajte), celý Jest 638 sád a 9 561 testov, `tsc`, ESLint, preklady a build čisté, paritné mutácie 14 zo 14. '
+      '(3) Kontrola agenta z GitHubu a v kópii mimo repozitára: CI (`checks`, `backend-postgres`) a CodeRabbit zelené, vlákna '
+      'nie sú; z 988 neprázdnych riadkov pôvodnej karty chýba v nových súboroch len šesť, všetky vysvetliteľné (importy typov, '
+      '`export`, hlavička typu a `post.id` → `postId`); `tsc` a ESLint čisté; 40 sád (22 sád karty, K48 a K49) s 439 testami a 73 '
+      'snapshotmi prešlo, odtlačky bezo zmeny; paritné mutácie 14 zo 14 zachytených, odstránenie `fixedBlock` zhodilo 8 stavov '
+      'okna; krok 9 v manuáli ručných testov zodpovedá opravenej karte. Kandidáti na nové nálezy: žiadni. (4) Majiteľ 21. 11. '
+      '2026: ručný test K50 robí sám a ďalšiu prácu dáva kolegovi hneď, kým testuje (nálezy hlási hneď); preto agent napísal kartu '
+      'K51 (krok d, zdieľaný blok a označenia, `karty/K51.md`; K51 sa zlúčí až po ručnom teste K50). (5) Upravené: nález 333 '
+      '(výsledky K50), tabuľka PR, fronta (333 je teraz dávka K51) a stav. (6) Prehľad: nálezy 1–356, zatvorené 14, hotové 142, '
+      'PRED 48, PO 132; čakajúcich rozhodnutí 10 z 66. Dopad na E2E: žiadny.'),
     ('21. 11. 2026',
       'Vetva 193 (vychádza z `main` `c16b97df`, teda po PR #307). (1) Zlúčené: PR #305 (vetva 192; 21. 11. 2026 o 16:18 UTC), '
       'PR #306 (K48; o 18:20 UTC, merge `c573f502`) a PR #307 (K49; o 19:35 UTC, merge `c16b97df`). (2) K48 (PR #306): ochrana '
