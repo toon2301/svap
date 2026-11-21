@@ -268,7 +268,7 @@ NEW_ITEMS_K14 = [
               'majiteľ sa pýta, či nie je bezpečnejšie a lepšie rozdeliť `FeedPostCard.tsx` poriadne ešte pred '
               'redizajnom; agent odporúča áno (rozhodnutie R65 (a)). Karta K46 (`karty/K46.md`) je napísaná: len '
               'mapovanie, kód sa nemení; obsahuje predbežný rozbor agenta z čítania kódu (`ActionButton` 74-158, '
-              'jediný komponent 160-1033 s 15 volaniami `useState` a 7 `useEffect`, JSX 555-1033) a deväť bodov na '
+              'jediný komponent 160-1033 s 17 volaniami `useState` a 7 `useEffect`, JSX 555-1033) a deväť bodov na '
               'overenie kolegom: mapa hraníc, poradie malých krokov, pružný stĺpec okna `fillHeight`, '
               '`FeedPostMobileDetail.tsx`, verejné rozhranie, stráženie testami (kartu vykresľuje 22 testových '
               'súborov), súvislosti s ďalšími nálezmi, ručné scenáre a odhad. Hrubý odhad agenta '
