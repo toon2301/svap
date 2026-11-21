@@ -387,7 +387,9 @@ DECISIONS_DALSIE = [
                 'ako samostatný krok hneď po vyčlenení zdieľaného bloku z `FeedPostCard.tsx` (čistý presun, R23). '
                 '(b) Všetko naraz hneď, s jednorazovou výnimkou pre `FeedPostCard.tsx` (dve drobné zmeny: podať '
                 'karte výšku a prepnúť obal na flex stĺpec; riziko stredné, lebo rozloženie okna je citlivé a súbor '
-                'je veľký). (c) Všetko až po delení `FeedPostCard.tsx` (K46). (4) Šírka úzkeho okna: (a) 576 px '
+                'je veľký). (c) Všetko až po delení `FeedPostCard.tsx` (K46). Súvisí s R65 (delenie `FeedPostCard.tsx` '
+                'pred redizajnom): ak majiteľ schváli odporúčanie R65 (a), z tohto bodu ostáva možnosť (c). (4) Šírka '
+                'úzkeho okna: (a) 576 px '
                 '(štandardná hodnota `max-w-xl`), (b) presne 580 px. (5) Poradie: (a) 344 (nová dávka K47) pred '
                 'redizajnom komentárov (K44), (b) K44 pred 344, (c) obe v jednej dávke.',
          odporucanie='(1a), (2a), (3a), (4a) a (5a). (1a): žiadny nový vizuálny prvok a najčastejší textový '
@@ -428,4 +430,39 @@ DECISIONS_DALSIE = [
                  'nejasnosť alebo si je istý, že niečomu nerozumie, pýta sa majiteľa. Pri nálezoch HNEĎ ostáva '
                  'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz.',
          datum='20. 11. 2026'),
+    dict(id='R65', tema='Delenie `FeedPostCard.tsx` (a posúdenie `FeedPostMobileDetail.tsx`) poriadne pred redizajnom komentárov a okna príspevkov na počítači',
+         otazka='Majiteľ sa 21. 11. 2026 pýta, či nie je bezpečnejšie a lepšie rozdeliť súbor poriadne ešte pred '
+                'redizajnom (komentáre 261 a okno príspevkov na počítači 344). Východisko: `FeedPostCard.tsx` má 1 033 '
+                'riadkov a `FeedPostMobileDetail.tsx` 594 (pravidlo 500 riadkov); R23 povolilo delenie troch súborov '
+                'Nástenky po jednom a prvý, `FeedPostComments.tsx`, je hotový (1 487 → 401 riadkov; mapovanie K26 '
+                '16. 11. 2026, dávky K28 až K42 od 17. do 19. 11. 2026). Mapovanie 344 (K45) ukázalo, že dva stĺpce a '
+                'užšie okno len s textom sa dajú bez zásahu do karty, no natiahnutie fotky karty ponuky a portfólia '
+                '(majiteľ chce ako pri príspevku s foto) vyžaduje zmeny v `FeedPostCard.tsx` (R63, bod 3); na kartu '
+                'narazia aj značky (261, skupina 8), mobilné doladenia (261, skupina 6) a etapa B zoznamu lajkujúcich '
+                '(262). Čo spraviť? (a) Poriadne delenie pred redizajnom: kolega najprv zmapuje (karta K46, kód sa '
+                'nemení), potom delí po malých krokoch podľa vzoru K28 až K42 (každý krok jedna dávka: odtlačok HTML '
+                'podľa R45, celý Jest, ručný test majiteľa, po nasadení dym Codexu); `FeedPostMobileDetail.tsx` sa '
+                'rozhodne podľa mapovania; redizajn (261 a 344 vrátane natiahnutia fotky karty) začne agent po '
+                'zlúčení posledného kroku (R64). (b) Len vyčleniť zdieľaný blok a riadok akcií (jedna až dve dávky), '
+                'zvyšok súboru až neskôr, potom redizajn. (c) Bez delenia: redizajn komentárov a dva stĺpce s úzkym '
+                'oknom, fotka karty ostane 256 px (R63 (3a) bez druhého kroku), delenie neskôr. (d) Jednorazová '
+                'výnimka z pravidla 500 riadkov pre `FeedPostCard.tsx` na dve drobné zmeny pre natiahnutie fotky.',
+         odporucanie='(a). (1) Delenie sa tak či tak nevyhne: natiahnutie fotky, značky, mobilné doladenia aj etapa B '
+                     'zoznamu lajkujúcich sa kartou dotknú; spraviť ho raz a poriadne je lacnejšie než tri zásahy do '
+                     'súboru s 1 033 riadkami. (2) Oddelí zmenu štruktúry (bez zmeny vzhľadu, strážená odtlačkom HTML) '
+                     'od zmeny vzhľadu (strážená ručným testom): ak po redizajne niečo vyzerá zle, vieme, že to '
+                     'nespôsobilo delenie. (3) Skúsenosť z `FeedPostComments.tsx`: päť dávok za tri dni a chyby 345 a '
+                     '346 z ručných testov po delení boli staršie (starší stav podľa mapovania K36), nie dôsledok '
+                     'presunov. (4) Kolega nemá ďalšiu rozrobenú dávku (K31 je hotová) a rekapitulácia s vizuálnym '
+                     'návrhom sa dá pripraviť súbežne, takže čakanie je kratšie, ako vyzerá. (5) Agent, ktorý bude '
+                     'redizajn písať (R64), dostane menšie súbory chránené testami, a teda lepšie čitateľné zmeny. '
+                     'Cena: hrubý odhad kolegu 4 až 6 dní (mapovanie asi deň, potom päť až šesť dávok; ručný test '
+                     'majiteľa na počítači a na iPhone po každej); riziko stredné až vysoké pre pružný stĺpec okna '
+                     '(`fillHeight`) a poradie efektov, ktoré kryjú odtlačok HTML, sonda poradia efektov a malé '
+                     'kroky. (b) je rýchlejšie, no súbor ostane nad 500 riadkov a delenie by sa muselo robiť znova '
+                     'pred značkami; (c) je najrýchlejšie, no natiahnutie fotky, ktoré majiteľ chce, by odpadlo; (d) '
+                     'pravidlo R23 výnimku neudeľuje a ide práve o súbor s citlivým rozložením.',
+         kedy='Pred odoslaním karty K46 kolegovi: karta `karty/K46.md` je napísaná podľa odporúčania (a) a jej '
+              'odoslanie kolegovi je súhlas majiteľa s (a). Samotné delenie sa začne po zlúčení K31 a po schválení '
+              'výsledku mapovania majiteľom.'),
 ]

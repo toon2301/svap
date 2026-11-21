@@ -112,7 +112,8 @@ NEW_ITEMS_K14 = [
                 '`FeedPostMobileDetail.tsx`) bez zmeny vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: '
                 'mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29), dávka 3 z 5 (K37), dávka 4 z 5 (K38) a dávka '
                 '5 z 5 (K42) hotové: `FeedPostComments.tsx` je rozdelený (1 487 → 401 riadkov po K43); zostávajú '
-                '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594)',
+                '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594); ich delenie pred redizajnom '
+                'odporúča agent (R65 (a)), mapovanie je karta K46',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov '
               'rozdelia po jednom: `feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a '
               '`feed/FeedPostMobileDetail.tsx` 594 (počty agent overil 13. 11. 2026). Delenie nesmie zmeniť '
@@ -263,7 +264,17 @@ NEW_ITEMS_K14 = [
               'commitov 71, 68 a 54 znakov. Kandidáti kolegu: žiadni. RUČNÝ TEST MAJITEĽA po K42 a K43 (19. 11. '
               '2026): prešlo všetko v poriadku. Delenie `FeedPostComments.tsx` je tým hotové; podľa R23 ostáva '
               '`FeedPostCard.tsx` (1 033 riadkov) a `FeedPostMobileDetail.tsx` (594), každý najprv mapovanie a '
-              'vlastné dávky; prežívajúce mutácie z K42 sú v poznámkach a v karte K45.',
+              'vlastné dávky; prežívajúce mutácie z K42 sú v poznámkach a v karte K45. DOPLNOK 21. 11. 2026 (agent): '
+              'majiteľ sa pýta, či nie je bezpečnejšie a lepšie rozdeliť `FeedPostCard.tsx` poriadne ešte pred '
+              'redizajnom; agent odporúča áno (rozhodnutie R65 (a)). Karta K46 (`karty/K46.md`) je napísaná: len '
+              'mapovanie, kód sa nemení; obsahuje predbežný rozbor agenta z čítania kódu (`ActionButton` 74-158, '
+              'jediný komponent 160-1033 s 15 volaniami `useState` a 7 `useEffect`, JSX 555-1033) a deväť bodov na '
+              'overenie kolegom: mapa hraníc, poradie malých krokov, pružný stĺpec okna `fillHeight`, '
+              '`FeedPostMobileDetail.tsx`, verejné rozhranie, stráženie testami (kartu vykresľuje 22 testových '
+              'súborov), súvislosti s ďalšími nálezmi, ručné scenáre a odhad. Mapovanie na K31 nezávisí a môže ísť '
+              'hneď; samotné delenie sa začne po zlúčení K31 a po schválení výsledku majiteľom. Hrubý odhad agenta '
+              '(neoverený): mapovanie asi deň, potom päť až šesť dávok, spolu 4 až 6 dní. `FeedPostMobileDetail.tsx` '
+              '(594) sa rozhodne podľa mapovania. Odoslanie karty kolegovi je súhlas majiteľa s R65 (a).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
     dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
@@ -351,7 +362,11 @@ NEW_ITEMS_K14 = [
               'stĺpec) a novú vlastnosť v `SharedContentPreviewCard.tsx`. Dva stĺpce a úzke okno len s textom '
               'ostávajú bez zásahu do `FeedPostCard.tsx` (tá časť mapovania platí). `FeedPostCard.tsx` má 1 033 '
               'riadkov, takže zmena je možná len po vyčlenení zdieľaného bloku (čistý presun podľa R23, v odhade K46 '
-              'krok `:781-860`) alebo s jednorazovou výnimkou majiteľa; preto bod 3 v R63.',
+              'krok `:781-860`) alebo s jednorazovou výnimkou majiteľa; preto bod 3 v R63. DOPLNOK 21. 11. 2026 '
+              '(agent): majiteľ potvrdil, že krokom kolegu pred redizajnom je K31 (upgrade Next.js), a pýta sa, či '
+              'sa pred redizajnom nemá poriadne rozdeliť `FeedPostCard.tsx`; podľa odporúčania R65 (a) natiahnutie '
+              'fotky karty ide až po delení karty (K46), takže z bodu 3 v R63 ostáva možnosť (c); ak majiteľ '
+              'zvolí v R65 inak, platí (3a) alebo (3b).',
          dec='ROZHODNUTIE R63', src='majiteľ (17. 11. 2026)'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '

@@ -212,7 +212,7 @@ NEW_ITEMS_NASTENKA = [
               '343 a okno detailu na počítači nález 344. ROZHODNUTIE MAJITEĽA (R59, 19. 11. 2026): redizajn '
               'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40, K41, K42, K43 a K31); nič sa '
               'nesilí. STAV 20. 11. 2026: K40 až K43 a K45 sú hotové a delenie `FeedPostComments.tsx` je hotové; K31 '
-              'čaká na PR; majiteľ 20. 11. 2026: pred redizajnom ešte jeden krok kolegu, potom rekapitulácia a '
+              'čaká na PR; majiteľ 20. 11. 2026: pred redizajnom ešte jeden krok kolegu (21. 11. 2026 potvrdil: K31) a podľa odporúčania R65 (a) poriadne delenie `FeedPostCard.tsx` (K46), potom rekapitulácia a '
               'vizuál s odporúčaním; po 100 % dohode mapuje a implementuje agent (R64). Pri redizajne treba vyriešiť '
               'aj pole na text pri odpovedi na komentár (R52 ho nechal ako dnes); čo presne má byť inak, dodá '
               'majiteľ pri príprave vzhľadu, ktorý sa podľa R49 najprv prebere (agent pripraví návrh s možnosťami a '
