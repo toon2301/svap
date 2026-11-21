@@ -120,4 +120,9 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
      'z upozornenia na desktope a celý nový komentár na iPhone 15 s fotopríspevkom; lokálne overené, živý beh zatiaľ nebehol)'),
     ('#302', 'K45', 'bez nálezu (príprava redizajnu komentárov: päť nových súborov testov so 34 testami pre medzery z K38 až '
      'K42; mapovanie 344 je zapísané v náleze 344)'),
+    ('#306', 'K48', '333 (dávka 0 delenia `FeedPostCard.tsx`, len testy: deväť súborov testov správania (60 testov), dočasný '
+     'odtlačok HTML (44 stavov) a dočasná sonda poradia efektov (24 stavov); produkčný kód sa nemenil; ostáva delenie karty a '
+     'mobilného detailu)'),
+    ('#307', 'K49', '333 (dávka 0m delenia `FeedPostMobileDetail.tsx`, len testy: šesť súborov testov správania (42 testov) a '
+     'dočasný odtlačok HTML (5 stavov); produkčný kód sa nemenil)'),
 ]

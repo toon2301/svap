@@ -461,3 +461,8 @@ NEW_ITEMS.extend(NEW_ITEMS_223)
 from polozky_nove_k46 import NEW_ITEMS_K46  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K46)
+
+# Nález 333 (delenie veľkých súborov Nástenky, dlhý denník dávok) je v `polozky_nove_333.py` (kvôli limitu 500 riadkov).
+from polozky_nove_333 import NEW_ITEMS_333  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_333)
