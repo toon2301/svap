@@ -68,9 +68,9 @@ DONE_SINCE_K40 = [
               'päť minút nečinnosti) a od udalosti '
               '`online`. RUČNÝ TEST MAJITEĽA (19. 11. 2026): všetko prešlo v poriadku. Dopad na E2E: žiadny. '
               'Kandidát z K43: nález 353.'),
-    dict(n=341, vetva='K31', pr=None, zlucene=False,
-         text='HOTOVÉ VO VETVE K31 (commit `906f7c32` nad `main` `1c454330`, nahraté 20. 11. 2026; PR ešte nie je, '
-              'CI nebežalo a vetva nie je v `main`, takže čaká na PR a zlúčenie; kolega ju urobil podľa karty '
+    dict(n=341, vetva='K31', pr='#304', zlucene=True,
+         text='HOTOVÉ (K31, PR #304, zlúčené 21. 11. 2026 o 07:11 UTC, merge `8c49c5b7`; jeden commit `906f7c32` '
+              'nad `main` `1c454330`, 2 súbory, +41 a −41 riadkov; kolega ju urobil podľa karty '
               '`karty/K31.md`, výsledok `karty/K31_vysledok.md`). MEDZERA: nainštalovaný Next.js 16.4.3 bol v '
               'rozsahu upozornenia GHSA-mfr8-8qww-v76h a prvý lokálny build po kompilácii vypisoval '
               '`SecurityFatalError` (štrnásť zo štrnástich hlásených prvých buildov K28 až K43). OPRAVA: `next` '
@@ -99,9 +99,11 @@ DONE_SINCE_K40 = [
               '`registry.npmjs.org`, verzia 16.4.5, kontrolný súčet sha512, žiadna iná zmena); oproti `main` '
               '`f0c4b789` bez konfliktu; vlastný `npm audit --omit=dev` nad zámkom: `main` 6 záznamov (z toho `next` '
               'so siedmimi upozorneniami), vetva K31 5 záznamov bez `next` (`@sentry/bundler-plugins`, '
-              '`@sentry/nextjs`, `@sentry/webpack-plugin`, `glob` a `minimatch`, nález 229). ČAKÁ: PR a zlúčenie '
-              'mimo behu Playwrightu, kontrola logu nasadenia na Railway (build už nemá končiť výpisom o zraniteľnej '
-              'verzii), ručný dymový test majiteľa (`sablony/dymovy_test.md` aj bod 8) a dym `@smoke` od Codexu. '
+              '`@sentry/nextjs`, `@sentry/webpack-plugin`, `glob` a `minimatch`, nález 229). KONTROLA PR (21. 11. 2026, z GitHubu): CI '
+              '(`checks`, `backend-postgres`) zelené, CodeRabbit (spustený ručne majiteľom) bez pripomienok, Codex bez '
+              'väčších problémov, vlákna nie sú; PR zlúčil majiteľ. ČAKÁ (od majiteľa nepotvrdené): kontrola logu '
+              'nasadenia na Railway (build už nemá končiť výpisom o zraniteľnej verzii), ručný dymový test majiteľa '
+              '(`sablony/dymovy_test.md` aj bod 8) a dym `@smoke` od Codexu. '
               'Dopad na E2E: DOM ani `data-testid` sa nemenia, framework sa mení pre celú aplikáciu. Kandidát z K31: '
               'nález 354.'),
 ]
