@@ -113,7 +113,9 @@ NEW_ITEMS_K14 = [
                 'mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29), dávka 3 z 5 (K37), dávka 4 z 5 (K38) a dávka '
                 '5 z 5 (K42) hotové: `FeedPostComments.tsx` je rozdelený (1 487 → 401 riadkov po K43); zostávajú '
                 '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594); ich delenie pred redizajnom '
-                'odporúča agent (R65 (a)), mapovanie je karta K46',
+                'schválil majiteľ (R65 (a)), dvojité mapovanie K46 (kolega aj agent) je hotové a porovnané: '
+                'ochrana testami v K48 a K49, presuny v K50 až K55 a opravy 355 a 356 v K56 (plán v '
+                '`karty/K46_porovnanie.md`)',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov '
               'rozdelia po jednom: `feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a '
               '`feed/FeedPostMobileDetail.tsx` 594 (počty agent overil 13. 11. 2026). Delenie nesmie zmeniť '
@@ -277,8 +279,26 @@ NEW_ITEMS_K14 = [
               'R65 (a), dal kartu K46 kolegovi a chce dvojité mapovanie: kým mapuje kolega, mapuje nezávisle aj agent; '
               'po dokončení kolegu mu majiteľ pošle jeho výsledok a agent obe mapovania porovná (agent svoje mapovanie '
               'do porovnania nezverejní v repozitári). Samotné delenie sa začne po schválení spoločného výsledku '
-              'majiteľom.',
-         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
+              'majiteľom. VÝSLEDOK DVOJITÉHO MAPOVANIA K46 (21. 11. 2026, agent): kolega (`karty/K46_vysledok.md`) '
+              'aj agent (`karty/K46_agent.md`, podklady `karty/K46_podklady.md`) nezávisle dospeli k tomu istému: '
+              'karta (1 033 riadkov) aj mobilný detail (594) sa dajú deliť čistými presunmi (karta asi 440 až 480, '
+              'detail asi 350 riadkov, každý nový súbor pod 500); existujúce testy nezachytili 49 zo 121 (kolega) a '
+              '84 zo 166 (agent) skúšobných pokazení karty a zmazanie z mobilného detailu nemá žiadny test (agent '
+              'overil: 8 z 8 pokazení prežilo aj proti 80 súborom, prežili aj zásahy do menu a zdieľania); pružný '
+              'stĺpec okna stráži len odtlačok HTML (11 z 11 zmien tried; testy 1 z 11) a pokazenie poradia '
+              'efektov testy nezachytia, preto sa pridá sonda poradia efektov. Porovnanie a dohodnutý postup: '
+              '`karty/K46_porovnanie.md`: K48 a K49 sú ochrana bez zmeny kódu (K48 karta: asi 35 testov v 9 '
+              'súboroch, dočasný odtlačok HTML a sonda poradia efektov; K49 mobilný detail: asi 25 testov), potom '
+              'K50 (kroky a, g a b: `FeedPostActionButton.tsx`, typ vlastností a riadok akcií; karta asi 860), K51 '
+              '(zdieľaný blok s označeniami; asi 785), K52 (vrstvy a dialógy s hookom vlajok; asi 700), K53 '
+              '(hlavička s menu; asi 570), K54 (efekty, tri hooky v troch commitoch; asi 440; najrizikovejšia), K55 '
+              '(mobilný detail v dvoch presunoch a zmazanie dočasných odtlačkov a sond) a K56 (opravy 355 a 356). '
+              'Odhad kolegu 5 až 7 dní práce (7 až 9 kalendárnych s ručnými testami); veľkosti sú odhad z '
+              'prototypov, ktoré ostali mimo repozitára. Z mapovania vznikli nálezy 355 a 356. Karty K48 a K49 sú '
+              'napísané, ďalšie pripraví agent po zlúčení predchádzajúcej; kedy opraviť 355 a 356 a kedy začne '
+              'redizajn, rieši R66.',
+         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026), výsledok K26 (kolega, 16. 11. 2026) a '
+                                    'výsledky K46 (kolega a agent, 21. 11. 2026)'),
     dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
                 'namiesto tenkej úchytky; oprava podľa R55',
