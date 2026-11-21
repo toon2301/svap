@@ -31,8 +31,6 @@ import {
   deleteFeedPost,
   getFeedPost,
   removeOwnFeedPostTag,
-  type FeedPost,
-  type FeedPostImage,
 } from '@/lib/feedApi';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
@@ -53,7 +51,6 @@ import FeedPostCaption, {
 import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
-import ShareIcon from './ShareIcon';
 import ExchangeIcon from './FeedExchangeIcon';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
@@ -70,92 +67,8 @@ import FeedPostMobileDetail from './FeedPostMobileDetail';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
-
-function ActionButton({
-  label,
-  count,
-  active = false,
-  onClick,
-  onCountClick,
-  countLabel,
-  countTestId,
-  testId,
-  children,
-}: {
-  label: string;
-  count?: number;
-  active?: boolean;
-  onClick: () => void;
-  /**
-   * Klik na POČET (nie na ikonu) – napr. otvorenie zoznamu lajkujúcich.
-   * Keď chýba alebo je počet 0, ostáva počet obyčajný text: vnorené tlačidlo
-   * v tlačidle je neplatné HTML, takže sa vyčlení iba keď má čo robiť.
-   */
-  onCountClick?: () => void;
-  countLabel?: string;
-  countTestId?: string;
-  testId?: string;
-  children: React.ReactNode;
-}) {
-  const countIsInteractive = Boolean(onCountClick) && (count ?? 0) > 0;
-
-  if (countIsInteractive) {
-    return (
-      // gap-1 drží medzi srdiečkom a číslom skutočnú medzeru – bez nej sa
-      // dva nezávislé ciele kliku čítajú ako jedno tlačidlo.
-      <span className="-m-1 inline-flex items-center gap-1">
-        <button
-          type="button"
-          onClick={onClick}
-          data-testid={testId}
-          aria-label={count === undefined ? label : `${label}: ${count}`}
-          title={label}
-          className={`inline-flex items-center rounded-full p-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
-            active
-              ? 'text-purple-600 dark:text-purple-300'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
-        >
-          {children}
-        </button>
-        <button
-          type="button"
-          onClick={onCountClick}
-          data-testid={countTestId}
-          aria-label={countLabel ? `${countLabel}: ${count}` : undefined}
-          title={countLabel}
-          // Farba ZÁMERNE nesleduje `active`: keď je príspevok lajknutý,
-          // srdiečko sfialovie a číslo ostane neutrálne, takže je vidieť, že
-          // sú to dve rôzne veci. Podčiarknutie + zmena farby pri hoveri
-          // napovedajú, že číslo je samostatný cieľ kliku.
-          className="rounded-full px-1.5 py-2 text-sm tabular-nums text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300"
-        >
-          {count}
-        </button>
-      </span>
-    );
-  }
-
-  return (
-    // p-2 + gap drží dotykový cieľ nad 40px aj na mobile (vzor ostatných
-    // ikonových tlačidiel appky, napr. zatváracie X v modaloch).
-    <button
-      type="button"
-      onClick={onClick}
-      data-testid={testId}
-      aria-label={count === undefined ? label : `${label}: ${count}`}
-      title={label}
-      className={`-m-1 inline-flex items-center gap-1.5 rounded-full p-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
-        active
-          ? 'text-purple-600 dark:text-purple-300'
-          : 'text-gray-500 dark:text-gray-400'
-      }`}
-    >
-      {children}
-      {count === undefined ? null : <span className="tabular-nums">{count}</span>}
-    </button>
-  );
-}
+import FeedPostActions from './FeedPostActions';
+import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
   post,
@@ -169,54 +82,7 @@ export default function FeedPostCard({
   liveImages,
   onPostUpdated,
   commentsCount: commentsCountOverride,
-}: {
-  post: FeedPost;
-  /**
-   * `card` = dlaždica vo feede (vlastný rám, komentáre sa rozbaľujú v nej).
-   * `detail` = vnútrajšok okna detailu: bez rámu a BEZ komentárovej sekcie –
-   * tú si okno vykresľuje samo v scrollovateľnej časti.
-   */
-  variant?: 'card' | 'detail';
-  /**
-   * Karta vyplní výšku rodiča a fotka si vezme zvyšok (dvojstĺpcové okno
-   * detailu pri príspevku S FOTKOU).
-   *
-   * Hlavička, text, označenia aj riadok akcií majú vtedy pevnú výšku
-   * (`shrink-0`) a jediná pružná časť je médiová plocha, takže rozbalenie
-   * textu fotku zmenší namiesto toho, aby stĺpec pretiekol. Bez fotky nemá
-   * čo zvyšok pohltiť, preto to zapína výhradne `FeedPostDetailSplitLayout`.
-   */
-  fillHeight?: boolean;
-  /**
-   * Živý stav fotiek zvonka – karta si ho vtedy nesleduje sama.
-   *
-   * Používa to okno detailu: podľa fotiek sa rozhoduje o rozložení, takže ich
-   * musí poznať UŽ NAD kartou. Aby nad tým istým príspevkom nebežali dva
-   * pollingy, dostane ich karta hotové (viď `usePendingFeedImages`).
-   */
-  liveImages?: FeedPostImage[];
-  /**
-   * Autor príspevok upravil. Karta si novú verziu drží aj sama; okno detailu
-   * ju ale potrebuje tiež – rozhoduje sa podľa nej o rozložení a podáva karte
-   * fotky späť.
-   */
-  onPostUpdated?: (post: FeedPost) => void;
-  /** V okne drží počet komentárov okno (má ich pod sebou), nie karta. */
-  commentsCount?: number;
-  /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
-  initialCommentsOpen?: boolean;
-  /** Komentár z notifikácie – sekcia naň doscrolluje a zvýrazní ho. */
-  highlightCommentId?: number | null;
-  /** Zdieľanie ďalej vloží nový príspevok na vrch feedu (ako composer). */
-  onShared?: (created: FeedPost) => void;
-  /**
-   * Používateľ odstránil svoje označenie. Zoznamy filtrované na „kde som
-   * označený" (profilový tab) tam príspevok už nemajú prečo držať.
-   */
-  onSelfTagRemoved?: (postId: number) => void;
-  /** Autor zmazal príspevok – zoznamy ho majú okamžite vyhodiť. */
-  onDeleted?: (postId: number) => void;
-}) {
+}: FeedPostCardProps) {
   const { t, locale } = useLanguage();
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -859,70 +725,23 @@ export default function FeedPostCard({
         </div>
       ) : null}
 
-      <footer
-        className={`flex items-center gap-4 border-t border-gray-200/70 px-4 py-2.5 dark:border-gray-700/60 ${fixedBlock}`}
-      >
-        <ActionButton
-          label={t('feed.likes', 'Páči sa mi')}
-          count={likesCount}
-          active={isLiked}
-          onClick={() => void toggleLike()}
-          onCountClick={() => setLikersOpen(true)}
-          countLabel={t('feed.likersTitle', 'Páči sa im to')}
-          countTestId="feed-like-count"
-          testId="feed-like-button"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill={isLiked ? 'currentColor' : 'none'}
-            stroke="currentColor"
-            strokeWidth="2"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </ActionButton>
-
-        <ActionButton
-          label={t('feed.comments', 'Komentáre')}
-          count={shownCommentsCount}
-          active={commentsOpen}
-          onClick={() => {
-            if (opensOverlay) {
-              postOverlay?.open({ postId: post.id });
-              return;
-            }
-            // Mobil dostáva vlastnú obrazovku detailu namiesto rozbaľovania
-            // komentárov priamo v karte.
-            if (opensMobileDetail) {
-              setMobileDetailOpen(true);
-              return;
-            }
-            setCommentsOpen((open) => !open);
-          }}
-          testId="feed-comments-button"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </ActionButton>
-
-        <ActionButton
-          label={t('feed.sharePost', 'Zdieľať ďalej')}
-          onClick={() => setShareOpen(true)}
-          testId="feed-share-button"
-        >
-          <ShareIcon />
-        </ActionButton>
-      </footer>
+      <FeedPostActions
+        fixedBlock={fixedBlock}
+        t={t}
+        postId={post.id}
+        likesCount={likesCount}
+        isLiked={isLiked}
+        toggleLike={toggleLike}
+        setLikersOpen={setLikersOpen}
+        shownCommentsCount={shownCommentsCount}
+        commentsOpen={commentsOpen}
+        setCommentsOpen={setCommentsOpen}
+        opensOverlay={opensOverlay}
+        postOverlay={postOverlay}
+        opensMobileDetail={opensMobileDetail}
+        setMobileDetailOpen={setMobileDetailOpen}
+        setShareOpen={setShareOpen}
+      />
 
       {commentsOpen && !isDetail ? (
         <FeedPostComments
