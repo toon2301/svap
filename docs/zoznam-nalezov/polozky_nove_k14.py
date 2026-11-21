@@ -295,8 +295,10 @@ NEW_ITEMS_K14 = [
               '(mobilný detail v dvoch presunoch a zmazanie dočasných odtlačkov a sond) a K56 (opravy 355 a 356). '
               'Odhad kolegu 5 až 7 dní práce (7 až 9 kalendárnych s ručnými testami); veľkosti sú odhad z '
               'prototypov, ktoré ostali mimo repozitára. Z mapovania vznikli nálezy 355 a 356. Karty K48 a K49 sú '
-              'napísané, ďalšie pripraví agent po zlúčení predchádzajúcej; kedy opraviť 355 a 356 a kedy začne '
-              'redizajn, rieši R66.',
+              'napísané, ďalšie pripraví agent po zlúčení predchádzajúcej a na pokyn majiteľa. ODPOVEĎ MAJITEĽA '
+              '21. 11. 2026: R66 (a): opravy 355 a 356 idú v K56 po poslednom presune a redizajn začne až po nej; ide '
+              'sa postupne, jedna vec naraz: kolegovi pošle majiteľ kartu K48 po zlúčení vetvy 192 (PR #305), K49 až '
+              'po zlúčení K48 a agent bez jeho pokynu nič nemapuje ani nepripravuje.',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026), výsledok K26 (kolega, 16. 11. 2026) a '
                                     'výsledky K46 (kolega a agent, 21. 11. 2026)'),
     dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',

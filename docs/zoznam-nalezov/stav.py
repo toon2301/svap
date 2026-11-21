@@ -17,6 +17,20 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
     ('21. 11. 2026',
+      'Doplnok 2 vetvy 192 (PR #305; `main` ostáva `8c49c5b7`). (1) Kontrola PR #305: CI (`checks`, `backend-postgres`) zelené, '
+      'CodeRabbit 3 pripomienky (všetky Minor). Agent ich overil voči súborom, všetky tri sú platné a opravené v tejto vetve: (a) '
+      'skript `compare.py` v `karty/K46_podklady.md` končil pri rozdieloch s kódom 0 (pridané ukončenie s kódom 1, ak je `bad` '
+      'nenulové); (b) odporúčanie R63 stále vyberalo (3a), hoci text otázky po R65 (a) ponecháva len (3c) (odporúčanie je teraz '
+      '(3c) s odôvodnením podľa R65 (a) a R66 (a); ostatné štyri otázky sa nezmenili); (c) pole `kedy` pri R66 žiadalo odpoveď '
+      'až pred K56, čím by sa vylúčili možnosti (b) a (d); po odpovedi majiteľa je rozhodnutie zodpovedané. Vlákna na GitHube '
+      'zatvára majiteľ. (2) Odpoveď majiteľa 21. 11. 2026: R66 podľa odporúčania (a): opravy 355 a 356 idú v samostatnej malej '
+      'dávke K56 po poslednom presune a redizajn (344 a 261) začne až po nej. Kolegovi pošle majiteľ prácu (kartu K48) až po '
+      'zlúčení vetvy 192; chce ísť postupne, jedna vec naraz (výslovne: toto treba rešpektovať), preto agent nemapuje a '
+      'nepripravuje nič ďalšie (ani rekapituláciu a vizuálny návrh redizajnu, ani ďalšie karty), kým majiteľ nepovie; agent z '
+      'toho vyvodil, že karta K49 ide kolegovi až po zlúčení K48 (karty K48 a K49 a porovnanie K46 sú upravené). (3) Upravené: '
+      'R63, R66, nálezy 333, 355 a 356, fronta, README, karty K48, K49 a porovnanie K46 a podklady K46. (4) Prehľad: nálezy '
+      '1–356, zatvorené 14, hotové 142, PRED 48, PO 132; čakajúcich rozhodnutí 10 z 66. Dopad na E2E: žiadny.'),
+    ('21. 11. 2026',
       'Doplnok vetvy 192 (`main` ostáva `8c49c5b7`; PR k vetve 192 ešte nie je). (1) Porovnanie dvoch nezávislých mapovaní K46: '
       'kolega (`karty/K46_vysledok.md`, prevzaté bez zmeny obsahu) a agent (`karty/K46_agent.md`; podklady so sondou, ukážkami '
       'testov a tabuľkou 166 skúšobných pokazení sú v `karty/K46_podklady.md`); porovnanie a dohodnutý postup sú v '

@@ -56,7 +56,7 @@ Skúšky bežali v kópii `frontend` z `main` `8c49c5b7` (`npm ci`); čísla sú
 | 6 | Poradie | d (zdieľaný blok) pred c | JSX bez stavu, potom okno, potom hooky | **d pred c**, potom c, e, f |
 | 7 | Typ vlastností | krok g (posledný) | spolu s `ActionButton` (krok 1) | **g spolu s a** (nulové riziko) |
 | 8 | Ochrana | dávka 0 (karta) a 0m (mobilný detail, 25 testov), odtlačok, asi 35 testov | odtlačok, sonda efektov, testy podľa tých istých oblastí | **oboje spolu**: K48 a K49 (časť 5), sonda efektov je doplnok agenta |
-| 9 | Opravy chýb | samostatne po kroku 0 | samostatne, po delení | rozhodne majiteľ (R66) |
+| 9 | Opravy chýb | samostatne po kroku 0 | samostatne, po delení | rozhodol majiteľ (R66 (a), 21. 11. 2026): samostatná dávka K56 po poslednom presune |
 
 ## 5. Dohodnutý postup: dávky
 
@@ -65,16 +65,16 @@ Každá dávka je jeden PR, jeden ručný test majiteľa, zlúčenie mimo behu P
 | Dávka | Čo | Karta po dávke | Riziko | Poznámka |
 | --- | --- | --- | --- | --- |
 | **K48** | ochrana karty: asi 35 charakterizačných testov v 9 súboroch, dočasný odtlačok HTML (stavy kolegu a agenta), dočasná sonda poradia efektov | 1 033 | žiadne | len testy |
-| **K49** | ochrana mobilného detailu: asi 25 testov, dočasný odtlačok 4 až 5 stavov | 1 033 | žiadne | len testy; ide s K48 alebo hneď za ňou |
+| **K49** | ochrana mobilného detailu: asi 25 testov, dočasný odtlačok 4 až 5 stavov | 1 033 | žiadne | len testy; ide po zlúčení K48 (kolegovi vždy len jedna dávka naraz) |
 | K50 | kroky a a g (`FeedPostActionButton.tsx`, `FeedPostCard.types.ts`) a b (riadok akcií) | asi 860 | nulové až nízke | prvý presun, odtlačok a sonda |
 | K51 | krok d (zdieľaný blok s označeniami) | asi 785 | stredné | samostatne: pružný stĺpec okna; ručný test okna na počítači |
 | K52 | krok c (vrstvy a dialógy, hook vlajok) | asi 700 | stredné | dvanásť stavov do hooku |
 | K53 | krok e (hlavička s menu, stav menu do hlavičky) | asi 570 | stredné | fokus, portál, Escape |
 | K54 | krok f (tri hooky: obsluhy, počty a polling, synchronizácia stavu), tri commity | asi 440 | **vysoké** | efekty; najrizikovejšia dávka |
 | K55 | mobilný detail (2 presuny) a **zmazanie dočasných odtlačkov a sond** | detail asi 350 | nízke | iPhone |
-| K56 | opravy 355 a 356 (podľa R66) | – | nízke | nie je presun, vlastné testy |
+| K56 | opravy 355 a 356 (podľa R66 (a)) | – | nízke | nie je presun, vlastné testy |
 
-Redizajn (344 a 261) začne agent podľa R64 a R65 až po poslednom kroku delenia (R66 pýta, či až po K55, alebo už po K54).
+Redizajn (344 a 261) začne agent podľa R64, R65 a R66 (a) až po K56, teda po poslednom presune aj po opravách; kedy presne, určí majiteľ (zatiaľ sa nič nemapuje ani nepripravuje).
 
 ## 6. Pravidlá pre všetky kroky delenia (spoločné pasce a poistky)
 
@@ -97,4 +97,4 @@ Redizajn (344 a 261) začne agent podľa R64 a R65 až po poslednom kroku deleni
 
 ## 8. Čo ostáva
 
-Majiteľ odošle kolegovi karty K48 a K49 (návrh a text v správe agenta), rozhodne R66 a zlúči vetvu so zoznamom. Po zlúčení K48 pripraví agent kartu K50 (a ďalšie podľa tabuľky v časti 5); po K54 a K55 príde rekapitulácia s vizuálnym návrhom podľa R64.
+Majiteľ rozhodol R66 (a) (21. 11. 2026), zlúči vetvu so zoznamom a pošle kolegovi kartu K48; K49 ide po zlúčení K48 a ďalšie karty po jednej, vždy na pokyn majiteľa (agent bez pokynu nič nemapuje ani nepripravuje). Po K56 príde podľa R64 rekapitulácia s vizuálnym návrhom.

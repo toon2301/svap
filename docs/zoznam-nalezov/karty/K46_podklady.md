@@ -374,6 +374,7 @@ for k in a:
         j = next((j for j in range(min(len(ea), len(eb))) if ea[j] != eb[j]), min(len(ea), len(eb)))
         print('EFEKTY sa líšia:', k, 'počet', len(ea), '->', len(eb), 'prvý rozdiel #', j, ea[j:j+1], '->', eb[j:j+1]); bad += 1
 print('stavov', len(a), 'rozdielnych', bad)
+sys.exit(1 if bad else 0)
 ```
 
 ## 2. Ukážky testov overené v kópii

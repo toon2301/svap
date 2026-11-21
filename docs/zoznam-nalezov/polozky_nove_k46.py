@@ -22,8 +22,9 @@ NEW_ITEMS_K46 = [
          note='Oprava je jeden riadok (`post={currentPost}`) a patrí do dávky K56 po poslednom presune, keď bude dialóg v '
               'malom súbore (`FeedPostCard.tsx` má 1 033 riadkov a podľa R23 sa nemení); test (úprava vlastného '
               'príspevku, otvorenie okna zdieľania, náhľad ukáže nový text) ide do nového súboru (R27) spolu s opravou. '
-              'Dávka K48 test na dnešné chybné správanie nepíše, aby ho po oprave nebolo treba prepisovať. Kedy ich '
-              'opraviť, rieši R66. Dôležitosť a skupina sú predbežný návrh agenta (nízka; PRED NASADENÍM spolu s '
+              'Dávka K48 test na dnešné chybné správanie nepíše, aby ho po oprave nebolo treba prepisovať. Podľa '
+              'R66 (a) (majiteľ 21. 11. 2026) ide oprava v dávke K56 po poslednom presune. Dôležitosť a skupina sú '
+              'predbežný návrh agenta (nízka; PRED NASADENÍM spolu s '
               'ostatnými chybami Nástenky). Odhad: nízky · S.',
          dec='ROZHODNUTIE R66', src='K46 (kolega aj agent nezávisle, 21. 11. 2026)'),
     dict(n=356, bucket=P, imp=N, eff=EM, pkg='Vzhľad Nástenky',
@@ -42,7 +43,7 @@ NEW_ITEMS_K46 = [
               'ide až v dávke K56 s vlastnými testami (ukážka v `karty/K46_podklady.md`, časť 2.3). Dávka K48 test na dnešné '
               'chybné správanie nepíše a na chybu sa nespolieha. Možnosti (neoverené): spojiť prepis `currentPost` a '
               'premietnutie lajku do jedného efektu, alebo pridať `post` do závislostí efektu premietnutia; vyberie '
-              'kolega pri oprave a odôvodní v commite. Kedy ich opraviť, rieši R66. Dôležitosť a skupina sú predbežný '
-              'návrh agenta. Odhad: nízky · M.',
+              'kolega pri oprave a odôvodní v commite. Podľa R66 (a) (majiteľ 21. 11. 2026) ide oprava v dávke K56 '
+              'po poslednom presune. Dôležitosť a skupina sú predbežný návrh agenta. Odhad: nízky · M.',
          dec='ROZHODNUTIE R66', src='K46 (kolega, 21. 11. 2026) a overenie agenta sondou v kópii'),
 ]

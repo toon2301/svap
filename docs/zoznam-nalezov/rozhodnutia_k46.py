@@ -24,6 +24,13 @@ DECISIONS_K46 = [
                      '(4) Odklad je krátky: K56 je malá dávka (asi pol dňa). (c) nechá dve známe chyby dlhšie a '
                      'zväčší redizajn; (d) sa neodporúča: R23 výnimku neudeľuje a oprava 356 je práve v efektoch, '
                      'ktoré najrizikovejšia dávka K54 presúva.',
-         kedy='Pred dávkou K56 (po poslednom presune); K48 a K49 (len testy) na odpoveď nečakajú a testy sa píšu tak, '
-              'aby nezachytávali dnešné chybné správanie.'),
+         kedy='Rozhodnuté 21. 11. 2026.',
+         odpoved='Majiteľ 21. 11. 2026: (a) podľa odporúčania: opravy 355 a 356 idú v samostatnej malej dávke K56 '
+                 'po poslednom presune a redizajn (344 a 261) začne až po nej. Navyše majiteľ určil tempo: ide sa '
+                 'postupne, jedna vec naraz (výslovne: toto treba rešpektovať). Kolegovi pošle prácu (kartu K48) '
+                 'až po zlúčení vetvy 192 (PR #305) a agent zatiaľ nič nemapuje ani nepripravuje (ani rekapituláciu '
+                 'a vizuálny návrh redizajnu, ani ďalšie karty), kým majiteľ nepovie. Agent z toho vyvodil, že '
+                 'karta K49 ide kolegovi až po zlúčení K48 (majiteľ to môže zmeniť). Testy v K48 a K49 sa píšu '
+                 'tak, aby nezachytávali dnešné chybné správanie nálezov 355 a 356.',
+         datum='21. 11. 2026'),
 ]
