@@ -404,18 +404,25 @@ NEW_ITEMS = [
          dec=None, src='vetva 159'),
     dict(n=229, bucket=A, imp=N, eff=ES, pkg='Nástroje a testy',
          kratko='5 stredných zraniteľností v build nástroji Sentry (frontend)',
-         what='`npm audit --omit=dev` hlási po 184b 5 stredných záznamov: `@sentry/nextjs` → `@sentry/bundler-plugins` a '
-              '`@sentry/webpack-plugin` → `glob` a `minimatch` (DoS cez zosilnenie `globparts` a obídenie zrušenia cez `AbortSignal`). '
-              'Všetko je v nástroji, ktorý beží len pri zostavení; nahrávanie zdrojových máp je vypnuté, kým nie je nastavený '
-              '`SENTRY_AUTH_TOKEN`.',
-         note='Nástroj navrhuje `npm audit fix --force`, no ponúka `@sentry/nextjs` 10.76.1, teda nižšiu verziu než dnešné `^10.76.2`, takže '
-              'to nie je oprava. Čakať na novšiu verziu `@sentry/nextjs`, ktorá bundler plugin aktualizuje, a medzitým ich viesť ako známu '
-              'výnimku v kontrole z nálezu 194. Doplnené 5. 11. 2026: v produkčnom strome je aj `@opentelemetry/sdk-trace-base` 2.12.0 '
-              '(cez `@sentry/node`, `@sentry/node-core` a `@sentry/opentelemetry`), ktorý je v `package-lock.json` označený ako '
-              'zastaraný; vymení ho tá istá aktualizácia `@sentry/nextjs`, viď nález 238. Doplnok z K12 (8. 11. 2026): `glob` a `minimatch` sú '
-              'moderate, takže pri prahu `high` (`--npm-level high` v `dependency-audit.yml`) ich týždenný audit nehlási a vo výnimkách '
-              'nie sú; ak sa prah zníži na `moderate`, treba ich pridať do `.github/dependency-audit-exceptions.json` s podmienkou '
-              '„zatvorí nález 229“.',
+         what='`npm audit --omit=dev` hlási po 184b 5 stredných záznamov: `@sentry/nextjs` → '
+              '`@sentry/bundler-plugins` a `@sentry/webpack-plugin` → `glob` a `minimatch` (DoS cez zosilnenie '
+              '`globparts` a obídenie zrušenia cez `AbortSignal`). Všetko je v nástroji, ktorý beží len pri '
+              'zostavení; nahrávanie zdrojových máp je vypnuté, kým nie je nastavený `SENTRY_AUTH_TOKEN`.',
+         note='Nástroj navrhuje `npm audit fix --force`, no ponúka `@sentry/nextjs` 10.76.1, teda nižšiu verziu než '
+              'dnešné `^10.76.2`, takže to nie je oprava. Čakať na novšiu verziu `@sentry/nextjs`, ktorá bundler '
+              'plugin aktualizuje, a medzitým ich viesť ako známu výnimku v kontrole z nálezu 194. Doplnené 5. 11. '
+              '2026: v produkčnom strome je aj `@opentelemetry/sdk-trace-base` 2.12.0 (cez `@sentry/node`, '
+              '`@sentry/node-core` a `@sentry/opentelemetry`), ktorý je v `package-lock.json` označený ako '
+              'zastaraný; vymení ho tá istá aktualizácia `@sentry/nextjs`, viď nález 238. Doplnok z K12 (8. 11. '
+              '2026): `glob` a `minimatch` sú moderate, takže pri prahu `high` (`--npm-level high` v '
+              '`dependency-audit.yml`) ich týždenný audit nehlási a vo výnimkách nie sú; ak sa prah zníži na '
+              '`moderate`, treba ich pridať do `.github/dependency-audit-exceptions.json` s podmienkou „zatvorí '
+              'nález 229“. DOPLNOK 20. 11. 2026 (agent, `npm audit --omit=dev` nad zámkom z vetvy K31): po upgrade '
+              '`next` na 16.4.5 ostáva týchto 5 záznamov a `next` medzi nimi nie je; `fixAvailable` už neponúka '
+              'nižšiu verziu, ale `@sentry/nextjs` 11.15.0 (podľa `npm audit` nová hlavná verzia; či je zlučiteľná s '
+              'Next 16.4.5 a s dnešným nastavením Sentry, nie je overené). Oprava by bola samostatná dávka '
+              'závislostí (prečítať zmeny Sentry 11, vyskúšať zostavenie aj hlásenia), nie pred redizajnom '
+              'komentárov.',
          dec=None, src='vetva 159'),
     dict(n=230, bucket=A, imp=N, eff=EM, pkg='Upratovanie a architektúra',
          kratko='prechod z webpacku na Turbopack (Next 16)',

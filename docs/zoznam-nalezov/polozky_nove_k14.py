@@ -112,7 +112,8 @@ NEW_ITEMS_K14 = [
                 '`FeedPostMobileDetail.tsx`) bez zmeny vzhľadu, až potom redizajn (R23); `FeedPostComments.tsx`: '
                 'mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29), dávka 3 z 5 (K37), dávka 4 z 5 (K38) a dávka '
                 '5 z 5 (K42) hotové: `FeedPostComments.tsx` je rozdelený (1 487 → 401 riadkov po K43); zostávajú '
-                '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594)',
+                '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594); ich delenie pred redizajnom '
+                'odporúča agent (R65 (a)), mapovanie je karta K46',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov '
               'rozdelia po jednom: `feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a '
               '`feed/FeedPostMobileDetail.tsx` 594 (počty agent overil 13. 11. 2026). Delenie nesmie zmeniť '
@@ -263,40 +264,18 @@ NEW_ITEMS_K14 = [
               'commitov 71, 68 a 54 znakov. Kandidáti kolegu: žiadni. RUČNÝ TEST MAJITEĽA po K42 a K43 (19. 11. '
               '2026): prešlo všetko v poriadku. Delenie `FeedPostComments.tsx` je tým hotové; podľa R23 ostáva '
               '`FeedPostCard.tsx` (1 033 riadkov) a `FeedPostMobileDetail.tsx` (594), každý najprv mapovanie a '
-              'vlastné dávky; prežívajúce mutácie z K42 sú v poznámkach a v karte K45.',
+              'vlastné dávky; prežívajúce mutácie z K42 sú v poznámkach a v karte K45. DOPLNOK 21. 11. 2026 (agent): '
+              'majiteľ sa pýta, či nie je bezpečnejšie a lepšie rozdeliť `FeedPostCard.tsx` poriadne ešte pred '
+              'redizajnom; agent odporúča áno (rozhodnutie R65 (a)). Karta K46 (`karty/K46.md`) je napísaná: len '
+              'mapovanie, kód sa nemení; obsahuje predbežný rozbor agenta z čítania kódu (`ActionButton` 74-158, '
+              'jediný komponent 160-1033 s 15 volaniami `useState` a 7 `useEffect`, JSX 555-1033) a deväť bodov na '
+              'overenie kolegom: mapa hraníc, poradie malých krokov, pružný stĺpec okna `fillHeight`, '
+              '`FeedPostMobileDetail.tsx`, verejné rozhranie, stráženie testami (kartu vykresľuje 22 testových '
+              'súborov), súvislosti s ďalšími nálezmi, ručné scenáre a odhad. Mapovanie na K31 nezávisí a môže ísť '
+              'hneď; samotné delenie sa začne po zlúčení K31 a po schválení výsledku majiteľom. Hrubý odhad agenta '
+              '(neoverený): mapovanie asi deň, potom päť až šesť dávok, spolu 4 až 6 dní. `FeedPostMobileDetail.tsx` '
+              '(594) sa rozhodne podľa mapovania. Odoslanie karty kolegovi je súhlas majiteľa s R65 (a).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
-    dict(n=341, bucket=P, imp=S_, eff=ES, pkg='Bezpečnosť a produkčná odolnosť',
-         kratko='Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia GHSA-mfr8-8qww-v76h (stredná závažnosť); '
-                'lokálny build pri prvom behu skončil `SecurityFatalError` (K28 raz, K29 v každom z troch krokov, '
-                'K37 raz, K38 v oboch krokoch, K39, K40 a K41 po jednom, K42 v každom zo svojich troch krokov a K43 '
-                'raz; druhý beh vždy prešiel); upgrade ako samostatná dávka závislostí',
-         what='Kolega pri K28 (17. 11. 2026): nainštalovaný Next.js 16.4.3 (`frontend/package.json` `^16.4.3`, '
-              '`package-lock.json` 16.4.3) je v rozsahu upozornenia GHSA-mfr8-8qww-v76h (stupeň moderate, rozsah '
-              '16.3.0 až 16.4.4, oprava je dostupná). Dôkaz kolegu: `npm audit --omit=dev --json` vo `frontend` '
-              'hlási pre `next` stupeň moderate (celkovo 6 moderate, 0 high, 0 critical); prvý lokálny `npm run '
-              'build` skončil po úspešnom skompilovaní výpisom Next.js `SecurityFatalError` o zraniteľnej verzii a '
-              'pri zopakovaní prešiel. Kontrola agenta: CI build na `main` (úloha `checks`, 17. 11. 2026 o 06:22 '
-              'UTC, Next.js 16.4.3) prešiel bez takého výpisu; týždenný workflow `dependency-audit` '
-              '(`.github/workflows/dependency-audit.yml`) padá až od stupňa high, takže tento nález nenahlási. '
-              'Neoverené: či build na Railway niekedy skončí rovnakou chybou (treba pozrieť log nasadenia). '
-              'Opakovanie v K29 (18. 11. 2026, podľa textov commitov kolegu): v každom z troch krokov skončil prvý '
-              'lokálny `npm run build` rovnakým výpisom `SecurityFatalError` a druhý beh prešiel, takže sa to '
-              'opakuje pri prvom builde. Opakovanie v K37 (18. 11. 2026): prvý lokálny build znova '
-              '`SecurityFatalError`, druhý prešiel. Opakovanie v K38 (v oboch krokoch) a v K39 (18. 11. 2026): prvý '
-              'lokálny build znova `SecurityFatalError`, druhý vždy prešiel; spolu osem hlásených prvých buildov z '
-              'osmich (K28 1, K29 3, K37 1, K38 2 a K39 1). Opakovanie v K40 a K41 (19. 11. 2026): prvý lokálny '
-              'build znova `SecurityFatalError`, druhý prešiel; spolu desať hlásených prvých buildov z desiatich '
-              '(K28 1, K29 3, K37 1, K38 2, K39 1, K40 1 a K41 1). Opakovanie v K42 (po každom zo troch krokov) a v '
-              'K43 (19. 11. 2026): prvý lokálny build znova `SecurityFatalError`, druhý prešiel; spolu štrnásť '
-              'hlásených prvých buildov zo štrnástich.',
-         note='Návrh (neoverený): upgrade `next` na opravenú verziu v rámci rozsahu `^16.4.3` ako samostatná dávka '
-              'závislostí (tretí druh rizika ide vždy samostatne): `package.json` a `package-lock.json`, celý Jest, '
-              '`tsc`, build, kontrola prekladov a ručný dymový test majiteľa po nasadení. Majiteľ by mal pozrieť '
-              'posledné nasadenia na Railway (zelené, bez chyby `SecurityFatalError`); ak by nasadenie padalo, nález '
-              'sa posúva na začiatok poradia. Odhad: stredný · S až M. OPAKOVANIE: štrnásť zo štrnástich hlásených '
-              'prvých lokálnych buildov (K28 až K43) skončilo týmto výpisom; K31 je teraz najbližší krok (karta '
-              '`karty/K31.md`, 19. 11. 2026); majiteľ môže nasadenia na Railway pozrieť hneď.',
-         dec=None, src='K28 (kolega, 17. 11. 2026) a kontrola agenta z logu CI'),
     dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
                 'namiesto tenkej úchytky; oprava podľa R55',
@@ -335,8 +314,60 @@ NEW_ITEMS_K14 = [
               'voči redizajnu komentárov a deleniu `FeedPostCard.tsx` rozhodne majiteľ po mapovaní. Dopad na E2E: '
               'špecy okna detailu (`feed-post-detail.spec.ts`) a nový scenár komentárov (257) používajú okno len s '
               'textom, treba ich pozrieť. Vzhľad schválil majiteľ (R49, R53; obrázky `navrhy/pc-okno-ponuka.png` a '
-              '`navrhy/pc-okno-text.png`). Odhad: nízky · M.',
-         dec='ROZHODNUTIE R53', src='majiteľ (17. 11. 2026)'),
+              '`navrhy/pc-okno-text.png`). Odhad: nízky · M. MAPOVANIE HOTOVÉ (K45, PR #302, 20. 11. 2026, kolega; '
+              '`karty/K45_vysledok.md`; agent overil kľúčové tvrdenia čítaním kódu na `main` `f0c4b789`: riadky, '
+              'súbory, štyri testy a E2E odkazy sedia). KDE SA ROZHODUJE: `FeedPostDetailOverlay.tsx:220-222` '
+              '(`hasPhoto`, `splitLayout = hasPhoto && !isMobile`, hranica 1 024 px z `useIsMobile`), rám okna '
+              '`:267-269` (`max-w-[54rem]` vždy; `h-[95vh]` pri dvoch stĺpcoch, inak strop `max-h-[95vh]`), '
+              'dvojstĺpcová vetva `:306-319`, jednostĺpcová `:320-379`; telo dvoch stĺpcov '
+              '`FeedPostDetailSplitLayout.tsx:99-142`. (A) PONUKA A PORTFÓLIO V DVOCH STĹPCOCH BEZ ZÁSAHU DO '
+              '`FeedPostCard.tsx`: predikát „zdieľa ponuku alebo portfólio“ vedľa `hasVisibleFeedPhoto` v '
+              '`FeedPostDetailSplitLayout.tsx`, jeho pridanie do `:222` a oprava komentárov v oboch súboroch; karta '
+              'v režime `fillHeight` drží hlavičku, riadok „… ponúka výmenu ďalej“ a riadok akcií pevne '
+              '(`FeedPostCard.tsx:329`, `:580-585`, `:600-604`, `:862-864`), zdieľaný blok je pružný a posúva sa '
+              'vnútri (`:781-799`), „Viac“ má strop `max-h-[40vh]` (`FeedPostCaption.tsx:68-69`) a fotka karty '
+              'ostane 256 px (`SharedContentPreviewCard.tsx:33`, `h-64`), ako je v návrhu („obsah karty sa nemení“). '
+              '(B) UŽŠIE OKNO LEN S TEXTOM, TIEŽ BEZ `FeedPostCard.tsx`: len podmienená šírka rámu `splitLayout ? '
+              'h-[95vh] max-w-[54rem] : max-h-[95vh] max-w-xl` (576 px, návrh hovorí asi 580). DÔKAZ: prototyp v '
+              'kópii mimo repozitára (+9 a −3 riadky v dvoch súboroch): zo 365 testov v 11 súvisiacich sadách padajú '
+              'práve 4, všetky vo `FeedPostDetailOverlay.test.tsx` (797 riadkov): dva o šírke textového okna '
+              '(`:621`, `:631`) a dva o ponuke v jednostĺpcovom okne (`:273`, `:281`); ostatných 361 prechádza. '
+              'KOMENTÁRE A K40: oprava 346 platí len v mobilnom detaile (`useFeedCommentsScroll.ts:37-45`), v okne '
+              'na počítači majú komentáre vlastný obal; 344 sa dotýka len `FeedPostDetailOverlay.tsx` (385 → okolo '
+              '395 riadkov) a `FeedPostDetailSplitLayout.tsx` (144 → okolo 165), redizajn komentárov (K44) súborov '
+              'komentárov, takže nekolidujú; odporúčané poradie: 344 pred K44. E2E: žiadny existujúci špec nepadne '
+              '(`feed-post-detail.spec.ts:85-123`, `notification-click.spec.ts:150-170`, scenár komentárov '
+              '`support/feed-comments-ui.ts:26-29` hľadá `feed-post-overlay`, `feed-post-overlay-comments` a '
+              '`feed-post-comments`, ktoré existujú v oboch rozloženiach; čísla riadkov E2E súborov sú zo `main` '
+              '`1c454330`, pred PR #301, ktorý ich posunul; nové scenáre 345 a 346 z PR #301 mapovanie nezahŕňalo, '
+              'preto ich treba pri K47 skontrolovať tiež: podľa názvov a `data-testid` sa nezdá, že by ich zmena '
+              'okna rozbila); Codex po nasadení doplní kontrolu rozloženia na čítanie (príspevok s fotkou, ponuka, '
+              'portfólio a textový: `feed-post-overlay-split` je alebo nie je, šírka okolo 864 resp. 576 px, výška '
+              '95 % pri dvoch stĺpcoch, pole „Napíš komentár...“ a riadok akcií celé v okne). ROZSAH A RIZIKO: jedna '
+              'dávka (K47), dva commity (najprv ponuka a portfólio, potom úzke okno), nové testy v novom súbore '
+              '(okolo 200 riadkov), v `FeedPostDetailOverlay.test.tsx` sa menia len tie štyri testy (R27); riziko '
+              'nízke pre dáta, stredné pre vzhľad (výška, šírka a posun sa dajú overiť len v prehliadači); delenie '
+              '`FeedPostCard.tsx` (K46) nie je podmienkou. Pri tejto dávke sa opraví aj zastaraný komentár '
+              '`FeedPostDetailOverlay.tsx:361-362` (hovorí o `max-h-[90vh]`, kód má `95vh`). ČAKÁ: rekapitulácia a '
+              'vizuálny návrh s odporúčaním od agenta, potom 100 % dohoda s majiteľom vrátane odpovedí na R63 (päť '
+              'drobností: kostra pri načítaní, repost textového príspevku, fotka karty, šírka 576 alebo 580 px, '
+              'poradie); mapovanie (znova) a implementáciu robí podľa R64 agent, nie kolega. DOPLNOK 20. 11. 2026 '
+              '(agent, čítanie kódu po správe majiteľa): majiteľ upresnil, že ponuka a portfólio majú v okne na '
+              'počítači fungovať „tak ako príspevok s foto“, teda fotka karty vyplní zvyšok ľavého stĺpca (pri fotke '
+              'príspevku je to pružný blok `feed-post-media-fill`, `FeedPostCard.tsx:742-760`, so spodnou hranicou 8 '
+              'rem). Tvrdenie z mapovania, že natiahnutie karty ide bez zásahu do `FeedPostCard.tsx`, sa '
+              'nepotvrdilo: `SharedContentPreviewCard` v okne vykresľuje len `FeedPostCard.tsx:803-815` a bez výšky '
+              '(nemá vlastnosť výšky a fotka má pevné `h-64`), obal `:781-799` je blok s `space-y-3`, nie flex '
+              'stĺpec, takže treba drobné zmeny aj v `FeedPostCard.tsx` (podať karte výšku a prepnúť obal na flex '
+              'stĺpec) a novú vlastnosť v `SharedContentPreviewCard.tsx`. Dva stĺpce a úzke okno len s textom '
+              'ostávajú bez zásahu do `FeedPostCard.tsx` (tá časť mapovania platí). `FeedPostCard.tsx` má 1 033 '
+              'riadkov, takže zmena je možná len po vyčlenení zdieľaného bloku (čistý presun podľa R23, v odhade K46 '
+              'krok `:781-860`) alebo s jednorazovou výnimkou majiteľa; preto bod 3 v R63. DOPLNOK 21. 11. 2026 '
+              '(agent): majiteľ potvrdil, že krokom kolegu pred redizajnom je K31 (upgrade Next.js), a pýta sa, či '
+              'sa pred redizajnom nemá poriadne rozdeliť `FeedPostCard.tsx`; podľa odporúčania R65 (a) natiahnutie '
+              'fotky karty ide až po delení karty (K46), takže z bodu 3 v R63 ostáva možnosť (c); ak majiteľ '
+              'zvolí v R65 inak, platí (3a) alebo (3b).',
+         dec='ROZHODNUTIE R63', src='majiteľ (17. 11. 2026)'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
                 'vytvorenie žiadosti nepustí; treba rozhodnúť, či je to zámer',
@@ -413,4 +444,19 @@ NEW_ITEMS_K14 = [
               'hook sa pri redizajne tiež budú meniť, takže oprava môže ísť aj spolu s ním, ak o tom rozhodne '
               'majiteľ. Odhad: nízky · S.',
          dec=None, src='K43 (kolega, 19. 11. 2026)'),
+    dict(n=354, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='v koreni repozitára leží prázdny `package-lock.json` (83 bajtov), pre ktorý Next.js pri každom '
+                'zostavení hlási „inferred your workspace root“',
+         what='Kolega pri K31 (20. 11. 2026): v koreni repozitára je zvyšok `package-lock.json` (83 bajtov, '
+              '`packages` bez balíkov) a v koreni nie je `package.json`; pri každom `npm run build` vo `frontend` '
+              'Next.js hlási varovanie „inferred your workspace root“ (viac zámkov, ako koreň zvolil koreň '
+              'repozitára). Dôkaz kolegu: začiatok výpisu `npm run build` pred aj po upgrade (K31). Agent overil '
+              'existenciu a obsah súboru (83 bajtov, `lockfileVersion` 3, `packages` prázdne, v koreni nie je '
+              '`package.json`; v gite je od zlúčenia PR #211, 30. 10. 2026); varovanie pri zostavení agent nemeral. '
+              'Dopad: len hlásenie pri zostavení, nič sa nerozbíja.',
+         note='Návrh kolegu: zmazať zvyšok, alebo nastaviť `outputFileTracingRoot`; zmazanie je jednoduchšie, no '
+              'pred ním treba overiť, že súbor nepoužíva žiaden skript, workflow ani nasadenie (Railway, Nixpacks, '
+              'CI); agent to nekontroloval. Skupina a dôležitosť sú predbežný návrh agenta (po nasadení, nízka). '
+              'Odhad: nízky · S.',
+         dec=None, src='K31 (kolega, 20. 11. 2026)'),
 ]
