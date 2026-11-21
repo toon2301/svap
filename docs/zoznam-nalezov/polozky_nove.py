@@ -417,7 +417,7 @@ NEW_ITEMS = [
               '2026): `glob` a `minimatch` sú moderate, takže pri prahu `high` (`--npm-level high` v '
               '`dependency-audit.yml`) ich týždenný audit nehlási a vo výnimkách nie sú; ak sa prah zníži na '
               '`moderate`, treba ich pridať do `.github/dependency-audit-exceptions.json` s podmienkou „zatvorí '
-              'nález 229“. DOPLNOK 20. 11. 2026 (agent, `npm audit --omit=dev` nad zámkom z vetvy K31): po upgrade '
+              'nález 229“. DOPLNOK 20. 11. 2026 (agent, `npm audit --omit=dev` nad zámkom z vetvy K31; K31 je zlúčená v PR #304, 21. 11. 2026): po upgrade '
               '`next` na 16.4.5 ostáva týchto 5 záznamov a `next` medzi nimi nie je; `fixAvailable` už neponúka '
               'nižšiu verziu, ale `@sentry/nextjs` 11.15.0 (podľa `npm audit` nová hlavná verzia; či je zlučiteľná s '
               'Next 16.4.5 a s dnešným nastavením Sentry, nie je overené). Oprava by bola samostatná dávka '
@@ -456,3 +456,8 @@ NEW_ITEMS.extend(NEW_ITEMS_K14)
 from polozky_nove_223 import NEW_ITEMS_223  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_223)
+
+# Nálezy od 355 (chyby nájdené pri dvojitom mapovaní delenia karty, K46) sú v `polozky_nove_k46.py`.
+from polozky_nove_k46 import NEW_ITEMS_K46  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_K46)

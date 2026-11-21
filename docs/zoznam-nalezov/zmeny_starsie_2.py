@@ -1,10 +1,81 @@
 # -*- coding: utf-8 -*-
-"""Starší denník zmien dokumentu (12. 11. 2026 až 16. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
+"""Starší denník zmien dokumentu (12. 11. 2026 až 18. 11. 2026): `ZMENY_STARSIE_2`, najnovšie hore.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_STARSIE` (z `zmeny_starsie.py`). Nový záznam sa pridáva na začiatok `stav.ZMENY`.
 """
 
 ZMENY_STARSIE_2 = [
+    ('18. 11. 2026',
+      'Vetva 185 (vychádza z `main` `a9d0fc0c`, teda po PR #283). (1) Vetva 184 (PR #282, zlúčené 18. 11. 2026 o 06:11 UTC, '
+      'merge `8f059cf7`; tri commity `550de6f1`, `0416caf3` a `96b48163`) je zlúčená: pripomienka CodeRabbitu k nej (nález '
+      '261: prianie o šípke je prekonané R55) bola platná a je opravená a nález 265 je na žiadosť majiteľa presunutý z PO do '
+      'PRED. (2) K29 (PR #283, zlúčené 18. 11. 2026 o 07:21 UTC, merge `a9d0fc0c`; tri commity `a042993f`, `9b5a5f89` a '
+      '`eca1e650`; 7 súborov): dávka 2 z 5 delenia `FeedPostComments.tsx` (nález 333), čisté presuny: 1 487 → 1 098 riadkov a '
+      'šesť nových súborov (`feedCommentsLogic.ts` 178, `FeedCommentItem.tsx` 206, `FeedCommentComposer.tsx` 135, '
+      '`FeedCommentsNewIndicator.tsx` 70, `FeedCommentsLoadingMore.tsx` 25 a nový súbor testov 319 riadkov). Podľa textov '
+      'commitov: celý Jest po každom kroku 609 sád a 9 167 testov prešlo, odtlačok HTML bezo zmeny, mutácie 19 z 19, 8 z 9 a '
+      '10 z 11 (dve prežili ako staré medzery v testoch), lokálny build pri prvom behu v každom kroku `SecurityFatalError` '
+      '(pozri 341). Kontrola agenta z GitHubu a z `main`: CI (`checks`, `backend-postgres`) aj CodeRabbit zelené, vlákna nie '
+      'sú; počty riadkov na `main` sedia s commitmi; odtlačok HTML ani existujúce testy sa v PR nemenili; dotknutý je jediný '
+      'súbor nad 500 riadkov (`FeedPostComments.tsx`, R23). Kandidáti kolegu: žiadni. (3) Ručný test majiteľa 18. 11. 2026: '
+      '14 z 14 vykonaných, 12 prešlo bez novej chyby v hodnotenom rozsahu a 2 čiastočne (testy 6 a 13). Nové nálezy podľa '
+      'opisu majiteľa, bez mapovania agentom: 345 (počítač: detail príspevku ostane otvorený po prechode na profil autora '
+      'komentára) a 346 (iPhone: nový komentár nie je celý viditeľný po vlastnom odoslaní ani po kliknutí na upozornenie o '
+      'nových komentároch); či ide o starší stav alebo dôsledok K29, zistí kolega. (4) Rozhodnutie majiteľa 18. 11. 2026: '
+      'mapovanie si tentoraz robí kolega sám, agent kód nečíta. (5) Codex (PR #284, vetva `e2e/komentare-257-opravy`, tri '
+      'commity `90ee57b8`, `1e9110ae` a `e58274c4`, 7 súborov; v čase zápisu otvorený a nezlúčený, CI zelené): opravuje '
+      'všetky tri pripomienky z PR #281 a dve nové pripomienky CodeRabbitu sú v kóde opravené neskoršími commitmi; vlákna sú '
+      'na GitHube neuzavreté (zatvára majiteľ). (6) Fronta: karta K30 (oprava 339; mapovanie robí kolega), potom návrh K36 '
+      '(mapovanie 345 a 346), dávka 3 z 5 delenia a K31 až K35. (7) Prehľad: nálezy 1–346 (nové 345 a 346), zatvorené 14, '
+      'hotové 134, PRED 48, PO 130; čakajúcich rozhodnutí 9 z 56. Dopad na E2E: žiadny; po zlúčení PR #284 ostáva Codexovi '
+      'živý beh scenára komentárov a po K29 cielený beh špecov `feed-post-detail.spec.ts` a `notification-click.spec.ts` v '
+      'okne dohodnutom s majiteľom.'),
+    ('17. 11. 2026',
+      'Vetva 184 (vychádza z `main` `eac245bf`, teda po PR #281). (1) Vetva 183 (PR #279, zlúčené 17. 11. 2026 o 09:56 UTC, merge '
+      '`7134cab6`; dva commity `3e417e56` a `9de4d792`) je zlúčená; dve pripomienky CodeRabbitu k nej agent opravil v `9de4d792` a ich '
+      'vlákna ostali na GitHube neuzavreté (zatvára majiteľ). (2) Codex (PR #280, vetva `e2e/api-repeat-340`, zlúčené 17. 11. 2026 o '
+      '10:48 UTC, merge `d600b925`; commit `c511b99d`; 6 súborov v `frontend/e2e/**`): hotová oprava poistky `--repeat-each` (nález 340, '
+      'R50), lokálne overená (49 z 49 čistých a 5 z 5 prehliadačových kontrol); kontrola agenta z GitHubu: CI (`checks`, '
+      '`backend-postgres`) a CodeRabbit zelené, vlákna nie sú. (3) Codex (PR #281, vetva `e2e/komentare-257`, zlúčené 17. 11. 2026 o '
+      '11:53 UTC, merge `eac245bf`; commit `7225cc82`; 15 súborov, z toho 14 nových súborov E2E a `docs/playwright-odovzdanie.md`): '
+      'pripravený bezpečný scenár pridania a zmazania vlastného komentára (nález 257; vlastný textový príspevok, desktop aj mobil, '
+      'upratanie; lokálne 20 z 20 kontrol logiky, 11 z 11 prehliadačových kontrol a 24 z 24 zámerných chýb odhalených; živý beh čaká '
+      'na samostatné okno majiteľa). Odovzdanie nesie aj živé overenie 337: prvý pokus v okne 09:00 až 09:15 skončil na podmienke '
+      '`in_app_notifications` (0 prešlo, 1 zlyhalo, 1 preskočené, žiadny zápis; nie chyba aplikácie), po ručnej príprave účtu '
+      'majiteľom a novom okne 09:25 až 09:40 dal beh 2 prešlo, 0 zlyhalo a 0 preskočených (WebKit desktop aj mobil, všetkých sedem '
+      'hodnôt overených), preto je nález 337 hotový. Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) a CodeRabbit zelené, '
+      'no PR bolo zlúčené s tromi neuzavretými vláknami (Codex review P2 a dve pripomienky CodeRabbitu Minor); agent ich overil v '
+      'kóde a všetky tri platia (pozri nález 257), opraví ich Codex v malej vetve pred živým behom. (4) Rozhodnutia majiteľa zo 17. '
+      '11. 2026 pri návrhu vzhľadu zoznamu lajkujúcich a komentárov (mobil aj počítač; obrázky v `navrhy/`): R51 (bublinka so '
+      'zoznamom lajkujúcich na všetkých miestach), R52 (vzhľad komentárov a odpovedí s bublinkou), R53 (okno detailu na počítači: '
+      'ponuka a portfólio v dvoch stĺpcoch, okno len s textom užšie), R54 (prehliadač fotky zo zdieľania ostáva pri pôvodnom '
+      'príspevku), R55 (tenká úchytka panela nad fotkou) a R56 (text pri skrytých lajkujúcich). Nové nálezy: 343 (úchytka je kvôli '
+      '`button { min-height: 36px }` ovál 40×36 px; overené čítaním kódu) a 344 (okno detailu na počítači). Frontend nálezu 262 má '
+      'schválený vzhľad a ide po etapách (K34, najprv mapovanie); redizajn komentárov (261) až po delení (R47). (5) Karta K29 je '
+      'schválená majiteľom a posiela sa kolegovi; fronta: K29 (333), K30 (339), K31 (341), K32 (176) a nové návrhy K33 (343), K34 '
+      '(262, etapa A) a K35 (344). (6) Číselný prehľad: nálezy 1–344 (nové 343 a 344), zatvorené 14, hotové 134 (pribudli 337 a 340); '
+      'čakajúcich rozhodnutí 9 z 56. Dopad na E2E: žiadny na existujúce špecy; po K29 spustí Codex v dohodnutom okne cielený beh '
+      'špecov komentárov. (7) Kontrola CodeRabbitu k PR #282 (jedna pripomienka, platná; druhý commit vetvy 184): v náleze 261 ostalo '
+      'staré prianie „drag handle vo fotoprehliadači zjednodušiť na šípku“, ktoré rozhodnutie R55 prekonalo (majiteľ zvolil tenkú '
+      'úchytku 40×6 px, nález 343; vo fotoprehliadači je jediná úchytka, tá na paneli komentárov); v zozname je prianie označené ako '
+      'prekonané a vlákno na GitHube zatvára majiteľ. (8) Na žiadosť majiteľa (17. 11. 2026) je nález 265 (verejné SEO stránky) '
+      'presunutý z PO NASADENÍ do PRED NASADENÍM (tretí commit vetvy 184); zatiaľ sa nemapuje, do žiadnej vlny poradia nie je zaradený '
+      'a dôležitosť (nízka) a odhad (veľký) sa nemenili; prehľad nálezov: HNEĎ 0, PRED 46, PO 130.'),
+    ('17. 11. 2026',
+      'Vetva 183 (vychádza z `main` `4c342f72`, teda po PR #278). (1) Vetva 182 (PR #277) je zlúčená 17. 11. 2026 o 05:33 UTC. '
+      '(2) K28 (PR #278, zlúčené 17. 11. 2026 o 06:33 UTC, merge `4c342f72`; päť commitov `eb86d9a5`, `33a81b9b`, `ffcfad33`, '
+      '`e8991819` a `b737a0f9`): hotová dávka 1 z 5 delenia `FeedPostComments.tsx` (nález 333): päť nových súborov testov (39 '
+      'nových testov) a dočasný odtlačok HTML (desať stavov, súbor `.snap` s 3 499 riadkami, ktorý zmaže dávka 5 z 5); produkčný '
+      'kód nezmenený. Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) zelené, CodeRabbit aj Codex review bez '
+      'pripomienok, vlákna nie sú a zmenené sú len nové súbory testov a jeden `.snap`; overenie je v textoch commitov (celý Jest '
+      '608 sád a 9 133 testov prešlo, všetkých 17 mutácií z karty zachytených, `tsc`, ESLint, kontrola prekladov a build čisté). '
+      'Kandidáti kolegu sú nové nálezy 341 (Next.js 16.4.3 je v rozsahu bezpečnostného upozornenia, CI build na `main` prešiel) a '
+      '342 (zmiznutý príspevok pri odpovedi, úprave a zmazaní komentára). (3) Odpovede majiteľa zo 17. 11. 2026 podľa odporúčaní '
+      'agenta: vzhľad zoznamu lajkujúcich sa prebere hneď (R49; majiteľ najprv povie svoj návrh), R50 (a): Codex opraví poistku '
+      '`--repeat-each` ako samostatnú malú vetvu, pravidlo R49 je zapísané aj v `AGENTS.md` a po živom behu 337 pripraví Codex '
+      'E2E scenár komentárov (nález 257). (4) Karta K29 (`karty/K29.md`): delenie `FeedPostComments.tsx`, dávka 2 z 5 (kroky 1 až '
+      '3, s ručným testom majiteľa); fronta: K29 (333), K30 (339), K31 (341), K32 (176). (5) Číselný prehľad: nálezy 1–342 (nové '
+      '341 a 342), zatvorené 14, hotové 132; čakajúcich rozhodnutí 9 z 50. Dopad na E2E: žiadny.'),
     ('16. 11. 2026',
       'Vetva 182 (vychádza z `main` `da27a931`, teda po PR #276). (1) K27 (PR #275, zlúčené 16. 11. 2026 o 19:34 UTC, merge '
       '`bf754de0`; commity `7eed510a`, `c26f314e` a `a894dc23`): hotová backendová časť nálezu 262 (tri nové koncové body na '

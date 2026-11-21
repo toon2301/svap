@@ -113,7 +113,9 @@ NEW_ITEMS_K14 = [
                 'mapovanie (K26), dávka 1 z 5 (K28), dávka 2 z 5 (K29), dávka 3 z 5 (K37), dávka 4 z 5 (K38) a dávka '
                 '5 z 5 (K42) hotové: `FeedPostComments.tsx` je rozdelený (1 487 → 401 riadkov po K43); zostávajú '
                 '`FeedPostCard.tsx` (1 033) a `FeedPostMobileDetail.tsx` (594); ich delenie pred redizajnom '
-                'odporúča agent (R65 (a)), mapovanie je karta K46',
+                'schválil majiteľ (R65 (a)), dvojité mapovanie K46 (kolega aj agent) je hotové a porovnané: '
+                'ochrana testami v K48 a K49, presuny v K50 až K55 a opravy 355 a 356 v K56 (plán v '
+                '`karty/K46_porovnanie.md`)',
          what='Rozhodnutie R23 (13. 11. 2026): pred redizajnom Nástenky (nález 261) sa tri súbory nad 500 riadkov '
               'rozdelia po jednom: `feed/FeedPostComments.tsx` 1 487 riadkov (prvý), `feed/FeedPostCard.tsx` 1 033 a '
               '`feed/FeedPostMobileDetail.tsx` 594 (počty agent overil 13. 11. 2026). Delenie nesmie zmeniť '
@@ -268,14 +270,37 @@ NEW_ITEMS_K14 = [
               'majiteľ sa pýta, či nie je bezpečnejšie a lepšie rozdeliť `FeedPostCard.tsx` poriadne ešte pred '
               'redizajnom; agent odporúča áno (rozhodnutie R65 (a)). Karta K46 (`karty/K46.md`) je napísaná: len '
               'mapovanie, kód sa nemení; obsahuje predbežný rozbor agenta z čítania kódu (`ActionButton` 74-158, '
-              'jediný komponent 160-1033 s 15 volaniami `useState` a 7 `useEffect`, JSX 555-1033) a deväť bodov na '
+              'jediný komponent 160-1033 s 17 volaniami `useState` a 7 `useEffect`, JSX 555-1033) a deväť bodov na '
               'overenie kolegom: mapa hraníc, poradie malých krokov, pružný stĺpec okna `fillHeight`, '
               '`FeedPostMobileDetail.tsx`, verejné rozhranie, stráženie testami (kartu vykresľuje 22 testových '
-              'súborov), súvislosti s ďalšími nálezmi, ručné scenáre a odhad. Mapovanie na K31 nezávisí a môže ísť '
-              'hneď; samotné delenie sa začne po zlúčení K31 a po schválení výsledku majiteľom. Hrubý odhad agenta '
+              'súborov), súvislosti s ďalšími nálezmi, ručné scenáre a odhad. Hrubý odhad agenta '
               '(neoverený): mapovanie asi deň, potom päť až šesť dávok, spolu 4 až 6 dní. `FeedPostMobileDetail.tsx` '
-              '(594) sa rozhodne podľa mapovania. Odoslanie karty kolegovi je súhlas majiteľa s R65 (a).',
-         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026) a výsledok K26 (kolega, 16. 11. 2026)'),
+              '(594) sa rozhodne podľa mapovania. STAV 21. 11. 2026 (majiteľ): zlúčil PR #303 a #304 (K31), schválil '
+              'R65 (a), dal kartu K46 kolegovi a chce dvojité mapovanie: kým mapuje kolega, mapuje nezávisle aj agent; '
+              'po dokončení kolegu mu majiteľ pošle jeho výsledok a agent obe mapovania porovná (agent svoje mapovanie '
+              'do porovnania nezverejní v repozitári). Samotné delenie sa začne po schválení spoločného výsledku '
+              'majiteľom. VÝSLEDOK DVOJITÉHO MAPOVANIA K46 (21. 11. 2026, agent): kolega (`karty/K46_vysledok.md`) '
+              'aj agent (`karty/K46_agent.md`, podklady `karty/K46_podklady.md`) nezávisle dospeli k tomu istému: '
+              'karta (1 033 riadkov) aj mobilný detail (594) sa dajú deliť čistými presunmi (karta asi 440 až 480, '
+              'detail asi 350 riadkov, každý nový súbor pod 500); existujúce testy nezachytili 49 zo 121 (kolega) a '
+              '84 zo 166 (agent) skúšobných pokazení karty a zmazanie z mobilného detailu nemá žiadny test (agent '
+              'overil: 8 z 8 pokazení prežilo aj proti 80 súborom, prežili aj zásahy do menu a zdieľania); pružný '
+              'stĺpec okna stráži len odtlačok HTML (11 z 11 zmien tried; testy 1 z 11) a pokazenie poradia '
+              'efektov testy nezachytia, preto sa pridá sonda poradia efektov. Porovnanie a dohodnutý postup: '
+              '`karty/K46_porovnanie.md`: K48 a K49 sú ochrana bez zmeny kódu (K48 karta: asi 35 testov v 9 '
+              'súboroch, dočasný odtlačok HTML a sonda poradia efektov; K49 mobilný detail: asi 25 testov), potom '
+              'K50 (kroky a, g a b: `FeedPostActionButton.tsx`, typ vlastností a riadok akcií; karta asi 860), K51 '
+              '(zdieľaný blok s označeniami; asi 785), K52 (vrstvy a dialógy s hookom vlajok; asi 700), K53 '
+              '(hlavička s menu; asi 570), K54 (efekty, tri hooky v troch commitoch; asi 440; najrizikovejšia), K55 '
+              '(mobilný detail v dvoch presunoch a zmazanie dočasných odtlačkov a sond) a K56 (opravy 355 a 356). '
+              'Odhad kolegu 5 až 7 dní práce (7 až 9 kalendárnych s ručnými testami); veľkosti sú odhad z '
+              'prototypov, ktoré ostali mimo repozitára. Z mapovania vznikli nálezy 355 a 356. Karty K48 a K49 sú '
+              'napísané, ďalšie pripraví agent po zlúčení predchádzajúcej a na pokyn majiteľa. ODPOVEĎ MAJITEĽA '
+              '21. 11. 2026: R66 (a): opravy 355 a 356 idú v K56 po poslednom presune a redizajn začne až po nej; ide '
+              'sa postupne, jedna vec naraz: kolegovi pošle majiteľ kartu K48 po zlúčení vetvy 192 (PR #305), K49 až '
+              'po zlúčení K48 a agent bez jeho pokynu nič nemapuje ani nepripravuje.',
+         dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026), výsledok K26 (kolega, 16. 11. 2026) a '
+                                    'výsledky K46 (kolega a agent, 21. 11. 2026)'),
     dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
          kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
                 'namiesto tenkej úchytky; oprava podľa R55',
@@ -363,10 +388,9 @@ NEW_ITEMS_K14 = [
               'ostávajú bez zásahu do `FeedPostCard.tsx` (tá časť mapovania platí). `FeedPostCard.tsx` má 1 033 '
               'riadkov, takže zmena je možná len po vyčlenení zdieľaného bloku (čistý presun podľa R23, v odhade K46 '
               'krok `:781-860`) alebo s jednorazovou výnimkou majiteľa; preto bod 3 v R63. DOPLNOK 21. 11. 2026 '
-              '(agent): majiteľ potvrdil, že krokom kolegu pred redizajnom je K31 (upgrade Next.js), a pýta sa, či '
-              'sa pred redizajnom nemá poriadne rozdeliť `FeedPostCard.tsx`; podľa odporúčania R65 (a) natiahnutie '
-              'fotky karty ide až po delení karty (K46), takže z bodu 3 v R63 ostáva možnosť (c); ak majiteľ '
-              'zvolí v R65 inak, platí (3a) alebo (3b).',
+              '(agent): majiteľ potvrdil, že krokom kolegu pred redizajnom je K31 (zlúčená, PR #304), a schválil R65 '
+              '(a): poriadne delenie `FeedPostCard.tsx` pred redizajnom; natiahnutie fotky karty teda ide až po '
+              'delení karty (K46) a z bodu 3 v R63 ostáva možnosť (c).',
          dec='ROZHODNUTIE R63', src='majiteľ (17. 11. 2026)'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '

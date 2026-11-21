@@ -388,17 +388,18 @@ DECISIONS_DALSIE = [
                 '(b) Všetko naraz hneď, s jednorazovou výnimkou pre `FeedPostCard.tsx` (dve drobné zmeny: podať '
                 'karte výšku a prepnúť obal na flex stĺpec; riziko stredné, lebo rozloženie okna je citlivé a súbor '
                 'je veľký). (c) Všetko až po delení `FeedPostCard.tsx` (K46). Súvisí s R65 (delenie `FeedPostCard.tsx` '
-                'pred redizajnom): ak majiteľ schváli odporúčanie R65 (a), z tohto bodu ostáva možnosť (c). (4) Šírka '
+                'pred redizajnom): R65 (a) majiteľ schválil 21. 11. 2026, z tohto bodu teda ostáva možnosť (c). (4) Šírka '
                 'úzkeho okna: (a) 576 px '
                 '(štandardná hodnota `max-w-xl`), (b) presne 580 px. (5) Poradie: (a) 344 (nová dávka K47) pred '
                 'redizajnom komentárov (K44), (b) K44 pred 344, (c) obe v jednej dávke.',
-         odporucanie='(1a), (2a), (3a), (4a) a (5a). (1a): žiadny nový vizuálny prvok a najčastejší textový '
+         odporucanie='(1a), (2a), (3c), (4a) a (5a). (1a): žiadny nový vizuálny prvok a najčastejší textový '
                      'príspevok sa nehýbe; druh príspevku vopred vedela povedať až karta vo feede, na čo by sa '
-                     'najprv musel rozdeliť `FeedPostCard.tsx` (K46). (2a): ide len o text. (3a): najmenší a '
-                     'bezpečný krok: rozloženie sa nasadí hneď a natiahnutie fotky, ktoré majiteľ chce rovnako ako '
-                     'pri príspevku s foto, ide potom v malom súbore bez rizika pre okno ostatných príspevkov; (3b) '
-                     'sa dá, ak majiteľ nechce čakať, no vyžaduje výnimku pre veľký súbor s citlivým rozložením; '
-                     '(3c) je najdlhšie. (4a): rozdiel je 4 px a štandardná hodnota drží kód jednoduchý. (5a): '
+                     'najprv musel rozdeliť `FeedPostCard.tsx` (K46). (2a): ide len o text. (3c): majiteľ '
+                     '21. 11. 2026 schválil poriadne delenie pred redizajnom (R65 (a)) a že redizajn začne až po '
+                     'poslednej dávke delenia a po opravách dvoch chýb (R66 (a)), takže dva stĺpce, úzke okno aj '
+                     'natiahnutie fotky karty idú spolu až potom, v malom súbore so zdieľaným blokom; (3a) a (3b) '
+                     'by okno nasadili skôr, než sa karta rozdelí, a (3b) by navyše vyžadovalo výnimku pre veľký '
+                     'súbor s citlivým rozložením. (4a): rozdiel je 4 px a štandardná hodnota drží kód jednoduchý. (5a): '
                      'menšia a nezávislá zmena sa vyskúša v prehliadači skôr, než príde väčší redizajn; K44 potom '
                      'skúša vzhľad len v dvoch šírkach (okolo 380 a 576 px), nie ešte aj v starých 864 px, a 344 '
                      'nečaká na podrobnosti k poľu pri odpovedi. (5c) by miešala dve vzhľadové zmeny v jednom '
@@ -462,7 +463,12 @@ DECISIONS_DALSIE = [
                      'kroky. (b) je rýchlejšie, no súbor ostane nad 500 riadkov a delenie by sa muselo robiť znova '
                      'pred značkami; (c) je najrýchlejšie, no natiahnutie fotky, ktoré majiteľ chce, by odpadlo; (d) '
                      'pravidlo R23 výnimku neudeľuje a ide práve o súbor s citlivým rozložením.',
-         kedy='Pred odoslaním karty K46 kolegovi: karta `karty/K46.md` je napísaná podľa odporúčania (a) a jej '
-              'odoslanie kolegovi je súhlas majiteľa s (a). Samotné delenie sa začne po zlúčení K31 a po schválení '
-              'výsledku mapovania majiteľom.'),
+         kedy='Rozhodnuté 21. 11. 2026.',
+         odpoved='Majiteľ 21. 11. 2026: zlúčil PR #303 (so zoznamom a kartou K46) aj PR #304 (K31) a dal kartu K46 '
+                 'kolegovi, teda podľa odporúčania (a): poriadne delenie `FeedPostCard.tsx` pred redizajnom, najprv '
+                 'mapovanie. Navyše chce dvojité mapovanie pre istotu: kým mapuje kolega, mapuje nezávisle aj agent; '
+                 'po dokončení kolegu pošle majiteľ agentovi jeho výsledok a agent obe mapovania porovná. Agent svoje '
+                 'mapovanie do porovnania nezverejní v repozitári, aby ostalo nezávislé. Samotné delenie sa začne po '
+                 'schválení spoločného výsledku majiteľom; `FeedPostMobileDetail.tsx` sa rozhodne podľa mapovania.',
+         datum='21. 11. 2026'),
 ]
