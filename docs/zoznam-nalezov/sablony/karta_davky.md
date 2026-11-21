@@ -15,6 +15,7 @@ Vyplní agent, schváli majiteľ; kolega ju číta zo zoznamu v `main` alebo z o
 - **Nerobiť:** čo je mimo dávky.
 - **Čaká na:** logy, rozhodnutie alebo dôkazy (od koho).
 - **Ručne po nasadení:** najviac 3 body.
+- **Manuál ručných testov:** ak dávka má ručné testy, kolega ich doplní aj do manuálu `sablony/dymovy_test.md` (nový podmienený krok „Len po dávke …“ alebo úprava existujúceho; samostatný posledný commit dávky); pokyn majiteľa z 21. 11. 2026, platí pri každej dávke a pripomína sa aj v každom texte pre kolegu.
 - **Dopad na E2E:** ktoré špecy to môže zasiahnuť.
 
 **Značky:** JASNÉ = kolega len rýchlo overí, že nález platí, a opraví. NEJASNÉ = kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ nepovie.
