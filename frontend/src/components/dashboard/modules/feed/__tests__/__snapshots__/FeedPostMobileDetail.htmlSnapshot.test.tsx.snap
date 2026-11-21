@@ -1,0 +1,732 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`dočasný odtlačok HTML mobilnej obrazovky detailu príspevku (R45, zmaže ho K55) menu vlastníka pri texte bez fotky 1`] = `
+"<div>
+</div>
+<div tabindex="-1" role="dialog" aria-modal="true" aria-label="Detail príspevku" data-testid="feed-mobile-detail" class="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]">
+<header data-testid="feed-mobile-detail-header" class="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800">
+<button type="button" data-testid="feed-mobile-detail-author" aria-label="Otvoriť profil" class="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-9 h-9 text-xs rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+<span class="min-w-0">
+<span class="block truncate text-sm font-semibold text-gray-900 dark:text-white">Jana Nováková</span>
+<span class="block truncate text-xs text-gray-500 dark:text-gray-400">1 d</span>
+</span>
+</button>
+<div class="relative shrink-0">
+<button type="button" data-testid="feed-mobile-detail-menu-trigger" aria-label="Možnosti príspevku" aria-haspopup="menu" aria-expanded="true" class="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z">
+</path>
+</svg>
+</button>
+<div role="menu" data-testid="feed-mobile-detail-menu" aria-label="Možnosti príspevku" class="absolute left-0 top-12 z-10 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-[#151517]">
+<button type="button" role="menuitem" data-testid="feed-mobile-detail-report" class="block w-full px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 dark:text-white dark:hover:bg-gray-800 dark:disabled:text-gray-500">Nahlásiť príspevok</button>
+<button type="button" role="menuitem" data-testid="feed-mobile-detail-edit" class="block w-full border-t border-gray-200 px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800">Upraviť príspevok</button>
+<button type="button" role="menuitem" data-testid="feed-mobile-detail-delete" class="block w-full border-t border-gray-200 px-4 py-3 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-gray-700 dark:text-red-400 dark:hover:bg-red-900/20">Zmazať príspevok</button>
+</div>
+</div>
+<button type="button" data-testid="feed-mobile-detail-close" aria-label="Zavrieť" class="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12">
+</path>
+</svg>
+</button>
+</header>
+<div class="min-h-0 flex-1">
+<div data-testid="feed-post-comments" class="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 flex h-full min-h-0 flex-col">
+<div class="relative min-h-0 flex-1">
+<div data-testid="feed-comments-scroll" role="region" aria-label="Komentáre" tabindex="0" class="subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 h-full">
+<div data-testid="feed-mobile-detail-header-content" class="pb-1">
+<div class="pb-3">
+<div>
+<p data-testid="feed-mobile-detail-caption" class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 line-clamp-5 ">Text príspevku</p>
+</div>
+</div>
+<div data-testid="feed-mobile-detail-actions" class="flex items-center gap-1 border-y border-gray-200/70 py-1 dark:border-gray-700/60">
+<button type="button" data-testid="feed-mobile-detail-like" aria-label="Páči sa mi" aria-pressed="false" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10 ">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+<button type="button" data-testid="feed-mobile-detail-like-count" aria-label="Páči sa im to: 2" class="h-11 rounded-full px-1 text-sm tabular-nums text-gray-600 underline-offset-2 transition-colors hover:bg-black/5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">2</button>
+<span class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10" data-testid="feed-mobile-detail-comments">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+</path>
+</svg>
+<span class="tabular-nums">0</span>
+</span>
+<button type="button" data-testid="feed-mobile-detail-share" aria-label="Zdieľať ďalej" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<circle cx="18" cy="5" r="3">
+</circle>
+<circle cx="6" cy="12" r="3">
+</circle>
+<circle cx="18" cy="19" r="3">
+</circle>
+<line x1="8.6" y1="10.5" x2="15.4" y2="6.5">
+</line>
+<line x1="8.6" y1="13.5" x2="15.4" y2="17.5">
+</line>
+</svg>
+</button>
+</div>
+<div data-testid="feed-mobile-detail-comments-anchor" class="pt-3" data-auto-scrolled="false">
+<h2 data-testid="feed-mobile-detail-comments-title" class="text-sm font-semibold text-gray-900 dark:text-white">Komentáre</h2>
+</div>
+</div>
+<p class="py-2 text-sm text-gray-500 dark:text-gray-400" data-testid="feed-comments-empty">Zatiaľ žiadne komentáre.</p>
+<div aria-hidden="true" data-testid="feed-comments-sentinel">
+</div>
+</div>
+<p data-testid="feed-comments-new-announcer" aria-live="polite" class="sr-only">
+</p>
+</div>
+<div class="mt-3">
+<div class="relative">
+<textarea rows="1" placeholder="Napíš komentár..." aria-label="Napíš komentár..." class="w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 resize-none pr-12">
+</textarea>
+<button type="button" disabled="" data-testid="feed-comment-send" aria-label="Pridať" class="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<line x1="10" y1="14" x2="21" y2="3">
+</line>
+<path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`dočasný odtlačok HTML mobilnej obrazovky detailu príspevku (R45, zmaže ho K55) potvrdenie zmazania vlastného reposta bez fotky 1`] = `
+"<div>
+</div>
+<div tabindex="-1" role="dialog" aria-modal="true" aria-label="Detail príspevku" data-testid="feed-mobile-detail" class="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]">
+<header data-testid="feed-mobile-detail-header" class="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800">
+<button type="button" data-testid="feed-mobile-detail-author" aria-label="Otvoriť profil" class="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-9 h-9 text-xs rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+<span class="min-w-0">
+<span class="block truncate text-sm font-semibold text-gray-900 dark:text-white">Jana Nováková</span>
+<span class="block truncate text-xs text-gray-500 dark:text-gray-400">1 d</span>
+</span>
+</button>
+<div class="relative shrink-0">
+<button type="button" data-testid="feed-mobile-detail-menu-trigger" aria-label="Možnosti príspevku" aria-haspopup="menu" aria-expanded="false" class="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z">
+</path>
+</svg>
+</button>
+</div>
+<button type="button" data-testid="feed-mobile-detail-close" aria-label="Zavrieť" class="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12">
+</path>
+</svg>
+</button>
+</header>
+<div class="min-h-0 flex-1">
+<div data-testid="feed-post-comments" class="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 flex h-full min-h-0 flex-col">
+<div class="relative min-h-0 flex-1">
+<div data-testid="feed-comments-scroll" role="region" aria-label="Komentáre" tabindex="0" class="subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 h-full">
+<div data-testid="feed-mobile-detail-header-content" class="pb-1">
+<div class="pb-3">
+<div>
+<p data-testid="feed-mobile-detail-caption" class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 line-clamp-5 ">Toto stojí za prečítanie.</p>
+</div>
+</div>
+<div class="pb-3" data-testid="feed-mobile-detail-shared">
+<div data-testid="feed-shared-card" data-shared-type="feed_post">
+<div data-testid="feed-shared-post-preview" class="space-y-2 ">
+<button type="button" data-testid="feed-shared-post-preview-open" class="block w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60">
+<div class="space-y-1 text-left ">
+<p class="line-clamp-4 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">Pôvodný text príspevku</p>
+</div>
+</button>
+</div>
+</div>
+</div>
+<div data-testid="feed-mobile-detail-actions" class="flex items-center gap-1 border-y border-gray-200/70 py-1 dark:border-gray-700/60">
+<button type="button" data-testid="feed-mobile-detail-like" aria-label="Páči sa mi" aria-pressed="false" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10 ">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+<button type="button" data-testid="feed-mobile-detail-like-count" aria-label="Páči sa im to: 2" class="h-11 rounded-full px-1 text-sm tabular-nums text-gray-600 underline-offset-2 transition-colors hover:bg-black/5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">2</button>
+<span class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10" data-testid="feed-mobile-detail-comments">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+</path>
+</svg>
+<span class="tabular-nums">0</span>
+</span>
+<button type="button" data-testid="feed-mobile-detail-share" aria-label="Zdieľať ďalej" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<circle cx="18" cy="5" r="3">
+</circle>
+<circle cx="6" cy="12" r="3">
+</circle>
+<circle cx="18" cy="19" r="3">
+</circle>
+<line x1="8.6" y1="10.5" x2="15.4" y2="6.5">
+</line>
+<line x1="8.6" y1="13.5" x2="15.4" y2="17.5">
+</line>
+</svg>
+</button>
+</div>
+<div data-testid="feed-mobile-detail-comments-anchor" class="pt-3" data-auto-scrolled="false">
+<h2 data-testid="feed-mobile-detail-comments-title" class="text-sm font-semibold text-gray-900 dark:text-white">Komentáre</h2>
+</div>
+</div>
+<p class="py-2 text-sm text-gray-500 dark:text-gray-400" data-testid="feed-comments-empty">Zatiaľ žiadne komentáre.</p>
+<div aria-hidden="true" data-testid="feed-comments-sentinel">
+</div>
+</div>
+<p data-testid="feed-comments-new-announcer" aria-live="polite" class="sr-only">
+</p>
+</div>
+<div class="mt-3">
+<div class="relative">
+<textarea rows="1" placeholder="Napíš komentár..." aria-label="Napíš komentár..." class="w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 resize-none pr-12">
+</textarea>
+<button type="button" disabled="" data-testid="feed-comment-send" aria-label="Pridať" class="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<line x1="10" y1="14" x2="21" y2="3">
+</line>
+<path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" role="alertdialog" aria-modal="true" aria-labelledby="feed-comment-delete-title" data-testid="feed-mobile-detail-delete-confirm">
+<div tabindex="-1" class="relative w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#0f0f10]">
+<div class="p-6">
+<div class="flex items-start gap-4">
+<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-7 w-7 text-red-600 dark:text-red-400">
+<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z">
+</path>
+</svg>
+</div>
+<div class="min-w-0 flex-1 pt-0.5">
+<h2 id="feed-comment-delete-title" class="text-lg font-semibold text-gray-900 dark:text-white">Naozaj chceš zmazať tento príspevok?</h2>
+<p class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">Túto akciu už nie je možné vrátiť späť.</p>
+</div>
+</div>
+<div class="mt-6 flex justify-end gap-3">
+<button type="button" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800/50">Zrušiť</button>
+<button type="button" data-testid="feed-mobile-detail-delete-confirm-action" class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">Vymazať</button>
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`dočasný odtlačok HTML mobilnej obrazovky detailu príspevku (R45, zmaže ho K55) repost s fotkou od autora bez profilu (vypnutý avatar) 1`] = `
+"<div>
+</div>
+<div tabindex="-1" role="dialog" aria-modal="true" aria-label="Detail príspevku" data-testid="feed-mobile-detail" class="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]">
+<header data-testid="feed-mobile-detail-header" class="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800">
+<button type="button" disabled="" data-testid="feed-mobile-detail-author" aria-label="Otvoriť profil" class="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-9 h-9 text-xs rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">BP</div>
+<span class="min-w-0">
+<span class="block truncate text-sm font-semibold text-gray-900 dark:text-white">Bývalý používateľ</span>
+<span class="block truncate text-xs text-gray-500 dark:text-gray-400">1 d</span>
+</span>
+</button>
+<div class="relative shrink-0">
+<button type="button" data-testid="feed-mobile-detail-menu-trigger" aria-label="Možnosti príspevku" aria-haspopup="menu" aria-expanded="false" class="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z">
+</path>
+</svg>
+</button>
+</div>
+<button type="button" data-testid="feed-mobile-detail-close" aria-label="Zavrieť" class="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12">
+</path>
+</svg>
+</button>
+</header>
+<div class="min-h-0 flex-1">
+<div data-testid="feed-post-comments" class="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 flex h-full min-h-0 flex-col">
+<div class="relative min-h-0 flex-1">
+<div data-testid="feed-comments-scroll" role="region" aria-label="Komentáre" tabindex="0" class="subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 h-full">
+<div data-testid="feed-mobile-detail-header-content" class="pb-1">
+<div class="pb-3">
+<div>
+<p data-testid="feed-mobile-detail-caption" class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 line-clamp-5 ">Toto stojí za prečítanie.</p>
+</div>
+</div>
+<div class="pb-3" data-testid="feed-mobile-detail-shared">
+<div data-testid="feed-shared-card" data-shared-type="feed_post">
+<div data-testid="feed-shared-card-owner" class="mb-2 flex items-center gap-2">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">PM</div>
+<span class="truncate text-sm font-semibold text-gray-900 dark:text-white">Peter Malý</span>
+</div>
+<div data-testid="feed-shared-post-preview" class="space-y-2 ">
+<button type="button" data-testid="feed-shared-post-preview-open" class="block w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60">
+<div class="space-y-1 text-left ">
+<p class="line-clamp-4 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">Pôvodný text príspevku</p>
+</div>
+</button>
+<div class="relative w-full h-64">
+<button type="button" data-testid="feed-shared-post-photo" aria-label="Otvoriť fotku na celú obrazovku" class="block h-full w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-purple-400/60">
+<div class="h-full w-full overflow-hidden bg-gray-100 dark:bg-[#0e0e0f] ">
+<div class="relative h-full w-full">
+<img loading="lazy" decoding="async" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-90" src="http://api.test/orig-t.webp">
+<div class="absolute inset-0 bg-black/10 dark:bg-black/20" aria-hidden="true">
+</div>
+<img loading="lazy" decoding="async" alt="" class="absolute inset-0 h-full w-full object-contain " src="http://api.test/orig-t.webp">
+</div>
+</div>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div data-testid="feed-mobile-detail-actions" class="flex items-center gap-1 border-y border-gray-200/70 py-1 dark:border-gray-700/60">
+<button type="button" data-testid="feed-mobile-detail-like" aria-label="Páči sa mi" aria-pressed="false" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10 ">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+<button type="button" data-testid="feed-mobile-detail-like-count" aria-label="Páči sa im to: 2" class="h-11 rounded-full px-1 text-sm tabular-nums text-gray-600 underline-offset-2 transition-colors hover:bg-black/5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">2</button>
+<span class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10" data-testid="feed-mobile-detail-comments">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+</path>
+</svg>
+<span class="tabular-nums">0</span>
+</span>
+<button type="button" data-testid="feed-mobile-detail-share" aria-label="Zdieľať ďalej" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<circle cx="18" cy="5" r="3">
+</circle>
+<circle cx="6" cy="12" r="3">
+</circle>
+<circle cx="18" cy="19" r="3">
+</circle>
+<line x1="8.6" y1="10.5" x2="15.4" y2="6.5">
+</line>
+<line x1="8.6" y1="13.5" x2="15.4" y2="17.5">
+</line>
+</svg>
+</button>
+</div>
+<div data-testid="feed-mobile-detail-comments-anchor" class="pt-3" data-auto-scrolled="false">
+<h2 data-testid="feed-mobile-detail-comments-title" class="text-sm font-semibold text-gray-900 dark:text-white">Komentáre</h2>
+</div>
+</div>
+<p class="py-2 text-sm text-gray-500 dark:text-gray-400" data-testid="feed-comments-empty">Zatiaľ žiadne komentáre.</p>
+<div aria-hidden="true" data-testid="feed-comments-sentinel">
+</div>
+</div>
+<p data-testid="feed-comments-new-announcer" aria-live="polite" class="sr-only">
+</p>
+</div>
+<div class="mt-3">
+<div class="relative">
+<textarea rows="1" placeholder="Napíš komentár..." aria-label="Napíš komentár..." class="w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 resize-none pr-12">
+</textarea>
+<button type="button" disabled="" data-testid="feed-comment-send" aria-label="Pridať" class="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<line x1="10" y1="14" x2="21" y2="3">
+</line>
+<path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`dočasný odtlačok HTML mobilnej obrazovky detailu príspevku (R45, zmaže ho K55) text s fotkou a tromi komentármi (rozhodnutie o posune: áno) 1`] = `
+"<div>
+</div>
+<div tabindex="-1" role="dialog" aria-modal="true" aria-label="Detail príspevku" data-testid="feed-mobile-detail" class="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]">
+<header data-testid="feed-mobile-detail-header" class="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800">
+<button type="button" data-testid="feed-mobile-detail-author" aria-label="Otvoriť profil" class="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-9 h-9 text-xs rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+<span class="min-w-0">
+<span class="block truncate text-sm font-semibold text-gray-900 dark:text-white">Jana Nováková</span>
+<span class="block truncate text-xs text-gray-500 dark:text-gray-400">1 d</span>
+</span>
+</button>
+<div class="relative shrink-0">
+<button type="button" data-testid="feed-mobile-detail-menu-trigger" aria-label="Možnosti príspevku" aria-haspopup="menu" aria-expanded="false" class="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z">
+</path>
+</svg>
+</button>
+</div>
+<button type="button" data-testid="feed-mobile-detail-close" aria-label="Zavrieť" class="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12">
+</path>
+</svg>
+</button>
+</header>
+<div class="min-h-0 flex-1">
+<div data-testid="feed-post-comments" class="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 flex h-full min-h-0 flex-col">
+<div class="relative min-h-0 flex-1">
+<div data-testid="feed-comments-scroll" role="region" aria-label="Komentáre" tabindex="0" class="subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 h-full">
+<div data-testid="feed-mobile-detail-header-content" class="pb-1">
+<div class="pb-3">
+<div>
+<p data-testid="feed-mobile-detail-caption" class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 line-clamp-5 ">Text príspevku</p>
+</div>
+</div>
+<div class="-mx-4 pb-3" data-testid="feed-mobile-detail-photo">
+<div data-testid="feed-post-image" class="w-full h-80 sm:h-96">
+<button type="button" aria-label="Otvoriť fotku na celú obrazovku" data-testid="feed-image-open-11" class="block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 cursor-zoom-in">
+<div class="h-full w-full overflow-hidden bg-gray-100 dark:bg-[#0e0e0f] ">
+<div class="relative h-full w-full">
+<img loading="lazy" decoding="async" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-90" src="http://api.test/11-l.webp">
+<div class="absolute inset-0 bg-black/10 dark:bg-black/20" aria-hidden="true">
+</div>
+<img loading="lazy" decoding="async" alt="Fotka príspevku" class="absolute inset-0 h-full w-full object-contain " src="http://api.test/11-l.webp">
+</div>
+</div>
+</button>
+</div>
+</div>
+<div data-testid="feed-mobile-detail-actions" class="flex items-center gap-1 border-y border-gray-200/70 py-1 dark:border-gray-700/60">
+<button type="button" data-testid="feed-mobile-detail-like" aria-label="Páči sa mi" aria-pressed="false" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10 ">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+<button type="button" data-testid="feed-mobile-detail-like-count" aria-label="Páči sa im to: 2" class="h-11 rounded-full px-1 text-sm tabular-nums text-gray-600 underline-offset-2 transition-colors hover:bg-black/5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">2</button>
+<span class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10" data-testid="feed-mobile-detail-comments">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+</path>
+</svg>
+<span class="tabular-nums">3</span>
+</span>
+<button type="button" data-testid="feed-mobile-detail-share" aria-label="Zdieľať ďalej" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<circle cx="18" cy="5" r="3">
+</circle>
+<circle cx="6" cy="12" r="3">
+</circle>
+<circle cx="18" cy="19" r="3">
+</circle>
+<line x1="8.6" y1="10.5" x2="15.4" y2="6.5">
+</line>
+<line x1="8.6" y1="13.5" x2="15.4" y2="17.5">
+</line>
+</svg>
+</button>
+</div>
+<div data-testid="feed-mobile-detail-comments-anchor" class="pt-3" data-auto-scrolled="true">
+<h2 data-testid="feed-mobile-detail-comments-title" class="text-sm font-semibold text-gray-900 dark:text-white">Komentáre</h2>
+</div>
+</div>
+<ul class="space-y-3">
+<li>
+<div data-comment-id="100" class="flex items-start gap-2.5 rounded-xl transition-colors duration-700 ">
+<button type="button" data-testid="feed-comment-avatar-100" aria-label="Otvoriť profil" class="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+</button>
+<div class="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ">
+<button type="button" data-testid="feed-comment-author-100" class="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white">Jana Nováková</button>
+<p class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">Komentár 1</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+<time datetime="2026-01-05T09:00:00Z" data-testid="feed-comment-time-100" class="text-xs text-gray-500 dark:text-gray-400">1 h</time>
+<span class="-m-1 inline-flex items-center gap-0.5">
+<button type="button" data-testid="feed-comment-like-100" aria-label="Páči sa mi komentár: 0" aria-pressed="false" title="Páči sa mi komentár" class="inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-gray-500">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+</span>
+<button type="button" data-testid="feed-comment-reply-100" class="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300">Odpovedať</button>
+</div>
+</div>
+</div>
+</li>
+<li>
+<div data-comment-id="101" class="flex items-start gap-2.5 rounded-xl transition-colors duration-700 ">
+<button type="button" data-testid="feed-comment-avatar-101" aria-label="Otvoriť profil" class="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+</button>
+<div class="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ">
+<button type="button" data-testid="feed-comment-author-101" class="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white">Jana Nováková</button>
+<p class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">Komentár 2</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+<time datetime="2026-01-05T09:00:00Z" data-testid="feed-comment-time-101" class="text-xs text-gray-500 dark:text-gray-400">1 h</time>
+<span class="-m-1 inline-flex items-center gap-0.5">
+<button type="button" data-testid="feed-comment-like-101" aria-label="Páči sa mi komentár: 0" aria-pressed="false" title="Páči sa mi komentár" class="inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-gray-500">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+</span>
+<button type="button" data-testid="feed-comment-reply-101" class="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300">Odpovedať</button>
+</div>
+</div>
+</div>
+</li>
+<li>
+<div data-comment-id="102" class="flex items-start gap-2.5 rounded-xl transition-colors duration-700 ">
+<button type="button" data-testid="feed-comment-avatar-102" aria-label="Otvoriť profil" class="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+</button>
+<div class="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ">
+<button type="button" data-testid="feed-comment-author-102" class="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white">Jana Nováková</button>
+<p class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">Komentár 3</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+<time datetime="2026-01-05T09:00:00Z" data-testid="feed-comment-time-102" class="text-xs text-gray-500 dark:text-gray-400">1 h</time>
+<span class="-m-1 inline-flex items-center gap-0.5">
+<button type="button" data-testid="feed-comment-like-102" aria-label="Páči sa mi komentár: 0" aria-pressed="false" title="Páči sa mi komentár" class="inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-gray-500">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+</span>
+<button type="button" data-testid="feed-comment-reply-102" class="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300">Odpovedať</button>
+</div>
+</div>
+</div>
+</li>
+</ul>
+<div aria-hidden="true" data-testid="feed-comments-sentinel">
+</div>
+</div>
+<p data-testid="feed-comments-new-announcer" aria-live="polite" class="sr-only">
+</p>
+</div>
+<div class="mt-3">
+<div class="relative">
+<textarea rows="1" placeholder="Napíš komentár..." aria-label="Napíš komentár..." class="w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 resize-none pr-12">
+</textarea>
+<button type="button" disabled="" data-testid="feed-comment-send" aria-label="Pridať" class="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<line x1="10" y1="14" x2="21" y2="3">
+</line>
+<path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`dočasný odtlačok HTML mobilnej obrazovky detailu príspevku (R45, zmaže ho K55) zdieľaná ponuka s lajkom 1`] = `
+"<div>
+</div>
+<div tabindex="-1" role="dialog" aria-modal="true" aria-label="Detail príspevku" data-testid="feed-mobile-detail" class="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]">
+<header data-testid="feed-mobile-detail-header" class="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800">
+<button type="button" data-testid="feed-mobile-detail-author" aria-label="Otvoriť profil" class="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-9 h-9 text-xs rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+<span class="min-w-0">
+<span class="block truncate text-sm font-semibold text-gray-900 dark:text-white">Jana Nováková</span>
+<span class="block truncate text-xs text-gray-500 dark:text-gray-400">1 d</span>
+</span>
+</button>
+<div class="relative shrink-0">
+<button type="button" data-testid="feed-mobile-detail-menu-trigger" aria-label="Možnosti príspevku" aria-haspopup="menu" aria-expanded="false" class="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z">
+</path>
+</svg>
+</button>
+</div>
+<button type="button" data-testid="feed-mobile-detail-close" aria-label="Zavrieť" class="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12">
+</path>
+</svg>
+</button>
+</header>
+<div class="min-h-0 flex-1">
+<div data-testid="feed-post-comments" class="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 flex h-full min-h-0 flex-col">
+<div class="relative min-h-0 flex-1">
+<div data-testid="feed-comments-scroll" role="region" aria-label="Komentáre" tabindex="0" class="subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 h-full">
+<div data-testid="feed-mobile-detail-header-content" class="pb-1">
+<div class="pb-3">
+<div>
+<p data-testid="feed-mobile-detail-caption" class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 line-clamp-5 ">Odporúčam.</p>
+</div>
+</div>
+<div class="pb-3" data-testid="feed-mobile-detail-shared">
+<div data-testid="feed-shared-card" data-shared-type="offer">
+<div data-testid="feed-shared-card-owner" class="mb-2 flex items-center gap-2">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">PM</div>
+<span class="truncate text-sm font-semibold text-gray-900 dark:text-white">Peter Malý</span>
+</div>
+<button type="button" data-testid="feed-shared-compact-preview" class="block w-full text-left transition-colors hover:bg-white disabled:cursor-default dark:hover:bg-black/30 overflow-hidden rounded-2xl border border-purple-200/70 bg-white/80 shadow-sm dark:border-purple-800/40 dark:bg-black/20 ">
+<div class="relative w-full h-64">
+<div class="h-full w-full overflow-hidden bg-gray-100 dark:bg-[#0e0e0f] ">
+<div class="relative h-full w-full">
+<img loading="lazy" decoding="async" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-90" src="http://api.test/offer-t.webp">
+<div class="absolute inset-0 bg-black/10 dark:bg-black/20" aria-hidden="true">
+</div>
+<img loading="lazy" decoding="async" alt="" class="absolute inset-0 h-full w-full object-contain " src="http://api.test/offer-t.webp">
+</div>
+</div>
+<span data-testid="feed-shared-card-kind" class="absolute left-2 top-2 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.12em] text-purple-700 shadow-sm dark:bg-black/80 dark:text-purple-200">Ponúkam</span>
+</div>
+<div class="space-y-1 text-left p-3">
+<div class="flex items-start gap-2">
+<span class="min-w-0 flex-1 truncate text-[15px] font-semibold text-gray-900 dark:text-white">Programovanie</span>
+<span data-testid="feed-shared-card-price" class="shrink-0 rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-purple-700 dark:border-purple-800/30 dark:bg-purple-900/20 dark:text-purple-300">25 €</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div data-testid="feed-mobile-detail-actions" class="flex items-center gap-1 border-y border-gray-200/70 py-1 dark:border-gray-700/60">
+<button type="button" data-testid="feed-mobile-detail-like" aria-label="Páči sa mi" aria-pressed="true" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10 text-purple-600 dark:text-purple-300">
+<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+<button type="button" data-testid="feed-mobile-detail-like-count" aria-label="Páči sa im to: 1" class="h-11 rounded-full px-1 text-sm tabular-nums text-gray-600 underline-offset-2 transition-colors hover:bg-black/5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">1</button>
+<span class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10" data-testid="feed-mobile-detail-comments">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5" aria-hidden="true">
+<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+</path>
+</svg>
+<span class="tabular-nums">3</span>
+</span>
+<button type="button" data-testid="feed-mobile-detail-share" aria-label="Zdieľať ďalej" class="inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<circle cx="18" cy="5" r="3">
+</circle>
+<circle cx="6" cy="12" r="3">
+</circle>
+<circle cx="18" cy="19" r="3">
+</circle>
+<line x1="8.6" y1="10.5" x2="15.4" y2="6.5">
+</line>
+<line x1="8.6" y1="13.5" x2="15.4" y2="17.5">
+</line>
+</svg>
+</button>
+</div>
+<div data-testid="feed-mobile-detail-comments-anchor" class="pt-3" data-auto-scrolled="true">
+<h2 data-testid="feed-mobile-detail-comments-title" class="text-sm font-semibold text-gray-900 dark:text-white">Komentáre</h2>
+</div>
+</div>
+<ul class="space-y-3">
+<li>
+<div data-comment-id="100" class="flex items-start gap-2.5 rounded-xl transition-colors duration-700 ">
+<button type="button" data-testid="feed-comment-avatar-100" aria-label="Otvoriť profil" class="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+</button>
+<div class="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ">
+<button type="button" data-testid="feed-comment-author-100" class="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white">Jana Nováková</button>
+<p class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">Komentár 1</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+<time datetime="2026-01-05T09:00:00Z" data-testid="feed-comment-time-100" class="text-xs text-gray-500 dark:text-gray-400">1 h</time>
+<span class="-m-1 inline-flex items-center gap-0.5">
+<button type="button" data-testid="feed-comment-like-100" aria-label="Páči sa mi komentár: 0" aria-pressed="false" title="Páči sa mi komentár" class="inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-gray-500">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+</span>
+<button type="button" data-testid="feed-comment-reply-100" class="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300">Odpovedať</button>
+</div>
+</div>
+</div>
+</li>
+<li>
+<div data-comment-id="101" class="flex items-start gap-2.5 rounded-xl transition-colors duration-700 ">
+<button type="button" data-testid="feed-comment-avatar-101" aria-label="Otvoriť profil" class="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+</button>
+<div class="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ">
+<button type="button" data-testid="feed-comment-author-101" class="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white">Jana Nováková</button>
+<p class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">Komentár 2</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+<time datetime="2026-01-05T09:00:00Z" data-testid="feed-comment-time-101" class="text-xs text-gray-500 dark:text-gray-400">1 h</time>
+<span class="-m-1 inline-flex items-center gap-0.5">
+<button type="button" data-testid="feed-comment-like-101" aria-label="Páči sa mi komentár: 0" aria-pressed="false" title="Páči sa mi komentár" class="inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-gray-500">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+</span>
+<button type="button" data-testid="feed-comment-reply-101" class="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300">Odpovedať</button>
+</div>
+</div>
+</div>
+</li>
+<li>
+<div data-comment-id="102" class="flex items-start gap-2.5 rounded-xl transition-colors duration-700 ">
+<button type="button" data-testid="feed-comment-avatar-102" aria-label="Otvoriť profil" class="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default">
+<div aria-hidden="true" class="w-7 h-7 text-[10px] rounded-full shrink-0  flex items-center justify-center bg-purple-100 border border-purple-200 font-bold text-purple-700 dark:bg-purple-900/40 dark:border-purple-800/60 dark:text-purple-200">JN</div>
+</button>
+<div class="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60 ">
+<button type="button" data-testid="feed-comment-author-102" class="block max-w-full truncate text-left text-xs font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white">Jana Nováková</button>
+<p class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">Komentár 3</p>
+<div class="mt-1 flex flex-wrap items-center gap-2">
+<time datetime="2026-01-05T09:00:00Z" data-testid="feed-comment-time-102" class="text-xs text-gray-500 dark:text-gray-400">1 h</time>
+<span class="-m-1 inline-flex items-center gap-0.5">
+<button type="button" data-testid="feed-comment-like-102" aria-label="Páči sa mi komentár: 0" aria-pressed="false" title="Páči sa mi komentár" class="inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-gray-500">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+</path>
+</svg>
+</button>
+</span>
+<button type="button" data-testid="feed-comment-reply-102" class="rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300">Odpovedať</button>
+</div>
+</div>
+</div>
+</li>
+</ul>
+<div aria-hidden="true" data-testid="feed-comments-sentinel">
+</div>
+</div>
+<p data-testid="feed-comments-new-announcer" aria-live="polite" class="sr-only">
+</p>
+</div>
+<div class="mt-3">
+<div class="relative">
+<textarea rows="1" placeholder="Napíš komentár..." aria-label="Napíš komentár..." class="w-full subtle-scrollbar rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 resize-none pr-12">
+</textarea>
+<button type="button" disabled="" data-testid="feed-comment-send" aria-label="Pridať" class="absolute right-1.5 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-purple-600 transition-colors hover:bg-purple-500/15 disabled:cursor-not-allowed disabled:opacity-40 dark:text-purple-300">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+<line x1="10" y1="14" x2="21" y2="3">
+</line>
+<path d="M21 3 14.5 21a.55.55 0 0 1-1 0L10 14 3 10.5a.55.55 0 0 1 0-1z">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>"
+`;
