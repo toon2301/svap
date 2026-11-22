@@ -16,24 +16,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
-import { translateFeedActionError } from './feedActionErrors';
-import {
-  deleteFeedPost,
-  getFeedPost,
-  removeOwnFeedPostTag,
-} from '@/lib/feedApi';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import { emitFeedPostCounts } from './feedPostCountEvents';
-import {
-  emitFeedPostDeleted,
-  onFeedPostDeleted,
-} from './feedPostDeletedEvents';
-import { onFeedShareLanding } from './feedShareLanding';
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
   DETAIL_CAPTION_LINES,
@@ -44,7 +31,6 @@ import { usePendingFeedImages } from './usePendingFeedImages';
 import { useViewerPost } from './useViewerPost';
 import { useCardInViewport } from './useCardInViewport';
 import { sharedFeedPostPhoto } from './feedImageSources';
-import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedPostActions from './FeedPostActions';
@@ -52,6 +38,9 @@ import FeedPostSharedBlock from './FeedPostSharedBlock';
 import FeedPostCardLayers from './FeedPostCardLayers';
 import { useFeedPostCardLayers } from './useFeedPostCardLayers';
 import FeedPostCardHeader from './FeedPostCardHeader';
+import { useFeedPostCardActions } from './useFeedPostCardActions';
+import { useFeedPostCounts } from './useFeedPostCounts';
+import { useFeedPostMobileLayers } from './useFeedPostMobileLayers';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -72,52 +61,6 @@ export default function FeedPostCard({
   const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
-  // Odstránenie sa premietne AŽ po potvrdení serverom – rovnako ako mazanie
-  // komentára. Optimistický vzor je vo feede vyhradený lajku, kde je zlyhanie
-  // bezvýznamné; tu by zmiznutý a späť vrátený chip pôsobil ako chyba.
-  const handleRemoveOwnTag = async () => {
-    if (removingTag) return;
-    setRemovingTag(true);
-    try {
-      await removeOwnFeedPostTag(post.id);
-      setTaggedUsers((current) => current.filter((tag) => !tag.can_remove_tag));
-      setTagRemoveOpen(false);
-      toast.success(t('feed.tagRemoved', 'Označenie bolo odstránené.'));
-      onSelfTagRemoved?.(post.id);
-    } catch (error) {
-      toast.error(
-        translateFeedActionError(t, error, () =>
-          t('feed.tagRemoveError', 'Označenie sa nepodarilo odstrániť.'),
-        ),
-      );
-    } finally {
-      setRemovingTag(false);
-    }
-  };
-
-  const handleDeletePost = async () => {
-    if (deleting) return;
-    setDeleting(true);
-    try {
-      await deleteFeedPost(post.id);
-      setDeleteOpen(false);
-      toast.success(t('feed.postDeleted', 'Príspevok bol zmazaný.'));
-      // Zoznam si kartu odstráni sám; na detaile to znamená odchod na Nástenku.
-      onDeleted?.(post.id);
-      // Mazať sa dá aj z okna detailu, ktoré leží NAD feedom – ten sa o tom
-      // inak nedozvie a nechal by kartu neexistujúceho príspevku.
-      emitFeedPostDeleted(post.id);
-    } catch (error) {
-      toast.error(
-        translateFeedActionError(t, error, () =>
-          t('feed.postDeleteError', 'Príspevok sa nepodarilo zmazať.'),
-        ),
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
   // pending/rejected – hook ich dosleduje, kým sa spracovanie nedokončí.
   //
@@ -183,20 +126,17 @@ export default function FeedPostCard({
    * `null` = zatvorený; číslo je index v zozname otvárateľných fotiek.
    */
   const opensPhotoViewer = isMobile && !isDetail;
-  const [photoViewerIndex, setPhotoViewerIndex] = useState<number | null>(null);
   /**
    * Fotoprehliadač PÔVODNÉHO príspevku, otvorený z fotky v repost náhľade.
    * `null` = repost fotku nemá, takže sa nedá ani otvoriť.
    */
   const sharedPhotoPostId = sharedFeedPostPhoto(currentPost)?.postId ?? null;
-  const [sharedPhotoOpen, setSharedPhotoOpen] = useState(false);
   /**
    * Mobilná obrazovka detailu – otvára ju ikona komentárov a ťuk na TEXT
    * príspevku. Ťuk na FOTKU vedie inam (prehliadač fotky vyššie), desktop sa
    * nemení: tam komentáre aj naďalej otvárajú okno detailu.
    */
   const opensMobileDetail = isMobile && !isDetail;
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   /**
    * Preklik VON z karty (profil autora). V okne detailu musí okno zmiznúť –
@@ -234,6 +174,19 @@ export default function FeedPostCard({
   const [taggedUsers, setTaggedUsers] = useState(post.tagged_users ?? []);
   // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
   const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
+  const { handleRemoveOwnTag, handleDeletePost } = useFeedPostCardActions({
+    post,
+    t,
+    onSelfTagRemoved,
+    onDeleted,
+    removingTag,
+    setRemovingTag,
+    setTagRemoveOpen,
+    setTaggedUsers,
+    deleting,
+    setDeleting,
+    setDeleteOpen,
+  });
 
   // Obnovenie feedu nahradí príspevok čerstvejšou verziou, ale `key` ostáva
   // rovnaké – React teda inštanciu recykluje a bez tejto synchronizácie by
@@ -275,74 +228,24 @@ export default function FeedPostCard({
     );
   }, [isLiked, likesCount]);
 
-  // Po zdieľaní sa pristáva na Nástenku, takže žiadna vrstva nad kartou nesmie
-  // ostať otvorená – ani tá, z ktorej sa zdieľalo. Zatvárajú sa tu spoločne,
-  // rovnako ako pri zmiznutom príspevku nižšie.
-  useEffect(
-    () =>
-      onFeedShareLanding(() => {
-        setMobileDetailOpen(false);
-        setPhotoViewerIndex(null);
-        setSharedPhotoOpen(false);
-      }),
-    [],
-  );
+  const {
+    photoViewerIndex,
+    setPhotoViewerIndex,
+    sharedPhotoOpen,
+    setSharedPhotoOpen,
+    mobileDetailOpen,
+    setMobileDetailOpen,
+  } = useFeedPostMobileLayers(post.id);
 
-  // Príspevok zmizol (zmazal ho niekto iný, alebo to zistila iná interakcia).
-  // Kartu odstráni zoznam, ale otvorené vrstvy nad ňou treba zavrieť tu –
-  // karta sa vykresľuje aj tam, kde zoznam signál nespracúva (profil).
-  useEffect(
-    () =>
-      onFeedPostDeleted((deletedId) => {
-        if (deletedId !== post.id) return;
-        setMobileDetailOpen(false);
-        setPhotoViewerIndex(null);
-        setSharedPhotoOpen(false);
-      }),
-    [post.id],
-  );
-
-  /**
-   * Priebežné počty lajkov od iných používateľov.
-   *
-   * Rovnaký hook ako pri komentároch, takže interval, pauza pri skrytej
-   * záložke, timeout nečinnosti aj ochrana proti prekrývajúcim sa requestom
-   * sú zdieľané, nie skopírované.
-   *
-   * Počty lajkov KOMENTÁROV nič nové nepotrebujú: pollovanie komentárov
-   * vracia celé objekty vrátane `likes_count` a merge ich nahradí čerstvou
-   * verziou.
-   */
-  const refreshCounts = useCallback(async () => {
-    // Vlastný lajk práve beží – serverová odpoveď je spred neho a prebliklo
-    // by to späť. Rovnaká zásada ako v prop-sync efekte vyššie.
-    if (likePendingRef.current) return;
-    const seq = likeSeqRef.current;
-    const fresh = await getFeedPost(post.id);
-    // Medzitým používateľ lajkol (aj keď už dobehol) → odpoveď je spred toho.
-    if (seq !== likeSeqRef.current || likePendingRef.current) return;
-    setLikesCount(fresh.likes_count);
-    setIsLiked(fresh.is_liked_by_me);
-    // Čerstvá serverová pravda musí ísť aj do otvorenej vrstvy NAD kartou –
-    // tá sama nepolluje, takže by inak držala číslo z momentu otvorenia.
-    // Rozposiela sa až TU, za oboma brzdami vyššie: odpoveď spred práve
-    // dokončeného lajku by inak prepísala čerstvý stav ostatným.
-    publishCommentsCount(fresh.comments_count);
-    emitFeedPostCounts({
-      postId: post.id,
-      likesCount: fresh.likes_count,
-      isLikedByMe: fresh.is_liked_by_me,
-    });
-  }, [
+  useFeedPostCounts({
+    postId: post.id,
+    inViewport,
     likePendingRef,
     likeSeqRef,
-    publishCommentsCount,
-    setIsLiked,
     setLikesCount,
-    post.id,
-  ]);
-
-  useFeedCommentsPolling({ enabled: inViewport, onPoll: refreshCounts });
+    setIsLiked,
+    publishCommentsCount,
+  });
 
   // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
   // zobrazí dvakrát pod sebou (hlavička + vnorený náhľad), čo pôsobí ako chyba.
