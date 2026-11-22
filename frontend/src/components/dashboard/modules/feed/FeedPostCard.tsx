@@ -18,11 +18,9 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
-import { getFeedPost } from '@/lib/feedApi';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import { emitFeedPostCounts } from './feedPostCountEvents';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import { onFeedShareLanding } from './feedShareLanding';
 import FeedPostCaption, {
@@ -35,7 +33,6 @@ import { usePendingFeedImages } from './usePendingFeedImages';
 import { useViewerPost } from './useViewerPost';
 import { useCardInViewport } from './useCardInViewport';
 import { sharedFeedPostPhoto } from './feedImageSources';
-import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedPostActions from './FeedPostActions';
@@ -44,6 +41,7 @@ import FeedPostCardLayers from './FeedPostCardLayers';
 import { useFeedPostCardLayers } from './useFeedPostCardLayers';
 import FeedPostCardHeader from './FeedPostCardHeader';
 import { useFeedPostCardActions } from './useFeedPostCardActions';
+import { useFeedPostCounts } from './useFeedPostCounts';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -261,47 +259,15 @@ export default function FeedPostCard({
     [post.id],
   );
 
-  /**
-   * Priebežné počty lajkov od iných používateľov.
-   *
-   * Rovnaký hook ako pri komentároch, takže interval, pauza pri skrytej
-   * záložke, timeout nečinnosti aj ochrana proti prekrývajúcim sa requestom
-   * sú zdieľané, nie skopírované.
-   *
-   * Počty lajkov KOMENTÁROV nič nové nepotrebujú: pollovanie komentárov
-   * vracia celé objekty vrátane `likes_count` a merge ich nahradí čerstvou
-   * verziou.
-   */
-  const refreshCounts = useCallback(async () => {
-    // Vlastný lajk práve beží – serverová odpoveď je spred neho a prebliklo
-    // by to späť. Rovnaká zásada ako v prop-sync efekte vyššie.
-    if (likePendingRef.current) return;
-    const seq = likeSeqRef.current;
-    const fresh = await getFeedPost(post.id);
-    // Medzitým používateľ lajkol (aj keď už dobehol) → odpoveď je spred toho.
-    if (seq !== likeSeqRef.current || likePendingRef.current) return;
-    setLikesCount(fresh.likes_count);
-    setIsLiked(fresh.is_liked_by_me);
-    // Čerstvá serverová pravda musí ísť aj do otvorenej vrstvy NAD kartou –
-    // tá sama nepolluje, takže by inak držala číslo z momentu otvorenia.
-    // Rozposiela sa až TU, za oboma brzdami vyššie: odpoveď spred práve
-    // dokončeného lajku by inak prepísala čerstvý stav ostatným.
-    publishCommentsCount(fresh.comments_count);
-    emitFeedPostCounts({
-      postId: post.id,
-      likesCount: fresh.likes_count,
-      isLikedByMe: fresh.is_liked_by_me,
-    });
-  }, [
+  useFeedPostCounts({
+    postId: post.id,
+    inViewport,
     likePendingRef,
     likeSeqRef,
-    publishCommentsCount,
-    setIsLiked,
     setLikesCount,
-    post.id,
-  ]);
-
-  useFeedCommentsPolling({ enabled: inViewport, onPoll: refreshCounts });
+    setIsLiked,
+    publishCommentsCount,
+  });
 
   // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
   // zobrazí dvakrát pod sebou (hlavička + vnorený náhľad), čo pôsobí ako chyba.
