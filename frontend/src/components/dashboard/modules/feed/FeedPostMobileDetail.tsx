@@ -35,17 +35,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { EllipsisHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { deleteFeedPost, type FeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
-import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
 import { feedViewableImages, sharedFeedPostPhoto } from './feedImageSources';
 import FeedSharedPhotoViewer from './FeedSharedPhotoViewer';
-import { formatRelativeTime } from './feedRelativeTime';
 import { shouldAutoScrollToComments } from './feedMobileDetailAutoScroll';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
@@ -56,6 +52,7 @@ import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostMobileDetailContent from './FeedPostMobileDetailContent';
+import FeedPostMobileDetailHeader from './FeedPostMobileDetailHeader';
 import FeedPostReportModal from './FeedPostReportModal';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import FeedPostShareModal from './FeedPostShareModal';
@@ -244,11 +241,6 @@ export default function FeedPostMobileDetail({
 
   if (!portalNode) return null;
 
-  const author = currentPost.author;
-  const authorName = author?.display_name || '';
-  const openAuthorProfile = () =>
-    openUserProfile(author, { beforeNavigate: onClose });
-
   /**
    * Všetko nad komentármi. Ide DOVNÚTRA scrollovateľného boxu komentárov,
    * takže text, fotka aj akcie scrollujú spolu so zoznamom.
@@ -286,116 +278,18 @@ export default function FeedPostMobileDetail({
       data-testid="feed-mobile-detail"
       className="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]"
     >
-      {/* PEVNÁ hlavička – nescrolluje s obsahom. */}
-      <header
-        data-testid="feed-mobile-detail-header"
-        className="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800"
-      >
-        <button
-          type="button"
-          onClick={openAuthorProfile}
-          disabled={!canOpenUserProfile(author)}
-          data-testid="feed-mobile-detail-author"
-          aria-label={t('feed.openProfile', 'Otvoriť profil')}
-          className="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
-        >
-          <InitialsAvatar
-            name={authorName}
-            avatarUrl={author?.avatar_url}
-            size="sm"
-          />
-          <span className="min-w-0">
-            {/* Meno sa NIKDY nezalomí – `min-w-0` + `truncate` nechajú menu aj
-                „X" vpravo vždy ich miesto. */}
-            <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">
-              {authorName}
-            </span>
-            <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-              {formatRelativeTime(currentPost.created_at, t, locale)}
-            </span>
-          </span>
-        </button>
-
-        {/* „..." menu sedí VEDĽA MENA, nie v riadku akcií. */}
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            data-testid="feed-mobile-detail-menu-trigger"
-            aria-label={t('feed.postMenu', 'Možnosti príspevku')}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10"
-          >
-            <EllipsisHorizontalIcon className="h-5 w-5" />
-          </button>
-
-          {menuOpen ? (
-            <div
-              role="menu"
-              data-testid="feed-mobile-detail-menu"
-              aria-label={t('feed.postMenu', 'Možnosti príspevku')}
-              className="absolute left-0 top-12 z-10 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-[#151517]"
-            >
-              <button
-                type="button"
-                role="menuitem"
-                disabled={reported}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setReportOpen(true);
-                }}
-                data-testid="feed-mobile-detail-report"
-                className="block w-full px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 dark:text-white dark:hover:bg-gray-800 dark:disabled:text-gray-500"
-              >
-                {reported
-                  ? t('feed.alreadyReported', 'Už nahlásené')
-                  : t('feed.reportPost', 'Nahlásiť príspevok')}
-              </button>
-              {/* Upravovať aj mazať smie iba autor – rozhoduje backend cez
-                  `can_manage`, FE si to neodvodzuje sám. */}
-              {currentPost.can_manage ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setEditOpen(true);
-                  }}
-                  data-testid="feed-mobile-detail-edit"
-                  className="block w-full border-t border-gray-200 px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
-                >
-                  {t('feed.editPost', 'Upraviť príspevok')}
-                </button>
-              ) : null}
-              {currentPost.can_manage ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setDeleteOpen(true);
-                  }}
-                  data-testid="feed-mobile-detail-delete"
-                  className="block w-full border-t border-gray-200 px-4 py-3 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-gray-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                >
-                  {t('feed.deletePost', 'Zmazať príspevok')}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          data-testid="feed-mobile-detail-close"
-          aria-label={t('common.close', 'Zavrieť')}
-          className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10"
-        >
-          <XMarkIcon className="h-5 w-5" />
-        </button>
-      </header>
+      <FeedPostMobileDetailHeader
+        currentPost={currentPost}
+        onClose={onClose}
+        t={t}
+        locale={locale}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        reported={reported}
+        setReportOpen={setReportOpen}
+        setEditOpen={setEditOpen}
+        setDeleteOpen={setDeleteOpen}
+      />
 
       {/* `min-h-0` ruší automatické minimum flex položky – bez neho by obsah
           plochu roztiahol a pole na nový komentár by vypadlo z obrazovky. */}
