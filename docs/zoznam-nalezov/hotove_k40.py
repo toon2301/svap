@@ -130,4 +130,7 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
      'zdieľaného bloku, vrstiev, hlavičky, efektov a mobilného detailu; spolu s krokom 9 v manuáli ručných testov)'),
     ('#311', 'K51', '333 (dávka 2 delenia `FeedPostCard.tsx`, krok d: zdieľaný blok a označenia do `FeedPostSharedBlock.tsx`; '
      'karta 852 → 774 riadkov; spolu s odrážkami v manuáli ručných testov; z ručného testu vznikli nálezy 357 až 360)'),
+    ('#313', 'K52', '333 (dávka 3 delenia `FeedPostCard.tsx`, krok c: vrstvy a dialógy do `FeedPostCardLayers.tsx` a stav deviatich '
+     'vlajok do `useFeedPostCardLayers.ts`; tri vlajky ostali v karte kvôli efektom E6 a E7; karta 774 → 722 riadkov; spolu s '
+     'odrážkami v manuáli ručných testov)'),
 ]

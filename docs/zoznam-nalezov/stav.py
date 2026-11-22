@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='22. 11. 2026',
-    kod='`main` `39f6e1a7` (po PR #311: K51; PR #310 je zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
+    kod='`main` `8c9e636d` (po PR #313: K52; PR #312 je zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -16,6 +16,27 @@ from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
+    ('22. 11. 2026',
+      'Vetva 196 (vychádza z `main` `8c9e636d`, teda po PR #313). (1) Zlúčené: PR #312 (vetva 195; 22. 11. 2026 o 11:18 UTC, '
+      'merge `20cac81c`; zápis K51, nálezy 357 až 360 a karta K52; CI zelené, CodeRabbit bez pripomienok, vlákna nie sú) a PR #313 '
+      '(K52; o 12:35 UTC, merge `8c9e636d`). (2) K52 (PR #313): krok c delenia karty: 2 commity, 4 súbory: nové '
+      '`FeedPostCardLayers.tsx` 204 riadkov a `useFeedPostCardLayers.ts` 51 riadkov, `FeedPostCard.tsx` 774 → 722 a '
+      '`sablony/dymovy_test.md` (+4 odrážky kroku 9); podľa textu commitu čistý presun (pôvodná karta poskladaná späť bajt po '
+      'bajte), celý Jest 638 sád, 9 561 testov a 73 snapshotov, `tsc`, ESLint (0 varovaní), preklady a build čisté, paritné '
+      'mutácie L1 až L27 vrátane L25b 27 z 28 (prežila len L20 = chyba 355). Odchýlky od karty: hook má deväť vlajok namiesto '
+      'dvanástich (tri vlajky ostali v karte kvôli efektom E6 a E7 a pravidlu `exhaustive-deps`), nové súbory 255 riadkov '
+      '(karta asi 240) a karta 722 riadkov (karta asi 695 ±25). (3) Kontrola agenta (dodatočná, lebo PR bol zlúčený skôr, než '
+      'majiteľ poslal jeho číslo) z GitHubu a v kópii mimo repozitára: CI a CodeRabbit zelené, Codex bez väčších problémov, '
+      'vlákna ani recenzie nie sú; telo pôvodnej karty sa poskladá späť bajt po bajte (703 z 703 riadkov), všetkých 99 '
+      'neprázdnych odstránených riadkov je v nových súboroch; `tsc` a ESLint čisté, 98 sád s 1 346 testami a 73 snapshotmi '
+      'prešlo; zo 41 paritných mutácií (L1 až L27 vrátane L25b, S1 až S9 a X1 až X4) zachytených 40, prežila len L20; manuál '
+      'ručných testov (krok 9) zodpovedá kódu. (4) Na pokyn majiteľa agent napísal kartu K53 (krok e: hlavička s menu a stav '
+      'menu do `FeedPostCardHeader.tsx`, `karty/K53.md`); prototyp kroku e v kópii mimo repozitára prešiel `tsc`, ESLintom bez '
+      'varovania a 98 sadami bez zmeny odtlačkov a sondy (karta 722 → 590 riadkov, nový súbor 201), zásahy H1 až H22 (23) '
+      'zachytené pred presunom aj po ňom (23 z 23, vždy tým istým prvým padnutým testom) a tri zásahy navyše tiež (26 z 26). '
+      'K53 sa zlúči až po ručnom teste K52 (majiteľ ho robí). (5) Upravené: nález 333 (výsledky K52 a plán K53), tabuľka PR, '
+      'fronta (333 je teraz dávka K53) a stav. (6) Prehľad: nálezy 1–360, zatvorené 14, hotové 142, PRED 52, PO 132; '
+      'čakajúcich rozhodnutí 10 z 66. Dopad na E2E: žiadny.'),
     ('22. 11. 2026',
       'Vetva 195 (vychádza z `main` `39f6e1a7`, teda po PR #311). (1) Zlúčené: PR #310 (vetva 194; 22. 11. 2026 o 06:37 UTC, '
       'merge `ee374c4c`; zápis K50 a karta K51; CodeRabbit dal jednu platnú pripomienku, podmienku zlúčenia K51 po ručnom teste '
