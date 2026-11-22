@@ -52,8 +52,6 @@ import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
 import ExchangeIcon from './FeedExchangeIcon';
-import SharedContentPreviewCard from './SharedContentPreviewCard';
-import { sharedContentCardFromPost } from './sharedContentCard';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useViewerPost } from './useViewerPost';
@@ -68,6 +66,7 @@ import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedPostActions from './FeedPostActions';
+import FeedPostSharedBlock from './FeedPostSharedBlock';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -396,21 +395,6 @@ export default function FeedPostCard({
     ? () => setMobileDetailOpen(true)
     : undefined;
 
-  // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
-  const sharedCaptionNode =
-    isShared && caption ? (
-      <FeedPostCaption
-        text={caption}
-        boundedExpansion={isDetail}
-        expansionBound={fillHeight ? 'roomy' : 'compact'}
-        maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
-        collapseBlankLines
-        onTextClick={
-          opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
-        }
-      />
-    ) : null;
-
   const sharedHeadline =
     post.shared_content?.type === 'portfolio_item'
       ? t('feed.sharesPortfolioOnward', '{name} zdieľa portfólio ďalej')
@@ -644,86 +628,24 @@ export default function FeedPostCard({
         )
       ) : null}
 
-      {isShared || taggedUsers.length ? (
-        <div
-          className={`space-y-3 px-4 py-3 ${
-            // V okne detailu je náhľad JEDINÁ pružná časť stĺpca: keď sa
-            // nezmestí, scrolluje sa on, nie karta. Bez toho by sa pri vyššom
-            // náhľade (ponuka s fotkou) rozhýbala aj hlavička a riadok akcií –
-            // tie musia stáť bez ohľadu na to, či náhľad fotku má.
-            //
-            // Zdieľaný príspevok a vlastné fotky sa nikdy nestretnú (backend
-            // posiela `images` len pri `free_post`), takže o `flex-1` tu nie je
-            // s čím súperiť.
-            fillHeight
-              ? 'subtle-scrollbar min-h-0 flex-1 overflow-y-auto'
-              : fixedBlock
-          }`}
-        >
-          {/* Sprievodný text zdieľajúceho ide VŽDY nad náhľad – rovnaké
-              pravidlo ako „text nad fotkou" pri voľnom príspevku. Je to jeho
-              komentár k obsahu, takže sa má prečítať skôr než obsah sám. */}
-          {sharedCaptionNode}
-
-          {isShared ? (
-            <SharedContentPreviewCard
-              data={sharedContentCardFromPost(post)}
-              hideOwner={isSelfShare}
-              onOpenSource={handleOpenSharedSource}
-              onOpenPostPreview={handleOpenSharedPostPreview}
-              // Fotka vnútri repostu patrí PÔVODNÉMU príspevku – otvára jeho
-              // fotoprehliadač, nie detail zdieľajúceho.
-              onOpenPostPhoto={
-                sharedPhotoPostId != null
-                  ? () => setSharedPhotoOpen(true)
-                  : undefined
-              }
-            />
-          ) : null}
-
-          {taggedUsers.length ? (
-            <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">
-              {taggedUsers.map((tagged) => {
-                // „x" patrí VÝHRADNE vlastnému označeniu; príznak dáva backend,
-                // ktorý je aj tak jediný, kto o tom rozhoduje.
-                const isOwnTag = tagged.can_remove_tag === true;
-                return (
-                  <li
-                    key={tagged.id}
-                    data-testid={`feed-post-tag-${tagged.id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200"
-                  >
-                    @{tagged.display_name}
-                    {isOwnTag ? (
-                      <button
-                        type="button"
-                        onClick={() => setTagRemoveOpen(true)}
-                        data-testid="feed-post-tag-remove"
-                        aria-label={t('feed.tagRemoveAction', 'Odstrániť označenie')}
-                        title={t('feed.tagRemoveAction', 'Odstrániť označenie')}
-                        className="-mr-1 rounded-full p-0.5 text-purple-500 transition-colors hover:bg-purple-200 hover:text-purple-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-purple-300 dark:hover:bg-purple-800/60 dark:hover:text-white"
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          className="h-3 w-3"
-                          aria-hidden="true"
-                        >
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                        </svg>
-                      </button>
-                    ) : null}
-                  </li>
-                );
-              })}
-              </ul>
-          ) : null}
-        </div>
-      ) : null}
+      <FeedPostSharedBlock
+        fillHeight={fillHeight}
+        fixedBlock={fixedBlock}
+        isShared={isShared}
+        isDetail={isDetail}
+        caption={caption}
+        opensMobileDetail={opensMobileDetail}
+        setMobileDetailOpen={setMobileDetailOpen}
+        post={post}
+        isSelfShare={isSelfShare}
+        handleOpenSharedSource={handleOpenSharedSource}
+        handleOpenSharedPostPreview={handleOpenSharedPostPreview}
+        sharedPhotoPostId={sharedPhotoPostId}
+        setSharedPhotoOpen={setSharedPhotoOpen}
+        taggedUsers={taggedUsers}
+        setTagRemoveOpen={setTagRemoveOpen}
+        t={t}
+      />
 
       <FeedPostActions
         fixedBlock={fixedBlock}
