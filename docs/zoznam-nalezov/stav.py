@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='22. 11. 2026',
-    kod='`main` `8c9e636d` (po PR #313: K52; PR #312 je zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
+    kod='`main` `0c2be295` (po PR #315: K53; PR #314 je zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -16,6 +16,30 @@ from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
+    ('22. 11. 2026',
+      'Vetva 197 (vychádza z `main` `0c2be295`, teda po PR #315). (1) Zlúčené: PR #314 (vetva 196; 22. 11. 2026 o 13:50 UTC, '
+      'merge `cc728394`; zápis K52 a karta K53; CI a CodeRabbit zelené, vlákna ani recenzie nie sú) a PR #315 (K53; o 15:53 UTC, '
+      'merge `0c2be295`). (2) K53 (PR #315): krok e delenia karty: 2 commity, 3 súbory: nový `FeedPostCardHeader.tsx` 211 riadkov, '
+      '`FeedPostCard.tsx` 722 → 590 a `sablony/dymovy_test.md` (+4 odrážky kroku 9); podľa textu commitu čistý presun (pôvodná '
+      'karta poskladaná späť bajt po bajte), celý Jest 638 sád, 9 561 testov a 73 snapshotov, `tsc`, ESLint (0 varovaní), preklady '
+      'a build čisté, paritné mutácie H1 až H22 (23) zachytené pred presunom aj po ňom; zásah X4 (`closeMenu` bez `useCallback`) '
+      'prežil, takže stabilitu `onClose` nestráži žiadny test (poznámka, nie nález). (3) Kontrola agenta (dodatočná, lebo PR bol '
+      'zlúčený skôr, než majiteľ poslal jeho číslo) z GitHubu a v kópii mimo repozitára: CI zelené, Codex bez väčších problémov, '
+      'vlákna ani recenzie nie sú; CodeRabbit K53 nekontroloval (automatické recenzie sú vypnuté a príkaz `@coderabbitai review` prišiel '
+      'o 15:55 UTC, po zlúčení o 15:53 UTC); 149 odstránených a 17 pridaných riadkov karty sedí s novým súborom; `tsc` a ESLint '
+      'čisté, 98 sád s 1 346 testami a 73 snapshotmi prešlo; 26 paritných mutácií (H1 až H22 a tri navyše) zachytených 26 z 26. '
+      '(4) Ručný test K53 (majiteľ): K53 nič nepokazila; nové nálezy 361 (meno autora príspevku sa podčiarkuje pri prejdení kurzorom '
+      'alebo po ťuknutí) a 362 (avatar a meno pôvodného autora v prezdieľanom príspevku nevedú na profil), obe staršie správanie, '
+      'zadané presne (vzhľad aj správanie), takže R49 je splnené. Agent ich zaradil po redizajne spolu s 357 až 360 a nie pred K55, '
+      'lebo menia DOM, ktorý stráži dočasný odtlačok HTML; manuál ručných testov má známe odchýlky 361 a 362. (5) Na pokyn majiteľa '
+      'agent napísal kartu K54 (krok f: obsluhy, počty s pollingom a mobilné vrstvy s efektmi E6 a E7 do troch hookov v troch '
+      'commitoch; `karty/K54.md`, najrizikovejšia dávka); prototyp v kópii mimo repozitára prešiel po každej etape `tsc`, ESLintom '
+      'bez varovania a 98 sadami bez zmeny odtlačkov a sondy (karta 590 → 549 → 516 → 495 riadkov), zásahy D1 až D14, E1a až E7e a R1 '
+      'až R9 a dva zásahy na poradie volania hookov zachytených 43 zo 48 (prežili len D1, D8, R3b, R4 a R5, ktoré prežívajú už dnes, K48), obe zmeny poradia zhodila sonda. K54 sa nezlúči s K55: tá čaká na ručný test K54. Majiteľ sa opýtal, koľko '
+      'krokov je do redizajnu: tri dávky kolegu (K54, K55, K56) a potom návrh vzhľadu od agenta (R64). (6) Upravené: nález 333 '
+      '(výsledky K53 a plán K54), nové 361 a 362 (`polozky_nove_k53.py`), tabuľka PR, fronta (333 je teraz dávka K54; nálezy 361 a 362 '
+      'idú po redizajne), manuál ručných testov (známe odchýlky) a stav. (7) Prehľad: nálezy 1–362, zatvorené 14, hotové 142, PRED 54, '
+      'PO 132; čakajúcich rozhodnutí 10 z 66. Dopad na E2E: žiadny (žiadny špec nepoužíva riadok pôvodného autora v náhľade).'),
     ('22. 11. 2026',
       'Vetva 196 (vychádza z `main` `8c9e636d`, teda po PR #313). (1) Zlúčené: PR #312 (vetva 195; 22. 11. 2026 o 11:18 UTC, '
       'merge `20cac81c`; zápis K51, nálezy 357 až 360 a karta K52; CI zelené, CodeRabbit bez pripomienok, vlákna nie sú) a PR #313 '

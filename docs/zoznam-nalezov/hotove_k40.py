@@ -133,4 +133,6 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
     ('#313', 'K52', '333 (dávka 3 delenia `FeedPostCard.tsx`, krok c: vrstvy a dialógy do `FeedPostCardLayers.tsx` a stav deviatich '
      'vlajok do `useFeedPostCardLayers.ts`; tri vlajky ostali v karte kvôli efektom E6 a E7; karta 774 → 722 riadkov; spolu s '
      'odrážkami v manuáli ručných testov)'),
+    ('#315', 'K53', '333 (dávka 4 delenia `FeedPostCard.tsx`, krok e: hlavička karty s menu „…“ a stav menu do `FeedPostCardHeader.tsx`; '
+     'karta 722 → 590 riadkov; spolu s odrážkami v manuáli ručných testov; z ručného testu vznikli nálezy 361 a 362)'),
 ]
