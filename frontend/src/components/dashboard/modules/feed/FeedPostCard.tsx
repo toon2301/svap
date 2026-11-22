@@ -32,8 +32,6 @@ import {
   getFeedPost,
   removeOwnFeedPostTag,
 } from '@/lib/feedApi';
-import FeedDestructiveConfirm from './FeedDestructiveConfirm';
-import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
@@ -48,9 +46,6 @@ import FeedPostCaption, {
   CARD_CAPTION_LINES,
   DETAIL_CAPTION_LINES,
 } from './FeedPostCaption';
-import FeedPostEditModal from './FeedPostEditModal';
-import FeedPostReportModal from './FeedPostReportModal';
-import FeedPostShareModal from './FeedPostShareModal';
 import ExchangeIcon from './FeedExchangeIcon';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
@@ -59,14 +54,13 @@ import { useCardInViewport } from './useCardInViewport';
 import { formatRelativeTime } from './feedRelativeTime';
 import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
 import { sharedFeedPostPhoto } from './feedImageSources';
-import FeedSharedPhotoViewer from './FeedSharedPhotoViewer';
-import FeedPhotoViewer from './FeedPhotoViewer';
-import FeedPostMobileDetail from './FeedPostMobileDetail';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedPostActions from './FeedPostActions';
 import FeedPostSharedBlock from './FeedPostSharedBlock';
+import FeedPostCardLayers from './FeedPostCardLayers';
+import { useFeedPostCardLayers } from './useFeedPostCardLayers';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -234,18 +228,29 @@ export default function FeedPostCard({
   const [menuOpen, setMenuOpen] = useState(false);
   // Pozícia spúšťača v okne – menu sa kreslí portálom, takže si ju musí niesť.
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [reported, setReported] = useState(false);
+  const {
+    reportOpen,
+    setReportOpen,
+    shareOpen,
+    setShareOpen,
+    reported,
+    setReported,
+    tagRemoveOpen,
+    setTagRemoveOpen,
+    removingTag,
+    setRemovingTag,
+    deleteOpen,
+    setDeleteOpen,
+    editOpen,
+    setEditOpen,
+    likersOpen,
+    setLikersOpen,
+    deleting,
+    setDeleting,
+  } = useFeedPostCardLayers();
   // Označenia sú lokálne, aby chip po odstránení zmizol bez čakania na
   // obnovenie celého feedu. Prop-sync nižšie ich vráti do súladu so serverom.
   const [taggedUsers, setTaggedUsers] = useState(post.tagged_users ?? []);
-  const [tagRemoveOpen, setTagRemoveOpen] = useState(false);
-  const [removingTag, setRemovingTag] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [likersOpen, setLikersOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
   const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -678,96 +683,39 @@ export default function FeedPostCard({
         />
       ) : null}
 
-      {/* Fotoprehliadač pôvodného príspevku (klik na fotku v reposte). */}
-      {sharedPhotoOpen && sharedPhotoPostId != null ? (
-        <FeedSharedPhotoViewer
-          postId={sharedPhotoPostId}
-          onClose={() => setSharedPhotoOpen(false)}
-        />
-      ) : null}
-
-      {/* Mobilná obrazovka detailu – mountuje sa až pri otvorení. */}
-      {mobileDetailOpen ? (
-        <FeedPostMobileDetail
-          post={currentPost}
-          onClose={() => setMobileDetailOpen(false)}
-          onPostUpdated={setCurrentPost}
-          onDeleted={onDeleted}
-          onShared={onShared}
-        />
-      ) : null}
-
-      {/* Mobilný prehliadač fotky – mountuje sa až pri otvorení, rovnako ako
-          ostatné vrstvy karty. */}
-      {photoViewerIndex !== null ? (
-        <FeedPhotoViewer
-          post={viewerPost}
-          initialIndex={photoViewerIndex}
-          onClose={() => setPhotoViewerIndex(null)}
-          onPostUpdated={setCurrentPost}
-          onDeleted={onDeleted}
-          onShared={onShared}
-        />
-      ) : null}
-
-      <FeedLikersDialog
-        open={likersOpen}
-        onClose={() => setLikersOpen(false)}
-        postId={post.id}
-      />
-
-      <FeedDestructiveConfirm
-        open={deleteOpen}
-        isDeleting={deleting}
-        onClose={() => setDeleteOpen(false)}
-        onConfirm={handleDeletePost}
-        testId="feed-post-delete-confirm"
-        title={t('feed.postDeleteConfirm', 'Naozaj chceš zmazať tento príspevok?')}
-        hint={t('feed.postDeleteHint', 'Túto akciu už nie je možné vrátiť späť.')}
-      />
-
-      <FeedDestructiveConfirm
-        open={tagRemoveOpen}
-        isDeleting={removingTag}
-        onClose={() => setTagRemoveOpen(false)}
-        onConfirm={handleRemoveOwnTag}
-        testId="feed-tag-remove-confirm"
-        title={t(
-          'feed.tagRemoveConfirm',
-          'Naozaj chceš odstrániť svoje označenie z tohto príspevku?',
-        )}
-        hint={t(
-          'feed.tagRemoveHint',
-          'Príspevok ostane zverejnený, zmizne len tvoje označenie.',
-        )}
-        confirmLabel={t('feed.tagRemoveAction', 'Odstrániť označenie')}
-        busyLabel={t('feed.tagRemoving', 'Odstraňujem...')}
-      />
-
-      {/* Mountuje sa až pri otvorení – rovnaký vzor ako composer: každé
-          otvorenie je čistý stav, bez resetovacieho efektu. */}
-      {editOpen ? (
-        <FeedPostEditModal
-          open
-          post={currentPost}
-          onClose={() => setEditOpen(false)}
-          onUpdated={(updated) => {
-            setCurrentPost(updated);
-            onPostUpdated?.(updated);
-          }}
-        />
-      ) : null}
-      <FeedPostReportModal
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        postId={post.id}
-        onReported={() => setReported(true)}
-      />
-      <FeedPostShareModal
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
+      <FeedPostCardLayers
         post={post}
+        sharedPhotoOpen={sharedPhotoOpen}
+        sharedPhotoPostId={sharedPhotoPostId}
+        setSharedPhotoOpen={setSharedPhotoOpen}
+        mobileDetailOpen={mobileDetailOpen}
+        currentPost={currentPost}
+        setMobileDetailOpen={setMobileDetailOpen}
+        setCurrentPost={setCurrentPost}
+        onDeleted={onDeleted}
         onShared={onShared}
+        photoViewerIndex={photoViewerIndex}
+        viewerPost={viewerPost}
+        setPhotoViewerIndex={setPhotoViewerIndex}
+        likersOpen={likersOpen}
+        setLikersOpen={setLikersOpen}
+        deleteOpen={deleteOpen}
+        deleting={deleting}
+        setDeleteOpen={setDeleteOpen}
+        handleDeletePost={handleDeletePost}
+        t={t}
+        tagRemoveOpen={tagRemoveOpen}
+        removingTag={removingTag}
+        setTagRemoveOpen={setTagRemoveOpen}
+        handleRemoveOwnTag={handleRemoveOwnTag}
+        editOpen={editOpen}
+        setEditOpen={setEditOpen}
+        onPostUpdated={onPostUpdated}
+        reportOpen={reportOpen}
+        setReportOpen={setReportOpen}
+        setReported={setReported}
+        shareOpen={shareOpen}
+        setShareOpen={setShareOpen}
       />
     </motion.article>
   );
