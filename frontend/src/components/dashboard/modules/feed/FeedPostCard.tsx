@@ -16,23 +16,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
-import { translateFeedActionError } from './feedActionErrors';
-import {
-  deleteFeedPost,
-  getFeedPost,
-  removeOwnFeedPostTag,
-} from '@/lib/feedApi';
+import { getFeedPost } from '@/lib/feedApi';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
 import { emitFeedPostCounts } from './feedPostCountEvents';
-import {
-  emitFeedPostDeleted,
-  onFeedPostDeleted,
-} from './feedPostDeletedEvents';
+import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import { onFeedShareLanding } from './feedShareLanding';
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
@@ -52,6 +43,7 @@ import FeedPostSharedBlock from './FeedPostSharedBlock';
 import FeedPostCardLayers from './FeedPostCardLayers';
 import { useFeedPostCardLayers } from './useFeedPostCardLayers';
 import FeedPostCardHeader from './FeedPostCardHeader';
+import { useFeedPostCardActions } from './useFeedPostCardActions';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -72,52 +64,6 @@ export default function FeedPostCard({
   const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
-  // Odstránenie sa premietne AŽ po potvrdení serverom – rovnako ako mazanie
-  // komentára. Optimistický vzor je vo feede vyhradený lajku, kde je zlyhanie
-  // bezvýznamné; tu by zmiznutý a späť vrátený chip pôsobil ako chyba.
-  const handleRemoveOwnTag = async () => {
-    if (removingTag) return;
-    setRemovingTag(true);
-    try {
-      await removeOwnFeedPostTag(post.id);
-      setTaggedUsers((current) => current.filter((tag) => !tag.can_remove_tag));
-      setTagRemoveOpen(false);
-      toast.success(t('feed.tagRemoved', 'Označenie bolo odstránené.'));
-      onSelfTagRemoved?.(post.id);
-    } catch (error) {
-      toast.error(
-        translateFeedActionError(t, error, () =>
-          t('feed.tagRemoveError', 'Označenie sa nepodarilo odstrániť.'),
-        ),
-      );
-    } finally {
-      setRemovingTag(false);
-    }
-  };
-
-  const handleDeletePost = async () => {
-    if (deleting) return;
-    setDeleting(true);
-    try {
-      await deleteFeedPost(post.id);
-      setDeleteOpen(false);
-      toast.success(t('feed.postDeleted', 'Príspevok bol zmazaný.'));
-      // Zoznam si kartu odstráni sám; na detaile to znamená odchod na Nástenku.
-      onDeleted?.(post.id);
-      // Mazať sa dá aj z okna detailu, ktoré leží NAD feedom – ten sa o tom
-      // inak nedozvie a nechal by kartu neexistujúceho príspevku.
-      emitFeedPostDeleted(post.id);
-    } catch (error) {
-      toast.error(
-        translateFeedActionError(t, error, () =>
-          t('feed.postDeleteError', 'Príspevok sa nepodarilo zmazať.'),
-        ),
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
   // pending/rejected – hook ich dosleduje, kým sa spracovanie nedokončí.
   //
@@ -234,6 +180,19 @@ export default function FeedPostCard({
   const [taggedUsers, setTaggedUsers] = useState(post.tagged_users ?? []);
   // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
   const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
+  const { handleRemoveOwnTag, handleDeletePost } = useFeedPostCardActions({
+    post,
+    t,
+    onSelfTagRemoved,
+    onDeleted,
+    removingTag,
+    setRemovingTag,
+    setTagRemoveOpen,
+    setTaggedUsers,
+    deleting,
+    setDeleting,
+    setDeleteOpen,
+  });
 
   // Obnovenie feedu nahradí príspevok čerstvejšou verziou, ale `key` ostáva
   // rovnaké – React teda inštanciu recykluje a bez tejto synchronizácie by
