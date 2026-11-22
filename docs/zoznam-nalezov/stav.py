@@ -6,8 +6,8 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='21. 11. 2026',
-    kod='`main` `1c054479` (po PR #309: K50; PR #308 je zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 je zoznam 192, PR #304 je K31, PR #303 zoznam 191, PR #302 je K45)',
+    datum='22. 11. 2026',
+    kod='`main` `39f6e1a7` (po PR #311: K51; PR #310 je zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -16,6 +16,29 @@ from zmeny_starsie import ZMENY_STARSIE  # noqa: E402
 from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
+    ('22. 11. 2026',
+      'Vetva 195 (vychádza z `main` `39f6e1a7`, teda po PR #311). (1) Zlúčené: PR #310 (vetva 194; 22. 11. 2026 o 06:37 UTC, '
+      'merge `ee374c4c`; zápis K50 a karta K51; CodeRabbit dal jednu platnú pripomienku, podmienku zlúčenia K51 po ručnom teste '
+      'K50, opravenú pred zlúčením) a PR #311 (K51; o 08:58 UTC, merge `39f6e1a7`). (2) K51 (PR #311): krok d delenia karty: 2 '
+      'commity, 3 súbory: nový `FeedPostSharedBlock.tsx` 163 riadkov, `FeedPostCard.tsx` 852 → 774 a `sablony/dymovy_test.md`; '
+      'podľa textu commitu čistý presun (pôvodná karta poskladaná späť bajt po bajte), celý Jest 638 sád a 9 561 testov, `tsc`, '
+      'ESLint, preklady a build čisté, paritné mutácie 12 z 12; kolega opravil dve tvrdenia v karte (odstránenie `fixedBlock` je '
+      'ekvivalent; „len odtlačok“ neplatí pri B2) a priradil jednorazový pád `FeedHomeEntryScroll` k nálezu 31. (3) Kontrola agenta '
+      'z GitHubu a v kópii mimo repozitára: CI a CodeRabbit zelené, vlákna nie sú; z 812 neprázdnych riadkov pôvodnej karty '
+      'chýbajú v nových súboroch len dva (obal ternára); `tsc` a ESLint čisté, 40 sád s 439 testami a 73 snapshotmi prešlo; '
+      'paritné mutácie 12 z 12 zachytených, odstránenie `fixedBlock` prežilo (ekvivalent, kolega mal pravdu) a vynechanie '
+      'skorého `return null` zhodilo odtlačok. (4) Ručný test K51 (majiteľ): nové nálezy 357 (repost: text pôvodného príspevku bez '
+      '„Viac“), 358 (zdieľaná ponuka a portfólio: text zdieľajúceho sa nezobrazuje), 359 (označenia ako obyčajný text bez '
+      'bubliny; podmnožina skupiny 8 v nálezu 261) a 360 (mobil: starý spôsob zobrazenia príspevku namiesto dnešnej obrazovky '
+      'detailu; odstrániť aj z kódu). Majiteľ ich chce opraviť hneď po redizajne komentárov a rozložení príspevkov (261 a 344), '
+      'lebo sa dotýkajú tých istých miest; agent ich podľa jeho pokynu nemapoval a zapísal ich až po vysvetlení (dve snímky z '
+      'počítača a dve z mobilu). K51 je doslovný presun, takže nálezy sú staršie správanie. Manuál ručných testov '
+      '(`sablony/dymovy_test.md`, krok 9) tvrdil, že text zdieľajúceho je nad náhľadom a dá sa rozbaliť (z karty K51); opravený '
+      'o známe odchýlky 357 a 358. (5) Ďalší krok: K52 (krok c: vrstvy a dialógy a hook vlajok; karta `karty/K52.md`). (6) '
+      'Upravené: nález 333 a nové 357 až 360 (`polozky_nove_k51.py`), tabuľka PR, fronta (333 je teraz dávka K52; nálezy 357 '
+      'až 360 idú po redizajne), poradie a manuál ručných testov. (7) Prehľad: nálezy 1–360, zatvorené 14, hotové 142, PRED 52, '
+      'PO 132; čakajúcich rozhodnutí 10 z 66. Dopad na E2E: žiadny na špecy; nález 360 môže zasiahnuť špecy upozornení a detailu '
+      'príspevku (neoverené).'),
     ('21. 11. 2026',
       'Vetva 194 (vychádza z `main` `1c054479`, teda po PR #309). (1) Zlúčené: PR #308 (vetva 193; 21. 11. 2026 o 20:40 UTC, '
       'merge `6a059c14`; zápis K48 a K49, karta K50 a pokyn o manuáli ručných testov; CodeRabbit dal jednu platnú pripomienku, '
@@ -288,10 +311,10 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie `FeedPostComments.tsx` je hotové (nález 333, K28 až K42; ostáva delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`), K40 až K43 a K45 sú hotové, K31 je zlúčená (PR #304) a podľa R59, dohody s majiteľom (20. a 21. 11. 2026) a R65 (a) sa redizajn komentárov a okno na počítači (344) začnú až po delení `FeedPostCard.tsx` (K46: dvojité mapovanie je hotové a porovnané, ochrana testami K48 a K49 je zlúčená, delenie ide v dávkach K50 až K55 a opravy 355 a 356 v K56), rekapitulácii a vizuálnom návrhu; mapuje a implementuje ich agent (R64); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; 355 okno zdieľania po úprave ukáže starý text a 356 starý lajk v detaile po obnove feedu počas lajku (z mapovania K46); zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 (mapovanie kolegu hotové v K45; po rekapitulácii a dohode ho implementuje agent, R63 a R64); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie `FeedPostComments.tsx` je hotové (nález 333, K28 až K42; ostáva delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`), K40 až K43 a K45 sú hotové, K31 je zlúčená (PR #304) a podľa R59, dohody s majiteľom (20. a 21. 11. 2026) a R65 (a) sa redizajn komentárov a okno na počítači (344) začnú až po delení `FeedPostCard.tsx` (K46: dvojité mapovanie je hotové a porovnané, ochrana testami K48 a K49 je zlúčená, delenie ide v dávkach K50 až K55 a opravy 355 a 356 v K56), rekapitulácii a vizuálnom návrhu; mapuje a implementuje ich agent (R64); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; 355 okno zdieľania po úprave ukáže starý text a 356 starý lajk v detaile po obnove feedu počas lajku (z mapovania K46); 357 až 360 (ručný test K51: repost bez „Viac“, text pri zdieľanej ponuke a portfóliu, označenia ako obyčajný text, starý spôsob zobrazenia príspevku na mobile; idú po redizajne); zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 (mapovanie kolegu hotové v K45; po rekapitulácii a dohode ho implementuje agent, R63 a R64); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
-         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '343', '344', '353', '355', '356', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
+         polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '333', '343', '344', '353', '355', '356', '357', '358', '359', '360', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
     dict(vlna='3 – texty a súkromie',
          co='175, 176, 204, APP-03 a 186 (R2: všetkých šesť jazykov pred štartom; 332 je hotová v K21, 335 (atribút `lang` na `<html>`) v K22; 120 a 177 sú hotové v K6; 297 v K13; 306 surový „Network Error“ v toastoch v K15) a súkromie: 347 (ponuky účtov staff a superuser cez priame id; najprv rozhodnúť, či je to zámer), 348 (osirotená recenzia '
             'neaktívneho hodnoteného používateľa) a 349 (deaktivovaný účet a cache autentifikácie; najprv rozhodnúť dôležitosť); 339 je hotová v K30',
