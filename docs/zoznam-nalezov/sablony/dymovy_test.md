@@ -32,7 +32,11 @@ Po každom zlúčení dávky, pred zlúčením ďalšej. Na iPhone s nainštalov
    - Nahlásenie (cudzí príspevok): menu „…“ → Nahlásiť otvorí okno nahlásenia; po odoslaní je v menu „Už nahlásené“.
    - Úprava a zmazanie (vlastný skúšobný príspevok): menu „…“ → Upraviť otvorí okno úpravy a po uložení karta ukáže nový text (známa odchýlka, ktorá sa v teste nehlási: okno zdieľania ukáže po úprave ešte starý text, nález 355); menu „…“ → Zmazať otvorí potvrdenie a po potvrdení príspevok zo zoznamu zmizne.
    - Vrstvy na iPhone: ťuk na fotku otvorí prehliadač fotky, ťuk na text alebo na ikonu komentárov obrazovku detailu a v reposte ťuk na fotku prehliadač fotky pôvodného príspevku; každá vrstva sa zavrie a vráti na kartu a po zdieľaní z vrstvy sa všetky zavrú a navrchu je nový príspevok.
+   - Hlavička karty: avatar, meno a čas (pri vlastnom upravenom príspevku aj „(upravené)“) vyzerajú rovnako ako predtým; klik alebo ťuk na avatar alebo meno otvorí profil autora; zdieľaný príspevok (repost, ponuka, portfólio) má nad hlavičkou riadok „… zdieľa ďalej“.
+   - Menu „…“: otvorí sa pod tlačidlom a zatvorí sa druhým klikom na „…“, klikom mimo menu a na počítači klávesom Escape (po ňom ostane fokus na tlačidle „…“); pri cudzom príspevku je v menu len Nahlásiť, pri vlastnom aj Upraviť a Zmazať; každá položka menu ho zavrie a otvorí príslušné okno.
+   - Hlavička v okne detailu na počítači (príspevok s fotkou a príspevok len s dlhším textom): hlavička a „…“ sú hore a neprekrývajú sa s „X“ okna; pri príspevku s fotkou hlavička stojí hore aj po rozbalení dlhšieho textu; menu otvorené v okne je viditeľné nad oknom a dá sa naň kliknúť; klik na avatar alebo meno okno zatvorí a otvorí profil autora.
    - Tmavý režim: ikony majú rovnaké farby ako predtým, aktívne srdiečko je fialové.
+   - Tmavý režim, hlavička: farby avatara, mena, času a tlačidla „…“ sú rovnaké ako predtým.
 
 **Výsledok** jedným riadkom agentovi: „prešlo“ alebo „neprešlo: krok N, čo sa stalo, približný čas“. Pri zlyhaní push pošli aj počty z riadku `message_push_delivery_summary` (bez ID), alebo napíš, že riadok v logu chýba.
 Kým test neprejde, ďalšia dávka sa nezlučuje. Pri HNEĎ chybe po nasadení platí postup v `README.md`, časť „Postup od K15“.
