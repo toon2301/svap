@@ -21,8 +21,6 @@ import { useIsMobile } from '@/hooks';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import { onFeedPostDeleted } from './feedPostDeletedEvents';
-import { onFeedShareLanding } from './feedShareLanding';
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
   DETAIL_CAPTION_LINES,
@@ -42,6 +40,7 @@ import { useFeedPostCardLayers } from './useFeedPostCardLayers';
 import FeedPostCardHeader from './FeedPostCardHeader';
 import { useFeedPostCardActions } from './useFeedPostCardActions';
 import { useFeedPostCounts } from './useFeedPostCounts';
+import { useFeedPostMobileLayers } from './useFeedPostMobileLayers';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -127,20 +126,17 @@ export default function FeedPostCard({
    * `null` = zatvorený; číslo je index v zozname otvárateľných fotiek.
    */
   const opensPhotoViewer = isMobile && !isDetail;
-  const [photoViewerIndex, setPhotoViewerIndex] = useState<number | null>(null);
   /**
    * Fotoprehliadač PÔVODNÉHO príspevku, otvorený z fotky v repost náhľade.
    * `null` = repost fotku nemá, takže sa nedá ani otvoriť.
    */
   const sharedPhotoPostId = sharedFeedPostPhoto(currentPost)?.postId ?? null;
-  const [sharedPhotoOpen, setSharedPhotoOpen] = useState(false);
   /**
    * Mobilná obrazovka detailu – otvára ju ikona komentárov a ťuk na TEXT
    * príspevku. Ťuk na FOTKU vedie inam (prehliadač fotky vyššie), desktop sa
    * nemení: tam komentáre aj naďalej otvárajú okno detailu.
    */
   const opensMobileDetail = isMobile && !isDetail;
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   /**
    * Preklik VON z karty (profil autora). V okne detailu musí okno zmiznúť –
@@ -232,32 +228,14 @@ export default function FeedPostCard({
     );
   }, [isLiked, likesCount]);
 
-  // Po zdieľaní sa pristáva na Nástenku, takže žiadna vrstva nad kartou nesmie
-  // ostať otvorená – ani tá, z ktorej sa zdieľalo. Zatvárajú sa tu spoločne,
-  // rovnako ako pri zmiznutom príspevku nižšie.
-  useEffect(
-    () =>
-      onFeedShareLanding(() => {
-        setMobileDetailOpen(false);
-        setPhotoViewerIndex(null);
-        setSharedPhotoOpen(false);
-      }),
-    [],
-  );
-
-  // Príspevok zmizol (zmazal ho niekto iný, alebo to zistila iná interakcia).
-  // Kartu odstráni zoznam, ale otvorené vrstvy nad ňou treba zavrieť tu –
-  // karta sa vykresľuje aj tam, kde zoznam signál nespracúva (profil).
-  useEffect(
-    () =>
-      onFeedPostDeleted((deletedId) => {
-        if (deletedId !== post.id) return;
-        setMobileDetailOpen(false);
-        setPhotoViewerIndex(null);
-        setSharedPhotoOpen(false);
-      }),
-    [post.id],
-  );
+  const {
+    photoViewerIndex,
+    setPhotoViewerIndex,
+    sharedPhotoOpen,
+    setSharedPhotoOpen,
+    mobileDetailOpen,
+    setMobileDetailOpen,
+  } = useFeedPostMobileLayers(post.id);
 
   useFeedPostCounts({
     postId: post.id,
