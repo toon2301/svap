@@ -128,4 +128,6 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
     ('#309', 'K50', '333 (dávka 1 delenia `FeedPostCard.tsx`, čisté presuny: `ActionButton`, typ vlastností a riadok akcií do '
      '`FeedPostActionButton.tsx`, `FeedPostCard.types.ts` a `FeedPostActions.tsx`; karta 1 033 → 852 riadkov; ostáva delenie '
      'zdieľaného bloku, vrstiev, hlavičky, efektov a mobilného detailu; spolu s krokom 9 v manuáli ručných testov)'),
+    ('#311', 'K51', '333 (dávka 2 delenia `FeedPostCard.tsx`, krok d: zdieľaný blok a označenia do `FeedPostSharedBlock.tsx`; '
+     'karta 852 → 774 riadkov; spolu s odrážkami v manuáli ručných testov; z ručného testu vznikli nálezy 357 až 360)'),
 ]

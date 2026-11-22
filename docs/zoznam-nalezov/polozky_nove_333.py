@@ -252,8 +252,27 @@ NEW_ITEMS_333 = [
               'bez zmeny; 14 zo 14 paritných mutácií zachytených a odstránenie `fixedBlock` zhodilo 8 stavov okna; krok 9 '
               'v `sablony/dymovy_test.md` zodpovedá opravenej karte (komentáre na počítači otvoria okno detailu). RUČNÝ '
               'TEST K50: robí majiteľ (výsledok čaká); majiteľ dal kolegovi dávku K51 (krok d, zdieľaný blok a označenia; '
-              'karta `karty/K51.md`) hneď, kým testuje K50, a nálezy z testu hlási hneď.',
+              'karta `karty/K51.md`) hneď, kým testuje K50, a nálezy z testu hlási hneď. DÁVKA K51 HOTOVÁ (PR #311, zlúčené '
+              '22. 11. 2026 o 08:58 UTC, merge `39f6e1a7`; 2 commity: krok d a odrážky v manuáli ručných testov; 3 súbory: '
+              'nový `FeedPostSharedBlock.tsx` (163 riadkov), `FeedPostCard.tsx` (852 → 774) a `sablony/dymovy_test.md`; žiadny '
+              'test sa nemenil). PODĽA TEXTU COMMITU: kolega poskladal pôvodnú kartu späť z karty a nového súboru bajt po '
+              'bajte, celý Jest 638 sád, 9 561 testov a 73 snapshotov pred krokom aj po ňom, ochrana z K48 a K49 bez zmeny, '
+              '`tsc`, ESLint, preklady a build čisté, paritné mutácie B1 až B7 a C2 až C6 12 z 12 pred presunom aj po ňom. '
+              'Kolega opravil dve tvrdenia v karte K51: odstránenie `fixedBlock` z `className` odtlačok zhodiť nemôže (je '
+              'ekvivalentné: `fixedBlock` je prázdny reťazec presne vtedy, keď `fillHeight` nie je pravdivé) a „len odtlačok“ '
+              'platí pri C2 až C4, nie pri B2 (zachytáva ho aj `FeedPostDetailOverlay`); rovnako opravil A2 z K50 („len '
+              'odtlačok“ platí len pre jadro 17 sád). Jednorazový pád testu v `FeedHomeEntryScroll` (53 sád naraz; 8 '
+              'opakovaní bez pádu) priradil k nálezu 31 (nestabilné Jest testy). KONTROLA AGENTA (22. 11. 2026, z GitHubu a '
+              'v kópii mimo repozitára): CI (`checks`, `backend-postgres`) aj CodeRabbit zelené, vlákna nie sú; z 812 '
+              'neprázdnych riadkov pôvodnej karty chýbajú v nových súboroch len dva (obal ternára `{isShared || '
+              'taggedUsers.length ? (` a `) : null}`, nahradený skorým `return null`); `tsc` a ESLint čisté, 40 sád s 439 '
+              'testami a 73 snapshotmi prešlo; paritné mutácie 12 z 12 zachytených; odstránenie `fixedBlock` skutočne '
+              'prežilo (ekvivalent, kolega mal pravdu) a vynechanie skorého `return null` zhodilo odtlačok; tvrdenie '
+              'kolegu o nálezu 31 sedí (31 je otvorený nález o nestabilných Jest testoch). Kandidáti na nové nálezy od '
+              'kolegu: žiadni. RUČNÝ TEST K51 (majiteľ): našiel nálezy 357 až 360 (staršie správanie, nie dôsledok K51, '
+              'lebo presun je doslovný); manuál ručných testov (krok 9) sa preto opravil o známe odchýlky 357 a 358. '
+              'Ďalší krok: K52 (krok c: vrstvy a dialógy a hook vlajok, stredné riziko; karta `karty/K52.md`).',
          dec='ROZHODNUTIE R23', src='rozhodnutie majiteľa R23 (13. 11. 2026), výsledok K26 (kolega, 16. 11. 2026) a '
-                                    'výsledky K46 (kolega a agent, 21. 11. 2026) a K48 a K49 (kolega, 21. 11. 2026, a '
-                                    'kontrola agenta)'),
+                                    'výsledky K46 (kolega a agent, 21. 11. 2026), K48 až K51 (kolega, 21. 11. a 22. 11. '
+                                    '2026, a kontrola agenta)'),
 ]
