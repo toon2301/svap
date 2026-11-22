@@ -20,11 +20,14 @@ Po každom zlúčení dávky, pred zlúčením ďalšej. Na iPhone s nainštalov
 6. **Uloženie:** zmeniť jedno nastavenie (napr. Správy vypnúť a zapnúť), zavrieť a znova otvoriť. Hodnota sa zachovala.
 7. **Len po dávke s prihlásením alebo CSRF:** nechať aplikáciu 10 až 15 minút na pozadí a vrátiť sa. Používateľ ostane prihlásený.
 8. **Len po dávke so závislosťami alebo infra:** v Railway štartujú backend-http, backend-ws, worker a beat bez chýb.
-9. **Len po dávke s kartou príspevku na Nástenke** (na počítači aj na iPhone; vzhľad a správanie musia byť presne také ako pred dávkou): pod príspevkom na Nástenke vyskúšať srdiečko, komentáre a zdieľanie.
+9. **Len po dávke s kartou príspevku na Nástenke** (na počítači aj na iPhone; vzhľad a správanie musia byť presne také ako pred dávkou): vyskúšať príspevok na Nástenke podľa odrážok (karta dávky uvádza, ktoré).
    - Lajk: klik zafarbí srdiečko a zmení počet, ďalší klik ho vráti. Počet pri srdiečku (keď je väčší ako 0) otvorí zoznam lajkujúcich.
    - Komentáre: na počítači otvoria okno detailu príspevku (sekcia komentárov sa v karte nerozbaľuje), na iPhone obrazovku detailu.
    - Zdieľanie: otvorí okno zdieľania.
    - Okno detailu na počítači (príspevok s fotkou, rozbaliť dlhší text): riadok s ikonami ostáva pri spodku okna a okno sa nepretiahne.
+   - Zdieľaný obsah (ponuka, portfólio a repost príspevku): text zdieľajúceho je nad náhľadom a dá sa rozbaliť; ťuk na náhľad ponuky otvorí ponuku na profile jej vlastníka, na náhľad portfólia jeho detail, fotka v reposte prehliadač fotky pôvodného príspevku; na iPhone ťuk na repostnutý príspevok mimo fotky otvorí obrazovku detailu, na počítači ostáva nekliknuteľný.
+   - Označenia (druhý účet označí prvý v príspevku): pod príspevkom sú „@Meno“; pri vlastnom označení je „x“, ktorý otvorí potvrdenie, a po potvrdení označenie zmizne.
+   - Okno detailu na počítači so zdieľanou ponukou alebo portfóliom (aj s označeniami a dlhším textom zdieľajúceho): hlavička a riadok s ikonami ostávajú na mieste; ak sa náhľad nezmestí, posúva sa len on vnútri okna, nie celé okno.
    - Tmavý režim: ikony majú rovnaké farby ako predtým, aktívne srdiečko je fialové.
 
 **Výsledok** jedným riadkom agentovi: „prešlo“ alebo „neprešlo: krok N, čo sa stalo, približný čas“. Pri zlyhaní push pošli aj počty z riadku `message_push_delivery_summary` (bez ID), alebo napíš, že riadok v logu chýba.
