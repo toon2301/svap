@@ -471,3 +471,8 @@ NEW_ITEMS.extend(NEW_ITEMS_333)
 from polozky_nove_k51 import NEW_ITEMS_K51  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K51)
+
+# Nálezy od 361 (ručný test majiteľa po K53) sú v `polozky_nove_k53.py`.
+from polozky_nove_k53 import NEW_ITEMS_K53  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_K53)
