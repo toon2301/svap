@@ -35,6 +35,8 @@ Po každom zlúčení dávky, pred zlúčením ďalšej. Na iPhone s nainštalov
    - Hlavička karty: avatar, meno a čas (pri vlastnom upravenom príspevku aj „(upravené)“) vyzerajú rovnako ako predtým; klik alebo ťuk na avatar alebo meno otvorí profil autora; zdieľaný príspevok (repost, ponuka, portfólio) má nad hlavičkou riadok „… zdieľa ďalej“. Známa odchýlka, ktorá sa opraví neskôr a v teste sa nehlási: meno autora sa pri prejdení kurzorom (na mobile po ťuknutí) podčiarkuje (nález 361).
    - Menu „…“: otvorí sa pod tlačidlom a zatvorí sa druhým klikom na „…“, klikom mimo menu a na počítači klávesom Escape (po ňom ostane fokus na tlačidle „…“); pri cudzom príspevku je v menu len Nahlásiť, pri vlastnom aj Upraviť a Zmazať; každá položka menu ho zavrie a otvorí príslušné okno.
    - Hlavička v okne detailu na počítači (príspevok s fotkou a príspevok len s dlhším textom): hlavička a „…“ sú hore a neprekrývajú sa s „X“ okna; pri príspevku s fotkou hlavička stojí hore aj po rozbalení dlhšieho textu; menu otvorené v okne je viditeľné nad oknom a dá sa naň kliknúť; klik na avatar alebo meno okno zatvorí a otvorí profil autora.
+   - Lajk druhého účtu (druhý účet alebo druhé zariadenie): lajk sa v karte objaví do asi 8 sekúnd aj bez obnovy stránky.
+   - Počet komentárov: počet pri ikone komentárov v karte sa zhoduje s počtom v okne detailu príspevku.
    - Tmavý režim: ikony majú rovnaké farby ako predtým, aktívne srdiečko je fialové.
    - Tmavý režim, hlavička: farby avatara, mena, času a tlačidla „…“ sú rovnaké ako predtým.
 
