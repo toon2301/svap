@@ -13,20 +13,13 @@
  * optimisticky a pri zlyhaní sa vráti do pôvodného stavu.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import {
-  EllipsisHorizontalIcon,
-  FlagIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { translateFeedActionError } from './feedActionErrors';
-import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import {
   deleteFeedPost,
   getFeedPost,
@@ -41,7 +34,6 @@ import {
   onFeedPostDeleted,
 } from './feedPostDeletedEvents';
 import { onFeedShareLanding } from './feedShareLanding';
-import FeedAnchoredMenu from './FeedAnchoredMenu';
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
   DETAIL_CAPTION_LINES,
@@ -51,8 +43,6 @@ import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useViewerPost } from './useViewerPost';
 import { useCardInViewport } from './useCardInViewport';
-import { formatRelativeTime } from './feedRelativeTime';
-import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
 import { sharedFeedPostPhoto } from './feedImageSources';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useFeedPostLike } from './useFeedPostLike';
@@ -61,6 +51,7 @@ import FeedPostActions from './FeedPostActions';
 import FeedPostSharedBlock from './FeedPostSharedBlock';
 import FeedPostCardLayers from './FeedPostCardLayers';
 import { useFeedPostCardLayers } from './useFeedPostCardLayers';
+import FeedPostCardHeader from './FeedPostCardHeader';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 export default function FeedPostCard({
@@ -103,13 +94,6 @@ export default function FeedPostCard({
       setRemovingTag(false);
     }
   };
-
-  const closeMenu = useCallback(() => {
-    setMenuOpen(false);
-    // Fokus späť na spúšťač – inak by po zatvorení skončil na <body>
-    // a klávesnicová navigácia by začínala odznova.
-    menuTriggerRef.current?.focus();
-  }, []);
 
   const handleDeletePost = async () => {
     if (deleting) return;
@@ -225,9 +209,6 @@ export default function FeedPostCard({
   }, [isDetail, postOverlay]);
 
   const [commentsOpen, setCommentsOpen] = useState(initialCommentsOpen);
-  const [menuOpen, setMenuOpen] = useState(false);
-  // Pozícia spúšťača v okne – menu sa kreslí portálom, takže si ju musí niesť.
-  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
   const {
     reportOpen,
     setReportOpen,
@@ -253,7 +234,6 @@ export default function FeedPostCard({
   const [taggedUsers, setTaggedUsers] = useState(post.tagged_users ?? []);
   // Polling počtov beží LEN pre kartu na obrazovke – viď useCardInViewport.
   const { ref: viewportRef, inViewport } = useCardInViewport<HTMLElement>();
-  const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Obnovenie feedu nahradí príspevok čerstvejšou verziou, ale `key` ostáva
   // rovnaké – React teda inštanciu recykluje a bez tejto synchronizácie by
@@ -447,133 +427,21 @@ export default function FeedPostCard({
         </div>
       ) : null}
 
-      {/* V jednostĺpcovom okne detailu sedí vpravo hore ešte jeho vlastné „X".
-          Bez miesta navyše by prekrylo „..." menu karty – oboje má byť
-          dosiahnuteľné. V dvojstĺpcovom rozložení leží „X" nad PRAVÝM stĺpcom
-          (miesto mu uvoľňuje nadpis komentárov), takže tu by odsadenie len
-          zbytočne ukrajovalo šírku. */}
-      <header
-        className={`flex items-center gap-3 px-4 pb-3 pt-3 ${
-          isDetail && !fillHeight ? 'pr-12' : ''
-        } ${fixedBlock}`}
-      >
-        {/* Avatar aj meno vedú na profil autora – rovnako vo feede, v okne
-            detailu aj v mobilnom prehliadači fotky. */}
-        <button
-          type="button"
-          onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
-          disabled={!canOpenUserProfile(post.author)}
-          data-testid="feed-post-author-avatar"
-          aria-label={t('feed.openProfile', 'Otvoriť profil')}
-          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
-        >
-          <InitialsAvatar
-            name={authorName}
-            avatarUrl={post.author?.avatar_url}
-            size="sm"
-          />
-        </button>
-        <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
-            disabled={!canOpenUserProfile(post.author)}
-            data-testid="feed-post-author-name"
-            className="block max-w-full truncate text-left text-sm font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"
-          >
-            {authorName}
-          </button>
-          <p className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-            <time dateTime={post.created_at}>
-              {formatRelativeTime(post.created_at, t, locale)}
-            </time>
-            {/* „Upravené" vidí LEN autor – backend pole nikomu inému neposiela,
-                takže tu netreba (ani sa nedá) porovnávať identity. */}
-            {isEdited ? (
-              <span data-testid="feed-post-edited">
-                · {t('feed.editedMark', '(upravené)')}
-              </span>
-            ) : null}
-          </p>
-        </div>
-
-        {/* „..." menu v pravom hornom rohu karty, vedľa času. Zámerne nie je
-            štvrtou ikonou v riadku akcií – ten by sa na mobile preplnil.
-            Štruktúrou je pripravené na ďalšie položky (napr. kopírovanie
-            odkazu), zatiaľ nesie jedinú akciu. */}
-        <div className="shrink-0">
-          <button
-            type="button"
-            ref={menuTriggerRef}
-            onClick={(event) => {
-              setMenuAnchor(event.currentTarget.getBoundingClientRect());
-              setMenuOpen((open) => !open);
-            }}
-            aria-label={t('feed.postMenu', 'Možnosti príspevku')}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            data-testid="feed-post-menu-trigger"
-            className="rounded-full p-2 text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-600 dark:hover:bg-white/10 dark:hover:text-gray-200"
-          >
-            <EllipsisHorizontalIcon className="h-5 w-5" />
-          </button>
-          <FeedAnchoredMenu
-            open={menuOpen}
-            anchorRect={menuAnchor}
-            onClose={closeMenu}
-            ariaLabel={t('feed.postMenu', 'Možnosti príspevku')}
-            testId="feed-post-menu"
-          >
-              <button
-                type="button"
-                role="menuitem"
-                disabled={reported}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setReportOpen(true);
-                }}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 dark:text-white dark:hover:bg-gray-800 dark:disabled:text-gray-500"
-              >
-                <FlagIcon className="h-4 w-4" />
-                {reported
-                  ? t('feed.alreadyReported', 'Už nahlásené')
-                  : t('feed.reportPost', 'Nahlásiť príspevok')}
-              </button>
-              {/* Upravovať aj mazať smie iba autor – o tom rozhoduje backend
-                  cez `can_manage`, FE si to neodvodzuje sám. */}
-              {post.can_manage ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setEditOpen(true);
-                  }}
-                  data-testid="feed-post-edit"
-                  className="flex w-full items-center gap-2 border-t border-gray-200 px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
-                >
-                  <PencilSquareIcon className="h-4 w-4" />
-                  {t('feed.editPost', 'Upraviť príspevok')}
-                </button>
-              ) : null}
-              {post.can_manage ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setDeleteOpen(true);
-                  }}
-                  data-testid="feed-post-delete"
-                  className="flex w-full items-center gap-2 border-t border-gray-200 px-4 py-3 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-gray-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                  {t('feed.deletePost', 'Zmazať príspevok')}
-                </button>
-              ) : null}
-          </FeedAnchoredMenu>
-        </div>
-      </header>
+      <FeedPostCardHeader
+        post={post}
+        authorName={authorName}
+        isEdited={isEdited}
+        isDetail={isDetail}
+        fillHeight={fillHeight}
+        fixedBlock={fixedBlock}
+        closeOverlayOnLeave={closeOverlayOnLeave}
+        reported={reported}
+        setReportOpen={setReportOpen}
+        setEditOpen={setEditOpen}
+        setDeleteOpen={setDeleteOpen}
+        t={t}
+        locale={locale}
+      />
 
       {/* Voľný príspevok: VEDIE text, fotky idú pod neho. Zdieľanie sa riadi
           tým istým pravidlom v okne detailu (text nad náhľadom), na karte vo
