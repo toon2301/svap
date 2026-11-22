@@ -11,7 +11,7 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K31, K36 až K43, K45, K48 a K49 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K31, K36 až K43, K45 a K48 až K50 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
@@ -35,7 +35,7 @@ zoznam nemôže ticho zastarať.
 """
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy '
-             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45, K48 a K49 sú hotové (z '
+             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45 a K48 až K50 sú hotové (z '
              'K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 '
              '(PR #273), 181 (PR #274), 182 (PR #277), 183 (PR #279), 184 (PR #282), 185 (PR #285), 186 (PR #288), 187 (PR #290), '
              '188 (PR #293), 189 (PR #296), 190 (PR #299), 191 (PR #303), 192 (PR #305) a 193 sú len zoznam, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) '
@@ -89,11 +89,14 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'obe dospeli k čistým presunom, najväčším rizikom sú medzery v testoch, a preto agent pripravil karty K48 (ochrana karty) '
              'a K49 (ochrana mobilného detailu), obe len testy; kolega ich dokončil a majiteľ zlúčil: K48 (PR #306, 21. 11. 2026 o '
              '18:20 UTC) a K49 (PR #307, o 19:35 UTC); agent ich overil z GitHubu a vlastnými skúškami v kópii mimo repozitára '
-             '(výsledky sú v nálezu 333, ručný test netreba). Ďalšie dávky (K50 až K55 presuny, K56 opravy nálezov 355 a 356) '
-             'pripraví po zlúčení predchádzajúcej a na pokyn majiteľa; podľa R66 (a) (21. 11. 2026) ide opravy 355 a 356 v K56 a '
-             'redizajn začne až po nej; majiteľ chce ísť postupne, jedna vec naraz, a agent bez jeho pokynu nič nemapuje ani '
-             'nepripravuje; ďalšia dávka je K50 (karta `karty/K50.md` je napísaná na pokyn majiteľa; majiteľ ju pošle kolegovi po zlúčení '
-             'vetvy 193). Pri každej dávke má kolega doplniť aj manuál ručných testov `sablony/dymovy_test.md`, ak dávka ručné testy má. Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
+             '(výsledky sú v nálezu 333, ručný test netreba). K50 (PR #309, 21. 11. 2026 o 21:35 UTC; kroky a, g a b, prvé presuny kódu; '
+             'karta `karty/K50.md`) kolega dokončil a majiteľ zlúčil; agent ju overil z GitHubu a vlastnými skúškami v kópii mimo '
+             'repozitára (výsledky sú v nálezu 333) a ručný test K50 robí majiteľ (výsledok čaká). Majiteľ 21. 11. 2026 dal kolegovi '
+             'ďalšiu dávku hneď, kým testuje K50: K51 (krok d, zdieľaný blok a označenia; karta `karty/K51.md`; K51 sa zlúči až po '
+             'ručnom teste K50). Ďalšie dávky (K52 až K55 presuny, K56 opravy nálezov 355 a 356) pripraví agent po zlúčení '
+             'predchádzajúcej a na pokyn majiteľa; podľa R66 (a) (21. 11. 2026) ide opravy 355 a 356 v K56 a redizajn začne až po '
+             'nej; agent bez pokynu majiteľa nič nemapuje ani nepripravuje. Pri každej dávke má kolega doplniť aj manuál ručných '
+             'testov `sablony/dymovy_test.md`, ak dávka ručné testy má (K50 pridala krok 9). Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
              'upozornení a E2E regresie 345 a 346 (zatiaľ len lokálne overené). Údržba zoznamu (jedna dokumentačná vetva agenta; '
              'majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky PO-A a '
              'PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
@@ -106,28 +109,27 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA = [
-    dict(n='333', davka='K50',
-         co='Nástenka: delenie `FeedPostCard.tsx` (1 033 riadkov) a `FeedPostMobileDetail.tsx` (594) bez zmeny '
+    dict(n='333', davka='K51',
+         co='Nástenka: delenie `FeedPostCard.tsx` (1 033 → 852 riadkov po K50) a `FeedPostMobileDetail.tsx` (594) bez zmeny '
             'vzhľadu (R23); delenie `FeedPostComments.tsx` je hotové (K28 až K42, 1 487 → 401 riadkov). Dvojité mapovanie '
-            'K46 a ochrana testami (K48 karta, K49 mobilný detail) sú hotové a zlúčené; ďalej presuny K50 až K55.',
-         preco='JASNÉ (ďalšia dávka K50: kroky a, g a b delenia karty, čisté presuny `FeedPostActionButton.tsx`, typu '
-               'vlastností `FeedPostCard.types.ts` a riadku akcií `FeedPostActions.tsx`; karta po nej asi 860 riadkov; '
-               'karta `karty/K50.md` je napísaná (21. 11. 2026, na pokyn majiteľa) a majiteľ ju pošle kolegovi po zlúčení vetvy '
-               '193; kolega pri nej doplní aj manuál ručných testov (`sablony/dymovy_test.md`, pokyn majiteľa 21. 11. 2026). K48 (PR #306) a K49 (PR #307) sú '
-               'zlúčené a agent ich overil, výsledky sú v nálezu 333; ich dočasné odtlačky HTML a sonda poradia efektov sa '
-               'pri delení nikdy neaktualizujú (`-u`) a zmaže ich K55. Ďalšie dávky pripraví agent po zlúčení '
-               'predchádzajúcej a na pokyn majiteľa: K51 zdieľaný blok (asi 785), K52 vrstvy a dialógy (asi 700), K53 '
-               'hlavička s menu (asi 570), K54 efekty (tri hooky, asi 440; najrizikovejšia), K55 mobilný detail (asi 350) a '
-               'zmazanie dočasných odtlačkov a sond, K56 opravy 355 a 356 (R66 (a)); odhad kolegu 5 až 7 dní práce, veľkosti '
-               'kariet sú odhad z prototypov. Čisté presuny kódu ako pri `FeedPostComments.tsx`; výnimka z pravidla 500 '
-               'riadkov sa neudeľuje, povolenie platí len pre delenie troch súborov Nástenky (R23), z ktorých je jeden '
-               'hotový. Čakajú na ne tagy a ostatné mobilné doladenia (261, skupiny 8 a 6), etapa B nálezu 262 (príspevok '
-               'a detail príspevku) a podľa R65 (a) aj redizajn (344 a 261, R64).'),
+            'K46, ochrana testami (K48, K49) a prvé presuny (K50) sú zlúčené; ďalej presuny K51 až K55.',
+         preco='JASNÉ (ďalšia dávka K51: krok d, zdieľaný blok a označenia do `FeedPostSharedBlock.tsx`, čistý presun, riziko '
+               'stredné (pružný stĺpec okna); karta po nej asi 775 riadkov; karta `karty/K51.md` je napísaná (21. 11. 2026) a '
+               'majiteľ ju dal kolegovi hneď, kým testuje K50, takže K51 sa zlúči až po ručnom teste K50; kolega pri nej doplní aj '
+               'manuál ručných testov (`sablony/dymovy_test.md`, pokyn majiteľa). K48 (PR #306), K49 (PR #307) a K50 (PR #309) sú '
+               'zlúčené a agent ich overil, výsledky sú v nálezu 333; ich dočasné odtlačky HTML a sonda poradia efektov sa pri '
+               'delení nikdy neaktualizujú (`-u`) a zmaže ich K55. Ďalšie dávky pripraví agent po zlúčení predchádzajúcej a na '
+               'pokyn majiteľa: K52 vrstvy a dialógy (asi 700), K53 hlavička s menu (asi 570), K54 efekty (tri hooky, asi 440; '
+               'najrizikovejšia), K55 mobilný detail (asi 350) a zmazanie dočasných odtlačkov a sond, K56 opravy 355 a 356 (R66 '
+               '(a)); odhad kolegu 5 až 7 dní práce, veľkosti kariet sú odhad z prototypov. Čisté presuny kódu ako pri '
+               '`FeedPostComments.tsx`; výnimka z pravidla 500 riadkov sa neudeľuje, povolenie platí len pre delenie troch '
+               'súborov Nástenky (R23), z ktorých je jeden hotový. Čakajú na ne tagy a ostatné mobilné doladenia (261, skupiny '
+               '8 a 6), etapa B nálezu 262 (príspevok a detail príspevku) a podľa R65 (a) aj redizajn (344 a 261, R64).'),
     dict(n='344', davka='K47',
          co='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch a užšie okno len s '
             'textom (R53).',
          preco='NEJASNÉ (najprv K31 (zlúčená, PR #304) a podľa R65 (a), ktoré majiteľ schválil 21. 11. 2026, '
-               'delenie `FeedPostCard.tsx` (mapovanie K46 a ochrana testami K48 a K49 sú hotové, delenie ide v K50 až K55); potom rekapitulácia a vizuálny návrh s odporúčaním od '
+               'delenie `FeedPostCard.tsx` (mapovanie K46 a ochrana testami K48 a K49 sú hotové, delenie ide v K50 až K55, K50 je zlúčená); potom rekapitulácia a vizuálny návrh s odporúčaním od '
                'agenta; po 100 % dohode vrátane odpovedí na R63 mapuje znova a implementuje agent, nie kolega, R64 '
                'z 20. 11. 2026; karta pre kolegu sa nepíše). Predbežné mapovanie kolegu je hotové v '
                'K45 (`karty/K45_vysledok.md`; agent overil kľúčové tvrdenia čítaním kódu 20. 11. 2026): dve malé '
