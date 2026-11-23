@@ -225,8 +225,14 @@ export default function FeedPostDetailOverlay({
     hasVisibleFeedPhoto(liveImages) || sharedFeedPostPhoto(post) !== null;
   /** Zdieľaná ponuka alebo portfólio: karta je hlavný obsah okna ako fotka (R53). */
   const sharesCard = sharesOfferOrPortfolio(post);
-  /** Široké okno (864 px) majú príspevky s fotkou, ponukou a portfóliom, všetky ostatné užšie (576 px). */
-  const wideContent = hasPhoto || sharesCard;
+  /**
+   * Široké okno (864 px) majú príspevky s fotkou, ponukou a portfóliom, všetky ostatné užšie (576 px).
+   *
+   * Kým sa príspevok načítava, je okno vždy úzke, aj keď `post` ešte drží PREDOŠLÝ príspevok (pri prepnutí na iný
+   * príspevok sa okno neodmountuje, viď `loadSeqRef`): kostra nesmie dediť rozmery príspevku, ktorý už nie je na
+   * obrazovke. Po načítaní sa šírka aj rozloženie určia podľa nového príspevku; pri chybe je `post` `null`.
+   */
+  const wideContent = !loading && (hasPhoto || sharesCard);
   const splitLayout = wideContent && !isMobile;
   /**
    * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?
