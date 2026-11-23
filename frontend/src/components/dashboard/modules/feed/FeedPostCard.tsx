@@ -219,6 +219,11 @@ export default function FeedPostCard({
    * prehliadač fotky aj obrazovka detailu naskočili na ZASTARANÝ stav a
    * správny sa ukázal až po prvom rozposlaní počtov. Obe sa nasadzujú z toho
    * istého objektu, takže stačí zosúladiť ten.
+   *
+   * `post` je medzi závislosťami, aby sa lajk premietol aj po obnove feedu: ten
+   * vráti `currentPost` na hodnoty z feedu (efekt vyššie) a bez nového behu by
+   * starý lajk ostal, kým sa lajk alebo počet znova nezmení (nález 356). Efekt
+   * `setCurrentPost(post)` preto musí ostať PRED týmto.
    */
   useEffect(() => {
     setCurrentPost((previous) =>
@@ -226,7 +231,7 @@ export default function FeedPostCard({
         ? previous
         : { ...previous, is_liked_by_me: isLiked, likes_count: likesCount },
     );
-  }, [isLiked, likesCount]);
+  }, [post, isLiked, likesCount]);
 
   const {
     photoViewerIndex,
