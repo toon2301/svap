@@ -7,12 +7,16 @@
  * neodmountuje: appka sa nenaviguje, len sa navrch vykreslí portál. Po zavretí
  * je teda používateľ presne tam, kde bol, vrátane pozície scrollu.
  *
- * Rozloženie má dva tvary podľa toho, či príspevok má fotku:
+ * Rozloženie má dva tvary podľa toho, čo je v príspevku hlavný obsah:
  *
- *  - S FOTKOU: dva stĺpce vedľa seba (`FeedPostDetailSplitLayout`) – vľavo
- *    hlavička, text, fotka a akcie, vpravo výhradne komentáre.
- *  - BEZ FOTKY: pôvodné jednostĺpcové rozloženie – pevný blok (hlavička, text,
+ *  - S FOTKOU, PONUKOU ALEBO PORTFÓLIOM: dva stĺpce vedľa seba
+ *    (`FeedPostDetailSplitLayout`) – vľavo hlavička, text, fotka alebo karta
+ *    a akcie, vpravo výhradne komentáre. Okno je široké 54 rem (864 px).
+ *  - BEZ NICH (text, repost textového príspevku): pôvodné jednostĺpcové
+ *    rozloženie v užšom okne (36 rem, 576 px) – pevný blok (hlavička, text,
  *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor.
+ *    Úzke je aj okno pri načítaní a pri chybe: príspevok ešte nepoznáme a
+ *    textový príspevok sa tak po načítaní nehýbe (R63).
  *    Robí to `flex` stĺpec s `min-h-0` na komentárovej časti – bez toho by ju
  *    obsah roztiahol a okno by prerástlo obrazovku (flex položka má
  *    predvolene `min-height: auto`).
@@ -34,11 +38,13 @@ import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
 import FeedPostDetailSplitLayout, {
   hasVisibleFeedPhoto,
+  sharesOfferOrPortfolio,
 } from './FeedPostDetailSplitLayout';
 import { sharedFeedPostPhoto } from './feedImageSources';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
+import { useFeedCommentDraft } from './useFeedCommentDraft';
 import { handleGoneFeedPost } from './feedPostGone';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import {
@@ -72,6 +78,9 @@ export default function FeedPostDetailOverlay({
     changeCommentsCount,
     countVersionRef,
   } = useFeedPostCommentsCount(postId, 0);
+  // Rozpracovaný komentár drží okno: pri prepnutí rozloženia (dva stĺpce ⇄ jeden) sa komentáre odmountujú a ich
+  // vlastný text by sa stratil (viď `useFeedCommentDraft`).
+  const commentDraft = useFeedCommentDraft(postId);
 
   // Fokus, Tab trap aj Escape rieši spoločný hook feed dialógov – vrátane
   // poradia vrstiev, takže Escape nad otvoreným prehliadačom fotky (alebo nad
@@ -195,7 +204,7 @@ export default function FeedPostDetailOverlay({
   /**
    * Dvojstĺpcové rozloženie potrebuje DVE veci naraz:
    *
-   *  - fotku (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
+   *  - fotku alebo kartu ponuky či portfólia (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
    *  - a dosť širokú obrazovku, inak by z dvoch stĺpcov ostali dva nepoužiteľne
    *    úzke pruhy.
    *
@@ -205,8 +214,7 @@ export default function FeedPostDetailOverlay({
    * nová konštanta. Otvorené okno sa pri zúžení prehliadača nezatvára, takže
    * bez tejto podmienky by sa dva stĺpce udržali aj hlboko pod ňou.
    *
-   * Pod hranicou platí presne to, čo dnes platí pre text-only príspevky:
-   * pôvodné jednostĺpcové rozloženie.
+   * Pod hranicou platí pôvodné jednostĺpcové rozloženie.
    */
   const isMobile = useIsMobile();
   /**
@@ -219,7 +227,17 @@ export default function FeedPostDetailOverlay({
    */
   const hasPhoto =
     hasVisibleFeedPhoto(liveImages) || sharedFeedPostPhoto(post) !== null;
-  const splitLayout = hasPhoto && !isMobile;
+  /** Zdieľaná ponuka alebo portfólio: karta je hlavný obsah okna ako fotka (R53). */
+  const sharesCard = sharesOfferOrPortfolio(post);
+  /**
+   * Široké okno (864 px) majú príspevky s fotkou, ponukou a portfóliom, všetky ostatné užšie (576 px).
+   *
+   * Kým sa príspevok načítava, je okno vždy úzke, aj keď `post` ešte drží PREDOŠLÝ príspevok (pri prepnutí na iný
+   * príspevok sa okno neodmountuje, viď `loadSeqRef`): kostra nesmie dediť rozmery príspevku, ktorý už nie je na
+   * obrazovke. Po načítaní sa šírka aj rozloženie určia podľa nového príspevku; pri chybe je `post` `null`.
+   */
+  const wideContent = !loading && (hasPhoto || sharesCard);
+  const splitLayout = wideContent && !isMobile;
   /**
    * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?
    *
@@ -247,9 +265,11 @@ export default function FeedPostDetailOverlay({
         aria-modal="true"
         aria-label={t('feed.postDetail', 'Detail príspevku')}
         data-testid="feed-post-overlay"
-        // Rozmery: `max-w-[54rem]` (864 px) je o ~29 % viac než pôvodných
-        // `max-w-2xl` (672 px) – šírka je FIXNÁ pre foto aj text-only variant,
-        // nech okno vyzerá rovnako bez ohľadu na obsah. Výška je len STROP:
+        // Rozmery: šírku určuje obsah. Široké okno (`max-w-[54rem]`, 864 px, o ~29 %
+        // viac než pôvodných `max-w-2xl`, 672 px) majú príspevky s fotkou, ponukou
+        // a portfóliom; text, repost textového príspevku, kostra a chyba pri
+        // načítaní majú užšie (`max-w-xl`, 576 px; R53 a R63). Pod hranicou lg
+        // ostáva šírka podľa obsahu, mení sa len rozloženie. Výška je len STROP:
         // krátky príspevok drží okno nízke, dlhý ho natiahne až po `95vh`.
         //
         // Prečo práve 95vh: ostávajú 2,5 % viewportu hore aj dole, takže je
@@ -264,9 +284,9 @@ export default function FeedPostDetailOverlay({
         // pružná fotka v ľavom stĺpci má `flex-1`, ktoré potrebuje definitívnu
         // výšku rodiča – zo `max-h` by vyšla nula. Text-only príspevok ostáva
         // pri strope, aby krátky príspevok držal okno nízke.
-        className={`relative flex w-full max-w-[54rem] flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
-          splitLayout ? 'h-[95vh]' : 'max-h-[95vh]'
-        }`}
+        className={`relative flex w-full flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
+          wideContent ? 'max-w-[54rem]' : 'max-w-xl'
+        } ${splitLayout ? 'h-[95vh]' : 'max-h-[95vh]'}`}
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -316,12 +336,23 @@ export default function FeedPostDetailOverlay({
                 changeCommentsCount(delta)
               }
               onCommentsTotalChange={publishCommentsCount}
+              commentDraft={commentDraft}
             />
           ) : (
           <>
-            {/* PEVNÝ blok – hlavička, text, fotky, akcie. Za bežných
-                okolností sa nescrolluje: komentáre pod ním majú `flex-1` so
-                základom 0, takže si berú až to, čo zvýši.
+            {/* PEVNÝ blok – hlavička, text, fotky, akcie. Nezmenšuje sa
+                (`shrink-0`): čo sa do okna nezmestí, odoberá komentárom,
+                nie jemu. Okno má v tomto rozložení len strop `max-h`, nie
+                pevnú výšku, takže základ `0%` pri `flex-1` sa vyhodnotí ako
+                obsah a zmrštenie by sa rozdelilo medzi blok a komentáre
+                podľa ich veľkosti: pri štyroch a viac komentároch by sa
+                blok zmáčkol a pole na komentár vypadlo pod okno (nález 363).
+
+                Strop `calc(95vh-11rem)` je POISTKA: nechá komentárom 11 rem
+                (pole na komentár s odsadením zaberá okolo 9 rem, k tomu
+                riadok zoznamu aj pri prázdnom zozname), takže pri veľmi
+                nízkom okne sa v bloku doscrolluje a pole na komentár
+                ostane celé vidno.
 
                 DVA režimy podľa toho, čo je vnútri pružné:
 
@@ -334,11 +365,11 @@ export default function FeedPostDetailOverlay({
 
                 - Voľný príspevok: nemá čo pružné pohltiť zvyšok, takže ostáva
                   pôvodná POISTKA `overflow-y-auto` pre krajný prípad (nízke
-                  okno, dlhý rozbalený text): až keď by sa blok sám nezmestil,
-                  zmrští sa a doscrolluje sa v ňom, takže nič neostane
+                  okno, dlhý rozbalený text): až keď by sa blok nezmestil pod
+                  strop, doscrolluje sa v ňom, takže nič neostane
                   nedosiahnuteľné za orezanou hranou okna. */}
             <div
-              className={`subtle-scrollbar min-h-0 ${
+              className={`subtle-scrollbar min-h-0 shrink-0 max-h-[calc(95vh-11rem)] ${
                 sharedFillsColumn
                   ? 'flex flex-col overflow-hidden'
                   : 'overflow-y-auto'
@@ -360,15 +391,19 @@ export default function FeedPostDetailOverlay({
                 plní dve úlohy naraz: ruší automatické minimum flex položky
                 (inak by ju obsah roztiahol a okno by prerástlo `max-h-[90vh]`)
                 a zároveň drží komentárom podlahu, aby ich pevný blok nad nimi
-                nikdy nestlačil na nulu. */}
+                nikdy nestlačil na nulu. `flex-col` a `flexFill` odovzdávajú
+                výšku zoznamu komentárov flexom, lebo percentuálna výška
+                (`h-full`) sa v okne bez pevnej výšky nevyhodnotí. */}
             <div
-              className="min-h-[7rem] flex-1 overflow-hidden"
+              className="flex min-h-[7rem] flex-1 flex-col overflow-hidden"
               data-testid="feed-post-overlay-comments"
             >
               <FeedPostComments
                 postId={post.id}
                 highlightCommentId={highlightCommentId}
                 fillHeight
+                flexFill
+                draft={commentDraft}
                 onCountChange={(delta) =>
                   changeCommentsCount(delta)
                 }

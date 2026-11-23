@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Dvojstĺpcové rozloženie okna detailu – VÝHRADNE pre príspevok s fotkou.
+ * Dvojstĺpcové rozloženie okna detailu – pre príspevok s fotkou a pre zdieľanú ponuku alebo portfólio (R53).
  *
- * Text-only príspevok ostáva na pôvodnom jednostĺpcovom rozložení priamo vo
- * `FeedPostDetailOverlay`: bez fotky by pravý stĺpec nemal čo vyvážiť a
- * v ľavom by nebolo nič pružné, čo by pohltilo zvyšok výšky.
+ * Text-only príspevok (aj repost textového príspevku) ostáva na pôvodnom jednostĺpcovom rozložení priamo vo
+ * `FeedPostDetailOverlay`: bez fotky ani karty by pravý stĺpec nemal čo vyvážiť a v ľavom by nebolo nič
+ * pružné, čo by pohltilo zvyšok výšky. Pri ponuke a portfóliu je pružný zdieľaný blok s kartou.
  *
  *   ĽAVÝ (56 %)                      PRAVÝ (44 %)
  *   ─────────────────────────        ─────────────────────
@@ -46,8 +46,10 @@
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { FeedPost, FeedPostImage } from '@/lib/feedApi';
+import { FeedDetailSplitProvider } from './FeedDetailSplitContext';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
+import type { FeedCommentDraft } from './FeedPostComments.types';
 
 /**
  * Je čo ukázať v médiovej ploche?
@@ -60,12 +62,24 @@ import FeedPostComments from './FeedPostComments';
  * zamietnuť aj počas otvoreného okna a rozloženie sa vtedy musí prepnúť samo.
  * Zoznam preto vedie `usePendingFeedImages` v okne, nie snímka z načítania.
  *
- * Backend posiela `images` len pri `free_post` – zdieľané príspevky sem teda
- * nikdy nespadnú a ich poradie „text nad náhľadom" ostáva na jednostĺpcovom
- * rozložení nezmenené.
+ * Backend posiela `images` len pri `free_post`, takže zdieľané príspevky tu nikdy nepatria: ich rozloženie
+ * určuje `sharesOfferOrPortfolio` (ponuka, portfólio) a fotka repostovaného príspevku (`sharedFeedPostPhoto`).
  */
 export function hasVisibleFeedPhoto(images: FeedPostImage[] | undefined): boolean {
   return (images ?? []).some((image) => image.status !== 'rejected');
+}
+
+/**
+ * Zdieľa príspevok ponuku alebo portfólio?
+ *
+ * Takýto príspevok nemá vlastné `images`, no karta ponuky alebo portfólia je plnohodnotný obsah okna, takže
+ * patrí do dvojstĺpcového rozloženia rovnako ako fotka (R53). Rozhoduje typ v snapshote, nie živý zdroj:
+ * ponuka alebo portfólio, ktoré medzitým zmizli, majú snapshot s typom a ostávajú v tom istom rozložení
+ * (karta je len stlmená). Zdieľaný príspevok a voľný príspevok bez fotky sem nepatria.
+ */
+export function sharesOfferOrPortfolio(post: FeedPost | null | undefined): boolean {
+  const type = post?.shared_content?.type;
+  return type === 'offer' || type === 'portfolio_item';
 }
 
 type FeedPostDetailSplitLayoutProps = {
@@ -81,6 +95,8 @@ type FeedPostDetailSplitLayoutProps = {
   onPostUpdated: (post: FeedPost) => void;
   onCommentsCountChange: (delta: number) => void;
   onCommentsTotalChange: (total: number) => void;
+  /** Rozpracovaný komentár drží okno: pri prepnutí rozloženia sa komentáre odmountujú (viď `draft`). */
+  commentDraft?: FeedCommentDraft;
 };
 
 export default function FeedPostDetailSplitLayout({
@@ -92,6 +108,7 @@ export default function FeedPostDetailSplitLayout({
   onPostUpdated,
   onCommentsCountChange,
   onCommentsTotalChange,
+  commentDraft,
 }: FeedPostDetailSplitLayoutProps) {
   const { t } = useLanguage();
 
@@ -105,15 +122,18 @@ export default function FeedPostDetailSplitLayout({
         data-testid="feed-post-overlay-media"
         className="subtle-scrollbar flex min-h-0 w-[56%] min-w-0 flex-col overflow-y-auto"
       >
-        <FeedPostCard
-          post={post}
-          variant="detail"
-          fillHeight
-          liveImages={liveImages}
-          commentsCount={commentsCount}
-          onDeleted={onDeleted}
-          onPostUpdated={onPostUpdated}
-        />
+        {/* Pevná výška stĺpca dovoľuje pružnú plochu karty ponuky a portfólia (viď `FeedDetailSplitContext`). */}
+        <FeedDetailSplitProvider value>
+          <FeedPostCard
+            post={post}
+            variant="detail"
+            fillHeight
+            liveImages={liveImages}
+            commentsCount={commentsCount}
+            onDeleted={onDeleted}
+            onPostUpdated={onPostUpdated}
+          />
+        </FeedDetailSplitProvider>
       </div>
 
       {/* PRAVÝ STĹPEC – výhradne komentáre. */}
@@ -134,6 +154,7 @@ export default function FeedPostDetailSplitLayout({
             postId={post.id}
             highlightCommentId={highlightCommentId}
             fillHeight
+            draft={commentDraft}
             onCountChange={onCommentsCountChange}
             onTotalChange={onCommentsTotalChange}
           />

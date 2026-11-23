@@ -64,9 +64,11 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+let mockIsMobile = false;
+
 jest.mock('@/hooks', () => ({
-  useIsMobile: () => false,
-  useIsMobileState: () => ({ isMobile: false, isResolved: true }),
+  useIsMobile: () => mockIsMobile,
+  useIsMobileState: () => ({ isMobile: mockIsMobile, isResolved: true }),
 }));
 
 jest.mock('../../shared/useProtectedImage', () => ({
@@ -206,6 +208,7 @@ function stubCaptionHeights() {
 }
 
 afterEach(() => {
+  mockIsMobile = false;
   // Výšky sú nastavené na prototype – bez upratania by pretiekli inam.
   Reflect.deleteProperty(HTMLParagraphElement.prototype, 'clientHeight');
   Reflect.deleteProperty(HTMLParagraphElement.prototype, 'scrollHeight');
@@ -271,6 +274,8 @@ describe('zdielany obsah v jednostlpcovom okne', () => {
   }
 
   it('pins the header and actions when the shared offer HAS a photo', async () => {
+    // Jednostĺpcové okno s ponukou je od nálezu 344 len pod 1 024 px (inak sú dva stĺpce).
+    mockIsMobile = true;
     await renderLoadedOverlay(sharedOfferPost());
 
     const { fixed, header, shared } = expectHeaderPinned();
@@ -281,6 +286,7 @@ describe('zdielany obsah v jednostlpcovom okne', () => {
   it('pins them the same way when the shared offer has NO photo', async () => {
     // Prave tento rozdiel bol chybou: s fotkou sa horna cast hybala, bez nej
     // stala. Rozlozenie sa o fotku nesmie opierat vobec.
+    mockIsMobile = true;
     await renderLoadedOverlay(sharedOfferPost({ thumbnail_url: null }));
 
     expectHeaderPinned();
@@ -619,23 +625,23 @@ describe('zdieľaný obsah v okne', () => {
 
 describe('rozmery okna', () => {
   it('is wider than the feed card and nearly as tall as the screen', async () => {
-    await renderLoadedOverlay(textOnlyPost());
+    // Široké okno má príspevok s fotkou (text-only má od nálezu 344 užšie okno).
+    await renderLoadedOverlay(makePost());
 
     const overlay = screen.getByTestId('feed-post-overlay');
     // 54rem = 864 px, teda o ~29 % viac než pôvodných 42rem (672 px).
     expect(overlay.className).toContain('max-w-[54rem]');
-    // Strop výšky necháva 2,5 % viewportu hore aj dole.
-    expect(overlay.className).toContain('max-h-[95vh]');
+    // Dvojstĺpcové okno má pevnú výšku 95 % viewportu (2,5 % hore aj dole).
+    expect(overlay.className).toMatch(/(^|\s)h-\[95vh\]/);
   });
 
-  it('keeps the same width for a text-only post', async () => {
-    // Šírka je fixná, nech okno vyzerá rovnako bez ohľadu na to, či príspevok
-    // má fotku – inak by sa pri prechádzaní príspevkov „mrvilo".
+  it('príspevok len s textom má užšie okno než príspevok s fotkou', async () => {
+    // Od nálezu 344 (R53 b) šírku určuje obsah: text-only 576 px, fotka 864 px.
     await renderLoadedOverlay(makePost({ images: [] }));
 
-    expect(screen.getByTestId('feed-post-overlay').className).toContain(
-      'max-w-[54rem]',
-    );
+    const overlay = screen.getByTestId('feed-post-overlay');
+    expect(overlay.className).toContain('max-w-xl');
+    expect(overlay.className).not.toContain('max-w-[54rem]');
   });
 
   it('lets the height grow with the content instead of fixing it', async () => {

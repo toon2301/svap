@@ -33,9 +33,30 @@ import {
 } from '@/lib/feedApi';
 import type { FeedPostCommentsProps } from './FeedPostComments.types';
 
+/**
+ * Triedy komentárov pri `fillHeight`: koreň, obal zoznamu a posuvný rámik.
+ *
+ * `FILL_CLASSES` vypĺňajú výšku rodiča, ktorá je pevná (percentuálna výška, `h-full`). `FLEX_FILL_CLASSES` ju namiesto
+ * toho odovzdávajú flexom celým reťazcom (`flex-1` + `min-h-0`), lebo rodič s nedefinitnou výškou (okno so stropom
+ * `max-h`) percentuálnu výšku nevyhodnotí; viď `flexFill` vo `FeedPostComments.types.ts`. Píšu sa DOSLOVA, lebo
+ * Tailwind hľadá v zdroji celé názvy tried.
+ */
+const FILL_CLASSES = {
+  root: 'flex h-full min-h-0 flex-col',
+  listWrap: 'min-h-0 flex-1',
+  scroll: 'h-full',
+} as const;
+const FLEX_FILL_CLASSES = {
+  root: 'flex min-h-0 flex-1 flex-col',
+  listWrap: 'flex min-h-0 flex-1 flex-col',
+  scroll: 'min-h-0 flex-1',
+} as const;
+
 export default function FeedPostComments({
   postId,
   fillHeight = false,
+  flexFill = false,
+  draft,
   showTimestamp = false,
   compactComposer = false,
   listHeader,
@@ -48,8 +69,14 @@ export default function FeedPostComments({
   // Mobil má emoji priamo na systémovej klávesnici – appkové
   // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
   const isMobile = useIsMobile();
-  const [submitting, setSubmitting] = useState(false);
-  const [text, setText] = useState('');
+  const [ownSubmitting, setOwnSubmitting] = useState(false);
+  const [ownText, setOwnText] = useState('');
+  // Text aj priebeh odosielania drží rodič, ak o to požiada (`draft`): odmountovanie komentárov pri prepnutí rozloženia
+  // okna ich nestratí, takže sa po prepnutí nedá odoslať ten istý komentár druhýkrát.
+  const text = draft ? draft.value : ownText;
+  const setText: (value: string) => void = draft ? draft.onChange : setOwnText;
+  const submitting = draft ? draft.submitting : ownSubmitting;
+  const setSubmitting: (value: boolean) => void = draft ? draft.onSubmittingChange : setOwnSubmitting;
   // Okno detailu vie o sebe cez kontext – komentáre sa v ňom vykresľujú tiež,
   // takže ho vedia zavrieť rovnako ako hlavička príspevku.
   const postOverlay = useFeedPostOverlay();
@@ -178,6 +205,19 @@ export default function FeedPostComments({
   const tooLong = text.length > FEED_COMMENT_MAX_LENGTH;
   const canSubmit = Boolean(trimmed) && !tooLong && !submitting;
 
+  /**
+   * Vyprázdnenie poľa po úspešnom odoslaní (mutácie ho volajú ako `setText('')`).
+   *
+   * S `draft` sa pole vyprázdni len vtedy, keď ešte obsahuje odoslaný text: odpoveď servera môže prísť až po prepnutí
+   * rozloženia a po tom, čo používateľ napísal ďalší komentár, a ten sa nesmie stratiť. `trimmed` je ten istý text, ktorý
+   * odišiel na server, lebo obsluha odoslania aj táto funkcia vznikli v tom istom vykreslení. Bez `draft` sa pole
+   * vyprázdni vždy, ako doteraz.
+   */
+  const clearSentText = (next: string) => {
+    if (draft) draft.onSent(trimmed);
+    else setOwnText(next);
+  };
+
   // Skloňovanie: 1 / 2–4 / 5+ pokrýva sk, cs aj pl. V en, de a hu, kde sa
   // tvary 2–4 a 5+ nelíšia, majú oba kľúče rovnaký text, takže rovnaká vetva
   // funguje pre všetkých šesť jazykov bez ďalšej logiky.
@@ -212,7 +252,7 @@ export default function FeedPostComments({
     trimmed,
     canSubmit,
     setSubmitting,
-    setText,
+    setText: clearSentText,
     onCountChange,
     loadSeqRef,
     markSeen,
@@ -257,11 +297,13 @@ export default function FeedPostComments({
     />
   );
 
+  const fill = flexFill ? FLEX_FILL_CLASSES : FILL_CLASSES;
+
   return (
     <div
       data-testid="feed-post-comments"
       className={`border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 ${
-        fillHeight ? 'flex h-full min-h-0 flex-col' : ''
+        fillHeight ? fill.root : ''
       }`}
     >
       {/* Ohraničený box s vlastným scrollom: stovky komentárov nenaťahujú
@@ -270,7 +312,7 @@ export default function FeedPostComments({
           tabIndex robí oblasť dostupnou aj z klávesnice (WCAG 2.1.1). */}
       {/* `relative` kvôli indikátoru nových komentárov, ktorý pláva nad
           spodným okrajom zoznamu. */}
-      <div className={`relative ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
+      <div className={`relative ${fillHeight ? fill.listWrap : ''}`}>
         <div
           ref={scrollRef}
           onScroll={handleListScroll}
@@ -284,7 +326,7 @@ export default function FeedPostComments({
           // detailu je toto JEDINÉ scrollovateľné miesto, takže by tu
           // predvolený systémový scrollbar bil do očí najviac.
           className={`subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
-            fillHeight ? 'h-full' : 'max-h-[min(26rem,60dvh)]'
+            fillHeight ? fill.scroll : 'max-h-[min(26rem,60dvh)]'
           }`}
         >
           {listHeader}

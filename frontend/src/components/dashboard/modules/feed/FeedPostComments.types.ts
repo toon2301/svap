@@ -8,6 +8,26 @@
 
 import type { ReactNode } from 'react';
 
+/**
+ * Koncept nového komentára, ktorý namiesto komponentu drží jeho rodič (viď `draft`): text aj to, že sa práve odosiela.
+ *
+ * Odosielanie môže bežať, kým sa komponent odmountuje a vykreslí znova (prepnutie rozloženia okna). Nová inštancia by inak
+ * začala s tlačidlom „Pridať“ znova použiteľným a ten istý komentár by sa dal odoslať druhýkrát.
+ */
+export type FeedCommentDraft = {
+  value: string;
+  onChange: (value: string) => void;
+  /** Komentár sa práve odosiela, aj z inštancie, ktorá sa medzitým odmountovala. */
+  submitting: boolean;
+  onSubmittingChange: (submitting: boolean) => void;
+  /**
+   * Odoslanie dobehlo úspešne: pole sa vyprázdni, len ak ešte obsahuje odoslaný text.
+   *
+   * Odpoveď servera môže prísť po tom, čo používateľ napísal ďalší komentár, a ten sa nesmie stratiť.
+   */
+  onSent: (sentText: string) => void;
+};
+
 export type FeedPostCommentsProps = {
   /**
    * Sekcia vyplní výšku rodiča namiesto vlastného stropu.
@@ -18,6 +38,23 @@ export type FeedPostCommentsProps = {
    * prázdne miesto alebo by okno prerástol.
    */
   fillHeight?: boolean;
+  /**
+   * Výška ide cez flex celým reťazcom namiesto percentuálnej (`h-full`). Má zmysel len spolu s `fillHeight`.
+   *
+   * Rodič, ktorý má len strop `max-h` (jednostĺpcové okno detailu), má NEDEFINITNÚ výšku: `h-full` sa tam nevyhodnotí,
+   * zoznam ostane vysoký ako všetky komentáre, neposúva sa a pole na komentár vypadne pod okraj okna (nález 363).
+   * Ostatné miesta (dvojstĺpcové okno, mobilný detail, panel nad fotkou) majú výšku pevnú a ostávajú pri `h-full`.
+   */
+  flexFill?: boolean;
+  /**
+   * Text rozpracovaného komentára a jeho odosielanie drží rodič, nie komponent.
+   *
+   * Okno detailu na počítači prepína rozloženie (dva stĺpce / jeden stĺpec) pri prechode cez 1 024 px aj pri zmene
+   * fotiek a pri prepnutí komentáre odmountuje, takže ich vlastný stav by sa stratil: text aj to, že sa komentár práve
+   * odosiela (inak by sa dal odoslať druhýkrát). Bez vlastnosti (karta, mobilný detail, panel nad fotkou) si všetko drží
+   * komponent sám.
+   */
+  draft?: FeedCommentDraft;
   /**
    * Ukázať čas pri komentári.
    *
