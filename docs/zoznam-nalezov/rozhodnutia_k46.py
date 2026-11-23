@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66 a R67 (23. 11. 2026, zmena R64).
+"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64) a R68.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Po odpovedi majiteľa sa doplní `odpoved` a `datum`.
 """
@@ -55,5 +55,27 @@ DECISIONS_K46 = [
                  'agent spraví krátku rekapituláciu, aby si bol majiteľ na 100 % istý, že výsledok bude vyzerať tak, ako '
                  'chce. Všetko ostatné z R64 platí (rekapitulácia a vizuál s odporúčaním od agenta, vzhľad schvaľuje '
                  'majiteľ podľa R49, pri nejasnosti sa pýta majiteľa).',
+         datum='23. 11. 2026'),
+    dict(id='R68', tema='Okno detailu príspevku na počítači (344): plocha fotky karty ponuky a portfólia bez fotky a pri nedostatku miesta',
+         otazka='R53 hovorí, že karta ponuky a portfólia vyplní zvyšok ľavého stĺpca okna. Prototyp v prehliadači (obrázky '
+                'z 23. 11. 2026) ukázal dve podrobnosti, ktoré R53 nerozhoduje. (1) Čo s plochou karty, keď fotka chýba '
+                '(sivá náhrada „Bez fotografie“ pri ponuke, „Bez titulnej fotky“ pri portfóliu)? (a) Natiahne sa aj '
+                'náhrada, takže okno vyzerá rovnako s fotkou aj bez nej. (b) Náhrada ostane 256 px a pod kartou je prázdne '
+                'miesto až po riadok s lajkom. (2) Čo sa stane, keď sa dlhý text zdieľajúceho a karta nezmestia (nízka '
+                'obrazovka, napríklad 650 px)? (a) Plocha fotky sa nezmenší pod dnešných 256 px a posúva sa ľavý stĺpec '
+                '(názov a cena karty sú pod okrajom). (b) Plocha sa zmenší, najmenej na 128 px (ako médiová plocha '
+                'príspevku s fotkou), a až potom sa posúva ľavý stĺpec.',
+         odporucanie='(1a) a (2b). (1a): jedno pravidlo pre fotku aj náhradu; (1b) je pokojnejšie na pohľad, no okno by '
+                     'vyzeralo inak s fotkou a bez nej a plocha by mala dve pravidlá. (2b): agent pôvodne odporúčal (2a), '
+                     'no po vykreslení obrázkov zo skutočného kódu sa ukázalo, že (2a) na malom notebooku (výška 650 px) '
+                     'schová názov a cenu ponuky pod okraj a treba ich hľadať posúvaním, čo je horšie než menšia plocha; '
+                     '(2b) sa správa ako fotka pri príspevku s fotkou (minimum 128 px); minimum sa preto zmenilo zo 160 na '
+                     '128 px.',
+         kedy='Rozhodnuté 23. 11. 2026.',
+         odpoved='Majiteľ 23. 11. 2026: podľa odporúčaní agenta (po štyroch obrázkoch s variantmi A a B, vrátane zmeny '
+                 'odporúčania k bodu 2): (1a) natiahne sa aj náhrada; (2b) plocha sa zmenší najmenej na 128 px a až potom '
+                 'sa posúva ľavý stĺpec. Schválený vzhľad je v karte K57 (`navrhy/pc-okno-ponuka-portfolio-schvalene.png`, '
+                 '`pc-okno-text-uzke-schvalene.png` a `pc-okno-male-obrazovky-schvalene.png`). Náhrada pri portfóliu je dnes '
+                 'iná než pri ponuke (nález 259); jej zjednotenie nie je súčasťou tohto kroku.',
          datum='23. 11. 2026'),
 ]

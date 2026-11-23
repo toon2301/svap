@@ -17,6 +17,28 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 
 ZMENY = [
     ('23. 11. 2026',
+      'Doplnok vetvy 200 (PR #322 je ešte otvorené; `main` ostáva `a9e70eef`). (1) Pripomienka CodeRabbitu k PR #322 (jedna, '
+      'Minor, k `stav.py:354` a k dvom miestam v `README.md`: stále hovorili, že redizajn komentárov a okna príspevkov na '
+      'počítači (261, 344) implementuje agent, hoci podľa R67 kód píše kolega): platná, opravená v commite `548deadd`; agent '
+      'našiel rovnakú chybu aj vo `fronta.py` (nenahlásenú) a pri historickom zázname vo `stav.py` (doplnok 3 vetvy 191) '
+      'doplnil poznámku o zmene R67; CI zelené (CodeRabbit, `checks`, `backend-postgres`). (2) Odpoveď majiteľa 23. 11. 2026 '
+      'na otázky agenta k oknu detailu na počítači (344), po štyroch obrázkoch s variantmi A a B z prototypu („idem podľa '
+      'tvojich odporúčaní, vyzerá to dobre“): R63 je zodpovedané (kostra a chybové okno úzke, repost textu úzky, fotka karty '
+      'spolu s oknom, šírka 576 px, 344 ako prvá časť redizajnu) a nové R68 (natiahne sa aj náhrada za fotku; plocha sa '
+      'zmenší najmenej na 128 px: agent po vykreslení obrázkov zmenil odporúčanie z pevných 256 px na zmenšenie, lebo na malom '
+      'notebooku inak názov a cena ponuky padnú pod okraj). (3) Karta K57 (`karty/K57.md`: tri kódové kroky a manuál ručných '
+      'testov), podklady `karty/K57_podklady.md` a tri schválené obrázky v `navrhy/` (`pc-okno-ponuka-portfolio-schvalene.png`, '
+      '`pc-okno-text-uzke-schvalene.png`, `pc-okno-male-obrazovky-schvalene.png`). Prototyp agenta (kópia `frontend` z `main` '
+      '`a9e70eef` mimo repozitára): 4 produkčné súbory (+120 a −49 riadkov) a nový `FeedDetailSplitContext.tsx` (22 riadkov), '
+      'všetky pod 500 riadkov, `FeedPostCard.tsx` sa nemení (498); 4 nové súbory testov (66 testov), existujúce testy sa menia '
+      'len štyri (R27); 31 zásahov z 31 zachytených; celý Jest 641 sád a 9 563 testov (na `main` 637 a 9 497), `tsc` a ESLint '
+      'čisté; každý z troch krokov prechádza samostatne; scény, ktoré sa nemajú zmeniť, sú v Chromiu pixel po pixeli rovnaké. '
+      'Zistenie z merania: pružná plocha fotky bez podmienky by v jednostĺpcovom okne pod 1 024 px klesla zo 256 na 128 px '
+      '(karta 177 px namiesto 305 px), preto sa zapína len v ľavom stĺpci dvojstĺpcového okna cez kontext. (4) Upravené: R63, '
+      'nové R68, nález 344 (K47 sa stalo K57), fronta, README a stav. (5) Prehľad: nálezy 1–362, zatvorené 14, hotové 145, '
+      'PRED 51, PO 132; čakajúcich rozhodnutí 9 z 68. Dopad na E2E: žiadny (Codex po nasadení pridá kontrolu rozloženia na '
+      'čítanie).'),
+    ('23. 11. 2026',
       'Vetva 200 (vychádza z `main` `a9e70eef`, teda po PR #321). (1) Zlúčené od vetvy 199: PR #320 (vetva 199; 23. 11. 2026 o '
       '08:23 UTC, merge `8d15bc40`; zápis K54 a K55, nález 333 uzavretý a karta K56; CI zelené) a PR #321 (K56; o 09:42 UTC, merge '
       '`a9e70eef`). (2) K56 (PR #321): opravy 355 a 356, tri commity (`b651df1c` pre 355, `8e96b7bc` pre 356 a manuál `8955e61d`), '
@@ -351,7 +373,7 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie veľkých súborov Nástenky je hotové (nález 333: `FeedPostComments.tsx` K28 až K42, `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` K46 až K55), K40 až K43 a K45 sú hotové, K31 je zlúčená (PR #304) a podľa R59, dohody s majiteľom (20. a 21. 11. 2026) a R65 (a) sa redizajn komentárov a okno na počítači (344) začnú až po opravách 355 a 356 v K56 (delenie `FeedPostCard.tsx` a mobilného detailu je hotové), rekapitulácii a vizuálnom návrhu; karty píše agent a kód kolega (R67, zmena R64); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; 355 okno zdieľania po úprave a 356 starý lajk v detaile po obnove feedu počas lajku (z mapovania K46) sú hotové v K56; 357 až 360 (ručný test K51: repost bez „Viac“, text pri zdieľanej ponuke a portfóliu, označenia ako obyčajný text, starý spôsob zobrazenia príspevku na mobile; idú po redizajne); zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 (mapovanie kolegu hotové v K45; po rekapitulácii a dohode napíše agent presnú kartu a kód napíše kolega, R63, R64 a R67; R67 mení R64); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie veľkých súborov Nástenky je hotové (nález 333: `FeedPostComments.tsx` K28 až K42, `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` K46 až K55), K40 až K43 a K45 sú hotové, K31 je zlúčená (PR #304) a podľa R59, dohody s majiteľom (20. a 21. 11. 2026) a R65 (a) sa redizajn komentárov a okno na počítači (344) začnú až po opravách 355 a 356 v K56 (delenie `FeedPostCard.tsx` a mobilného detailu je hotové), rekapitulácii a vizuálnom návrhu; karty píše agent a kód kolega (R67, zmena R64); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; 355 okno zdieľania po úprave a 356 starý lajk v detaile po obnove feedu počas lajku (z mapovania K46) sú hotové v K56; 357 až 360 (ručný test K51: repost bez „Viac“, text pri zdieľanej ponuke a portfóliu, označenia ako obyčajný text, starý spôsob zobrazenia príspevku na mobile; idú po redizajne); zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343, okno detailu na počítači 344 (mapovanie kolegu hotové v K45; po odpovediach majiteľa 23. 11. 2026 na R63 a R68 napísal agent kartu K57, kód píše kolega, R67); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
          polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '343', '344', '353', '357', '358', '359', '360', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),

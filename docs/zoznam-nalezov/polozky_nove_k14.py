@@ -172,18 +172,18 @@ NEW_ITEMS_K14 = [
               '`support/feed-comments-ui.ts:26-29` hľadá `feed-post-overlay`, `feed-post-overlay-comments` a '
               '`feed-post-comments`, ktoré existujú v oboch rozloženiach; čísla riadkov E2E súborov sú zo `main` '
               '`1c454330`, pred PR #301, ktorý ich posunul; nové scenáre 345 a 346 z PR #301 mapovanie nezahŕňalo, '
-              'preto ich treba pri K47 skontrolovať tiež: podľa názvov a `data-testid` sa nezdá, že by ich zmena '
+              'preto ich treba pri K57 skontrolovať tiež: podľa názvov a `data-testid` sa nezdá, že by ich zmena '
               'okna rozbila); Codex po nasadení doplní kontrolu rozloženia na čítanie (príspevok s fotkou, ponuka, '
               'portfólio a textový: `feed-post-overlay-split` je alebo nie je, šírka okolo 864 resp. 576 px, výška '
               '95 % pri dvoch stĺpcoch, pole „Napíš komentár...“ a riadok akcií celé v okne). ROZSAH A RIZIKO: jedna '
-              'dávka (K47), dva commity (najprv ponuka a portfólio, potom úzke okno), nové testy v novom súbore '
+              'dávka (K57), dva commity (najprv ponuka a portfólio, potom úzke okno), nové testy v novom súbore '
               '(okolo 200 riadkov), v `FeedPostDetailOverlay.test.tsx` sa menia len tie štyri testy (R27); riziko '
               'nízke pre dáta, stredné pre vzhľad (výška, šírka a posun sa dajú overiť len v prehliadači); delenie '
               '`FeedPostCard.tsx` (K46) nie je podmienkou. Pri tejto dávke sa opraví aj zastaraný komentár '
-              '`FeedPostDetailOverlay.tsx:361-362` (hovorí o `max-h-[90vh]`, kód má `95vh`). ČAKÁ: rekapitulácia a '
-              'vizuálny návrh s odporúčaním od agenta, potom 100 % dohoda s majiteľom vrátane odpovedí na R63 (päť '
-              'drobností: kostra pri načítaní, repost textového príspevku, fotka karty, šírka 576 alebo 580 px, '
-              'poradie); po dohode napíše agent presnú kartu a kód píše kolega (R67, zmena R64 z 23. 11. 2026). DOPLNOK 20. 11. 2026 '
+              '`FeedPostDetailOverlay.tsx:361-362` (hovorí o `max-h-[90vh]`, kód má `95vh`). KARTA K57 NAPÍSANÁ 23. 11. 2026 '
+              '(agent, po odpovediach majiteľa: R63 zodpovedané, nové R68): `karty/K57.md` a podklady `karty/K57_podklady.md`; '
+              'tri kódové kroky (ponuka a portfólio v dvoch stĺpcoch, pružná plocha fotky karty, užšie okno len s textom '
+              '576 px) a manuál ručných testov; kód píše kolega (R67, zmena R64). DOPLNOK 20. 11. 2026 '
               '(agent, čítanie kódu po správe majiteľa): majiteľ upresnil, že ponuka a portfólio majú v okne na '
               'počítači fungovať „tak ako príspevok s foto“, teda fotka karty vyplní zvyšok ľavého stĺpca (pri fotke '
               'príspevku je to pružný blok `feed-post-media-fill`, `FeedPostCard.tsx:742-760`, so spodnou hranicou 8 '
@@ -197,8 +197,13 @@ NEW_ITEMS_K14 = [
               'krok `:781-860`) alebo s jednorazovou výnimkou majiteľa; preto bod 3 v R63. DOPLNOK 21. 11. 2026 '
               '(agent): majiteľ potvrdil, že krokom kolegu pred redizajnom je K31 (zlúčená, PR #304), a schválil R65 '
               '(a): poriadne delenie `FeedPostCard.tsx` pred redizajnom; natiahnutie fotky karty teda ide až po '
-              'delení karty (K46) a z bodu 3 v R63 ostáva možnosť (c).',
-         dec='ROZHODNUTIE R63', src='majiteľ (17. 11. 2026)'),
+              'delení karty (K46) a z bodu 3 v R63 ostáva možnosť (c). DOPLNOK 23. 11. 2026 (agent): majiteľ schválil '
+              'odporúčania (R63 a R68); prototyp v kópii mimo repozitára overil postup (4 produkčné súbory a nový '
+              '`FeedDetailSplitContext.tsx`, 66 nových testov, 31 zásahov zachytených, štyri existujúce testy sa menia, '
+              'celý Jest, `tsc` a ESLint čisté, scény, ktoré sa nemajú zmeniť, v Chromiu pixel po pixeli rovnaké); '
+              'natiahnutie fotky karty ide bez zásahu do `FeedPostCard.tsx` (kontext namiesto vlastnosti karty, lebo '
+              'karta má 498 riadkov). Po nasadení kontrola Codexu a ručný test majiteľa.',
+         dec='ROZHODNUTIE R63 a R68', src='majiteľ (17. a 23. 11. 2026)'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
                 'vytvorenie žiadosti nepustí; treba rozhodnúť, či je to zámer',
