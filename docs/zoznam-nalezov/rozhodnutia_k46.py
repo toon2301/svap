@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64) a R68.
+"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68 a R69.
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Po odpovedi majiteľa sa doplní `odpoved` a `datum`.
 """
@@ -77,5 +77,26 @@ DECISIONS_K46 = [
                  'sa posúva ľavý stĺpec. Schválený vzhľad je v karte K57 (`navrhy/pc-okno-ponuka-portfolio-schvalene.png`, '
                  '`pc-okno-text-uzke-schvalene.png` a `pc-okno-male-obrazovky-schvalene.png`). Náhrada pri portfóliu je dnes '
                  'iná než pri ponuke (nález 259); jej zjednotenie nie je súčasťou tohto kroku.',
+         datum='23. 11. 2026'),
+    dict(id='R69', tema='Okno detailu príspevku len s textom na počítači (344): komentáre pri štyroch a viac komentároch (nález 363) a „Viac“ pod 800 px (nález 364)',
+         otazka='Obrázky agenta z 23. 11. 2026 (text s 15 riadkami, 14 komentárov, výšky obrazovky 800 a 950 px) ukázali dve veci. '
+                '(1) V jednostĺpcovom okne (príspevok len s textom, repost textového príspevku) sa pri štyroch a viac '
+                'komentároch zoznam komentárov neposúva, pevný blok sa zmáčkne a pole „Napíš komentár“ vypadne pod okno '
+                '(nález 363; existuje už dnes). Kedy ho opraviť? (a) Ako krok 4 dávky K57 (okno detailu na počítači). (b) '
+                'Samostatne po K57 (dávka K58). (2) Rozbalený dlhý text má strop štvrtinu výšky obrazovky, takže pod 800 px '
+                'výšky ukáže menej riadkov než zbalený (text s 15 riadkami, zbalený / rozbalený: 650 px 10 / 8, 720 px 10 / 9, '
+                '800 px 10 / 10, 950 px 10 / 12; nález 364). Čo s tým? (a) Nechať a zapísať ako nález, riešiť s redizajnom '
+                'komentárov (R59). (b) Rozbalený rámik nikdy nižší než zbalený. (c) Zbalený text kratší (napríklad 6 riadkov). '
+                '(d) Strop 40 % výšky obrazovky.',
+         odporucanie='(1a) a (2a). (1a): oprava je v tom istom okne a v tých istých súboroch (`FeedPostDetailOverlay.tsx`) '
+                     'ako zmena šírky okna len s textom v kroku 3, takže kolega ich dostane naraz a okno ide na jeden ručný '
+                     'test; oprava má vlastný krok a commit, takže sa dá samostatne vrátiť. (2a): zmena vzhľadu zbaleného '
+                     'alebo rozbaleného textu potrebuje návrh a schválenie (R49) a patrí k redizajnu komentárov (R59), kde sa '
+                     'rozhodne o rovnováhe medzi textom a komentármi v malých oknách.',
+         kedy='Rozhodnuté 23. 11. 2026.',
+         odpoved='Majiteľ 23. 11. 2026: podľa odporúčaní agenta. (1a) Oprava komentárov v jednostĺpcovom okne ide ako krok 4 '
+                 'dávky K57 (nález 363). (2a) Správanie „Viac“ pod 800 px sa nemení a zapisuje sa ako nález 364 (rieši sa '
+                 's redizajnom komentárov, R59). Schválený vzhľad: `navrhy/pc-okno-dlhy-text-komentare-800-schvalene.png`, '
+                 '`pc-okno-dlhy-text-komentare-950-schvalene.png` a `pc-okno-dlhy-text-dnes-a-navrh-800-schvalene.png`.',
          datum='23. 11. 2026'),
 ]

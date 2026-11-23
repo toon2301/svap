@@ -466,3 +466,8 @@ NEW_ITEMS.extend(NEW_ITEMS_K51)
 from polozky_nove_k53 import NEW_ITEMS_K53  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K53)
+
+# Nálezy od 363 (obrázky agenta k oknu detailu, R69) sú v `polozky_nove_k57.py`.
+from polozky_nove_k57 import NEW_ITEMS_K57  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_K57)

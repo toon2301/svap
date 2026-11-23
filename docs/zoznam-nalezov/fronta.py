@@ -127,13 +127,22 @@ FRONTA = [
             'okno len s textom (R53, R63, R68).',
          preco='JASNÉ (karta `karty/K57.md` a podklady `karty/K57_podklady.md` napísal agent 23. 11. 2026 po odpovediach majiteľa '
                'na R63 a R68; kód píše kolega podľa karty (R67, zmena R64); karta nesie schválený vzhľad (`navrhy/pc-okno-*-schvalene.png`), '
-               'tabuľku hodnôt a tri kódové kroky: (1) ponuka a portfólio v dvoch stĺpcoch, (2) pružná plocha fotky karty (kontext '
+               'tabuľku hodnôt a štyri kódové kroky: (1) ponuka a portfólio v dvoch stĺpcoch, (2) pružná plocha fotky karty (kontext '
                '`FeedDetailSplitContext`, bez zásahu do `FeedPostCard.tsx`), (3) užšie okno len s textom (576 px, aj kostra a chyba), '
-               'potom manuál ručných testov. Prototyp agenta (kópia mimo repozitára) overil: 4 produkčné súbory a jeden nový, 4 nové '
-               'súbory testov (66 testov), 31 zásahov z 31 zachytených, 4 existujúce testy sa menia (R27), celý Jest, `tsc` a ESLint '
-               'čisté, scény, ktoré sa nemajú zmeniť, sú v Chromiu pixel po pixeli rovnaké. Po nasadení kontrola rozloženia od Codexu a '
+               '(4) oprava komentárov v jednostĺpcovom okne (nález 363, R69), potom manuál ručných testov. Prototyp agenta (kópia mimo '
+               'repozitára) overil: 6 produkčných súborov a jeden nový, 7 nových súborov testov (83 testov), 51 zásahov z 51 '
+               'zachytených, 4 existujúce testy sa menia (R27), celý Jest, `tsc` a ESLint čisté, scény, ktoré sa nemajú zmeniť, sú v '
+               'Chromiu pixel po pixeli rovnaké. Po nasadení kontrola rozloženia od Codexu a '
                'ručný test majiteľa v prehliadači (výška, šírka a posun sa overia len tam). Predbežné mapovanie kolegu je v K45 '
                '(`karty/K45_vysledok.md`).'),
+    dict(n='363', davka='K57',
+         co='Okno detailu príspevku len s textom (aj repost textu) na počítači: pri štyroch a viac komentároch sa zoznam komentárov '
+            'neposúva a pole „Napíš komentár“ vypadne pod okno (oprava ako krok 4 dávky K57).',
+         preco='JASNÉ (zistil agent 23. 11. 2026 pri obrázkoch okna, existuje už dnes; majiteľ podľa R69 (1a) rozhodol, že ide ako krok 4 '
+               'dávky K57 (karta `karty/K57.md`, podklady `karty/K57_podklady.md`): nová vlastnosť `flexFill` komponentu '
+               '`FeedPostComments`, pevný blok `shrink-0` so stropom poistky `calc(95vh-11rem)` a flex stĺpec v sekcii komentárov; '
+               'dvojstĺpcové okno, mobilný detail a panel nad fotkou sa nemenia. Prototyp agenta: 17 nových testov, 20 zásahov z 20 '
+               'zachytených, existujúce testy bez úpravy; schválený vzhľad v `navrhy/pc-okno-dlhy-text-*-schvalene.png`).'),
     dict(n='261', davka='K44',
          co='Nástenka: redizajn komentárov (skupina 7, vzhľad schválený v R52): plochý vzhľad bez sivých bublín, '
             'bublinka s lajkom, odpovede so zvislou čiarou; pri ňom sa rieši aj pole na text pri odpovedi na '
@@ -177,6 +186,12 @@ FRONTA = [
          preco='JASNÉ (ručný test majiteľa po K53; riadok pôvodného autora v `SharedContentPreviewCard.tsx` nie je ovládací '
                'prvok, feed API ale posiela vlastníka s `id` a `slug`; K55 je zlúčená a dočasný odtlačok HTML je zmazaný, takže ju '
                'nič nebrzdí; ide po redizajne spolu s 357 až 361, lebo sa dotýka toho istého náhľadu).'),
+    dict(n='364', davka='po redizajne',
+         co='Okno detailu len s textom na počítači: rozbalený dlhý text („Menej“) má strop štvrtinu výšky obrazovky, takže pod 800 px '
+            'ukáže menej riadkov než zbalený.',
+         preco='NEJASNÉ (najprv návrh vzhľadu s možnosťami a odporúčaním, R49; kód nemeň; majiteľ podľa R69 (2a) rozhodol správanie '
+               'nemeniť a zapísať ho; rieši sa s redizajnom komentárov (261, R59), kde sa rozhodne o rovnováhe medzi textom a '
+               'komentármi v malých oknách).'),
     dict(n='176', davka='K32',
          co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
          preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '
