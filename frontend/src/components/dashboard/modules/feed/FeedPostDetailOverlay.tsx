@@ -7,12 +7,14 @@
  * neodmountuje: appka sa nenaviguje, len sa navrch vykreslí portál. Po zavretí
  * je teda používateľ presne tam, kde bol, vrátane pozície scrollu.
  *
- * Rozloženie má dva tvary podľa toho, či príspevok má fotku:
+ * Rozloženie má dva tvary podľa toho, čo je v príspevku hlavný obsah:
  *
- *  - S FOTKOU: dva stĺpce vedľa seba (`FeedPostDetailSplitLayout`) – vľavo
- *    hlavička, text, fotka a akcie, vpravo výhradne komentáre.
- *  - BEZ FOTKY: pôvodné jednostĺpcové rozloženie – pevný blok (hlavička, text,
- *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor.
+ *  - S FOTKOU, PONUKOU ALEBO PORTFÓLIOM: dva stĺpce vedľa seba
+ *    (`FeedPostDetailSplitLayout`) – vľavo hlavička, text, fotka alebo karta
+ *    a akcie, vpravo výhradne komentáre.
+ *  - BEZ NICH (text, repost textového príspevku): pôvodné jednostĺpcové
+ *    rozloženie – pevný blok (hlavička, text, akcie) sa nikdy nescrolluje
+ *    a komentáre dostanú všetok zvyšný priestor.
  *    Robí to `flex` stĺpec s `min-h-0` na komentárovej časti – bez toho by ju
  *    obsah roztiahol a okno by prerástlo obrazovku (flex položka má
  *    predvolene `min-height: auto`).
@@ -34,6 +36,7 @@ import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
 import FeedPostDetailSplitLayout, {
   hasVisibleFeedPhoto,
+  sharesOfferOrPortfolio,
 } from './FeedPostDetailSplitLayout';
 import { sharedFeedPostPhoto } from './feedImageSources';
 import { useFeedDialog } from './useFeedDialog';
@@ -195,7 +198,7 @@ export default function FeedPostDetailOverlay({
   /**
    * Dvojstĺpcové rozloženie potrebuje DVE veci naraz:
    *
-   *  - fotku (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
+   *  - fotku alebo kartu ponuky či portfólia (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
    *  - a dosť širokú obrazovku, inak by z dvoch stĺpcov ostali dva nepoužiteľne
    *    úzke pruhy.
    *
@@ -205,8 +208,7 @@ export default function FeedPostDetailOverlay({
    * nová konštanta. Otvorené okno sa pri zúžení prehliadača nezatvára, takže
    * bez tejto podmienky by sa dva stĺpce udržali aj hlboko pod ňou.
    *
-   * Pod hranicou platí presne to, čo dnes platí pre text-only príspevky:
-   * pôvodné jednostĺpcové rozloženie.
+   * Pod hranicou platí pôvodné jednostĺpcové rozloženie.
    */
   const isMobile = useIsMobile();
   /**
@@ -219,7 +221,9 @@ export default function FeedPostDetailOverlay({
    */
   const hasPhoto =
     hasVisibleFeedPhoto(liveImages) || sharedFeedPostPhoto(post) !== null;
-  const splitLayout = hasPhoto && !isMobile;
+  /** Zdieľaná ponuka alebo portfólio: karta je hlavný obsah okna ako fotka (R53). */
+  const sharesCard = sharesOfferOrPortfolio(post);
+  const splitLayout = (hasPhoto || sharesCard) && !isMobile;
   /**
    * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?
    *

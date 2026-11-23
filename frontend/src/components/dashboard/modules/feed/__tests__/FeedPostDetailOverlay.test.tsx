@@ -64,9 +64,11 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+let mockIsMobile = false;
+
 jest.mock('@/hooks', () => ({
-  useIsMobile: () => false,
-  useIsMobileState: () => ({ isMobile: false, isResolved: true }),
+  useIsMobile: () => mockIsMobile,
+  useIsMobileState: () => ({ isMobile: mockIsMobile, isResolved: true }),
 }));
 
 jest.mock('../../shared/useProtectedImage', () => ({
@@ -206,6 +208,7 @@ function stubCaptionHeights() {
 }
 
 afterEach(() => {
+  mockIsMobile = false;
   // Výšky sú nastavené na prototype – bez upratania by pretiekli inam.
   Reflect.deleteProperty(HTMLParagraphElement.prototype, 'clientHeight');
   Reflect.deleteProperty(HTMLParagraphElement.prototype, 'scrollHeight');
@@ -271,6 +274,8 @@ describe('zdielany obsah v jednostlpcovom okne', () => {
   }
 
   it('pins the header and actions when the shared offer HAS a photo', async () => {
+    // Jednostĺpcové okno s ponukou je od nálezu 344 len pod 1 024 px (inak sú dva stĺpce).
+    mockIsMobile = true;
     await renderLoadedOverlay(sharedOfferPost());
 
     const { fixed, header, shared } = expectHeaderPinned();
@@ -281,6 +286,7 @@ describe('zdielany obsah v jednostlpcovom okne', () => {
   it('pins them the same way when the shared offer has NO photo', async () => {
     // Prave tento rozdiel bol chybou: s fotkou sa horna cast hybala, bez nej
     // stala. Rozlozenie sa o fotku nesmie opierat vobec.
+    mockIsMobile = true;
     await renderLoadedOverlay(sharedOfferPost({ thumbnail_url: null }));
 
     expectHeaderPinned();

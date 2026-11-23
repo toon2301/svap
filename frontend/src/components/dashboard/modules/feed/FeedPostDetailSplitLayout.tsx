@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Dvojstĺpcové rozloženie okna detailu – VÝHRADNE pre príspevok s fotkou.
+ * Dvojstĺpcové rozloženie okna detailu – pre príspevok s fotkou a pre zdieľanú ponuku alebo portfólio (R53).
  *
- * Text-only príspevok ostáva na pôvodnom jednostĺpcovom rozložení priamo vo
- * `FeedPostDetailOverlay`: bez fotky by pravý stĺpec nemal čo vyvážiť a
- * v ľavom by nebolo nič pružné, čo by pohltilo zvyšok výšky.
+ * Text-only príspevok (aj repost textového príspevku) ostáva na pôvodnom jednostĺpcovom rozložení priamo vo
+ * `FeedPostDetailOverlay`: bez fotky ani karty by pravý stĺpec nemal čo vyvážiť a v ľavom by nebolo nič
+ * pružné, čo by pohltilo zvyšok výšky. Pri ponuke a portfóliu je pružný zdieľaný blok s kartou.
  *
  *   ĽAVÝ (56 %)                      PRAVÝ (44 %)
  *   ─────────────────────────        ─────────────────────
@@ -60,12 +60,24 @@ import FeedPostComments from './FeedPostComments';
  * zamietnuť aj počas otvoreného okna a rozloženie sa vtedy musí prepnúť samo.
  * Zoznam preto vedie `usePendingFeedImages` v okne, nie snímka z načítania.
  *
- * Backend posiela `images` len pri `free_post` – zdieľané príspevky sem teda
- * nikdy nespadnú a ich poradie „text nad náhľadom" ostáva na jednostĺpcovom
- * rozložení nezmenené.
+ * Backend posiela `images` len pri `free_post`, takže zdieľané príspevky tu nikdy nepatria: ich rozloženie
+ * určuje `sharesOfferOrPortfolio` (ponuka, portfólio) a fotka repostovaného príspevku (`sharedFeedPostPhoto`).
  */
 export function hasVisibleFeedPhoto(images: FeedPostImage[] | undefined): boolean {
   return (images ?? []).some((image) => image.status !== 'rejected');
+}
+
+/**
+ * Zdieľa príspevok ponuku alebo portfólio?
+ *
+ * Takýto príspevok nemá vlastné `images`, no karta ponuky alebo portfólia je plnohodnotný obsah okna, takže
+ * patrí do dvojstĺpcového rozloženia rovnako ako fotka (R53). Rozhoduje typ v snapshote, nie živý zdroj:
+ * ponuka alebo portfólio, ktoré medzitým zmizli, majú snapshot s typom a ostávajú v tom istom rozložení
+ * (karta je len stlmená). Zdieľaný príspevok a voľný príspevok bez fotky sem nepatria.
+ */
+export function sharesOfferOrPortfolio(post: FeedPost | null | undefined): boolean {
+  const type = post?.shared_content?.type;
+  return type === 'offer' || type === 'portfolio_item';
 }
 
 type FeedPostDetailSplitLayoutProps = {
