@@ -1418,7 +1418,7 @@ describe('kostra a chyba pri načítaní sú v úzkom okne', () => {
 
 ## 3. Úprava existujúcich testov (R27, `FeedPostDetailOverlay.test.tsx` 797 riadkov)
 
-Padajú presne štyri existujúce testy, všetky v tomto súbore (celý Jest pri samotnej zmene kódu, ešte bez nových testov: 637 sád a 9 497 testov, z toho 4 zlyhania; piate zlyhanie v prvom behu prototypu, `countryRegistry.test.ts`, bolo len v kópii bez priečinka `backend`). Tri úpravy ku kroku 1 (ponuka v jednostĺpcovom okne je od neho len pod 1 024 px) a dve ku kroku 3 (šírka podľa obsahu). Súbor má po úprave 803 riadkov (+17, −11).
+Padajú presne štyri existujúce testy, všetky v tomto súbore (celý Jest pri samotnej zmene kódu, ešte bez nových testov: 637 sád a 9 497 testov, z toho 4 zlyhania; piate zlyhanie v prvom behu prototypu, `countryRegistry.test.ts`, bolo len v kópii bez priečinka `backend`). Štyri úpravy ku kroku 1 (mock, `afterEach` a dva testy: ponuka v jednostĺpcovom okne je od neho len pod 1 024 px) a dve ku kroku 3 (dva testy o šírke podľa obsahu). Súbor má po úprave 803 riadkov (+17, −11).
 
 ```diff
 diff --git a/frontend/src/components/dashboard/modules/feed/__tests__/FeedPostDetailOverlay.test.tsx b/frontend/src/components/dashboard/modules/feed/__tests__/FeedPostDetailOverlay.test.tsx
