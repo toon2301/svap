@@ -12,8 +12,8 @@
  * Vracia fragment, takže všetky vrstvy ostávajú PRIAMYMI potomkami koreňa karty (`motion.article`) na rovnakom mieste
  * (za vloženými komentármi) a v DOM nepribudne žiadny obal.
  *
- * Okno zdieľania dostáva `post`, nie `currentPost` (nález 355): po úprave vlastného príspevku preto ešte ukáže starý
- * text. Presun to nemení, opraví sa to samostatne (K56).
+ * Okno zdieľania dostáva `currentPost`, takže po úprave vlastného príspevku ukáže nový text (nález 355); `post` z feedu
+ * berú len zoznam lajkujúcich a nahlásenie kvôli `post.id`.
  */
 
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
@@ -28,7 +28,7 @@ import type { FeedPost } from '@/lib/feedApi';
 import type { FeedPostCardProps } from './FeedPostCard.types';
 
 type FeedPostCardLayersProps = {
-  // Príspevok z feedu (nie `currentPost`): `post.id` berú zoznam lajkujúcich a nahlásenie, celý objekt okno zdieľania.
+  // Príspevok z feedu: `post.id` berú zoznam lajkujúcich a nahlásenie (okno zdieľania dostáva `currentPost`).
   post: FeedPost;
   // Fotoprehliadač pôvodného príspevku (fotka v reposte).
   sharedPhotoOpen: boolean;
@@ -196,7 +196,7 @@ export default function FeedPostCardLayers({
       <FeedPostShareModal
         open={shareOpen}
         onClose={() => setShareOpen(false)}
-        post={post}
+        post={currentPost}
         onShared={onShared}
       />
     </>
