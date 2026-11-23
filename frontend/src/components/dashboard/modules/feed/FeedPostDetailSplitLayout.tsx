@@ -49,6 +49,7 @@ import type { FeedPost, FeedPostImage } from '@/lib/feedApi';
 import { FeedDetailSplitProvider } from './FeedDetailSplitContext';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
+import type { FeedCommentDraft } from './FeedPostComments.types';
 
 /**
  * Je čo ukázať v médiovej ploche?
@@ -94,6 +95,8 @@ type FeedPostDetailSplitLayoutProps = {
   onPostUpdated: (post: FeedPost) => void;
   onCommentsCountChange: (delta: number) => void;
   onCommentsTotalChange: (total: number) => void;
+  /** Rozpracovaný komentár drží okno: pri prepnutí rozloženia sa komentáre odmountujú (viď `draft`). */
+  commentDraft?: FeedCommentDraft;
 };
 
 export default function FeedPostDetailSplitLayout({
@@ -105,6 +108,7 @@ export default function FeedPostDetailSplitLayout({
   onPostUpdated,
   onCommentsCountChange,
   onCommentsTotalChange,
+  commentDraft,
 }: FeedPostDetailSplitLayoutProps) {
   const { t } = useLanguage();
 
@@ -150,6 +154,7 @@ export default function FeedPostDetailSplitLayout({
             postId={post.id}
             highlightCommentId={highlightCommentId}
             fillHeight
+            draft={commentDraft}
             onCountChange={onCommentsCountChange}
             onTotalChange={onCommentsTotalChange}
           />

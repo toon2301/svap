@@ -44,6 +44,7 @@ import { sharedFeedPostPhoto } from './feedImageSources';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
+import { useFeedCommentDraft } from './useFeedCommentDraft';
 import { handleGoneFeedPost } from './feedPostGone';
 import { onFeedPostDeleted } from './feedPostDeletedEvents';
 import {
@@ -77,6 +78,9 @@ export default function FeedPostDetailOverlay({
     changeCommentsCount,
     countVersionRef,
   } = useFeedPostCommentsCount(postId, 0);
+  // Rozpracovaný komentár drží okno: pri prepnutí rozloženia (dva stĺpce ⇄ jeden) sa komentáre odmountujú a ich
+  // vlastný text by sa stratil (viď `useFeedCommentDraft`).
+  const commentDraft = useFeedCommentDraft(postId);
 
   // Fokus, Tab trap aj Escape rieši spoločný hook feed dialógov – vrátane
   // poradia vrstiev, takže Escape nad otvoreným prehliadačom fotky (alebo nad
@@ -332,6 +336,7 @@ export default function FeedPostDetailOverlay({
                 changeCommentsCount(delta)
               }
               onCommentsTotalChange={publishCommentsCount}
+              commentDraft={commentDraft}
             />
           ) : (
           <>
@@ -398,6 +403,7 @@ export default function FeedPostDetailOverlay({
                 highlightCommentId={highlightCommentId}
                 fillHeight
                 flexFill
+                draft={commentDraft}
                 onCountChange={(delta) =>
                   changeCommentsCount(delta)
                 }

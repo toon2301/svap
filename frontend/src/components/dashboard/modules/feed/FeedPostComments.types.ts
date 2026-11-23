@@ -8,6 +8,12 @@
 
 import type { ReactNode } from 'react';
 
+/** Text rozpracovaného komentára, ktorý namiesto komponentu drží jeho rodič (viď `draft`). */
+export type FeedCommentDraft = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
 export type FeedPostCommentsProps = {
   /**
    * Sekcia vyplní výšku rodiča namiesto vlastného stropu.
@@ -26,6 +32,14 @@ export type FeedPostCommentsProps = {
    * Ostatné miesta (dvojstĺpcové okno, mobilný detail, panel nad fotkou) majú výšku pevnú a ostávajú pri `h-full`.
    */
   flexFill?: boolean;
+  /**
+   * Text rozpracovaného komentára drží rodič, nie komponent.
+   *
+   * Okno detailu na počítači prepína rozloženie (dva stĺpce / jeden stĺpec) pri prechode cez 1 024 px aj pri zmene
+   * fotiek a pri prepnutí komentáre odmountuje, takže ich vlastný stav textu by sa stratil. Bez vlastnosti (karta,
+   * mobilný detail, panel nad fotkou) si text drží komponent sám.
+   */
+  draft?: FeedCommentDraft;
   /**
    * Ukázať čas pri komentári.
    *

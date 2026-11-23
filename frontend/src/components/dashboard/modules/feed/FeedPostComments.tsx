@@ -56,6 +56,7 @@ export default function FeedPostComments({
   postId,
   fillHeight = false,
   flexFill = false,
+  draft,
   showTimestamp = false,
   compactComposer = false,
   listHeader,
@@ -69,7 +70,10 @@ export default function FeedPostComments({
   // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
   const isMobile = useIsMobile();
   const [submitting, setSubmitting] = useState(false);
-  const [text, setText] = useState('');
+  const [ownText, setOwnText] = useState('');
+  // Text drží rodič, ak o to požiada (`draft`): odmountovanie komentárov pri prepnutí rozloženia okna ho nestratí.
+  const text = draft ? draft.value : ownText;
+  const setText: (value: string) => void = draft ? draft.onChange : setOwnText;
   // Okno detailu vie o sebe cez kontext – komentáre sa v ňom vykresľujú tiež,
   // takže ho vedia zavrieť rovnako ako hlavička príspevku.
   const postOverlay = useFeedPostOverlay();
