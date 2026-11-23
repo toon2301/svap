@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od PR #297 (19. 11. 2026): `DONE_SINCE_K40` (zatiaľ dávka K43: 342 a 351).
+"""Nálezy opravené od PR #297 (19. 11. 2026): `DONE_SINCE_K40` (342 a 351 v K43, 341 v K31 a 333 v K55).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_k20.py` má 481 riadkov); `hotove.py` ich pripája do `DONE_SINCE`. Opravený
 nález sa odstráni z `NEW_ITEMS` a pridá sa sem: dict(n=…, vetva='K43', pr='#298', zlucene=True, text='HOTOVÉ …').
@@ -106,6 +106,69 @@ DONE_SINCE_K40 = [
               '(`sablony/dymovy_test.md` aj bod 8) a dym `@smoke` od Codexu. '
               'Dopad na E2E: DOM ani `data-testid` sa nemenia, framework sa mení pre celú aplikáciu. Kandidát z K31: '
               'nález 354.'),
+    dict(n=333, vetva='K55', pr='#319', zlucene=True,
+         text='HOTOVÉ (poslednou dávkou K55, PR #319, zlúčené 23. 11. 2026 o 06:19 UTC, merge `46eb8d0b`; delenie išlo v dávkach K28 až '
+              'K55). VÝSLEDOK: všetky tri súbory nad 500 riadkov sú rozdelené čistými presunmi bez zmeny správania, vzhľadu a '
+              '`data-testid` (R23): `FeedPostComments.tsx` 1 487 → 401 riadkov (K28 až K43), `FeedPostCard.tsx` 1 033 → 493 (K50 až '
+              'K54) a `FeedPostMobileDetail.tsx` 594 → 358 (K55); každý nový súbor je pod 500 riadkov. Výnimka z pravidla 500 '
+              'riadkov platila len pre tieto presuny (R23). '
+              'KOMENTÁRE: mapovanie K26 (kolega, 16. 11. 2026, `karty/K26_vysledok.md`: z 39 skúšobných pokazení existujúce testy '
+              'zachytili 13; plán v deviatich krokoch 0 až 8; rozhodnutia R45 až R49) a päť dávok: K28 (PR #278, 17. 11.: len testy a '
+              'dočasný odtlačok HTML s desiatimi stavmi), K29 (PR #283, 18. 11.: kroky 1 až 3, `feedCommentsLogic.ts` 178, '
+              '`FeedCommentItem.tsx` 206, `FeedCommentComposer.tsx` 135, `FeedCommentsNewIndicator.tsx` 70 a '
+              '`FeedCommentsLoadingMore.tsx` 25; 1 487 → 1 098), K37 (PR #289, 18. 11.: krok 4, `useFeedCommentsSeek.ts` 287; → 884), '
+              'K38 (PR #291, 18. 11.: kroky 5 a 6, `useFeedCommentsScroll.ts` 82 a `useFeedCommentsLoader.ts` 349; → 573) a K42 '
+              '(PR #297, 19. 11.: kroky 7 a 8, `useFeedCommentMutations.ts` 226 a `FeedPostComments.types.ts` 68; → 396 a zmazanie '
+              'odtlačku; po K43 401). Z mapovaní a ručných testov komentárov vznikli nálezy 338, 341, 342, 345, 346, 351 a 353; '
+              'okrem 353 sú všetky hotové. '
+              'KARTA A MOBILNÝ DETAIL: dvojité mapovanie K46 (kolega aj agent nezávisle, 21. 11. 2026; R65 (a); porovnanie '
+              '`karty/K46_porovnanie.md`; z neho nálezy 355 a 356 a postup K48 až K56, R66 (a)). Ochrana testami bez zmeny kódu: K48 '
+              '(PR #306, 21. 11.: deväť súborov testov správania so 60 testami, dočasný odtlačok HTML karty so 44 stavmi a dočasná '
+              'sonda poradia efektov s 24 stavmi) a K49 (PR #307, 21. 11.: šesť súborov testov správania so 42 testami a dočasný '
+              'odtlačok mobilného detailu s piatimi stavmi). Presuny: K50 (PR #309, 21. 11.: `FeedPostActionButton.tsx` 94, '
+              '`FeedPostCard.types.ts` 58 a `FeedPostActions.tsx` 121; 1 033 → 852), K51 (PR #311, 22. 11.: `FeedPostSharedBlock.tsx` '
+              '163; → 774), K52 (PR #313, 22. 11.: `FeedPostCardLayers.tsx` 204 a `useFeedPostCardLayers.ts` 51; → 722), K53 (PR #315, '
+              '22. 11.: `FeedPostCardHeader.tsx` 211; → 590), K54 (PR #317, 22. 11. o 19:06 UTC, merge `fb43add0`: tri hooky '
+              '`useFeedPostCardActions.ts` 94, `useFeedPostCounts.ts` 79 a `useFeedPostMobileLayers.ts` 60 v troch etapách, karta '
+              '590 → 549 → 515 → 493) a K55 (`FeedPostMobileDetailContent.tsx` 225 a `FeedPostMobileDetailHeader.tsx` 172, '
+              '`FeedPostMobileDetail.tsx` 594 → 464 → 358, potom zmazanie šiestich dočasných súborov s 73 testami a 73 snapshotmi a '
+              'úprava jednej vety komentára). Pri každom presune kolega poskladal pôvodný súbor späť z nových bajt po bajte; celý Jest '
+              'mal pred každým presunom aj po ňom 638 sád, 9 561 testov a 73 snapshotov (ochrana z K48 a K49 bez zmeny), `tsc`, '
+              'ESLint, preklady a build boli čisté; po zmazaní 635 sád, 9 488 testov a 0 snapshotov (v repozitári už nie je žiadny '
+              'súbor `.snap`). Z ručných testov majiteľa vznikli nálezy 357 až 360 (K51) a 361 a 362 (K53); ručné testy K54 aj K55 '
+              '(22. a 23. 11. 2026) prešli bez nových nálezov. '
+              'KONTROLA AGENTA K54 a K55 (23. 11. 2026, z GitHubu a v kópii `frontend` mimo repozitára zo zlúčeného `main`): '
+              'obe PR majú CI (`checks`, `backend-postgres`) aj CodeRabbit zelené (CodeRabbit spustil majiteľ príkazom pred zlúčením; '
+              'bez pripomienok, riziko „Minimal“, len kozmetické hlásenie o názve PR „K54“ a „K55“), Codex bez väčších problémov, '
+              'vlákna ani recenzie nie sú, prvé riadky commitov majú najviac 72 znakov; K54 má 4 commity (`800c91d6`, `1e6fab10`, '
+              '`f1deacb7` a manuál `f37f501a`), 5 súborov, +265 a −127 riadkov; K55 má 4 commity (`afca350a`, `6b15e283`, `2f501c7b` '
+              'a manuál `65c56c18`), 11 súborov, +438 a −8 452 riadkov (šesť zmazaných súborov a jedna veta komentára, nič iné v '
+              'testoch). Čisté presuny z git objektov po etapách: všetky odstránené neprázdne riadky karty a mobilného detailu sú v '
+              'nových súboroch; ako „chýbajúce“ vyšli len rámce viacriadkových importov, ktoré sa zúžili na jednoriadkové (K54, etapa '
+              '1: osem riadkov) a komentár hlavičky `{/* PEVNÁ hlavička – nescrolluje s obsahom. */}`, ktorý je v novom súbore '
+              'obyčajný komentár `//` (K55, presun 2, ako píše karta); všetko ostatné v nových súboroch je obal (JSDoc, importy, typ '
+              'vlastností, deštrukturovanie a `return`). Zlúčené súbory sa od agentových prototypov líšia len komentármi, názvami '
+              'typov, poradím importov a prázdnymi riadkami; spustiteľný kód je rovnaký. `tsc` a ESLint s `--max-warnings=0` čisté '
+              'nad desiatimi súbormi Nástenky; celý Jest 635 sád, 9 488 testov a 0 snapshotov prešiel (presne ako udáva kolega). '
+              'PARITNÉ ZÁSAHY K54 na zlúčenom kóde (48 zásahov: D1 až D14, E1a až E7e a R1 až R9 z `karty/K54.md` a dva na poradie volania hookov; '
+              'jeden naraz proti 95 súvisiacim sadám Nástenky bez dočasných odtlačkov a sondy): zachytených 41; prežili D1, D8, R3b, R4 a R5 (rovnako '
+              'ako pred delením) a P1 a P2 (volanie hooku vrstiev alebo pollingu pred E1), ktoré predtým zachytávala sonda poradia efektov; všetkých 22 '
+              'zásahov do efektov E1 až E7 ostalo zachytených aj bez nej (sady `feedSync`, `layersClose` a `FeedMobileOpenState`), takže po zmazaní '
+              'sondy nestráži nič len poradie volania hookov. '
+              'PARITNÉ ZÁSAHY K55 na zlúčenom kóde (34 zásahov: MD1 až MD13 z K49 a 21 doplňujúcich na obsah a hlavičku; jeden naraz proti 20 sadám '
+              'mobilného detailu a prežívajúce potom proti všetkým 95 súvisiacim sadám): zachytených 31; prežili MD1 (ochrana `if (deleting) return;` '
+              'pred dvojitým volaním zmazania je z rozhrania nepozorovateľná), C14 (aktívne srdiečko bez farby, len trieda CSS) a H7 (čas v hlavičke '
+              'sa nezobrazí), žiadnu z 95 sád; C14 a H7 sú práve tie dva vzhľadové zásahy, o ktorých karta K55 písala, že po zmazaní odtlačku ostanú '
+              'bez ochrany. '
+              'ČO PO ZMAZANÍ NESTRÁŽI NIČ (poznámka pre redizajn): DOM karty a mobilného detailu už nestráži odtlačok HTML, len '
+              'testy správania. Kolega pri zmazaní zmeral, že z 106 zásahov prežije 17: pri obrazovke detailu farba aktívneho '
+              'srdiečka (len trieda CSS), výplň srdiečka, `alt` fotky, popiska tlačidla zdieľania, čas a meno autora v hlavičke, '
+              'meno v avatare, popiska tlačidla „X“, dodatočný `div` okolo hlavičky alebo obsahu nad komentármi a obsah s kľúčmi '
+              'prekladov namiesto textov, plus ekvivalenty a medzery z presunov. Pre redizajn to nie je chyba, len upozornenie: '
+              'vzhľadovú zmenu týchto miest nezachytí žiaden test, a treba ju preto overiť ručne a v E2E od Codexu. Zo zásahov do '
+              'karty a jej hookov prežívajú aj naďalej D1 a D8 (ochrana pred dvojitým volaním zmazania a odstránenia označenia, pri vypnutom '
+              'tlačidle nepozorovateľné), R3b (ekvivalent) a R4 a R5 (hook lajku počúva udalosť počtov) a X4 (stabilita `onClose` v '
+              'hlavičke, K53). Ostáva K56 (opravy 355 a 356; `karty/K56.md`) a potom redizajn (261, 344). Dopad na E2E: žiadny.'),
 ]
 
 # Zlúčené PR, v ktorých nie je hotový celý nález (len časť otvoreného nálezu alebo nález nemá číslo); `hotove.py` ich pripája do
@@ -135,4 +198,7 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
      'odrážkami v manuáli ručných testov)'),
     ('#315', 'K53', '333 (dávka 4 delenia `FeedPostCard.tsx`, krok e: hlavička karty s menu „…“ a stav menu do `FeedPostCardHeader.tsx`; '
      'karta 722 → 590 riadkov; spolu s odrážkami v manuáli ručných testov; z ručného testu vznikli nálezy 361 a 362)'),
+    ('#317', 'K54', '333 (dávka 5 delenia `FeedPostCard.tsx`, krok f: obsluhy, počty s pollingom a mobilné vrstvy s efektmi E6 a E7 do '
+     '`useFeedPostCardActions.ts`, `useFeedPostCounts.ts` a `useFeedPostMobileLayers.ts`; karta 590 → 493 riadkov, teda pod '
+     'limitom 500; spolu s odrážkami v manuáli ručných testov; ručný test majiteľa bez nových nálezov; ostáva mobilný detail v K55)'),
 ]
