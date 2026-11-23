@@ -18,6 +18,19 @@ from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
     ('23. 11. 2026',
+      'Doplnok 3 vetvy 200 (PR #322 je ešte otvorené; `main` ostáva `a9e70eef`). (1) Kontrola PR #322 na hlave `f4a46587` '
+      '(23. 11. 2026): CI (`checks`, `backend-postgres`) zelené, Codex bez nálezov, CodeRabbit dve pripomienky (obe Minor, obe '
+      'platné, opravené v commite s týmto záznamom): (a) `README.md:105` (mimo zmeneného rozsahu): tabuľka „Kto čo robí“ uvádzala '
+      'v riadku Agent medzi výnimkami z mapovania kolegom len nález HNEĎ a dvojité mapovanie K46, hoci pravidlo vyššie (riadok '
+      '80) aj R64 a R67 určujú, že redizajn komentárov (261) a okna príspevkov na počítači (344) po schválení vzhľadu mapuje '
+      'agent a kód píše kolega podľa jeho karty; výnimka je doplnená aj do tabuľky; (b) `karty/K57.md:82`: ručný test po '
+      'nasadení (bod 6) vyžadoval, aby malo okno pevnú výšku, no jednostĺpcové okno má len strop `max-h-[95vh]` (pevnú výšku '
+      '`h-[95vh]` má len dvojstĺpcové okno), takže pri krátkom texte a štyroch krátkych komentároch by správna implementácia '
+      'kritérium nesplnila; požiadavka je teraz „okno neprekročí 95 % výšky obrazovky“. Rovnaká nepresnosť bola v úvode merania '
+      'v podkladoch (`karty/K57_podklady.md`, časť 4: „Okno je `h-[95vh]`“), ktorú pripomienka nespomínala; opravená tiež. '
+      'Vlákno k pripomienke (b) zatvára majiteľ. (2) Prehľad sa nemení: nálezy 1–364, zatvorené 14, hotové 145, PRED 53, PO 132; '
+      'čakajúcich rozhodnutí 9 z 69. Dopad na E2E: žiadny.'),
+    ('23. 11. 2026',
       'Doplnok 2 vetvy 200 (PR #322 je ešte otvorené; `main` ostáva `a9e70eef`). (1) Obrázky k oknu detailu s dlhým textom a veľa '
       'komentármi (na žiadosť majiteľa 23. 11. 2026): agent vykreslil zo skutočného kódu v Chromiu (vymyslené údaje, svetlý režim) '
       'príspevok len s textom s 15 riadkami a 14 komentármi: zbalený („Viac“), rozbalený („Menej“) a rozbalený s textom posunutým na '

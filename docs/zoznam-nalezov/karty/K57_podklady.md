@@ -2327,7 +2327,7 @@ diff --git a/frontend/src/components/dashboard/modules/feed/__tests__/FeedPostDe
 
 ## 4. Merania v prehliadači (Chromium, prototyp proti `main`)
 
-Skutočné okno `FeedPostDetailOverlay` s vymyslenými údajmi sa vykreslilo cez Jest (jsdom) do HTML, k nemu sa zbalili štýly aplikácie (Tailwind z `globals.css`) a v Chromiu sa zmeralo a odfotilo. Zástupné údaje, žiadne osobné údaje ani odpovede servera. Okno je `h-[95vh]`, preto sa výšky menia s obrazovkou.
+Skutočné okno `FeedPostDetailOverlay` s vymyslenými údajmi sa vykreslilo cez Jest (jsdom) do HTML, k nemu sa zbalili štýly aplikácie (Tailwind z `globals.css`) a v Chromiu sa zmeralo a odfotilo. Zástupné údaje, žiadne osobné údaje ani odpovede servera. Dvojstĺpcové okno je `h-[95vh]` a jednostĺpcové má len strop `max-h-[95vh]`, preto sa výšky menia s obrazovkou.
 
 ### 4.1 Okno pri výške obrazovky 800 px (šírka 1 440 px): `main` → prototyp
 
