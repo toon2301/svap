@@ -457,11 +457,6 @@ from polozky_nove_223 import NEW_ITEMS_223  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_223)
 
-# Nálezy od 355 (chyby nájdené pri dvojitom mapovaní delenia karty, K46) sú v `polozky_nove_k46.py`.
-from polozky_nove_k46 import NEW_ITEMS_K46  # noqa: E402
-
-NEW_ITEMS.extend(NEW_ITEMS_K46)
-
 # Nálezy od 357 (ručný test majiteľa po K51) sú v `polozky_nove_k51.py`.
 from polozky_nove_k51 import NEW_ITEMS_K51  # noqa: E402
 
@@ -471,3 +466,8 @@ NEW_ITEMS.extend(NEW_ITEMS_K51)
 from polozky_nove_k53 import NEW_ITEMS_K53  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K53)
+
+# Nálezy od 363 (obrázky agenta k oknu detailu, R69) sú v `polozky_nove_k57.py`.
+from polozky_nove_k57 import NEW_ITEMS_K57  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_K57)

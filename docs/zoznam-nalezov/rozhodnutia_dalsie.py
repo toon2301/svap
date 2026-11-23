@@ -390,7 +390,7 @@ DECISIONS_DALSIE = [
                 'je veľký). (c) Všetko až po delení `FeedPostCard.tsx` (K46). Súvisí s R65 (delenie `FeedPostCard.tsx` '
                 'pred redizajnom): R65 (a) majiteľ schválil 21. 11. 2026, z tohto bodu teda ostáva možnosť (c). (4) Šírka '
                 'úzkeho okna: (a) 576 px '
-                '(štandardná hodnota `max-w-xl`), (b) presne 580 px. (5) Poradie: (a) 344 (nová dávka K47) pred '
+                '(štandardná hodnota `max-w-xl`), (b) presne 580 px. (5) Poradie: (a) 344 (nová dávka K57) pred '
                 'redizajnom komentárov (K44), (b) K44 pred 344, (c) obe v jednej dávke.',
          odporucanie='(1a), (2a), (3c), (4a) a (5a). (1a): žiadny nový vizuálny prvok a najčastejší textový '
                      'príspevok sa nehýbe; druh príspevku vopred vedela povedať až karta vo feede, na čo by sa '
@@ -404,7 +404,15 @@ DECISIONS_DALSIE = [
                      'skúša vzhľad len v dvoch šírkach (okolo 380 a 576 px), nie ešte aj v starých 864 px, a 344 '
                      'nečaká na podrobnosti k poľu pri odpovedi. (5c) by miešala dve vzhľadové zmeny v jednom '
                      'nasadení a sťažila by hľadanie príčiny, keby niečo vyzeralo zle.',
-         kedy='Pri rekapitulácii s vizuálnym návrhom po kroku kolegu (majiteľ 20. 11. 2026: najprv rekapitulácia a vizuál s odporúčaním, až potom rozhodnutie); karta pre kolegu sa nepíše, mapovanie a implementáciu robí agent (R64).'),
+         kedy='Rozhodnuté 23. 11. 2026.',
+         odpoved='Majiteľ 23. 11. 2026: podľa odporúčaní agenta (po otázkach z 23. 11. 2026 a obrázkoch z prototypu): (1a) kostra pri '
+                 'načítaní a chybové okno sú úzke (576 px): textový príspevok sa po načítaní nehýbe, príspevok s fotkou, ponukou '
+                 'a portfóliom sa rozšíri na 864 px; (2a) repost textového príspevku má úzke okno; (3) natiahnutie fotky karty '
+                 'ponuky a portfólia ide spolu s oknom, bez zásahu do `FeedPostCard.tsx` (jeho delenie je hotové): v malých '
+                 'súboroch `FeedPostSharedBlock.tsx` a `SharedContentPreviewCard.tsx`, podrobnosti R68; (4a) šírka 576 px '
+                 '(`max-w-xl`); (5a) 344 ide ako prvá časť redizajnu pred komentármi (K44), po jednej časti (R67). Kartu '
+                 'píše agent (`karty/K57.md`), kód píše kolega.',
+         datum='23. 11. 2026'),
     dict(id='R64', tema='Rozdelenie práce pri redizajne: kto navrhuje vzhľad, kto mapuje kód, kto píše kód a kto kontroluje',
          otazka='Pri otázke k mapovaniu 344 (20. 11. 2026) sa ukázalo, že rozdelenie práce nie je zapísané ako jedno '
                 'rozhodnutie. Dnešný stav podľa zápisov: vzhľad navrhuje agent a schvaľuje majiteľ (R49; návrhy v '
@@ -429,7 +437,9 @@ DECISIONS_DALSIE = [
                  '(znova) aj implementáciu redizajnu komentárov (261, K44) a rozloženia okna príspevkov na počítači '
                  '(344: ponuka, portfólio a text) robí agent, nie kolega, teda možnosti (b) aj (c). Ak má agent '
                  'nejasnosť alebo si je istý, že niečomu nerozumie, pýta sa majiteľa. Pri nálezoch HNEĎ ostáva '
-                 'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz.',
+                 'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz. ZMENENÉ 23. 11. 2026 (R67): '
+                 'implementáciu redizajnu robí kolega podľa presnej karty agenta (agent píše karty a kontroluje výsledok '
+                 'voči odsúhlasenému vzhľadu); ostatné z tejto odpovede platí.',
          datum='20. 11. 2026'),
     dict(id='R65', tema='Delenie `FeedPostCard.tsx` (a posúdenie `FeedPostMobileDetail.tsx`) poriadne pred redizajnom komentárov a okna príspevkov na počítači',
          otazka='Majiteľ sa 21. 11. 2026 pýta, či nie je bezpečnejšie a lepšie rozdeliť súbor poriadne ešte pred '
