@@ -11,10 +11,12 @@
  *
  *  - S FOTKOU, PONUKOU ALEBO PORTFÓLIOM: dva stĺpce vedľa seba
  *    (`FeedPostDetailSplitLayout`) – vľavo hlavička, text, fotka alebo karta
- *    a akcie, vpravo výhradne komentáre.
+ *    a akcie, vpravo výhradne komentáre. Okno je široké 54 rem (864 px).
  *  - BEZ NICH (text, repost textového príspevku): pôvodné jednostĺpcové
- *    rozloženie – pevný blok (hlavička, text, akcie) sa nikdy nescrolluje
- *    a komentáre dostanú všetok zvyšný priestor.
+ *    rozloženie v užšom okne (36 rem, 576 px) – pevný blok (hlavička, text,
+ *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor.
+ *    Úzke je aj okno pri načítaní a pri chybe: príspevok ešte nepoznáme a
+ *    textový príspevok sa tak po načítaní nehýbe (R63).
  *    Robí to `flex` stĺpec s `min-h-0` na komentárovej časti – bez toho by ju
  *    obsah roztiahol a okno by prerástlo obrazovku (flex položka má
  *    predvolene `min-height: auto`).
@@ -223,7 +225,9 @@ export default function FeedPostDetailOverlay({
     hasVisibleFeedPhoto(liveImages) || sharedFeedPostPhoto(post) !== null;
   /** Zdieľaná ponuka alebo portfólio: karta je hlavný obsah okna ako fotka (R53). */
   const sharesCard = sharesOfferOrPortfolio(post);
-  const splitLayout = (hasPhoto || sharesCard) && !isMobile;
+  /** Široké okno (864 px) majú príspevky s fotkou, ponukou a portfóliom, všetky ostatné užšie (576 px). */
+  const wideContent = hasPhoto || sharesCard;
+  const splitLayout = wideContent && !isMobile;
   /**
    * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?
    *
@@ -251,9 +255,11 @@ export default function FeedPostDetailOverlay({
         aria-modal="true"
         aria-label={t('feed.postDetail', 'Detail príspevku')}
         data-testid="feed-post-overlay"
-        // Rozmery: `max-w-[54rem]` (864 px) je o ~29 % viac než pôvodných
-        // `max-w-2xl` (672 px) – šírka je FIXNÁ pre foto aj text-only variant,
-        // nech okno vyzerá rovnako bez ohľadu na obsah. Výška je len STROP:
+        // Rozmery: šírku určuje obsah. Široké okno (`max-w-[54rem]`, 864 px, o ~29 %
+        // viac než pôvodných `max-w-2xl`, 672 px) majú príspevky s fotkou, ponukou
+        // a portfóliom; text, repost textového príspevku, kostra a chyba pri
+        // načítaní majú užšie (`max-w-xl`, 576 px; R53 a R63). Pod hranicou lg
+        // ostáva šírka podľa obsahu, mení sa len rozloženie. Výška je len STROP:
         // krátky príspevok drží okno nízke, dlhý ho natiahne až po `95vh`.
         //
         // Prečo práve 95vh: ostávajú 2,5 % viewportu hore aj dole, takže je
@@ -268,9 +274,9 @@ export default function FeedPostDetailOverlay({
         // pružná fotka v ľavom stĺpci má `flex-1`, ktoré potrebuje definitívnu
         // výšku rodiča – zo `max-h` by vyšla nula. Text-only príspevok ostáva
         // pri strope, aby krátky príspevok držal okno nízke.
-        className={`relative flex w-full max-w-[54rem] flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
-          splitLayout ? 'h-[95vh]' : 'max-h-[95vh]'
-        }`}
+        className={`relative flex w-full flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
+          wideContent ? 'max-w-[54rem]' : 'max-w-xl'
+        } ${splitLayout ? 'h-[95vh]' : 'max-h-[95vh]'}`}
         onClick={(event) => event.stopPropagation()}
       >
         <button
