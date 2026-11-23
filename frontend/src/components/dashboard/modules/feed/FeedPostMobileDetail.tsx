@@ -35,17 +35,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { EllipsisHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { deleteFeedPost, type FeedPost } from '@/lib/feedApi';
 import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostDeleted } from './feedPostDeletedEvents';
-import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
 import { feedViewableImages, sharedFeedPostPhoto } from './feedImageSources';
 import FeedSharedPhotoViewer from './FeedSharedPhotoViewer';
-import { formatRelativeTime } from './feedRelativeTime';
 import { shouldAutoScrollToComments } from './feedMobileDetailAutoScroll';
 import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
@@ -53,53 +49,13 @@ import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
-import FeedPostCaption from './FeedPostCaption';
 import FeedPostComments from './FeedPostComments';
 import FeedPostEditModal from './FeedPostEditModal';
-import FeedPostImageCarousel from './FeedPostImageCarousel';
+import FeedPostMobileDetailContent from './FeedPostMobileDetailContent';
+import FeedPostMobileDetailHeader from './FeedPostMobileDetailHeader';
 import FeedPostReportModal from './FeedPostReportModal';
-import SharedContentPreviewCard from './SharedContentPreviewCard';
-import { sharedContentCardFromPost } from './sharedContentCard';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import FeedPostShareModal from './FeedPostShareModal';
-import ShareIcon from './ShareIcon';
-
-/** Text príspevku sa tu zbalí na päť riadkov – obrazovka má miesta viac než karta. */
-const MOBILE_DETAIL_CAPTION_LINES = 5;
-
-/** Spoločný vzhľad troch akcií – dotykový cieľ nad 44 px. */
-const ACTION_BUTTON =
-  'inline-flex h-11 items-center gap-1.5 rounded-full px-2 text-sm text-gray-600 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10';
-
-function HeartIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
-}
-
-function CommentIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
 
 type FeedPostMobileDetailProps = {
   post: FeedPost;
@@ -285,125 +241,31 @@ export default function FeedPostMobileDetail({
 
   if (!portalNode) return null;
 
-  const author = currentPost.author;
-  const authorName = author?.display_name || '';
-  const openAuthorProfile = () =>
-    openUserProfile(author, { beforeNavigate: onClose });
-
   /**
    * Všetko nad komentármi. Ide DOVNÚTRA scrollovateľného boxu komentárov,
    * takže text, fotka aj akcie scrollujú spolu so zoznamom.
    */
   const listHeader = (
-    <div data-testid="feed-mobile-detail-header-content" className="pb-1">
-      {caption ? (
-        <div className="pb-3">
-          <FeedPostCaption
-            text={caption}
-            testId="feed-mobile-detail-caption"
-            maxLines={MOBILE_DETAIL_CAPTION_LINES}
-            collapseBlankLines
-            // Rozbaľuje sa v BEŽNOM toku: žiadny strop ani vlastný scroll, len
-            // viac textu, ktorý prirodzene posunie fotku, akcie aj komentáre
-            // nižšie.
-          />
-        </div>
-      ) : null}
-
-      {hasPhoto ? (
-        <div className="-mx-4 pb-3" data-testid="feed-mobile-detail-photo">
-          {/* Bez `onPhotoClick`: ťuk otvorí pôvodný fullscreen prehliadač
-              (`ImageLightbox`) priamo z karuselu – tá istá cesta, aká platí
-              vnútri okna detailu na desktope. */}
-          <FeedPostImageCarousel
-            images={images}
-            alt={t('feed.imageAlt', 'Fotka príspevku')}
-          />
-        </div>
-      ) : null}
-
-      {/* Zdieľaný obsah stojí presne tam, kde má voľný príspevok fotku – text
-          teda ostáva NAD ním, rovnaké pravidlo ako „text nad fotkou". */}
-      {hasSharedPreview ? (
-        <div className="pb-3" data-testid="feed-mobile-detail-shared">
-          <SharedContentPreviewCard
-            data={sharedContentCardFromPost(currentPost)}
-            hideOwner={isSelfShare}
-            onOpenSource={openSharedSource}
-            // Tu je náhľad hlavným obsahom obrazovky, takže naň vedie klik aj
-            // pri zdieľanom príspevku…
-            onOpenPostPreview={openSharedSource}
-            // …a fotka v ňom otvára fotoprehliadač PÔVODNÉHO príspevku.
-            onOpenPostPhoto={
-              sharedPhotoPostId != null
-                ? () => setSharedPhotoOpen(true)
-                : undefined
-            }
-          />
-        </div>
-      ) : null}
-
-      {/* Lajk, komentáre aj zdieľanie sú POKOPE – žiadne odsúvanie zdieľania
-          na druhý koniec riadku. */}
-      <div
-        data-testid="feed-mobile-detail-actions"
-        className="flex items-center gap-1 border-y border-gray-200/70 py-1 dark:border-gray-700/60"
-      >
-        <button
-          type="button"
-          onClick={() => void toggleLike()}
-          data-testid="feed-mobile-detail-like"
-          aria-label={t('feed.likes', 'Páči sa mi')}
-          aria-pressed={isLiked}
-          className={`${ACTION_BUTTON} ${
-            isLiked ? 'text-purple-600 dark:text-purple-300' : ''
-          }`}
-        >
-          <HeartIcon filled={isLiked} />
-        </button>
-        {/* Počet je samostatný cieľ kliku – otvára zoznam lajkujúcich. */}
-        <button
-          type="button"
-          onClick={() => setLikersOpen(true)}
-          data-testid="feed-mobile-detail-like-count"
-          aria-label={`${t('feed.likersTitle', 'Páči sa im to')}: ${likesCount}`}
-          className="h-11 rounded-full px-1 text-sm tabular-nums text-gray-600 underline-offset-2 transition-colors hover:bg-black/5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-300 dark:hover:bg-white/10"
-        >
-          {likesCount}
-        </button>
-
-        <span className={ACTION_BUTTON} data-testid="feed-mobile-detail-comments">
-          <CommentIcon />
-          <span className="tabular-nums">{commentsCount}</span>
-        </span>
-
-        <button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          data-testid="feed-mobile-detail-share"
-          aria-label={t('feed.sharePost', 'Zdieľať ďalej')}
-          className={ACTION_BUTTON}
-        >
-          <ShareIcon className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div
-        ref={commentsAnchorRef}
-        data-testid="feed-mobile-detail-comments-anchor"
-        data-auto-scrolled={
-          autoScrollDecision === null ? undefined : String(autoScrollDecision)
-        }
-        className="pt-3"
-      >
-        <h2
-          data-testid="feed-mobile-detail-comments-title"
-          className="text-sm font-semibold text-gray-900 dark:text-white"
-        >
-          {t('feed.comments', 'Komentáre')}
-        </h2>
-      </div>
-    </div>
+    <FeedPostMobileDetailContent
+      caption={caption}
+      hasPhoto={hasPhoto}
+      images={images}
+      t={t}
+      hasSharedPreview={hasSharedPreview}
+      currentPost={currentPost}
+      isSelfShare={isSelfShare}
+      openSharedSource={openSharedSource}
+      sharedPhotoPostId={sharedPhotoPostId}
+      setSharedPhotoOpen={setSharedPhotoOpen}
+      toggleLike={toggleLike}
+      isLiked={isLiked}
+      likesCount={likesCount}
+      setLikersOpen={setLikersOpen}
+      commentsCount={commentsCount}
+      setShareOpen={setShareOpen}
+      commentsAnchorRef={commentsAnchorRef}
+      autoScrollDecision={autoScrollDecision}
+    />
   );
 
   return createPortal(
@@ -416,116 +278,18 @@ export default function FeedPostMobileDetail({
       data-testid="feed-mobile-detail"
       className="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]"
     >
-      {/* PEVNÁ hlavička – nescrolluje s obsahom. */}
-      <header
-        data-testid="feed-mobile-detail-header"
-        className="flex shrink-0 items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-800"
-      >
-        <button
-          type="button"
-          onClick={openAuthorProfile}
-          disabled={!canOpenUserProfile(author)}
-          data-testid="feed-mobile-detail-author"
-          aria-label={t('feed.openProfile', 'Otvoriť profil')}
-          className="flex min-w-0 items-center gap-2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default"
-        >
-          <InitialsAvatar
-            name={authorName}
-            avatarUrl={author?.avatar_url}
-            size="sm"
-          />
-          <span className="min-w-0">
-            {/* Meno sa NIKDY nezalomí – `min-w-0` + `truncate` nechajú menu aj
-                „X" vpravo vždy ich miesto. */}
-            <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">
-              {authorName}
-            </span>
-            <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
-              {formatRelativeTime(currentPost.created_at, t, locale)}
-            </span>
-          </span>
-        </button>
-
-        {/* „..." menu sedí VEDĽA MENA, nie v riadku akcií. */}
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            data-testid="feed-mobile-detail-menu-trigger"
-            aria-label={t('feed.postMenu', 'Možnosti príspevku')}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10"
-          >
-            <EllipsisHorizontalIcon className="h-5 w-5" />
-          </button>
-
-          {menuOpen ? (
-            <div
-              role="menu"
-              data-testid="feed-mobile-detail-menu"
-              aria-label={t('feed.postMenu', 'Možnosti príspevku')}
-              className="absolute left-0 top-12 z-10 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-[#151517]"
-            >
-              <button
-                type="button"
-                role="menuitem"
-                disabled={reported}
-                onClick={() => {
-                  setMenuOpen(false);
-                  setReportOpen(true);
-                }}
-                data-testid="feed-mobile-detail-report"
-                className="block w-full px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 dark:text-white dark:hover:bg-gray-800 dark:disabled:text-gray-500"
-              >
-                {reported
-                  ? t('feed.alreadyReported', 'Už nahlásené')
-                  : t('feed.reportPost', 'Nahlásiť príspevok')}
-              </button>
-              {/* Upravovať aj mazať smie iba autor – rozhoduje backend cez
-                  `can_manage`, FE si to neodvodzuje sám. */}
-              {currentPost.can_manage ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setEditOpen(true);
-                  }}
-                  data-testid="feed-mobile-detail-edit"
-                  className="block w-full border-t border-gray-200 px-4 py-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
-                >
-                  {t('feed.editPost', 'Upraviť príspevok')}
-                </button>
-              ) : null}
-              {currentPost.can_manage ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setDeleteOpen(true);
-                  }}
-                  data-testid="feed-mobile-detail-delete"
-                  className="block w-full border-t border-gray-200 px-4 py-3 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-gray-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                >
-                  {t('feed.deletePost', 'Zmazať príspevok')}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          data-testid="feed-mobile-detail-close"
-          aria-label={t('common.close', 'Zavrieť')}
-          className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-white/10"
-        >
-          <XMarkIcon className="h-5 w-5" />
-        </button>
-      </header>
+      <FeedPostMobileDetailHeader
+        currentPost={currentPost}
+        onClose={onClose}
+        t={t}
+        locale={locale}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        reported={reported}
+        setReportOpen={setReportOpen}
+        setEditOpen={setEditOpen}
+        setDeleteOpen={setDeleteOpen}
+      />
 
       {/* `min-h-0` ruší automatické minimum flex položky – bez neho by obsah
           plochu roztiahol a pole na nový komentár by vypadlo z obrazovky. */}

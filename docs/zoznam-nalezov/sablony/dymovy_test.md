@@ -37,6 +37,10 @@ Po každom zlúčení dávky, pred zlúčením ďalšej. Na iPhone s nainštalov
    - Hlavička v okne detailu na počítači (príspevok s fotkou a príspevok len s dlhším textom): hlavička a „…“ sú hore a neprekrývajú sa s „X“ okna; pri príspevku s fotkou hlavička stojí hore aj po rozbalení dlhšieho textu; menu otvorené v okne je viditeľné nad oknom a dá sa naň kliknúť; klik na avatar alebo meno okno zatvorí a otvorí profil autora.
    - Lajk druhého účtu (druhý účet alebo druhé zariadenie): lajk sa v karte objaví do asi 8 sekúnd aj bez obnovy stránky.
    - Počet komentárov: počet pri ikone komentárov v karte sa zhoduje s počtom v okne detailu príspevku.
+   - Obrazovka detailu na iPhone, rozloženie (príspevok s fotkou alebo zdieľaným náhľadom a aspoň tromi komentármi; otvorí sa ťukom na text alebo na ikonu komentárov): hore je pevná hlavička (avatar, meno a čas autora, menu „…“ a „X“), pod ňou text (päť riadkov a „Viac“), fotka alebo zdieľaný náhľad, riadok akcií a nadpis „Komentáre“; všetko okrem hlavičky a poľa na komentár pri spodku sa posúva spolu s komentármi.
+   - Obrazovka detailu na iPhone, štartovacia poloha: pri príspevku s fotkou alebo zdieľaným náhľadom a aspoň troch komentároch sa obrazovka otvorí rovno pri komentároch, inak od vrchu.
+   - Obrazovka detailu na iPhone, hlavička s menu a „X“: ťuk na avatar alebo meno otvorí profil autora a obrazovka sa zavrie; menu „…“ sa otvorí a druhým ťukom zavrie, jeho položky (Nahlásiť, pri vlastnom príspevku Upraviť a Zmazať s potvrdením) fungujú ako v karte, po potvrdení zmazania príspevok zmizne a obrazovka sa zavrie; „X“ obrazovku zatvorí.
+   - Obrazovka detailu na iPhone, pole na komentár: pole je pri spodku a pridanie komentára zvýši počet pri ikone komentárov.
    - Tmavý režim: ikony majú rovnaké farby ako predtým, aktívne srdiečko je fialové.
    - Tmavý režim, hlavička: farby avatara, mena, času a tlačidla „…“ sú rovnaké ako predtým.
 

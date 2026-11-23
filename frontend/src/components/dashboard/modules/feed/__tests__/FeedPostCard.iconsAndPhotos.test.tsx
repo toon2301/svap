@@ -5,9 +5,9 @@
  * Existujúce testy nestrážia, že druhý klik na ikonu komentárov (bez okna na počítači) komentáre zbalí, že ťuk na DRUHÚ
  * fotku na mobile otvorí prehliadač na druhej fotke, že v okne detailu fotka ani ikona komentárov neotvárajú okno
  * detailu a ťuk na text ani ikona komentárov neotvárajú mobilnú obrazovku detailu, a že počet lajkov s hodnotou 0 nie je
- * klikateľný (zoznam lajkujúcich sa nemá čo otvárať). Farba aktívnej ikony je len trieda CSS, tú stráži dočasný odtlačok
- * HTML. Testy idú cez verejné rozhranie karty (vlastnosti, DOM, `data-testid`, kontext okna), takže musia prejsť bez
- * úpravy aj po každom kroku delenia.
+ * klikateľný (zoznam lajkujúcich sa nemá čo otvárať). Farba aktívnej ikony je len trieda CSS a po zmazaní dočasného
+ * odtlačku HTML (K55) ju nestráži žiadny test. Testy idú cez verejné rozhranie karty (vlastnosti, DOM, `data-testid`,
+ * kontext okna), takže musia prejsť bez úpravy aj po každom kroku delenia.
  */
 
 import { render, screen } from '@testing-library/react';
