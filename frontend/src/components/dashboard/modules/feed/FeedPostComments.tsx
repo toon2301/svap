@@ -33,9 +33,29 @@ import {
 } from '@/lib/feedApi';
 import type { FeedPostCommentsProps } from './FeedPostComments.types';
 
+/**
+ * Triedy komentárov pri `fillHeight`: koreň, obal zoznamu a posuvný rámik.
+ *
+ * `FILL_CLASSES` vypĺňajú výšku rodiča, ktorá je pevná (percentuálna výška, `h-full`). `FLEX_FILL_CLASSES` ju namiesto
+ * toho odovzdávajú flexom celým reťazcom (`flex-1` + `min-h-0`), lebo rodič s nedefinitnou výškou (okno so stropom
+ * `max-h`) percentuálnu výšku nevyhodnotí; viď `flexFill` vo `FeedPostComments.types.ts`. Píšu sa DOSLOVA, lebo
+ * Tailwind hľadá v zdroji celé názvy tried.
+ */
+const FILL_CLASSES = {
+  root: 'flex h-full min-h-0 flex-col',
+  listWrap: 'min-h-0 flex-1',
+  scroll: 'h-full',
+} as const;
+const FLEX_FILL_CLASSES = {
+  root: 'flex min-h-0 flex-1 flex-col',
+  listWrap: 'flex min-h-0 flex-1 flex-col',
+  scroll: 'min-h-0 flex-1',
+} as const;
+
 export default function FeedPostComments({
   postId,
   fillHeight = false,
+  flexFill = false,
   showTimestamp = false,
   compactComposer = false,
   listHeader,
@@ -257,11 +277,13 @@ export default function FeedPostComments({
     />
   );
 
+  const fill = flexFill ? FLEX_FILL_CLASSES : FILL_CLASSES;
+
   return (
     <div
       data-testid="feed-post-comments"
       className={`border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60 ${
-        fillHeight ? 'flex h-full min-h-0 flex-col' : ''
+        fillHeight ? fill.root : ''
       }`}
     >
       {/* Ohraničený box s vlastným scrollom: stovky komentárov nenaťahujú
@@ -270,7 +292,7 @@ export default function FeedPostComments({
           tabIndex robí oblasť dostupnou aj z klávesnice (WCAG 2.1.1). */}
       {/* `relative` kvôli indikátoru nových komentárov, ktorý pláva nad
           spodným okrajom zoznamu. */}
-      <div className={`relative ${fillHeight ? 'min-h-0 flex-1' : ''}`}>
+      <div className={`relative ${fillHeight ? fill.listWrap : ''}`}>
         <div
           ref={scrollRef}
           onScroll={handleListScroll}
@@ -284,7 +306,7 @@ export default function FeedPostComments({
           // detailu je toto JEDINÉ scrollovateľné miesto, takže by tu
           // predvolený systémový scrollbar bil do očí najviac.
           className={`subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
-            fillHeight ? 'h-full' : 'max-h-[min(26rem,60dvh)]'
+            fillHeight ? fill.scroll : 'max-h-[min(26rem,60dvh)]'
           }`}
         >
           {listHeader}

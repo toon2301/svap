@@ -329,9 +329,19 @@ export default function FeedPostDetailOverlay({
             />
           ) : (
           <>
-            {/* PEVNÝ blok – hlavička, text, fotky, akcie. Za bežných
-                okolností sa nescrolluje: komentáre pod ním majú `flex-1` so
-                základom 0, takže si berú až to, čo zvýši.
+            {/* PEVNÝ blok – hlavička, text, fotky, akcie. Nezmenšuje sa
+                (`shrink-0`): čo sa do okna nezmestí, odoberá komentárom,
+                nie jemu. Okno má v tomto rozložení len strop `max-h`, nie
+                pevnú výšku, takže základ `0%` pri `flex-1` sa vyhodnotí ako
+                obsah a zmrštenie by sa rozdelilo medzi blok a komentáre
+                podľa ich veľkosti: pri štyroch a viac komentároch by sa
+                blok zmáčkol a pole na komentár vypadlo pod okno (nález 363).
+
+                Strop `calc(95vh-11rem)` je POISTKA: nechá komentárom 11 rem
+                (pole na komentár s odsadením zaberá okolo 9 rem, k tomu
+                riadok zoznamu aj pri prázdnom zozname), takže pri veľmi
+                nízkom okne sa v bloku doscrolluje a pole na komentár
+                ostane celé vidno.
 
                 DVA režimy podľa toho, čo je vnútri pružné:
 
@@ -344,11 +354,11 @@ export default function FeedPostDetailOverlay({
 
                 - Voľný príspevok: nemá čo pružné pohltiť zvyšok, takže ostáva
                   pôvodná POISTKA `overflow-y-auto` pre krajný prípad (nízke
-                  okno, dlhý rozbalený text): až keď by sa blok sám nezmestil,
-                  zmrští sa a doscrolluje sa v ňom, takže nič neostane
+                  okno, dlhý rozbalený text): až keď by sa blok nezmestil pod
+                  strop, doscrolluje sa v ňom, takže nič neostane
                   nedosiahnuteľné za orezanou hranou okna. */}
             <div
-              className={`subtle-scrollbar min-h-0 ${
+              className={`subtle-scrollbar min-h-0 shrink-0 max-h-[calc(95vh-11rem)] ${
                 sharedFillsColumn
                   ? 'flex flex-col overflow-hidden'
                   : 'overflow-y-auto'
@@ -370,15 +380,18 @@ export default function FeedPostDetailOverlay({
                 plní dve úlohy naraz: ruší automatické minimum flex položky
                 (inak by ju obsah roztiahol a okno by prerástlo `max-h-[90vh]`)
                 a zároveň drží komentárom podlahu, aby ich pevný blok nad nimi
-                nikdy nestlačil na nulu. */}
+                nikdy nestlačil na nulu. `flex-col` a `flexFill` odovzdávajú
+                výšku zoznamu komentárov flexom, lebo percentuálna výška
+                (`h-full`) sa v okne bez pevnej výšky nevyhodnotí. */}
             <div
-              className="min-h-[7rem] flex-1 overflow-hidden"
+              className="flex min-h-[7rem] flex-1 flex-col overflow-hidden"
               data-testid="feed-post-overlay-comments"
             >
               <FeedPostComments
                 postId={post.id}
                 highlightCommentId={highlightCommentId}
                 fillHeight
+                flexFill
                 onCountChange={(delta) =>
                   changeCommentsCount(delta)
                 }

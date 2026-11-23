@@ -19,6 +19,14 @@ export type FeedPostCommentsProps = {
    */
   fillHeight?: boolean;
   /**
+   * Výška ide cez flex celým reťazcom namiesto percentuálnej (`h-full`). Má zmysel len spolu s `fillHeight`.
+   *
+   * Rodič, ktorý má len strop `max-h` (jednostĺpcové okno detailu), má NEDEFINITNÚ výšku: `h-full` sa tam nevyhodnotí,
+   * zoznam ostane vysoký ako všetky komentáre, neposúva sa a pole na komentár vypadne pod okraj okna (nález 363).
+   * Ostatné miesta (dvojstĺpcové okno, mobilný detail, panel nad fotkou) majú výšku pevnú a ostávajú pri `h-full`.
+   */
+  flexFill?: boolean;
+  /**
    * Ukázať čas pri komentári.
    *
    * Zapína to mobilný prehliadač fotky, kde je meta riadok jediné miesto, kde
