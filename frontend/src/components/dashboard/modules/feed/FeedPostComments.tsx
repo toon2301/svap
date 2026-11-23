@@ -69,11 +69,14 @@ export default function FeedPostComments({
   // Mobil má emoji priamo na systémovej klávesnici – appkové
   // tlačidlo je tam duplicitné, tak ho tam nekreslíme.
   const isMobile = useIsMobile();
-  const [submitting, setSubmitting] = useState(false);
+  const [ownSubmitting, setOwnSubmitting] = useState(false);
   const [ownText, setOwnText] = useState('');
-  // Text drží rodič, ak o to požiada (`draft`): odmountovanie komentárov pri prepnutí rozloženia okna ho nestratí.
+  // Text aj priebeh odosielania drží rodič, ak o to požiada (`draft`): odmountovanie komentárov pri prepnutí rozloženia
+  // okna ich nestratí, takže sa po prepnutí nedá odoslať ten istý komentár druhýkrát.
   const text = draft ? draft.value : ownText;
   const setText: (value: string) => void = draft ? draft.onChange : setOwnText;
+  const submitting = draft ? draft.submitting : ownSubmitting;
+  const setSubmitting: (value: boolean) => void = draft ? draft.onSubmittingChange : setOwnSubmitting;
   // Okno detailu vie o sebe cez kontext – komentáre sa v ňom vykresľujú tiež,
   // takže ho vedia zavrieť rovnako ako hlavička príspevku.
   const postOverlay = useFeedPostOverlay();
@@ -202,6 +205,19 @@ export default function FeedPostComments({
   const tooLong = text.length > FEED_COMMENT_MAX_LENGTH;
   const canSubmit = Boolean(trimmed) && !tooLong && !submitting;
 
+  /**
+   * Vyprázdnenie poľa po úspešnom odoslaní (mutácie ho volajú ako `setText('')`).
+   *
+   * S `draft` sa pole vyprázdni len vtedy, keď ešte obsahuje odoslaný text: odpoveď servera môže prísť až po prepnutí
+   * rozloženia a po tom, čo používateľ napísal ďalší komentár, a ten sa nesmie stratiť. `trimmed` je ten istý text, ktorý
+   * odišiel na server, lebo obsluha odoslania aj táto funkcia vznikli v tom istom vykreslení. Bez `draft` sa pole
+   * vyprázdni vždy, ako doteraz.
+   */
+  const clearSentText = (next: string) => {
+    if (draft) draft.onSent(trimmed);
+    else setOwnText(next);
+  };
+
   // Skloňovanie: 1 / 2–4 / 5+ pokrýva sk, cs aj pl. V en, de a hu, kde sa
   // tvary 2–4 a 5+ nelíšia, majú oba kľúče rovnaký text, takže rovnaká vetva
   // funguje pre všetkých šesť jazykov bez ďalšej logiky.
@@ -236,7 +252,7 @@ export default function FeedPostComments({
     trimmed,
     canSubmit,
     setSubmitting,
-    setText,
+    setText: clearSentText,
     onCountChange,
     loadSeqRef,
     markSeen,

@@ -102,6 +102,11 @@ function napis(text: string) {
   fireEvent.change(pole(), { target: { value: text } });
 }
 
+/** Koncept s atrapami odosielania; tento súbor skúša text, odosielanie rieši `FeedPostComments.draftSubmitting`. */
+function koncept(value: string, onChange: (value: string) => void = jest.fn()): FeedCommentDraft {
+  return { value, onChange, submitting: false, onSubmittingChange: jest.fn(), onSent: jest.fn() };
+}
+
 /** Text, ktorý má rodič práve vo svojom stave (mimo komentárov). */
 const textRodica = () => screen.getByTestId('text-rodica').textContent;
 
@@ -111,8 +116,15 @@ const textRodica = () => screen.getByTestId('text-rodica').textContent;
  */
 function Rodic({ sDraftom = true }: { sDraftom?: boolean }) {
   const [text, setText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [zobrazene, setZobrazene] = useState(true);
-  const draft: FeedCommentDraft = { value: text, onChange: setText };
+  const draft: FeedCommentDraft = {
+    value: text,
+    onChange: setText,
+    submitting,
+    onSubmittingChange: setSubmitting,
+    onSent: (sent) => setText((current) => (current.trim() === sent ? '' : current)),
+  };
   return (
     <>
       <button type="button" onClick={() => setZobrazene((current) => !current)}>
@@ -160,14 +172,14 @@ describe('FeedPostComments: text rozpracovaného komentára', () => {
 
   describe('s vlastnosťou draft', () => {
     it('ukáže v poli text od rodiča', async () => {
-      await vykresli(<FeedPostComments postId={5} draft={{ value: 'Text od rodiča', onChange: jest.fn() }} />);
+      await vykresli(<FeedPostComments postId={5} draft={koncept('Text od rodiča')} />);
 
       expect(pole()).toHaveValue('Text od rodiča');
     });
 
     it('pri písaní ohlási rodičovi nový text a pole ostane pri hodnote od rodiča, kým ju rodič nezmení', async () => {
       const onChange = jest.fn();
-      await vykresli(<FeedPostComments postId={5} draft={{ value: 'Text od rodiča', onChange }} />);
+      await vykresli(<FeedPostComments postId={5} draft={koncept('Text od rodiča', onChange)} />);
 
       napis('Iný text');
 
@@ -219,13 +231,13 @@ describe('FeedPostComments: text rozpracovaného komentára', () => {
       const dlhy = 'x'.repeat(501);
       const naHranici = 'x'.repeat(500);
       const { rerender } = await vykresli(
-        <FeedPostComments postId={5} draft={{ value: dlhy, onChange: jest.fn() }} />,
+        <FeedPostComments postId={5} draft={koncept(dlhy)} />,
       );
 
       expect(screen.getByTestId('feed-comment-counter')).toHaveTextContent('501/500');
       expect(screen.getByRole('button', { name: 'Pridať' })).toBeDisabled();
 
-      rerender(<FeedPostComments postId={5} draft={{ value: naHranici, onChange: jest.fn() }} />);
+      rerender(<FeedPostComments postId={5} draft={koncept(naHranici)} />);
 
       expect(screen.getByTestId('feed-comment-counter')).toHaveTextContent('500/500');
       expect(screen.getByRole('button', { name: 'Pridať' })).toBeEnabled();
