@@ -5,8 +5,8 @@
  * objekt príspevku pod tým istým `key`, takže karta si stav musí prevziať sama: lajk a jeho počet (okrem času, keď
  * beží vlastný lajk), počet komentárov a označenia. Sedem efektov, ktoré to robia, musí po delení bežať v rovnakom
  * poradí, preto je tu aj test, v ktorom sa v jednej dávke zmení príspevok z feedu aj lajk používateľa: pri
- * zlom poradí by vyhral starý príspevok. Chybu 355 a 356 (zastaraný stav pri obnove feedu počas lajku, okno zdieľania
- * po úprave) tieto testy zámerne nezachytávajú ani na nich nezávisia.
+ * zlom poradí by vyhral starý príspevok. Chyby 355 a 356 (zastaraný stav pri obnove feedu počas lajku, okno zdieľania
+ * po úprave) sú opravené v K56 a majú vlastné testy; tieto testy na nich nezávisia.
  */
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
