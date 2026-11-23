@@ -19,7 +19,7 @@ nemôže ticho prestať sedieť.
 | `register.py` | Stav ID z `docs/testing/findings-register.md` (otvorené, zatvorené, čaká živé overenie). |
 | `stav.py` | Dátum a stav kódu, poradie práce, rozhodnutia, denník zmien (od 7. 11. 2026). |
 | `zmeny_starsie.py` | Starší denník zmien (do 8. 11. 2026): `ZMENY_STARSIE`. Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája na koniec `ZMENY`. |
-| `zmeny_starsie_2.py` | Starší denník zmien (12. 11. 2026 až 17. 11. 2026): `ZMENY_STARSIE_2`. Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_STARSIE`. |
+| `zmeny_starsie_2.py` | Starší denník zmien (12. 11. 2026 až 19. 11. 2026): `ZMENY_STARSIE_2`. Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ho pripája pred `ZMENY_STARSIE`. |
 | `hotove.py` | Nálezy opravené po prvom vydaní do 5. 11. 2026 (`DONE_SINCE`), tabuľka PR a popis série Upozornenia. Samostatný súbor, aby žiadny súbor nepresiahol 500 riadkov; `stav.py` ich sprístupňuje pod pôvodnými názvami. |
 | `hotove_dalsie.py` | Nálezy opravené od 6. 11. 2026 (`DONE_SINCE_DALSIE`). Samostatný súbor kvôli limitu 500 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |
 | `hotove_k20.py` | Nálezy opravené od 13. 11. 2026 do PR #295 (K41) (`DONE_SINCE_K20`). Samostatný súbor, lebo `hotove_dalsie.py` má 496 riadkov; `hotove.py` ich pripája do `DONE_SINCE`. |

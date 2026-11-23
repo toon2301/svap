@@ -6,7 +6,7 @@ Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do 
 po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova. Kandidát B kolegu (osem
 `alert()` v súboroch nad 500 riadkov) je v nálezu 302, kandidát L (`require()` v `csrf.test.ts`) v nálezu 206 a kandidát N (kategórie
 upozornení nie sú napojené na server) je spolu s nálezom majiteľa v 321.
-Nález 333 (delenie veľkých súborov Nástenky, dlhý denník dávok) je v `polozky_nove_333.py` (kvôli limitu 500 riadkov).
+Nález 333 (delenie veľkých súborov Nástenky) je od dávky K55 hotový; jeho text je v `hotove_k40.py`.
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
