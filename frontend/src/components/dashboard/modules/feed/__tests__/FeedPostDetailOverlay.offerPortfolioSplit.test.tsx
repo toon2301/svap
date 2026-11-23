@@ -276,6 +276,14 @@ describe('okno detailu: zdieľaná ponuka a portfólio v dvoch stĺpcoch', () =>
     expect(karta).toBeEnabled();
   });
 
+  it('plocha fotky karty je v dvojstĺpcovom okne pružná', async () => {
+    await otvorOkno(zdielanaKarta('offer'));
+
+    const plocha = screen.getByTestId('feed-shared-card-media');
+    expect(plocha.className).toContain('min-h-32');
+    expect(plocha.className).toContain('flex-1');
+  });
+
   it('pod 1 024 px ostáva jednostĺpcové rozloženie so širokým oknom', async () => {
     mockIsMobile = true;
     await otvorOkno(zdielanaKarta('offer', { sFotkou: true }));
@@ -285,6 +293,15 @@ describe('okno detailu: zdieľaná ponuka a portfólio v dvoch stĺpcoch', () =>
     expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
     expect(okno.className).toContain('max-w-[54rem]');
     expect(okno.className).toContain('max-h-[95vh]');
+  });
+
+  it('pod 1 024 px ostáva plocha fotky karty 256 px', async () => {
+    mockIsMobile = true;
+    await otvorOkno(zdielanaKarta('offer', { sFotkou: true }));
+
+    const plocha = screen.getByTestId('feed-shared-card-media');
+    expect(plocha.className).toContain('h-64');
+    expect(plocha.className).not.toContain('min-h-32');
   });
 
   it('zdieľaný príspevok bez fotky ostáva v jednostĺpcovom rozložení', async () => {
@@ -298,6 +315,14 @@ describe('okno detailu: zdieľaná ponuka a portfólio v dvoch stĺpcoch', () =>
     await otvorOkno(repost(true));
 
     expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
+  });
+
+  it('zdieľaný príspevok s fotkou má plochu fotky 256 px', async () => {
+    await otvorOkno(repost(true));
+
+    const plocha = screen.getByTestId('feed-shared-card-media');
+    expect(plocha.className).toContain('h-64');
+    expect(plocha.className).not.toContain('flex-1');
   });
 
   it('voľný príspevok s fotkou ostáva v dvojstĺpcovom rozložení', async () => {

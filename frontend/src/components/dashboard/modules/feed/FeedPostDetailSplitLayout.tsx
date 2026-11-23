@@ -46,6 +46,7 @@
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { FeedPost, FeedPostImage } from '@/lib/feedApi';
+import { FeedDetailSplitProvider } from './FeedDetailSplitContext';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
 
@@ -117,15 +118,18 @@ export default function FeedPostDetailSplitLayout({
         data-testid="feed-post-overlay-media"
         className="subtle-scrollbar flex min-h-0 w-[56%] min-w-0 flex-col overflow-y-auto"
       >
-        <FeedPostCard
-          post={post}
-          variant="detail"
-          fillHeight
-          liveImages={liveImages}
-          commentsCount={commentsCount}
-          onDeleted={onDeleted}
-          onPostUpdated={onPostUpdated}
-        />
+        {/* Pevná výška stĺpca dovoľuje pružnú plochu karty ponuky a portfólia (viď `FeedDetailSplitContext`). */}
+        <FeedDetailSplitProvider value>
+          <FeedPostCard
+            post={post}
+            variant="detail"
+            fillHeight
+            liveImages={liveImages}
+            commentsCount={commentsCount}
+            onDeleted={onDeleted}
+            onPostUpdated={onPostUpdated}
+          />
+        </FeedDetailSplitProvider>
       </div>
 
       {/* PRAVÝ STĹPEC – výhradne komentáre. */}

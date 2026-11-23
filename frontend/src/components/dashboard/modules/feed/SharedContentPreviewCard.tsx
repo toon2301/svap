@@ -20,9 +20,14 @@
  * (galéria, recenzie, otváracie hodiny), ktoré snapshot vo feede nenesie.
  * Náhradu za chýbajúci obrázok si však táto karta požičiava od nich, nech
  * zdieľaná ponuka bez fotky vyzerá ako ponuka bez fotky na profile.
+ *
+ * PRUŽNÁ PLOCHA (`fillHeight`): v ľavom stĺpci dvojstĺpcového okna detailu je plocha náhľadu ponuky a portfólia
+ * (fotka, náhrada aj ikona nedostupného zdroja) pružná: vyplní zvyšok stĺpca a nezmenší sa pod 8 rem (128 px),
+ * rovnako ako médiová plocha príspevku s fotkou (R53, R68). Všade inde (feed, dialóg zdieľania, jednostĺpcové
+ * okno) ostáva výška 256 px. Zdieľaný príspevok sa nemení.
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
@@ -31,6 +36,9 @@ import type { SharedContentCard } from './sharedContentCard';
 
 /** Výška náhľadu obrázka. Jedna hodnota pre všetky typy aj všetky kontexty. */
 const PHOTO_FRAME = 'h-64';
+
+/** Pružná plocha náhľadu v dvojstĺpcovom okne: vyplní zvyšok stĺpca, najmenej však 8 rem (128 px). */
+const PHOTO_FRAME_FILL = 'min-h-32 flex-1';
 
 function UnavailableIcon() {
   return (
@@ -107,6 +115,7 @@ export default function SharedContentPreviewCard({
   onOpenSource,
   onOpenPostPreview,
   onOpenPostPhoto,
+  fillHeight = false,
 }: {
   data: SharedContentCard | null;
   /** Zdieľa sám seba: meno by sa zopakovalo hneď pod hlavičkou karty. */
@@ -129,6 +138,11 @@ export default function SharedContentPreviewCard({
    * `onOpenPostPreview`, nie jeden spoločný na celej karte.
    */
   onOpenPostPhoto?: () => void;
+  /**
+   * Ľavý stĺpec dvojstĺpcového okna s pevnou výškou: plocha náhľadu ponuky a portfólia vyplní zvyšok stĺpca.
+   * Pre zdieľaný príspevok sa ignoruje.
+   */
+  fillHeight?: boolean;
 }) {
   const { t, locale } = useLanguage();
   // Adresa náhľadu, ktorú sa nepodarilo načítať. Porovnáva sa s aktuálnou adresou, takže karta, ktorej sa náhľad
@@ -140,6 +154,12 @@ export default function SharedContentPreviewCard({
   const isOffer = data.type === 'offer';
   const unavailable = data.unavailable === true;
   const thumbnailFailed = Boolean(data.thumbnailUrl) && failedThumbnail === data.thumbnailUrl;
+  // Pružná plocha sa týka len ponuky a portfólia; zdieľaný príspevok ostáva bez zmeny.
+  const stretch = fillHeight && !isPost;
+  const photoFrame = stretch ? PHOTO_FRAME_FILL : PHOTO_FRAME;
+  // Pri pružnej ploche obsah vypĺňa rám absolútne, nezávisle od toho, ako prehliadač rátá percentá výšky vo flex položke.
+  const fillContent = (node: ReactNode) =>
+    stretch ? <div className="absolute inset-0">{node}</div> : node;
   /** Náhľad sa nenačítal (napr. pôvodná fotka je zmazaná): karta ukáže náhradu namiesto pokazeného obrázka. */
   const handleThumbnailError = () => setFailedThumbnail(data.thumbnailUrl ?? null);
   // Spoločný helper s dialógom zdieľania – inak by používateľ pri zdieľaní
@@ -173,8 +193,11 @@ export default function SharedContentPreviewCard({
     // s rozmazaným pozadím – ten istý `BlurredContainImage`, aký používa
     // karusel príspevku. `object-cover` by fotku orezal.
     photo = (
-      <div className={`relative w-full ${PHOTO_FRAME}`}>
-        {onOpenPostPhoto ? (
+      <div
+        data-testid="feed-shared-card-media"
+        className={`relative w-full ${photoFrame}`}
+      >
+        {fillContent(onOpenPostPhoto ? (
           <button
             type="button"
             onClick={onOpenPostPhoto}
@@ -196,7 +219,7 @@ export default function SharedContentPreviewCard({
             loading="lazy"
             onError={handleThumbnailError}
           />
-        )}
+        ))}
         {typeBadge}
       </div>
     );
@@ -209,8 +232,11 @@ export default function SharedContentPreviewCard({
     // dostanú náhradu, príspevok nič. Výnimka je nedostupný zdroj so zlyhaným
     // náhľadom: `photo` ostáva `null`, takže platí ikona nedostupného zdroja nižšie.
     photo = (
-      <div className={`relative w-full ${PHOTO_FRAME}`}>
-        <MissingImage type={data.type} />
+      <div
+        data-testid="feed-shared-card-media"
+        className={`relative w-full ${photoFrame}`}
+      >
+        {fillContent(<MissingImage type={data.type} />)}
         {typeBadge}
       </div>
     );
@@ -228,7 +254,7 @@ export default function SharedContentPreviewCard({
   const body = (
     // Zdieľaný príspevok nemá rám, takže ani vnútorné odsadenie – text má
     // začínať tam, kde text karty, nie o kúsok vpravo.
-    <div className={`space-y-1 text-left ${isPost ? '' : 'p-3'}`}>
+    <div className={`space-y-1 text-left ${isPost ? '' : 'p-3'}${stretch ? ' shrink-0' : ''}`}>
       {unavailable ? (
         <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
           {unavailableText}
@@ -300,15 +326,23 @@ export default function SharedContentPreviewCard({
     // Ponuka a portfólio sú dlaždice, takže si rám držia aj bez zdroja –
     // mení sa len stlmenie a náhrada za náhľad, ktorý sa už nedá načítať.
     frame = (
-      <div data-testid="feed-shared-unavailable" className={frameClass}>
+      <div
+        data-testid="feed-shared-unavailable"
+        className={`${frameClass}${stretch ? ' flex flex-1 flex-col' : ''}`}
+      >
         {photo ?? (
-          <div className={`relative w-full ${PHOTO_FRAME}`}>
-            <div
-              data-testid="feed-shared-unavailable-icon"
-              className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500"
-            >
-              <UnavailableIcon />
-            </div>
+          <div
+            data-testid="feed-shared-card-media"
+            className={`relative w-full ${photoFrame}`}
+          >
+            {fillContent(
+              <div
+                data-testid="feed-shared-unavailable-icon"
+                className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400 dark:bg-[#0e0e0f] dark:text-gray-500"
+              >
+                <UnavailableIcon />
+              </div>,
+            )}
           </div>
         )}
         {body}
@@ -321,7 +355,7 @@ export default function SharedContentPreviewCard({
         onClick={onOpenSource}
         disabled={!onOpenSource}
         data-testid="feed-shared-compact-preview"
-        className={`block w-full text-left transition-colors hover:bg-white disabled:cursor-default dark:hover:bg-black/30 ${frameClass}`}
+        className={`${stretch ? 'flex flex-1 flex-col' : 'block'} w-full text-left transition-colors hover:bg-white disabled:cursor-default dark:hover:bg-black/30 ${frameClass}`}
       >
         {photo}
         {body}
@@ -330,7 +364,11 @@ export default function SharedContentPreviewCard({
   }
 
   return (
-    <div data-testid="feed-shared-card" data-shared-type={data.type}>
+    <div
+      data-testid="feed-shared-card"
+      data-shared-type={data.type}
+      className={stretch ? 'flex flex-1 flex-col' : undefined}
+    >
       {/* Pôvodný vlastník stojí NAD kartou – obsah patrí jemu, nie tomu, kto
           ho zdieľa. Pri zdieľaní seba samého sa vynecháva: meno už nesie
           hlavička karty ("Znovu zdieľané"), druhýkrát by mýlilo. */}

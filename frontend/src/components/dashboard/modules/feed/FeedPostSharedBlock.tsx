@@ -7,8 +7,9 @@
  * Presunuté z `FeedPostCard.tsx` bez zmeny (krok d delenia karty, nález 333, R23): JSX, komentáre aj obsluhy sú
  * rovnaké ako predtým, mení sa len odsadenie (o štyri znaky) a podmienka `isShared || taggedUsers.length` z výrazu v
  * JSX sa stala skorým `return null`. Text zdieľajúceho (`sharedCaptionNode`) sa presunul s blokom, lebo ho používa len
- * on. Komponent nemá vlastný stav ani hooky; otvárače (preklik na zdroj, náhľad zdieľaného príspevku, fotka v reposte,
- * odstránenie označenia) dostáva od karty ako vlastnosti.
+ * on. Komponent nemá vlastný stav ani efekty; otvárače (preklik na zdroj, náhľad zdieľaného príspevku, fotka v reposte,
+ * odstránenie označenia) dostáva od karty ako vlastnosti. Jediný hák je údaj, či stojí v ľavom stĺpci
+ * dvojstĺpcového okna (`useFeedDetailSplit`): len tam dostane karta ponuky a portfólia pružnú plochu fotky.
  *
  * PRUŽNÝ STĹPEC OKNA (`fillHeight`): koreňový `div` ostáva PRIAMYM potomkom koreňa karty, na rovnakom mieste medzi
  * médiami a riadkom akcií, a nič sa neobaľuje; pri zdieľanom obsahu v okne je jedinou pružnou časťou stĺpca. `fillHeight`
@@ -20,6 +21,7 @@ import FeedPostCaption, {
   CARD_CAPTION_LINES,
   DETAIL_CAPTION_LINES,
 } from './FeedPostCaption';
+import { useFeedDetailSplit } from './FeedDetailSplitContext';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import type { FeedPost, FeedTaggedUser } from '@/lib/feedApi';
@@ -63,6 +65,8 @@ export default function FeedPostSharedBlock({
   setTagRemoveOpen,
   t,
 }: FeedPostSharedBlockProps) {
+  // Pružná plocha fotky ide len do ľavého stĺpca dvojstĺpcového okna (pevná výška); jednostĺpcové okno ju nemá.
+  const inSplitColumn = useFeedDetailSplit();
   if (!(isShared || taggedUsers.length)) return null;
 
   // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
@@ -92,7 +96,9 @@ export default function FeedPostSharedBlock({
         // posiela `images` len pri `free_post`), takže o `flex-1` tu nie je
         // s čím súperiť.
         fillHeight
-          ? 'subtle-scrollbar min-h-0 flex-1 overflow-y-auto'
+          ? `subtle-scrollbar min-h-0 flex-1 overflow-y-auto${
+              inSplitColumn ? ' flex flex-col' : ''
+            }`
           : fixedBlock
       }`}
     >
@@ -114,6 +120,7 @@ export default function FeedPostSharedBlock({
               ? () => setSharedPhotoOpen(true)
               : undefined
           }
+          fillHeight={fillHeight && inSplitColumn}
         />
       ) : null}
 
