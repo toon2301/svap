@@ -169,6 +169,40 @@ DONE_SINCE_K40 = [
               'karty a jej hookov prežívajú aj naďalej D1 a D8 (ochrana pred dvojitým volaním zmazania a odstránenia označenia, pri vypnutom '
               'tlačidle nepozorovateľné), R3b (ekvivalent) a R4 a R5 (hook lajku počúva udalosť počtov) a X4 (stabilita `onClose` v '
               'hlavičke, K53). Ostáva K56 (opravy 355 a 356; `karty/K56.md`) a potom redizajn (261, 344). Dopad na E2E: žiadny.'),
+    dict(n=355, vetva='K56', pr='#321', zlucene=True,
+         text='HOTOVÉ (K56, PR #321, zlúčené 23. 11. 2026 o 09:42 UTC, merge `a9e70eef`; commit `b651df1c`; spolu s 356 tri commity, 6 '
+              'súborov, +469 a −8 riadkov; kolega ju urobil podľa karty `karty/K56.md`). MEDZERA (K46, kolega aj agent nezávisle): '
+              '`FeedPostCardLayers.tsx` dával oknu zdieľania `FeedPostShareModal` príspevok z feedu (`post`), kým po úprave vlastného '
+              'príspevku drží novú verziu `currentPost`; náhľad skladá okno z `post.caption` a `post.images`, takže po uložení nového '
+              'textu ukázala karta nový text a okno zdieľania z tej istej karty starý. OPRAVA: `post={post}` → `post={currentPost}` '
+              '(`FeedPostCardLayers.tsx`, 204 riadkov, ostáva 204) a dva komentáre, ktoré o chybe hovorili; `post` ostáva vo '
+              'vlastnostiach pre zoznam lajkujúcich a nahlásenie (berú len `post.id`). Kód a testy sú rovnaké ako v prototype agenta '
+              'z podkladov (`karty/K56_podklady.md`): produkčné súbory sa líšia jedným slovom komentára, oba súbory testov sú bajt '
+              'po bajte rovnaké. OVERENIE: nový súbor `FeedPostCard.shareAfterEdit.test.tsx` (170 riadkov, 3 testy; pred opravou '
+              'padá jeden, po oprave prechádzajú tri); zásah Q1 (späť na `post={post}`) zachytený. KONTROLA AGENTA (23. 11. 2026, z '
+              'GitHubu a v kópii `main` mimo repozitára): CI (`checks`, `backend-postgres`) zelené, CodeRabbit bez pripomienok (riziko '
+              '„Minimal“, len kozmetické hlásenie o názve PR „K56“), Codex bez väčších problémov, vlákna ani recenzie nie sú, prvé '
+              'riadky commitov 62, 63 a 65 znakov; zmenené sú len súbory z karty; `tsc` a ESLint s `--max-warnings=0` čisté, celý '
+              'Jest 637 sád, 9 497 testov a 0 snapshotov (na `main` pred K56 635, 9 488 a 0). RUČNÝ TEST MAJITEĽA (23. 11. 2026): '
+              'K56 hotová, nasadená a otestovaná; nové nálezy nenahlásené. Dopad na E2E: žiadny.'),
+    dict(n=356, vetva='K56', pr='#321', zlucene=True,
+         text='HOTOVÉ (K56, PR #321, zlúčené 23. 11. 2026 o 09:42 UTC, merge `a9e70eef`; commit `8e96b7bc`; kolega ju urobil podľa '
+              'karty `karty/K56.md`). MEDZERA (K46, kolega našiel, agent reprodukoval): obnova feedu počas prebiehajúceho lajku '
+              'nechala v `currentPost` starý lajk: efekt E4 v `FeedPostCard.tsx` vráti `currentPost` na hodnoty z feedu a efekt E5, '
+              'ktorý premieta živý lajk, bežal len pri zmene lajku alebo počtu, takže sa po obnove feedu nespustil a ani po '
+              'potvrdení lajku serverom (hodnoty rovnaké ako optimistický stav); mobilná obrazovka detailu a prehliadač fotky, ktoré '
+              'preberajú lajk z `currentPost` pri otvorení, sa potom otvorili s nesprávnym lajkom a počtom. OPRAVA: do závislostí E5 '
+              'pribudol `post` (`[post, isLiked, likesCount]`) a päť riadkov komentára o tom, prečo tam je a že E4 musí ostať pred E5 '
+              '(`FeedPostCard.tsx` 493 → 498 riadkov); jedna veta úvodného komentára v `FeedPostCard.feedSync.test.tsx`. Iné '
+              'možnosti sa nehodili: spojiť E4 a E5 by pri ďalšom lajku vrátilo starý text po úprave (E5 zámerne mení `previous`) a '
+              'závislosť na lajku a počte z `post` by chybu nechala (zastaraný snapshot má rovnaké hodnoty). Prechodový jav (zmeral '
+              'agent sondou v prototype): pri obnove feedu s iným lajkom bez prebiehajúceho lajku má vrstva `currentPost` jedno '
+              'vykreslenie navyše so starým lajkom a potom nový stav, bez viditeľného dôsledku. OVERENIE: nový súbor '
+              '`FeedPostCard.feedRefreshDuringLike.test.tsx` (285 riadkov, 6 testov; pred opravou padajú tri, po oprave všetkých '
+              'šesť prechádza, päť opakovaných behov bez pádu v prototype); zásahy Q2 až Q9 (pôvodné závislosti, zlá oprava so '
+              'závislosťou na poliach lajku z `post`, chýbajúci E4, zlé poradie E4 a E5, premietanie len lajku, len počtu, nahradenie '
+              '`currentPost` príspevkom z feedu a závislosť len na `post`) všetky zachytené už novými testami, aj na zlúčenom kóde. '
+              'KONTROLA AGENTA a ručný test majiteľa: pozri 355 (rovnaká dávka). Dopad na E2E: žiadny.'),
 ]
 
 # Zlúčené PR, v ktorých nie je hotový celý nález (len časť otvoreného nálezu alebo nález nemá číslo); `hotove.py` ich pripája do

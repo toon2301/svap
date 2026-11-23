@@ -57,7 +57,7 @@ NEW_ITEMS_K51 = [
               'vlastnom označení, takže či má byť klikateľné, vysvetlí majiteľ). Zhoduje sa so skupinou 8 v nálezu '
               '261 (redizajn tagov: zrušiť farebné čipy a nahradiť ich obyčajným textom `@Meno`, tagy na vlastný '
               'riadok pod textom, ktoré sa balia a rozbaľujú spolu s „Viac“); tento nález je jej podmnožina.',
-         note='NEJASNÉ: ide spolu s redizajnom (261, skupina 8; implementuje agent podľa R64) a zoznam označených je od '
+         note='NEJASNÉ: ide spolu s redizajnom (261, skupina 8; kód píše kolega podľa presnej karty agenta, R67) a zoznam označených je od '
               'K51 v `FeedPostSharedBlock.tsx` (`<ul data-testid="feed-post-tags">`). Vzhľad zadal majiteľ '
               '(obyčajný text bez bubliny), detaily (farba vo svetlom a tmavom režime, medzery, či meno vedie na '
               'profil) agent podľa R49 najprv potvrdí s majiteľom v návrhu; bez schváleného vzhľadu sa kód '

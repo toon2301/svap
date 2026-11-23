@@ -11,7 +11,7 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K31, K36 až K43, K45 a K48 až K55 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K31, K36 až K43, K45 a K48 až K56 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
@@ -35,10 +35,10 @@ zoznam nemôže ticho zastarať.
 """
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy '
-             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45 a K48 až K55 sú hotové (z '
+             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45 a K48 až K56 sú hotové (z '
              'K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 '
              '(PR #273), 181 (PR #274), 182 (PR #277), 183 (PR #279), 184 (PR #282), 185 (PR #285), 186 (PR #288), 187 (PR #290), '
-             '188 (PR #293), 189 (PR #296), 190 (PR #299), 191 (PR #303), 192 (PR #305), 193 (PR #308), 194 (PR #310), 195 (PR #312), 196 (PR #314), 197 (PR #316), 198 (PR #318; len karta K55) a 199 sú len zoznam alebo karta, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) '
+             '188 (PR #293), 189 (PR #296), 190 (PR #299), 191 (PR #303), 192 (PR #305), 193 (PR #308), 194 (PR #310), 195 (PR #312), 196 (PR #314), 197 (PR #316), 198 (PR #318; len karta K55), 199 (PR #320; zápis a karta K56) a 200 sú len zoznam alebo karta, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) '
              'a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z 13. 11. 2026 (majiteľ 7. 11. 2026: '
              'opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť); oprava pripomienky CodeRabbitu vo vetve K21 (commit '
              '`71f9cff4`) bola druhá jednorazová výnimka majiteľa z 13. 11. 2026, lebo kolega už nemohol vetvu upraviť. Dávku K21 '
@@ -77,8 +77,8 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              '2026; výsledok `karty/K45_vysledok.md`) a K31 je zlúčená (PR #304, 21. 11. 2026 o 07:11 UTC; commit `906f7c32`; '
              'výsledok `karty/K31_vysledok.md`); mapovanie si robil kolega sám. Okno detailu '
              'príspevku na počítači (344) je zmapované kolegom; podľa R64 (20. 11. 2026) ho aj redizajn komentárov (261) po '
-             'rekapitulácii a vizuálnom návrhu s odporúčaním a po 100 % dohode s majiteľom mapuje znova a implementuje agent, nie '
-             'kolega; pred tým majiteľ 21. 11. 2026 potvrdil krok kolegu K31 (upgrade Next.js), ktorý je zlúčený. Na jeho '
+             'rekapitulácii a vizuálnom návrhu s odporúčaním a po 100 % dohode s majiteľom mal implementovať agent, no majiteľ to '
+             '23. 11. 2026 zmenil (R67): po dohode napíše agent presné karty a kód píše kolega; pred tým majiteľ 21. 11. 2026 potvrdil krok kolegu K31 (upgrade Next.js), ktorý je zlúčený. Na jeho '
              'otázku, či sa pred redizajnom poriadne delí `FeedPostCard.tsx`, agent odporučil áno a majiteľ 21. 11. 2026 R65 (a) '
              'schválil: kolega mapuje podľa karty `karty/K46.md` a majiteľ chce navyše dvojité mapovanie (nezávisle mapuje aj '
              'agent a po dokončení kolegu sa oba výsledky porovnajú); potom delenie po malých krokoch a redizajn až po zlúčení '
@@ -104,10 +104,11 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              '`karty/K54.md`) a K55 (PR #319, 23. 11. 2026 o 06:19 UTC; mobilný detail v dvoch presunoch a zmazanie dočasných '
              'odtlačkov a sond; karta `karty/K55.md`) sú zlúčené, agent ich overil rovnako (výsledky sú v nálezu 333, ktorý je '
              'tým hotový) a ručné testy majiteľa po nich prešli bez nových nálezov; delenie je dokončené (`FeedPostComments.tsx` '
-             '401, `FeedPostCard.tsx` 493 a `FeedPostMobileDetail.tsx` 358 riadkov). Ďalšia dávka je K56 (opravy 355 a 356, '
-             'posledný krok pred redizajnom; karta `karty/K56.md`); podľa R66 (a) (21. 11. 2026) začne redizajn (rekapitulácia a '
-             'vizuálny návrh od agenta, R64) až keď majiteľ potvrdí, že K56 je nasadená a otestovaná; agent bez pokynu majiteľa '
-             'nič ďalšie nemapuje ani nepripravuje. Pri každej dávke má kolega doplniť aj manuál ručných '
+             '401, `FeedPostCard.tsx` 493 a `FeedPostMobileDetail.tsx` 358 riadkov). K56 (PR #321, 23. 11. 2026 '
+             'o 09:42 UTC; opravy 355 a 356, posledný krok pred redizajnom; karta `karty/K56.md`) je zlúčená, agent ju overil rovnako '
+             'a jej ručný test majiteľa prešiel; tým sa podľa R66 (a) začína redizajn: majiteľ 23. 11. 2026 zmenil R64 (R67), takže po '
+             'rekapitulácii a vizuálnom návrhu s odporúčaním a po 100 % dohode napíše agent presné karty a kód píše kolega; agent '
+             'bez pokynu majiteľa nič nepripravuje mimo tohto postupu. Pri každej dávke má kolega doplniť aj manuál ručných '
              'testov `sablony/dymovy_test.md`, ak dávka ručné testy má (K50 pridala krok 9, K51 až K55 odrážky). Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
              'upozornení a E2E regresie 345 a 346 (zatiaľ len lokálne overené). Údržba zoznamu (jedna dokumentačná vetva agenta; '
              'majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky PO-A a '
@@ -121,27 +122,13 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA = [
-    dict(n='355', davka='K56',
-         co='Okno zdieľania príspevku ukáže po úprave vlastného príspevku starý text a staré fotky (`FeedPostCardLayers.tsx` dáva '
-            'dialógu `post` namiesto `currentPost`).',
-         preco='JASNÉ (posledný krok pred redizajnom, R66 (a); dávka K56 spolu s 356, každá oprava vlastný commit; karta '
-               '`karty/K56.md` je napísaná (23. 11. 2026) a prototyp agenta v kópii mimo repozitára ukázal, že nový test pred '
-               'opravou padá a po oprave prejde; oprava je jeden riadok `post={currentPost}` v `FeedPostCardLayers.tsx` (204 '
-               'riadkov) a nový súbor testov, DOM sa nemení; kolega doplní aj manuál ručných testov (`sablony/dymovy_test.md`); '
-               'delenie karty je hotové, takže pravidlo 500 riadkov sa neobchádza).'),
-    dict(n='356', davka='K56',
-         co='Obnova feedu počas prebiehajúceho lajku nechá v `currentPost` starý lajk: mobilná obrazovka detailu a prehliadač '
-            'fotky sa otvoria s nesprávnym lajkom a počtom.',
-         preco='JASNÉ (v tej istej dávke K56 po 355; oprava je jedna závislosť efektu E5 v `FeedPostCard.tsx` (`post` do '
-               'závislostí; E4 musí ostať pred ním), karta má 493 riadkov, takže zmena smie pridať najviac 7 riadkov; nový súbor '
-               'testov; prototyp agenta: z 9 nových testov (355 a 356) 4 pred opravami padajú a po nich všetky prejdú).'),
     dict(n='344', davka='K47',
          co='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch a užšie okno len s '
             'textom (R53).',
          preco='NEJASNÉ (najprv K31 (zlúčená, PR #304) a podľa R65 (a), ktoré majiteľ schválil 21. 11. 2026, '
-               'delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (K46 až K55 sú hotové, posledná dávka K55 je zlúčená 23. 11. 2026 v PR #319) a opravy 355 a 356 v K56; potom rekapitulácia a vizuálny návrh s odporúčaním od '
-               'agenta; po 100 % dohode vrátane odpovedí na R63 mapuje znova a implementuje agent, nie kolega, R64 '
-               'z 20. 11. 2026; karta pre kolegu sa nepíše). Predbežné mapovanie kolegu je hotové v '
+               'delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (K46 až K56 sú hotové, posledná dávka K56 je zlúčená 23. 11. 2026 v PR #321); teraz rekapitulácia a vizuálny návrh s odporúčaním od '
+               'agenta; po 100 % dohode vrátane odpovedí na R63 napíše agent presnú kartu a kód píše kolega (R67 z '
+               '23. 11. 2026, zmena R64). Predbežné mapovanie kolegu je hotové v '
                'K45 (`karty/K45_vysledok.md`; agent overil kľúčové tvrdenia čítaním kódu 20. 11. 2026): dve malé '
                'úpravy v `FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx`, dva commity (najprv ponuka a '
                'portfólio v dvoch stĺpcoch, potom užšie okno len s textom), nový súbor testov a úprava štyroch '
@@ -154,10 +141,10 @@ FRONTA = [
             'bublinka s lajkom, odpovede so zvislou čiarou; pri ňom sa rieši aj pole na text pri odpovedi na '
             'komentár.',
          preco='NEJASNÉ (najprv K31 (zlúčená, PR #304) a podľa R65 (a), ktoré majiteľ schválil 21. 11. 2026, '
-               'delenie `FeedPostCard.tsx` (K46 mapovanie, K48 a K49 ochrana, K50 až K55 delenie, všetko hotové) a opravy 355 a 356 v K56 (komentáre '
+               'delenie `FeedPostCard.tsx` (K46 mapovanie, K48 a K49 ochrana, K50 až K56 delenie a opravy, všetko hotové) (komentáre '
                'sú rozdelené a technicky na kartu nečakajú, no zmena štruktúry a zmena vzhľadu sa nemiešajú), potom rekapitulácia a vizuálny návrh s '
-               'odporúčaním od agenta (R49); po 100 % dohode mapuje a implementuje agent, nie kolega (R64, 20. 11. '
-               '2026); K40 až K43 a K45 sú hotové; R59). Vzhľad komentárov je schválený (R52, obrázky '
+               'odporúčaním od agenta (R49); po 100 % dohode napíše agent presné karty a kód píše kolega (R67, 23. 11. '
+               '2026, zmena R64); K40 až K43 a K45 sú hotové; R59). Vzhľad komentárov je schválený (R52, obrázky '
                '`navrhy/mobil-komentare.png` a `navrhy/pc-komentare.png`), no pole na text pri odpovedi na komentár '
                'sa musí doriešiť: majiteľ dodá, čo je s ním (R49: najprv návrh vzhľadu s možnosťami a odporúčaním, '
                'potom karta). Ide v jednej dávke po poslednej dávke delenia `FeedPostComments.tsx` (R47; hotová v '
@@ -173,7 +160,7 @@ FRONTA = [
                'redizajne komentárov a rozložení príspevkov, spolu s 357 a 359).'),
     dict(n='359', davka='po redizajne',
          co='Označení používatelia sú fialové bubliny `@Meno`; majiteľ chce obyčajný text bez bubliny (podmnožina 261, skupina 8).',
-         preco='NEJASNÉ (ide spolu s redizajnom tagov v 261, ktorý implementuje agent po 100 % dohode o vzhľade, R49 a R64; '
+         preco='NEJASNÉ (ide spolu s redizajnom tagov v 261, ktorý píše kolega podľa presnej karty po 100 % dohode o vzhľade, R49 a R67; '
                'ručný test majiteľa po K51).'),
     dict(n='360', davka='po redizajne',
          co='Mobil: po kliknutí na upozornenie k príspevku alebo na príspevok na Nástenke sa niekedy otvorí starý spôsob '
@@ -208,7 +195,7 @@ FRONTA = [
          preco='NEJASNÉ (najprv mapovanie etapy A podľa R51 a R56, kód nemeň, kým majiteľ nepovie; plán etáp je v '
                'nálezu 262). Vzhľad je schválený (R51 a R56, obrázky v `navrhy/`), takže R49 je splnené. Etapa B '
                '(príspevok a detail príspevku) ide až po delení `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` (hotové, K55) a po '
-               'opravách 355 a 356 (K56), '
+               'opravách 355 a 356 (hotové, K56), '
                'etapa C (komentáre s redizajnom 261) až po delení `FeedPostComments.tsx` (R47); súbory nad 500 '
                'riadkov sa nemenia.'),
     dict(n='24', davka='PO-A',

@@ -404,7 +404,7 @@ DECISIONS_DALSIE = [
                      'skúša vzhľad len v dvoch šírkach (okolo 380 a 576 px), nie ešte aj v starých 864 px, a 344 '
                      'nečaká na podrobnosti k poľu pri odpovedi. (5c) by miešala dve vzhľadové zmeny v jednom '
                      'nasadení a sťažila by hľadanie príčiny, keby niečo vyzeralo zle.',
-         kedy='Pri rekapitulácii s vizuálnym návrhom po kroku kolegu (majiteľ 20. 11. 2026: najprv rekapitulácia a vizuál s odporúčaním, až potom rozhodnutie); karta pre kolegu sa nepíše, mapovanie a implementáciu robí agent (R64).'),
+         kedy='Pri rekapitulácii s vizuálnym návrhom po kroku kolegu (majiteľ 20. 11. 2026: najprv rekapitulácia a vizuál s odporúčaním, až potom rozhodnutie); kartu pre kolegu píše agent po 100 % dohode (R67 z 23. 11. 2026 zmenilo R64: kód redizajnu píše kolega podľa presnej karty).'),
     dict(id='R64', tema='Rozdelenie práce pri redizajne: kto navrhuje vzhľad, kto mapuje kód, kto píše kód a kto kontroluje',
          otazka='Pri otázke k mapovaniu 344 (20. 11. 2026) sa ukázalo, že rozdelenie práce nie je zapísané ako jedno '
                 'rozhodnutie. Dnešný stav podľa zápisov: vzhľad navrhuje agent a schvaľuje majiteľ (R49; návrhy v '
@@ -429,7 +429,9 @@ DECISIONS_DALSIE = [
                  '(znova) aj implementáciu redizajnu komentárov (261, K44) a rozloženia okna príspevkov na počítači '
                  '(344: ponuka, portfólio a text) robí agent, nie kolega, teda možnosti (b) aj (c). Ak má agent '
                  'nejasnosť alebo si je istý, že niečomu nerozumie, pýta sa majiteľa. Pri nálezoch HNEĎ ostáva '
-                 'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz.',
+                 'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz. ZMENENÉ 23. 11. 2026 (R67): '
+                 'implementáciu redizajnu robí kolega podľa presnej karty agenta (agent píše karty a kontroluje výsledok '
+                 'voči odsúhlasenému vzhľadu); ostatné z tejto odpovede platí.',
          datum='20. 11. 2026'),
     dict(id='R65', tema='Delenie `FeedPostCard.tsx` (a posúdenie `FeedPostMobileDetail.tsx`) poriadne pred redizajnom komentárov a okna príspevkov na počítači',
          otazka='Majiteľ sa 21. 11. 2026 pýta, či nie je bezpečnejšie a lepšie rozdeliť súbor poriadne ešte pred '

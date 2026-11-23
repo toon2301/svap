@@ -213,7 +213,7 @@ NEW_ITEMS_NASTENKA = [
               'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40, K41, K42, K43 a K31); nič sa '
               'nesilí. STAV 20. 11. 2026: K40 až K43 a K45 sú hotové a delenie `FeedPostComments.tsx` je hotové; K31 '
               'je zlúčená (PR #304, 21. 11. 2026); majiteľ 20. 11. 2026: pred redizajnom ešte jeden krok kolegu (K31) a 21. 11. 2026 schválil R65 (a): poriadne delenie `FeedPostCard.tsx` (K46; mapuje kolega aj agent), potom rekapitulácia a '
-              'vizuál s odporúčaním; po 100 % dohode mapuje a implementuje agent (R64). Pri redizajne treba vyriešiť '
+              'vizuál s odporúčaním; po 100 % dohode napíše agent presné karty a kód píše kolega (R67 z 23. 11. 2026, zmena R64). STAV 23. 11. 2026: delenie aj opravy 355 a 356 (K56) sú hotové, začína sa dohadovanie vzhľadu. Pri redizajne treba vyriešiť '
               'aj pole na text pri odpovedi na komentár (R52 ho nechal ako dnes); čo presne má byť inak, dodá '
               'majiteľ pri príprave vzhľadu, ktorý sa podľa R49 najprv prebere (agent pripraví návrh s možnosťami a '
               'odporúčaním) a až potom ide karta. Možná súvislosť (neoverené): staršie prianie skupiny 6 '

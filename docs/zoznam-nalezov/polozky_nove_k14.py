@@ -183,7 +183,7 @@ NEW_ITEMS_K14 = [
               '`FeedPostDetailOverlay.tsx:361-362` (hovorí o `max-h-[90vh]`, kód má `95vh`). ČAKÁ: rekapitulácia a '
               'vizuálny návrh s odporúčaním od agenta, potom 100 % dohoda s majiteľom vrátane odpovedí na R63 (päť '
               'drobností: kostra pri načítaní, repost textového príspevku, fotka karty, šírka 576 alebo 580 px, '
-              'poradie); mapovanie (znova) a implementáciu robí podľa R64 agent, nie kolega. DOPLNOK 20. 11. 2026 '
+              'poradie); po dohode napíše agent presnú kartu a kód píše kolega (R67, zmena R64 z 23. 11. 2026). DOPLNOK 20. 11. 2026 '
               '(agent, čítanie kódu po správe majiteľa): majiteľ upresnil, že ponuka a portfólio majú v okne na '
               'počítači fungovať „tak ako príspevok s foto“, teda fotka karty vyplní zvyšok ľavého stĺpca (pri fotke '
               'príspevku je to pružný blok `feed-post-media-fill`, `FeedPostCard.tsx:742-760`, so spodnou hranicou 8 '
