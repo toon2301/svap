@@ -13,8 +13,9 @@
  *    vľavo hlavička, text, fotka alebo karta a akcie, vpravo výhradne komentáre. Okno je široké 54 rem (864 px).
  *    Pri fotke, ponuke a portfóliu má pevnú výšku 95 % obrazovky (pružná je fotka alebo karta); príspevok len
  *    s textom (aj repost textového príspevku) nemá nič pružné, preto má výšku podľa obsahu (najmenej 20 rem,
- *    najviac 95 % obrazovky; na veľmi nízkej obrazovke je aj minimum najviac 95 % jej výšky) a text sa ukáže celý
- *    (R73).
+ *    najviac 95 % obrazovky; na veľmi nízkej obrazovke je aj minimum najviac 95 % jej výšky) a text voľného
+ *    príspevku sa ukáže celý (R73); repost textového príspevku má text zdieľajúceho na desať riadkov a pôvodný text
+ *    na päť (R77).
  *  - POD 1 024 px (zúžené okno prehliadača): pôvodné jednostĺpcové rozloženie – pevný blok (hlavička, text,
  *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor. Šírku určuje obsah: 864 px pri
  *    fotke, ponuke a portfóliu, 576 px (36 rem) pri texte; úzke je aj okno pri načítaní a pri chybe, takže sa
@@ -240,7 +241,7 @@ export default function FeedPostDetailOverlay({
   const wideContent = !isMobile || (!loading && (hasPhoto || sharesCard));
   /** Dva stĺpce: na počítači po načítaní každý príspevok. */
   const splitLayout = !isMobile && !loading && post !== null;
-  /** Príspevok len s textom (aj repost textového príspevku): nič pružné, preto výška podľa obsahu a text celý. */
+  /** Príspevok len s textom (aj repost textového príspevku): nič pružné, preto výška podľa obsahu a text voľného príspevku celý. */
   const textOnlySplit = splitLayout && !hasPhoto && !sharesCard;
   /**
    * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?

@@ -5,7 +5,8 @@
  * (R53) a od R73 aj pre príspevok len s textom (aj repost textového príspevku).
  *
  * Príspevok len s textom (`textOnly`) nemá nič pružné, čo by pohltilo výšku: okno má výšku podľa obsahu (strop
- * `95vh` a najmenej `20rem` rieši `FeedPostDetailOverlay`), text sa ukáže celý a posúva sa len on vo vlastnom
+ * `95vh` a najmenej `20rem` rieši `FeedPostDetailOverlay`), text voľného príspevku sa ukáže celý (repost textového
+ * príspevku má text zdieľajúceho na desať riadkov a pôvodný text na päť, R77) a posúva sa len on vo vlastnom
  * rámiku, keď sa nezmestí (viď `FeedDetailTextOnlyContext`). Komentáre idú flexom (`flexFill`), lebo percentuálna
  * výška sa v okne bez pevnej výšky nevyhodnotí (nález 363).
  *
@@ -100,7 +101,7 @@ type FeedPostDetailSplitLayoutProps = {
   onCommentsTotalChange: (total: number) => void;
   /** Rozpracovaný komentár drží okno: pri prepnutí rozloženia sa komentáre odmountujú (viď `draft`). */
   commentDraft?: FeedCommentDraft;
-  /** Príspevok len s textom (aj repost textového príspevku): text sa ukáže celý a okno má výšku podľa obsahu. */
+  /** Príspevok len s textom (aj repost textového príspevku): okno má výšku podľa obsahu, text voľného príspevku je celý. */
   textOnly?: boolean;
 };
 

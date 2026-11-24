@@ -1,8 +1,8 @@
 /**
  * Okno detailu sleduje ŽIVÝ stav fotiek aj pri texte príspevku (K58, krok 3, nález 367, R73).
  *
- * Autor má príspevok s jednou rozpracovanou fotkou a dlhým textom: okno je dvojstĺpcové s pevnou výškou a text má 10
- * riadkov s „Viac". Keď moderácia poslednú fotku zamietne počas otvoreného okna, ostáva dvojstĺpcové, no príspevok je
+ * Autor má príspevok s jednou rozpracovanou fotkou a dlhým textom: okno je dvojstĺpcové s pevnou výškou a text má 5
+ * riadkov (R77) s „Viac". Keď moderácia poslednú fotku zamietne počas otvoreného okna, ostáva dvojstĺpcové, no príspevok je
  * odvtedy len s textom: okno dostane výšku podľa obsahu a text sa ukáže celý. Karta pritom ostáva pripojená, takže stav
  * „rozbalené" z predošlého rozloženia by prežil a text by ostal v rámiku `max-h-[40vh]` s prepínačom „Menej": kľúč
  * v `FeedPostCardCaption` ho vynuluje.
@@ -225,7 +225,7 @@ afterEach(() => {
 });
 
 describe('zamietnutie poslednej fotky pri rozbalenom texte', () => {
-  it('kým sa fotka spracúva: pevná výška, text na 10 riadkoch s „Viac" a po rozbalení rámik s „Menej"', async () => {
+  it('kým sa fotka spracúva: pevná výška, text na 5 riadkoch s „Viac" a po rozbalení rámik s „Menej"', async () => {
     const p = prispevok({ images: [rozpracovanaFotka(11)] });
     odpovedaj(p);
     await otvorOkno(p);
@@ -233,7 +233,7 @@ describe('zamietnutie poslednej fotky pri rozbalenom texte', () => {
     const okno = screen.getByTestId('feed-post-overlay');
     expect(okno).toHaveClass('h-[95vh]');
     expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
-    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-[10]');
+    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-5');
     const prepinac = screen.getByTestId('feed-post-caption-toggle');
     expect(prepinac).toHaveTextContent('Viac');
 

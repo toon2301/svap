@@ -21,6 +21,10 @@
  * ustúpi karte, keď sa nezmestí (najmenej päť riadkov), a posúva sa len vo vlastnom rámčeku. Medzery medzi súrodencami
  * dáva v ľavom stĺpci `gap-3` namiesto `space-y-3`: repost s fotkou rozpúšťa obal karty a rám (`display: contents`), na
  * ktorých by sa vonkajšie okraje stratili. Mimo ľavého stĺpca ostáva všetko ako predtým.
+ *
+ * REPOST TEXTOVÉHO PRÍSPEVKU V OKNE (`useFeedDetailTextOnly`, R73 a R77): nič tu nesúperí o miesto, preto má text zdieľajúceho
+ * desať riadkov (`DETAIL_CAPTION_LINES`; predtým bol celý) a pôvodný text päť (`SharedContentPreviewCard`); „Viac" je od
+ * 11. a od 6. riadku.
  */
 
 import FeedPostCaption, {
@@ -77,7 +81,8 @@ export default function FeedPostSharedBlock({
 }: FeedPostSharedBlockProps) {
   // Pružná plocha fotky ide len do ľavého stĺpca dvojstĺpcového okna (pevná výška); jednostĺpcové okno ju nemá.
   const inSplitColumn = useFeedDetailSplit();
-  // Okno príspevku len s textom (R73): texty sa ukážu celé; blok je pružný len vtedy, keď nesie zdieľaný obsah.
+  // Okno príspevku len s textom (R73, R77): text zdieľajúceho má desať riadkov, pôvodný text päť; blok je pružný len
+  // vtedy, keď nesie zdieľaný obsah.
   const textOnly = useFeedDetailTextOnly();
   if (!(isShared || taggedUsers.length)) return null;
 
@@ -90,7 +95,7 @@ export default function FeedPostSharedBlock({
         expansionBound={fillHeight ? 'roomy' : 'compact'}
         maxLines={
           textOnly
-            ? 0
+            ? DETAIL_CAPTION_LINES
             : isDetail
               ? fillHeight && inSplitColumn
                 ? SPLIT_SHARED_CAPTION_LINES

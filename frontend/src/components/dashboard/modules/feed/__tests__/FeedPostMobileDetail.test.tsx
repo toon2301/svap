@@ -298,7 +298,7 @@ describe('rozloženie obrazovky', () => {
 });
 
 describe('text príspevku', () => {
-  it('sa zbalí na desať riadkov a rozbalí sa v bežnom toku dokumentu', async () => {
+  it('príspevku s fotkou sa zbalí na päť riadkov a rozbalí sa v bežnom toku dokumentu', async () => {
     // jsdom nelayoutuje – „presahuje text orezanie?" sa nastavuje priamo na
     // uzle, rovnako ako v ostatných testoch textu príspevku.
     Object.defineProperty(HTMLParagraphElement.prototype, 'clientHeight', {
@@ -321,7 +321,7 @@ describe('text príspevku', () => {
       );
 
       const caption = within(detail).getByTestId('feed-mobile-detail-caption');
-      expect(caption.className).toContain('line-clamp-[10]');
+      expect(caption.className).toContain('line-clamp-5');
       // Žiadny overlay ani vlastný strop – text je bežná časť toku.
       expect(caption.className).not.toContain('overflow-y-auto');
       expect(caption.className).not.toMatch(/max-h-\[/);
@@ -331,7 +331,7 @@ describe('text príspevku', () => {
       );
 
       const expanded = within(detail).getByTestId('feed-mobile-detail-caption');
-      expect(expanded.className).not.toContain('line-clamp-[10]');
+      expect(expanded.className).not.toContain('line-clamp-5');
       expect(expanded.className).not.toMatch(/max-h-\[/);
       expect(expanded.className).not.toContain('overflow-y-auto');
       // Obsah pod textom ostáva pod ním v tom istom toku – teda sa posunie

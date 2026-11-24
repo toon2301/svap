@@ -1,9 +1,10 @@
 /**
  * Počet riadkov textu na mobilnej obrazovke detailu príspevku (K58, krok 1, nález 357).
  *
- * Text príspevku sa na obrazovke zbalí na desať riadkov (rovnako ako v okne detailu na počítači), nie na päť. Karta
- * vo feede pod obrazovkou ostáva na troch riadkoch. Rozbalený text je bežná časť toku, bez stropu a bez vlastného
- * posúvania.
+ * Text príspevku len s textom sa na obrazovke zbalí na desať riadkov, nie na päť (od R77 má päť riadkov príspevok s
+ * fotkou, ponukou, portfóliom a náhľadom zdieľaného obsahu: viď `FeedPostMobileDetail.captionLinesMedia.test.tsx`).
+ * Karta vo feede pod obrazovkou ostáva na troch riadkoch. Rozbalený text je bežná časť toku, bez stropu a bez vlastného
+ * posúvania. Príspevky v tomto súbore nemajú fotku.
  *
  * jsdom nelayoutuje, takže „presahuje text desať riadkov?“ sa nastavuje na uzle (`scrollHeight` proti `clientHeight`).
  */

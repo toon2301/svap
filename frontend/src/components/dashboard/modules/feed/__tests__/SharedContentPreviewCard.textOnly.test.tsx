@@ -1,8 +1,9 @@
 /**
- * Pôvodný text reposta v okne príspevku len s textom (K58, krok 3, R73).
+ * Pôvodný text reposta v okne príspevku len s textom (K58, krok 3, R73, R77).
  *
- * V ľavom stĺpci okna len s textom sa aj pôvodný text zdieľaného príspevku ukáže celý (bez orezania a bez „Viac“).
- * Inde (karta vo feede, dialóg zdieľania, okno s fotkou, jednostĺpcové okno) ostáva 3 riadky s „Viac“ a „Menej“.
+ * V ľavom stĺpci okna len s textom má pôvodný text zdieľaného príspevku 5 riadkov a „Viac“ od šiesteho (R77; pred R77 bol
+ * celý, bez „Viac“). Inde (karta vo feede, dialóg zdieľania, okno s fotkou, jednostĺpcové okno) ostáva 3 riadky s „Viac“
+ * a „Menej“.
  *
  * jsdom nelayoutuje, takže „presahuje text riadky?“ sa nastavuje na uzle (`scrollHeight` proti `clientHeight`).
  */
@@ -63,7 +64,7 @@ afterEach(() => {
 });
 
 describe('pôvodný text reposta v okne len s textom', () => {
-  it('je celý: bez orezania a bez „Viac“, aj keď by presahoval', () => {
+  it('má 5 riadkov a „Viac“, keď presahuje (R77)', async () => {
     nastavVysky();
     render(
       <FeedDetailTextOnlyProvider value>
@@ -72,9 +73,10 @@ describe('pôvodný text reposta v okne len s textom', () => {
     );
 
     const text = screen.getByTestId('feed-shared-caption');
-    expect(text.className).not.toContain('line-clamp');
+    expect(text).toHaveClass('line-clamp-5');
+    expect(text).not.toHaveClass('line-clamp-3');
     expect(text).toHaveTextContent(DLHY_TEXT);
-    expect(screen.queryByTestId('feed-shared-caption-toggle')).toBeNull();
+    expect(await screen.findByTestId('feed-shared-caption-toggle')).toHaveTextContent('Viac');
   });
 
   it('nie je pružný: bez `fillParent`, rám ostáva `space-y-2` a obal karty bez tried', () => {
@@ -91,7 +93,7 @@ describe('pôvodný text reposta v okne len s textom', () => {
     expect(screen.getByTestId('feed-shared-card')).not.toHaveAttribute('class');
   });
 
-  it('ťuk na text otvára pôvodný príspevok aj bez orezania', () => {
+  it('ťuk na text otvára pôvodný príspevok', () => {
     const otvor = jest.fn();
     render(
       <FeedDetailTextOnlyProvider value>
