@@ -1,9 +1,10 @@
 /**
- * Okno detailu: rozpracovaný komentár pri prepnutí rozloženia kvôli živému stavu fotiek (PR #323, nález CodeRabbitu).
+ * Okno detailu: rozpracovaný komentár pri prepnutí rozloženia (PR #323, nález CodeRabbitu; K58).
  *
- * Rozloženie sa prepína nielen šírkou obrazovky, ale aj tým, či je v príspevku čo ukázať v médiovej ploche: ak moderácia
- * zamietne jedinú (rozpracovanú) fotku počas otvoreného okna, okno prejde z dvoch stĺpcov na jeden a komentáre sa
- * odmountujú. Text, ktorý autor práve písal, tým nesmie zmiznúť (text drží okno, viď `useFeedCommentDraft`).
+ * Rozloženie sa prepína šírkou obrazovky: ak sa okno prehliadača zúži pod 1 024 px počas otvoreného okna, okno prejde
+ * z dvoch stĺpcov na jeden a komentáre sa odmountujú. Text, ktorý autor práve písal, tým nesmie zmiznúť (text drží
+ * okno, viď `useFeedCommentDraft`). Zamietnutie jedinej (rozpracovanej) fotky počas otvoreného okna rozloženie na
+ * počítači od K58 (R73) nemení: príspevok len s textom má tiež dva stĺpce, text ostane v poli aj tak.
  *
  * Vlastný súbor kvôli falošným časovačom: dosledovanie fotiek beží na intervale, rovnako ako v
  * `FeedPostDetailOverlay.livePhotos` (a rovnako ako tam sa nemiešajú falošné časovače so skutočnými v jednom module).
@@ -58,9 +59,10 @@ jest.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
+let mockIsMobile = false;
 jest.mock('@/hooks', () => ({
-  useIsMobile: () => false,
-  useIsMobileState: () => ({ isMobile: false, isResolved: true }),
+  useIsMobile: () => mockIsMobile,
+  useIsMobileState: () => ({ isMobile: mockIsMobile, isResolved: true }),
 }));
 
 jest.mock('../../shared/useProtectedImage', () => ({
@@ -148,6 +150,7 @@ function prispevokSoZamietnutouFotkou(): FeedPost {
 }
 
 beforeEach(() => {
+  mockIsMobile = false;
   jest.useFakeTimers();
   jest.clearAllMocks();
   resetOverlayLayers();
@@ -165,6 +168,29 @@ afterEach(() => {
 
 describe('okno detailu: rozpracovaný komentár a zamietnutie fotky počas písania', () => {
   it('text ostane v poli, keď okno prejde z dvoch stĺpcov na jeden', async () => {
+    mockedGetPost.mockReset();
+    mockedGetPost.mockResolvedValue(prispevokSRozpracovanouFotkou());
+    const { rerender } = render(<FeedPostDetailOverlay postId={7} onClose={jest.fn()} />);
+    await act(async () => {});
+    await waitFor(() => expect(screen.getByTestId('feed-post-card')).toBeInTheDocument());
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(NAZOV_POLA), {
+      target: { value: 'Rozpísaný komentár' },
+    });
+
+    // Okno prehliadača sa zúži pod 1 024 px: rozloženie sa prepne samo a komentáre sa vykreslia znova.
+    mockIsMobile = true;
+    rerender(<FeedPostDetailOverlay postId={7} onClose={jest.fn()} />);
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('feed-post-overlay-split')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByLabelText(NAZOV_POLA)).toHaveValue('Rozpísaný komentár');
+    await act(async () => {});
+  });
+
+  it('text ostane v poli aj po zamietnutí poslednej fotky, keď sa rozloženie nemení', async () => {
     // Prvá odpoveď patrí načítaniu okna, ďalšia kolu dosledovania fotiek.
     mockedGetPost.mockReset();
     mockedGetPost.mockResolvedValue(prispevokSoZamietnutouFotkou());
@@ -181,11 +207,11 @@ describe('okno detailu: rozpracovaný komentár a zamietnutie fotky počas písa
       jest.advanceTimersByTime(IMAGE_POLL_MS);
     });
 
-    // Moderácia fotku zamietla, rozloženie sa prepne samo a komentáre sa vykreslia znova.
+    // Moderácia fotku zamietla: na počítači ostane dvojstĺpcové okno (len text), pole s komentárom sa nezmení.
     await waitFor(() =>
-      expect(screen.queryByTestId('feed-post-overlay-split')).not.toBeInTheDocument(),
+      expect(screen.getByTestId('feed-image-rejected-note')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
     expect(screen.getByLabelText(NAZOV_POLA)).toHaveValue('Rozpísaný komentár');
     await act(async () => {});
   });

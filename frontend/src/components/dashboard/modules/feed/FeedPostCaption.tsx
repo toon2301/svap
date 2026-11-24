@@ -121,7 +121,8 @@ type FeedPostCaptionProps = {
   expansionBound?: CaptionExpansionBound;
   /**
    * Koľko riadkov je vidno pred „Viac". Karta vo feede musí ustúpiť fotke a
-   * ďalším príspevkom, okno detailu má miesta podstatne viac.
+   * ďalším príspevkom, okno detailu má miesta podstatne viac. `0` = bez
+   * orezania: text sa ukáže celý a „Viac" sa neukáže (okno len s textom, R73).
    */
   maxLines?: number;
   /**
@@ -178,7 +179,10 @@ export default function FeedPostCaption({
   fillParent = false,
 }: FeedPostCaptionProps) {
   const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
-  const clampClass = CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES];
+  const clampClass =
+    maxLines === 0
+      ? ''
+      : (CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES]);
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);

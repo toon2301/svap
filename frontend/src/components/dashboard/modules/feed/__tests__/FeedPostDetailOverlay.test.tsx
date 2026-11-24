@@ -293,6 +293,7 @@ describe('zdielany obsah v jednostlpcovom okne', () => {
   });
 
   it('leaves a free post on the original safety-valve behaviour', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     await renderLoadedOverlay(textOnlyPost());
 
     // Volny prispevok nema co pruzne pohltit zvysok, takze mu ostava poistka
@@ -321,6 +322,7 @@ describe('pristátie po zdieľaní', () => {
 
 describe('obsah okna', () => {
   it('shows the fixed block in order and the comments below it', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     await renderLoadedOverlay(textOnlyPost());
 
     const overlay = screen.getByTestId('feed-post-overlay');
@@ -343,6 +345,7 @@ describe('obsah okna', () => {
   });
 
   it('keeps both the post menu and the close button reachable', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     await renderLoadedOverlay(textOnlyPost());
 
     const header = screen.getByTestId('feed-post-overlay-fixed').querySelector('header');
@@ -361,6 +364,7 @@ describe('obsah okna', () => {
   });
 
   it('keeps the window inside the screen and scrolls only the comments', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     await renderLoadedOverlay(textOnlyPost());
 
     const overlay = screen.getByTestId('feed-post-overlay');
@@ -385,6 +389,7 @@ describe('obsah okna', () => {
   });
 
   it('lets the keyboard reach the scrollable expanded caption', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     stubCaptionHeights();
     await renderLoadedOverlay(textOnlyPost({ caption: 'Veľmi dlhý text.' }));
 
@@ -402,6 +407,7 @@ describe('obsah okna', () => {
   });
 
   it('keeps the actions and comments reachable with a long caption expanded', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     stubCaptionHeights();
 
     const longText = Array.from(
@@ -635,16 +641,21 @@ describe('rozmery okna', () => {
     expect(overlay.className).toMatch(/(^|\s)h-\[95vh\]/);
   });
 
-  it('príspevok len s textom má užšie okno než príspevok s fotkou', async () => {
-    // Od nálezu 344 (R53 b) šírku určuje obsah: text-only 576 px, fotka 864 px.
+  it('príspevok len s textom má na počítači rovnako široké okno ako príspevok s fotkou', async () => {
+    // Od K58 (R73) má na počítači každý príspevok okno 864 px; text nemá nič pružné, preto výšku podľa obsahu
+    // (strop 95 % obrazovky, najmenej 20 rem). Užšie okno (576 px) platí pod 1 024 px (`mockIsMobile = true`).
     await renderLoadedOverlay(makePost({ images: [] }));
 
     const overlay = screen.getByTestId('feed-post-overlay');
-    expect(overlay.className).toContain('max-w-xl');
-    expect(overlay.className).not.toContain('max-w-[54rem]');
+    expect(overlay.className).toContain('max-w-[54rem]');
+    expect(overlay.className).not.toContain('max-w-xl');
+    expect(overlay.className).toContain('max-h-[95vh]');
+    expect(overlay.className).toContain('min-h-[20rem]');
+    expect(overlay.className).not.toMatch(/(^|\s)h-\[95vh\]/);
   });
 
   it('lets the height grow with the content instead of fixing it', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     await renderLoadedOverlay(makePost({ images: [] }));
 
     const overlay = screen.getByTestId('feed-post-overlay');
@@ -658,6 +669,7 @@ describe('rozmery okna', () => {
 
 describe('text v okne detailu', () => {
   it('shows about ten lines before the toggle, not three', async () => {
+    mockIsMobile = true; // Jednostĺpcové okno s textom je od K58 (R73) len pod 1 024 px.
     stubCaptionHeights();
     await renderLoadedOverlay(textOnlyPost({ caption: 'Dlhý text príspevku.' }));
 

@@ -304,11 +304,12 @@ describe('okno detailu: zdieľaná ponuka a portfólio v dvoch stĺpcoch', () =>
     expect(plocha.className).not.toContain('min-h-32');
   });
 
-  it('zdieľaný príspevok bez fotky ostáva v jednostĺpcovom rozložení', async () => {
+  it('zdieľaný príspevok bez fotky je na počítači v dvojstĺpcovom rozložení', async () => {
+    // Od K58 (R73) majú dva stĺpce aj príspevky len s textom; jednostĺpcové okno ostáva pod 1 024 px.
     await otvorOkno(repost(false));
 
-    expect(screen.queryByTestId('feed-post-overlay-split')).toBeNull();
-    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
+    expect(screen.queryByTestId('feed-post-overlay-fixed')).toBeNull();
   });
 
   it('zdieľaný príspevok s fotkou ostáva v dvojstĺpcovom rozložení', async () => {

@@ -31,6 +31,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
+import { useFeedDetailTextOnly } from './FeedDetailTextOnlyContext';
 import FeedPostCaption, { CARD_CAPTION_LINES } from './FeedPostCaption';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -152,6 +153,8 @@ export default function SharedContentPreviewCard({
   // Adresa náhľadu, ktorú sa nepodarilo načítať. Porovnáva sa s aktuálnou adresou, takže karta, ktorej sa náhľad
   // zmení na inú fotku, chybu nezdedí.
   const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
+  // Okno príspevku len s textom (R73): aj pôvodný text reposta sa ukáže celý.
+  const textOnly = useFeedDetailTextOnly();
   if (!data) return null;
 
   const isPost = data.type === 'feed_post';
@@ -265,7 +268,7 @@ export default function SharedContentPreviewCard({
     <FeedPostCaption
       text={caption}
       testId="feed-shared-caption"
-      maxLines={CARD_CAPTION_LINES}
+      maxLines={textOnly ? 0 : CARD_CAPTION_LINES}
       boundedExpansion={flatten}
       fillParent={flatten}
       collapseBlankLines
