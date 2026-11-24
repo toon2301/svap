@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 363: obrázky agenta k oknu detailu príspevku na počítači (23. 11. 2026) a text príspevku v okne (365 až 368, 24. 11. 2026).
+"""Nové nálezy od čísla 363: obrázky agenta k oknu detailu príspevku na počítači (23. 11. 2026) a text príspevku v okne (365 až 368 a 373, 24. 11. 2026).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova.
@@ -108,4 +108,28 @@ NEW_ITEMS_K57 = [
               's fotkou je pružný; obrázok jeho schváleného vzhľadu ukazuje blok pod fotkou, pri presune nad fotku sa upraví) a so '
               'skupinou 8 v 261 (tagy na vlastný riadok pod textom), preto sa navrhujú jedným návrhom. Odhad: stredný · M.',
          dec=None, src='ručný test majiteľa po K58 (24. 11. 2026), čítanie kódu agentom'),
+    dict(n=373, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='počty riadkov „Viac“ v detaile príspevku sú po K58 vysoké: s fotkou, ponukou a portfóliom majú byť 5 riadkov, pri '
+                'prezdieľanom príspevku len s textom na počítači 10 (text zdieľajúceho) a 5 (pôvodný text)',
+         what='Zistil majiteľ pri ručnom teste K58 (24. 11. 2026) po nasadení: desať riadkov pred „Viac“ v otvorenom detaile je veľa. '
+              'Stav po K58 (z kódu): voľný príspevok s fotkou v okne na počítači 10 riadkov (`DETAIL_CAPTION_LINES`), obrazovka '
+              'detailu na mobile vždy 10 (`MOBILE_DETAIL_CAPTION_LINES`), text zdieľajúceho nad ponukou, portfóliom a repostom s '
+              'fotkou v dvojstĺpcovom okne 5 (`SPLIT_SHARED_CAPTION_LINES`), pôvodný text reposta 3 a v okne len s textom (R73) '
+              'voľný príspevok aj oba texty reposta celé, bez „Viac“. Majiteľ chcel: pri otvorenom detaile s fotkou, portfóliom a '
+              'ponukou „Viac“ od 6. riadku (5 riadkov) a pri prezdieľanom príspevku len s textom na počítači text zdieľajúceho 10 '
+              'riadkov a pôvodný text 5. Na miesta, ktoré nespomenul, odpovedal v R77: mobilný detail 5 riadkov pri fotke, ponuke, '
+              'portfóliu a náhľade zdieľaného obsahu a 10 pri príspevku len s textom; repost s fotkou v okne na počítači bez zmeny '
+              '(5 a 3); voľný príspevok len s textom v okne na počítači bez zmeny (celý); karta na Nástenke a prehliadač fotky bez '
+              'zmeny (3).',
+         note='V RIEŠENÍ: opravuje ho agent vo vetve 204 (z `main` `328355ee`; PR otvára majiteľ), nie kolega (je to malá zmena a '
+              'majiteľ ju zadal agentovi). Zmena: nová konštanta `DETAIL_MEDIA_CAPTION_LINES` = 5 vo `FeedPostCaption.tsx`; '
+              '`FeedPostCardCaption.tsx` dá textu voľného príspevku v ľavom stĺpci dvojstĺpcového okna 5 riadkov; '
+              '`FeedPostSharedBlock.tsx` dá textu zdieľajúceho v okne len s textom 10 riadkov (predtým celý); '
+              '`SharedContentPreviewCard.tsx` dá pôvodnému textu v okne len s textom 5 riadkov (predtým celý); '
+              '`FeedPostMobileDetailContent.tsx` dá textu 5 riadkov pri fotke alebo náhľade zdieľaného obsahu a inak 10 (predtým '
+              'vždy 10); ostatné súbory len komentáre. Bez zmeny ostáva jednostĺpcové okno pod 1 024 px (10 riadkov), karta, '
+              'prehliadač fotky a text zdieľajúceho s fotkou v okne (5). Žiadne nové texty ani preklady, `FeedPostCard.tsx` sa '
+              'nemenil. Dopad na E2E: žiadny (špecy nepoužívajú `data-testid` textu príspevku ani prepínač a ich texty sú '
+              'krátke). Po zlúčení sa presunie do `hotove_k40.py`. Odhad: nízky · S.',
+         dec='ROZHODNUTIE R77', src='ručný test majiteľa po K58 (24. 11. 2026)'),
 ]

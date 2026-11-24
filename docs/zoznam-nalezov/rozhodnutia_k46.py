@@ -141,7 +141,10 @@ DECISIONS_K46 = [
                  'posunom: v jednostĺpcovom okne strop `max(25vh, 14rem)`, v dvojstĺpcovom ostáva 40 % výšky obrazovky, v prehliadači '
                  'fotky najviac 40 % na tmavom podklade. Schválený vzhľad: `navrhy/mobil-viac-menej-fotoprehliadac-schvalene.png`, '
                  '`mobil-viac-menej-detail-schvalene.png`, `viac-menej-repost-schvalene.png` a '
-                 '`pc-viac-menej-okno-nizka-obrazovka-schvalene.png`. Rieši nálezy 357, 364 a 365 (karta K58, krok 1).',
+                 '`pc-viac-menej-okno-nizka-obrazovka-schvalene.png`. Rieši nálezy 357, 364 a 365 (karta K58, krok 1). '
+                 'ZMENENÉ 24. 11. 2026 (R77): detaily majú 5 riadkov pri fotke, ponuke, portfóliu a náhľade zdieľaného obsahu (okno na '
+                 'počítači s fotkou aj detail na mobile) a 10 riadkov len pri textovom príspevku na mobile; jednostĺpcové okno pod 1 024 px '
+                 'a náhľady (3 riadky) ostávajú; ostatné z tejto odpovede platí.',
          datum='24. 11. 2026'),
     dict(id='R72', tema='Okno detailu na počítači: ponuka, portfólio a repost s fotkou sa neposúvajú, ako fotka (nález 366)',
          otazka='Majiteľ 24. 11. 2026: pri rozbalenom texte nad ponukou alebo portfóliom v okne detailu vznikne posúvanie na karte a '
@@ -186,7 +189,9 @@ DECISIONS_K46 = [
                  'ostáva jednostĺpcový, 576 px). Schválený vzhľad: `navrhy/pc-okno-text-dva-stlpce-schvalene.png` a '
                  '`pc-okno-text-dva-stlpce-dlhsie-texty-schvalene.png`; väčšie písmo na stred sa zamietlo a obrázok s ním sa do '
                  'repozitára nedáva. Mení R53 (b) a R63 (úzke okno pre text) a obrázok `pc-okno-text-uzke-schvalene.png` z K57 '
-                 'v tomto bode neplatí. Rieši nález 367 (karta K58, krok 3).',
+                 'v tomto bode neplatí. Rieši nález 367 (karta K58, krok 3). '
+                 'ZMENENÉ 24. 11. 2026 (R77): text voľného príspevku len s textom ostáva celý, no repost textového príspevku už nemá '
+                 'texty celé: text zdieľajúceho má 10 riadkov a pôvodný text 5 (s „Viac“); ostatné z tejto odpovede platí.',
          datum='24. 11. 2026'),
     dict(id='R74', tema='Nález 368 (označení používatelia v okne s fotkou): vzhľad schválený, opraví ho agent po K58 (výnimka z R67)',
          otazka='Agent pri kontrole K58 zistil, že v okne detailu s fotkou a označenými používateľmi si blok so štítkami berie polovicu '
@@ -271,7 +276,20 @@ DECISIONS_K46 = [
                      '`FeedPostCardCaption.tsx`, `FeedPostSharedBlock.tsx`, `SharedContentPreviewCard.tsx` a '
                      '`FeedPostMobileDetailContent.tsx` a úprava testov, ktoré dnes čakajú 10 a 0) a odporúča sa ju urobiť v krátkej '
                      'samostatnej vetve, nie čakať na K44.',
-         kedy='Potrebné pred opravou počtov riadkov (vetva agenta po K58).'),
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026: (a) áno, upraví sa aj detail na mobile: príspevok s fotkou, zdieľanou ponukou, portfóliom '
+                 'alebo náhľadom zdieľaného obsahu má 5 riadkov („Viac“ od 6. riadku), obyčajný textový príspevok 10 riadkov („Viac“ '
+                 'od 11.); (b) repost s fotkou v okne na počítači ostáva ako dnes: text zdieľajúceho 5 riadkov a pôvodný text 3 („Viac“ '
+                 'od 4.); (c) voľný príspevok len s textom v okne na počítači ostáva celý bez „Viac“ (R73); prezdieľaný textový '
+                 'príspevok bez fotky má text zdieľajúceho na 10 riadkoch („Viac“ od 11.) a pôvodný text na 5 („Viac“ od 6.); (d) karta '
+                 'na Nástenke a prehliadač fotky ostávajú na 3 riadkoch („Viac“ od 4.); (e) zmena ide v samostatnej vetve 204 z '
+                 'aktuálneho `main`. Z pôvodnej poznámky majiteľa z ručného testu vyplýva aj to, že voľný príspevok s fotkou v okne na '
+                 'počítači má 5 riadkov (predtým 10). Mení R71 (detaily mali 10 riadkov) a R73 (repost textového príspevku už nie je '
+                 'celý). Miesta, ktoré majiteľ nespomenul, agent nemenil: jednostĺpcové okno pod 1 024 px (okno zúžené po otvorení) '
+                 'ostáva na 10 riadkoch ako po K58 a jeho testy ostali; text zdieľajúceho pri repostoch textového príspevku má na '
+                 'mobile 5 riadkov, lebo ide o náhľad zdieľaného obsahu (podľa znenia odpovede (a)), na počítači v okne len s textom '
+                 '10. Ak majiteľ pre niektoré z týchto miest chce iný počet, je to jedna podmienka. Rieši nález 373 (vetva 204).',
+         datum='24. 11. 2026'),
     dict(id='R78', tema='Nález 343 (úchytka panela komentárov nad fotkou) ide vo vetve agenta s K44; K59 sa zatiaľ nepripravuje',
          otazka='Nález 343 mal ísť ako dávka K33 kolegu (R55: tenká úchytka 40×6 px, súbor `FeedPhotoCommentsSheet.tsx`). K44 (R76) '
                 'mení ten istý súbor (pole na komentár a odpoveď, zamknutie stránky a výška pri klávesnici v paneli nad fotkou). Kto ho '
