@@ -650,7 +650,7 @@ describe('rozmery okna', () => {
     expect(overlay.className).toContain('max-w-[54rem]');
     expect(overlay.className).not.toContain('max-w-xl');
     expect(overlay.className).toContain('max-h-[95vh]');
-    expect(overlay.className).toContain('min-h-[20rem]');
+    expect(overlay.className).toContain('min-h-[min(20rem,95vh)]');
     expect(overlay.className).not.toMatch(/(^|\s)h-\[95vh\]/);
   });
 

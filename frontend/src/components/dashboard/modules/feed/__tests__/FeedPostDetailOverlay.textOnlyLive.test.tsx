@@ -232,7 +232,7 @@ describe('zamietnutie poslednej fotky pri rozbalenom texte', () => {
 
     const okno = screen.getByTestId('feed-post-overlay');
     expect(okno).toHaveClass('h-[95vh]');
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
     expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-[10]');
     const prepinac = screen.getByTestId('feed-post-caption-toggle');
     expect(prepinac).toHaveTextContent('Viac');
@@ -273,7 +273,7 @@ describe('zamietnutie poslednej fotky pri rozbalenom texte', () => {
     await jednoKoloPollingu();
 
     await waitFor(() =>
-      expect(screen.getByTestId('feed-post-overlay')).toHaveClass('min-h-[20rem]'),
+      expect(screen.getByTestId('feed-post-overlay')).toHaveClass('min-h-[min(20rem,95vh)]'),
     );
     const okno = screen.getByTestId('feed-post-overlay');
     expect(okno).toHaveClass('max-h-[95vh]', 'max-w-[54rem]');
@@ -319,7 +319,7 @@ describe('fotka prejde alebo ostane iná fotka', () => {
     expect(screen.getByTestId('feed-post-caption-toggle')).toHaveTextContent('Menej');
     const okno = screen.getByTestId('feed-post-overlay');
     expect(okno).toHaveClass('h-[95vh]');
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
   });
 
   it('zamietnutá je len jedna z dvoch fotiek: text ostáva rozbalený a okno na pevnej výške', async () => {
@@ -341,6 +341,6 @@ describe('fotka prejde alebo ostane iná fotka', () => {
     expect(screen.getByTestId('feed-post-caption')).toHaveClass('max-h-[40vh]');
     expect(screen.getByTestId('feed-post-caption-toggle')).toHaveTextContent('Menej');
     expect(screen.getByTestId('feed-post-overlay')).toHaveClass('h-[95vh]');
-    expect(screen.getByTestId('feed-post-overlay')).not.toHaveClass('min-h-[20rem]');
+    expect(screen.getByTestId('feed-post-overlay')).not.toHaveClass('min-h-[min(20rem,95vh)]');
   });
 });

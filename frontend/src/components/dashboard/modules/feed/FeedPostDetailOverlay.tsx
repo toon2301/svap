@@ -13,7 +13,8 @@
  *    vľavo hlavička, text, fotka alebo karta a akcie, vpravo výhradne komentáre. Okno je široké 54 rem (864 px).
  *    Pri fotke, ponuke a portfóliu má pevnú výšku 95 % obrazovky (pružná je fotka alebo karta); príspevok len
  *    s textom (aj repost textového príspevku) nemá nič pružné, preto má výšku podľa obsahu (najmenej 20 rem,
- *    najviac 95 % obrazovky) a text sa ukáže celý (R73).
+ *    najviac 95 % obrazovky; na veľmi nízkej obrazovke je aj minimum najviac 95 % jej výšky) a text sa ukáže celý
+ *    (R73).
  *  - POD 1 024 px (zúžené okno prehliadača): pôvodné jednostĺpcové rozloženie – pevný blok (hlavička, text,
  *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor. Šírku určuje obsah: 864 px pri
  *    fotke, ponuke a portfóliu, 576 px (36 rem) pri texte; úzke je aj okno pri načítaní a pri chybe, takže sa
@@ -289,10 +290,14 @@ export default function FeedPostDetailOverlay({
         // výšku rodiča – zo `max-h` by vyšla nula. Príspevok len s textom nemá
         // čo pružné, preto ostáva pri strope a drží okno nízke (najmenej 20 rem,
         // aby ani krátky text s jedným komentárom nevyzeral stlačený; R73).
+        // Minimum je `min(20rem,95vh)`, nie holé `20rem`: `min-height` prebíja
+        // `max-height`, takže by okno pri výške obrazovky pod asi 337 px malo 320 px,
+        // presiahlo strop a vycentrované by vyšlo hore aj dole mimo obrazovky
+        // (zatváracie „X" by zmizlo); PR #326.
         className={`relative flex w-full flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
           wideContent ? 'max-w-[54rem]' : 'max-w-xl'
         } ${splitLayout && !textOnlySplit ? 'h-[95vh]' : 'max-h-[95vh]'}${
-          textOnlySplit ? ' min-h-[20rem]' : ''
+          textOnlySplit ? ' min-h-[min(20rem,95vh)]' : ''
         }`}
         onClick={(event) => event.stopPropagation()}
       >

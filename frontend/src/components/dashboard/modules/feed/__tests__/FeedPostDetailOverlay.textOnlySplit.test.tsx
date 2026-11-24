@@ -292,7 +292,7 @@ describe('okno príspevku len s textom na počítači', () => {
       expect(within(okno).getByTestId('feed-post-overlay-split')).toBeInTheDocument();
       expect(within(okno).queryByTestId('feed-post-overlay-fixed')).toBeNull();
       jeSiroke(okno);
-      expect(okno).toHaveClass('max-h-[95vh]', 'min-h-[20rem]');
+      expect(okno).toHaveClass('max-h-[95vh]', 'min-h-[min(20rem,95vh)]');
       expect(okno).not.toHaveClass('h-[95vh]');
     },
   );
@@ -311,6 +311,20 @@ describe('okno príspevku len s textom na počítači', () => {
   );
 });
 
+describe('minimálna výška okna len s textom', () => {
+  it.each(PRISPEVKY_LEN_S_TEXTOM)(
+    '%s: minimum 20 rem je obmedzené výškou obrazovky, aby okno nepresiahlo strop `95vh` (PR #326)',
+    async (_nazov, vytvor) => {
+      const okno = await otvorOkno(vytvor());
+
+      // `min-height` prebíja `max-height`: s holým `min-h-[20rem]` by mala okno pri výške obrazovky pod asi 337 px
+      // 320 px aj vyššie než strop, vycentrované by vyšlo hore aj dole mimo obrazovky a zatváracie „X“ by zmizlo.
+      expect(okno).toHaveClass('max-h-[95vh]', 'min-h-[min(20rem,95vh)]');
+      expect(okno).not.toHaveClass('min-h-[20rem]');
+    },
+  );
+});
+
 describe('kostra a chyba pri načítaní na počítači', () => {
   it('kostra pri načítaní má široké okno so stropom výšky', () => {
     mockedGetPost.mockReturnValue(new Promise(() => undefined));
@@ -321,7 +335,7 @@ describe('kostra a chyba pri načítaní na počítači', () => {
     jeSiroke(okno);
     expect(okno).toHaveClass('max-h-[95vh]');
     expect(okno).not.toHaveClass('h-[95vh]');
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
   });
 
   it('okno s chybou načítania je široké so stropom výšky', async () => {
@@ -333,7 +347,7 @@ describe('kostra a chyba pri načítaní na počítači', () => {
     jeSiroke(okno);
     expect(okno).toHaveClass('max-h-[95vh]');
     expect(okno).not.toHaveClass('h-[95vh]');
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
   });
 
   it.each(PRISPEVKY_LEN_S_TEXTOM)(
@@ -355,7 +369,7 @@ describe('kostra a chyba pri načítaní na počítači', () => {
 
       const okno = screen.getByTestId('feed-post-overlay');
       jeSiroke(okno);
-      expect(okno).toHaveClass('max-h-[95vh]', 'min-h-[20rem]');
+      expect(okno).toHaveClass('max-h-[95vh]', 'min-h-[min(20rem,95vh)]');
     },
   );
 
@@ -377,7 +391,7 @@ describe('kostra a chyba pri načítaní na počítači', () => {
     const okno = screen.getByTestId('feed-post-overlay');
     jeSiroke(okno);
     expect(okno).toHaveClass('h-[95vh]');
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
   });
 });
 
@@ -412,14 +426,14 @@ describe('prepnutie na iný príspevok na počítači: kostra nededí výšku pr
       jeSiroke(okno);
       expect(okno).toHaveClass('max-h-[95vh]');
       expect(okno).not.toHaveClass('h-[95vh]');
-      expect(okno).not.toHaveClass('min-h-[20rem]');
+      expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
     },
   );
 });
 
 describe('okno s fotkou, ponukou a portfóliom ostáva na pevnej výške', () => {
   it.each(PRISPEVKY_S_PEVNOU_VYSKOU)(
-    '%s: `h-[95vh]` bez `min-h-[20rem]`',
+    '%s: `h-[95vh]` bez `min-h-[min(20rem,95vh)]`',
     async (_nazov, vytvor) => {
       const okno = await otvorOkno(vytvor());
 
@@ -427,7 +441,7 @@ describe('okno s fotkou, ponukou a portfóliom ostáva na pevnej výške', () =>
       jeSiroke(okno);
       expect(okno).toHaveClass('h-[95vh]');
       expect(okno).not.toHaveClass('max-h-[95vh]');
-      expect(okno).not.toHaveClass('min-h-[20rem]');
+      expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
     },
   );
 });
@@ -548,7 +562,7 @@ describe('okno pod 1 024 px sa nemení', () => {
     jeUzke(okno);
     expect(okno).toHaveClass('max-h-[95vh]');
     expect(okno).not.toHaveClass('h-[95vh]');
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
   });
 
   it('príspevok len s textom: text ostáva na 10 riadkoch s „Viac" a obal nie je pružný', async () => {
@@ -570,7 +584,7 @@ describe('okno pod 1 024 px sa nemení', () => {
     expect(within(okno).getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
     expect(within(okno).queryByTestId('feed-post-overlay-split')).toBeNull();
     jeUzke(okno);
-    expect(okno).not.toHaveClass('min-h-[20rem]');
+    expect(okno).not.toHaveClass('min-h-[min(20rem,95vh)]');
     expect(screen.getByTestId('feed-shared-caption')).toHaveClass('line-clamp-3');
     expect(await screen.findByTestId('feed-shared-caption-toggle')).toHaveTextContent('Viac');
   });
