@@ -1,9 +1,10 @@
 /**
- * Okno detailu na počítači: šírku určuje obsah (nález 344, R53 a R63).
+ * Okno detailu pod 1 024 px: šírku určuje obsah (nález 344, R53 a R63).
  *
  * Príspevok s fotkou, ponukou alebo portfóliom má široké okno (54 rem, 864 px). Príspevok len s textom, repost
  * textového príspevku, kostra pri načítaní a chybové okno majú užšie (36 rem, 576 px): druh príspevku sa pri
- * otvorení okna zistí až po načítaní, preto je kostra úzka a textový príspevok sa po načítaní nehýbe.
+ * otvorení okna zistí až po načítaní, preto je kostra úzka a textový príspevok sa po načítaní nehýbe. Od K58 (R73)
+ * to platí len pod 1 024 px (`mockIsMobile = true`); na počítači má okno každého príspevku 864 px.
  *
  * jsdom nelayoutuje, takže sa kontrolujú triedy, ktoré o rozmeroch rozhodujú.
  */
@@ -235,8 +236,9 @@ function jeSiroke(okno: HTMLElement) {
   expect(okno).not.toHaveClass('max-w-xl');
 }
 
-describe('okno len s textom je užšie', () => {
-  it('príspevok len s textom: úzke okno so stropom výšky', async () => {
+describe('okno len s textom je pod 1 024 px užšie', () => {
+  it('pod 1 024 px: príspevok len s textom má úzke okno so stropom výšky', async () => {
+    mockIsMobile = true;
     const okno = await otvorOkno(volnyPrispevok(false));
 
     jeUzke(okno);
@@ -244,7 +246,8 @@ describe('okno len s textom je užšie', () => {
     expect(okno).not.toHaveClass('h-[95vh]');
   });
 
-  it('repost textového príspevku: úzke okno', async () => {
+  it('pod 1 024 px: repost textového príspevku má úzke okno', async () => {
+    mockIsMobile = true;
     jeUzke(await otvorOkno(repost(false)));
   });
 });
@@ -271,8 +274,9 @@ describe('okno s fotkou, ponukou a portfóliom je široké', () => {
   });
 });
 
-describe('kostra a chyba pri načítaní sú v úzkom okne', () => {
-  it('kostra pri načítaní je v úzkom okne', () => {
+describe('kostra a chyba pri načítaní sú pod 1 024 px v úzkom okne', () => {
+  it('pod 1 024 px: kostra pri načítaní je v úzkom okne', () => {
+    mockIsMobile = true;
     mockedGetPost.mockReturnValue(new Promise(() => undefined));
     render(<FeedPostDetailOverlay postId={7} onClose={jest.fn()} />);
 
@@ -280,7 +284,8 @@ describe('kostra a chyba pri načítaní sú v úzkom okne', () => {
     jeUzke(screen.getByTestId('feed-post-overlay'));
   });
 
-  it('okno s chybou načítania je v úzkom okne', async () => {
+  it('pod 1 024 px: okno s chybou načítania je v úzkom okne', async () => {
+    mockIsMobile = true;
     mockedGetPost.mockRejectedValue(new Error('chyba'));
     render(<FeedPostDetailOverlay postId={7} onClose={jest.fn()} />);
 
@@ -288,7 +293,8 @@ describe('kostra a chyba pri načítaní sú v úzkom okne', () => {
     jeUzke(screen.getByTestId('feed-post-overlay'));
   });
 
-  it('textový príspevok sa po načítaní z kostry nehýbe', async () => {
+  it('pod 1 024 px: textový príspevok sa po načítaní z kostry nehýbe', async () => {
+    mockIsMobile = true;
     let dokonci: (prispevok: FeedPost) => void = () => undefined;
     mockedGetPost.mockReturnValue(
       new Promise<FeedPost>((resolve) => {
@@ -306,7 +312,8 @@ describe('kostra a chyba pri načítaní sú v úzkom okne', () => {
     jeUzke(screen.getByTestId('feed-post-overlay'));
   });
 
-  it('ponuka sa po načítaní z úzkej kostry rozšíri na široké okno', async () => {
+  it('pod 1 024 px: ponuka sa po načítaní z úzkej kostry rozšíri na široké okno', async () => {
+    mockIsMobile = true;
     let dokonci: (prispevok: FeedPost) => void = () => undefined;
     mockedGetPost.mockReturnValue(
       new Promise<FeedPost>((resolve) => {

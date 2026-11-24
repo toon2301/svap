@@ -227,11 +227,12 @@ describe('desktopové okno detailu', () => {
     expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
   });
 
-  it('keeps the single column for a reposted text post', async () => {
+  it('shows a reposted text post in two columns on desktop', async () => {
+    // Od K58 (R73) majú dva stĺpce aj repost textu; jednostĺpcové okno ostáva pod 1 024 px.
     await openOverlay(repost({ shared_content: { thumbnail_url: null } }));
 
-    expect(screen.queryByTestId('feed-post-overlay-split')).not.toBeInTheDocument();
-    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
+    expect(screen.queryByTestId('feed-post-overlay-fixed')).not.toBeInTheDocument();
   });
 });
 

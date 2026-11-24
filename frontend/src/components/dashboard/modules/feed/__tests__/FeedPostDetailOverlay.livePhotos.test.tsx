@@ -218,7 +218,7 @@ afterEach(() => {
 });
 
 describe('rozloženie sa prepína podľa živého stavu fotiek', () => {
-  it('switches to the single-column layout when the last photo is rejected', async () => {
+  it('keeps the two-column layout and shows the whole text when the last photo is rejected', async () => {
     const post = pendingPost();
     respondWith(
       post,
@@ -226,19 +226,19 @@ describe('rozloženie sa prepína podľa živého stavu fotiek', () => {
     );
     await openOverlay(post);
 
-    // Kým sa fotka spracúva, okno je dvojstĺpcové so stavovou plochou.
+    // Kým sa fotka spracúva, okno je dvojstĺpcové so stavovou plochou a text je orezaný na desať riadkov.
     expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
     expect(screen.getByTestId('feed-image-status')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-caption').className).toContain('line-clamp-[10]');
 
     await tickImagePoll();
 
-    // Moderácia fotku zamietla – rozloženie sa prepne SAMO, bez zavretia okna.
+    // Moderácia fotku zamietla – okno ostane dvojstĺpcové (od K58, R73), fotka zmizne a text sa ukáže celý.
     await waitFor(() =>
-      expect(
-        screen.queryByTestId('feed-post-overlay-split'),
-      ).not.toBeInTheDocument(),
+      expect(screen.getByTestId('feed-post-caption').className).not.toContain('line-clamp'),
     );
-    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
+    expect(screen.queryByTestId('feed-post-overlay-fixed')).not.toBeInTheDocument();
     expect(screen.queryByTestId('feed-post-image')).not.toBeInTheDocument();
     // Autor sa o dôvode dozvie z diskrétnej poznámky, ako inde v appke.
     expect(screen.getByTestId('feed-image-rejected-note')).toBeInTheDocument();

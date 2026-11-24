@@ -213,11 +213,12 @@ describe('kedy sa rozloženie zapína', () => {
     expect(hasVisibleFeedPhoto(undefined)).toBe(false);
   });
 
-  it('keeps a text-only post on the untouched single-column layout', async () => {
+  it('shows a text-only post in two columns on desktop', async () => {
+    // Od K58 (R73) má na počítači dva stĺpce aj príspevok len s textom; jednostĺpcové okno ostáva pod 1 024 px.
     await renderOverlay(makePost({ images: [] }));
 
-    expect(screen.queryByTestId('feed-post-overlay-split')).not.toBeInTheDocument();
-    expect(screen.getByTestId('feed-post-overlay-fixed')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
+    expect(screen.queryByTestId('feed-post-overlay-fixed')).not.toBeInTheDocument();
     // Výška ostáva STROPOM – krátky text drží okno nízke.
     expect(screen.getByTestId('feed-post-overlay').className).toContain(
       'max-h-[95vh]',
@@ -444,9 +445,9 @@ describe('scrollbar komentárov', () => {
 });
 
 describe('rozpočet výšky ľavého stĺpca', () => {
-  /** Číslo z triedy typu `max-h-[40vh]`. */
+  /** Číslo z triedy typu `max-h-[40vh]` aj `max-h-[max(25vh,14rem)]` (vtedy ide o jeho vh časť). */
   function vhOf(className: string): number {
-    const match = className.match(/max-h-\[(\d+)vh\]/);
+    const match = className.match(/max-h-\[(?:max\()?(\d+)vh/);
     expect(match).not.toBeNull();
     return Number(match?.[1]);
   }

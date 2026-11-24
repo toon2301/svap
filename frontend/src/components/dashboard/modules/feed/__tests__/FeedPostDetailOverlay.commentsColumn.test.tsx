@@ -5,7 +5,8 @@
  * sa preto vyhodnotí ako obsah a zmrštenie by sa rozdelilo medzi pevný blok (hlavička, text, akcie) a komentáre podľa
  * ich veľkosti: pri štyroch a viac komentároch by sa blok zmáčkol a pole na komentár vypadlo pod okno. Pevný blok sa
  * preto nezmenšuje (`shrink-0`), má strop poistky `calc(95vh-11rem)` a komentáre odovzdávajú výšku flexom (`flexFill`).
- * Dvojstĺpcové okno (ponuka, portfólio a príspevok s fotkou na počítači) sa nemení.
+ * Dvojstĺpcové okno (ponuka, portfólio a príspevok s fotkou na počítači) sa nemení. Príspevok len s textom a repost
+ * textu majú od K58 (R73) jednostĺpcové okno len pod 1 024 px (`mockIsMobile = true`), na počítači sú dva stĺpce.
  *
  * jsdom nelayoutuje, takže sa kontrolujú triedy, ktoré o rozmeroch rozhodujú.
  */
@@ -221,7 +222,8 @@ async function otvorOkno(prispevok: FeedPost) {
 const STROP_POISTKY = 'max-h-[calc(95vh-11rem)]';
 
 describe('jednostĺpcové okno: pevný blok sa nezmenšuje', () => {
-  it('príspevok len s textom: pevný blok má poistku s posúvaním a strop', async () => {
+  it('príspevok len s textom pod 1 024 px: pevný blok má poistku s posúvaním a strop', async () => {
+    mockIsMobile = true;
     const okno = await otvorOkno(volnyPrispevok(false));
 
     const pevny = within(okno).getByTestId('feed-post-overlay-fixed');
@@ -238,7 +240,7 @@ describe('jednostĺpcové okno: pevný blok sa nezmenšuje', () => {
   });
 
   it.each([
-    ['repost textového príspevku', false, () => repostTextu()],
+    ['repost textového príspevku pod 1 024 px', true, () => repostTextu()],
     ['ponuka pod 1 024 px', true, () => zdielanaKarta('offer')],
     ['portfólio pod 1 024 px', true, () => zdielanaKarta('portfolio_item')],
   ])(
@@ -262,6 +264,7 @@ describe('jednostĺpcové okno: pevný blok sa nezmenšuje', () => {
 
 describe('jednostĺpcové okno: komentáre odovzdávajú výšku flexom', () => {
   it('sekcia komentárov je flex stĺpec a zoznam v nej sa zmenšuje cez flex', async () => {
+    mockIsMobile = true;
     const okno = await otvorOkno(volnyPrispevok(false));
 
     const sekcia = within(okno).getByTestId('feed-post-overlay-comments');

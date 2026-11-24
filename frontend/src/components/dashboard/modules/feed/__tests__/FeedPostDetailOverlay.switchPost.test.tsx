@@ -2,8 +2,9 @@
  * Okno detailu na počítači: prepnutie na iný príspevok pri otvorenom okne (PR #323, nález CodeRabbitu).
  *
  * Okno sa pri prepnutí na iný príspevok neodmountuje, takže kým sa nový príspevok načítava, `post` ešte drží
- * predošlý. Kostra pri načítaní má byť vždy v úzkom okne (576 px, bez pevnej výšky) a nesmie dediť rozmery príspevku,
- * ktorý už nie je na obrazovke; po načítaní sa šírka a rozloženie určia podľa nového príspevku.
+ * predošlý. Kostra pri načítaní je pod 1 024 px vždy v úzkom okne (576 px, bez pevnej výšky) a nesmie dediť rozmery
+ * príspevku, ktorý už nie je na obrazovke; po načítaní sa šírka a rozloženie určia podľa nového príspevku. Na počítači
+ * je od K58 (R73) široká (864 px) hneď, takže sa po načítaní nehýbe žiadny druh príspevku.
  *
  * jsdom nelayoutuje, takže sa kontrolujú triedy, ktoré o rozmeroch rozhodujú.
  */
@@ -230,8 +231,9 @@ describe('prepnutie na iný príspevok: kostra pri načítaní', () => {
     ['príspevok s fotkou', () => volnyPrispevok(7, true)],
     ['ponuka', () => ponuka(7)],
   ])(
-    'po prepnutí z príspevku (%s) je kostra v úzkom okne so stropom výšky',
+    'po prepnutí z príspevku (%s) pod 1 024 px je kostra v úzkom okne so stropom výšky',
     async (_nazov, vytvor) => {
+      mockIsMobile = true;
       const { okno } = await otvorAPrepni(vytvor());
 
       expect(screen.getByTestId('feed-post-overlay-loading')).toBeInTheDocument();
@@ -241,7 +243,8 @@ describe('prepnutie na iný príspevok: kostra pri načítaní', () => {
     },
   );
 
-  it('po prepnutí z textového príspevku je kostra v úzkom okne', async () => {
+  it('po prepnutí z textového príspevku pod 1 024 px je kostra v úzkom okne', async () => {
+    mockIsMobile = true;
     const { okno } = await otvorAPrepni(volnyPrispevok(7, false));
 
     jeUzke(okno);
@@ -258,9 +261,12 @@ describe('prepnutie na iný príspevok: kostra pri načítaní', () => {
 });
 
 describe('prepnutie na iný príspevok: po načítaní', () => {
-  it('príspevok s fotkou: okno sa z úzkej kostry rozšíri na široké s pevnou výškou', async () => {
+  it('príspevok s fotkou: okno sa zo širokej kostry nehýbe a po načítaní dostane pevnú výšku', async () => {
     const { nova, okno } = await otvorAPrepni(volnyPrispevok(7, false));
-    jeUzke(okno);
+    // Na počítači je kostra od K58 (R73) široká, so stropom výšky.
+    jeSiroke(okno);
+    expect(okno).toHaveClass('max-h-[95vh]');
+    expect(okno).not.toHaveClass('h-[95vh]');
 
     nova.dokonci(volnyPrispevok(8, true));
     await screen.findByTestId('feed-post-overlay-split');
@@ -280,7 +286,8 @@ describe('prepnutie na iný príspevok: po načítaní', () => {
     expect(screen.getByTestId('feed-post-overlay')).toHaveClass('h-[95vh]');
   });
 
-  it('textový príspevok: okno ostane úzke aj po načítaní', async () => {
+  it('pod 1 024 px: textový príspevok: okno ostane úzke aj po načítaní', async () => {
+    mockIsMobile = true;
     const { nova } = await otvorAPrepni(volnyPrispevok(7, true));
 
     nova.dokonci(volnyPrispevok(8, false));
@@ -292,7 +299,8 @@ describe('prepnutie na iný príspevok: po načítaní', () => {
     expect(screen.queryByTestId('feed-post-overlay-split')).toBeNull();
   });
 
-  it('chyba pri načítaní nového príspevku: okno s chybou je úzke', async () => {
+  it('pod 1 024 px: chyba pri načítaní nového príspevku: okno s chybou je úzke', async () => {
+    mockIsMobile = true;
     const { nova } = await otvorAPrepni(volnyPrispevok(7, true));
 
     nova.zlyha(new Error('chyba'));

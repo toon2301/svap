@@ -21,10 +21,7 @@ import { useIsMobile } from '@/hooks';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
-import FeedPostCaption, {
-  CARD_CAPTION_LINES,
-  DETAIL_CAPTION_LINES,
-} from './FeedPostCaption';
+import FeedPostCardCaption from './FeedPostCardCaption';
 import ExchangeIcon from './FeedExchangeIcon';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import { usePendingFeedImages } from './usePendingFeedImages';
@@ -355,18 +352,15 @@ export default function FeedPostCard({
           tým istým pravidlom v okne detailu (text nad náhľadom), na karte vo
           feede ostáva poradie opačné – viď blok zdieľaného obsahu nižšie. */}
       {!isShared && caption ? (
-        <div className={`px-4 py-3 ${fixedBlock}`}>
-          <FeedPostCaption
-            text={caption}
-            boundedExpansion={isDetail}
-            expansionBound={fillHeight ? 'roomy' : 'compact'}
-            maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
-            collapseBlankLines
-            onTextClick={
-              opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
-            }
-          />
-        </div>
+        <FeedPostCardCaption
+          caption={caption}
+          isDetail={isDetail}
+          fillHeight={fillHeight}
+          fixedBlock={fixedBlock}
+          onTextClick={
+            opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
+          }
+        />
       ) : null}
 
       {images.length > 0 ? (

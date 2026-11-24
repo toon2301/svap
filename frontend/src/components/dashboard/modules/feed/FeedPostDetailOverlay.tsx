@@ -7,16 +7,18 @@
  * neodmountuje: appka sa nenaviguje, len sa navrch vykreslí portál. Po zavretí
  * je teda používateľ presne tam, kde bol, vrátane pozície scrollu.
  *
- * Rozloženie má dva tvary podľa toho, čo je v príspevku hlavný obsah:
+ * Rozloženie má dva tvary podľa šírky obrazovky:
  *
- *  - S FOTKOU, PONUKOU ALEBO PORTFÓLIOM: dva stĺpce vedľa seba
- *    (`FeedPostDetailSplitLayout`) – vľavo hlavička, text, fotka alebo karta
- *    a akcie, vpravo výhradne komentáre. Okno je široké 54 rem (864 px).
- *  - BEZ NICH (text, repost textového príspevku): pôvodné jednostĺpcové
- *    rozloženie v užšom okne (36 rem, 576 px) – pevný blok (hlavička, text,
- *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor.
- *    Úzke je aj okno pri načítaní a pri chybe: príspevok ešte nepoznáme a
- *    textový príspevok sa tak po načítaní nehýbe (R63).
+ *  - NA POČÍTAČI (od 1 024 px): dva stĺpce vedľa seba (`FeedPostDetailSplitLayout`) pri KAŽDOM príspevku –
+ *    vľavo hlavička, text, fotka alebo karta a akcie, vpravo výhradne komentáre. Okno je široké 54 rem (864 px).
+ *    Pri fotke, ponuke a portfóliu má pevnú výšku 95 % obrazovky (pružná je fotka alebo karta); príspevok len
+ *    s textom (aj repost textového príspevku) nemá nič pružné, preto má výšku podľa obsahu (najmenej 20 rem,
+ *    najviac 95 % obrazovky; na veľmi nízkej obrazovke je aj minimum najviac 95 % jej výšky) a text sa ukáže celý
+ *    (R73).
+ *  - POD 1 024 px (zúžené okno prehliadača): pôvodné jednostĺpcové rozloženie – pevný blok (hlavička, text,
+ *    akcie) sa nikdy nescrolluje a komentáre dostanú všetok zvyšný priestor. Šírku určuje obsah: 864 px pri
+ *    fotke, ponuke a portfóliu, 576 px (36 rem) pri texte; úzke je aj okno pri načítaní a pri chybe, takže sa
+ *    textový príspevok po načítaní nehýbe (R63).
  *    Robí to `flex` stĺpec s `min-h-0` na komentárovej časti – bez toho by ju
  *    obsah roztiahol a okno by prerástlo obrazovku (flex položka má
  *    predvolene `min-height: auto`).
@@ -202,11 +204,8 @@ export default function FeedPostDetailOverlay({
   const liveImages = usePendingFeedImages(post);
 
   /**
-   * Dvojstĺpcové rozloženie potrebuje DVE veci naraz:
-   *
-   *  - fotku alebo kartu ponuky či portfólia (jediná časť, ktorá vie pohltiť zvyšok výšky ľavého stĺpca),
-   *  - a dosť širokú obrazovku, inak by z dvoch stĺpcov ostali dva nepoužiteľne
-   *    úzke pruhy.
+   * Dvojstĺpcové rozloženie potrebuje dosť širokú obrazovku, inak by z dvoch stĺpcov ostali dva nepoužiteľne
+   * úzke pruhy (R73: obsah príspevku ho už nepodmieňuje).
    *
    * Hranicu určuje `useIsMobile` – tá istá, akou sa rozhoduje, či sa okno
    * vôbec otvorí namiesto celoobrazovkovej stránky (`decideFeedPostEntry`),
@@ -230,14 +229,19 @@ export default function FeedPostDetailOverlay({
   /** Zdieľaná ponuka alebo portfólio: karta je hlavný obsah okna ako fotka (R53). */
   const sharesCard = sharesOfferOrPortfolio(post);
   /**
-   * Široké okno (864 px) majú príspevky s fotkou, ponukou a portfóliom, všetky ostatné užšie (576 px).
+   * Široké okno (864 px): na počítači každý príspevok, pod 1 024 px len príspevok s fotkou, ponukou a portfóliom
+   * (ostatné majú 576 px).
    *
-   * Kým sa príspevok načítava, je okno vždy úzke, aj keď `post` ešte drží PREDOŠLÝ príspevok (pri prepnutí na iný
-   * príspevok sa okno neodmountuje, viď `loadSeqRef`): kostra nesmie dediť rozmery príspevku, ktorý už nie je na
-   * obrazovke. Po načítaní sa šírka aj rozloženie určia podľa nového príspevku; pri chybe je `post` `null`.
+   * Pod 1 024 px je kým sa príspevok načítava okno vždy úzke, aj keď `post` ešte drží PREDOŠLÝ príspevok (pri
+   * prepnutí na iný príspevok sa okno neodmountuje, viď `loadSeqRef`): kostra nesmie dediť rozmery príspevku, ktorý
+   * už nie je na obrazovke. Na počítači je široké hneď, takže sa po načítaní nehýbe žiadny druh príspevku. Pri
+   * chybe je `post` `null`.
    */
-  const wideContent = !loading && (hasPhoto || sharesCard);
-  const splitLayout = wideContent && !isMobile;
+  const wideContent = !isMobile || (!loading && (hasPhoto || sharesCard));
+  /** Dva stĺpce: na počítači po načítaní každý príspevok. */
+  const splitLayout = !isMobile && !loading && post !== null;
+  /** Príspevok len s textom (aj repost textového príspevku): nič pružné, preto výška podľa obsahu a text celý. */
+  const textOnlySplit = splitLayout && !hasPhoto && !sharesCard;
   /**
    * Vypĺňa zdieľaný náhľad zvyšok jednostĺpcového bloku?
    *
@@ -266,10 +270,11 @@ export default function FeedPostDetailOverlay({
         aria-label={t('feed.postDetail', 'Detail príspevku')}
         data-testid="feed-post-overlay"
         // Rozmery: šírku určuje obsah. Široké okno (`max-w-[54rem]`, 864 px, o ~29 %
-        // viac než pôvodných `max-w-2xl`, 672 px) majú príspevky s fotkou, ponukou
-        // a portfóliom; text, repost textového príspevku, kostra a chyba pri
-        // načítaní majú užšie (`max-w-xl`, 576 px; R53 a R63). Pod hranicou lg
-        // ostáva šírka podľa obsahu, mení sa len rozloženie. Výška je len STROP:
+        // viac než pôvodných `max-w-2xl`, 672 px) má na počítači každý príspevok;
+        // pod hranicou lg ju majú len príspevky s fotkou, ponukou a portfóliom,
+        // text, repost textového príspevku, kostra a chyba pri načítaní majú užšie
+        // (`max-w-xl`, 576 px; R53 a R63). Pod hranicou lg ostáva šírka podľa obsahu,
+        // mení sa len rozloženie. Výška je pri jednom stĺpci a pri texte len STROP:
         // krátky príspevok drží okno nízke, dlhý ho natiahne až po `95vh`.
         //
         // Prečo práve 95vh: ostávajú 2,5 % viewportu hore aj dole, takže je
@@ -282,11 +287,18 @@ export default function FeedPostDetailOverlay({
         //
         // Pri dvojstĺpcovom rozložení je výška PEVNÁ (`h-[95vh]`, nie strop):
         // pružná fotka v ľavom stĺpci má `flex-1`, ktoré potrebuje definitívnu
-        // výšku rodiča – zo `max-h` by vyšla nula. Text-only príspevok ostáva
-        // pri strope, aby krátky príspevok držal okno nízke.
+        // výšku rodiča – zo `max-h` by vyšla nula. Príspevok len s textom nemá
+        // čo pružné, preto ostáva pri strope a drží okno nízke (najmenej 20 rem,
+        // aby ani krátky text s jedným komentárom nevyzeral stlačený; R73).
+        // Minimum je `min(20rem,95vh)`, nie holé `20rem`: `min-height` prebíja
+        // `max-height`, takže by okno pri výške obrazovky pod asi 337 px malo 320 px,
+        // presiahlo strop a vycentrované by vyšlo hore aj dole mimo obrazovky
+        // (zatváracie „X" by zmizlo); PR #326.
         className={`relative flex w-full flex-col overflow-hidden rounded-none border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:rounded-2xl ${
           wideContent ? 'max-w-[54rem]' : 'max-w-xl'
-        } ${splitLayout ? 'h-[95vh]' : 'max-h-[95vh]'}`}
+        } ${splitLayout && !textOnlySplit ? 'h-[95vh]' : 'max-h-[95vh]'}${
+          textOnlySplit ? ' min-h-[min(20rem,95vh)]' : ''
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -337,6 +349,7 @@ export default function FeedPostDetailOverlay({
               }
               onCommentsTotalChange={publishCommentsCount}
               commentDraft={commentDraft}
+              textOnly={textOnlySplit}
             />
           ) : (
           <>
@@ -389,7 +402,7 @@ export default function FeedPostDetailOverlay({
 
             {/* Jediná scrollovateľná časť za bežných okolností. `min-h`
                 plní dve úlohy naraz: ruší automatické minimum flex položky
-                (inak by ju obsah roztiahol a okno by prerástlo `max-h-[90vh]`)
+                (inak by ju obsah roztiahol a okno by prerástlo `max-h-[95vh]`)
                 a zároveň drží komentárom podlahu, aby ich pevný blok nad nimi
                 nikdy nestlačil na nulu. `flex-col` a `flexFill` odovzdávajú
                 výšku zoznamu komentárov flexom, lebo percentuálna výška

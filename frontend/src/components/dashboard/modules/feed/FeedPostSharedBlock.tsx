@@ -15,6 +15,12 @@
  * médiami a riadkom akcií, a nič sa neobaľuje; pri zdieľanom obsahu v okne je jedinou pružnou časťou stĺpca. `fillHeight`
  * aj `fixedBlock` idú ako vlastnosti do toho istého výrazu v `className`. Keď nie je čo ukázať (voľný príspevok bez
  * označení), komponent vracia `null`.
+ *
+ * TEXT ZDIEĽAJÚCEHO V OKNE (ľavý stĺpec dvojstĺpcového okna): karta je hlavný obsah a text je jej komentár, preto má
+ * päť riadkov (`SPLIT_SHARED_CAPTION_LINES`) a po rozbalení nemá pevný strop (`fillParent`): vyplní zvyšok stĺpca,
+ * ustúpi karte, keď sa nezmestí (najmenej päť riadkov), a posúva sa len vo vlastnom rámčeku. Medzery medzi súrodencami
+ * dáva v ľavom stĺpci `gap-3` namiesto `space-y-3`: repost s fotkou rozpúšťa obal karty a rám (`display: contents`), na
+ * ktorých by sa vonkajšie okraje stratili. Mimo ľavého stĺpca ostáva všetko ako predtým.
  */
 
 import FeedPostCaption, {
@@ -22,6 +28,7 @@ import FeedPostCaption, {
   DETAIL_CAPTION_LINES,
 } from './FeedPostCaption';
 import { useFeedDetailSplit } from './FeedDetailSplitContext';
+import { useFeedDetailTextOnly } from './FeedDetailTextOnlyContext';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import type { FeedPost, FeedTaggedUser } from '@/lib/feedApi';
@@ -47,6 +54,9 @@ type FeedPostSharedBlockProps = {
   t: (key: string, fallback?: string) => string;
 };
 
+/** Text zdieľajúceho nad kartou v dvojstĺpcovom okne: karta je hlavný obsah, text je jej komentár, preto kratší náhľad. */
+const SPLIT_SHARED_CAPTION_LINES = 5;
+
 export default function FeedPostSharedBlock({
   fillHeight,
   fixedBlock,
@@ -67,6 +77,8 @@ export default function FeedPostSharedBlock({
 }: FeedPostSharedBlockProps) {
   // Pružná plocha fotky ide len do ľavého stĺpca dvojstĺpcového okna (pevná výška); jednostĺpcové okno ju nemá.
   const inSplitColumn = useFeedDetailSplit();
+  // Okno príspevku len s textom (R73): texty sa ukážu celé; blok je pružný len vtedy, keď nesie zdieľaný obsah.
+  const textOnly = useFeedDetailTextOnly();
   if (!(isShared || taggedUsers.length)) return null;
 
   // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
@@ -76,7 +88,16 @@ export default function FeedPostSharedBlock({
         text={caption}
         boundedExpansion={isDetail}
         expansionBound={fillHeight ? 'roomy' : 'compact'}
-        maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
+        maxLines={
+          textOnly
+            ? 0
+            : isDetail
+              ? fillHeight && inSplitColumn
+                ? SPLIT_SHARED_CAPTION_LINES
+                : DETAIL_CAPTION_LINES
+              : CARD_CAPTION_LINES
+        }
+        fillParent={fillHeight && inSplitColumn && !textOnly}
         collapseBlankLines
         onTextClick={
           opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
@@ -84,9 +105,12 @@ export default function FeedPostSharedBlock({
       />
     ) : null;
 
+  // Pružný je blok v okne so zdieľaným obsahom; samotní označení (voľný príspevok len s textom) nesúperia s textom o miesto.
+  const flexible = fillHeight && !(textOnly && !isShared);
+
   return (
     <div
-      className={`space-y-3 px-4 py-3 ${
+      className={`${flexible && inSplitColumn ? 'gap-3' : 'space-y-3'} px-4 py-3 ${
         // V okne detailu je náhľad JEDINÁ pružná časť stĺpca: keď sa
         // nezmestí, scrolluje sa on, nie karta. Bez toho by sa pri vyššom
         // náhľade (ponuka s fotkou) rozhýbala aj hlavička a riadok akcií –
@@ -95,7 +119,7 @@ export default function FeedPostSharedBlock({
         // Zdieľaný príspevok a vlastné fotky sa nikdy nestretnú (backend
         // posiela `images` len pri `free_post`), takže o `flex-1` tu nie je
         // s čím súperiť.
-        fillHeight
+        flexible
           ? `subtle-scrollbar min-h-0 flex-1 overflow-y-auto${
               inSplitColumn ? ' flex flex-col' : ''
             }`

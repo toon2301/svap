@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * Dvojstĺpcové rozloženie okna detailu – pre príspevok s fotkou a pre zdieľanú ponuku alebo portfólio (R53).
+ * Dvojstĺpcové rozloženie okna detailu na počítači – pre príspevok s fotkou, pre zdieľanú ponuku alebo portfólio
+ * (R53) a od R73 aj pre príspevok len s textom (aj repost textového príspevku).
  *
- * Text-only príspevok (aj repost textového príspevku) ostáva na pôvodnom jednostĺpcovom rozložení priamo vo
- * `FeedPostDetailOverlay`: bez fotky ani karty by pravý stĺpec nemal čo vyvážiť a v ľavom by nebolo nič
- * pružné, čo by pohltilo zvyšok výšky. Pri ponuke a portfóliu je pružný zdieľaný blok s kartou.
+ * Príspevok len s textom (`textOnly`) nemá nič pružné, čo by pohltilo výšku: okno má výšku podľa obsahu (strop
+ * `95vh` a najmenej `20rem` rieši `FeedPostDetailOverlay`), text sa ukáže celý a posúva sa len on vo vlastnom
+ * rámiku, keď sa nezmestí (viď `FeedDetailTextOnlyContext`). Komentáre idú flexom (`flexFill`), lebo percentuálna
+ * výška sa v okne bez pevnej výšky nevyhodnotí (nález 363).
  *
  *   ĽAVÝ (56 %)                      PRAVÝ (44 %)
  *   ─────────────────────────        ─────────────────────
@@ -47,6 +49,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { FeedPost, FeedPostImage } from '@/lib/feedApi';
 import { FeedDetailSplitProvider } from './FeedDetailSplitContext';
+import { FeedDetailTextOnlyProvider } from './FeedDetailTextOnlyContext';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComments from './FeedPostComments';
 import type { FeedCommentDraft } from './FeedPostComments.types';
@@ -97,6 +100,8 @@ type FeedPostDetailSplitLayoutProps = {
   onCommentsTotalChange: (total: number) => void;
   /** Rozpracovaný komentár drží okno: pri prepnutí rozloženia sa komentáre odmountujú (viď `draft`). */
   commentDraft?: FeedCommentDraft;
+  /** Príspevok len s textom (aj repost textového príspevku): text sa ukáže celý a okno má výšku podľa obsahu. */
+  textOnly?: boolean;
 };
 
 export default function FeedPostDetailSplitLayout({
@@ -109,6 +114,7 @@ export default function FeedPostDetailSplitLayout({
   onCommentsCountChange,
   onCommentsTotalChange,
   commentDraft,
+  textOnly = false,
 }: FeedPostDetailSplitLayoutProps) {
   const { t } = useLanguage();
 
@@ -124,15 +130,17 @@ export default function FeedPostDetailSplitLayout({
       >
         {/* Pevná výška stĺpca dovoľuje pružnú plochu karty ponuky a portfólia (viď `FeedDetailSplitContext`). */}
         <FeedDetailSplitProvider value>
-          <FeedPostCard
-            post={post}
-            variant="detail"
-            fillHeight
-            liveImages={liveImages}
-            commentsCount={commentsCount}
-            onDeleted={onDeleted}
-            onPostUpdated={onPostUpdated}
-          />
+          <FeedDetailTextOnlyProvider value={textOnly}>
+            <FeedPostCard
+              post={post}
+              variant="detail"
+              fillHeight
+              liveImages={liveImages}
+              commentsCount={commentsCount}
+              onDeleted={onDeleted}
+              onPostUpdated={onPostUpdated}
+            />
+          </FeedDetailTextOnlyProvider>
         </FeedDetailSplitProvider>
       </div>
 
@@ -149,11 +157,12 @@ export default function FeedPostDetailSplitLayout({
         </h2>
         {/* `min-h-0` ruší automatické minimum flex položky – bez neho by zoznam
             komentárov stĺpec roztiahol a okno by prerástlo obrazovku. */}
-        <div className="min-h-0 flex-1">
+        <div className={`min-h-0 flex-1${textOnly ? ' flex flex-col' : ''}`}>
           <FeedPostComments
             postId={post.id}
             highlightCommentId={highlightCommentId}
             fillHeight
+            flexFill={textOnly}
             draft={commentDraft}
             onCountChange={onCommentsCountChange}
             onTotalChange={onCommentsTotalChange}

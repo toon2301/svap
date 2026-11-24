@@ -25,8 +25,8 @@ import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import ShareIcon from './ShareIcon';
 
-/** Text príspevku sa tu zbalí na päť riadkov – obrazovka má miesta viac než karta. */
-const MOBILE_DETAIL_CAPTION_LINES = 5;
+/** Text príspevku sa tu zbalí na desať riadkov (rovnako ako v okne detailu na počítači) – obrazovka má miesta viac než karta. */
+const MOBILE_DETAIL_CAPTION_LINES = 10;
 
 /** Spoločný vzhľad troch akcií – dotykový cieľ nad 44 px. */
 const ACTION_BUTTON =
