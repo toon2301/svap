@@ -254,4 +254,33 @@ DECISIONS_K46 = [
                  'Rozsah je redizajn komentárov (K44); tagy (359, skupina 8) a ostatné mobilné doladenia (skupina 6) sa rozhodnú '
                  'osobitne. Rieši nález 261 (skupina 7).',
          datum='24. 11. 2026'),
+    dict(id='R77', tema='Počty riadkov „Viac“ v detaile príspevku po ručnom teste K58 (zmena R71)',
+         otazka='Majiteľ po ručnom teste K58 (24. 11. 2026): 10 riadkov je veľa. Chce: (1) pri otvorenom detaile s fotkou, portfóliom a '
+                'ponukou „Viac“ od šiesteho riadku (5 riadkov); (2) na počítači pri prezdieľanom príspevku len s textom bez fotky: pri '
+                'texte zdieľajúceho (majiteľ prezdieľaného príspevku) „Viac“ od jedenásteho riadku (10 riadkov), pri texte pôvodného '
+                '(zdieľaného) príspevku „Viac“ od šiesteho riadku (5 riadkov). Dnes po K58 (z kódu): voľný príspevok s fotkou v okne 10 '
+                'riadkov (`DETAIL_CAPTION_LINES`); text zdieľajúceho nad ponukou, portfóliom a repostom s fotkou v dvojstĺpcovom okne 5 '
+                '(`SPLIT_SHARED_CAPTION_LINES`); text pôvodného príspevku v reposte v okne 3; repost len s textom v okne celý bez '
+                '„Viac“ (R73); voľný príspevok len s textom v okne celý bez „Viac“ (R73); detail na mobile 10; karta a fotoprehliadač '
+                '3. Čo presne platí na miestach, ktoré majiteľ nespomenul? (a) Platí (1) aj pre detail príspevku na mobile (dnes 10)? '
+                '(b) Repost s fotkou v okne: text zdieľajúceho 5 (ako dnes) a pôvodný 3 (dnes) alebo 5? (c) Voľný príspevok len s '
+                'textom na počítači ostáva celý bez „Viac“ (R73)? (d) Karta (3) a fotoprehliadač (3) bez zmeny?',
+         odporucanie='(a) áno: detail na mobile s fotkou, ponukou, portfóliom alebo náhľadom zdieľaného obsahu 5 riadkov, len text 10, aby '
+                     'boli obe zariadenia rovnaké a mobil (menej miesta) nemal viac než počítač; (b) 5 a 5 (s fotkou 5); (c) áno, ostáva '
+                     'celý (okno je na to postavené a posúva sa v stĺpci); (d) áno, bez zmeny. Zmena je malá (konštanty a podmienky vo '
+                     '`FeedPostCardCaption.tsx`, `FeedPostSharedBlock.tsx`, `SharedContentPreviewCard.tsx` a '
+                     '`FeedPostMobileDetailContent.tsx` a úprava testov, ktoré dnes čakajú 10 a 0) a odporúča sa ju urobiť v krátkej '
+                     'samostatnej vetve, nie čakať na K44.',
+         kedy='Potrebné pred opravou počtov riadkov (vetva agenta po K58).'),
+    dict(id='R78', tema='Nález 343 (úchytka panela komentárov nad fotkou) ide vo vetve agenta s K44; K59 sa zatiaľ nepripravuje',
+         otazka='Nález 343 mal ísť ako dávka K33 kolegu (R55: tenká úchytka 40×6 px, súbor `FeedPhotoCommentsSheet.tsx`). K44 (R76) '
+                'mení ten istý súbor (pole na komentár a odpoveď, zamknutie stránky a výška pri klávesnici v paneli nad fotkou). Kto ho '
+                'urobí a kedy? (a) Kolega samostatne (dvaja menia ten istý súbor); (b) agent vo vetve K44 ako samostatný krok. Kolega '
+                'po K58 nemá kartu: pripraviť K59 (361 a 362)?',
+         odporucanie='(b): jeden autor jedného súboru, bez zrážky vetiev. K59 sa nepripravuje, kým majiteľ nepovie.',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026: „áno 343 urob v mojej vetve a K59 nemusíš ešte chystať“. Platí: (a) nález 343 (úchytka 40×6 px '
+                 'podľa R55 a obrázka `navrhy/mobil-uchytka.png`) robí agent vo vetve K44 ako samostatný krok; dávka K33 zaniká; (b) K59 '
+                 '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie.',
+         datum='24. 11. 2026'),
 ]

@@ -123,7 +123,8 @@ NEW_ITEMS_K14 = [
                '`navrhy/mobil-uchytka.png`), nie šípka ani bez úchytky; ťuk aj potiahnutie nadol fungujú ďalej a neviditeľná plocha na '
                'ťuk má aspoň 44 px. Návrh (neoverený): tlačidlo s priehľadnou plochou a vnútornou tenkou čiarou, globálne pravidlo '
                '`button` sa nemení. JASNÉ: jeden malý súbor pod 500 riadkov a test; nesúvisí s delením `FeedPostComments.tsx`, takže môže '
-               'ísť aj pred ním. Po nasadení krátky ručný test majiteľa na mobile. Odhad: nízky · S.',
+               'ísť aj pred ním. Podľa R78 (24. 11. 2026) ho robí agent v jednej vetve s K44, lebo K44 mení ten istý súbor '
+               '(`FeedPhotoCommentsSheet.tsx`: pole na komentár, zamknutie stránky a výška pri klávesnici); dávka K33 zaniká. Po nasadení krátky ručný test majiteľa na mobile. Odhad: nízky · S.',
          dec='ROZHODNUTIE R55', src='majiteľ (17. 11. 2026) a kontrola agenta čítaním kódu'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '

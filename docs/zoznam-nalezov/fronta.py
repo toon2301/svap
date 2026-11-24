@@ -11,7 +11,7 @@ Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v k
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
 nie ako voľný, lebo kým kolega pracuje, zoznam o tom nevie. Polia a ich kontrola ostávajú pre prípad, že by sa postup zmenil.
 
-Dávky K1 až K31, K36 až K43, K45 a K48 až K57 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
+Dávky K1 až K31, K36 až K43, K45 a K48 až K58 sú zlúčené (K6 až K18 sú v `hotove_dalsie.py`, K19, K20, K23 a K25 sú v nálezu 321 a K21, K22 a K24 sú v `hotove_k20.py`; z K16 zostáva ručný test nálezu 319, z K17 nič, lebo nález 311 majiteľ 12. 11. 2026 uzavrel (R38), z K18 nič, lebo toast pri nálezu 325 je v K21, a z K20 a K23 nič, lebo zvyšok E2E nálezu 321 je nález 337; K26, K27 a K28 sú zapísané v nálezoch 333 a 262, ktoré ostávajú otvorené): K8 (mapovanie nálezov 275, 274 a 276) sa robila na dva razy,
 PR #237 a #238 (druhé kolo sa volalo K9), dávka drobných opráv (193, 279, 277, 281) išla ako K10 (PR #239), K11 (PR #241) bola o fotkách
 na frontende (279, 293, 291 a 292, ktorý je PO NASADENÍ a majiteľ ho do dávky zaradil 7. 11. 2026), K12 (PR #242) o súkromí a CI (282, 246,
 194 a časť 204), K13 (PR #244) o starom endpointe fotiek ponúk, zámkoch pri zmazaní účtu, CI prekladoch a toastoch (301, 296, 297 a časť
@@ -35,7 +35,7 @@ zoznam nemôže ticho zastarať.
 """
 
 SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu, potom jedna vetva agenta; kolega smie robiť aj nálezy '
-             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45 a K48 až K57 sú hotové (z '
+             'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45 a K48 až K58 sú hotové (z '
              'K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 '
              '(PR #273), 181 (PR #274), 182 (PR #277), 183 (PR #279), 184 (PR #282), 185 (PR #285), 186 (PR #288), 187 (PR #290), '
              '188 (PR #293), 189 (PR #296), 190 (PR #299), 191 (PR #303), 192 (PR #305), 193 (PR #308), 194 (PR #310), 195 (PR #312), 196 (PR #314), 197 (PR #316), 198 (PR #318; len karta K55), 199 (PR #320; zápis a karta K56), 200 (PR #322; karta K57, nálezy 363 a 364 a R69), 201 (PR #324), 202 (PR #325; karta K58, rozhodnutia R71 až R74, nálezy 365 až 368 a obrázky v `navrhy/`) a 203 (oprava vety o nálezu 364 vo vlne 2 po druhej kontrole CodeRabbitu, rozhodnutia R75 a R76, nálezy 369 a 370 a obrázky v `navrhy/`) sú len zoznam alebo karta, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) '
@@ -108,8 +108,8 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'o 09:42 UTC; opravy 355 a 356, posledný krok pred redizajnom; karta `karty/K56.md`) je zlúčená, agent ju overil rovnako '
              'a jej ručný test majiteľa prešiel; tým sa podľa R66 (a) začína redizajn: majiteľ 23. 11. 2026 zmenil R64 (R67), takže po '
              'rekapitulácii a vizuálnom návrhu s odporúčaním a po 100 % dohode napíše agent presné karty a kód píše kolega; agent '
-             'bez pokynu majiteľa nič nepripravuje mimo tohto postupu. K57 (PR #323, 23. 11. 2026 o 21:55 UTC; okno detailu na počítači, nálezy 344 a 363, prvá časť redizajnu; karta `karty/K57.md`) je zlúčená a agent ju overil rovnako (výsledky sú v nálezoch 344 a 363); verdikt ručného testu majiteľ zatiaľ nepovedal a drobné vzhľadové úpravy chce urobiť sám vo vetve `VU1` (R70), ktorú agent po oznámení skontroluje; po odpovediach majiteľa na návrh textu príspevku a okna detailu (R71 až R73, 24. 11. 2026) napísal agent kartu K58 (`karty/K58.md`, podklady `karty/K58_podklady.md`; tri kódové kroky, nálezy 357, 364, 365, 366 a 367) a kolegovi ju pošle majiteľ; nález 368 (označení používatelia v okne s fotkou; vzhľad schválil majiteľ po obrázku Dnes a Po, R74) opraví po zlúčení K58 sám agent, keď majiteľ dá pokyn (výnimka z R67), preto nie je vo fronte kolegu; redizajn komentárov (K44: plochý vzhľad podľa R52, pole na komentár a odpoveď na mobile podľa R75 a nálezy 369 a 370) má od 24. 11. 2026 schválený vzhľad a podľa R76 ho píše sám agent (výnimka z R67), preto ho fronta kolegu nemá; ďalšie dávky agent nepripravuje, kým majiteľ nepovie. Pri každej dávke má kolega doplniť aj manuál ručných '
-             'testov `sablony/dymovy_test.md`, ak dávka ručné testy má (K50 pridala krok 9, K51 až K57 odrážky). Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
+             'bez pokynu majiteľa nič nepripravuje mimo tohto postupu. K57 (PR #323, 23. 11. 2026 o 21:55 UTC; okno detailu na počítači, nálezy 344 a 363, prvá časť redizajnu; karta `karty/K57.md`) je zlúčená a agent ju overil rovnako (výsledky sú v nálezoch 344 a 363); verdikt ručného testu majiteľ zatiaľ nepovedal a drobné vzhľadové úpravy chce urobiť sám vo vetve `VU1` (R70), ktorú agent po oznámení skontroluje; po odpovediach majiteľa na návrh textu príspevku a okna detailu (R71 až R73, 24. 11. 2026) napísal agent kartu K58 (`karty/K58.md`, podklady `karty/K58_podklady.md`; tri kódové kroky, nálezy 357, 364, 365, 366 a 367) a kolega ju urobil: K58 je zlúčená (PR #326, 24. 11. 2026 o 19:29 UTC, merge `828753ff`; karta `karty/K58.md`), agent ju overil rovnako (výsledky sú v nálezoch 357 a 364 až 367) a ručný test majiteľa po nasadení prešiel s jednou výhradou, počtami riadkov „Viac“ (R77), a priniesol nálezy 371 a 372; nález 368 (označení používatelia v okne s fotkou; vzhľad schválil majiteľ po obrázku Dnes a Po, R74) opraví po zlúčení K58 sám agent, keď majiteľ dá pokyn (výnimka z R67), preto nie je vo fronte kolegu; redizajn komentárov (K44: plochý vzhľad podľa R52, pole na komentár a odpoveď na mobile podľa R75 a nálezy 369 a 370) má od 24. 11. 2026 schválený vzhľad a podľa R76 ho píše sám agent (výnimka z R67), preto ho fronta kolegu nemá; úchytku panela nad fotkou (343) robí podľa R78 agent v tej istej vetve; K59 sa podľa majiteľa zatiaľ nepripravuje a ďalšie dávky agent nepripravuje, kým majiteľ nepovie. Pri každej dávke má kolega doplniť aj manuál ručných '
+             'testov `sablony/dymovy_test.md`, ak dávka ručné testy má (K50 pridala krok 9, K51 až K58 odrážky). Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
              'upozornení a E2E regresie 345 a 346 (zatiaľ len lokálne overené). Údržba zoznamu (jedna dokumentačná vetva agenta; '
              'majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky PO-A a '
              'PO-B sú staršie návrhy z nálezov PO NASADENÍ a číslo K dostanú, až keď pôjdu kolegovi.')
@@ -122,30 +122,6 @@ STAVY = (STAV_ROZROBENE, STAV_CAKA)
 # kto='kolega', stav=STAV_ROZROBENE, od='3. 11. 2026' (od 5. 11. 2026 sa nepoužíva). ID je reťazec (číslo nálezu alebo ID z
 # registra, napr. 'APP-05').
 FRONTA = [
-    dict(n='365', davka='K58',
-         co='Text príspevku: „Viac“ a „Menej“ sa správajú na piatich miestach inak; jedno pravidlo pre kartu, repost, okno na '
-            'počítači, detail na mobile a prehliadač fotky (3 riadky v náhľade, 10 v detaile).',
-         preco='JASNÉ (krok 1 karty K58; vzhľad schválený majiteľom, R71; obrázky `navrhy/*viac-menej*-schvalene.png`; riešia sa tým aj '
-               '357 a 364).'),
-    dict(n='357', davka='K58',
-         co='Prezdieľaný príspevok (repost): text pôvodného príspevku sa v náhľade skracuje na 4 až 5 riadkov a chýba „Viac“.',
-         preco='JASNÉ (krok 1 karty K58 spolu s 365: text pôvodného príspevku dostane „Viac“ a „Menej“ a 3 riadky; vzhľad schválený, '
-               'R71; prototyp agenta ukázal, že oprava ide cez `FeedPostCaption.tsx`).'),
-    dict(n='364', davka='K58',
-         co='Okno detailu len s textom na počítači: rozbalený dlhý text („Menej“) má strop štvrtinu výšky obrazovky, takže pod 800 px '
-            'ukáže menej riadkov než zbalený.',
-         preco='JASNÉ (krok 1 karty K58: rozbalený strop v jednostĺpcovom okne `max(25vh, 14rem)`, nikdy nižší než zbalený text; '
-               'majiteľ ho schválil v R71, čím sa mení R69 (2a)).'),
-    dict(n='366', davka='K58',
-         co='Okno detailu na počítači: ponuka, portfólio a repost s fotkou sa pri dlhom alebo rozbalenom texte posúvajú; majiteľ '
-            'chce, aby sa neposúvali a zmenšovali sa ako fotka.',
-         preco='JASNÉ (krok 2 karty K58; vzhľad schválený majiteľom, R72; obrázky `navrhy/pc-okno-fotka-ponuka-portfolio-bez-posuvania-'
-               'schvalene.png` a `pc-okno-repost-s-fotkou-bez-posuvania-schvalene.png`).'),
-    dict(n='367', davka='K58',
-         co='Okno detailu na počítači: príspevok len s textom (aj repost textového príspevku) v dvoch stĺpcoch, komentáre vpravo, '
-            'okno 864 px s výškou podľa obsahu, text celý hneď pod menom autora.',
-         preco='JASNÉ (krok 3 karty K58; vzhľad schválený majiteľom, R73; mení R53 (b) a R63; obrázky `navrhy/pc-okno-text-dva-stlpce-'
-               'schvalene.png` a `pc-okno-text-dva-stlpce-dlhsie-texty-schvalene.png`).'),
     dict(n='358', davka='po redizajne',
          co='Zdieľaná ponuka alebo portfólio: sprievodný text, ktorý zdieľajúci napísal, sa nad náhľadom nezobrazuje vôbec.',
          preco='NEJASNÉ (najprv mapovanie, kód nemeň; môže siahnuť aj na backend; ručný test majiteľa po K51; ide po '
@@ -171,16 +147,21 @@ FRONTA = [
          preco='JASNÉ (ručný test majiteľa po K53; riadok pôvodného autora v `SharedContentPreviewCard.tsx` nie je ovládací '
                'prvok, feed API ale posiela vlastníka s `id` a `slug`; K55 je zlúčená a dočasný odtlačok HTML je zmazaný, takže ju '
                'nič nebrzdí; ide po redizajne spolu s 357 až 361, lebo sa dotýka toho istého náhľadu).'),
+    dict(n='371', davka='po redizajne',
+         co='Prezdieľaná ponuka alebo portfólio bez fotky: keď vlastník dodatočne pridá fotku, na Nástenke sa to neobnoví a stále '
+            'ukazuje „bez fotky“.',
+         preco='NEJASNÉ (najprv mapovanie, kód nemeň; zasahuje backend: náhľad sa pri zdieľaní uloží ako kľúč `shared_thumbnail_key` '
+               'a neobnovuje sa, kým názov, kategória a cena sú naživo; spôsob opravy určí majiteľ po mapovaní; ručný test majiteľa po K58).'),
+    dict(n='372', davka='po redizajne',
+         co='Označení používatelia: v detaile príspevku na mobile a vo fotoprehliadači sa nezobrazujú; pri príspevku s fotkou majú byť '
+            'nad fotkou (mobil aj počítač), dnes sú pod ňou.',
+         preco='NEJASNÉ (najprv návrh vzhľadu s možnosťami a odporúčaním od agenta a schválenie majiteľom, R49; súvisí s 359, 368 a '
+               'skupinou 8 v 261, preto jedným návrhom; kto píše kód, určí majiteľ osobitne, R76; ručný test majiteľa po K58).'),
     dict(n='176', davka='K32',
          co='Preklady: zvyšné slovenské kópie v češtine, poľštine, nemčine a maďarčine (R2: všetkých šesť jazykov pred štartom).',
          preco='NEJASNÉ (najprv mapovanie po jazykoch, kód nemeň: oddeliť legitímne rovnaké slová od nepreložených textov; '
                'meranie z 6. 11. 2026: cs 247, pl 49, de 3 a hu 1 hodnôt zhodných so slovenčinou). R2 je zodpovedané (13. 11. 2026). '
                'Zahŕňa 175 a APP-03 a maďarské pomenovanie sekcie Žiadosti (Kérelmek a Kérések); veľká práca (L), po jazykoch.'),
-    dict(n='343', davka='K33',
-         co='Úchytka panela komentárov nad fotkou na mobile: tenká úchytka 40×6 px namiesto ovála 40×36 px (R55).',
-         preco='JASNÉ (karta sa pripraví po K30). Jeden malý súbor `FeedPhotoCommentsSheet.tsx` (126 riadkov) a test, bez súvisu s delením '
-               'komentárov; vzhľad je schválený (R55, obrázok `navrhy/mobil-uchytka.png`), globálne pravidlo `button` sa nemení. Po '
-               'nasadení krátky ručný test majiteľa na mobile (potiahnutie nadol aj ťuk panel zatvorí).'),
     dict(n='262', davka='K34',
          co='Zoznam „kto lajkol“: frontend, etapa A (zoznam a bublinka pri ponuke a dopyte, portfóliu, profile a '
             'fotke na celú obrazovku; text pri skrytých lajkujúcich).',
