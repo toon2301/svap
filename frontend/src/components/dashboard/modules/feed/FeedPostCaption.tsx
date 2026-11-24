@@ -17,7 +17,15 @@
  * Stav je lokálny pre túto inštanciu, takže karty vo feede sa neovplyvňujú.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
@@ -56,17 +64,26 @@ const OVERFLOW_TOLERANCE_PX = 1;
  * `CLAMP_CLASSES` (Tailwind hľadá v zdroji celé názvy tried).
  *
  * - `compact` = jednostĺpcové okno detailu: text, akcie aj komentáre sú pod
- *   sebou, takže text si smie vziať nanajvýš štvrtinu obrazovky.
+ *   sebou, takže text si smie vziať štvrtinu obrazovky, no nikdy menej než
+ *   14 rem. Zbalený text má 10 riadkov po 20 px (12,5 rem) a rozbalený rámik
+ *   nesmie byť nižší než zbalený, inak by „Viac" ukázalo MENEJ riadkov než pred
+ *   ním (nález 364; samotná štvrtina obrazovky je pod 800 px nižšia než 12,5 rem).
  * - `roomy` = dvojstĺpcové okno pri príspevku s fotkou: v ľavom stĺpci je s
  *   textom už len hlavička, fotka a riadok akcií, takže text má miesta viac.
  *   Strop je tam POISTKA, nie bežný stav – reálny caption (limit 500 znakov)
  *   sa pri šírke stĺpca zmestí do ~8 riadkov (~10 % výšky obrazovky), takže
  *   sa nadobudne len pri texte plnom vynútených zalomení. Práve on ale drží
  *   záruku, že ľavý stĺpec nikdy nescrolluje – viď FeedPostDetailSplitLayout.
+ *   Hodnota sa NEMENÍ na `max(40vh, 14rem)`: `40vh` je nad 14 rem už od výšky
+ *   obrazovky 560 px, takže by to nič nezmenilo.
+ * - `viewer` = prehliadač fotky na mobile: text sedí NA fotke (na tmavom
+ *   podklade), preto ho rozbalený smie zakryť najviac štyri desatiny obrazovky;
+ *   dlhší sa posúva vnútri.
  */
 export const BOUNDED_EXPANDED_MAX_HEIGHT = {
-  compact: 'max-h-[25vh]',
+  compact: 'max-h-[max(25vh,14rem)]',
   roomy: 'max-h-[40vh]',
+  viewer: 'max-h-[40vh]',
 } as const;
 
 export type CaptionExpansionBound = keyof typeof BOUNDED_EXPANDED_MAX_HEIGHT;
@@ -128,6 +145,17 @@ type FeedPostCaptionProps = {
    * teda o nič neprídu.
    */
   onTextClick?: () => void;
+  /**
+   * Text na fotke (prehliadač fotky na mobile): biely text a po rozbalení tmavý podklad so zjemneným pozadím, aby sa
+   * dal čítať na akejkoľvek fotke. Predvolene `default` (text na svetlom podklade karty a okna).
+   */
+  tone?: 'default' | 'onPhoto';
+  /**
+   * Obalí ODSEK, napríklad tlačidlom s prekliknutím na pôvodný príspevok (text pôvodného príspevku v reposte).
+   * Prepínač „Viac"/„Menej" ostáva MIMO obalu: tlačidlo v tlačidle je neplatné HTML a ťuk na prepínač nemá
+   * nič otvárať.
+   */
+  wrapText?: (paragraph: ReactElement) => ReactNode;
 };
 
 export default function FeedPostCaption({
@@ -138,6 +166,8 @@ export default function FeedPostCaption({
   maxLines = CARD_CAPTION_LINES,
   collapseBlankLines = false,
   onTextClick,
+  tone = 'default',
+  wrapText,
 }: FeedPostCaptionProps) {
   const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
   const clampClass = CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES];
@@ -199,30 +229,47 @@ export default function FeedPostCaption({
         : '')
     : clampClass;
 
+  const onPhoto = tone === 'onPhoto';
+  const paragraph = (
+    <p
+      ref={textRef}
+      data-testid={testId}
+      role={scrollable ? 'region' : undefined}
+      aria-label={
+        scrollable ? t('feed.captionRegion', 'Text príspevku') : undefined
+      }
+      tabIndex={scrollable ? 0 : undefined}
+      onClick={onTextClick}
+      className={`whitespace-pre-wrap break-words text-sm ${
+        onPhoto ? 'text-white' : 'text-gray-800 dark:text-gray-100'
+      } ${sizeClass} ${onTextClick ? 'cursor-pointer' : ''}`}
+    >
+      {text}
+    </p>
+  );
+
   return (
-    <div>
-      <p
-        ref={textRef}
-        data-testid={testId}
-        role={scrollable ? 'region' : undefined}
-        aria-label={
-          scrollable ? t('feed.captionRegion', 'Text príspevku') : undefined
-        }
-        tabIndex={scrollable ? 0 : undefined}
-        onClick={onTextClick}
-        className={`whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100 ${sizeClass} ${
-          onTextClick ? 'cursor-pointer' : ''
-        }`}
-      >
-        {text}
-      </p>
+    // Na fotke dostane ROZBALENÝ text tmavý podklad (`-mx-2` a `px-2` vyrovnajú odsadenie, takže text ostane na
+    // rovnakom mieste ako zbalený); zbalený sedí priamo na gradiente prehliadača.
+    <div
+      className={
+        onPhoto && expanded
+          ? '-mx-2 rounded-xl bg-black/60 px-2 py-1.5 backdrop-blur-sm'
+          : undefined
+      }
+    >
+      {wrapText ? wrapText(paragraph) : paragraph}
       {overflows ? (
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
           aria-expanded={expanded}
           data-testid={`${testId}-toggle`}
-          className="mt-0.5 text-sm font-medium text-gray-500 underline-offset-2 transition-colors hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:text-purple-300"
+          className={`mt-0.5 text-sm font-medium underline-offset-2 transition-colors hover:underline ${
+            onPhoto
+              ? 'text-white/80 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70'
+              : 'text-gray-500 hover:text-purple-700 dark:text-gray-400 dark:hover:text-purple-300'
+          }`}
         >
           {expanded
             ? t('feed.captionLess', 'Menej')

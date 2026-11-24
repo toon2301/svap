@@ -444,9 +444,9 @@ describe('scrollbar komentárov', () => {
 });
 
 describe('rozpočet výšky ľavého stĺpca', () => {
-  /** Číslo z triedy typu `max-h-[40vh]`. */
+  /** Číslo z triedy typu `max-h-[40vh]` aj `max-h-[max(25vh,14rem)]` (vtedy ide o jeho vh časť). */
   function vhOf(className: string): number {
-    const match = className.match(/max-h-\[(\d+)vh\]/);
+    const match = className.match(/max-h-\[(?:max\()?(\d+)vh/);
     expect(match).not.toBeNull();
     return Number(match?.[1]);
   }

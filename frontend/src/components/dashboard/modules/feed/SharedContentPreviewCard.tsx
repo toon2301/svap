@@ -28,6 +28,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
+import FeedPostCaption, { CARD_CAPTION_LINES } from './FeedPostCaption';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
@@ -251,6 +252,32 @@ export default function SharedContentPreviewCard({
     </span>
   ) : null;
 
+  // Text pôvodného príspevku: rovnaké „Viac"/„Menej" ako text karty (3 riadky, „Viac" len pri presahu). Obal s
+  // prekliknutím na pôvodný príspevok je len okolo ODSEKU; prepínač stojí mimo neho, lebo tlačidlo v tlačidle je
+  // neplatné HTML a ťuk na „Viac" nemá nič otvárať.
+  const captionNode = caption ? (
+    <FeedPostCaption
+      text={caption}
+      testId="feed-shared-caption"
+      maxLines={CARD_CAPTION_LINES}
+      collapseBlankLines
+      wrapText={
+        isPost && onOpenPostPreview && !unavailable
+          ? (paragraph) => (
+              <button
+                type="button"
+                onClick={onOpenPostPreview}
+                data-testid="feed-shared-post-preview-open"
+                className="block w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+              >
+                {paragraph}
+              </button>
+            )
+          : undefined
+      }
+    />
+  ) : null;
+
   const body = (
     // Zdieľaný príspevok nemá rám, takže ani vnútorné odsadenie – text má
     // začínať tam, kde text karty, nie o kúsok vpravo.
@@ -279,11 +306,8 @@ export default function SharedContentPreviewCard({
         <p className="truncate text-xs text-gray-500 dark:text-gray-400">{meta}</p>
       ) : null}
 
-      {caption ? (
-        <p className="line-clamp-4 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">
-          {caption}
-        </p>
-      ) : null}
+      {/* Text zdieľaného PRÍSPEVKU ide mimo tela (viď `captionNode`); ponuka a portfólio ho posielajú prázdny. */}
+      {!isPost ? captionNode : null}
     </div>
   );
 
@@ -306,19 +330,10 @@ export default function SharedContentPreviewCard({
         data-testid={unavailable ? 'feed-shared-unavailable' : 'feed-shared-post-preview'}
         className={`space-y-2 ${mutedClass}`}
       >
-        {/* Zmiznutý zdroj nie je cieľ kliku – nie je kam ísť. */}
-        {onOpenPostPreview && caption && !unavailable ? (
-          <button
-            type="button"
-            onClick={onOpenPostPreview}
-            data-testid="feed-shared-post-preview-open"
-            className="block w-full rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-          >
-            {body}
-          </button>
-        ) : (
-          body
-        )}
+        {/* Telo (nedostupný zdroj, názov, meta, cena) zdieľaný príspevok zvyčajne nemá. Zmiznutý zdroj nie je cieľ
+            kliku – nie je kam ísť, preto sa v ňom text neobaľuje (viď `wrapText` v `captionNode`). */}
+        {unavailable || title || meta || priceBadge ? body : null}
+        {captionNode}
         {photo}
       </div>
     );

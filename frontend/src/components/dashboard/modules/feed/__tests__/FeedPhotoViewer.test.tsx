@@ -232,17 +232,42 @@ describe('otvorenie prehliadača', () => {
     expect(name?.className).not.toContain('break-words');
   });
 
-  it('clamps the caption to two lines with a Viac toggle', async () => {
-    await openViewer(makePost({ caption: 'Veľmi dlhý text príspevku.' }));
+  it('zbalí text na tri riadky a „Viac“ ukáže len pri presahu', async () => {
+    // jsdom nelayoutuje – „presahuje text tri riadky?" sa nastavuje priamo na
+    // uzle (scrollHeight vs. clientHeight), rovnako ako v testoch
+    // `FeedPostCaption`.
+    Object.defineProperty(HTMLParagraphElement.prototype, 'clientHeight', {
+      configurable: true,
+      get() {
+        return this.dataset.testid === 'feed-photo-viewer-caption' ? 60 : 0;
+      },
+    });
+    Object.defineProperty(HTMLParagraphElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get() {
+        if (this.dataset.testid !== 'feed-photo-viewer-caption') return 0;
+        return this.className.includes('line-clamp') ? 900 : 60;
+      },
+    });
 
-    const caption = screen.getByTestId('feed-photo-viewer-caption');
-    expect(caption.className).toContain('line-clamp-2');
+    try {
+      await openViewer(makePost({ caption: 'Veľmi dlhý text príspevku.' }));
 
-    await userEvent.click(screen.getByTestId('feed-photo-viewer-caption-more'));
+      const caption = screen.getByTestId('feed-photo-viewer-caption');
+      expect(caption.className).toContain('line-clamp-3');
 
-    expect(screen.getByTestId('feed-photo-viewer-caption').className).not.toContain(
-      'line-clamp-2',
-    );
+      await userEvent.click(
+        await screen.findByTestId('feed-photo-viewer-caption-toggle'),
+      );
+
+      expect(
+        screen.getByTestId('feed-photo-viewer-caption').className,
+      ).not.toContain('line-clamp-3');
+    } finally {
+      // Výšky sú nastavené na prototype – bez upratania by pretiekli inam.
+      Reflect.deleteProperty(HTMLParagraphElement.prototype, 'clientHeight');
+      Reflect.deleteProperty(HTMLParagraphElement.prototype, 'scrollHeight');
+    }
   });
 });
 

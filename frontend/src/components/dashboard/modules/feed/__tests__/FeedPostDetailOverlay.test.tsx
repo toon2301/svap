@@ -415,7 +415,7 @@ describe('obsah okna', () => {
     // Rozbalený text v okne dostane vlastný strop a scrolluje sa v ňom, takže
     // nevytlačí riadok akcií ani komentáre za orezanú hranu okna.
     const caption = screen.getByTestId('feed-post-caption');
-    expect(caption.className).toContain('max-h-[25vh]');
+    expect(caption.className).toContain('max-h-[max(25vh,14rem)]');
     expect(caption.className).toContain('overflow-y-auto');
     expect(caption.className).toContain('subtle-scrollbar');
     expect(caption.className).not.toContain('line-clamp-3');

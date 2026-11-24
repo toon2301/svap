@@ -5,8 +5,9 @@
  *
  * Fotku samotnú (aj prepínanie medzi viacerými) rieši `ImageLightbox`; tento
  * komponent je len jeho `chrome`, takže o swipe, klávesnicu ani vrstvy sa
- * nestará. Zhora nadol: hlavička s autorom a „X", text príspevku (dva riadky
- * s „Viac"), a dole riadok akcií s „..." menu.
+ * nestará. Zhora nadol: hlavička s autorom a „X", text príspevku (tri riadky
+ * s „Viac" a „Menej", rovnako ako na karte; rozbalený sedí na tmavom podklade),
+ * a dole riadok akcií s „..." menu.
  *
  * Čitateľnosť bieleho textu drží jemný gradient hore aj dole – nie plná
  * plocha, aby fotka pod ním ostala vidieť.
@@ -18,6 +19,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import type { FeedPost } from '@/lib/feedApi';
+import FeedPostCaption, { CARD_CAPTION_LINES } from './FeedPostCaption';
 import ShareIcon from './ShareIcon';
 import { canOpenUserProfile, openUserProfile } from './feedProfileNavigation';
 import { formatRelativeTime } from './feedRelativeTime';
@@ -96,7 +98,6 @@ export default function FeedPhotoViewerChrome({
 }: FeedPhotoViewerChromeProps) {
   const { t, locale } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [captionExpanded, setCaptionExpanded] = useState(false);
   const author = post.author;
   const authorName = author?.display_name || '';
   const caption = post.caption || '';
@@ -155,24 +156,17 @@ export default function FeedPhotoViewerChrome({
 
         {caption ? (
           <div className="pointer-events-auto mt-2 pr-12">
-            <p
-              data-testid="feed-photo-viewer-caption"
-              className={`whitespace-pre-wrap break-words text-sm text-white ${
-                captionExpanded ? '' : 'line-clamp-2'
-              }`}
-            >
-              {caption}
-            </p>
-            {captionExpanded ? null : (
-              <button
-                type="button"
-                onClick={() => setCaptionExpanded(true)}
-                data-testid="feed-photo-viewer-caption-more"
-                className="mt-0.5 text-sm font-medium text-white/80 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-              >
-                {t('feed.captionMore', 'Viac')}
-              </button>
-            )}
+            {/* Rovnaké „Viac"/„Menej" ako na karte: „Viac" len pri texte, ktorý presahuje tri riadky. Rozbalený text
+                zakryje najviac 40 % obrazovky a posúva sa vnútri (`viewer`). */}
+            <FeedPostCaption
+              text={caption}
+              testId="feed-photo-viewer-caption"
+              tone="onPhoto"
+              maxLines={CARD_CAPTION_LINES}
+              boundedExpansion
+              expansionBound="viewer"
+              collapseBlankLines
+            />
           </div>
         ) : null}
       </div>
