@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68 a R69.
+"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68, R69 a R70 (24. 11. 2026).
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Po odpovedi majiteľa sa doplní `odpoved` a `datum`.
 """
@@ -99,4 +99,24 @@ DECISIONS_K46 = [
                  's redizajnom komentárov, R59). Schválený vzhľad: `navrhy/pc-okno-dlhy-text-komentare-800-schvalene.png`, '
                  '`pc-okno-dlhy-text-komentare-950-schvalene.png` a `pc-okno-dlhy-text-dnes-a-navrh-800-schvalene.png`.',
          datum='23. 11. 2026'),
+    dict(id='R70', tema='Vlastné vzhľadové úpravy majiteľa po K57: vetva `VU` a ako ich agent skontroluje',
+         otazka='Po zlúčení K57 (okno detailu príspevku na počítači) chce majiteľ niektoré drobné vzhľadové veci, ktoré sa mu nepáčia, '
+                'upraviť sám a hodiť ich do vlastnej vetvy `VU1` (ďalšie by boli `VU2` a tak ďalej). Vie ich agent z tej vetvy pozrieť, '
+                'skontrolovať, či v nich nie je chyba, a podľa toho aktualizovať zoznam? Ako sa to má robiť, aby sa vetva majiteľa '
+                'nemiešala s vetvami agenta a kolegu? (a) Majiteľ oznámi vetvu (názov alebo číslo PR) a čo chcel zmeniť; agent zmeny '
+                'prečíta z GitHubu, skontroluje ich v kópii mimo repozitára a výsledok zapíše vo vlastnej očíslovanej vetve; do `VU` '
+                'nikdy nepíše. (b) Agent chyby priamo opravuje vo vetve `VU`. (c) Majiteľ si vetvu kontroluje sám a agent ju nepozerá.',
+         odporucanie='(a): vetva `VU` je vetva majiteľa, tak ako `K…` je vetva kolegu a `e2e/…` vetva Codexu, a agent do cudzej vetvy nepíše '
+                     '(AGENTS.md). Kontrola je rovnaká ako pri dávke kolegu: GitHub (súbory, CI, boty, otvorené vlákna), `tsc`, ESLint a '
+                     'Jest v kópii `main` s vetvou, a pri zmene rozmerov alebo farieb vykreslenie v Chromiu oproti schválenému vzhľadu. '
+                     'Vzhľad, ktorý majiteľ zmení sám, je nový schválený vzhľad (R49), takže agent kontroluje len to, či zmena nerozbila '
+                     'správanie, testy alebo iné miesta. Ak nájde chybu, napíše majiteľovi, čo a kde (číslo nálezu pridelí agent), a opravu '
+                     'urobí majiteľ vo `VU` alebo pôjde ako dávka kolegu podľa jeho rozhodnutia. Zápis do zoznamu robí agent vo vlastnej '
+                     'vetve.',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026: po zlúčení K57 upraví niektoré vzhľadové veci, ktoré sa mu nepáčia (len vzhľadové a jednoduché), '
+                 'sám a hodí ich do vetvy `VU1`; na odpoveď agenta, že vetvu po oznámení skontroluje a zoznam podľa toho aktualizuje, '
+                 'odpovedal, že je to dohodnuté (možnosť a). Zároveň určil, že agent teraz len aktualizuje zoznam a kartu K58 '
+                 'nepripravuje.',
+         datum='24. 11. 2026'),
 ]
