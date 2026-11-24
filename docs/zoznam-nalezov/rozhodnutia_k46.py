@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68, R69 a R70 (24. 11. 2026).
+"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68, R69 a R70 až R74 (24. 11. 2026).
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Po odpovedi majiteľa sa doplní `odpoved` a `datum`.
 """
@@ -118,5 +118,88 @@ DECISIONS_K46 = [
                  'sám a hodí ich do vetvy `VU1`; na odpoveď agenta, že vetvu po oznámení skontroluje a zoznam podľa toho aktualizuje, '
                  'odpovedal, že je to dohodnuté (možnosť a). Zároveň určil, že agent teraz len aktualizuje zoznam a kartu K58 '
                  'nepripravuje.',
+         datum='24. 11. 2026'),
+    dict(id='R71', tema='Text príspevku: jedno pravidlo pre „Viac“ a „Menej“ na všetkých miestach (nálezy 357, 364 a 365)',
+         otazka='Majiteľ 24. 11. 2026: „Viac“ pri príspevku s viacerými riadkami textu pôsobí dosť divoko; chce to zjednotiť všade '
+                '(Nástenka, detail príspevku, detail fotky, zdieľaný príspevok; počítač aj mobil). Agent zmeral dnešný stav v kópii '
+                '`main` na piatich miestach: karta vo feede (3 riadky a „Viac“ len pri presahu, po rozbalení „Menej“), repost (text '
+                'pôvodného príspevku orezaný na 4 riadky s trojbodkou, bez „Viac“; nález 357), detail príspevku na mobile (5 riadkov), '
+                'okno detailu na počítači (10 riadkov; rozbalený strop štvrtina výšky obrazovky, takže pod 800 px ukáže menej než '
+                'zbalený text; nález 364) a prehliadač fotky na mobile („Viac“ stále aj pri krátkom texte, 2 riadky, bez „Menej“). '
+                'Ako to zjednotiť? (a) Jedno pravidlo: „Viac“ len keď text presahuje, „Menej“ vždy po rozbalení, rovnaké miesto a '
+                'vzhľad (na fotke biele písmo); náhľady (karta, repost, prehliadač fotky) 3 riadky, detaily (okno na počítači, detail '
+                'na mobile) 10 riadkov; rozbalený text s vlastným posunom v rámiku. (b) Nechať dnešný stav. (c) Zjednotiť len mobil.',
+         odporucanie='(a). Komponent `FeedPostCaption.tsx` už rieši „Viac“ a „Menej“ na karte a v okne, takže zjednotenie je hlavne '
+                     'o tom, aby ho použili aj repost a prehliadač fotky a aby sa miesta líšili len počtom riadkov podľa toho, či ide o '
+                     'náhľad (3) alebo detail (10). Rozbalený strop v okne sa nesmie zmenšiť pod výšku zbaleného textu '
+                     '(`max(25vh, 14rem)`), čím sa rieši aj nález 364. Je to zmena vzhľadu, preto návrh s obrázkami (R49).',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026 po štyroch obrázkoch návrhu („Okej schvaľujem“): (a) podľa odporúčania. Platí: „Viac“ len '
+                 'pri presahu a „Menej“ vždy; náhľady 3 riadky (karta, repost vrátane náhľadu v dialógu zdieľania, prehliadač fotky), '
+                 'detaily 10 riadkov (okno na počítači aj detail na mobile; na mobile zmena z 5 riadkov); rozbalený text s vlastným '
+                 'posunom: v jednostĺpcovom okne strop `max(25vh, 14rem)`, v dvojstĺpcovom ostáva 40 % výšky obrazovky, v prehliadači '
+                 'fotky najviac 40 % na tmavom podklade. Schválený vzhľad: `navrhy/mobil-viac-menej-fotoprehliadac-schvalene.png`, '
+                 '`mobil-viac-menej-detail-schvalene.png`, `viac-menej-repost-schvalene.png` a '
+                 '`pc-viac-menej-okno-nizka-obrazovka-schvalene.png`. Rieši nálezy 357, 364 a 365 (karta K58, krok 1).',
+         datum='24. 11. 2026'),
+    dict(id='R72', tema='Okno detailu na počítači: ponuka, portfólio a repost s fotkou sa neposúvajú, ako fotka (nález 366)',
+         otazka='Majiteľ 24. 11. 2026: pri rozbalenom texte nad ponukou alebo portfóliom v okne detailu vznikne posúvanie na karte a '
+                'to nechce; chce, aby sa ponuka, portfólio aj fotka správali rovnako (zmenšujú sa, neposúvajú). Agent zmeral v '
+                'Chromiu (kópia `main`, text s 15 riadkami): fotka sa zmenšuje (141 px pri výške obrazovky 600 px) a neposúva, ale '
+                'ponuka a portfólio posúvajú blok (zbalený text 80 px pri 600 px a 32 px pri 650 px, rozbalený 120 px a 92 px; pri '
+                '800 px nič) a repost s fotkou má fotku pevných 256 px a posúva sa o 247, 199, 133 a 57 px pri 600, 650, 720 a 800 px. '
+                'Ako to urobiť? (a) Plocha karty (fotka alebo náhrada) sa zmenší najmenej na 128 px a ako prvé ustupuje text nad kartou '
+                '(zbalený na 5 riadkov); rozbalený text vyplní zvyšok miesta a posúva sa len vo svojom rámčeku; to isté pri reposte '
+                's fotkou (pružná plocha fotky, text zdieľajúceho aj pôvodný text ustupujú). (b) Nechať a len skrátiť text. (c) Karta '
+                'sa pri nedostatku miesta posúva.',
+         odporucanie='(a). Príspevok s fotkou sa už dnes správa takto; ponuka, portfólio a repost majú dostať rovnaké pravidlo. '
+                     'Technicky musia byť texty a plocha fotky súrodenci v jednom stĺpci (rozbalený text v zanorenom bloku inak '
+                     'neustúpi a posúva sa celý blok), preto sa pri reposte obal karty a rám „rozpustia“ (`display: contents`). '
+                     'Posúvanie bloku ostane len ako poistka v krajných prípadoch.',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026 po obrázku `navrhy/pc-okno-fotka-ponuka-portfolio-bez-posuvania-schvalene.png` („Áno '
+                 'súhlasím“) a po obrázku reposta s fotkou `pc-okno-repost-s-fotkou-bez-posuvania-schvalene.png`: (a) podľa '
+                 'odporúčania. Karta ponuky, portfólia a reposta s fotkou sa neposúva; plocha sa zmenší najmenej na 128 px a ako prvé '
+                 'ustupuje text nad kartou (zbalený text zdieľajúceho 5 riadkov, pôvodný text reposta 3 riadky); rozbalený text vyplní '
+                 'zvyšok miesta a posúva sa len vo svojom rámčeku. Posúvanie bloku ostáva len ako poistka v krajných prípadoch (dva '
+                 'dlhé texty naraz a výška obrazovky pod 720 px; najviac 85 px pri 600 px). Mení rozhodnutie K57, že repost s fotkou sa '
+                 'nemení (R68 sa týkalo len ponuky a portfólia). Rieši nález 366 (karta K58, krok 2).',
+         datum='24. 11. 2026'),
+    dict(id='R73', tema='Okno detailu na počítači: príspevok len s textom v dvoch stĺpcoch, komentáre vpravo (nález 367; mení R53 (b) a R63)',
+         otazka='Majiteľ 24. 11. 2026: chce rozloženie okna aj pri príspevku len s textom (aj repost textového príspevku) ako pri '
+                'fotke, ponuke a portfóliu, teda komentáre vpravo; chcel návrh vo všetkých situáciách (dlhý text, krátky text a '
+                'podobne). Dnes (R53 (b) a R63, K57) má taký príspevok jednostĺpcové okno 576 px s komentármi pod príspevkom. Agent '
+                'ukázal tri tabule s dvoma stĺpcami: bez komentárov, s troma a so štrnástimi, text s 2 až 28 riadkami, repost textu a '
+                'nízku obrazovku (650 px). Rozhodnúť: (1) výška okna: (a) podľa obsahu (najmenej 20 rem = 320 px, najviac 95 % '
+                'obrazovky), (b) vždy 95 % ako pri fotke; (2) krátky text (do 140 znakov bez zalomenia): (A3) väčšie písmo (20 px) a '
+                'na stred ľavého stĺpca, (A1) bežné písmo hore hneď pod hlavičkou; (3) dlhý text: ukáže sa celý bez „Viac“ a '
+                'posúva sa len on, keď sa nezmestí.',
+         odporucanie='(1a), (A3) a (3). (1a): ľavý stĺpec nemá nič pružné, takže pevná výška by len zväčšila prázdnu plochu; (A3): '
+                     'ľavý stĺpec pri krátkom texte nepôsobí prázdne; (3): ľavý stĺpec nemá s čím o miesto súperiť.',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026: súhlasí so všetkým okrem (A3): chce písmo vždy rovnakej veľkosti bez ohľadu na počet znakov '
+                 'a riadkov a text vždy zhora, hneď pod avatarom a menom. Platí teda (1a) výška podľa obsahu (najmenej 320 px, '
+                 'najviac 95 % obrazovky; bez námietky majiteľa), (A1) bežné písmo hneď pod avatarom a menom pri každom texte a (3) '
+                 'text sa ukáže celý bez „Viac“ a posúva sa len on vo svojom rámčeku, keď sa nezmestí. Okno je pri všetkých '
+                 'príspevkoch na počítači (od 1 024 px) široké 864 px a dvojstĺpcové; pod 1 024 px a na mobile sa nič nemení (text '
+                 'ostáva jednostĺpcový, 576 px). Schválený vzhľad: `navrhy/pc-okno-text-dva-stlpce-schvalene.png` a '
+                 '`pc-okno-text-dva-stlpce-dlhsie-texty-schvalene.png`; väčšie písmo na stred sa zamietlo a obrázok s ním sa do '
+                 'repozitára nedáva. Mení R53 (b) a R63 (úzke okno pre text) a obrázok `pc-okno-text-uzke-schvalene.png` z K57 '
+                 'v tomto bode neplatí. Rieši nález 367 (karta K58, krok 3).',
+         datum='24. 11. 2026'),
+    dict(id='R74', tema='Nález 368 (označení používatelia v okne s fotkou): vzhľad schválený, opraví ho agent po K58 (výnimka z R67)',
+         otazka='Agent pri kontrole K58 zistil, že v okne detailu s fotkou a označenými používateľmi si blok so štítkami berie polovicu '
+                'voľného miesta (štítky 20 px, ich blok 307 px, fotka 283 px pri výške obrazovky 800 px, pod štítkami prázdno). Oprava je '
+                'jedna podmienka, no zmení vzhľad (fotka sa zväčší na 545 px pri 800 px a na 403 px pri 650 px), preto R49. Agent ukázal '
+                'obrázok Dnes a Po. Kedy a kto? (a) Po K58 ako samostatná malá oprava; (b) v K58 ako ďalší krok; (c) nechať. Kód '
+                'opraví (1) kolega podľa karty (R67), alebo (2) agent.',
+         odporucanie='(a) po K58: K58 už mení rovnaký súbor (`FeedPostSharedBlock.tsx`) a okno len s textom, takže oprava ide '
+                     'samostatne a po jej zlúčení. Kto ju urobí, je rozhodnutie majiteľa (R67 dáva kód redizajnu kolegovi).',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026 po obrázku Dnes a Po (`navrhy/pc-okno-fotka-oznaceni-dnes-a-po-schvalene.png`): „Opravíme ho dobre '
+                 'po K58. Budem chcieť, aby si ju potom opravil ty, ale po K58.“ Platí: (a) vzhľad je schválený (fotka sa zväčší, blok so '
+                 'štítkami má prirodzenú výšku) a oprava ide samostatne až po zlúčení K58; opraví ju agent (2), nie kolega: výnimka z R67 '
+                 'a z pravidla, že agent kód nepíše, kým majiteľ nepovie. Agent ju urobí v samostatnej očíslovanej vetve, keď majiteľ '
+                 'po zlúčení K58 dá pokyn (nič nepripravuje vopred). K58 sa nemení: nález 368 do nej nepatrí. Rieši nález 368.',
          datum='24. 11. 2026'),
 ]

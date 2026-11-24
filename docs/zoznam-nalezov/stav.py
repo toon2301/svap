@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='24. 11. 2026',
-    kod='`main` `3d0b74ce` (po PR #323: K57; PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
+    kod='`main` `183e5caf` (po PR #324: zoznam 201; kód je od PR #323: K57, merge `3d0b74ce`; PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -17,6 +17,57 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
+    ('24. 11. 2026',
+      'Doplnok vetvy 202 (PR #325 je otvorené; `main` ostáva `183e5caf`). (1) Odpoveď majiteľa k nálezu 368: po obrázku Dnes a Po '
+      'vzhľad schválil a oprava ide až po K58; opraví ju agent, nie kolega: nové **R74** (výnimka z R67). Nález 368 je JASNÝ, '
+      'opraví ho agent v samostatnej vetve po zlúčení K58 a na pokyn majiteľa, preto ho z `fronta.py` odstránil (fronta je '
+      'poradie prác pre kolegu); obrázok je v `navrhy/pc-okno-fotka-oznaceni-dnes-a-po-schvalene.png`. (2) Kontrola PR #325 na '
+      'hlave `144c7a83`: CI (`checks`, `backend-postgres`) zelené, CodeRabbit jedna kontrola so štyrmi pripomienkami (všetky Minor); '
+      'agent ich overil voči kódu a faktom a všetky štyri platia: (a) `karty/K58_podklady.md` (časť 4) hovorili, že všetkých šesť '
+      'testov `FeedPostDetailOverlay.switchPost.test.tsx` sa presunie pod 1 024 px, no test s fotkou po načítaní overuje pevnú výšku '
+      '`h-[95vh]`, ktorá pod 1 024 px neplatí (`splitLayout` je vtedy nepravda); riadok je opravený (päť testov pod 1 024 px, test s '
+      'fotkou ostáva na počítači so širokou kostrou) a rovnako spresnený riadok `narrowWindow` (len šesť padajúcich testov, nie '
+      'celý súbor); (b) pri prechode do okna len s textom počas otvoreného okna (zamietnutie poslednej fotky) ostáva karta '
+      'pripojená a `FeedPostCaption` nuluje stav „rozbalené“ len pri zmene textu; jednorazový test v kópii to potvrdil (bez opravy '
+      'ostala trieda `max-h-[40vh]` aj prepínač „Menej“); oprava je `key` na `FeedPostCaption` v `FeedPostCardCaption.tsx` '
+      '(kópia po kroku 3: 64 riadkov, test prejde), karta (krok 3b) ju opisuje a pribudla požiadavka na test '
+      '`FeedPostDetailOverlay.textOnlyLive.test.tsx`; (c) manuál a ručné testy K58 hovorili „3 riadky v náhľade, 10 v detaile“ a '
+      '„karta ani okno sa neposúvajú“ bez výnimiek (text zdieľajúceho nad ponukou, portfóliom a repostom s fotkou má 5 riadkov, '
+      'okno len s textom ukáže text celý bez „Viac“ a poistka posúvania reposta pri dvoch dlhých textoch a výške do 650 px, R72); '
+      'výnimky sú doplnené v manuáli aj v ručných testoch; (d) poznámky nálezov 364 a 357 stále hovorili NEJASNÉ a kód nemeň, '
+      'hoci fronta ich po R71 vedie ako JASNÉ v K58 (CodeRabbit uviedol 364, rovnaký rozpor mal 357); poznámky sú zosúladené '
+      '(`dec` R71, história R69 a mapovanie ostávajú v texte). Chybu urobil agent: pri zápise R71 zmenil stav len vo fronte a v '
+      'karte, nie v poznámkach nálezov, a pri prvom prepise karty nechal v texte o ručných testoch pravidlá bez výnimiek. '
+      '(3) Prototyp po oprave (b): súčet po krokoch +297 a −125 riadkov, krok 3 má 8 upravených a 2 nové súbory, `FeedPostCardCaption.tsx` '
+      '64 riadkov, `FeedPostCard.tsx` 492; `tsc` a ESLint čisté, existujúci Jest po kroku 3 padá v tých istých 34 testoch '
+      '(overené záverečným behom). (4) Vlákna k pripomienkam zatvára majiteľ. (5) Prehľad: nálezy 1–368, zatvorené 14, hotové 147, '
+      'PRED 55, PO 132; čakajúcich rozhodnutí 9 z 74. Dopad na E2E: žiadny.'),
+    ('24. 11. 2026',
+      'Vetva 202 (vychádza z `main` `183e5caf`, teda po PR #324; kód je ten istý ako po PR #323). (1) Zlúčené od vetvy 201: PR #324 '
+      '(vetva 201, len zoznam; merge `183e5caf`). (2) Odpovede majiteľa na návrh textu príspevku a okna detailu na počítači (agent '
+      'ukázal obrázky vykreslené zo skutočného kódu v kópii `main` mimo repozitára, R49): **R71** (jedno pravidlo „Viac“ a „Menej“ na '
+      'piatich miestach: náhľady 3 riadky, detaily 10 riadkov; „Okej schvaľujem“), **R72** (ponuka, portfólio a repost s fotkou sa v '
+      'okne neposúvajú a zmenšujú sa ako fotka; „Áno súhlasím“) a **R73** (príspevok len s textom v dvoch stĺpcoch s komentármi vpravo, '
+      'okno 864 px s výškou podľa obsahu, text celý; väčšie písmo na stred pri krátkom texte majiteľ zamietol: písmo vždy rovnaké a '
+      'text vždy zhora hneď pod avatarom a menom). R73 mení R53 (b) a R63 a obrázok `pc-okno-text-uzke-schvalene.png` z K57 v tomto '
+      'bode neplatí. (3) Nové nálezy: **365** (rôzne „Viac“ na piatich miestach), **366** (ponuka, portfólio a repost s fotkou sa '
+      'posúvajú; zmerané čísla v texte nálezu) a **367** (okno len s textom v dvoch stĺpcoch) z návrhu majiteľa a **368** (zistil agent '
+      'pri kontrole: v okne s fotkou a označenými používateľmi si blok s označenými berie polovicu voľného miesta; vzhľad a opravu '
+      'agentom po K58 majiteľ schválil po odoslaní vetvy, R74, pozri doplnok). Nálezy 357 a 364 sa riešia v K58 (zmena R69 (2a): správanie „Viac“ pod 800 px sa mení). (4) **Karta K58** '
+      '(`karty/K58.md`, podklady `karty/K58_podklady.md`): druhá časť redizajnu, tri kódové kroky (1 jednotné „Viac“ a „Menej“; 2 ponuka, '
+      'portfólio a repost s fotkou bez posúvania; 3 príspevok len s textom v dvoch stĺpcoch) a manuál ručných testov; kód píše kolega '
+      '(R67). Prototyp agenta (tri kópie `frontend` z `main` `183e5caf` mimo repozitára, po jednej na krok): 8 upravených a 2 nové '
+      'produkčné súbory (súčet po krokoch +294 a −125 riadkov), všetky pod 500 riadkov; `FeedPostCard.tsx` sa pritom skráti z 498 na 492 '
+      'riadkov, lebo text voľného príspevku sa presúva do nového `FeedPostCardCaption.tsx` (priamy zásah do karty by ju dostal nad '
+      '500); `tsc` a ESLint čisté po každom kroku; existujúci Jest (110 sád, 1 278 testov): po kroku 1 padajú 4 testy, po kroku 2 '
+      '6 a po kroku 3 34 v 12 súboroch, všetky strážia staré správanie (jednostĺpcové okno 576 px pre text na počítači, pevná '
+      'fotka reposta 256 px, „Viac“ so 4 a 5 riadkami a v prehliadači fotky); v Chromiu sú okná s fotkou, ponukou a portfóliom '
+      'rovnaké ako na schválených obrázkoch (z 20 snímok 18 pixel po pixeli, 2 s rozdielom do 1 px). Prototyp nemá nové testy ani zásahy: píše '
+      'ich kolega podľa karty a agent ich overí vlastnými zásahmi. (5) Obrázky schváleného vzhľadu (osem, vykreslené zo skutočného '
+      'kódu prototypu s vymyslenými údajmi) sú v `navrhy/*-schvalene.png`. (6) Dopad na E2E: žiadny špec nepadne (E2E nepoužívajú '
+      'id textu ani karty zdieľaného obsahu; `feed-post-overlay-comments` existuje v oboch rozloženiach); ak Codex po K57 pridal '
+      'kontrolu šírky okna textového príspevku (576 px), po K58 ju upraví na 864 px a dvojstĺpcové rozloženie. (7) `README.md`: riadok o `navrhy/` a veta o K57 (už nie „má napísanú kartu“, ale zlúčená, PR #323) sú opravené a pribudla K58. (8) Prehľad: nálezy '
+      '1–368, zatvorené 14, hotové 147, PRED 55, PO 132; čakajúcich rozhodnutí 9 z 73.'),
     ('24. 11. 2026',
       'Doplnok vetvy 201 (PR #324 je ešte otvorené; `main` ostáva `3d0b74ce`). (1) Kontrola PR #324 na hlave `1f783dd9`: CI '
       '(`checks`, `backend-postgres`) zelené, CodeRabbit jedna pripomienka (Minor, platná, opravená v commite s týmto '
@@ -282,7 +333,7 @@ PORADIE = [
             'push (319 prepínač offline: kód je v K20, čaká na ručný test; 321 kategórie upozornení sú hotové (K19, K20, K23 a K25; zvyšok E2E je nález 337); 330 gulička Žiadostí pri vypnutej kategórii je hotová v K21, R39), Upozornenia '
             'na zmazaný obsah (74), Žiadosti (17), '
             'Vyhľadávanie a Sledovania (OW-11, OW-14, OW-17, OW-05), mobilný onboarding nových používateľov (252), vzhľad Nástenky '
-            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie veľkých súborov Nástenky je hotové (nález 333: `FeedPostComments.tsx` K28 až K42, `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` K46 až K55), K40 až K43 a K45 sú hotové, K31 je zlúčená (PR #304) a podľa R59, dohody s majiteľom (20. a 21. 11. 2026) a R65 (a) sa redizajn začal až po opravách 355 a 356 v K56 (delenie `FeedPostCard.tsx` a mobilného detailu je hotové): okno na počítači (344 a 363) je od 23. 11. 2026 hotové v K57 (PR #323) a redizajn komentárov (261) čaká na rekapituláciu a vizuálny návrh; karty píše agent a kód kolega (R67, zmena R64); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; 355 okno zdieľania po úprave a 356 starý lajk v detaile po obnove feedu počas lajku (z mapovania K46) sú hotové v K56; 357 až 360 (ručný test K51: repost bez „Viac“, text pri zdieľanej ponuke a portfóliu, označenia ako obyčajný text, starý spôsob zobrazenia príspevku na mobile; idú po redizajne); zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343 je otvorená (návrh K33); okno detailu na počítači 344 a oprava komentárov v ňom 363 sú hotové v K57 (PR #323; 364 rozbalený text pod 800 px ostáva otvorený a rieši sa s redizajnom komentárov); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
+            '(259 a 261; redizajn komentárov má schválený vzhľad (R52); delenie veľkých súborov Nástenky je hotové (nález 333: `FeedPostComments.tsx` K28 až K42, `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx` K46 až K55), K40 až K43 a K45 sú hotové, K31 je zlúčená (PR #304) a podľa R59, dohody s majiteľom (20. a 21. 11. 2026) a R65 (a) sa redizajn začal až po opravách 355 a 356 v K56 (delenie `FeedPostCard.tsx` a mobilného detailu je hotové): okno na počítači (344 a 363) je od 23. 11. 2026 hotové v K57 (PR #323), text príspevku a okno detailu (357 a 364 až 367: jednotné „Viac“ a „Menej“, ponuka, portfólio a repost bez posúvania, okno len s textom v dvoch stĺpcoch) majú od 24. 11. 2026 schválený vzhľad (R71 až R73) a napísanú kartu K58 a redizajn komentárov (261) čaká na rekapituláciu a vizuálny návrh; karty píše agent a kód kolega (R67, zmena R64); rieši sa pri ňom aj pole na text pri odpovedi na komentár; 338 zaseknuté načítavanie komentárov je hotové v K41, 342 zmiznutý príspevok pri odpovedi, úprave a zmazaní a 351 slučka chybových hlásení pri donačítaní komentárov a odpovedí bez internetu sú hotové v K43; 353 drobná hláška pri zastaranom zlyhaní odpovedí; 355 okno zdieľania po úprave a 356 starý lajk v detaile po obnove feedu počas lajku (z mapovania K46) sú hotové v K56; 357 (ručný test K51: repost bez „Viac“) ide v K58 a 358 až 360 (ručný test K51: text pri zdieľanej ponuke a portfóliu, označenia ako obyčajný text, starý spôsob zobrazenia príspevku na mobile) idú po redizajne; zoznam lajkujúcich pri ponukách, portfóliu a profile 262, R20: backend je hotový v K27, vzhľad je schválený (R51 a R56) a frontend ide po etapách; úchytka panela nad fotkou 343 je otvorená (návrh K33); okno detailu na počítači 344 a oprava komentárov v ňom 363 sú hotové v K57 (PR #323; 364 rozbalený text pod 800 px ostáva otvorený a rieši sa s redizajnom komentárov); 345 a 350 sú hotové v K39 a 346 viditeľnosť nového komentára na iPhone v K40) a drobnosti zo 36, živé '
             'overenie N16, RET-01..03 a ručný test VoiceOverom (294)',
          preco='To uvidí každý nový používateľ hneď prvý deň. Overenia (N16, RET-01..03, 294) sa dajú robiť už teraz na Railway a na iPhone.',
          polozky=['13', '14', '174', '283', '284', '285', '287', '288', '289', '81', '272', '92', '207', '319', '262', '343', '353', '357', '358', '359', '360', '74', '17', 'OW-11', 'OW-14', 'OW-17', 'OW-05', '252', '259', '261', '36', '294', 'N16', 'RET-01', 'RET-02', 'RET-03']),
