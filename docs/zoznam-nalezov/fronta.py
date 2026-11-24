@@ -83,7 +83,7 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'schválil: kolega mapuje podľa karty `karty/K46.md` a majiteľ chce navyše dvojité mapovanie (nezávisle mapuje aj '
              'agent a po dokončení kolegu sa oba výsledky porovnajú); potom delenie po malých krokoch a redizajn až po zlúčení '
              'posledného kroku; poradie okna na počítači a komentárov rozhodne R63; K32 (preklady, najprv mapovanie), nové K33 '
-             '(úchytka panela nad fotkou, 343) a K34 (frontend zoznamu lajkujúcich 262, etapa A, najprv mapovanie) sú návrh a '
+             '(úchytka panela nad fotkou, 343; dávka zanikla, nález ide vo vetve K44, R78) a K34 (frontend zoznamu lajkujúcich 262, etapa A, najprv mapovanie) sú návrh a '
              'K46 (delenie `FeedPostCard.tsx` a `FeedPostMobileDetail.tsx`, najprv mapovanie) mapovali kolega aj agent nezávisle a '
              'agent obe mapovania 21. 11. 2026 porovnal a overil vlastnými skúškami v kópii mimo repozitára (`karty/K46_porovnanie.md`): '
              'obe dospeli k čistým presunom, najväčším rizikom sú medzery v testoch, a preto agent pripravil karty K48 (ochrana karty) '
