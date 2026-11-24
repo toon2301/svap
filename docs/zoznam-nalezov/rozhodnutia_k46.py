@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68, R69 a R70 až R73 (24. 11. 2026).
+"""Rozhodnutia od R66 (21. 11. 2026), po dvojitom mapovaní delenia `FeedPostCard.tsx` (K46): R66, R67 (23. 11. 2026, zmena R64), R68, R69 a R70 až R74 (24. 11. 2026).
 
 Samostatný súbor kvôli limitu 500 riadkov; `stav.py` ich pripája do `DECISIONS`. Po odpovedi majiteľa sa doplní `odpoved` a `datum`.
 """
@@ -186,5 +186,20 @@ DECISIONS_K46 = [
                  '`pc-okno-text-dva-stlpce-dlhsie-texty-schvalene.png`; väčšie písmo na stred sa zamietlo a obrázok s ním sa do '
                  'repozitára nedáva. Mení R53 (b) a R63 (úzke okno pre text) a obrázok `pc-okno-text-uzke-schvalene.png` z K57 '
                  'v tomto bode neplatí. Rieši nález 367 (karta K58, krok 3).',
+         datum='24. 11. 2026'),
+    dict(id='R74', tema='Nález 368 (označení používatelia v okne s fotkou): vzhľad schválený, opraví ho agent po K58 (výnimka z R67)',
+         otazka='Agent pri kontrole K58 zistil, že v okne detailu s fotkou a označenými používateľmi si blok so štítkami berie polovicu '
+                'voľného miesta (štítky 20 px, ich blok 307 px, fotka 283 px pri výške obrazovky 800 px, pod štítkami prázdno). Oprava je '
+                'jedna podmienka, no zmení vzhľad (fotka sa zväčší na 545 px pri 800 px a na 403 px pri 650 px), preto R49. Agent ukázal '
+                'obrázok Dnes a Po. Kedy a kto? (a) Po K58 ako samostatná malá oprava; (b) v K58 ako ďalší krok; (c) nechať. Kód '
+                'opraví (1) kolega podľa karty (R67), alebo (2) agent.',
+         odporucanie='(a) po K58: K58 už mení rovnaký súbor (`FeedPostSharedBlock.tsx`) a okno len s textom, takže oprava ide '
+                     'samostatne a po jej zlúčení. Kto ju urobí, je rozhodnutie majiteľa (R67 dáva kód redizajnu kolegovi).',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026 po obrázku Dnes a Po (`navrhy/pc-okno-fotka-oznaceni-dnes-a-po-schvalene.png`): „Opravíme ho dobre '
+                 'po K58. Budem chcieť, aby si ju potom opravil ty, ale po K58.“ Platí: (a) vzhľad je schválený (fotka sa zväčší, blok so '
+                 'štítkami má prirodzenú výšku) a oprava ide samostatne až po zlúčení K58; opraví ju agent (2), nie kolega: výnimka z R67 '
+                 'a z pravidla, že agent kód nepíše, kým majiteľ nepovie. Agent ju urobí v samostatnej očíslovanej vetve, keď majiteľ '
+                 'po zlúčení K58 dá pokyn (nič nepripravuje vopred). K58 sa nemení: nález 368 do nej nepatrí. Rieši nález 368.',
          datum='24. 11. 2026'),
 ]

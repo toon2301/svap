@@ -9,7 +9,7 @@ K57 a nie sú jej dôsledkom. Nález 363 (komentáre v jednostĺpcovom okne) je 
 Otvorený je len 364.
 
 Nálezy 365 až 367 vznikli z návrhu majiteľa k textu príspevku a oknu detailu na počítači (24. 11. 2026; rozhodnutia R71 až R73)
-a rieši ich jedna dávka K58 (`karty/K58.md`); nález 368 zistil agent pri kontrole krokov K58 a čaká na schválenie vzhľadu (R49).
+a rieši ich jedna dávka K58 (`karty/K58.md`); nález 368 zistil agent pri kontrole krokov K58 a vzhľad jeho opravy schválil majiteľ (R74); opraví ho agent po K58.
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -29,11 +29,10 @@ NEW_ITEMS_K57 = [
               'alebo rozbaleného textu potrebuje návrh a schválenie majiteľa. Možnosti, ktoré agent ukázal: (A) nechať; (B) '
               'rozbalený rámik nikdy nižší než zbalený (`max-h-[max(25vh,12.5rem)]`); (C) zbalený text kratší (napríklad 6 '
               'riadkov); (D) strop 40 % výšky obrazovky (pri 650 px by sa zapla poistka pevného bloku).',
-         note='NEJASNÉ (najprv návrh vzhľadu s možnosťami a odporúčaním, R49; kód nemeň). Majiteľ 23. 11. 2026 podľa R69 (2a): '
-              'správanie sa nemení a zapisuje sa ako nález; rieši sa s redizajnom komentárov (261, R59), kde sa rozhoduje o '
-              'rovnováhe medzi textom a komentármi v malých oknách. Odporúčanie agenta: (A) nechať, kým sa nerieši spolu s '
-              'komentármi. Odhad: nízky · S až M podľa zvolenej možnosti.',
-         dec='ROZHODNUTIE R69', src='obrázky agenta k oknu detailu (23. 11. 2026)'),
+         note='JASNÉ (rieši K58, krok 1: rozbalený strop v jednostĺpcovom okne `max(25vh, 14rem)`, nikdy nižší než zbalený text; '
+              'vzhľad schválil majiteľ 24. 11. 2026, R71). História: majiteľ 23. 11. 2026 podľa R69 (2a) rozhodol správanie '
+              'nemeniť a zapísať ho ako nález; po návrhu jednotného „Viac“ a „Menej“ to 24. 11. 2026 zmenil (R71). Odhad: nízky · S.',
+         dec='ROZHODNUTIE R71', src='obrázky agenta k oknu detailu (23. 11. 2026)'),
     dict(n=365, bucket=P, imp=N, eff=EM, pkg='Vzhľad Nástenky',
          kratko='text príspevku: „Viac“ a „Menej“ sa správajú na piatich miestach inak (karta 3 riadky, repost 4 riadky bez „Viac“, '
                 'detail na mobile 5, okno na počítači 10, prehliadač fotky vždy „Viac“ pri 2 riadkoch)',
@@ -83,10 +82,12 @@ NEW_ITEMS_K57 = [
               'obrazovky 800 px má blok 307 px (štítky 20 px) a fotka 283 px, pri 650 px blok 235 px a fotka 211 px; pod štítkami je '
               'prázdna plocha až po riadok s lajkom. Komentár v `FeedPostSharedBlock.tsx` hovorí, že vlastné fotky a zdieľaný '
               'obsah sa nestretnú, takže o `flex-1` nie je s kým súperiť; označení sa s vlastnými fotkami stretnú. Oprava je jedna '
-              'podmienka (blok bez zdieľaného obsahu nie je pružný), no zmení vzhľad (fotka sa zväčší), preto R49: najprv obrázok '
-              'Dnes a Po a súhlas majiteľa. Krok 3 karty K58 rieši rovnaký problém len pre príspevok len s textom (blok s '
-              'označenými má prirodzenú výšku; premenná `flexible` v `FeedPostSharedBlock.tsx`).',
-         note='NEJASNÉ (čaká na schválenie vzhľadu, R49: agent ukáže obrázok Dnes a Po; kód nemeň). Odporúčanie agenta: opraviť jednou '
-              'podmienkou po K58 (rovnaká premenná `flexible`). Odhad: nízky · S.',
-         dec=None, src='agent (24. 11. 2026), meranie v kópii `main`'),
+              'podmienka (blok bez zdieľaného obsahu nie je pružný), no zmení vzhľad (fotka sa zväčší): agent ukázal obrázok Dnes a Po '
+              '(`navrhy/pc-okno-fotka-oznaceni-dnes-a-po-schvalene.png`: po oprave má blok 44 px a fotka 545 px pri 800 px a '
+              '403 px pri 650 px) a majiteľ ho 24. 11. 2026 schválil (R74). Krok 3 karty K58 rieši rovnaký problém len pre '
+              'príspevok len s textom (blok s označenými má prirodzenú výšku; premenná `flexible` v `FeedPostSharedBlock.tsx`).',
+         note='JASNÉ (vzhľad schválený, R74). Opraví ho **agent** (nie kolega; výnimka z R67) samostatne až po zlúčení K58, keď majiteľ '
+              'dá pokyn: podmienka `flexible` v `FeedPostSharedBlock.tsx` bude po oprave len `fillHeight && isShared`, takže blok s '
+              'označenými bez zdieľaného obsahu bude mať prirodzenú výšku aj pri príspevku s fotkou. Odhad: nízky · S.',
+         dec='ROZHODNUTIE R74', src='agent (24. 11. 2026), meranie v kópii `main`'),
 ]

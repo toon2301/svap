@@ -38,7 +38,7 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'PRED NASADENÍM a HNEĎ; majiteľ môže pomer dočasne zmeniť, napr. na 1 : 1). K6 až K31, K36 až K43, K45 a K48 až K57 sú hotové (z '
              'K16 čaká ručný test 319; nález 311 z K17 majiteľ uzavrel, R38); vetvy agenta 167 až 174, 177, 178, 179 (PR #272), 180 '
              '(PR #273), 181 (PR #274), 182 (PR #277), 183 (PR #279), 184 (PR #282), 185 (PR #285), 186 (PR #288), 187 (PR #290), '
-             '188 (PR #293), 189 (PR #296), 190 (PR #299), 191 (PR #303), 192 (PR #305), 193 (PR #308), 194 (PR #310), 195 (PR #312), 196 (PR #314), 197 (PR #316), 198 (PR #318; len karta K55), 199 (PR #320; zápis a karta K56), 200 (PR #322; karta K57, nálezy 363 a 364 a R69), 201 (PR #324) a 202 (karta K58, rozhodnutia R71 až R73, nálezy 365 až 368 a obrázky v `navrhy/`) sú len zoznam alebo karta, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) '
+             '188 (PR #293), 189 (PR #296), 190 (PR #299), 191 (PR #303), 192 (PR #305), 193 (PR #308), 194 (PR #310), 195 (PR #312), 196 (PR #314), 197 (PR #316), 198 (PR #318; len karta K55), 199 (PR #320; zápis a karta K56), 200 (PR #322; karta K57, nálezy 363 a 364 a R69), 201 (PR #324) a 202 (karta K58, rozhodnutia R71 až R74, nálezy 365 až 368 a obrázky v `navrhy/`) sú len zoznam alebo karta, vetva 176 sú pravidlá pre agentov (`AGENTS.md`, R27) '
              'a vetva 175 (oprava vyhľadávania, PR #259) bola jednorazová výnimka majiteľa z 13. 11. 2026 (majiteľ 7. 11. 2026: '
              'opravy nálezov agentom sa odkladajú, kým majiteľ nedá vedieť); oprava pripomienky CodeRabbitu vo vetve K21 (commit '
              '`71f9cff4`) bola druhá jednorazová výnimka majiteľa z 13. 11. 2026, lebo kolega už nemohol vetvu upraviť. Dávku K21 '
@@ -108,7 +108,7 @@ SCHVALENE = ('Majiteľ 6. 11. 2026 schválil striedanie 2 : 1 (dve dávky kolegu
              'o 09:42 UTC; opravy 355 a 356, posledný krok pred redizajnom; karta `karty/K56.md`) je zlúčená, agent ju overil rovnako '
              'a jej ručný test majiteľa prešiel; tým sa podľa R66 (a) začína redizajn: majiteľ 23. 11. 2026 zmenil R64 (R67), takže po '
              'rekapitulácii a vizuálnom návrhu s odporúčaním a po 100 % dohode napíše agent presné karty a kód píše kolega; agent '
-             'bez pokynu majiteľa nič nepripravuje mimo tohto postupu. K57 (PR #323, 23. 11. 2026 o 21:55 UTC; okno detailu na počítači, nálezy 344 a 363, prvá časť redizajnu; karta `karty/K57.md`) je zlúčená a agent ju overil rovnako (výsledky sú v nálezoch 344 a 363); verdikt ručného testu majiteľ zatiaľ nepovedal a drobné vzhľadové úpravy chce urobiť sám vo vetve `VU1` (R70), ktorú agent po oznámení skontroluje; po odpovediach majiteľa na návrh textu príspevku a okna detailu (R71 až R73, 24. 11. 2026) napísal agent kartu K58 (`karty/K58.md`, podklady `karty/K58_podklady.md`; tri kódové kroky, nálezy 357, 364, 365, 366 a 367) a kolegovi ju pošle majiteľ; ďalšie dávky agent nepripravuje, kým majiteľ nepovie. Pri každej dávke má kolega doplniť aj manuál ručných '
+             'bez pokynu majiteľa nič nepripravuje mimo tohto postupu. K57 (PR #323, 23. 11. 2026 o 21:55 UTC; okno detailu na počítači, nálezy 344 a 363, prvá časť redizajnu; karta `karty/K57.md`) je zlúčená a agent ju overil rovnako (výsledky sú v nálezoch 344 a 363); verdikt ručného testu majiteľ zatiaľ nepovedal a drobné vzhľadové úpravy chce urobiť sám vo vetve `VU1` (R70), ktorú agent po oznámení skontroluje; po odpovediach majiteľa na návrh textu príspevku a okna detailu (R71 až R73, 24. 11. 2026) napísal agent kartu K58 (`karty/K58.md`, podklady `karty/K58_podklady.md`; tri kódové kroky, nálezy 357, 364, 365, 366 a 367) a kolegovi ju pošle majiteľ; nález 368 (označení používatelia v okne s fotkou; vzhľad schválil majiteľ po obrázku Dnes a Po, R74) opraví po zlúčení K58 sám agent, keď majiteľ dá pokyn (výnimka z R67), preto nie je vo fronte kolegu; ďalšie dávky agent nepripravuje, kým majiteľ nepovie. Pri každej dávke má kolega doplniť aj manuál ručných '
              'testov `sablony/dymovy_test.md`, ak dávka ručné testy má (K50 pridala krok 9, K51 až K57 odrážky). Codex dokončil dve dávky (PR #300 a #301, 20. 11. 2026): živé overenie šiestich preklikov '
              'upozornení a E2E regresie 345 a 346 (zatiaľ len lokálne overené). Údržba zoznamu (jedna dokumentačná vetva agenta; '
              'majiteľ súhlasil 16. 11. 2026) ide ako ďalšia vetva agenta, kým majiteľ testuje poslednú dávku kolegu; dávky PO-A a '
@@ -146,11 +146,6 @@ FRONTA = [
             'okno 864 px s výškou podľa obsahu, text celý hneď pod menom autora.',
          preco='JASNÉ (krok 3 karty K58; vzhľad schválený majiteľom, R73; mení R53 (b) a R63; obrázky `navrhy/pc-okno-text-dva-stlpce-'
                'schvalene.png` a `pc-okno-text-dva-stlpce-dlhsie-texty-schvalene.png`).'),
-    dict(n='368', davka='po K58',
-         co='Okno detailu s fotkou a označenými používateľmi: blok s označenými si berie polovicu voľného miesta, fotka je menšia a '
-            'pod štítkami je prázdno.',
-         preco='NEJASNÉ (čaká na schválenie vzhľadu, R49: agent ukáže obrázok Dnes a Po; kód nemeň; ak majiteľ súhlasí, je to jedna '
-               'podmienka v `FeedPostSharedBlock.tsx` po K58).'),
     dict(n='261', davka='K44',
          co='Nástenka: redizajn komentárov (skupina 7, vzhľad schválený v R52): plochý vzhľad bez sivých bublín, '
             'bublinka s lajkom, odpovede so zvislou čiarou; pri ňom sa rieši aj pole na text pri odpovedi na '

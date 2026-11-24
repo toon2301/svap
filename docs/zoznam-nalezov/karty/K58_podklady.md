@@ -30,12 +30,12 @@ Všetky produkčné súbory ostávajú pod 500 riadkov. **`FeedPostCard.tsx` má
 | `FeedPostSharedBlock.tsx` | 170 | 180 | +12 −2 |
 | `SharedContentPreviewCard.tsx` | 405 | 410 | +10 −5 |
 
-**Krok 3** (príspevok len s textom v dvoch stĺpcoch; spolu +176 a −69):
+**Krok 3** (príspevok len s textom v dvoch stĺpcoch; spolu +179 a −69):
 
 | Súbor | Pred | Po | Zmena |
 |---|---|---|---|
 | `FeedDetailTextOnlyContext.tsx` (nový) | – | 20 | +20 |
-| `FeedPostCardCaption.tsx` (nový) | – | 61 | +61 |
+| `FeedPostCardCaption.tsx` (nový) | – | 64 | +64 |
 | `FeedPostCaption.tsx` | 278 | 282 | +6 −2 |
 | `FeedPostCard.tsx` | 498 | 492 | +10 −16 |
 | `FeedPostDetailOverlay.tsx` | 420 | 428 | +36 −28 |
@@ -43,7 +43,7 @@ Všetky produkčné súbory ostávajú pod 500 riadkov. **`FeedPostCard.tsx` má
 | `FeedPostSharedBlock.tsx` | 180 | 188 | +16 −8 |
 | `SharedContentPreviewCard.tsx` | 410 | 413 | +4 −1 |
 
-Dokopy sa dotkne 8 existujúcich súborov a pribudnú 2 nové (súčet po krokoch +294 a −125 riadkov; z pridaných riadkov je veľa komentárov, projekt komentuje „prečo“). `FeedPostCaption.tsx` skončí na 282 riadkoch, `SharedContentPreviewCard.tsx` na 413, `FeedPostDetailOverlay.tsx` na 428.
+Dokopy sa dotkne 8 existujúcich súborov a pribudnú 2 nové (súčet po krokoch +297 a −125 riadkov; z pridaných riadkov je veľa komentárov, projekt komentuje „prečo“). `FeedPostCaption.tsx` skončí na 282 riadkoch, `SharedContentPreviewCard.tsx` na 413, `FeedPostDetailOverlay.tsx` na 428.
 
 ## 3. Diffy po krokoch
 
@@ -551,7 +551,7 @@ diff --git a/frontend/src/components/dashboard/modules/feed/FeedPostCard.tsx b/f
 diff --git a/frontend/src/components/dashboard/modules/feed/FeedPostCardCaption.tsx b/frontend/src/components/dashboard/modules/feed/FeedPostCardCaption.tsx
 --- a/frontend/src/components/dashboard/modules/feed/FeedPostCardCaption.tsx
 +++ b/frontend/src/components/dashboard/modules/feed/FeedPostCardCaption.tsx
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,64 @@
 +'use client';
 +
 +/**
@@ -597,6 +597,9 @@ diff --git a/frontend/src/components/dashboard/modules/feed/FeedPostCardCaption.
 +      }`}
 +    >
 +      <FeedPostCaption
++        // Pri prechode do okna len s textom (napr. zamietnutie poslednej fotky počas otvoreného okna) ostáva karta
++        // pripojená, no stav „rozbalené“ by prežil a text by ostal v rámiku s prepínačom: zmena kľúča ho vynuluje.
++        key={textOnlySplit ? 'cely' : 'orezany'}
 +        text={caption}
 +        boundedExpansion={isDetail}
 +        expansionBound={fillHeight ? 'roomy' : 'compact'}
@@ -921,7 +924,7 @@ diff --git a/frontend/src/components/dashboard/modules/feed/SharedContentPreview
 
 Jest nad priečinkom `feed` (110 sád, 1 278 testov; `main` aj prototyp majú rovnaký počet, pribudnúť majú nové súbory kolegu). Po kroku 1 padajú 4 testy v 4 súboroch, po kroku 2 6 testov v 6 súboroch a po kroku 3 **34 testov v 12 súboroch**; `tsc` aj ESLint sú po každom kroku čisté. Všetky padajúce testy stráži staré správanie a **majú padnúť**; test, ktorý by padol mimo tohto zoznamu, je chyba kroku, nie testu (ak taký nájdeš, zastav sa a napíš to do commitu). Súbory nad 500 riadkov (`FeedPostDetailOverlay.test.tsx` 803, `FeedPhotoViewer.test.tsx` 609, `FeedPostDetailSplitLayout.test.tsx` 596, `FeedPostMobileDetail.test.tsx` 695) sa podľa R27 menia len málo (úprava očakávania alebo mocku), nové testy idú do nových súborov.
 
-**Všeobecné pravidlo pre krok 3:** na počítači (od 1 024 px) je teraz dvojstĺpcové okno pri každom príspevku, jednostĺpcové ostáva len **pod 1 024 px** (v testoch `mockIsMobile = true`). Test, ktorý overuje jednostĺpcové okno s textovým príspevkom (576 px, pevný blok `feed-post-overlay-fixed`, „Viac“ v okne, strop `max-h-[25vh]`), preto dostane `mockIsMobile = true` (rovnako ako v K57 testy ponuky a portfólia) a jeho očakávanie ostane; test, ktorý tvrdí, že text na počítači má jednostĺpcové okno, sa prepíše na dvojstĺpcové.
+**Všeobecné pravidlo pre krok 3:** na počítači (od 1 024 px) je teraz dvojstĺpcové okno pri každom príspevku, jednostĺpcové ostáva len **pod 1 024 px** (v testoch `mockIsMobile = true`). Test, ktorý overuje jednostĺpcové okno s textovým príspevkom (576 px, pevný blok `feed-post-overlay-fixed`, „Viac“ v okne, strop `max-h-[25vh]`), preto dostane `mockIsMobile = true` (rovnako ako v K57 testy ponuky a portfólia) a jeho očakávanie ostane; test, ktorý tvrdí, že text na počítači má jednostĺpcové okno, sa prepíše na dvojstĺpcové. **`mockIsMobile = true` nedávaj celému súboru ani testu, ktorý overuje pevnú výšku `h-[95vh]` alebo `feed-post-overlay-split`:** pod 1 024 px je `splitLayout` nepravda, takže okno dostane `max-h-[95vh]` aj pri fotke; také testy ostávajú na počítači a mení sa v nich len šírka kostry (864 px).
 
 | Krok | Súbor (riadkov) | Test | Prečo padá | Zmena |
 |---|---|---|---|---|
@@ -943,9 +946,9 @@ Jest nad priečinkom `feed` (110 sád, 1 278 testov; `main` aj prototyp majú ro
 | 3 | `FeedPostDetailOverlay.offerPortfolioSplit.test.tsx` | `zdieľaný príspevok bez fotky ostáva v jednostĺpcovom rozložení` | repost textu je na počítači dvojstĺpcový | dvojstĺpcový na počítači, jednostĺpcový pod 1 024 px |
 | 3 | `FeedPostDetailOverlay.livePhotos.test.tsx` | `rozloženie sa prepína podľa živého stavu fotiek switches to the single-column layout when the last photo is rejected` | po zamietnutí poslednej fotky ostáva na počítači dvojstĺpcové okno (text) | očakávať, že `feed-post-overlay-split` ostane a karta prejde na text celý (`feed-post-caption` bez `line-clamp`) |
 | 3 | `FeedRepostPhoto.test.tsx` | `desktopové okno detailu keeps the single column for a reposted text post` | repost textu je na počítači dvojstĺpcový | dvojstĺpcový na počítači |
-| 3 | `FeedPostDetailOverlay.narrowWindow.test.tsx` (326) | šesť testov: `príspevok len s textom: úzke okno so stropom výšky`, `repost textového príspevku: úzke okno`, `kostra pri načítaní je v úzkom okne`, `okno s chybou načítania je v úzkom okne`, `textový príspevok sa po načítaní z kostry nehýbe`, `ponuka sa po načítaní z úzkej kostry rozšíri na široké okno` | na počítači je okno aj pri kostre a chybe 864 px | celý súbor beží pod 1 024 px (`mockIsMobile = true` v `beforeEach`), kde tvrdenia platia; názvy upraviť na „pod 1 024 px“ |
+| 3 | `FeedPostDetailOverlay.narrowWindow.test.tsx` (326) | šesť testov: `príspevok len s textom: úzke okno so stropom výšky`, `repost textového príspevku: úzke okno`, `kostra pri načítaní je v úzkom okne`, `okno s chybou načítania je v úzkom okne`, `textový príspevok sa po načítaní z kostry nehýbe`, `ponuka sa po načítaní z úzkej kostry rozšíri na široké okno` | na počítači je okno aj pri kostre a chybe 864 px | len týchto šesť testov dostane `mockIsMobile = true` (pod 1 024 px tvrdenia o úzkom okne platia: text a repost textu 576 px, kostra a chyba úzke, text sa po načítaní nehýbe, ponuka sa rozšíri); ostatné testy súboru ostávajú na počítači bez zmeny; názvy upraviť na „pod 1 024 px“ |
 | 3 | `FeedPostDetailOverlay.commentsColumn.test.tsx` (312) | tri testy: `príspevok len s textom: pevný blok má poistku s posúvaním a strop`, `repost textového príspevku: pevný blok je flex stĺpec, nezmenšuje sa a má strop`, `sekcia komentárov je flex stĺpec a zoznam v nej sa zmenšuje cez flex` | text na počítači nemá pevný blok | tie isté tri testy s `mockIsMobile = true` |
-| 3 | `FeedPostDetailOverlay.switchPost.test.tsx` (303) | šesť testov (`kostra pri načítaní po prepnutí z príspevku (príspevok s fotkou)`, `… (ponuka)`, `… z textového príspevku`, `po načítaní príspevok s fotkou: okno sa z úzkej kostry rozšíri na široké s pevnou výškou`, `po načítaní textový príspevok: okno ostane úzke aj po načítaní`, `po načítaní chyba pri načítaní nového príspevku: okno s chybou je úzke`) | kostra a text na počítači sú široké | beh pod 1 024 px (`mockIsMobile = true`), kde tvrdenia platia |
+| 3 | `FeedPostDetailOverlay.switchPost.test.tsx` (303) | šesť testov (`kostra pri načítaní po prepnutí z príspevku (príspevok s fotkou)`, `… (ponuka)`, `… z textového príspevku`, `po načítaní príspevok s fotkou: okno sa z úzkej kostry rozšíri na široké s pevnou výškou`, `po načítaní textový príspevok: okno ostane úzke aj po načítaní`, `po načítaní chyba pri načítaní nového príspevku: okno s chybou je úzke`) | kostra a text sú na počítači široké | **päť testov** (tri o kostre, text po načítaní a chyba) dostane `mockIsMobile = true`: pod 1 024 px tvrdenia o úzkej kostre, úzkom texte a úzkom chybovom okne platia; **test s fotkou po načítaní ostáva na počítači** (pod 1 024 px by `splitLayout` bol nepravda a okno by malo `max-h-[95vh]`, nie `h-[95vh]`): kostra je tam teraz široká (`max-w-[54rem]`, `max-h-[95vh]`, nie `max-w-xl`) a po načítaní `feed-post-overlay-split`, `max-w-[54rem]` a `h-[95vh]` |
 | 3 | `FeedPostDetailOverlay.commentDraftLive.test.tsx` (192) | `okno detailu: rozpracovaný komentár a zamietnutie fotky počas písania text ostane v poli, keď okno prejde z dvoch stĺpcov na jeden` | zamietnutie poslednej fotky na počítači rozloženie nemení | zmenu rozloženia vyvolať zúžením okna prehliadača (`mockIsMobile` z `false` na `true` a nový render), zamietnutie fotky nechať ako samostatný prípad bez zmeny rozloženia |
 
 Súhrn: po kroku 3 padá 34 testov: 6 z krokov 1 a 2 (padajú ďalej; dva z nich, v `FeedPostDetailOverlay.test.tsx` a `FeedPostDetailSplitLayout.test.tsx`, po kroku 3 padajú aj z druhého dôvodu) a 28 nových v kroku 3 (osem v `FeedPostDetailOverlay.test.tsx`, po jednom v `FeedPostDetailSplitLayout.test.tsx`, `FeedPostDetailOverlay.offerPortfolioSplit.test.tsx`, `FeedPostDetailOverlay.livePhotos.test.tsx`, `FeedRepostPhoto.test.tsx` a `FeedPostDetailOverlay.commentDraftLive.test.tsx`, šesť v `FeedPostDetailOverlay.narrowWindow.test.tsx`, tri v `FeedPostDetailOverlay.commentsColumn.test.tsx` a šesť v `FeedPostDetailOverlay.switchPost.test.tsx`).
@@ -989,7 +992,8 @@ Okná, ktoré sa podľa karty **nemajú zmeniť oproti schválenému vzhľadu** 
 
 - **Prečo sa pri reposte s fotkou „rozpúšťa“ obal karty (`display: contents`).** Pružné zmenšovanie funguje len medzi priamymi súrodencami jedného flex stĺpca. Obal karty a rám príspevku sú vnorené flex kontajnery a ich automatické minimum (`min-height: auto`) je celý obsah, takže rozbalený pôvodný text v nich neustúpi a posúva sa celý blok. Prvá verzia prototypu (pružná plocha fotky a `fillParent` pri pôvodnom texte, obal a rám ostali) nestačila: rozbalený pôvodný text ostal celý (15 z 15 riadkov) a blok pretekal o 277 px pri 600 px. `min-h-0` na obale a ráme sa neskúšalo: z úvahy by obal prišiel o podlahu (plocha fotky najmenej 128 px, text najmenej päť riadkov), takže by text zdieľajúceho karte neustúpil. `display: contents` na obale a ráme (len pri reposte s fotkou, `flatten`) urobí z textu zdieľajúceho, mena pôvodného autora, pôvodného textu a plochy fotky súrodencov v bloku a medzery medzi nimi dáva `gap-3` bloku (pôvodné `space-y-3` by sa na rozpustenom obale stratilo). Karta ponuky a portfólia ostáva vnorená (jej plocha je jediný pružný prvok a text nad ňou ustupuje cez blok).
 - **Prečo `FeedPostCardCaption.tsx`.** Text voľného príspevku je v `FeedPostCard.tsx` obalený blokom `px-4 py-3` s `fixedBlock`. Pre okno len s textom musí byť obal pružný (`min-h-0 flex-1 overflow-y-auto`) a text bez orezania. Priame zmeny v karte (import, hák, trieda, výraz) ju v prototype dostali na 504 riadkov; presunom bloku sa skráti na 492. Presun sa dá urobiť ako samostatný commit bez zmeny správania (karta krok 3a).
-- **Prečo `flexible` v `FeedPostSharedBlock.tsx`.** Blok s označenými má pri `fillHeight` triedu `flex-1`; vedľa pružného textu (krok 3) by si bral polovicu voľného miesta. Pri príspevku len s textom a bez zdieľaného obsahu je preto blok prirodzenej výšky. **Rovnaký problém má príspevok s fotkou a označenými už na `main` (nález 368, merania v texte nálezu); K58 ho nerieši**, lebo mení vzhľad (fotka sa zväčší) a čaká na schválenie majiteľa (R49).
+- **Prečo `flexible` v `FeedPostSharedBlock.tsx`.** Blok s označenými má pri `fillHeight` triedu `flex-1`; vedľa pružného textu (krok 3) by si bral polovicu voľného miesta. Pri príspevku len s textom a bez zdieľaného obsahu je preto blok prirodzenej výšky. **Rovnaký problém má príspevok s fotkou a označenými už na `main` (nález 368, merania v texte nálezu); K58 ho nerieši**, lebo mení vzhľad (fotka sa zväčší); majiteľ vzhľad schválil (R74) a opraví ho po K58 agent: po K58 sa premenná `flexible` zjednoduší na `fillHeight && isShared`.
+- **Prečo `key` na `FeedPostCaption` v `FeedPostCardCaption.tsx` (pripomienka CodeRabbitu k PR #325, overené).** `FeedPostCaption` nuluje stav „rozbalené“ len pri zmene textu. Pri prechode do okna len s textom počas otvoreného okna (autor má príspevok s rozpracovanou fotkou a moderácia ju zamietne) ostane karta pripojená, takže rozbalený text zostal v rámiku `max-h-[40vh]` s prepínačom „Menej“. Jednorazový test v kópii (autor, jedna rozpracovaná fotka, rozbalené „Viac“, polling zamietne fotku) to potvrdil: bez `key` ostala v kópii po kroku 3 trieda `max-h-[40vh]` aj prepínač, s `key={textOnlySplit ? 'cely' : 'orezany'}` je text celý a bez prepínača. Test, ktorý to stráži, je v karte (krok 3, `FeedPostDetailOverlay.textOnlyLive.test.tsx`); jednorazová skúška agenta v repozitári nie je.
 - **`textOnly` ide kontextom, nie vlastnosťou karty** (rovnako ako `useFeedDetailSplit` v K57): `FeedPostCard.tsx` nesmie rásť. Kontext je `true` len v ľavom stĺpci okna len s textom.
 - **Kde platí pravidlo piatich riadkov:** `SPLIT_SHARED_CAPTION_LINES = 5` (krok 2) sa týka len textu zdieľajúceho v ľavom stĺpci dvojstĺpcového okna pri zdieľanom obsahu; mimo neho (feed, dialóg zdieľania, jednostĺpcové okno pod 1 024 px) ostáva 10 riadkov v detaile a 3 v náhľade. Pôvodný text reposta má všade 3 riadky.
 - **Súbory mimo karty, ktoré sa nemenia:** `FeedPostActions.tsx`, `FeedPostCardHeader.tsx`, `FeedPostComments.tsx` (okrem toho, že dostane `flexFill` od `FeedPostDetailSplitLayout.tsx`, čo už od K57 vie), `FeedPostMobileDetail.tsx`, `FeedPhotoCommentsSheet.tsx`, `ImageLightbox.tsx`, `frontend/e2e/**`.

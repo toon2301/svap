@@ -22,12 +22,12 @@ NEW_ITEMS_K51 = [
               'Očakávanie majiteľa: pri skrátenom texte pôvodného príspevku je dostupné „Viac“, ktoré zobrazí celý '
               'text. Agent kód nemapoval a príčinu nezisťoval. K51 správanie nezmenila (doslovný presun, pozri '
               'hlavičku tohto súboru), ide o staršie správanie.',
-         note='NEJASNÉ: najprv mapovanie (kolega podľa pravidla z 18. 11. 2026, ak majiteľ nepovie inak), kód sa '
-              'nemení, kým majiteľ nepovie. Ide po redizajne komentárov a rozložení príspevkov (261 a 344), lebo sa '
-              'týka tých istých miest (náhľad zdieľaného príspevku `SharedContentPreviewCard.tsx` a blok '
-              '`FeedPostSharedBlock.tsx`; miesta sú len predbežný odhad z toho, kde sa náhľad kreslí). Vzhľad „Viac“ '
-              'sa nemení (R49): použije sa ten, ktorý v appke už je. Odhad: stredný · M.',
-         dec=None, src='ručný test majiteľa po K51 (22. 11. 2026)'),
+         note='JASNÉ (rieši K58, krok 1 spolu s 365: text pôvodného príspevku v reposte dostane „Viac“ a „Menej“ a 3 riadky ako text '
+              'karty; vzhľad schválil majiteľ 24. 11. 2026, R71). História: nález vznikol z ručného testu po K51 ako NEJASNÝ (najprv '
+              'mapovanie, kód sa nemení, ide po redizajne); agent ho po návrhu jednotného „Viac“ a „Menej“ zmapoval prototypom v '
+              'kópii mimo repozitára (oprava je v `FeedPostCaption.tsx` a `SharedContentPreviewCard.tsx`), takže samostatné '
+              'mapovanie netreba. Použije sa vzhľad „Viac“, ktorý v appke už je. Odhad: stredný · M.',
+         dec='ROZHODNUTIE R71', src='ručný test majiteľa po K51 (22. 11. 2026)'),
     dict(n=358, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='zdieľaná ponuka alebo portfólio: sprievodný text, ktorý zdieľajúci napísal, sa nad náhľadom '
                 'nezobrazuje vôbec',
