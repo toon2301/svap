@@ -10,6 +10,7 @@ Otvorený je len 364.
 
 Nálezy 365 až 367 vznikli z návrhu majiteľa k textu príspevku a oknu detailu na počítači (24. 11. 2026; rozhodnutia R71 až R73)
 a rieši ich jedna dávka K58 (`karty/K58.md`); nález 368 zistil agent pri kontrole krokov K58 a vzhľad jeho opravy schválil majiteľ (R74); opraví ho agent po K58.
+Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent.
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -90,4 +91,43 @@ NEW_ITEMS_K57 = [
               'dá pokyn: podmienka `flexible` v `FeedPostSharedBlock.tsx` bude po oprave len `fillHeight && isShared`, takže blok s '
               'označenými bez zdieľaného obsahu bude mať prirodzenú výšku aj pri príspevku s fotkou. Odhad: nízky · S.',
          dec='ROZHODNUTIE R74', src='agent (24. 11. 2026), meranie v kópii `main`'),
+    dict(n=369, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='detail príspevku s fotkou na mobile: obsah sa dá posúvať vodorovne o 12 px (fotka je širšia než posúvateľný zoznam)',
+         what='Zistil majiteľ 24. 11. 2026 na vlastnom príspevku s fotkou (mobil): obsah okna detailu sa dá posúvať zo strany na '
+              'stranu; vodorovne má byť pevný. Agent to 24. 11. 2026 reprodukoval v Chromiu na skutočných komponentoch (kópia `main`, '
+              '`FeedPostMobileDetail`, šírky 360, 390 a 430 px): netýka sa len vlastného príspevku, ale každého príspevku s fotkou '
+              '(vlastného aj cudzieho; pri každej šírke 12 px). Príčina: zoznam komentárov `feed-comments-scroll` '
+              '(`FeedPostComments.tsx`) je posúvateľný box s `overflow-y-auto` (preto je jeho `overflow-x` vypočítané `auto`) a s '
+              'odsadením `pr-1`; blok fotky `feed-mobile-detail-photo` (`FeedPostMobileDetailContent.tsx`) je roztiahnutý na celú '
+              'šírku záporným okrajom `-mx-4` a jeho pravý okraj leží o 12 px za pravým okrajom boxu (pri šírke okna 390 px: blok 0 '
+              'až 386 px, box 16 až 374 px; `scrollWidth` − `clientWidth` = 12 px). Fotka navyše vpravo nesiaha až na okraj obrazovky '
+              '(386 z 390 px, chýbajú 4 px). Príspevok len s textom a panel komentárov nad fotkou (`FeedPhotoCommentsSheet.tsx`) '
+              'vodorovne nepretekajú (0 px). Meranie bolo v statickom vykreslení (HTML skutočných komponentov s reálnymi štýlmi), nie '
+              'na iPhone.',
+         note='JASNÉ (príčina nameraná). Súčasť dávky K44, ktorú píše agent (R76): zakázať vodorovné posúvanie boxu so zoznamom '
+              '(`overflow-x-hidden`) a zarovnať blok fotky na celú šírku obrazovky vrátane pravého okraja; test, že box vodorovne '
+              'nepreteká. Odhad: nízky · S.',
+         dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
+    dict(n=370, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
+         kratko='detail príspevku na mobile: pole na komentár sa na iPhone hýbe pri krátkom vlastnom príspevku len s textom (príčina '
+                'nepotvrdená)',
+         what='Hlási majiteľ 24. 11. 2026 (iPhone): pole na písanie komentárov dole na obrazovke sa hýbe (nie je pevne fixné), podľa '
+              'jeho dojmu len pri vlastnom príspevku a len pri krátkom príspevku len s textom. Agent to v Chromiu na skutočných '
+              'komponentoch nezreprodukoval: hlavné pole (`FeedCommentComposer`) stojí mimo posúvateľného zoznamu a pri posune '
+              'zoznamu o 400 px ani pri posune stránky sa nepohlo (detail príspevku aj panel nad fotkou, šírka 390 px); pri zmenšenej '
+              'viditeľnej ploche (508 px) ostalo celé viditeľné. Pole pri odpovedi pod komentárom sa naopak hýbe so zoznamom (po '
+              'posune o 400 px bolo mimo obrazovky); na mobile sa ruší (R75). Dve možné príčiny (hypotézy, nie dôkaz): (1) detail '
+              'príspevku a fotoprehliadač nezamykajú posúvanie stránky pod sebou (`FeedPostMobileDetail.tsx` a `FeedPhotoViewer.tsx` '
+              'nenastavujú `document.body.style.overflow`, ako to robia iné mobilné obrazovky, napr. `ProfileOfferDetailMobile.tsx`); '
+              'pri krátkom príspevku nie je v zozname čo posúvať, takže ťah prstom môže posúvať Nástenku za oknom a iPhone mení výšku '
+              'viditeľnej plochy; (2) komentáre neprispôsobujú výšku obrazovky klávesnici (chat to robí cez '
+              '`useMobileViewportHeight`: `DashboardLayout.tsx` a `useConversationComposerController.ts`). Rozlišovací test pre '
+              'majiteľa: keď sa pole pohne a detail potom zatvorí, je Nástenka pod ním posunutá inde než pred otvorením? Ak áno, ide '
+              'o (1).',
+         note='NEJASNÉ (príčina nepotvrdená; rozhodne až ručný test na iPhone). Súčasť dávky K44, ktorú píše agent (R76), ako '
+              'samostatný krok: zamknúť posúvanie stránky pod detailom príspevku a pod fotoprehliadačom a pri aktívnom poli na '
+              'komentár nastaviť výšku obrazovky podľa viditeľnej plochy (rovnako ako v chate); je to najlepšia oprava (návrh agenta, '
+              'nie dôkaz). Po nasadení ručný test majiteľa na iPhone (krátky vlastný príspevok len s textom, s klávesnicou aj bez '
+              'nej). Odhad: stredný · M.',
+         dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
 ]

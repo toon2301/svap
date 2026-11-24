@@ -180,10 +180,11 @@ NEW_ITEMS_NASTENKA = [
          dec=None, src=ZDROJ),
     dict(n=261, bucket=P, imp=S_, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, '
-                'tagy); vzhľad komentárov je schválený (R52), kód až po delení a po piatich krokoch (R59)',
+                'tagy); vzhľad komentárov (R52) a pole na komentár a odpoveď na mobile (R75) sú schválené, redizajn komentárov (K44) píše agent (R76)',
          what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné '
               'doladenia: komentárová textarea vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači '
-              'inline len keď je text orezaný; veľmi dlhé popisky zmenšiť fontom namiesto orezania a zrušiť „Menej“; '
+              'inline len keď je text orezaný (rieši K58, R71); veľmi dlhé popisky zmenšiť fontom namiesto orezania a zrušiť „Menej“ '
+              '(PREKONANÉ rozhodnutiami R71 a R73: „Menej“ je vždy a písmo je vždy rovnaké; rieši K58); '
               '(drag handle vo fotoprehliadači: prianie zjednodušiť ho na šípku je PREKONANÉ rozhodnutím R55, '
               'majiteľ 17. 11. 2026 zvolil tenkú úchytku 40×6 px a ide ako nález 343); väčší odstup spodného riadku '
               'akcií od okraja; menu „…“ presunúť do riadku akcií; „Zobraziť odpovede (N)“ bližšie k riadku akcií; s '
@@ -213,14 +214,18 @@ NEW_ITEMS_NASTENKA = [
               'komentárov (skupina 7) začne až po piatich najbližších krokoch (K40, K41, K42, K43 a K31); nič sa '
               'nesilí. STAV 20. 11. 2026: K40 až K43 a K45 sú hotové a delenie `FeedPostComments.tsx` je hotové; K31 '
               'je zlúčená (PR #304, 21. 11. 2026); majiteľ 20. 11. 2026: pred redizajnom ešte jeden krok kolegu (K31) a 21. 11. 2026 schválil R65 (a): poriadne delenie `FeedPostCard.tsx` (K46; mapuje kolega aj agent), potom rekapitulácia a '
-              'vizuál s odporúčaním; po 100 % dohode napíše agent presné karty a kód píše kolega (R67 z 23. 11. 2026, zmena R64). STAV 23. 11. 2026: delenie aj opravy 355 a 356 (K56) sú hotové, začína sa dohadovanie vzhľadu. Pri redizajne treba vyriešiť '
-              'aj pole na text pri odpovedi na komentár (R52 ho nechal ako dnes); čo presne má byť inak, dodá '
-              'majiteľ pri príprave vzhľadu, ktorý sa podľa R49 najprv prebere (agent pripraví návrh s možnosťami a '
-              'odporúčaním) a až potom ide karta. Možná súvislosť (neoverené): staršie prianie skupiny 6 '
-              '(komentárová textarea vyššia a väčšia, neprilepená na spodok); agent sa pri príprave vzhľadu opýta, '
-              'či ide o to isté. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne nenahlásil, lebo '
-              'ich redizajn zmení; agent ich nezapisuje a po redizajne navrhuje, aby majiteľ overil, ktoré ostali, a '
-              'tie nahlásil.',
+              'vizuál s odporúčaním; po 100 % dohode napíše agent presné karty a kód píše kolega (R67 z 23. 11. 2026, zmena R64; pre redizajn komentárov (K44) ju zmenilo R76). STAV 23. 11. 2026: delenie aj opravy 355 a 356 '
+              '(K56) sú hotové, začína sa dohadovanie vzhľadu. STAV 24. 11. 2026: vzhľad komentárov (R52) ostáva a pole na komentár a odpoveď '
+              'na mobile je schválené (R75; obrázky `navrhy/mobil-pole-komentar-odpoved-detail-schvalene.png` a `navrhy/mobil-pole-komentar-'
+              'odpoved-foto-schvalene.png`): len mobil; jedno pole dole (v detaile aj v paneli nad fotkou) slúži na komentár aj na odpoveď, '
+              'po ťuknutí na „Odpovedať“ sa prepne na „Napíš odpoveď...“ s riadkom „Odpovedáš: Meno“ a krížikom vpravo vedľa poľa, pole '
+              'pri komentári sa na mobile ruší, koncept komentára sa zachová, po odoslaní odpovede sa zoznam posunie na novú odpoveď, pri '
+              'prepnutí na iný komentár text odpovede ostane a pole stojí vždy dole, pri klávesnici tesne nad ňou (otázka R59 o poli pri '
+              'odpovedi je tým zodpovedaná). Staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená na spodok) R75 '
+              'nerieši (pole ostáva jednoriadkové ako dnes); ostáva v skupine 6. Kód redizajnu komentárov (K44: plochý vzhľad, pole na '
+              'mobile a nálezy 369 a 370) píše podľa R76 sám agent. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
+              'nenahlásil, lebo ich redizajn zmení; agent ich nezapisuje a po redizajne navrhuje, aby majiteľ overil, ktoré ostali, a tie '
+              'nahlásil.',
          dec='ROZHODNUTIE R23', src='zoznam majiteľa (príloha D; PDF z 6. 11. 2026, stav k 29. 9. 2026)'),
     dict(n=262, bucket=P, imp=N, eff=EL, pkg='Funkcie – väčšie balíky',
          kratko='zoznam „kto lajkol“ rozšíriť na ponuky, portfólio a profil pred štartom; viditeľnosť ako na Nástenke (R20, variant A); backend hotový (K27), vzhľad schválený (R51 a R56), frontend po etapách (K34, najprv mapovanie)',
