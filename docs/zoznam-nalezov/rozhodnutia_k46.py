@@ -54,7 +54,8 @@ DECISIONS_K46 = [
                  'aktualizuje zoznam a zapíše túto zmenu, potom sa dohodnú a doklepnú veci, ktoré treba doriešiť, a potom '
                  'agent spraví krátku rekapituláciu, aby si bol majiteľ na 100 % istý, že výsledok bude vyzerať tak, ako '
                  'chce. Všetko ostatné z R64 platí (rekapitulácia a vizuál s odporúčaním od agenta, vzhľad schvaľuje '
-                 'majiteľ podľa R49, pri nejasnosti sa pýta majiteľa).',
+                 'majiteľ podľa R49, pri nejasnosti sa pýta majiteľa). ZMENENÉ 24. 11. 2026 (R74 a R76): nález 368 a redizajn komentárov (K44) '
+                 'píše agent; okno detailu (K58) píše kolega podľa karty.',
          datum='23. 11. 2026'),
     dict(id='R68', tema='Okno detailu príspevku na počítači (344): plocha fotky karty ponuky a portfólia bez fotky a pri nedostatku miesta',
          otazka='R53 hovorí, že karta ponuky a portfólia vyplní zvyšok ľavého stĺpca okna. Prototyp v prehliadači (obrázky '
@@ -201,5 +202,85 @@ DECISIONS_K46 = [
                  'štítkami má prirodzenú výšku) a oprava ide samostatne až po zlúčení K58; opraví ju agent (2), nie kolega: výnimka z R67 '
                  'a z pravidla, že agent kód nepíše, kým majiteľ nepovie. Agent ju urobí v samostatnej očíslovanej vetve, keď majiteľ '
                  'po zlúčení K58 dá pokyn (nič nepripravuje vopred). K58 sa nemení: nález 368 do nej nepatrí. Rieši nález 368.',
+         datum='24. 11. 2026'),
+    dict(id='R75', tema='Pole na komentár a odpoveď na mobile (nález 261, skupina 7): jedno pole dole, krížik, riadok „Odpovedáš: Meno“, vždy nad klávesnicou',
+         otazka='R52 nechal pole na komentár a odpoveď „zatiaľ ako dnes“ a R59 uložilo majiteľovi dodať, čo je s poľom pri odpovedi. '
+                'Dnes je pole pri odpovedi samostatné pole pod komentárom v zozname (dva riadky, počítadlo, „Zrušiť“ a „Odpovedať“) a '
+                'scrolluje sa so zoznamom; hlavné pole na nový komentár je jednoriadkové s ikonou odoslania (`compactComposer`) a stojí '
+                'mimo zoznamu (v detaile na mobile aj v paneli nad fotkou). Majiteľ 24. 11. 2026 opísal, aké to má byť (len mobil): '
+                'jedno pole dole slúži na komentár aj na odpoveď, v režime odpovede je vpravo vedľa poľa krížik a pole je vždy '
+                'viditeľné dole, pri klávesnici nad ňou, a nescrolluje sa; to isté v komentároch pri fotke. Agent ukázal obrázky '
+                '(detail príspevku a panel nad fotkou, tri stavy) a položil podrobnosti: (a) čo s rozpísaným komentárom po ťuknutí na '
+                '„Odpovedať“; (b) či má pole ukázať, komu sa odpovedá; (c) či sa po odoslaní odpovede zoznam posunie na novú odpoveď; '
+                '(d) čo s textom odpovede pri prepnutí na iný komentár.',
+         odporucanie='(a) koncept komentára sa zachová a po krížiku sa vráti (komentár a odpoveď majú každý svoj text); (b) áno, malý riadok '
+                     '„Odpovedáš: Meno“, lebo zoznam sa dá posúvať a komentár, na ktorý sa odpovedá, môže zmiznúť z obrazovky; (c) áno; (d) '
+                     'text odpovede ostane, mení sa len cieľ (dnes sa text pri prepnutí maže).',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026: (a) a (b) „oboje podľa tvojho odporúčania“, (c) „podľa odporúčaní“, (d) „súhlasím s '
+                 'odporúčaním“; obrázky `navrhy/mobil-pole-komentar-odpoved-detail-schvalene.png` a '
+                 '`navrhy/mobil-pole-komentar-odpoved-foto-schvalene.png` „áno sedia, schvaľujem“. Platí: (1) len mobil (pod 1 024 px); '
+                 'na počítači ostáva pole pri odpovedi ako dnes. (2) Jedno pole dole (jednoriadkové s ikonou odoslania v poli ako dnes '
+                 '`compactComposer`) slúži na komentár aj na odpoveď: po ťuknutí na „Odpovedať“ sa jeho text zmení na „Napíš '
+                 'odpoveď...“, nad poľom je riadok „Odpovedáš: Meno“, vpravo vedľa poľa je krížik a „Odpovedať“ pri komentári, na ktorý '
+                 'sa odpovedá, sa zafarbí fialovo; pole pod komentárom sa na mobile ruší. (3) Rozpísaný komentár sa nestratí (dva '
+                 'oddelené texty); krížik aj odoslanie odpovede vrátia pole na komentár. (4) Po odoslaní odpovede sa zoznam posunie na '
+                 'novú odpoveď; pri prepnutí na iný komentár text odpovede ostane. (5) Pole je vždy dole a mimo zoznamu; pri otvorenej '
+                 'klávesnici stojí tesne nad ňou (výška obrazovky podľa viditeľnej plochy, rovnako ako v chate) a nedá sa odscrollovať; '
+                 'rovnako v paneli komentárov nad fotkou. (6) Automatický posun detailu na komentáre (fotka alebo náhľad zdieľaného '
+                 'obsahu a aspoň tri komentáre, `feedMobileDetailAutoScroll.ts`) a posun na nový komentár po odoslaní (K40) platia dnes '
+                 'a ostávajú; nesmú sa pokaziť. Staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená na spodok) '
+                 'R75 nerieši (pole ostáva jednoriadkové ako dnes); ostáva v skupine 6. Zodpovedá otázku R59 o poli pri odpovedi a mení '
+                 'R52 len v bode „pole na komentár zatiaľ ostáva ako dnes“. Rieši nález 261 (skupina 7, K44) a súvisí s nálezmi 369 a '
+                 '370.',
+         datum='24. 11. 2026'),
+    dict(id='R76', tema='Redizajn komentárov (K44): kód píše agent, nie kolega (výnimka z R67)',
+         otazka='R67 (23. 11. 2026) určilo, že kód redizajnu píše kolega z presnej karty agenta a agent kontroluje; možnosť, že kód '
+                'píše aj kontroluje agent, agent v R67 neodporúčal (autor a kontrolór by bol ten istý). R74 (24. 11. 2026) urobilo '
+                'výnimku pre nález 368. Majiteľ po schválení poľa na komentár a odpoveď (R75) určil, že redizajn komentárov má robiť '
+                'tiež agent.',
+         odporucanie='Možné, ak sa kontrola druhou reláciou nahradí inými poistkami: poistky z R64 ostávajú (testy v nových súboroch podľa '
+                     'R27, mutačné kontroly v kópii mimo repozitára, kontrola PR botmi CodeRabbit a Codex a CI, kontrola rozloženia od '
+                     'Codexa po nasadení, ručný test majiteľa; PR otvára a zlučuje len majiteľ); navyše agent odporúča, aby diff pred '
+                     'zlúčením prečítal aj kolega (nezávislé oči). Jeden človek v kóde naraz: kedy agent vetvu nahrá, sa dohodne s '
+                     'majiteľom.',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026 po schválení obrázkov poľa: „áno sedia, schvaľujem a chcem, aby si tento redizajn tiež robil ty, '
+                 'okej?“ Platí: (a) kód redizajnu komentárov (K44: plochý vzhľad komentárov R52, pole na komentár a odpoveď na mobile '
+                 'R75, nálezy 369 a 370) píše agent v samostatnej očíslovanej vetve, kolega ho nerobí; mení R67 len pre K44 (okno '
+                 'detailu K58 píše kolega podľa karty, nález 368 píše agent podľa R74). (b) Poistky podľa R64 (poznámka z 20. 11. 2026) '
+                 'ostávajú: testy v nových súboroch (R27), mutačné kontroly v kópii mimo repozitára, kontrola PR botmi (CodeRabbit, '
+                 'Codex) a CI, kontrola rozloženia od Codexa po nasadení, ručný test majiteľa; PR otvára a zlučuje len majiteľ. (c) '
+                 'Rozsah je redizajn komentárov (K44); tagy (359, skupina 8) a ostatné mobilné doladenia (skupina 6) sa rozhodnú '
+                 'osobitne. Rieši nález 261 (skupina 7).',
+         datum='24. 11. 2026'),
+    dict(id='R77', tema='Počty riadkov „Viac“ v detaile príspevku po ručnom teste K58 (zmena R71)',
+         otazka='Majiteľ po ručnom teste K58 (24. 11. 2026): 10 riadkov je veľa. Chce: (1) pri otvorenom detaile s fotkou, portfóliom a '
+                'ponukou „Viac“ od šiesteho riadku (5 riadkov); (2) na počítači pri prezdieľanom príspevku len s textom bez fotky: pri '
+                'texte zdieľajúceho (majiteľ prezdieľaného príspevku) „Viac“ od jedenásteho riadku (10 riadkov), pri texte pôvodného '
+                '(zdieľaného) príspevku „Viac“ od šiesteho riadku (5 riadkov). Dnes po K58 (z kódu): voľný príspevok s fotkou v okne 10 '
+                'riadkov (`DETAIL_CAPTION_LINES`); text zdieľajúceho nad ponukou, portfóliom a repostom s fotkou v dvojstĺpcovom okne 5 '
+                '(`SPLIT_SHARED_CAPTION_LINES`); text pôvodného príspevku v reposte v okne 3; repost len s textom v okne celý bez '
+                '„Viac“ (R73); voľný príspevok len s textom v okne celý bez „Viac“ (R73); detail na mobile 10; karta a fotoprehliadač '
+                '3. Čo presne platí na miestach, ktoré majiteľ nespomenul? (a) Platí (1) aj pre detail príspevku na mobile (dnes 10)? '
+                '(b) Repost s fotkou v okne: text zdieľajúceho 5 (ako dnes) a pôvodný 3 (dnes) alebo 5? (c) Voľný príspevok len s '
+                'textom na počítači ostáva celý bez „Viac“ (R73)? (d) Karta (3) a fotoprehliadač (3) bez zmeny?',
+         odporucanie='(a) áno: detail na mobile s fotkou, ponukou, portfóliom alebo náhľadom zdieľaného obsahu 5 riadkov, len text 10, aby '
+                     'boli obe zariadenia rovnaké a mobil (menej miesta) nemal viac než počítač; (b) 5 a 5 (s fotkou 5); (c) áno, ostáva '
+                     'celý (okno je na to postavené a posúva sa v stĺpci); (d) áno, bez zmeny. Zmena je malá (konštanty a podmienky vo '
+                     '`FeedPostCardCaption.tsx`, `FeedPostSharedBlock.tsx`, `SharedContentPreviewCard.tsx` a '
+                     '`FeedPostMobileDetailContent.tsx` a úprava testov, ktoré dnes čakajú 10 a 0) a odporúča sa ju urobiť v krátkej '
+                     'samostatnej vetve, nie čakať na K44.',
+         kedy='Potrebné pred opravou počtov riadkov (vetva agenta po K58).'),
+    dict(id='R78', tema='Nález 343 (úchytka panela komentárov nad fotkou) ide vo vetve agenta s K44; K59 sa zatiaľ nepripravuje',
+         otazka='Nález 343 mal ísť ako dávka K33 kolegu (R55: tenká úchytka 40×6 px, súbor `FeedPhotoCommentsSheet.tsx`). K44 (R76) '
+                'mení ten istý súbor (pole na komentár a odpoveď, zamknutie stránky a výška pri klávesnici v paneli nad fotkou). Kto ho '
+                'urobí a kedy? (a) Kolega samostatne (dvaja menia ten istý súbor); (b) agent vo vetve K44 ako samostatný krok. Kolega '
+                'po K58 nemá kartu: pripraviť K59 (361 a 362)?',
+         odporucanie='(b): jeden autor jedného súboru, bez zrážky vetiev. K59 sa nepripravuje, kým majiteľ nepovie.',
+         kedy='Rozhodnuté 24. 11. 2026.',
+         odpoved='Majiteľ 24. 11. 2026: „áno 343 urob v mojej vetve a K59 nemusíš ešte chystať“. Platí: (a) nález 343 (úchytka 40×6 px '
+                 'podľa R55 a obrázka `navrhy/mobil-uchytka.png`) robí agent vo vetve K44 ako samostatný krok; dávka K33 zaniká; (b) K59 '
+                 '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie.',
          datum='24. 11. 2026'),
 ]

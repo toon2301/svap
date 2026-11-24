@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 357: ručný test majiteľa po K51 (22. 11. 2026).
+"""Nové nálezy od čísla 357: ručný test majiteľa po K51 (22. 11. 2026). Nález 357 je od dávky K58 (PR #326) hotový, jeho text je v `hotove_k40.py`.
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova.
@@ -13,21 +13,6 @@ obalu ternára), takže správanie nezmenila a nálezy sú staršie správanie.
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
 
 NEW_ITEMS_K51 = [
-    dict(n=357, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
-         kratko='prezdieľaný príspevok (repost): text pôvodného príspevku sa v náhľade skracuje na 4 až 5 riadkov a '
-                'chýba „Viac“, takže sa nedá prečítať celý (Nástenka aj detail, počítač aj iPhone)',
-         what='Ručný test majiteľa po K51 (22. 11. 2026): keď používateľ prezdieľa príspevok s dlhším textom, z '
-              'pôvodného príspevku sa v náhľade zobrazia len prvé 4 až 5 riadkov a chýba tlačidlo „Viac“, takže si '
-              'celý text nemožno prečítať. Výskyt: Nástenka aj detail príspevku, počítač aj mobil (iPhone). '
-              'Očakávanie majiteľa: pri skrátenom texte pôvodného príspevku je dostupné „Viac“, ktoré zobrazí celý '
-              'text. Agent kód nemapoval a príčinu nezisťoval. K51 správanie nezmenila (doslovný presun, pozri '
-              'hlavičku tohto súboru), ide o staršie správanie.',
-         note='JASNÉ (rieši K58, krok 1 spolu s 365: text pôvodného príspevku v reposte dostane „Viac“ a „Menej“ a 3 riadky ako text '
-              'karty; vzhľad schválil majiteľ 24. 11. 2026, R71). História: nález vznikol z ručného testu po K51 ako NEJASNÝ (najprv '
-              'mapovanie, kód sa nemení, ide po redizajne); agent ho po návrhu jednotného „Viac“ a „Menej“ zmapoval prototypom v '
-              'kópii mimo repozitára (oprava je v `FeedPostCaption.tsx` a `SharedContentPreviewCard.tsx`), takže samostatné '
-              'mapovanie netreba. Použije sa vzhľad „Viac“, ktorý v appke už je. Odhad: stredný · M.',
-         dec='ROZHODNUTIE R71', src='ručný test majiteľa po K51 (22. 11. 2026)'),
     dict(n=358, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='zdieľaná ponuka alebo portfólio: sprievodný text, ktorý zdieľajúci napísal, sa nad náhľadom '
                 'nezobrazuje vôbec',
@@ -57,7 +42,7 @@ NEW_ITEMS_K51 = [
               'vlastnom označení, takže či má byť klikateľné, vysvetlí majiteľ). Zhoduje sa so skupinou 8 v nálezu '
               '261 (redizajn tagov: zrušiť farebné čipy a nahradiť ich obyčajným textom `@Meno`, tagy na vlastný '
               'riadok pod textom, ktoré sa balia a rozbaľujú spolu s „Viac“); tento nález je jej podmnožina.',
-         note='NEJASNÉ: ide spolu s redizajnom (261, skupina 8; kód píše kolega podľa presnej karty agenta, R67) a zoznam označených je od '
+         note='NEJASNÉ: ide spolu s redizajnom (261, skupina 8; kód píše kolega podľa presnej karty agenta, R67; kto píše kód tagov, určí majiteľ osobitne, R76) a zoznam označených je od '
               'K51 v `FeedPostSharedBlock.tsx` (`<ul data-testid="feed-post-tags">`). Vzhľad zadal majiteľ '
               '(obyčajný text bez bubliny), detaily (farba vo svetlom a tmavom režime, medzery, či meno vedie na '
               'profil) agent podľa R49 najprv potvrdí s majiteľom v návrhu; bez schváleného vzhľadu sa kód '

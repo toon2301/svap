@@ -192,7 +192,8 @@ DECISIONS_DALSIE = [
                   'odpovedi. Obrázky `mobil-komentare.png` (miesto pri príspevku a miesto nad fotkou, oba rovnaký vzhľad) a '
                   '`pc-komentare.png` (pravý stĺpec okna). Zoznam lajkujúcich pri komentároch a odpovediach už funguje (číslo vedľa '
                   'srdiečka), nová je bublinka. Implementácia v jednej dávke až po delení `FeedPostComments.tsx` (R47); kolega vzhľad '
-                  'nemení bez tohto schváleného vzhľadu v karte (R49).',
+                  'nemení bez tohto schváleného vzhľadu v karte (R49). ZMENENÉ 24. 11. 2026 (R75): pole na komentár a odpoveď sa na mobile '
+                   'mení (jedno pole dole, krížik, riadok „Odpovedáš: Meno“); ostatné z R52 platí.',
          datum='17. 11. 2026'),
     dict(id='R53', tema='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch, okno len s textom užšie (nález 344)',
          otazka='Dnes sú dva stĺpce (hlavička, text, fotka a akcie vľavo, komentáre vpravo) len pri príspevku s fotkou; zdieľaná ponuka '
@@ -302,7 +303,8 @@ DECISIONS_DALSIE = [
                  'K42, K43 a K31); nič sa nesilí. Pri redizajne sa musí vyriešiť aj pole na text pri odpovedi na '
                  'komentár (R52 ho nechával ako dnes); čo presne treba zmeniť, dodá majiteľ pri príprave vzhľadu, '
                  'ktorý sa podľa R49 najprv prebere. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
-                 'nenahlásil, lebo ich redizajn zmení.',
+                 'nenahlásil, lebo ich redizajn zmení. ZODPOVEDANÉ 24. 11. 2026 (R75): pole pri odpovedi sa na mobile ruší a nahradí ho '
+                  'jedno pole dole.',
          datum='19. 11. 2026'),
     dict(id='R60', tema='Oprava nálezu 342: ako po chybe pri odpovedi, úprave a zmazaní komentára poznať, že príspevok zmizol',
          otazka='Pri pridaní komentára kód pri chybe 404, 403 alebo 410 ukáže neutrálnu hlášku „Tento príspevok už '
@@ -439,7 +441,8 @@ DECISIONS_DALSIE = [
                  'nejasnosť alebo si je istý, že niečomu nerozumie, pýta sa majiteľa. Pri nálezoch HNEĎ ostáva '
                  'mapovanie príčiny na agentovi a ostatné nálezy mapuje kolega, ako doteraz. ZMENENÉ 23. 11. 2026 (R67): '
                  'implementáciu redizajnu robí kolega podľa presnej karty agenta (agent píše karty a kontroluje výsledok '
-                 'voči odsúhlasenému vzhľadu); ostatné z tejto odpovede platí.',
+                 'voči odsúhlasenému vzhľadu); ostatné z tejto odpovede platí. ZMENENÉ 24. 11. 2026 (R76): redizajn komentárov (K44) píše znova agent; poistky z tejto '
+                 'odpovede ostávajú.',
          datum='20. 11. 2026'),
     dict(id='R65', tema='Delenie `FeedPostCard.tsx` (a posúdenie `FeedPostMobileDetail.tsx`) poriadne pred redizajnom komentárov a okna príspevkov na počítači',
          otazka='Majiteľ sa 21. 11. 2026 pýta, či nie je bezpečnejšie a lepšie rozdeliť súbor poriadne ešte pred '
