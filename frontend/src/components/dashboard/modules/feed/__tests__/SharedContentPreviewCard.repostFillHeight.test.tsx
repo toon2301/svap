@@ -262,12 +262,13 @@ describe('ponuka a portfólio s fillHeight (bez zmeny oproti K57)', () => {
       />,
     );
 
-    await userEvent.click(await screen.findByTestId('feed-shared-caption-toggle'));
-
+    // Dlaždica je tlačidlo, takže popis nemá prepínač (PR #326): nič sa nerozbaľuje a nič nie je pružné.
+    expect(screen.queryByTestId('feed-shared-caption-toggle')).toBeNull();
     const text = screen.getByTestId('feed-shared-caption');
+    expect(text.tagName).toBe('P');
     expect(text).not.toHaveClass('min-h-0');
     expect(text).not.toHaveClass('flex-1');
     expect(text).not.toHaveClass('overflow-y-auto');
-    expect(text.parentElement).not.toHaveAttribute('class');
+    expect(text.parentElement).toHaveClass('space-y-1');
   });
 });

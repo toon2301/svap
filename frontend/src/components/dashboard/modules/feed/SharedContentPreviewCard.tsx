@@ -263,8 +263,8 @@ export default function SharedContentPreviewCard({
 
   // Text pôvodného príspevku: rovnaké „Viac"/„Menej" ako text karty (3 riadky, „Viac" len pri presahu). Obal s
   // prekliknutím na pôvodný príspevok je len okolo ODSEKU; prepínač stojí mimo neho, lebo tlačidlo v tlačidle je
-  // neplatné HTML a ťuk na „Viac" nemá nič otvárať.
-  const captionNode = caption ? (
+  // neplatné HTML a ťuk na „Viac" nemá nič otvárať. Len zdieľaný príspevok: popis ponuky a portfólia rieši `tileCaptionNode`.
+  const captionNode = caption && isPost ? (
     <FeedPostCaption
       text={caption}
       testId="feed-shared-caption"
@@ -288,6 +288,19 @@ export default function SharedContentPreviewCard({
       }
     />
   ) : null;
+
+  // Ponuka a portfólio: dlaždica je TLAČIDLO (ťuk vedie na zdroj), takže popis, ak by prišiel (backend ho pri nich posiela
+  // prázdny), je obyčajný odsek bez prepínača, rovnaký ako pred K58. „Viac" v tlačidle je neplatné HTML a jeho ťuk by prešiel
+  // na dlaždicu a otvoril zdroj namiesto rozbalenia textu.
+  const tileCaptionNode =
+    caption && !isPost ? (
+      <p
+        data-testid="feed-shared-caption"
+        className="line-clamp-4 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200"
+      >
+        {caption}
+      </p>
+    ) : null;
 
   const body = (
     // Zdieľaný príspevok nemá rám, takže ani vnútorné odsadenie – text má
@@ -318,7 +331,7 @@ export default function SharedContentPreviewCard({
       ) : null}
 
       {/* Text zdieľaného PRÍSPEVKU ide mimo tela (viď `captionNode`); ponuka a portfólio ho posielajú prázdny. */}
-      {!isPost ? captionNode : null}
+      {tileCaptionNode}
     </div>
   );
 
