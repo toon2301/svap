@@ -179,13 +179,18 @@ export default function FeedPostCaption({
   fillParent = false,
 }: FeedPostCaptionProps) {
   const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
-  const clampClass =
-    maxLines === 0
-      ? ''
-      : (CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES]);
+  // `0` = bez orezania (okno príspevku len s textom, R73): nie je čo rozbaľovať ani prepínať.
+  const clamped = maxLines !== 0;
+  const clampClass = clamped
+    ? (CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES])
+    : '';
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
+  // Bez orezania sa prepínač neukáže, aj keby meranie hlásilo presah. Ak sa ten istý text prepne z orezaného na neorezaný
+  // (napríklad pri zmene rozloženia okna), efekt nižšie zahodí stav „rozbalené", takže text nezostane v rámiku s „Menej";
+  // po návrate k orezaniu je text zbalený a presah sa zmeria znova (efekt závisí od `clamped`).
+  const showToggle = overflows && clamped;
   const textRef = useRef<HTMLParagraphElement | null>(null);
 
   const measure = useCallback(() => {
@@ -209,9 +214,15 @@ export default function FeedPostCaption({
         return;
       }
     }
+    // Bez orezania nie je čo rozbaľovať: stav „rozbalené" z predošlého počtu riadkov sa zahodí, inak by sa po návrate
+    // k orezaniu text vrátil rozbalený.
+    if (!clamped && expanded) {
+      setExpanded(false);
+      return;
+    }
     if (expanded) return;
     measure();
-  }, [text, expanded, measure]);
+  }, [text, expanded, clamped, measure]);
 
   // Preteká/nepreteká sa mení so šírkou – prepínač musí zmiznúť aj pribudnúť.
   useEffect(() => {
@@ -273,7 +284,7 @@ export default function FeedPostCaption({
     // rovnakom mieste ako zbalený); zbalený sedí priamo na gradiente prehliadača.
     <div className={rootClasses || undefined}>
       {wrapText ? wrapText(paragraph) : paragraph}
-      {overflows ? (
+      {showToggle ? (
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
