@@ -156,6 +156,13 @@ type FeedPostCaptionProps = {
    * nič otvárať.
    */
   wrapText?: (paragraph: ReactElement) => ReactNode;
+  /**
+   * Rozbalený text nemá pevný strop, ale vyplní miesto, ktoré mu rodič (flex stĺpec) ponechá, a posúva sa v ňom.
+   * Dvojstĺpcové okno to dáva textu nad kartou ponuky, portfólia alebo reposta s fotkou a pôvodnému textu v reposte:
+   * karta sa nikdy neposúva a text ustúpi, keď sa karta nezmestí (najmenej päť riadkov a prepínač). Platí spolu s
+   * `boundedExpansion`.
+   */
+  fillParent?: boolean;
 };
 
 export default function FeedPostCaption({
@@ -168,6 +175,7 @@ export default function FeedPostCaption({
   onTextClick,
   tone = 'default',
   wrapText,
+  fillParent = false,
 }: FeedPostCaptionProps) {
   const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
   const clampClass = CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES];
@@ -225,11 +233,19 @@ export default function FeedPostCaption({
   const scrollable = expanded && boundedExpansion;
   const sizeClass = expanded
     ? (boundedExpansion
-        ? `${BOUNDED_EXPANDED_MAX_HEIGHT[expansionBound]} ${BOUNDED_EXPANDED_CLASS}`
+        ? `${fillParent ? 'min-h-0 flex-1' : BOUNDED_EXPANDED_MAX_HEIGHT[expansionBound]} ${BOUNDED_EXPANDED_CLASS}`
         : '')
     : clampClass;
 
   const onPhoto = tone === 'onPhoto';
+  // Koreň: flex stĺpec pri `fillParent` (po rozbalení s podlahou asi päť riadkov a prepínač) a tmavý obal textu na fotke.
+  const rootClasses = [
+    fillParent ? 'flex flex-col' : '',
+    fillParent && expanded ? 'min-h-[8.6rem]' : '',
+    onPhoto && expanded ? '-mx-2 rounded-xl bg-black/60 px-2 py-1.5 backdrop-blur-sm' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const paragraph = (
     <p
       ref={textRef}
@@ -251,13 +267,7 @@ export default function FeedPostCaption({
   return (
     // Na fotke dostane ROZBALENÝ text tmavý podklad (`-mx-2` a `px-2` vyrovnajú odsadenie, takže text ostane na
     // rovnakom mieste ako zbalený); zbalený sedí priamo na gradiente prehliadača.
-    <div
-      className={
-        onPhoto && expanded
-          ? '-mx-2 rounded-xl bg-black/60 px-2 py-1.5 backdrop-blur-sm'
-          : undefined
-      }
-    >
+    <div className={rootClasses || undefined}>
       {wrapText ? wrapText(paragraph) : paragraph}
       {overflows ? (
         <button
@@ -266,6 +276,8 @@ export default function FeedPostCaption({
           aria-expanded={expanded}
           data-testid={`${testId}-toggle`}
           className={`mt-0.5 text-sm font-medium underline-offset-2 transition-colors hover:underline ${
+            fillParent ? 'shrink-0 self-start ' : ''
+          }${
             onPhoto
               ? 'text-white/80 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70'
               : 'text-gray-500 hover:text-purple-700 dark:text-gray-400 dark:hover:text-purple-300'

@@ -103,7 +103,7 @@ describe('pružná plocha náhľadu ponuky a portfólia (fillHeight)', () => {
     expect(ram().className).not.toContain('flex-col');
   });
 
-  it('zdieľaný príspevok ignoruje fillHeight: fotka ostáva 256 px a nič sa neobaľuje', () => {
+  it('zdieľaný príspevok s fotkou: plocha je pružná a obal karty aj rám sa rozpustia', () => {
     render(
       <SharedContentPreviewCard
         data={{ type: 'feed_post', title: '', caption: 'Pôvodný text', thumbnailUrl: THUMBNAIL }}
@@ -112,10 +112,28 @@ describe('pružná plocha náhľadu ponuky a portfólia (fillHeight)', () => {
     );
 
     const plocha = screen.getByTestId('feed-shared-card-media');
-    expect(plocha.className).toContain('h-64');
-    expect(plocha.className).not.toContain('flex-1');
-    // Obal `absolute inset-0` pribúda len pri pružnej ploche; fotka v zdieľanom príspevku ostáva priamo v ráme.
-    expect((plocha.firstElementChild as HTMLElement).className).not.toContain('absolute');
+    expect(plocha.className).toContain('min-h-32');
+    expect(plocha.className).toContain('flex-1');
+    expect(plocha.className).not.toContain('h-64');
+    // Obsah plochy vypĺňa rám absolútne, rovnako ako pri ponuke a portfóliu.
+    expect((plocha.firstElementChild as HTMLElement).className).toContain('absolute');
+    // Obal karty aj rám príspevku sú `contents`: texty a fotka sú súrodenci v bloku.
+    expect(screen.getByTestId('feed-shared-card').className).toBe('contents');
+    expect(screen.getByTestId('feed-shared-post-preview').className).toContain('contents');
+  });
+
+  it('zdieľaný príspevok bez fotky ignoruje fillHeight a nič sa neobaľuje', () => {
+    render(
+      <SharedContentPreviewCard
+        data={{ type: 'feed_post', title: '', caption: 'Pôvodný text', thumbnailUrl: null }}
+        fillHeight
+      />,
+    );
+
+    expect(screen.queryByTestId('feed-shared-card-media')).toBeNull();
     expect(screen.getByTestId('feed-shared-card').className).toBe('');
+    const ram = screen.getByTestId('feed-shared-post-preview');
+    expect(ram.className).toContain('space-y-2');
+    expect(ram.className).not.toContain('contents');
   });
 });

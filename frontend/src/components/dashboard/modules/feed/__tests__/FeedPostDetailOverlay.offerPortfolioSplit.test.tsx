@@ -317,12 +317,13 @@ describe('okno detailu: zdieľaná ponuka a portfólio v dvoch stĺpcoch', () =>
     expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
   });
 
-  it('zdieľaný príspevok s fotkou má plochu fotky 256 px', async () => {
+  it('zdieľaný príspevok s fotkou má pružnú plochu fotky (najmenej 128 px)', async () => {
     await otvorOkno(repost(true));
 
     const plocha = screen.getByTestId('feed-shared-card-media');
-    expect(plocha.className).toContain('h-64');
-    expect(plocha.className).not.toContain('flex-1');
+    expect(plocha.className).toContain('min-h-32');
+    expect(plocha.className).toContain('flex-1');
+    expect(plocha.className).not.toContain('h-64');
   });
 
   it('voľný príspevok s fotkou ostáva v dvojstĺpcovom rozložení', async () => {

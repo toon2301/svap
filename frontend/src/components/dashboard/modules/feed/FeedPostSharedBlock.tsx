@@ -15,6 +15,12 @@
  * médiami a riadkom akcií, a nič sa neobaľuje; pri zdieľanom obsahu v okne je jedinou pružnou časťou stĺpca. `fillHeight`
  * aj `fixedBlock` idú ako vlastnosti do toho istého výrazu v `className`. Keď nie je čo ukázať (voľný príspevok bez
  * označení), komponent vracia `null`.
+ *
+ * TEXT ZDIEĽAJÚCEHO V OKNE (ľavý stĺpec dvojstĺpcového okna): karta je hlavný obsah a text je jej komentár, preto má
+ * päť riadkov (`SPLIT_SHARED_CAPTION_LINES`) a po rozbalení nemá pevný strop (`fillParent`): vyplní zvyšok stĺpca,
+ * ustúpi karte, keď sa nezmestí (najmenej päť riadkov), a posúva sa len vo vlastnom rámčeku. Medzery medzi súrodencami
+ * dáva v ľavom stĺpci `gap-3` namiesto `space-y-3`: repost s fotkou rozpúšťa obal karty a rám (`display: contents`), na
+ * ktorých by sa vonkajšie okraje stratili. Mimo ľavého stĺpca ostáva všetko ako predtým.
  */
 
 import FeedPostCaption, {
@@ -47,6 +53,9 @@ type FeedPostSharedBlockProps = {
   t: (key: string, fallback?: string) => string;
 };
 
+/** Text zdieľajúceho nad kartou v dvojstĺpcovom okne: karta je hlavný obsah, text je jej komentár, preto kratší náhľad. */
+const SPLIT_SHARED_CAPTION_LINES = 5;
+
 export default function FeedPostSharedBlock({
   fillHeight,
   fixedBlock,
@@ -76,7 +85,14 @@ export default function FeedPostSharedBlock({
         text={caption}
         boundedExpansion={isDetail}
         expansionBound={fillHeight ? 'roomy' : 'compact'}
-        maxLines={isDetail ? DETAIL_CAPTION_LINES : CARD_CAPTION_LINES}
+        maxLines={
+          isDetail
+            ? fillHeight && inSplitColumn
+              ? SPLIT_SHARED_CAPTION_LINES
+              : DETAIL_CAPTION_LINES
+            : CARD_CAPTION_LINES
+        }
+        fillParent={fillHeight && inSplitColumn}
         collapseBlankLines
         onTextClick={
           opensMobileDetail ? () => setMobileDetailOpen(true) : undefined
@@ -86,7 +102,7 @@ export default function FeedPostSharedBlock({
 
   return (
     <div
-      className={`space-y-3 px-4 py-3 ${
+      className={`${fillHeight && inSplitColumn ? 'gap-3' : 'space-y-3'} px-4 py-3 ${
         // V okne detailu je náhľad JEDINÁ pružná časť stĺpca: keď sa
         // nezmestí, scrolluje sa on, nie karta. Bez toho by sa pri vyššom
         // náhľade (ponuka s fotkou) rozhýbala aj hlavička a riadok akcií –

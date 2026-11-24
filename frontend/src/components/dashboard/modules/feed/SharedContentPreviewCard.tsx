@@ -23,8 +23,11 @@
  *
  * PRUŽNÁ PLOCHA (`fillHeight`): v ľavom stĺpci dvojstĺpcového okna detailu je plocha náhľadu ponuky a portfólia
  * (fotka, náhrada aj ikona nedostupného zdroja) pružná: vyplní zvyšok stĺpca a nezmenší sa pod 8 rem (128 px),
- * rovnako ako médiová plocha príspevku s fotkou (R53, R68). Všade inde (feed, dialóg zdieľania, jednostĺpcové
- * okno) ostáva výška 256 px. Zdieľaný príspevok sa nemení.
+ * rovnako ako médiová plocha príspevku s fotkou (R53, R68). Platí aj pre zdieľaný príspevok, ale len keď má fotku;
+ * bez nej alebo so zlyhaným náhľadom ju `fillHeight` neovplyvní (nie je čo naťahovať). Repost s fotkou rozpúšťa obal
+ * karty aj rám (`display: contents`), aby text zdieľajúceho, meno pôvodného autora, pôvodný text a plocha fotky boli
+ * súrodenci jedného flex stĺpca bloku: pružné zmenšovanie funguje len medzi priamymi súrodencami, takže len tak texty
+ * ustúpia a blok sa neposúva. Všade inde (feed, dialóg zdieľania, jednostĺpcové okno) ostáva výška 256 px.
  */
 
 import { useState, type ReactNode } from 'react';
@@ -155,8 +158,11 @@ export default function SharedContentPreviewCard({
   const isOffer = data.type === 'offer';
   const unavailable = data.unavailable === true;
   const thumbnailFailed = Boolean(data.thumbnailUrl) && failedThumbnail === data.thumbnailUrl;
-  // Pružná plocha sa týka len ponuky a portfólia; zdieľaný príspevok ostáva bez zmeny.
-  const stretch = fillHeight && !isPost;
+  // Pružná plocha: ponuka a portfólio vždy, zdieľaný príspevok len vtedy, keď má fotku (bez nej nie je čo naťahovať).
+  const hasPhotoPlane = Boolean(data.thumbnailUrl) && !thumbnailFailed;
+  const stretch = fillHeight && (!isPost || hasPhotoPlane);
+  // Repost s fotkou: obal aj rám sa rozpustia, aby texty a fotka zdieľali jeden flex stĺpec bloku.
+  const flatten = stretch && isPost;
   const photoFrame = stretch ? PHOTO_FRAME_FILL : PHOTO_FRAME;
   // Pri pružnej ploche obsah vypĺňa rám absolútne, nezávisle od toho, ako prehliadač rátá percentá výšky vo flex položke.
   const fillContent = (node: ReactNode) =>
@@ -260,6 +266,8 @@ export default function SharedContentPreviewCard({
       text={caption}
       testId="feed-shared-caption"
       maxLines={CARD_CAPTION_LINES}
+      boundedExpansion={flatten}
+      fillParent={flatten}
       collapseBlankLines
       wrapText={
         isPost && onOpenPostPreview && !unavailable
@@ -328,7 +336,7 @@ export default function SharedContentPreviewCard({
     frame = (
       <div
         data-testid={unavailable ? 'feed-shared-unavailable' : 'feed-shared-post-preview'}
-        className={`space-y-2 ${mutedClass}`}
+        className={flatten ? `contents ${mutedClass}` : `space-y-2 ${mutedClass}`}
       >
         {/* Telo (nedostupný zdroj, názov, meta, cena) zdieľaný príspevok zvyčajne nemá. Zmiznutý zdroj nie je cieľ
             kliku – nie je kam ísť, preto sa v ňom text neobaľuje (viď `wrapText` v `captionNode`). */}
@@ -382,7 +390,7 @@ export default function SharedContentPreviewCard({
     <div
       data-testid="feed-shared-card"
       data-shared-type={data.type}
-      className={stretch ? 'flex flex-1 flex-col' : undefined}
+      className={stretch ? (flatten ? 'contents' : 'flex flex-1 flex-col') : undefined}
     >
       {/* Pôvodný vlastník stojí NAD kartou – obsah patrí jemu, nie tomu, kto
           ho zdieľa. Pri zdieľaní seba samého sa vynecháva: meno už nesie
@@ -390,7 +398,7 @@ export default function SharedContentPreviewCard({
       {data.owner && !hideOwner ? (
         <div
           data-testid="feed-shared-card-owner"
-          className="mb-2 flex items-center gap-2"
+          className={`${flatten ? '' : 'mb-2 '}flex items-center gap-2`}
         >
           <InitialsAvatar
             name={data.owner.displayName}
