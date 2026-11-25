@@ -482,3 +482,9 @@ DONE_PR_TABLE_CASTOCNE_K40 = [
      '`useFeedPostCardActions.ts`, `useFeedPostCounts.ts` a `useFeedPostMobileLayers.ts`; karta 590 → 493 riadkov, teda pod '
      'limitom 500; spolu s odrážkami v manuáli ručných testov; ručný test majiteľa bez nových nálezov; ostáva mobilný detail v K55)'),
 ]
+
+# Nálezy opravené v K59 a v kole 3c (25. 11. 2026) sú v `hotove_k59.py` (kvôli limitu 500 riadkov); pripájajú sa sem.
+from hotove_k59 import DONE_PR_TABLE_CASTOCNE_K59, DONE_SINCE_K59  # noqa: E402
+
+DONE_SINCE_K40.extend(DONE_SINCE_K59)
+DONE_PR_TABLE_CASTOCNE_K40.extend(DONE_PR_TABLE_CASTOCNE_K59)

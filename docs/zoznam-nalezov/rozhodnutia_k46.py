@@ -245,7 +245,7 @@ DECISIONS_K46 = [
                  'iPhone) neprešiel na 100 %: majiteľ nahlásil tri chyby, všetky v paneli komentárov nad otvorenou fotkou (pole je '
                  'pri klávesnici príliš vysoko: 375; hýbe sa fotka za panelom: 376; pod panelom je vidieť Nástenku: 377), v '
                  'detaile príspevku sa podľa neho neprejavila žiadna. Bod (5) sa teda v paneli nad fotkou nepodaril; oprava je urobená '
-                 'v kole 3c (R79; vetva 208, čaká na zlúčenie (PR #333) a ručný test majiteľa na iPhone).',
+                 'v kole 3c (R79; vetva 208, PR #333, zlúčené 25. 11. 2026); ručný test majiteľa na iPhone po nasadení prešiel, takže bod (5) platí aj v paneli nad fotkou.',
          datum='24. 11. 2026'),
     dict(id='R76', tema='Redizajn komentárov (K44): kód píše agent, nie kolega (výnimka z R67)',
          otazka='R67 (23. 11. 2026) určilo, že kód redizajnu píše kolega z presnej karty agenta a agent kontroluje; možnosť, že kód '
@@ -337,8 +337,9 @@ DECISIONS_K46 = [
                  'Minor, všetky opravené vo vetve), CI zelené. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone) neprešiel na 100 %: v '
                  'detaile príspevku je všetko v poriadku, v paneli komentárov nad otvorenou fotkou sú tri chyby (nálezy 375, 376 a '
                  '377). KOLO 3c: po zlúčení vetvy 207 (PR #331, 25. 11. 2026) dal majiteľ pokyn pustiť sa do práce; oprava 375 až 377 je '
-                 'urobená vo vetve 208 (píše agent, R76) a čaká na zlúčenie (PR #333) a ručný test majiteľa na iPhone; súbežne s ňou ide karta K59 '
-                 'kolegu (R80). Nález 370 sa zatvorí po úspešnom teste panela.',
+                 'urobená vo vetve 208 (píše agent, R76), zlúčená (PR #333, 25. 11. 2026 o 18:56 UTC) a ručný test majiteľa na iPhone prešiel bez '
+                 'nových nálezov; súbežne s ňou išla karta K59 '
+                 'kolegu (R80; zlúčená, PR #332). Nález 370 je tým hotový a redizajn komentárov (K44) je celý hotový.',
          datum='25. 11. 2026'),
     dict(id='R80', tema='Súbežná práca agenta a kolegu: výnimka z pravidla „v kóde pracuje len jeden“ pre kolo 3c agenta a kartu K59 '
                  'kolegu',
@@ -371,7 +372,9 @@ DECISIONS_K46 = [
                  'len manuál ručných testov (každý upravuje iné odrážky) a zoznam píše len agent (podrobnosti v odporúčaní; '
                  'doplnené 25. 11. 2026 po kontrole CodeRabbitu na PR #331); (d) výnimka platí len pre túto dvojicu prác: majiteľ '
                  '25. 11. 2026 po odovzdaní K59 potvrdil, že súbežná práca bola výnimka len na teraz a ďalej neplatí; po tejto '
-                 'dvojici prác pracuje v kóde opäť len jeden, kým majiteľ nepovie inak.',
+                 'dvojici prác pracuje v kóde opäť len jeden, kým majiteľ nepovie inak. '
+                 'STAV 25. 11. 2026: obe práce sú zlúčené (K59: PR #332, kolo 3c: PR #333) a ručné testy prebehli (K59 s jedným '
+                 'zvyškom, nález 362); výnimka tým skončila.',
          datum='25. 11. 2026'),
     dict(id='R81', tema='Po každej kontrole CodeRabbitu s pripomienkami agent odporučí, či treba ďalšiu kontrolu',
          otazka='CodeRabbit sa spúšťa na poslednom commite PR a plán dovoľuje jednu kontrolu za hodinu (README, krok „PR a '
