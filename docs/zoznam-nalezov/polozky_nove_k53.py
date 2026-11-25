@@ -53,11 +53,7 @@ NEW_ITEMS_K53 = [
               'API, tam má riadok ostať bez prekliku.',
          note='JASNÉ (po K55): požiadavka je úplná a príčina známa (neinteraktívny riadok), kolega ju overí a opraví; ak sa '
               'ukáže, že `shared_content.owner` nie je dostupný vo všetkých tokoch (nedostupný zdroj má `owner` `null`, vtedy '
-              'riadok ostáva bez prekliku; ak by bolo treba zásah do backendu), napíše krátku stranu a zastaví sa. NIE PRED K55: zmena riadku zmení dočasný odtlačok HTML karty (44 stavov; '
-              'stavy s reposterom, ponukou a portfóliom), ktorý sa počas delenia nikdy neaktualizuje (R45) a ktorý zmaže '
-              'až K55; mení sa `SharedContentPreviewCard.tsx` (355 riadkov) a `sharedContentCard.ts`, nie súbory nad 500 '
-              'riadkov. Ide po redizajne spolu s 357 až 361, lebo sa dotýka toho istého náhľadu (357 text pôvodného '
-              'príspevku, 344 natiahnutie fotky); ak majiteľ chce nález skôr, povie. Dôležité pri práci: avatar a meno sú '
+              'riadok ostáva bez prekliku; ak by bolo treba zásah do backendu), napíše krátku stranu a zastaví sa. STAV 25. 11. 2026: ide v dávke K59 (karta `karty/K59.md`, R80); K55 je hotová a dočasný odtlačok HTML karty je zmazaný, takže nič nebrzdí; mení sa `SharedContentPreviewCard.tsx` (439 riadkov) a `sharedContentCard.ts`, nie súbory nad 500 riadkov. Dôležité pri práci: avatar a meno sú '
               'samostatný ovládací prvok vedľa tlačidla textu náhľadu (tlačidlo v tlačidle je neplatné HTML), v okne '
               'detailu sa pred odchodom zatvára okno (`beforeNavigate`, ako pri hlavičke karty), meno sa nepodčiarkuje '
               '(rovnako ako 361). Dopad na E2E: žiadny špec v `frontend/e2e` nepoužíva `feed-shared-card-owner` '

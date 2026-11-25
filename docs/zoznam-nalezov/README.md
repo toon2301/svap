@@ -59,7 +59,7 @@ Podrobný denník položiek OW- / TEST- ostáva v `docs/testing/findings-registe
 Dohoda s majiteľom z 5. 11. 2026, upravená 6., 7. a 21. 11. 2026; platí, kým ju majiteľ nezmení.
 
 - **V kóde pracuje vždy len jeden:** agent, kolega alebo Codex, nikdy dvaja naraz. Ďalšia práca sa začne, až keď majiteľ potvrdí, že
-  predchádzajúca je úplne hotová. Výnimka R80 (25. 11. 2026): agent a kolega smú pracovať súčasne, ak sa ich súbory neprekrývajú (tentoraz kolo 3c agenta a karta K59 kolegu); či to platí aj ďalej, určí majiteľ.
+  predchádzajúca je úplne hotová. Výnimka R80 (25. 11. 2026): agent a kolega smeli pracovať súčasne, ak sa ich implementačné súbory neprekrývali (len tentoraz: kolo 3c agenta a karta K59 kolegu); majiteľ potvrdil, že ďalej neplatí.
 - **Postupne, jedna vec naraz** (majiteľ 21. 11. 2026, výslovne: toto treba rešpektovať): kolegovi ide vždy len jedna karta a ďalšia až po
   zlúčení predchádzajúcej; agent bez pokynu majiteľa nemapuje, nepripravuje ďalšie karty ani rekapituláciu či návrh vzhľadu dopredu a robí
   len to, o čo ho majiteľ práve požiadal.

@@ -346,19 +346,29 @@ DECISIONS_K46 = [
                 'dopredu. Majiteľ po ručnom teste kola 3b (25. 11. 2026; tri chyby v paneli komentárov nad fotkou, nálezy 375 až '
                 '377) požiadal, aby agent pripravil kolegovi prácu, ktorá sa neprekrýva s prácou agenta, lebo chce, aby agent už '
                 'teraz naplánoval aj svoj ďalší krok. Smú teda agent a kolega teraz pracovať súčasne?',
-         odporucanie='Áno, tentoraz a len pre dve práce, ktoré nemenia tie isté súbory: (1) kolo 3c agenta (oprava 375 až 377: '
-                     '`ImageLightbox.tsx`, `useFeedKeyboardViewport.ts`, `FeedPhotoViewer.tsx`, `FeedPhotoCommentsSheet.tsx`, '
+         odporucanie='Áno, tentoraz a len pre dve práce, ktoré nemenia tie isté implementačné súbory: (1) kolo 3c agenta (oprava 375 '
+                     'až 377: `ImageLightbox.tsx`, `useFeedKeyboardViewport.ts`, `FeedPhotoViewer.tsx`, `FeedPhotoCommentsSheet.tsx`, '
                      '`useFeedOverscrollLock.ts`, prípadne nové súbory a testy k nim) a (2) karta K59 kolegu (361 a 362: '
-                     '`FeedPostCardHeader.tsx`, `SharedContentPreviewCard.tsx`, `sharedContentCard.ts`, ich okolie a nové testy). '
-                     'Vetvy sú oddelené, každý si pred začiatkom aj pred odoslaním stiahne aktuálny `main` a ak sa jednému práca zlúči '
-                     'skôr, druhý ju zlúči do svojej vetvy; ak by sa niektorý súbor ukázal ako spoločný, kolega sa zastaví a napíše '
-                     'stranu a agent nič v jeho súboroch nemení. Ako trvalé pravidlo sa to nenavrhuje.',
+                     '`FeedPostCardHeader.tsx`, `SharedContentPreviewCard.tsx`, `sharedContentCard.ts`, `FeedPostSharedBlock.tsx`, '
+                     '`FeedPostMobileDetailContent.tsx` a nové testy). Zákaz prekrytia platí pre implementačné súbory '
+                     '(`frontend/src/**` a ich testy). Spoločná dokumentácia: (a) zoznam (`ZOZNAM.md`, `stav.py` a ostatné zdroje v '
+                     '`docs/zoznam-nalezov`) píše len agent a kolega ho nemení, takže tam k prekrytiu nedôjde; agent začne kolo 3c z '
+                     'čerstvého `main` po zlúčení vetvy 207 a `ZOZNAM.md` prebuduje (`build.py`) vo svojej vetve; (b) manuál ručných '
+                     'testov (`sablony/dymovy_test.md`) je spoločný, no každý upravuje inú časť: kolega len odrážky uvedené v karte '
+                     'K59 (zdieľaný obsah, hlavička karty a nová odrážka na konci kroku 9), agent odrážky o poli na komentár, paneli '
+                     'komentárov a ťahu prstom; ten, komu sa vetva zlúči neskôr, si zlúči `main`, v manuáli ponechá obe úpravy a '
+                     'zopakuje `build.py --check`. Vetvy sú oddelené a každý si pred začiatkom aj pred odoslaním stiahne aktuálny '
+                     '`main`; ak by sa niektorý implementačný súbor ukázal ako spoločný, kolega sa zastaví a napíše stranu a agent nič '
+                     'v jeho súboroch nemení. Ako trvalé pravidlo sa to nenavrhuje.',
          kedy='Rozhodnuté 25. 11. 2026 (pokyn majiteľa).',
          odpoved='Majiteľ 25. 11. 2026 (po ručnom teste kola 3b): pripraviť kolegovi prácu, ktorá sa neprekrýva s prácou agenta, a '
                  'agent si má aj teraz naplánovať ďalší krok; „ak rozumieš, pusti sa do práce“. Platí: (a) K59 (nálezy 361 a 362; '
-                 '`karty/K59.md`) je pripravená (otázka R78 (b) o K59 je tým splnená); (b) agent má naplánované kolo 3c (oprava '
-                 '375 až 377, vetva 208) a kód nezačína, kým majiteľ nedá pokyn; (c) súbory oboch prác sa neprekrývajú (zoznam v '
-                 'odporúčaní a v karte), čo je podmienka súbežnej práce; (d) výnimka platí pre túto dvojicu prác; či má platiť aj '
-                 'ďalej, určí majiteľ (agent sa opýta pri ďalšej karte).',
+                 '`karty/K59.md`) je pripravená (otázka R78 (b) o K59 je tým splnená) a majiteľ ju odovzdal kolegovi; (b) agent má '
+                 'naplánované kolo 3c (oprava 375 až 377, vetva 208) a kód nezačína, kým majiteľ nedá pokyn; (c) implementačné '
+                 'súbory oboch prác sa neprekrývajú (zoznam v odporúčaní a v karte), čo je podmienka súbežnej práce; spoločný je '
+                 'len manuál ručných testov (každý upravuje iné odrážky) a zoznam píše len agent (podrobnosti v odporúčaní; '
+                 'doplnené 25. 11. 2026 po kontrole CodeRabbitu na PR #331); (d) výnimka platí len pre túto dvojicu prác: majiteľ '
+                 '25. 11. 2026 po odovzdaní K59 potvrdil, že súbežná práca bola výnimka len na teraz a ďalej neplatí; po tejto '
+                 'dvojici prác pracuje v kóde opäť len jeden, kým majiteľ nepovie inak.',
          datum='25. 11. 2026'),
 ]

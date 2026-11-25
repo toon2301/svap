@@ -18,6 +18,26 @@ from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
     ('25. 11. 2026',
+      'Doplnok vetvy 207 (po kontrole CodeRabbitu na PR #331 a po odpovediach majiteľa z 25. 11. 2026; `main` ostáva '
+      '`a358303a`; PR vetvy 207 je #331). (1) Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) zelené. '
+      'CodeRabbit kontrolu dokončil (15:47 UTC), no inline komentáre sa kvôli výpadku GitHubu nezverejnili (tri '
+      'pripomienky stupňa Minor sú len v súhrnnom komentári; všetky sú oprávnené a opravené v tomto doplnku): (a) karta '
+      'K59 aj R80 zakazovali prekrytie súborov, no manuál ručných testov je spoločný (kolega upravuje svoje odrážky, '
+      'agent iné), takže by kontrola pred zlúčením odmietla povolenú zmenu: zákaz platí pre implementačné súbory, '
+      'zoznam píše len agent a manuál rieši ten, komu sa vetva zlúči neskôr (zlúči `main` a ponechá obe úpravy); (b) to '
+      'isté v R80 (postup pre spoločnú dokumentáciu); (c) poznámka k nálezu 362 ešte radila riešiť ho po redizajne a '
+      'bola v rozpore s K59: nahradená odkazom na K59 a R80. Codex review sa na ich strane nedokončil (zlyhal); '
+      'zopakuje ho komentár `@codex review`, ktorý píše majiteľ. (2) Odpovede majiteľa na otázky z plánu kola 3c: (a) '
+      'fotka (376) sa hýba len pri otvorenej klávesnici, bez nej nie; (b) Nástenka pod lištami (377) sa v detaile '
+      'príspevku nevidí, deje sa to len pri otvorenej klávesnici v paneli nad fotkou; (c) iOS 27.0.1. Nálezy 375 až 377 '
+      'sú doplnené; hypotéza zastaranej výšky z `visualViewport` (375) ostáva, pri 376 je po odpovedi '
+      'najpravdepodobnejšie oneskorené nasledovanie posunu viditeľnej plochy pri otvorenej klávesnici. (3) Majiteľ '
+      'odovzdal K59 kolegovi a potvrdil, že súbežná práca (R80) bola výnimka len na teraz: R80 a README sú upravené, po '
+      'tejto dvojici prác pracuje v kóde opäť len jeden. (4) Plán kola 3c sa nemení (čaká na pokyn majiteľa), len sa po '
+      'odpovediach spresnil: všetky tri chyby sú len pri otvorenej klávesnici v paneli nad fotkou a detail je v '
+      'poriadku, preto sa spolu s opravou navrhuje skrytá diagnostika hodnôt (`visualViewport`, poloha vrstvy a panela) '
+      'a porovnanie detailu s panelom nad fotkou. Dopad na E2E: žiadny.'),
+    ('25. 11. 2026',
       'Vetva 207 (z `main` `a358303a`, teda po PR #330; len zoznam a karta K59, žiadny kód; PR vetvy 207 ešte nie je '
       'otvorený; štvrtá vetva agenta po K58). (1) Zlúčené od vetvy 206: PR #330 (vetva 206, kolo 3b: pole na komentár a '
       'odpoveď na mobile podľa R75 a oprava nálezu 370; 25. 11. 2026 o 14:28 UTC, merge `a358303a`; osem commitov, 38 '

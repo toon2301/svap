@@ -122,72 +122,78 @@ NEW_ITEMS_K57 = [
     dict(n=375, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='panel komentárov nad fotkou na iPhone: po otvorení klávesnice je pole na komentár príliš vysoko, medzi ním a '
                 'klávesnicou je veľká prázdna medzera (vrstva je pripnutá na nižšiu výšku, než je viditeľná plocha)',
-         what='Hlási majiteľ 25. 11. 2026 po ručnom teste kola 3b (iPhone, Safari: nad klávesnicou je plávajúca lišta s adresou '
-              'stránky; vzhľad klávesnice zodpovedá najnovšiemu iOS, verziu overiť). V paneli komentárov nad otvorenou fotkou '
-              'sa po otvorení klávesnice pole na komentár posunie príliš vysoko a medzi poľom a klávesnicou je veľká prázdna '
-              'medzera: pole nestojí tesne nad klávesnicou (R75 bod 5). V bežnom detaile príspevku sa to neprejavilo. MERANIE Z '
-              'DVOCH FOTIEK majiteľa (agent, 25. 11. 2026; prevod 923 px = 393 pt, teda 2,35 px na bod; pomer výšky panela k '
-              'výške vrstvy vychádza na 0,78, čo je `h-[78%]` panela, takže rozmery sedia): vrstva prehliadača fotky '
-              '(`ImageLightbox`) začína 59 pt od vrchu obrazovky (pod stavovým riadkom) a na fotke 1 (po ťuku na „Odpovedať“) '
-              'končí v 450 pt, čo je presne horný okraj plávajúcej lišty s adresou (451 pt); na fotke 2 (prvé otvorenie '
-              'klávesnice, panel bez komentárov) končí už v 352 pt, teda o 99 pt vyššie než viditeľná plocha, pole stojí v 296 '
-              'až 336 pt a klávesnica začína v 551 pt (medzera asi 214 pt). Vrstva je teda pripnutá na výšku 391 pt (fotka 1) a '
-              '293 pt (fotka 2), kým viditeľná plocha nad plávajúcimi lištami má v oboch prípadoch asi 392 pt (lišty aj '
-              'klávesnica sú na oboch fotkách na rovnakom mieste). HYPOTÉZA (nie dôkaz): `useFeedKeyboardViewport.ts` berie '
-              'výšku vrstvy z `window.visualViewport.height` a prepočítava ju len pri udalostiach `resize` a `scroll`; iOS po '
-              'otvorení klávesnice doladí viditeľnú plochu aj neskôr (plávajúca lišta s adresou a lišta so šípkami sa usadia až '
-              'po zasunutí klávesnice) a nemusí poslať ďalšiu udalosť, takže vrstva ostane na zastaranej, nižšej hodnote (fotka '
-              '2); na fotke 1 sa výška dorovnala, čo mohla spôsobiť ďalšia udalosť (napríklad po prepnutí poľa na odpoveď). Prečo '
-              'sa to v detaile príspevku neprejavilo (rovnaký hák), nie je jasné a neskúmalo sa.',
+         what='Hlási majiteľ 25. 11. 2026 po ručnom teste kola 3b (iPhone s iOS 27.0.1 podľa majiteľa, Safari: nad klávesnicou '
+              'je plávajúca lišta s adresou stránky). V paneli komentárov nad otvorenou fotkou sa po otvorení klávesnice pole '
+              'na komentár posunie príliš vysoko a medzi poľom a klávesnicou je veľká prázdna medzera: pole nestojí tesne nad '
+              'klávesnicou (R75 bod 5). V bežnom detaile príspevku sa to neprejavilo. MERANIE Z DVOCH FOTIEK majiteľa (agent, '
+              '25. 11. 2026; prevod 923 px = 393 pt, teda 2,35 px na bod; pomer výšky panela k výške vrstvy vychádza na 0,78, '
+              'čo je `h-[78%]` panela, takže rozmery sedia): vrstva prehliadača fotky (`ImageLightbox`) začína 59 pt od vrchu '
+              'obrazovky (pod stavovým riadkom) a na fotke 1 (po ťuku na „Odpovedať“) končí v 450 pt, čo je presne horný okraj '
+              'plávajúcej lišty s adresou (451 pt); na fotke 2 (prvé otvorenie klávesnice, panel bez komentárov) končí už v 352 '
+              'pt, teda o 99 pt vyššie než viditeľná plocha, pole stojí v 296 až 336 pt a klávesnica začína v 551 pt (medzera '
+              'asi 214 pt). Vrstva je teda pripnutá na výšku 391 pt (fotka 1) a 293 pt (fotka 2), kým viditeľná plocha nad '
+              'plávajúcimi lištami má v oboch prípadoch asi 392 pt (lišty aj klávesnica sú na oboch fotkách na rovnakom '
+              'mieste). HYPOTÉZA (nie dôkaz): `useFeedKeyboardViewport.ts` berie výšku vrstvy z `window.visualViewport.height` '
+              'a prepočítava ju len pri udalostiach `resize` a `scroll`; iOS po otvorení klávesnice doladí viditeľnú plochu aj '
+              'neskôr (plávajúca lišta s adresou a lišta so šípkami sa usadia až po zasunutí klávesnice) a nemusí poslať ďalšiu '
+              'udalosť, takže vrstva ostane na zastaranej, nižšej hodnote (fotka 2); na fotke 1 sa výška dorovnala, čo mohla '
+              'spôsobiť ďalšia udalosť (napríklad po prepnutí poľa na odpoveď). Ďalšia neoverená možnosť: pri prvom otvorení '
+              'klávesnice sa mení aj spodná lišta Safari (veľká lišta so záložkami sa zmenší na lištu s adresou) a v detaile '
+              'príspevku mohla byť už zmenšená. Prečo sa to v detaile príspevku neprejavilo (rovnaký hák), nie je jasné a '
+              'neskúmalo sa.',
          note='V PLÁNE (kolo 3c podľa R79; opraví agent podľa R76 vo vetve 208 až po pokyne majiteľa; plán je v zázname z 25. '
               '11. 2026 v `stav.py`). Skutočný iPhone sa tu overiť nedá (agent má len Chromium a atrapu `visualViewport`), '
               'preto sa riešenie navrhuje tak, aby nezáviselo od jedinej hodnoty z `visualViewport`: (1) výška pripnutej vrstvy '
               'sa po získaní fokusu poľa prepočítava aspoň dve sekundy aj bez udalostí (časovač) a pri každej zmene fokusu, '
               'dotyku a veľkosti okna, takže sa nezasekne na zastaranej hodnote; (2) pod pripnutou časťou je pozadie na celú '
-              'plochu (nález 377). Ak by sa chyba po oprave opakovala, pomôže skrytá diagnostika hodnôt na iPhone (len na '
-              'vyžiadanie). Odhad: stredný · M.',
+              'plochu (nález 377). Spolu s opravou príde skrytá diagnostika hodnôt na iPhone (zapína sa len parametrom v '
+              'adrese), aby majiteľ vedel jedným testom poslať skutočné čísla z detailu aj z panela nad fotkou. Odhad: stredný '
+              '· M.',
          dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa a dve fotky), meranie agenta z fotiek'),
     dict(n=376, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
-         kratko='panel komentárov nad fotkou na iPhone: pri ťahu prstom hore a dole sa hýbe aj fotka za panelom (pri krátkych aj '
-                'dlhých komentároch); má sa hýbať nanajvýš zoznam komentárov',
+         kratko='panel komentárov nad fotkou na iPhone: pri ťahu prstom hore a dole sa pri otvorenej klávesnici hýbe aj fotka za '
+                'panelom (pri krátkych aj dlhých komentároch); má sa hýbať nanajvýš zoznam komentárov',
          what='Hlási majiteľ 25. 11. 2026 po ručnom teste kola 3b (iPhone): pri ťahu prstom hore a dole v paneli komentárov nad '
-              'otvorenou fotkou sa pohybuje aj fotka za panelom; opakovane pri krátkych aj dlhých komentároch. Očakávanie '
-              'majiteľa: pri krátkych komentároch, ktoré sa celé zmestia na obrazovku, sa nemá hýbať nič; pri dlhých sa má '
-              'posúvať iba zoznam komentárov, nie fotka na pozadí. V bežnom detaile príspevku sa to neprejavilo. Neznáme (treba '
-              'sa opýtať majiteľa): či bola pri tom klávesnica otvorená a či sa hýbe len fotka, alebo celá vrstva s panelom a '
-              'poľom. Z kódu: panel (`FeedPhotoCommentsSheet.tsx`) je súrodenec rámu s fotkou v tej istej vrstve '
-              '`ImageLightbox` (`fixed inset-0`, portál do `body`) a ťah po ňom v kóde fotku nijako neposúva (zoznam komentárov '
-              'má `overscroll-contain`, `useFeedOverscrollLock.ts` dáva `html` a `body` len `overscroll-behavior: none` a '
-              'dotykové obsluhy rámu fotky len rozpoznávajú vodorovné prepnutie fotky). Fotka sa teda môže hýbať len preto, že '
-              'sa hýbe celá vrstva: (a) pri otvorenej klávesnici iPhone posúva viditeľnú plochu (`visualViewport.offsetTop`) a '
-              'vrstva sa k nej dorovnáva cez `top` až po udalosti, teda s oneskorením; (b) pri ťahu mimo zoznamu (hlavička, '
-              'pole, krátky zoznam) sa ťah pošle stránke a Safari mení výšku plochy (lišty sa zasúvajú a vysúvajú), čo vrstva s '
-              '`inset-0` sleduje. Obe sú hypotézy, nie dôkaz.',
-         note='V PLÁNE (kolo 3c; opraví agent po pokyne majiteľa). Príčina nie je potvrdená a rozhodne sa po odpovediach '
-              'majiteľa: (a) hýbe sa fotka aj pri zatvorenej klávesnici, alebo len pri otvorenej?; (b) hýbe sa len fotka, alebo '
-              'celá vrstva spolu s panelom a poľom? Možné opravy: mimo zoznamu komentárov vypnúť posun gestom (`touch-action: '
-              'none` na ráme fotky, v hlavičke a pri poli; zoznam komentárov `touch-action: pan-y` s `overscroll-behavior: '
-              'contain`); počas ťahu nenasledovať posun viditeľnej plochy (pripnutie sa pri dotyku zmrazí); zámok posunu '
-              'stránky, ktorý funguje aj pri pravidlách `html, body` (nález 374). Odhad: stredný · M.',
-         dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa), čítanie kódu agentom'),
+              'otvorenou fotkou sa pohybuje aj fotka za panelom; opakovane pri krátkych aj dlhých komentároch. ODPOVEĎ MAJITEĽA '
+              '(25. 11. 2026): fotka sa hýbe len pri otvorenej klávesnici, bez nej nie. Očakávanie majiteľa: pri krátkych '
+              'komentároch, ktoré sa celé zmestia na obrazovku, sa nemá hýbať nič; pri dlhých sa má posúvať iba zoznam '
+              'komentárov, nie fotka na pozadí. V bežnom detaile príspevku sa to neprejavilo. Neznáme: či sa hýbe len fotka, '
+              'alebo celá vrstva s panelom a poľom. Z kódu: panel (`FeedPhotoCommentsSheet.tsx`) je súrodenec rámu s fotkou v '
+              'tej istej vrstve `ImageLightbox` (`fixed inset-0`, portál do `body`) a ťah po ňom v kóde fotku nijako neposúva '
+              '(zoznam komentárov má `overscroll-contain`, `useFeedOverscrollLock.ts` dáva `html` a `body` len '
+              '`overscroll-behavior: none` a dotykové obsluhy rámu fotky len rozpoznávajú vodorovné prepnutie fotky). Fotka sa '
+              'teda môže hýbať len preto, že sa hýbe celá vrstva. HYPOTÉZA (nie dôkaz; po odpovedi majiteľa '
+              'najpravdepodobnejšia): pri otvorenej klávesnici je rozloženie stránky vyššie než viditeľná plocha, a preto '
+              'iPhone dovolí viditeľnú plochu ťahom posúvať (`visualViewport.offsetTop` sa mení); `useFeedKeyboardViewport.ts` '
+              'posúva vrstvu za ňou cez `top` až po udalosti, teda s oneskorením, a vrstva (s fotkou, panelom aj poľom) sa pred '
+              'očami kýve. Bez klávesnice sa viditeľná plocha posúvať nedá, čo sedí s odpoveďou majiteľa; hypotéza o zmene '
+              'výšky plochy lištami Safari bez klávesnice je tým oslabená.',
+         note='V PLÁNE (kolo 3c; opraví agent po pokyne majiteľa). Zostáva neznáme len to, čo sa presne hýbe (len fotka, alebo '
+              'aj panel a pole); upresní to diagnostika alebo ďalšia správa majiteľa. Možné opravy: počas dotyku (od '
+              '`touchstart` po `touchend` a krátko po ňom) sa pripnutie nenasleduje, takže sa vrstva nekýva; mimo zoznamu '
+              'komentárov vypnúť posun gestom (`touch-action: none` na ráme fotky, v hlavičke a pri poli; zoznam komentárov '
+              '`touch-action: pan-y` s `overscroll-behavior: contain`); zámok posunu stránky, ktorý funguje aj pri pravidlách '
+              '`html, body` (nález 374). Odhad: stredný · M.',
+         dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa a odpovede), čítanie kódu agentom'),
     dict(n=377, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
          kratko='panel komentárov nad fotkou na iPhone: pri otvorenej klávesnici je v oblasti líšt nad klávesnicou (lišta so '
                 'šípkami a fajkou, plávajúca lišta s adresou) vidieť obsah Nástenky; vrstva s fotkou ho má prekrývať',
          what='Hlási majiteľ 25. 11. 2026 po ručnom teste kola 3b (iPhone): pri otvorenej klávesnici a poli prepnutom na '
               'odpoveď je v oblasti systémovej lišty iPhonu (šípky a potvrdzovacia fajka) vidieť obsah Nástenky vrátane ikon '
               'pôvodného príspevku, hoci ho má prekrývať vrstva prehliadača fotky s panelom komentárov. V bežnom detaile '
-              'príspevku sa to neprejavilo (osobitne sa nesledoval pás nad klávesnicou). FOTKA 1 (meranie agenta z 25. 11. '
-              '2026, prevod 923 px = 393 pt, teda 2,35 px na bod; pomer výšky panela k výške vrstvy vychádza na 0,78, čo je '
-              '`h-[78%]` panela, takže rozmery sedia): vrstva končí v 450 pt, čo je horný okraj plávajúcej lišty s adresou; '
-              'odtiaľ až po klávesnicu (551 pt) je cez priesvitné lišty vidieť stránku Nástenky (karta s ikonami lajku, '
-              'komentárov a zdieľania a riadok „… zdieľa príspevok ďalej“), lebo pod pripnutou vrstvou nie je nič, čo by ten '
-              'pás zakrylo. PRÍČINA (hypotéza z kódu a fotky): `useFeedKeyboardViewport.ts` pripne celú vrstvu aj s jej čiernym '
-              'pozadím (`bg-black/95`) na `visualViewport`, čiže na plochu nad všetkými lištami iOS; lišty sú priesvitné a '
-              'ležia nad stránkou, ktorá pod nimi pokračuje. Požiadavka majiteľa: Nástenka nemá byť pod panelom vidieť.',
+              'príspevku sa to neprejavilo; ODPOVEĎ MAJITEĽA (25. 11. 2026): deje sa to len pri otvorenej klávesnici v paneli '
+              'komentárov nad fotkou, v detaile príspevku nie. FOTKA 1 (meranie agenta z 25. 11. 2026, prevod 923 px = 393 pt, '
+              'teda 2,35 px na bod; pomer výšky panela k výške vrstvy vychádza na 0,78, čo je `h-[78%]` panela, takže rozmery '
+              'sedia): vrstva končí v 450 pt, čo je horný okraj plávajúcej lišty s adresou; odtiaľ až po klávesnicu (551 pt) je '
+              'cez priesvitné lišty vidieť stránku Nástenky (karta s ikonami lajku, komentárov a zdieľania a riadok „… zdieľa '
+              'príspevok ďalej“), lebo pod pripnutou vrstvou nie je nič, čo by ten pás zakrylo. PRÍČINA (hypotéza z kódu a '
+              'fotky): `useFeedKeyboardViewport.ts` pripne celú vrstvu aj s jej čiernym pozadím (`bg-black/95`) na '
+              '`visualViewport`, čiže na plochu nad všetkými lištami iOS; lišty sú priesvitné a ležia nad stránkou, ktorá pod '
+              'nimi pokračuje. Požiadavka majiteľa: Nástenka nemá byť pod panelom vidieť.',
          note='V PLÁNE (kolo 3c; opraví agent po pokyne majiteľa): čierne pozadie vrstvy prehliadača fotky sa oddelí od '
               'pripnutého obsahu a pokryje celú plochu stránky aj pod lištami (nová voliteľná vlastnosť `ImageLightbox`; vzhľad '
               'sa nemení, pozadie je dnes tiež čierne; pripnutý ostane len obsah, teda hlavička, fotka a panel). Detail '
-              'príspevku má plné pozadie (`bg-white`, `dark:bg-[#0f0f10]`) pripnuté na rovnakú výšku, takže pod lištami nemusí '
-              'mať pás pokrytý o nič lepšie; overí sa podľa odpovede majiteľa (otázka v správe). Odhad: nízky · S.',
-         dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa a dve fotky), meranie agenta z fotiek'),
+              'príspevku sa nemení: majiteľ potvrdil, že sa tam jav nevidí; prečo sa detail správa inak (rovnaký hák pripnutia, '
+              'nepriehľadné pozadie), ukáže diagnostika z nálezu 375. Odhad: nízky · S.',
+         dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa, odpovede a dve fotky), meranie agenta z fotiek'),
 ]
