@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od PR #297 (19. 11. 2026): `DONE_SINCE_K40` (342 a 351 v K43, 341 v K31, 333 v K55, 344 a 363 v K57 a 357, 364, 365, 366 a 367 v K58).
+"""Nálezy opravené od PR #297 (19. 11. 2026): `DONE_SINCE_K40` (342 a 351 v K43, 341 v K31, 333 v K55, 344 a 363 v K57 a 357, 364, 365, 366 a 367 v K58 a 373 vo vetve 204, PR #328).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_k20.py` má 481 riadkov); `hotove.py` ich pripája do `DONE_SINCE`. Opravený
 nález sa odstráni z `NEW_ITEMS` a pridá sa sem: dict(n=…, vetva='K43', pr='#298', zlucene=True, text='HOTOVÉ …').
@@ -344,7 +344,7 @@ DONE_SINCE_K40 = [
               'bajte rovnaké; zásahy 12 z 12 zachytených (M1 až M12 na zlúčenom kóde; M9 s hodnotou 2 bola ekvivalentná, lebo '
               '`CLAMP_CLASSES` pozná len 3, 5 a 10, a po zopakovaní s hodnotou 5 je zachytená). RUČNÝ TEST MAJITEĽA (24. 11. 2026 po '
               'nasadení): prešiel s jednou výhradou: počty riadkov „Viac“ v detaile (10 riadkov) sú vysoké (rozhodnutie R77, nález 373; '
-              'opravené vo vetve 204); pri teste našiel aj nálezy 371 a 372. Dopad na E2E: žiadny zásah do `frontend/e2e/**` a podľa karty '
+              'opravené vo vetve 204, PR #328); pri teste našiel aj nálezy 371 a 372. Dopad na E2E: žiadny zásah do `frontend/e2e/**` a podľa karty '
               'žiadny špec nepadne (E2E nepoužívajú `data-testid` textu príspevku ani prepínač fotoprehliadača); kontrola rozloženia '
               'od Codexa po nasadení: okno len s textom je od K58 dvojstĺpcové (864 px, nie 576 px) a `feed-post-overlay-split` je aj '
               'pri texte; pri textovom príspevku s aspoň štyrmi komentármi má zoznam komentárov vlastný posun a pole „Napíš '
@@ -385,6 +385,34 @@ DONE_SINCE_K40 = [
               '`FeedPostDetailOverlay.textOnlyLive.test.tsx` (346), `FeedPostCardCaption.test.tsx` (251), '
               '`FeedPostSharedBlock.textOnly.test.tsx` (302) a `FeedDetailTextOnlyContext.test.tsx` (57); zásahy M3, M5, M6, M7 a M12 '
               'padajú. Mení R53 (b) a R63. KONTROLA AGENTA a ručný test majiteľa: pozri 365 (rovnaká dávka).'),
+    dict(n=373, vetva='204', pr='#328', zlucene=True,
+         text='HOTOVÉ (vetva 204, PR #328, zlúčené 25. 11. 2026 o 06:44 UTC, merge `f0d4e355`; tri commity: kód a testy '
+              '`9f0e0eb7`, zápis do zoznamu `49286b75` a manuál ručných testov `8ea5d0ab`; 25 súborov, +910 a −108 riadkov: 8 '
+              'produkčných súborov, 9 súborov testov (2 nové a 7 upravených) a 8 súborov dokumentácie; opravil ho agent, nie '
+              'kolega, lebo je to malá zmena a majiteľ ju zadal agentovi). PRIANIE (R77, majiteľ pri ručnom teste K58 24. 11. '
+              '2026): desať riadkov pred „Viac“ v otvorenom detaile je veľa; pri fotke, portfóliu a ponuke má byť „Viac“ od 6. '
+              'riadku (5 riadkov) a pri prezdieľanom príspevku len s textom na počítači má mať text zdieľajúceho 10 riadkov a '
+              'pôvodný text 5. Miesta, ktoré nespomenul, určil v R77: mobilný detail 5 riadkov pri fotke, ponuke, portfóliu a '
+              'náhľade zdieľaného obsahu a 10 pri príspevku len s textom; repost s fotkou v okne na počítači bez zmeny (5 a 3); '
+              'voľný príspevok len s textom v okne na počítači bez zmeny (celý); karta na Nástenke a prehliadač fotky bez zmeny '
+              '(3). OPRAVA: nová konštanta `DETAIL_MEDIA_CAPTION_LINES` (5) vo `FeedPostCaption.tsx`; `FeedPostCardCaption.tsx` '
+              'dáva textu voľného príspevku v ľavom stĺpci dvojstĺpcového okna 5 riadkov; `FeedPostSharedBlock.tsx` dáva textu '
+              'zdieľajúceho v okne len s textom 10 riadkov (predtým celý); `SharedContentPreviewCard.tsx` dáva pôvodnému textu '
+              'v okne len s textom 5 riadkov (predtým celý); `FeedPostMobileDetailContent.tsx` dáva textu 5 riadkov pri fotke '
+              'alebo náhľade zdieľaného obsahu a inak 10 (predtým vždy 10); `FeedDetailTextOnlyContext.tsx`, '
+              '`FeedPostDetailOverlay.tsx` a `FeedPostDetailSplitLayout.tsx` majú len komentáre. Bez zmeny ostáva jednostĺpcové '
+              'okno pod 1 024 px (10 riadkov), karta, prehliadač fotky a text zdieľajúceho s fotkou v okne (5); žiadne nové '
+              'texty ani preklady, `FeedPostCard.tsx` sa nemenil a všetky zmenené produkčné súbory sú pod 500 riadkov. OVERENIE '
+              '(podľa výsledku): `tsc` a ESLint čisté; desať existujúcich testov upravených na nové počty a dva nové súbory '
+              '(`FeedPostDetailOverlay.captionLinesR77.test.tsx` a `FeedPostMobileDetail.captionLinesMedia.test.tsx`, 22 testov '
+              'so slovenskými názvami; na kóde pred zmenou ich padá 10 a 12 ostáva zelených, tie kontrolujú nezmenené miesta); '
+              'celý Jest 669 sád a 9 871 testov (pred zmenou 667 a 9 849), žiadny pád; zásahy do kódu 19 z 19 zachytených; '
+              'skutočný komponent `FeedPostCaption` v reálnom Chromiu (šírky 452 a 340 px): „Viac“ naskočí pri troch riadkoch '
+              'od 4. riadku, pri piatich od 6. a pri desiatich od 11. KONTROLA AGENTA (25. 11. 2026, z GitHubu): CI (`checks`, '
+              '`backend-postgres`) zelené, CodeRabbit bez pripomienok ku kódu (riziko zlúčenia „Minimal“; jedine k názvu PR '
+              '„204“ poznamenal, že je len číslo vetvy), Codex bez veľkých pripomienok, žiadne recenzie ani vlákna. RUČNÝ TEST '
+              'MAJITEĽA po nasadení: zatiaľ nepotvrdil (kroky sú v odrážke o počte riadkov textu v manuáli ručných testov). '
+              'Dopad na E2E: žiadny (špecy nepoužívajú `data-testid` textu príspevku ani prepínač a ich texty sú krátke).'),
 ]
 
 # Zlúčené PR, v ktorých nie je hotový celý nález (len časť otvoreného nálezu alebo nález nemá číslo); `hotove.py` ich pripája do

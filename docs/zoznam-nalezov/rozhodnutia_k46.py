@@ -299,6 +299,28 @@ DECISIONS_K46 = [
          kedy='Rozhodnuté 24. 11. 2026.',
          odpoved='Majiteľ 24. 11. 2026: „áno 343 urob v mojej vetve a K59 nemusíš ešte chystať“. Platí: (a) nález 343 (úchytka 40×6 px '
                  'podľa R55 a obrázka `navrhy/mobil-uchytka.png`) robí agent vo vetve K44 ako samostatný krok; dávka K33 zaniká; (b) K59 '
-                 '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie.',
+                 '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie. Nález 343 je urobený vo vetve 205 (kolo 3a '
+                 'podľa R79; čaká na PR).',
          datum='24. 11. 2026'),
+    dict(id='R79', tema='Redizajn komentárov (K44) ide v dvoch kolách: 3a plochý vzhľad s nálezmi 343 a 369 (vetva 205), 3b pole na '
+                 'komentár a odpoveď na mobile s nálezom 370 až po ručnom teste kola 3a',
+         otazka='K44 (R76) obsahuje dve rôzne práce. (1) Plochý vzhľad komentárov podľa R52: zmena tried a rozloženia v '
+                '`FeedCommentItem.tsx`, `FeedCommentLikeButton.tsx`, `FeedPostComments.tsx` a dvoch kostrách načítania, na '
+                'počítači, na mobile aj v paneli nad fotkou, spolu s malými nálezmi 343 (úchytka panela) a 369 (vodorovné '
+                'posúvanie detailu s fotkou). (2) Pole na komentár a odpoveď na mobile podľa R75: zmena správania (jedno pole pre '
+                'komentár aj odpoveď, riadok „Odpovedáš: Meno“, koncept, posun na novú odpoveď, pole nad klávesnicou) a nález 370 '
+                '(pole sa na iPhone hýbe; príčina nepotvrdená). Urobiť všetko naraz, alebo v dvoch kolách? Majiteľ sa pýtal, či '
+                'delenie zníži riziko chýb, a dodal, že mu dlhé testovanie nevadí.',
+         odporucanie='V dvoch kolách. Kolo 3a mení len vzhľad (triedy a rozloženie) a dá sa overiť meraním v prehliadači proti '
+                      'schváleným obrázkom aj testami tried. Kolo 3b mení správanie a stav poľa, príčinu 370 nepozná a bez ručného '
+                      'testu majiteľa na iPhone sa overiť nedá. V jednej vetve by chyba v správaní poľa zablokovala aj hotový vzhľad a '
+                      'pri chybe v ručnom teste by nebolo jasné, ktorá časť ju spôsobila.',
+         kedy='Rozhodnuté 25. 11. 2026.',
+         odpoved='Majiteľ 25. 11. 2026: „Jasne začni. Dávaj si pozor na chyby“ (po odporúčaní rozdeliť). Platí: (a) kolo 3a (vetva '
+                 '205): plochý vzhľad komentárov podľa R52 na počítači, na mobile aj v paneli nad fotkou, nález 343 (úchytka 40×6 '
+                 'px, R55 a R78) a nález 369 (vodorovné posúvanie detailu s fotkou); (b) kolo 3b: pole na komentár a odpoveď na '
+                 'mobile podľa R75 a nález 370 sa začnú až po ručnom teste majiteľa po kole 3a (nález 370 si vyžaduje test na '
+                 'iPhone); (c) ďalšie kolá, tagy (372, 359, 368 a skupina 8 v 261; najprv návrh vzhľadu, R49) a nález 371, sa '
+                 'nezačínajú, kým majiteľ nedá pokyn.',
+         datum='25. 11. 2026'),
 ]

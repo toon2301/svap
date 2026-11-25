@@ -136,7 +136,11 @@ export default function FeedPostMobileDetailContent({
       ) : null}
 
       {hasPhoto ? (
-        <div className="-mx-4 pb-3" data-testid="feed-mobile-detail-photo">
+        // `-mr-1` ruší pravé odsadenie `pr-1` posuvného boxu so zoznamom (`FeedPostComments.tsx`), takže blok fotky sedí presne
+        // v ňom a box sa nedá posúvať vodorovne (nález 369). Predtým tu bolo `-mx-4`: blok bol o 12 px širší než box, ten ho
+        // orezával na oboch stranách (fotka ostávala o 16 px od okrajov obrazovky) a vpravo sa dal posúvať. Viditeľná šírka
+        // fotky ostala rovnaká ako predtým.
+        <div className="-mr-1 pb-3" data-testid="feed-mobile-detail-photo">
           {/* Bez `onPhotoClick`: ťuk otvorí pôvodný fullscreen prehliadač
               (`ImageLightbox`) priamo z karuselu – tá istá cesta, aká platí
               vnútri okna detailu na desktope. */}

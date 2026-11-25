@@ -8,6 +8,12 @@
  * lajknúť tiež), revert + toast pri zlyhaní a ref guard proti dvojkliku.
  * Stav si drží komponent sám, takže preklikanie jedného komentára
  * neprerenderuje celý zoznam.
+ *
+ * VZHĽAD (R52, R51): číslo pri srdiečku je len text, už nie tlačidlo. Zoznam lajkujúcich otvára bublinka s plným
+ * fialovým srdiečkom (bez čísla), ktorá sa ukáže len pri aspoň jednom lajku, aj keď ho dal niekto iný. Bublinka je v
+ * riadku akcií úplne vpravo (`order-last ml-auto`), v osi s košom hore; komponent preto vracia fragment, aby boli
+ * srdiečko a bublinka priamymi potomkami riadku akcií v `FeedCommentItem`. Farba srdiečka v bublinke sa nemení podľa
+ * toho, či lajk dal prihlásený používateľ.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -83,7 +89,7 @@ export default function FeedCommentLikeButton({
       aria-label={`${label}: ${likesCount}`}
       aria-pressed={isLiked}
       title={label}
-      className={`inline-flex shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+      className={`inline-flex min-h-0 shrink-0 items-center rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
         isLiked
           ? 'text-purple-600 dark:text-purple-300'
           : 'text-gray-400 dark:text-gray-500'
@@ -102,27 +108,44 @@ export default function FeedCommentLikeButton({
     </button>
   );
 
-  // Počet je SAMOSTATNÉ tlačidlo (otvára zoznam) – vnorené tlačidlo v tlačidle
-  // by bolo neplatné HTML. Pri nule ostáva úplne skrytý, takže nie je čo
-  // otvárať a prázdny dialóg nevznikne.
+  // Počet je len text: zoznam lajkujúcich otvára bublinka vpravo v riadku (R52). Pri nule sa nekreslí ani počet, ani
+  // bublinka, takže nie je čo otvárať a prázdny dialóg nevznikne.
   return (
-    // gap-0.5 (menšie než pri príspevku, lebo aj celý prvok je menší) drží
-    // srdiečko a číslo opticky oddelené ako dva samostatné ciele kliku.
-    <span className="-m-1 inline-flex items-center gap-0.5">
-      {toggle}
+    <>
+      {/* gap-0.5 (menšie než pri príspevku, lebo aj celý prvok je menší) drží
+          srdiečko a číslo opticky pokope. */}
+      <span className="-m-1 inline-flex items-center gap-0.5">
+        {toggle}
+        {likesCount > 0 ? (
+          <span
+            data-testid={`feed-comment-like-count-${comment.id}`}
+            className="px-1 text-xs tabular-nums text-gray-400 dark:text-gray-500"
+          >
+            {likesCount}
+          </span>
+        ) : null}
+      </span>
+
       {likesCount > 0 ? (
+        // Dotykový cieľ je 32 px (`h-8 w-8`), viditeľná bublinka 24 px; záporné zvislé okraje držia výšku riadku akcií, takže
+        // sa riadok pri prvom lajku nepohne. Bublinka v svetlom režime: výplň (237, 233, 254), okraj (221, 214, 254),
+        // srdiečko (147, 51, 234); v tmavom: výplň (52, 55, 64), srdiečko (217, 179, 254) (R51).
         <button
           type="button"
           onClick={() => setLikersOpen(true)}
-          data-testid={`feed-comment-like-count-${comment.id}`}
+          data-testid={`feed-comment-like-bubble-${comment.id}`}
           aria-label={`${t('feed.likersTitle', 'Páči sa im to')}: ${likesCount}`}
           title={t('feed.likersTitle', 'Páči sa im to')}
-          // Rovnaký princíp ako pri lajku príspevku: farba nesleduje stav
-          // lajku, takže sfialovené srdiečko a neutrálne číslo sú viditeľne
-          // dve veci. Hover pridá podčiarknutie a fialovú.
-          className="rounded-full px-1 py-1.5 text-xs tabular-nums text-gray-400 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-purple-300"
+          className="order-last -my-1 ml-auto inline-flex h-8 min-h-0 w-8 shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
         >
-          {likesCount}
+          <span
+            aria-hidden="true"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-violet-200 bg-violet-100 text-purple-600 dark:border-transparent dark:bg-[#343740] dark:text-purple-300"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </span>
         </button>
       ) : null}
 
@@ -132,6 +155,6 @@ export default function FeedCommentLikeButton({
         postId={postId}
         commentId={comment.id}
       />
-    </span>
+    </>
   );
 }

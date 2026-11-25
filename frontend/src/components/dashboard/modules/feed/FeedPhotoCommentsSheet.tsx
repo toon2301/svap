@@ -5,7 +5,7 @@
  *
  * Zaberá väčšinu obrazovky, hore ale nechá fotku aj hlavičku „vykúkať", takže
  * je stále vidieť, ku ktorému príspevku komentáre patria. Zatvára sa
- * potiahnutím nadol alebo úchytkou hore.
+ * potiahnutím nadol alebo úchytkou hore (tenká úchytka 40×6 px s neviditeľnou dotykovou plochou, R55).
  *
  * ZOZNAM SÁM NEROBÍ NIČ: obsah je `FeedPostComments` – ten istý komponent ako
  * na karte a v okne detailu, takže načítavanie, polling, donačítavanie pri
@@ -97,12 +97,15 @@ export default function FeedPhotoCommentsSheet({
         onTouchCancel={handleTouchCancel}
         className="shrink-0 cursor-grab px-4 pb-1 pt-2"
       >
+        {/* `min-h-0`: globálne `button { min-height: 36px }` by tenkú úchytku 40×6 px natiahlo na sivý ovál 40×36 px a
+            odtlačilo nadpis nižšie (nález 343, R55). Dotykovú plochu (asi 96×44 px) dáva neviditeľný prvok `after`,
+            ktorý začína na okraji panela a siaha pod úchytku. */}
         <button
           type="button"
           onClick={onClose}
           data-testid="feed-photo-comments-handle"
           aria-label={t('feed.commentsClose', 'Zavrieť komentáre')}
-          className="mx-auto block h-1.5 w-10 rounded-full bg-white/35 transition-colors hover:bg-white/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          className="relative mx-auto block h-1.5 min-h-0 w-10 rounded-full bg-white/35 transition-colors after:absolute after:-top-2 after:left-1/2 after:h-11 after:w-24 after:-translate-x-1/2 after:content-[''] hover:bg-white/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         />
         <h2 className="mt-2 text-sm font-semibold text-white">
           {t('feed.comments', 'Komentáre')}
