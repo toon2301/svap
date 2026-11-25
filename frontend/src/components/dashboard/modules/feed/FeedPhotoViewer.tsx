@@ -34,6 +34,7 @@ import {
   useFeedKeyboardViewport,
 } from './useFeedKeyboardViewport';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
+import FeedKeyboardDiagnostics from './FeedKeyboardDiagnostics';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPhotoCommentsSheet from './FeedPhotoCommentsSheet';
 import FeedPhotoViewerChrome from './FeedPhotoViewerChrome';
@@ -203,6 +204,13 @@ export default function FeedPhotoViewer({
             />
           </>
         }
+      />
+
+      {/* Skrytá diagnostika (nálezy 375 až 377): bez zapnutia nevykreslí nič. */}
+      <FeedKeyboardDiagnostics
+        label="panel"
+        layerTestId="feed-photo-viewer"
+        panelTestId="feed-photo-comments-sheet"
       />
 
       <FeedLikersDialog

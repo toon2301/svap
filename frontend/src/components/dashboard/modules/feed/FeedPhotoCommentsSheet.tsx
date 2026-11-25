@@ -22,6 +22,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FeedPostComments from './FeedPostComments';
+import { toggleKeyboardDiagnostics } from './feedKeyboardDiagnostics';
+import { useFeedLongPress } from './useFeedLongPress';
 import { useFeedOverscrollLock } from './useFeedOverscrollLock';
 
 /** Ako ďaleko treba potiahnuť nadol, aby sa panel zavrel. */
@@ -51,6 +53,8 @@ export default function FeedPhotoCommentsSheet({
   const { t } = useLanguage();
   // Kým je panel otvorený, stránka pod ním sa nesmie „odpružiť“: pri pár komentároch by sa pole pred očami hýbalo (nález 370).
   useFeedOverscrollLock(open);
+  // Dlhé podržanie nadpisu zapne alebo vypne skrytú diagnostiku viditeľnej plochy (nálezy 375 až 377).
+  const diagnosticsLongPress = useFeedLongPress(toggleKeyboardDiagnostics);
   const dragStartRef = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
 
@@ -116,7 +120,10 @@ export default function FeedPhotoCommentsSheet({
           aria-label={t('feed.commentsClose', 'Zavrieť komentáre')}
           className="relative mx-auto block h-1.5 min-h-0 w-10 rounded-full bg-white/35 transition-colors after:absolute after:-top-2 after:left-1/2 after:h-11 after:w-24 after:-translate-x-1/2 after:content-[''] hover:bg-white/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         />
-        <h2 className="mt-2 text-sm font-semibold text-white">
+        <h2
+          {...diagnosticsLongPress}
+          className="mt-2 select-none text-sm font-semibold text-white [-webkit-touch-callout:none]"
+        >
           {t('feed.comments', 'Komentáre')}
         </h2>
       </div>

@@ -53,6 +53,7 @@ import {
 } from './useFeedKeyboardViewport';
 import { useFeedOverscrollLock } from './useFeedOverscrollLock';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
+import FeedKeyboardDiagnostics from './FeedKeyboardDiagnostics';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
 import FeedPostEditModal from './FeedPostEditModal';
@@ -367,6 +368,8 @@ export default function FeedPostMobileDetail({
         title={t('feed.postDeleteConfirm', 'Naozaj chceš zmazať tento príspevok?')}
         hint={t('feed.postDeleteHint', 'Túto akciu už nie je možné vrátiť späť.')}
       />
+      {/* Skrytá diagnostika (nálezy 375 až 377): bez zapnutia nevykreslí nič. */}
+      <FeedKeyboardDiagnostics label="detail" layerTestId="feed-mobile-detail" />
     </div>,
     portalNode,
   );
