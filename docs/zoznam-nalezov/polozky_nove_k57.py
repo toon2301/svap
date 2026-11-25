@@ -10,7 +10,7 @@ Nález 364 je od dávky K58 (PR #326) hotový.
 
 Nálezy 365 až 367 vznikli z návrhu majiteľa k textu príspevku a oknu detailu na počítači (24. 11. 2026; rozhodnutia R71 až R73)
 a vyriešila ich jedna dávka K58 (`karty/K58.md`, PR #326, hotové; ich text je v `hotove_k40.py`); nález 368 zistil agent pri kontrole krokov K58 a vzhľad jeho opravy schválil majiteľ (R74); opraví ho agent po K58.
-Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent; podľa R79 ide K44 v dvoch kolách: 369 je opravený v kole 3a (vetva 205) a 370 patrí do kola 3b. Nálezy 371 a 372 ohlásil majiteľ po ručnom teste K58 (24. 11. 2026).
+Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent; podľa R79 ide K44 v dvoch kolách: 369 je od kola 3a (vetva 205, PR #329) hotový (jeho text je v `hotove_k40.py`) a 370 je opravený v kole 3b (vetva 206, čaká na ručný test na iPhone). Nález 374 zistil agent 25. 11. 2026 pri kole 3b. Nálezy 371 a 372 ohlásil majiteľ po ručnom teste K58 (24. 11. 2026).
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -34,31 +34,6 @@ NEW_ITEMS_K57 = [
               'dá pokyn: podmienka `flexible` v `FeedPostSharedBlock.tsx` bude po oprave len `fillHeight && isShared`, takže blok s '
               'označenými bez zdieľaného obsahu bude mať prirodzenú výšku aj pri príspevku s fotkou. Odhad: nízky · S.',
          dec='ROZHODNUTIE R74', src='agent (24. 11. 2026), meranie v kópii `main`'),
-    dict(n=369, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
-         kratko='detail príspevku s fotkou na mobile: obsah sa dá posúvať vodorovne o 12 px (fotka je širšia než posúvateľný zoznam)',
-         what='Zistil majiteľ 24. 11. 2026 na vlastnom príspevku s fotkou (mobil): obsah okna detailu sa dá posúvať zo strany na '
-              'stranu; vodorovne má byť pevný. Agent to 24. 11. 2026 reprodukoval v Chromiu na skutočných komponentoch (kópia `main`, '
-              '`FeedPostMobileDetail`, šírky 360, 390 a 430 px): netýka sa len vlastného príspevku, ale každého príspevku s fotkou '
-              '(vlastného aj cudzieho; pri každej šírke 12 px). Príčina: zoznam komentárov `feed-comments-scroll` '
-              '(`FeedPostComments.tsx`) je posúvateľný box s `overflow-y-auto` (preto je jeho `overflow-x` vypočítané `auto`) a s '
-              'odsadením `pr-1`; blok fotky `feed-mobile-detail-photo` (`FeedPostMobileDetailContent.tsx`) je roztiahnutý na celú '
-              'šírku záporným okrajom `-mx-4` a jeho pravý okraj leží o 12 px za pravým okrajom boxu (pri šírke okna 390 px: blok 0 '
-              'až 386 px, box 16 až 374 px; `scrollWidth` − `clientWidth` = 12 px). Viditeľná fotka je orezaná '
-              'posuvným boxom na 16 až 374 px, teda je 16 px od okrajov obrazovky z oboch strán; presah sa prejaví len tým, že sa box '
-              'dá posúvať vodorovne. Príspevok len s textom a panel komentárov nad fotkou (`FeedPhotoCommentsSheet.tsx`) '
-              'vodorovne nepretekajú (0 px). Meranie bolo v statickom vykreslení (HTML skutočných komponentov s reálnymi štýlmi), nie '
-              'na iPhone.',
-         note='JASNÉ (príčina nameraná). OPRAVENÉ vo vetve 205 (kolo 3a podľa R79; píše agent podľa R76, PR otvára majiteľ): '
-              '`FeedPostMobileDetailContent.tsx` (233 → 237 riadkov) dáva bloku fotky `-mr-1` namiesto `-mx-4` (ruší práve '
-              'odsadenie `pr-1` posuvného boxu, takže blok sedí presne v boxe) a `FeedPostComments.tsx` dáva posuvnému boxu '
-              '`overflow-x-hidden` ako poistku. Viditeľná šírka fotky ostala rovnaká (16 px od okrajov obrazovky z oboch '
-              'strán); fotka od okraja po okraj by bola samostatná vzhľadová zmena (R49), ktorú majiteľ nežiadal, preto ju '
-              'agent neurobil. Overenie: v Chromiu je vodorovný presah 0 px pri šírkach 360, 390 a 430 px (predtým 12 px); nový '
-              'súbor testov `FeedPostMobileDetailContent.vodorovne.test.tsx` (3 testy) a test `overflow-x-hidden` v '
-              '`FeedPostComments.vlaknoAOddelovace.test.tsx`; zásahy M1 a P7 zachytené. Po zlúčení sa presunie do '
-              '`hotove_k40.py`; po nasadení krátky ručný test majiteľa na iPhone (detail príspevku s fotkou sa nedá posúvať do '
-              'strán). Odhad: nízky · S.',
-         dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
     dict(n=370, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='detail príspevku na mobile: pole na komentár sa na iPhone hýbe pri krátkom vlastnom príspevku len s textom (príčina '
                 'nepotvrdená)',
@@ -75,11 +50,18 @@ NEW_ITEMS_K57 = [
               '`useMobileViewportHeight`: `DashboardLayout.tsx` a `useConversationComposerController.ts`). Rozlišovací test pre '
               'majiteľa: keď sa pole pohne a detail potom zatvorí, je Nástenka pod ním posunutá inde než pred otvorením? Ak áno, ide '
               'o (1).',
-         note='NEJASNÉ (príčina nepotvrdená; rozhodne až ručný test na iPhone). Súčasť dávky K44, ktorú píše agent (R76), ako '
-              'samostatný krok: zamknúť posúvanie stránky pod detailom príspevku a pod fotoprehliadačom a pri aktívnom poli na '
-              'komentár nastaviť výšku obrazovky podľa viditeľnej plochy (rovnako ako v chate); je to najlepšia oprava (návrh agenta, '
-              'nie dôkaz). Po nasadení ručný test majiteľa na iPhone (krátky vlastný príspevok len s textom, s klávesnicou aj bez '
-              'nej). Podľa R79 ide až v kole 3b, po ručnom teste majiteľa po kole 3a (vetva 205). Odhad: stredný · M.',
+         note='V RIEŠENÍ (kolo 3b podľa R79): opravené vo vetve 206 (čaká na PR) bez potvrdenej príčiny; v Chromiu sa '
+              'nezreprodukovalo a skutočná klávesnica ani správanie iPhonu sa tu overiť nedajú. Oprava rieši dve príčiny, ktoré '
+              'v kóde sedia (R75 bod 5): (1) vrstva `fixed inset-0` sa pri otvorenej klávesnici nezmenší, iPhone len posunie '
+              'viditeľnú plochu: `useFeedKeyboardViewport.ts` pripne mobilný detail a prehliadač fotky na viditeľnú plochu nad '
+              'klávesnicou, kým má pole fokus; (2) pri krátkom príspevku sa ťah prstom posielal stránke pod vrstvou (gumový '
+              'efekt): `useFeedOverscrollLock.ts` dá `html` aj `body` `overscroll-behavior: none`, kým je detail alebo panel '
+              'komentárov otvorený. KOREKCIA hypotézy (1) z opisu: zámok cez `document.body.style.overflow` by nepomohol (pri '
+              'pravidlách `html, body` z `globals.css` stránku nezamkne, overené v Chromiu; nález 374) a prehliadač fotky ho '
+              'cez `ImageLightbox` už mal. ČAKÁ NA RUČNÝ TEST MAJITEĽA na iPhone (krátky vlastný príspevok len s textom, s '
+              'klávesnicou aj bez nej, aj panel komentárov nad fotkou: nič sa nesmie hýbať); nález sa zatvorí po jeho '
+              'potvrdení. Ak sa pole stále hýbe, treba vedieť kedy (po otvorení klávesnice, pri ťahu prstom, po zavretí '
+              'klávesnice). Odhad: stredný · M.',
          dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
     dict(n=371, bucket=P, imp=S_, eff=EM, pkg='Zdieľanie a obrázky',
          kratko='prezdieľaná ponuka alebo portfólio bez fotky: keď vlastník dodatočne pridá fotku, na Nástenke sa to neobnoví a stále '
@@ -116,4 +98,22 @@ NEW_ITEMS_K57 = [
               's fotkou je pružný; obrázok jeho schváleného vzhľadu ukazuje blok pod fotkou, pri presune nad fotku sa upraví) a so '
               'skupinou 8 v 261 (tagy na vlastný riadok pod textom), preto sa navrhujú jedným návrhom. Odhad: stredný · M.',
          dec=None, src='ručný test majiteľa po K58 (24. 11. 2026), čítanie kódu agentom'),
+    dict(n=374, bucket=A, imp=N, eff=ES, pkg='Upratovanie a architektúra',
+         kratko='zámok scrollovania cez `body.style.overflow` (hodnota `hidden`), ktorý používajú vrstvy v appke, pri pravidlách '
+                '`html, body` z `globals.css` okno nezamkne',
+         what='Zistil agent 25. 11. 2026 pri kole 3b (nález 370). `globals.css` dáva `html` aj `body` `overflow-x: hidden; '
+              'overflow-y: auto`, takže sa `overflow` z `body` nepremieta do viewportu a `document.body.style.overflow = '
+              'hidden` posúvanie okna nezamkne. Overené v Chromiu: pri stránke vyššej než okno sa po kolieskovom posune o 600 '
+              'px posunie okno rovnako (`scrollY` 600) s týmto zámkom aj bez neho. Zámok používajú aspoň `ImageLightbox`, '
+              '`OfferImageGalleryLightbox`, `ProfileOfferDetailMobile`, `PortfolioMobileEditFlow`, '
+              '`PortfolioCreateDesktopModal` a `MobilePortfolioOrderView` (aj testy ho očakávajú). V dashboarde to dnes '
+              'neprekáža: okno sa neposúva, posúva sa `<main>` (`DashboardLayout.tsx`) a vrstvy sú `fixed` portály mimo neho, '
+              'takže sa ťah do `<main>` nereťazí. Gumový efekt viewportu na iPhone zámok cez `overflow` pravdepodobne nevypína '
+              'tiež (neoverené, vypína ho `overscroll-behavior`).',
+         note='NEJASNÉ (nízka priorita, kód sa nemení; len nahlásené podľa pravidla o práci mimo zadania). Ak by sa niekde '
+              'posúvalo okno (stránka mimo dashboardu), zámok nefunguje. Oprava by bola jeden spoločný počítaný zámok namiesto '
+              'kópií (vzor: `useFeedOverscrollLock.ts` z kola 3b, ktorý `overflow` nemení); pri nich treba myslieť na vnorené '
+              'vrstvy: naivné uloženie a obnova `overflow` si pri súčasnom zatvorení vrstiev navzájom prepíšu hodnoty a stránka '
+              'môže ostať zamknutá. Odhad: nízky · S.',
+         dec=None, src='agent (25. 11. 2026), meranie v Chromiu'),
 ]
