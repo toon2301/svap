@@ -15,6 +15,10 @@
  *  - zdieľaný PRÍSPEVOK = holý obsah bez rámu. Pôvodného autora už nesie
  *    riadok nad ním, takže rám by do karty pridal len druhé orámovanie.
  *
+ * RIADOK PÔVODNÉHO AUTORA (avatar a meno nad kartou) je tlačidlo, ktoré otvorí jeho profil (`onOpenOwner`, nález 362), keď
+ * volajúci vlastnosť zadá, zdroj je dostupný a vlastník má id alebo adresu profilu; inak ostáva obyčajný `div` ako predtým
+ * (náhľad v dialógu zdieľania, nedostupný zdroj). Stojí MIMO tlačidla náhľadu, lebo tlačidlo v tlačidle je neplatné HTML.
+ *
  * Karty MIMO Nástenky (ProfileOfferCard, ProfileOfferCardMobile, PortfolioCard)
  * s týmto nemajú nič spoločné a zámerne ostávajú nezmenené: stoja na dátach
  * (galéria, recenzie, otváracie hodiny), ktoré snapshot vo feede nenesie.
@@ -36,6 +40,7 @@ import FeedPostCaption, { CARD_CAPTION_LINES } from './FeedPostCaption';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
+import { canOpenUserProfile } from './feedProfileNavigation';
 import { formatOfferPriceLabel } from './offerPriceLabel';
 import type { SharedContentCard } from './sharedContentCard';
 
@@ -123,6 +128,7 @@ function MissingImage({ type }: { type: SharedContentCard['type'] }) {
 export default function SharedContentPreviewCard({
   data,
   hideOwner = false,
+  onOpenOwner,
   onOpenSource,
   onOpenPostPreview,
   onOpenPostPhoto,
@@ -131,6 +137,12 @@ export default function SharedContentPreviewCard({
   data: SharedContentCard | null;
   /** Zdieľa sám seba: meno by sa zopakovalo hneď pod hlavičkou karty. */
   hideOwner?: boolean;
+  /**
+   * Klik na avatar alebo meno pôvodného autora (riadok nad kartou): otvorí jeho profil. Riadok je tlačidlo len keď je
+   * vlastnosť zadaná, zdroj je dostupný a vlastník má id alebo adresu profilu (`SharedContentCardOwner`); inak ostáva
+   * obyčajný `div`. Dialóg zdieľania ju nezadáva, takže náhľad v ňom sa nepreklikáva.
+   */
+  onOpenOwner?: () => void;
   /** Klik na kartu ponuky/portfólia – vedie rovno na zdroj. */
   onOpenSource?: () => void;
   /**
@@ -166,6 +178,12 @@ export default function SharedContentPreviewCard({
   const isPost = data.type === 'feed_post';
   const isOffer = data.type === 'offer';
   const unavailable = data.unavailable === true;
+  // Riadok pôvodného autora je tlačidlo len keď sa z neho dá prekliknúť: volajúci zadal `onOpenOwner`, zdroj je dostupný
+  // (pri nedostupnom backend vlastníka neposiela, snapshot nesie len meno) a vlastník má id alebo adresu profilu.
+  const ownerOpensProfile =
+    Boolean(onOpenOwner) &&
+    !unavailable &&
+    canOpenUserProfile({ id: data.owner?.id ?? 0, slug: data.owner?.slug ?? null });
   const thumbnailFailed = Boolean(data.thumbnailUrl) && failedThumbnail === data.thumbnailUrl;
   // Pružná plocha: ponuka a portfólio vždy, zdieľaný príspevok len vtedy, keď má fotku (bez nej nie je čo naťahovať).
   const hasPhotoPlane = Boolean(data.thumbnailUrl) && !thumbnailFailed;
@@ -409,6 +427,23 @@ export default function SharedContentPreviewCard({
     );
   }
 
+  // Riadok vlastníka: ten istý obsah aj rozmery ako doteraz, len ako tlačidlo (`min-h-0`: globálne pravidlo `button` by riadok
+  // natiahlo na 36 px; `max-w-full`: dlhé meno sa orezáva v tlačidle) bez podčiarkovania. Prístupný názov nesie aj meno, aby
+  // obsahoval viditeľný text.
+  const ownerRowClass = `${flatten ? '' : 'mb-2 '}flex items-center gap-2`;
+  const ownerContent = data.owner ? (
+    <>
+      <InitialsAvatar
+        name={data.owner.displayName}
+        avatarUrl={data.owner.avatarUrl}
+        size="xs"
+      />
+      <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+        {data.owner.displayName}
+      </span>
+    </>
+  ) : null;
+
   return (
     <div
       data-testid="feed-shared-card"
@@ -419,19 +454,21 @@ export default function SharedContentPreviewCard({
           ho zdieľa. Pri zdieľaní seba samého sa vynecháva: meno už nesie
           hlavička karty ("Znovu zdieľané"), druhýkrát by mýlilo. */}
       {data.owner && !hideOwner ? (
-        <div
-          data-testid="feed-shared-card-owner"
-          className={`${flatten ? '' : 'mb-2 '}flex items-center gap-2`}
-        >
-          <InitialsAvatar
-            name={data.owner.displayName}
-            avatarUrl={data.owner.avatarUrl}
-            size="xs"
-          />
-          <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-            {data.owner.displayName}
-          </span>
-        </div>
+        ownerOpensProfile ? (
+          <button
+            type="button"
+            onClick={onOpenOwner}
+            data-testid="feed-shared-card-owner"
+            aria-label={`${t('feed.openProfile', 'Otvoriť profil')}: ${data.owner.displayName}`}
+            className={`${ownerRowClass} min-h-0 max-w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60`}
+          >
+            {ownerContent}
+          </button>
+        ) : (
+          <div data-testid="feed-shared-card-owner" className={ownerRowClass}>
+            {ownerContent}
+          </div>
+        )
       ) : null}
       {frame}
     </div>
