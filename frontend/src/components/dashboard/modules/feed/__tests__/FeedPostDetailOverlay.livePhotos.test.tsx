@@ -226,10 +226,10 @@ describe('rozloženie sa prepína podľa živého stavu fotiek', () => {
     );
     await openOverlay(post);
 
-    // Kým sa fotka spracúva, okno je dvojstĺpcové so stavovou plochou a text je orezaný na desať riadkov.
+    // Kým sa fotka spracúva, okno je dvojstĺpcové so stavovou plochou a text je orezaný na päť riadkov (R77).
     expect(screen.getByTestId('feed-post-overlay-split')).toBeInTheDocument();
     expect(screen.getByTestId('feed-image-status')).toBeInTheDocument();
-    expect(screen.getByTestId('feed-post-caption').className).toContain('line-clamp-[10]');
+    expect(screen.getByTestId('feed-post-caption').className).toContain('line-clamp-5');
 
     await tickImagePoll();
 

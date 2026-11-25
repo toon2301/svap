@@ -5,8 +5,9 @@
  * akcií (lajk, počet lajkov, počet komentárov, zdieľanie) a nadpis „Komentáre" s kotvou.
  *
  * Presunuté z `FeedPostMobileDetail.tsx` bez zmeny (posledná dávka delenia, presun 1, nález 333, R23): JSX, komentáre
- * aj odsadenie sú rovnaké ako predtým, rovnako konštanty a ikony, ktoré používa len tento obsah
- * (`MOBILE_DETAIL_CAPTION_LINES`, `ACTION_BUTTON`, `HeartIcon`, `CommentIcon`). Komponent nemá stav ani hooky, všetko
+ * aj odsadenie sú rovnaké ako predtým, rovnako konštanta a ikony, ktoré používa len tento obsah
+ * (`ACTION_BUTTON`, `HeartIcon`, `CommentIcon`). Počet riadkov textu sa od R77 berie z `FeedPostCaption.tsx`: päť pri
+ * fotke alebo náhľade zdieľaného obsahu, desať pri príspevku len s textom. Komponent nemá stav ani hooky, všetko
  * dostáva od obrazovky ako vlastnosti a vracia priamo koreň s `data-testid="feed-mobile-detail-header-content"` bez
  * obalu. Obrazovka ho podáva do `FeedPostComments` ako `listHeader` (premenná ostala v obrazovke), takže ide DOVNÚTRA
  * scrollovateľného boxu komentárov: text, fotka aj akcie scrollujú spolu so zoznamom.
@@ -19,14 +20,14 @@
 
 import type { RefObject } from 'react';
 import type { FeedPost, FeedPostImage } from '@/lib/feedApi';
-import FeedPostCaption from './FeedPostCaption';
+import FeedPostCaption, {
+  DETAIL_CAPTION_LINES,
+  DETAIL_MEDIA_CAPTION_LINES,
+} from './FeedPostCaption';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import ShareIcon from './ShareIcon';
-
-/** Text príspevku sa tu zbalí na desať riadkov (rovnako ako v okne detailu na počítači) – obrazovka má miesta viac než karta. */
-const MOBILE_DETAIL_CAPTION_LINES = 10;
 
 /** Spoločný vzhľad troch akcií – dotykový cieľ nad 44 px. */
 const ACTION_BUTTON =
@@ -111,6 +112,13 @@ export default function FeedPostMobileDetailContent({
   commentsAnchorRef,
   autoScrollDecision,
 }: FeedPostMobileDetailContentProps) {
+  // Text príspevku s fotkou alebo náhľadom zdieľaného obsahu (ponuka, portfólio, príspevok) sa zbalí na päť riadkov,
+  // príspevok len s textom na desať (R77): s fotkou aj kartou je text komentár k obsahu a desať riadkov bolo veľa.
+  const captionLines =
+    hasPhoto || hasSharedPreview
+      ? DETAIL_MEDIA_CAPTION_LINES
+      : DETAIL_CAPTION_LINES;
+
   return (
     <div data-testid="feed-mobile-detail-header-content" className="pb-1">
       {caption ? (
@@ -118,7 +126,7 @@ export default function FeedPostMobileDetailContent({
           <FeedPostCaption
             text={caption}
             testId="feed-mobile-detail-caption"
-            maxLines={MOBILE_DETAIL_CAPTION_LINES}
+            maxLines={captionLines}
             collapseBlankLines
             // Rozbaľuje sa v BEŽNOM toku: žiadny strop ani vlastný scroll, len
             // viac textu, ktorý prirodzene posunie fotku, akcie aj komentáre

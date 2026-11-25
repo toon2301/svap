@@ -45,6 +45,12 @@ const PHOTO_FRAME = 'h-64';
 /** Pružná plocha náhľadu v dvojstĺpcovom okne: vyplní zvyšok stĺpca, najmenej však 8 rem (128 px). */
 const PHOTO_FRAME_FILL = 'min-h-32 flex-1';
 
+/**
+ * Pôvodný text reposta v okne príspevku len s textom (R73, R77): nič tu nesúperí o miesto, preto päť riadkov a „Viac" od
+ * šiesteho (predtým bol celý). Všade inde (feed, mobilný detail, repost s fotkou v okne) ostávajú tri riadky ako karta.
+ */
+const TEXT_ONLY_ORIGINAL_CAPTION_LINES = 5;
+
 function UnavailableIcon() {
   return (
     <svg
@@ -153,7 +159,7 @@ export default function SharedContentPreviewCard({
   // Adresa náhľadu, ktorú sa nepodarilo načítať. Porovnáva sa s aktuálnou adresou, takže karta, ktorej sa náhľad
   // zmení na inú fotku, chybu nezdedí.
   const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
-  // Okno príspevku len s textom (R73): aj pôvodný text reposta sa ukáže celý.
+  // Okno príspevku len s textom (R73, R77): pôvodný text reposta má päť riadkov namiesto troch.
   const textOnly = useFeedDetailTextOnly();
   if (!data) return null;
 
@@ -261,14 +267,15 @@ export default function SharedContentPreviewCard({
     </span>
   ) : null;
 
-  // Text pôvodného príspevku: rovnaké „Viac"/„Menej" ako text karty (3 riadky, „Viac" len pri presahu). Obal s
-  // prekliknutím na pôvodný príspevok je len okolo ODSEKU; prepínač stojí mimo neho, lebo tlačidlo v tlačidle je
-  // neplatné HTML a ťuk na „Viac" nemá nič otvárať. Len zdieľaný príspevok: popis ponuky a portfólia rieši `tileCaptionNode`.
+  // Text pôvodného príspevku: rovnaké „Viac"/„Menej" ako text karty (3 riadky, v okne len s textom 5; „Viac" len pri
+  // presahu). Obal s prekliknutím na pôvodný príspevok je len okolo ODSEKU; prepínač stojí mimo neho, lebo tlačidlo v
+  // tlačidle je neplatné HTML a ťuk na „Viac" nemá nič otvárať. Len zdieľaný príspevok: popis ponuky a portfólia rieši
+  // `tileCaptionNode`.
   const captionNode = caption && isPost ? (
     <FeedPostCaption
       text={caption}
       testId="feed-shared-caption"
-      maxLines={textOnly ? 0 : CARD_CAPTION_LINES}
+      maxLines={textOnly ? TEXT_ONLY_ORIGINAL_CAPTION_LINES : CARD_CAPTION_LINES}
       boundedExpansion={flatten}
       fillParent={flatten}
       collapseBlankLines

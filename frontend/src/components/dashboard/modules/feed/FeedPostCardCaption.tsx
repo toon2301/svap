@@ -10,12 +10,18 @@
  * nezmestí. Všade inde ostáva obal pevný blok (`fixedBlock`) a text sa správa ako doteraz.
  *
  * PRUŽNÝ STĹPEC OKNA (`fillHeight`): koreňom je obal textu a ostáva PRIAMYM potomkom koreňa karty, nič sa neobaľuje.
+ *
+ * POČET RIADKOV V OKNE (R77): v dvojstĺpcovom okne je voľný príspevok, ktorý nie je len text, príspevok s fotkou, takže
+ * jeho text má päť riadkov (`DETAIL_MEDIA_CAPTION_LINES`; desať bolo veľa). Jednostĺpcové okno pod 1 024 px sa nemení
+ * (desať riadkov, `DETAIL_CAPTION_LINES`), rovnako ako karta vo feede (tri riadky).
  */
 
 import FeedPostCaption, {
   CARD_CAPTION_LINES,
   DETAIL_CAPTION_LINES,
+  DETAIL_MEDIA_CAPTION_LINES,
 } from './FeedPostCaption';
+import { useFeedDetailSplit } from './FeedDetailSplitContext';
 import { useFeedDetailTextOnly } from './FeedDetailTextOnlyContext';
 
 type FeedPostCardCaptionProps = {
@@ -36,6 +42,14 @@ export default function FeedPostCardCaption({
   onTextClick,
 }: FeedPostCardCaptionProps) {
   const textOnlySplit = useFeedDetailTextOnly();
+  // Len ľavý stĺpec dvojstĺpcového okna; príspevok len s textom je v ňom `textOnlySplit` (celý text), takže ostatné
+  // voľné príspevky tam majú fotku.
+  const inSplitColumn = useFeedDetailSplit();
+  const detailLines = textOnlySplit
+    ? 0
+    : inSplitColumn
+      ? DETAIL_MEDIA_CAPTION_LINES
+      : DETAIL_CAPTION_LINES;
 
   return (
     <div
@@ -52,13 +66,7 @@ export default function FeedPostCardCaption({
         text={caption}
         boundedExpansion={isDetail}
         expansionBound={fillHeight ? 'roomy' : 'compact'}
-        maxLines={
-          isDetail
-            ? textOnlySplit
-              ? 0
-              : DETAIL_CAPTION_LINES
-            : CARD_CAPTION_LINES
-        }
+        maxLines={isDetail ? detailLines : CARD_CAPTION_LINES}
         collapseBlankLines
         onTextClick={onTextClick}
       />

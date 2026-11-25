@@ -2,9 +2,11 @@
  * Okno detailu na počítači: príspevok len s textom v dvoch stĺpcoch (K58, krok 3, nález 367, R73).
  *
  * Od 1 024 px má každý príspevok dva stĺpce a okno 864 px. Príspevok len s textom (aj repost textového príspevku) nemá
- * nič pružné, čo by pohltilo výšku, preto je okno vysoké podľa obsahu (najmenej 20 rem, najviac 95 % obrazovky) a text
- * sa ukáže celý, bez „Viac"; posúva sa len text vľavo a komentáre vpravo. Okno s fotkou, ponukou a portfóliom ostáva na
- * pevnej výške `h-[95vh]`. Pod 1 024 px sa nič nemení (576 px, jeden stĺpec, text s „Viac").
+ * nič pružné, čo by pohltilo výšku, preto je okno vysoké podľa obsahu (najmenej 20 rem, najviac 95 % obrazovky); text
+ * voľného príspevku sa ukáže celý, bez „Viac", a posúva sa len text vľavo a komentáre vpravo. Repost textového príspevku
+ * má od R77 text zdieľajúceho na 10 riadkoch a pôvodný text na 5 (oba s „Viac"). Okno s fotkou, ponukou a portfóliom
+ * ostáva na pevnej výške `h-[95vh]`, text voľného príspevku s fotkou má od R77 5 riadkov. Pod 1 024 px sa nič nemení
+ * (576 px, jeden stĺpec, text s „Viac").
  *
  * jsdom nelayoutuje, takže sa kontrolujú triedy, ktoré o rozmeroch rozhodujú. „Presahuje text riadky?" sa nastavuje na
  * uzle (`scrollHeight` proti `clientHeight`): orezaný text presahuje, neorezaný sa zmestí, tak ako v prehliadači.
@@ -446,7 +448,7 @@ describe('okno s fotkou, ponukou a portfóliom ostáva na pevnej výške', () =>
   );
 });
 
-describe('text v okne len s textom je celý', () => {
+describe('text v okne len s textom', () => {
   it('voľný príspevok: odsek bez orezania a bez „Viac", aj keď by orezaný presahoval', async () => {
     nastavVysky();
     await otvorOkno(volnyPrispevok(false));
@@ -476,16 +478,16 @@ describe('text v okne len s textom je celý', () => {
     expect(odsek).not.toHaveClass('overflow-y-auto');
   });
 
-  it('repost textového príspevku: text zdieľajúceho aj pôvodný text sú celé, bez „Viac"', async () => {
+  it('repost textového príspevku: text zdieľajúceho má 10 riadkov a pôvodný text 5, oba s „Viac" (R77)', async () => {
     nastavVysky();
     await otvorOkno(repost(false));
 
     const text = screen.getByTestId('feed-post-caption');
     const povodny = screen.getByTestId('feed-shared-caption');
-    expect(text.className).not.toContain('line-clamp');
-    expect(povodny.className).not.toContain('line-clamp');
-    expect(screen.queryByTestId('feed-post-caption-toggle')).toBeNull();
-    expect(screen.queryByTestId('feed-shared-caption-toggle')).toBeNull();
+    expect(text).toHaveClass('line-clamp-[10]');
+    expect(povodny).toHaveClass('line-clamp-5');
+    expect(await screen.findByTestId('feed-post-caption-toggle')).toHaveTextContent('Viac');
+    expect(await screen.findByTestId('feed-shared-caption-toggle')).toHaveTextContent('Viac');
   });
 
   it('repost textového príspevku: blok so zdieľaným obsahom sa posúva a nie je pevný', async () => {
@@ -496,11 +498,12 @@ describe('text v okne len s textom je celý', () => {
     expect(obalTextu()).not.toHaveClass('shrink-0');
   });
 
-  it('voľný príspevok s fotkou: text ostáva na 10 riadkoch s „Viac" a obal je pevný blok', async () => {
+  it('voľný príspevok s fotkou: text má 5 riadkov (R77) s „Viac" a obal je pevný blok', async () => {
     nastavVysky();
     await otvorOkno(volnyPrispevok(true));
 
-    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-[10]');
+    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-5');
+    expect(screen.getByTestId('feed-post-caption')).not.toHaveClass('line-clamp-[10]');
     expect(await screen.findByTestId('feed-post-caption-toggle')).toHaveTextContent('Viac');
     expect(obalTextu()).toHaveClass('px-4', 'py-3', 'shrink-0');
     expect(obalTextu()).not.toHaveClass('flex-1');
@@ -619,12 +622,12 @@ describe('dvojstĺpcové rozloženie bez vlastnosti `textOnly`', () => {
     );
   }
 
-  it('predvolene sa správa ako doteraz: text s fotkou má 10 riadkov a „Viac“, komentáre držia výšku v percentách', async () => {
+  it('predvolene sa správa ako doteraz: text s fotkou má 5 riadkov (R77) a „Viac“, komentáre držia výšku v percentách', async () => {
     nastavVysky();
     vykresliRozlozenie(volnyPrispevok(true));
     await screen.findByTestId('feed-post-card');
 
-    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-[10]');
+    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-5');
     expect(await screen.findByTestId('feed-post-caption-toggle')).toHaveTextContent('Viac');
     expect(obalTextu()).toHaveClass('shrink-0');
     const koren = screen.getByTestId('feed-post-comments');
@@ -650,7 +653,7 @@ describe('dvojstĺpcové rozloženie bez vlastnosti `textOnly`', () => {
     vykresliRozlozenie(volnyPrispevok(true), false);
     await screen.findByTestId('feed-post-card');
 
-    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-[10]');
+    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-5');
     expect(screen.getByTestId('feed-post-comments')).toHaveClass('h-full');
   });
 });

@@ -1,9 +1,10 @@
 /**
  * Zdieľaný blok v okne príspevku len s textom (K58, krok 3, R73).
  *
- * V okne len s textom (repost textového príspevku) sa texty reposta ukážu celé, bez „Viac“. Blok so zdieľaným obsahom
- * ostáva pružný; blok s označenými pri voľnom príspevku nemá zdieľaný obsah, preto je pevný (prirodzenej výšky) a
- * nesúperí s textom o miesto. S fotkou, s ponukou a v karte vo feede sa nič nemení (nález 368 sa v K58 nerieši).
+ * V okne len s textom (repost textového príspevku) má text zdieľajúceho 10 riadkov a pôvodný text 5, oba s „Viac“ (R77;
+ * pred R77 boli celé). Blok so zdieľaným obsahom ostáva pružný; blok s označenými pri voľnom príspevku nemá zdieľaný
+ * obsah, preto je pevný (prirodzenej výšky) a nesúperí s textom o miesto. S fotkou, s ponukou a v karte vo feede sa nič
+ * nemení (nález 368 sa v K58 nerieši).
  *
  * jsdom nelayoutuje, takže „presahuje text riadky?“ sa nastavuje na uzle (`scrollHeight` proti `clientHeight`).
  */
@@ -186,18 +187,18 @@ afterEach(() => {
 });
 
 describe('repost textového príspevku v okne len s textom', () => {
-  it('text zdieľajúceho aj pôvodný text sú celé, bez orezania a bez „Viac“', () => {
+  it('text zdieľajúceho má 10 riadkov a pôvodný text 5, oba s „Viac“ (R77)', async () => {
     nastavVysky();
     blok({ post: REPOST_TEXTU, isShared: true, lenText: true });
 
     const text = screen.getByTestId('feed-post-caption');
     const povodny = screen.getByTestId('feed-shared-caption');
-    expect(text.className).not.toContain('line-clamp');
-    expect(povodny.className).not.toContain('line-clamp');
+    expect(text).toHaveClass('line-clamp-[10]');
+    expect(povodny).toHaveClass('line-clamp-5');
     expect(text).toHaveTextContent(DLHY_TEXT);
     expect(povodny).toHaveTextContent(DLHY_TEXT);
-    expect(screen.queryByTestId('feed-post-caption-toggle')).toBeNull();
-    expect(screen.queryByTestId('feed-shared-caption-toggle')).toBeNull();
+    expect(await screen.findByTestId('feed-post-caption-toggle')).toHaveTextContent('Viac');
+    expect(await screen.findByTestId('feed-shared-caption-toggle')).toHaveTextContent('Viac');
   });
 
   it('text zdieľajúceho nie je pružný: bez `fillParent` a bez stropu', () => {
@@ -229,10 +230,10 @@ describe('repost textového príspevku v okne len s textom', () => {
     expect(koren()).not.toHaveClass('shrink-0');
   });
 
-  it('ponuka v okne len s textom (nemožný stav) má tiež celé texty', () => {
+  it('ponuka v okne len s textom (nemožný stav) má text zdieľajúceho tiež na 10 riadkoch', () => {
     blok({ post: PONUKA, isShared: true, lenText: true });
 
-    expect(screen.getByTestId('feed-post-caption').className).not.toContain('line-clamp');
+    expect(screen.getByTestId('feed-post-caption')).toHaveClass('line-clamp-[10]');
   });
 });
 

@@ -41,8 +41,18 @@ const CLAMP_CLASSES: Record<number, string> = {
 
 /** Karta vo feede – text ustúpi fotke a ostatným príspevkom v zozname. */
 export const CARD_CAPTION_LINES = 3;
-/** Okno detailu – je oveľa väčšie, takže tri riadky by pôsobili zbytočne. */
+/**
+ * Detail príspevku len s textom – je oveľa väčší než karta, takže tri riadky by pôsobili zbytočne: mobilný detail,
+ * jednostĺpcové okno pod 1 024 px a text zdieľajúceho v dvojstĺpcovom okne len s textom (R77).
+ */
 export const DETAIL_CAPTION_LINES = 10;
+/**
+ * Detail príspevku s fotkou, ponukou, portfóliom alebo náhľadom zdieľaného obsahu: text je tu komentár k obsahu a desať
+ * riadkov bolo veľa, preto päť a „Viac" od šiesteho riadku (R77). Platí pre mobilný detail a pre text voľného príspevku
+ * s fotkou v dvojstĺpcovom okne; text zdieľajúceho nad kartou v okne má päť riadkov vlastnou konštantou
+ * (`SPLIT_SHARED_CAPTION_LINES` vo `FeedPostSharedBlock.tsx`).
+ */
+export const DETAIL_MEDIA_CAPTION_LINES = 5;
 
 /**
  * Zhluk PRÁZDNYCH riadkov (dva a viac) sa scvrkne na jedno zalomenie.
@@ -122,7 +132,7 @@ type FeedPostCaptionProps = {
   /**
    * Koľko riadkov je vidno pred „Viac". Karta vo feede musí ustúpiť fotke a
    * ďalším príspevkom, okno detailu má miesta podstatne viac. `0` = bez
-   * orezania: text sa ukáže celý a „Viac" sa neukáže (okno len s textom, R73).
+   * orezania: text sa ukáže celý a „Viac" sa neukáže (voľný príspevok len s textom v dvojstĺpcovom okne, R73).
    */
   maxLines?: number;
   /**
@@ -179,7 +189,7 @@ export default function FeedPostCaption({
   fillParent = false,
 }: FeedPostCaptionProps) {
   const text = collapseBlankLines ? collapseBlankRuns(rawText) : rawText;
-  // `0` = bez orezania (okno príspevku len s textom, R73): nie je čo rozbaľovať ani prepínať.
+  // `0` = bez orezania (voľný príspevok len s textom v dvojstĺpcovom okne, R73): nie je čo rozbaľovať ani prepínať.
   const clamped = maxLines !== 0;
   const clampClass = clamped
     ? (CLAMP_CLASSES[maxLines] ?? CLAMP_CLASSES[CARD_CAPTION_LINES])
