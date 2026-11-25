@@ -60,6 +60,7 @@ import FeedPostEditModal from './FeedPostEditModal';
 import FeedPostMobileDetailContent from './FeedPostMobileDetailContent';
 import FeedPostMobileDetailHeader from './FeedPostMobileDetailHeader';
 import FeedPostReportModal from './FeedPostReportModal';
+import { openUserProfile } from './feedProfileNavigation';
 import { buildSharedSourceHandler } from './feedSharedContentNavigation';
 import FeedPostShareModal from './FeedPostShareModal';
 
@@ -178,6 +179,13 @@ export default function FeedPostMobileDetail({
     // sa používateľ práve dostal.
     beforeNavigate: onClose,
   });
+  // Profil pôvodného autora zo zdieľaného obsahu (nález 362): vlastník je z feed
+  // API (`shared_content.owner`, pri nedostupnom zdroji `null`) a obrazovka sa
+  // pred odchodom zatvorí rovnako ako pri prekliku na zdroj.
+  const sharedOwner = currentPost.shared_content?.owner ?? null;
+  const openSharedOwner = sharedOwner
+    ? () => openUserProfile(sharedOwner, { beforeNavigate: onClose })
+    : undefined;
 
   /**
    * Štartovacia pozícia: pri rozmernom obsahu a rozbehnutej diskusii sa
@@ -268,6 +276,7 @@ export default function FeedPostMobileDetail({
       currentPost={currentPost}
       isSelfShare={isSelfShare}
       openSharedSource={openSharedSource}
+      openSharedOwner={openSharedOwner}
       sharedPhotoPostId={sharedPhotoPostId}
       setSharedPhotoOpen={setSharedPhotoOpen}
       toggleLike={toggleLike}

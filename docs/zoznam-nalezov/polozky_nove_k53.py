@@ -1,62 +1,58 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 361: ručný test majiteľa po K53 (22. 11. 2026).
+"""Nové nálezy od čísla 361: ručný test majiteľa po K53 (22. 11. 2026). Nález 361 je od K59 (PR #332) hotový a jeho text je v `hotove_k59.py`; nález 362 je v K59 hotový len sčasti, jeho zvyšok (obrazovka detailu na iPhone) je opravený vo vetve 210 (PR #335) a čaká na zlúčenie a ručný test.
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
-po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova.
+po oprave odstráni odtiaľto a zapíše do `hotove_k59.DONE_SINCE_K59` (staršie do `hotove_k40.DONE_SINCE_K40`); čísla sa nikdy nepoužívajú znova.
 
-Obe zmeny zadal majiteľ presne (vzhľad aj správanie), takže R49 je splnené a návrh vzhľadu netreba. Obe menia DOM karty (trieda mena,
-riadok pôvodného autora v náhľade zdieľaného obsahu), preto ich nemožno robiť pred poslednou dávkou delenia K55: dočasný odtlačok HTML
-karty (44 stavov) sa počas delenia nikdy neaktualizuje (R45) a zmaže ho až K55. Majiteľ k času opravy nič nepovedal; agent ich zatiaľ
-zaradil do rovnakej skupiny ako 357 až 360 (po redizajne komentárov a rozložení príspevkov), nech sa počet krokov pred redizajnom nezvyšuje.
+Obe zmeny zadal majiteľ presne (vzhľad aj správanie), takže R49 je splnené a návrh vzhľadu netreba. Obe menili DOM karty (trieda mena, riadok pôvodného autora v náhľade zdieľaného obsahu), preto išli až po poslednej dávke delenia K55 (dočasný odtlačok HTML karty sa počas delenia nikdy neaktualizuje, R45, a zmazala ho až K55); urobila ich dávka K59 (karta `karty/K59.md`).
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
 
 NEW_ITEMS_K53 = [
-    dict(n=361, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
-         kratko='meno autora príspevku sa podčiarkuje pri prejdení kurzorom (počítač) a po ťuknutí (mobil), na Nástenke aj v '
-                'detaile príspevku, pri vlastných aj cudzích príspevkoch; podčiarkovanie sa má zrušiť, klik na meno má '
-                'ďalej otvárať profil',
-         what='Ručný test majiteľa po K53 (22. 11. 2026): na Nástenke aj v detaile príspevku sa meno autora príspevku '
-              'podčiarkuje: na počítači pri prejdení kurzorom, na mobile po ťuknutí; platí pri vlastných aj cudzích '
-              'príspevkoch. Požiadavka majiteľa: meno autora sa nesmie podčiarkovať pri žiadnej interakcii (kurzor, ťuk, '
-              'kliknutie); kliknutie na meno musí naďalej otvárať profil autora. Vzhľad zadal majiteľ, takže R49 je '
-              'splnené. Pozorovanie agenta z čítania kódu (nie je to mapovanie): podčiarkovanie robí trieda '
-              '`hover:underline` (spolu s `underline-offset-2` a `disabled:no-underline`) na tlačidle s menom v hlavičke '
-              'karty (`FeedPostCardHeader.tsx`, od K53 samostatný súbor; tá istá hlavička je na Nástenke aj v okne '
-              'detailu na počítači); na mobile ju spúšťa stav `hover`, ktorý po ťuknutí ostáva. Obrazovka detailu na '
-              'mobile (`FeedPostMobileDetail.tsx`) a fotoprehliadač (`FeedPhotoViewerChrome.tsx`) podčiarkovanie pri mene '
-              'autora nemajú. Rovnaká trieda je pri mene autora komentára (`FeedCommentItem.tsx`); majiteľ ju nežiadal '
-              '(rozsah je len meno autora príspevku), ak chce rovnako aj mená autorov komentárov, povie.',
-         note='JASNÉ (po K55): zmena je jedna trieda na jednom mieste a test, kolega ju urobí bez mapovania. NIE PRED K55: '
-              'zmena triedy zmení dočasný odtlačok HTML karty (44 stavov), ktorý sa počas delenia nikdy neaktualizuje (R45) '
-              'a ktorý zmaže až K55; po K55 sa dá triedu zmeniť spolu s novým testom (názvy po slovensky, R62). Ide v dávke K59 '
-              '(karta `karty/K59.md`, pripravená 25. 11. 2026 na pokyn majiteľa, R80). Po oprave sa v manuáli ručných testov (`sablony/dymovy_test.md`, krok 9) odstráni známa '
-              'odchýlka. Odhad: nízky · S.',
-         dec=None, src='ručný test majiteľa po K53 (22. 11. 2026)'),
-    dict(n=362, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
-         kratko='prezdieľaný príspevok (repost): po kliknutí na avatar alebo meno pôvodného autora sa nič nestane, profil '
-                'sa neotvorí (počítač aj mobil); má sa otvoriť profil pôvodného autora a meno sa nesmie podčiarkovať',
-         what='Ručný test majiteľa po K53 (22. 11. 2026): v prezdieľanom príspevku sa zobrazuje avatar a meno pôvodného '
-              'autora; po kliknutí na avatar alebo meno sa nič nestane a profil sa neotvorí. Výskyt: počítač aj mobil. '
-              'Požiadavka majiteľa: kliknutie na avatar alebo meno pôvodného autora musí otvoriť jeho profil na počítači '
-              'aj na mobile; meno pôvodného autora sa nesmie podčiarkovať pri prejdení kurzorom ani po kliknutí. '
-              'Pozorovanie agenta z čítania kódu (nie je to mapovanie): avatar a meno kreslí `SharedContentPreviewCard.tsx` '
-              '(riadok `data-testid="feed-shared-card-owner"`) ako obyčajný `div` s `InitialsAvatar` a `span`, bez tlačidla '
-              'a bez obsluhy kliku, a leží mimo tlačidla textu náhľadu; preto sa nestane nič ani na mobile. Dáta karty '
-              '(`SharedContentCardOwner` v `sharedContentCard.ts`) nesú len meno a adresu avatara, no feed API pri '
-              'zdieľanom obsahu posiela aj objekt vlastníka (`shared_content.owner` s `id` a `slug`; je `null`, keď je '
-              'zdroj nedostupný), na ktorom sa dá postaviť preklik cez `openUserProfile` '
-              '(`feedProfileNavigation.ts`). Ten istý riadok sa kreslí aj pri zdieľanej ponuke a portfóliu (vlastník '
-              'ponuky alebo portfólia); agent predpokladá, že požiadavka platí aj tam, lebo ide o ten istý prvok, ak by '
-              'majiteľ chcel len repost, povie. Náhľad v dialógu zdieľania používa tú istú kartu bez objektu vlastníka z '
-              'API, tam má riadok ostať bez prekliku.',
-         note='JASNÉ (po K55): požiadavka je úplná a príčina známa (neinteraktívny riadok), kolega ju overí a opraví; ak sa '
-              'ukáže, že `shared_content.owner` nie je dostupný vo všetkých tokoch (nedostupný zdroj má `owner` `null`, vtedy '
-              'riadok ostáva bez prekliku; ak by bolo treba zásah do backendu), napíše krátku stranu a zastaví sa. STAV 25. 11. 2026: ide v dávke K59 (karta `karty/K59.md`, R80); K55 je hotová a dočasný odtlačok HTML karty je zmazaný, takže nič nebrzdí; mení sa `SharedContentPreviewCard.tsx` (439 riadkov) a `sharedContentCard.ts`, nie súbory nad 500 riadkov. Dôležité pri práci: avatar a meno sú '
-              'samostatný ovládací prvok vedľa tlačidla textu náhľadu (tlačidlo v tlačidle je neplatné HTML), v okne '
-              'detailu sa pred odchodom zatvára okno (`beforeNavigate`, ako pri hlavičke karty), meno sa nepodčiarkuje '
-              '(rovnako ako 361). Dopad na E2E: žiadny špec v `frontend/e2e` nepoužíva `feed-shared-card-owner` '
-              '(vyhľadávanie: 0 výskytov). Odhad: stredný · M.',
-         dec=None, src='ručný test majiteľa po K53 (22. 11. 2026)'),
+    dict(n=362, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
+         kratko='prezdieľaný príspevok (repost), ponuka a portfólio: po ťuknutí na avatar alebo meno pôvodného autora sa v '
+                'obrazovke detailu na iPhone profil neotvoril (v karte na Nástenke a v okne detailu na počítači je preklik hotový '
+                'v K59, v obrazovke detailu ho dopĺňa vetva 210, PR #335)',
+         what='Ručný test majiteľa po K53 (22. 11. 2026): v prezdieľanom príspevku sa zobrazuje avatar a meno pôvodného autora; '
+              'po kliknutí na avatar alebo meno sa nič nestane a profil sa neotvorí. Výskyt: počítač aj mobil. Požiadavka '
+              'majiteľa: kliknutie na avatar alebo meno pôvodného autora musí otvoriť jeho profil na počítači aj na mobile; '
+              'meno pôvodného autora sa nesmie podčiarkovať pri prejdení kurzorom ani po kliknutí. Pozorovanie agenta z čítania '
+              'kódu (nie je to mapovanie): avatar a meno kreslí `SharedContentPreviewCard.tsx` (riadok '
+              '`data-testid="feed-shared-card-owner"`) ako obyčajný `div` s `InitialsAvatar` a `span`, bez tlačidla a bez '
+              'obsluhy kliku, a leží mimo tlačidla textu náhľadu; preto sa nestane nič ani na mobile. Dáta karty '
+              '(`SharedContentCardOwner` v `sharedContentCard.ts`) nesú len meno a adresu avatara, no feed API pri zdieľanom '
+              'obsahu posiela aj objekt vlastníka (`shared_content.owner` s `id` a `slug`; je `null`, keď je zdroj nedostupný), '
+              'na ktorom sa dá postaviť preklik cez `openUserProfile` (`feedProfileNavigation.ts`). Ten istý riadok sa kreslí '
+              'aj pri zdieľanej ponuke a portfóliu (vlastník ponuky alebo portfólia); agent predpokladá, že požiadavka platí aj '
+              'tam, lebo ide o ten istý prvok, ak by majiteľ chcel len repost, povie. Náhľad v dialógu zdieľania používa tú '
+              'istú kartu bez objektu vlastníka z API, tam má riadok ostať bez prekliku.',
+         note='OPRAVENÉ V KÓDE, PR #335 ČAKÁ NA ZLÚČENIE A RUČNÝ TEST NA IPHONE (vetva 210, commit `082bd00a`, 25. 11. 2026; '
+              'píše agent na pokyn majiteľa). HISTÓRIA: K59 (PR #332, zlúčené 25. 11. 2026 o 16:46 UTC, merge `8cced7e5`, '
+              'commit `211e025c`; urobil kolega podľa karty `karty/K59.md`) napojila avatar a meno pôvodného autora na jeho '
+              'profil v karte na Nástenke (počítač aj mobil) a v okne detailu na počítači (okno sa najprv zavrie); riadok je '
+              'pri nedostupnom zdroji, bez id a adresy profilu, v dialógu zdieľania a pri zdieľaní vlastného obsahu naďalej bez '
+              'prekliku; meno sa nepodčiarkuje; vzhľad riadka sa nezmenil (v Chromiu bajt po bajte rovnaká snímka karty). '
+              'Obrazovka detailu na iPhone ostala bez prekliku: kolega sa tam zastavil, lebo obsah nad komentármi kreslí '
+              '`FeedPostMobileDetailContent.tsx` bez `onClose` a `FeedPostMobileDetail.tsx` bol podľa karty v zozname súborov '
+              'kola 3c (R80); zapísal to do commitu aj do manuálu ako známu odchýlku. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone '
+              'po nasadení K59): v obrazovke detailu sa pri prezdieľanom textovom príspevku, príspevku s fotkou, zdieľanej '
+              'ponuke aj portfóliu po ťuknutí na meno alebo avatar pôvodného autora nič nestalo (očakávanie: detail sa zatvorí '
+              'a otvorí sa profil); na počítači a priamo na Nástenke na iPhone preklik funguje; je to presne ten zvyšok, preto '
+              'k nemu nevznikol nový nález. OPRAVA: `FeedPostMobileDetail.tsx` (376 → 385 riadkov) zostavuje `openSharedOwner` '
+              '(`openUserProfile` s vlastníkom zo `shared_content.owner` a `beforeNavigate: onClose`; `undefined` bez '
+              'vlastníka) a cez novú voliteľnú vlastnosť `openSharedOwner` v `FeedPostMobileDetailContent.tsx` (237 → 245 '
+              'riadkov) ho podáva karte ako `onOpenOwner`; kartu z K59 ani iné súbory som nemenil, takže sa obrazovka pred '
+              'odchodom na profil zatvorí rovnako ako pri prekliku na zdroj, tlačidlo sa kreslí len pri dostupnom zdroji a '
+              'vlastníkovi s id alebo adresou profilu a pri zdieľaní vlastného obsahu sa riadok nekreslí. OVERENIE (podľa '
+              'výsledku): nový súbor testov `FeedPostMobileDetail.vlastnikZdielania.test.tsx` (13 testov, pred opravou padalo '
+              '10 z 13): štyri druhy zdieľaného obsahu (meno aj avatar: najprv zatvorenie, potom profil), preklik bez otvorenia '
+              'zdroja a fotoprehliadača, profil podľa id bez adresy, vlastné zdieľanie, nedostupný zdroj a vlastník bez id aj '
+              'adresy bez prekliku; zásahy do kódu 6 zo 7 zachytených, prežil ekvivalentný (vlastník z vlastnosti `post` '
+              'namiesto stavu `currentPost`: úprava príspevku vlastníka zdieľaného obsahu nemení); `tsc` a ESLint čisté, celý '
+              'Jest 696 sád a 10 168 testov bez pádu. Po úspešnom ručnom teste sa nález presunie medzi hotové. Ručne po oprave: '
+              'štyri druhy zdieľaného obsahu na iPhone v obrazovke detailu (ťuk na meno aj na avatar: obrazovka sa zavrie a '
+              'otvorí sa profil) a ťuk na text alebo fotku náhľadu otvára zdroj ako doteraz. JASNÉ. Dopad na E2E: žiadny '
+              '(`feed-shared-card-owner` E2E nepoužíva). Odhad: nízky · S.',
+         dec=None, src='ručný test majiteľa po K53 (22. 11. 2026) a po K59 (25. 11. 2026)'),
 ]
