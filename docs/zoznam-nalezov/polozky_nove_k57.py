@@ -58,9 +58,10 @@ NEW_ITEMS_K57 = [
               'efekt): `useFeedOverscrollLock.ts` dá `html` aj `body` `overscroll-behavior: none`, kým je detail alebo panel '
               'komentárov otvorený. KOREKCIA hypotézy (1) z opisu: zámok cez `document.body.style.overflow` by nepomohol (pri '
               'pravidlách `html, body` z `globals.css` stránku nezamkne, overené v Chromiu; nález 374) a prehliadač fotky ho '
-              'cez `ImageLightbox` už mal. ČAKÁ NA RUČNÝ TEST MAJITEĽA na iPhone (krátky vlastný príspevok len s textom, s '
-              'klávesnicou aj bez nej, aj panel komentárov nad fotkou: nič sa nesmie hýbať); nález sa zatvorí po jeho '
-              'potvrdení. Ak sa pole stále hýbe, treba vedieť kedy (po otvorení klávesnice, pri ťahu prstom, po zavretí '
+              'cez `ImageLightbox` už mal. ČAKÁ NA RUČNÝ TEST MAJITEĽA na iPhone (krátky vlastný príspevok len s textom a '
+              'pár krátkymi komentármi, s klávesnicou aj bez nej, a príspevok s fotkou s panelom komentárov: panel a pole '
+              'sa nesmú hýbať, pri komentároch, ktoré sa celé zmestia, ani zoznam; pri dlhších sa zoznam smie posúvať); '
+              'nález sa zatvorí po jeho potvrdení. Ak sa pole stále hýbe, treba vedieť kedy (po otvorení klávesnice, pri ťahu prstom, po zavretí '
               'klávesnice). Odhad: stredný · M.',
          dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
     dict(n=371, bucket=P, imp=S_, eff=EM, pkg='Zdieľanie a obrázky',
