@@ -22,6 +22,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FeedPostComments from './FeedPostComments';
+import { useFeedOverscrollLock } from './useFeedOverscrollLock';
 
 /** Ako ďaleko treba potiahnuť nadol, aby sa panel zavrel. */
 const CLOSE_DRAG_DISTANCE_PX = 90;
@@ -32,6 +33,11 @@ type FeedPhotoCommentsSheetProps = {
   onClose: () => void;
   onCountChange: (delta: number) => void;
   onTotalChange: (total: number) => void;
+  /**
+   * Pole na komentár dole získalo alebo stratilo fokus. Prehliadač fotky podľa toho pripne celú vrstvu na viditeľnú plochu
+   * nad klávesnicou (R75 bod 5, nález 370).
+   */
+  onFieldFocusChange?: (focused: boolean) => void;
 };
 
 export default function FeedPhotoCommentsSheet({
@@ -40,8 +46,11 @@ export default function FeedPhotoCommentsSheet({
   onClose,
   onCountChange,
   onTotalChange,
+  onFieldFocusChange,
 }: FeedPhotoCommentsSheetProps) {
   const { t } = useLanguage();
+  // Kým je panel otvorený, stránka pod ním sa nesmie „odpružiť“: pri pár komentároch by sa pole pred očami hýbalo (nález 370).
+  useFeedOverscrollLock(open);
   const dragStartRef = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
 
@@ -121,6 +130,7 @@ export default function FeedPhotoCommentsSheet({
           showTimestamp
           compactComposer
           mobileReplyField
+          onFieldFocusChange={onFieldFocusChange}
           onCountChange={onCountChange}
           onTotalChange={onTotalChange}
         />

@@ -16,7 +16,14 @@
  *  - klik na tmavé pozadie zatvára všade.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
   ChevronLeftIcon,
@@ -78,6 +85,13 @@ type ImageLightboxProps = {
    * nič neoreže – len sa vysoká a široká fotka vykreslia v rovnakom ráme.
    */
   fixedFrame?: boolean;
+  /**
+   * Štýl koreňového prvku prehliadača (`fixed inset-0`).
+   *
+   * Mobilný prehliadač Nástenky ním pri otvorenej klávesnici pripne celú vrstvu na viditeľnú plochu nad ňou, aby pole na
+   * komentár v paneli stálo tesne nad klávesnicou. Bez vlastnosti je prehliadač presne ako doteraz.
+   */
+  containerStyle?: CSSProperties;
 };
 
 const SWIPE_MIN_DISTANCE = 50;
@@ -105,6 +119,7 @@ export function ImageLightbox({
   dismissOnBackdropClick = true,
   hideCloseButton = false,
   fixedFrame = false,
+  containerStyle,
 }: ImageLightboxProps) {
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -207,6 +222,7 @@ export function ImageLightbox({
       aria-modal="true"
       aria-label={labels.dialog}
       data-testid={testId}
+      style={containerStyle}
       onClick={dismissOnBackdropClick ? onClose : undefined}
     >
       {hideCloseButton ? null : (
