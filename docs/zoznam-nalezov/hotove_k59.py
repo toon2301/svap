@@ -1,0 +1,115 @@
+# -*- coding: utf-8 -*-
+"""Nálezy opravené v K59 (PR #332) a v kole 3c redizajnu komentárov (vetva 208, PR #333): `DONE_SINCE_K59` (361 v K59; 370 a 375 až 377 v kole 3c).
+
+Samostatný súbor kvôli limitu 500 riadkov (`hotove_k40.py` má takmer 490 riadkov); `hotove_k40.py` ich pripája do `DONE_SINCE_K40` a odtiaľ idú do `DONE_SINCE`. Opravený nález sa odstráni z `NEW_ITEMS` a pridá sa sem: dict(n=…, vetva='K59', pr='#332', zlucene=True, text='HOTOVÉ …'). Nález 362 je v K59 hotový len sčasti, preto ostáva otvorený (jeho zvyšok je obrazovka detailu na iPhone) a v tabuľke PR má čiastočný riadok.
+"""
+
+DONE_SINCE_K59 = [
+    dict(n=361, vetva='K59', pr='#332', zlucene=True,
+         text='HOTOVÉ (K59, PR #332, zlúčené 25. 11. 2026 o 16:46 UTC, merge `8cced7e5`; štyri commity: nález 361 `8d47f982`, '
+              'nález 362 `211e025c`, manuál ručných testov `9b6a0bb0` a zlúčenie `main` `a0b3917e`; spolu s nálezom 362 11 '
+              'súborov, +1 070 a −22 riadkov: 5 produkčných súborov, 5 súborov testov (4 nové a 1 upravený) a manuál ručných '
+              'testov; kolega ju urobil podľa karty `karty/K59.md`, ktorú pripravil agent na pokyn majiteľa, súbežne s kolom 3c '
+              'podľa R80). PRIANIE (majiteľ po K53, 22. 11. 2026): meno autora príspevku sa nepodčiarkuje pri žiadnej '
+              'interakcii (kurzor, ťuk, kliknutie) a klik naň naďalej otvára profil. PRÍČINA: tlačidlo mena v hlavičke karty '
+              '(`FeedPostCardHeader.tsx`) malo triedy `underline-offset-2`, `hover:underline` a `disabled:no-underline`; na '
+              'mobile spúšťal podčiarknutie stav `hover`, ktorý po ťuknutí ostáva. OPRAVA: tri triedy sa z tlačidla '
+              '`feed-post-author-name` odstránili (`FeedPostCardHeader.tsx` ostal na 211 riadkoch); ostatné triedy a správanie '
+              'kliku sa nezmenili; mená autorov komentárov a ďalšie miesta s podčiarkovaním sa podľa karty nemenili (poznámka v '
+              '`poznamky.md`). OVERENIE (podľa commitu `8d47f982`): v Chromiu bolo pred zmenou podčiarknutie pri prejdení '
+              'kurzorom, po kliknutí aj po ťuknutí, po zmene `none` vo všetkých stavoch; nový súbor testov '
+              '`FeedPostCardHeader.bezPodciarknutia.test.tsx` (9 testov, pred zmenou padalo 5), zásahy do kódu 11 z 11 '
+              'zachytených. KONTROLA AGENTA (25. 11. 2026, po zlúčení; z GitHubu a v kópii `main` mimo repozitára): CI '
+              '(`checks`, `backend-postgres`) zelené, CodeRabbit bez inline pripomienok (riziko zlúčenia „Minimal“; len k názvu '
+              'PR „K59“ poznamenal, že je kód bez opisu), Codex bez pripomienok; zmenené súbory presne podľa karty '
+              '(`FeedPostCardHeader.tsx` 211, `SharedContentPreviewCard.tsx` 439 → 476, `sharedContentCard.ts` 66 → 75, '
+              '`FeedPostSharedBlock.tsx` 199 → 215, `FeedPostCard.tsx` 492 → 493; nič nad 500 riadkov, '
+              '`FeedPostMobileDetail.tsx` ostal bez zmeny), štyri nové súbory testov so slovenskými názvami (73 testov) a jeden '
+              'upravený existujúci (`SharedContentPreviewCard.test.tsx`, 587 riadkov, +10 −6, s odôvodnením v commite: '
+              'porovnanie HTML štyroch kontextov karty); vzorka 10 zásahov do kódu K59 na `main` 10 z 10 zachytených (vrátené '
+              'podčiarkovanie, tlačidlo bez `onOpenOwner`, pri nedostupnom zdroji aj bez id a adresy, nevolaný klik, chýbajúce '
+              'id vlastníka, preklik bez zatvorenia okna, profil autora namiesto pôvodného autora, názov bez mena, bez '
+              '`min-h-0`); celý Jest na `main` po zlúčení vetvy 208 695 sád a 10 155 testov bez pádu. RUČNÝ TEST MAJITEĽA (25. '
+              '11. 2026, po nasadení): meno autora sa nepodčiarkuje a preklik v karte na Nástenke a v okne detailu na počítači '
+              'funguje; dávka neprešla na 100 % len pre zvyšok nálezu 362 (obrazovka detailu na iPhone), ktorý ostáva otvorený. '
+              'Dopad na E2E: žiadny.'),
+    dict(n=370, vetva='208', pr='#333', zlucene=True,
+         text='HOTOVÉ (vetva 208, PR #333, zlúčené 25. 11. 2026 o 18:56 UTC, merge `029e65c1`; 11 commitov, 29 súborov, +2 762 '
+              'a −58 riadkov: 9 produkčných súborov (5 upravených a 4 nové), 11 nových súborov testov a dokumentácia; kolo 3c '
+              'redizajnu komentárov (K44) podľa R79, písal ho agent podľa R76, nie kolega; 370 sa zatvára spolu s 375 až 377). '
+              'HLÁSENIE (majiteľ 24. 11. 2026, iPhone): pole na komentár dole na obrazovke sa hýbe (nie je pevne fixné), podľa '
+              'jeho dojmu len pri vlastnom a krátkom príspevku len s textom; v Chromiu sa to nezreprodukovalo. OPRAVA po '
+              'kolách: kolo 3b (vetva 206, PR #330, 25. 11. 2026): vrstva mobilného detailu a prehliadača fotky sa pri fokuse '
+              'poľa pripne na viditeľnú plochu nad klávesnicou (`useFeedKeyboardViewport.ts`) a `html` aj `body` dostanú '
+              '`overscroll-behavior: none` (`useFeedOverscrollLock.ts`); kolo 3c (vetva 208): dopočítavanie viditeľnej plochy '
+              'aj bez udalostí (375), pozadie na celú plochu pod lištami iOS (377) a zámok ťahu prstom v paneli komentárov '
+              '(376); podrobnosti, overenie a kontrola PR sú pri nálezoch 375 až 377. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone '
+              'po nasadení kola 3c): bez nových nálezov (správa majiteľa: vetva 208 je nasadená a ručne otestovaná, žiadne nové '
+              'nálezy). Dopad na E2E: žiadny.'),
+    dict(n=375, vetva='208', pr='#333', zlucene=True,
+         text='HOTOVÉ (vetva 208, PR #333, zlúčené 25. 11. 2026 o 18:56 UTC, merge `029e65c1`; commit kódu a testov `6d8e9496`; '
+              '11 commitov, 29 súborov, +2 762 a −58 riadkov: 9 produkčných súborov (5 upravených a 4 nové), 11 nových súborov '
+              'testov a dokumentácia; kolo 3c redizajnu komentárov (K44) podľa R79, písal ho agent podľa R76, nie kolega). '
+              'HLÁSENIE (majiteľ po ručnom teste kola 3b, 25. 11. 2026, iPhone s iOS 27.0.1, Safari): v paneli komentárov nad '
+              'otvorenou fotkou stálo pole po otvorení klávesnice príliš vysoko a medzi ním a klávesnicou bola veľká prázdna '
+              'medzera (R75 bod 5); v detaile príspevku sa to neprejavilo. MERANIE Z FOTIEK (agent): vrstva `ImageLightbox` '
+              'bola pripnutá na výšku 391 pt a 293 pt, kým viditeľná plocha nad plávajúcimi lištami mala asi 392 pt. PRÍČINA '
+              '(hypotéza z kódu a fotiek, na iPhone neoverená): `useFeedKeyboardViewport.ts` prepočítaval výšku len pri '
+              'udalostiach `resize` a `scroll`, no iOS po otvorení klávesnice doladí viditeľnú plochu aj neskôr bez ďalšej '
+              'udalosti. OPRAVA: `useFeedKeyboardViewport.ts` (98 → 110 riadkov) znova meria plochu každých 150 ms '
+              '(`KEYBOARD_POLL_INTERVAL_MS`), kým je vrstva pripnutá, a pri zmene veľkosti okna; nezmenená hodnota prekreslenie '
+              'nespúšťa (plán z 25. 11. 2026 hovoril o časovači len dve sekundy po fokuse). Spolu s opravou prišla skrytá '
+              'diagnostika viditeľnej plochy (commit `79a34b6c`; zapína sa dlhým podržaním nadpisu „Komentáre“ 1,5 s, pamätá sa '
+              'v `localStorage`, ostatným používateľom sa nezobrazí; odchýlka od plánu: nie parametrom v adrese), ktorú agent '
+              'po overení odstráni v samostatnej vetve po pokyne majiteľa. OVERENIE (podľa výsledku): nové súbory testov '
+              '`useFeedKeyboardViewport.zastarane.test.tsx` (9 testov) a testy diagnostiky (43 testov); celé kolo 3c: `tsc` a '
+              'ESLint čisté, celý Jest 695 sád a 10 155 testov, zásahy do kódu 57 z 57 a po kontrole CodeRabbitu ďalších 9 z 9. '
+              'KONTROLA AGENTA (25. 11. 2026, z GitHubu): CI (`checks`, `backend-postgres`) zelené na každej hlave, Codex bez '
+              'pripomienok; CodeRabbit dvakrát: prvá kontrola (17:49 UTC) tri vlákna, jedna pripomienka v súhrne a jedna '
+              'triviálna: štyri oprávnené a opravené (test s jedným `act`, commit `6598297f`; príznak diagnostiky po zlyhanom '
+              'zápise do úložiska, `c8581d1b`; dve pripomienky k manuálu), jedna bez zmeny kódu (zmena smeru na okraji zoznamu, '
+              'pozri 376) a jedna triviálna bez zmeny; druhá kontrola (18:44 UTC) dve pripomienky stupňa Minor k manuálu '
+              '(diagnostika v prostredí s chybou a zakrytie osobných údajov na snímkach), obe opravené (`d6a40bcb`). RUČNÝ TEST '
+              'MAJITEĽA (25. 11. 2026, iPhone po nasadení): bez nových nálezov. Dopad na E2E: žiadny.'),
+    dict(n=376, vetva='208', pr='#333', zlucene=True,
+         text='HOTOVÉ (vetva 208, PR #333, zlúčené 25. 11. 2026 o 18:56 UTC, merge `029e65c1`; commit kódu a testov `11423f8d`; '
+              '11 commitov, 29 súborov, +2 762 a −58 riadkov: 9 produkčných súborov (5 upravených a 4 nové), 11 nových súborov '
+              'testov a dokumentácia; kolo 3c redizajnu komentárov (K44) podľa R79, písal ho agent podľa R76, nie kolega; '
+              'kontrola PR je pri nálezoch 375). HLÁSENIE (majiteľ po ručnom teste kola 3b, 25. 11. 2026, iPhone): pri ťahu '
+              'prstom hore a dole v paneli komentárov nad otvorenou fotkou sa pohybovala aj fotka za panelom, pri krátkych aj '
+              'dlhých komentároch; odpoveď majiteľa: len pri otvorenej klávesnici. Očakávanie: pri krátkych komentároch sa '
+              'nehýbe nič, pri dlhých len zoznam komentárov. PRÍČINA (hypotéza, na iPhone neoverená): pri otvorenej klávesnici '
+              'je rozloženie stránky vyššie než viditeľná plocha, takže iPhone dovolí viditeľnú plochu ťahom posúvať a pripnutá '
+              'vrstva ju dobiehala až po udalosti. OPRAVA: nový `useLightboxTouchPanLock.ts` (85 riadkov) a vlastnosť '
+              '`lockTouchPan` v `ImageLightbox.tsx` (348 → 379 riadkov spolu s 377): nepasívny `touchmove` na vrstve zruší '
+              'predvolenú akciu ťahu všade, kde sa v danom smere nedá posúvať (mimo posuvných prvkov a na okraji zoznamu, '
+              'tolerancia 1 px), viacprstové gesto sa nechá; `FeedPhotoViewer.tsx` ho zapína len kým je panel otvorený; plán z '
+              '25. 11. 2026 (CSS `touch-action` a zmrazenie pripnutia počas ťahu) sa nepoužil. ZNÁME OBMEDZENIE (CodeRabbit, PR '
+              '#333): zrušenie prvého `touchmove` platí pre celý dotyk, takže keď dotyk na okraji zoznamu začne opačným smerom, '
+              'zoznam sa po zmene smeru bez zdvihnutia prsta nemusí posunúť; kód sa nemenil, do manuálu pribudol krok a pri '
+              'ručnom teste sa to nehlásilo. OVERENIE (podľa výsledku): `useLightboxTouchPanLock.test.tsx` (13 testov), '
+              '`ImageLightbox.tahPrstom.test.tsx` (4) a `FeedPhotoViewer.tahPrstom.test.tsx` (7); rozhodovanie v reálnom '
+              'Chromiu vychádza podľa návrhu. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone po nasadení): bez nových nálezov. Dopad '
+              'na E2E: žiadny.'),
+    dict(n=377, vetva='208', pr='#333', zlucene=True,
+         text='HOTOVÉ (vetva 208, PR #333, zlúčené 25. 11. 2026 o 18:56 UTC, merge `029e65c1`; commit kódu a testov `aabdd808`; '
+              '11 commitov, 29 súborov, +2 762 a −58 riadkov: 9 produkčných súborov (5 upravených a 4 nové), 11 nových súborov '
+              'testov a dokumentácia; kolo 3c redizajnu komentárov (K44) podľa R79, písal ho agent podľa R76, nie kolega; '
+              'kontrola PR je pri nálezoch 375). HLÁSENIE (majiteľ po ručnom teste kola 3b, 25. 11. 2026, iPhone): pri '
+              'otvorenej klávesnici bolo v oblasti líšt nad klávesnicou (šípky a fajka, plávajúca lišta s adresou) vidieť obsah '
+              'Nástenky; odpoveď majiteľa: len v paneli komentárov nad fotkou, v detaile príspevku nie. PRÍČINA (hypotéza z '
+              'kódu a fotky): vrstva aj s čiernym pozadím je pripnutá na viditeľnú plochu nad lištami a priesvitné lišty ležia '
+              'nad stránkou. OPRAVA: `ImageLightbox.tsx` má vlastnosť `fullBleedBackdrop`: koreň vrstvy je priehľadný a čierne '
+              'pozadie `fixed inset-0 -z-10 bg-black/95` je jeho samostatný prvok na celú plochu; `FeedPhotoViewer.tsx` (243 → '
+              '257 riadkov) ju zapína len pri pripnutí; vzhľad sa nemení. OVERENIE (podľa výsledku): v reálnom Chromiu (okno '
+              '393×852 px, plocha nad klávesnicou 392 px) bolo pred opravou na 520 px vidieť Nástenku, po oprave pozadie vrstvy '
+              '(0 až 852 px), kým koreň, panel a pole ostali na rovnakých miestach; testy `ImageLightbox.pozadie.test.tsx` (7) '
+              'a `FeedPhotoViewer.pozadie.test.tsx` (4). Prečo sa detail príspevku správal inak, nie je vysvetlené (po oprave '
+              'to nie je potrebné). RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone po nasadení): bez nových nálezov. Dopad na E2E: '
+              'žiadny.'),
+]
+
+# Zlúčené PR, v ktorých nález nie je hotový celý (len časť otvoreného nálezu); `hotove_k40.py` ich pripája do `DONE_PR_TABLE_CASTOCNE_K40`.
+DONE_PR_TABLE_CASTOCNE_K59 = [
+    ('#332', 'K59', '362 (časť: preklik z avatara a mena pôvodného autora v karte na Nástenke a v okne detailu na počítači; obrazovku detailu na iPhone dopĺňa vetva 210, PR #335)'),
+]

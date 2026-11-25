@@ -77,6 +77,12 @@ type FeedPostMobileDetailContentProps = {
   isSelfShare: boolean;
   /** Preklik na zdroj zdieľaného obsahu (`undefined` = otvárať sa nedá); pred ním sa obrazovka zavrie. */
   openSharedSource: (() => void) | undefined;
+  /**
+   * Preklik na profil pôvodného autora zdieľaného obsahu (bez vlastnosti alebo `undefined` = vlastník nie je, napríklad pri
+   * nedostupnom zdroji); pred ním sa obrazovka zavrie (nález 362). Karta ho použije len keď je zdroj dostupný a vlastník má id
+   * alebo adresu profilu.
+   */
+  openSharedOwner?: (() => void) | undefined;
   /** Id pôvodného príspevku, ktorého fotku ukazuje repost (`null` = fotka nie je). */
   sharedPhotoPostId: number | null;
   setSharedPhotoOpen: (open: boolean) => void;
@@ -101,6 +107,7 @@ export default function FeedPostMobileDetailContent({
   currentPost,
   isSelfShare,
   openSharedSource,
+  openSharedOwner,
   sharedPhotoPostId,
   setSharedPhotoOpen,
   toggleLike,
@@ -159,6 +166,8 @@ export default function FeedPostMobileDetailContent({
             data={sharedContentCardFromPost(currentPost)}
             hideOwner={isSelfShare}
             onOpenSource={openSharedSource}
+            // Avatar a meno pôvodného autora otvoria jeho profil (nález 362).
+            onOpenOwner={openSharedOwner}
             // Tu je náhľad hlavným obsahom obrazovky, takže naň vedie klik aj
             // pri zdieľanom príspevku…
             onOpenPostPreview={openSharedSource}
