@@ -18,6 +18,24 @@ from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
     ('25. 11. 2026',
+      'Doplnok 2 vetvy 208 (po druhej kontrole CodeRabbitu na PR #333; `main` ostáva `8cced7e5`). (1) Kontrola agenta z '
+      'GitHubu: druhú kontrolu CodeRabbitu spustil majiteľ, dokončila sa o 18:44 UTC na hlave `4d407253` (prírastková '
+      'oproti `0ad353e3`): dve pripomienky stupňa Minor, obe k jednej odrážke o diagnostike v manuáli ručných testov, '
+      'obe oprávnené. K opravám z prvej kontroly nič nové: vlákna k manuálu a k testu s jedným `act` sú zatvorené a '
+      'CodeRabbit pri nich uviedol „Addressed in commits 6598297 to 4d40725“; vlákno k zámku ťahu (zmena smeru na '
+      'okraji zoznamu, `useLightboxTouchPanLock.ts`) ostáva otvorené a CodeRabbit ho znova nenahlásil (kód sa nemení, '
+      'rozhodne ručný test na iPhone). CI na hlave `4d407253` zelené (`checks`, `backend-postgres`). Na vlákna na '
+      'GitHube odpovedá a zatvára ich majiteľ. (2) Pripomienky: (a) diagnostika sa zapína v prostredí, v ktorom sa '
+      'chyba ukázala: odrážka žiadala Safari, no keby chyba vznikla len v nainštalovanej PWA (regresná kontrola), '
+      'snímky zo Safari by ju neukázali, lebo úložisko Safari a PWA je oddelené; manuál teraz žiada zapnúť diagnostiku '
+      'a urobiť snímky v tom istom prostredí, v ktorom sa chyba ukázala (Safari alebo PWA); (b) súkromie: snímky panela '
+      'komentárov môžu ukázať mená, texty komentárov a adresu v lište Safari, no úvod manuálu zakazuje posielať do '
+      'chatu adresy a mená; manuál teraz žiada pred odoslaním tieto údaje na snímkach zakryť a nechať viditeľný čierny '
+      'blok s číslami a rozloženie (panel, pole, klávesnica, lišty). (3) Kód sa nemení, upravený je len manuál ručných '
+      'testov (jedna odrážka) a `ZOZNAM.md` je prebudovaný. (4) Odporúčanie ďalšej kontroly (R81): netreba. Dôvod: obe '
+      'pripomienky sú stupňa Minor, týkajú sa len textu v manuáli, bez zmeny správania, a kód sa od zelenej kontroly CI '
+      'nezmenil; ak by majiteľ ďalšiu kontrolu chcel, je podľa limitu možná asi po 19:45 UTC. Dopad na E2E: žiadny.'),
+    ('25. 11. 2026',
       'Doplnok vetvy 208 (po kontrole CodeRabbitu a Codexu na PR #333; `main` ostáva `8cced7e5`; PR #333 s názvom „208“ '
       'otvoril majiteľ 25. 11. 2026 o 17:04 UTC). (1) Kontrola agenta z GitHubu na hlave `0ad353e3`: CI (`checks`, '
       '`backend-postgres`) zelené; Codex (`@codex review` o 17:39 UTC) bez pripomienok; CodeRabbit (spustil ho majiteľ '
