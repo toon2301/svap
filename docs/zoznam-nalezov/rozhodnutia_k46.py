@@ -238,11 +238,14 @@ DECISIONS_K46 = [
                  'R75 nerieši (pole ostáva jednoriadkové ako dnes); ostáva v skupine 6. Zodpovedá otázku R59 o poli pri odpovedi a mení '
                  'R52 len v bode „pole na komentár zatiaľ ostáva ako dnes“. Rieši nález 261 (skupina 7, K44) a súvisí s nálezmi 369 a '
                  '370. '
-                 'REALIZOVANÉ 25. 11. 2026 (vetva 206, kolo 3b podľa R79; čaká na PR): body (1) až (4) urobené podľa schválených '
-                 'obrázkov (jedno pole `FeedCommentMobileComposer`, riadok „Odpovedáš: Meno“, krížik, fialové „Odpovedať“, dva '
-                 'oddelené texty, posun na novú odpoveď), bod (5) pripnutím vrstvy na viditeľnú plochu nad klávesnicou a poistkou '
-                 'proti gumovému efektu, bod (6) sa nedotkol. Skutočné správanie klávesnice na iPhone potvrdí až ručný test '
-                 'majiteľa.',
+                 'REALIZOVANÉ 25. 11. 2026 (vetva 206, PR #330, zlúčené 25. 11. 2026 o 14:28 UTC, kolo 3b podľa R79): body (1) až '
+                 '(4) urobené podľa schválených obrázkov (jedno pole `FeedCommentMobileComposer`, riadok „Odpovedáš: Meno“, '
+                 'krížik, fialové „Odpovedať“, dva oddelené texty, posun na novú odpoveď), bod (5) pripnutím vrstvy na viditeľnú '
+                 'plochu nad klávesnicou a poistkou proti gumovému efektu, bod (6) sa nedotkol. RUČNÝ TEST MAJITEĽA (25. 11. 2026, '
+                 'iPhone) neprešiel na 100 %: majiteľ nahlásil tri chyby, všetky v paneli komentárov nad otvorenou fotkou (pole je '
+                 'pri klávesnici príliš vysoko: 375; hýbe sa fotka za panelom: 376; pod panelom je vidieť Nástenku: 377), v '
+                 'detaile príspevku sa podľa neho neprejavila žiadna. Bod (5) sa teda v paneli nad fotkou nepodaril; oprava ide v '
+                 'kole 3c (R79).',
          datum='24. 11. 2026'),
     dict(id='R76', tema='Redizajn komentárov (K44): kód píše agent, nie kolega (výnimka z R67)',
          otazka='R67 (23. 11. 2026) určilo, že kód redizajnu píše kolega z presnej karty agenta a agent kontroluje; možnosť, že kód '
@@ -295,7 +298,7 @@ DECISIONS_K46 = [
                  'mobile 5 riadkov, lebo ide o náhľad zdieľaného obsahu (podľa znenia odpovede (a)), na počítači v okne len s textom '
                  '10. Ak majiteľ pre niektoré z týchto miest chce iný počet, je to jedna podmienka. Rieši nález 373 (vetva 204).',
          datum='24. 11. 2026'),
-    dict(id='R78', tema='Nález 343 (úchytka panela komentárov nad fotkou) ide vo vetve agenta s K44; K59 sa zatiaľ nepripravuje',
+    dict(id='R78', tema='Nález 343 (úchytka panela komentárov nad fotkou) ide vo vetve agenta s K44; K59 sa zatiaľ nepripravuje (od 25. 11. 2026 je pripravená, R80)',
          otazka='Nález 343 mal ísť ako dávka K33 kolegu (R55: tenká úchytka 40×6 px, súbor `FeedPhotoCommentsSheet.tsx`). K44 (R76) '
                 'mení ten istý súbor (pole na komentár a odpoveď, zamknutie stránky a výška pri klávesnici v paneli nad fotkou). Kto ho '
                 'urobí a kedy? (a) Kolega samostatne (dvaja menia ten istý súbor); (b) agent vo vetve K44 ako samostatný krok. Kolega '
@@ -305,7 +308,8 @@ DECISIONS_K46 = [
          odpoved='Majiteľ 24. 11. 2026: „áno 343 urob v mojej vetve a K59 nemusíš ešte chystať“. Platí: (a) nález 343 (úchytka 40×6 px '
                  'podľa R55 a obrázka `navrhy/mobil-uchytka.png`) robí agent vo vetve K44 ako samostatný krok; dávka K33 zaniká; (b) K59 '
                  '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie. Nález 343 je hotový: urobený vo vetve 205 (kolo 3a podľa R79), '
-                 'PR #329, zlúčené 25. 11. 2026.',
+                 'PR #329, zlúčené 25. 11. 2026. '
+                 'K59 (361 a 362) je od 25. 11. 2026 pripravená na pokyn majiteľa (R80; `karty/K59.md`).',
          datum='24. 11. 2026'),
     dict(id='R79', tema='Redizajn komentárov (K44) ide v dvoch kolách: 3a plochý vzhľad s nálezmi 343 a 369 (vetva 205), 3b pole na '
                  'komentár a odpoveď na mobile s nálezom 370 až po ručnom teste kola 3a',
@@ -328,7 +332,33 @@ DECISIONS_K46 = [
                  'iPhone); (c) ďalšie kolá, tagy (372, 359, 368 a skupina 8 v 261; najprv návrh vzhľadu, R49) a nález 371, sa '
                  'nezačínajú, kým majiteľ nedá pokyn. '
                  'KOLO 3a je hotové: PR #329, zlúčené 25. 11. 2026, ručný test majiteľa prešiel na 100 %, CodeRabbit bez nálezov. '
-                 'KOLO 3b (pole na komentár a odpoveď na mobile podľa R75 a nález 370) urobené 25. 11. 2026 po pokyne majiteľa '
-                 '„Pusť sa do kola 3b“ vo vetve 206; čaká na PR a na ručný test na iPhone.',
+                 'KOLO 3b (pole na komentár a odpoveď na mobile podľa R75 a nález 370) je urobené po pokyne majiteľa „Pusť sa do '
+                 'kola 3b“ vo vetve 206: PR #330, zlúčené 25. 11. 2026 o 14:28 UTC; CodeRabbit dvakrát (päť pripomienok stupňa '
+                 'Minor, všetky opravené vo vetve), CI zelené. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone) neprešiel na 100 %: v '
+                 'detaile príspevku je všetko v poriadku, v paneli komentárov nad otvorenou fotkou sú tri chyby (nálezy 375, 376 a '
+                 '377). KOLO 3c (nové): oprava 375 až 377 vo vetve 208 (píše agent, R76) čaká na pokyn majiteľa a súbežne s ním '
+                 'ide karta K59 kolegu (R80). Nález 370 sa zatvorí po úspešnom teste panela.',
+         datum='25. 11. 2026'),
+    dict(id='R80', tema='Súbežná práca agenta a kolegu: výnimka z pravidla „v kóde pracuje len jeden“ pre kolo 3c agenta a kartu K59 '
+                 'kolegu',
+         otazka='Dohoda z 5. 11. 2026 (README, „Postup s kolegom“, upravená 6., 7. a 21. 11. 2026): v kóde pracuje vždy len jeden '
+                '(agent, kolega alebo Codex) a kolegovi ide vždy len jedna karta; agent bez pokynu majiteľa nič nepripravuje '
+                'dopredu. Majiteľ po ručnom teste kola 3b (25. 11. 2026; tri chyby v paneli komentárov nad fotkou, nálezy 375 až '
+                '377) požiadal, aby agent pripravil kolegovi prácu, ktorá sa neprekrýva s prácou agenta, lebo chce, aby agent už '
+                'teraz naplánoval aj svoj ďalší krok. Smú teda agent a kolega teraz pracovať súčasne?',
+         odporucanie='Áno, tentoraz a len pre dve práce, ktoré nemenia tie isté súbory: (1) kolo 3c agenta (oprava 375 až 377: '
+                     '`ImageLightbox.tsx`, `useFeedKeyboardViewport.ts`, `FeedPhotoViewer.tsx`, `FeedPhotoCommentsSheet.tsx`, '
+                     '`useFeedOverscrollLock.ts`, prípadne nové súbory a testy k nim) a (2) karta K59 kolegu (361 a 362: '
+                     '`FeedPostCardHeader.tsx`, `SharedContentPreviewCard.tsx`, `sharedContentCard.ts`, ich okolie a nové testy). '
+                     'Vetvy sú oddelené, každý si pred začiatkom aj pred odoslaním stiahne aktuálny `main` a ak sa jednému práca zlúči '
+                     'skôr, druhý ju zlúči do svojej vetvy; ak by sa niektorý súbor ukázal ako spoločný, kolega sa zastaví a napíše '
+                     'stranu a agent nič v jeho súboroch nemení. Ako trvalé pravidlo sa to nenavrhuje.',
+         kedy='Rozhodnuté 25. 11. 2026 (pokyn majiteľa).',
+         odpoved='Majiteľ 25. 11. 2026 (po ručnom teste kola 3b): pripraviť kolegovi prácu, ktorá sa neprekrýva s prácou agenta, a '
+                 'agent si má aj teraz naplánovať ďalší krok; „ak rozumieš, pusti sa do práce“. Platí: (a) K59 (nálezy 361 a 362; '
+                 '`karty/K59.md`) je pripravená (otázka R78 (b) o K59 je tým splnená); (b) agent má naplánované kolo 3c (oprava '
+                 '375 až 377, vetva 208) a kód nezačína, kým majiteľ nedá pokyn; (c) súbory oboch prác sa neprekrývajú (zoznam v '
+                 'odporúčaní a v karte), čo je podmienka súbežnej práce; (d) výnimka platí pre túto dvojicu prác; či má platiť aj '
+                 'ďalej, určí majiteľ (agent sa opýta pri ďalšej karte).',
          datum='25. 11. 2026'),
 ]

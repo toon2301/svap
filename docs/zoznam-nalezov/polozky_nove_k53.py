@@ -30,9 +30,8 @@ NEW_ITEMS_K53 = [
               '(rozsah je len meno autora príspevku), ak chce rovnako aj mená autorov komentárov, povie.',
          note='JASNÉ (po K55): zmena je jedna trieda na jednom mieste a test, kolega ju urobí bez mapovania. NIE PRED K55: '
               'zmena triedy zmení dočasný odtlačok HTML karty (44 stavov), ktorý sa počas delenia nikdy neaktualizuje (R45) '
-              'a ktorý zmaže až K55; po K55 sa dá triedu zmeniť spolu s novým testom (názvy po slovensky, R62). Zatiaľ ide po '
-              'redizajne spolu s 357 až 360 a 362; ak majiteľ chce nález skôr, ide to ako jedna malá zmena hneď po K55 bez '
-              'ďalšej dávky navyše. Po oprave sa v manuáli ručných testov (`sablony/dymovy_test.md`, krok 9) odstráni známa '
+              'a ktorý zmaže až K55; po K55 sa dá triedu zmeniť spolu s novým testom (názvy po slovensky, R62). Ide v dávke K59 '
+              '(karta `karty/K59.md`, pripravená 25. 11. 2026 na pokyn majiteľa, R80). Po oprave sa v manuáli ručných testov (`sablony/dymovy_test.md`, krok 9) odstráni známa '
               'odchýlka. Odhad: nízky · S.',
          dec=None, src='ručný test majiteľa po K53 (22. 11. 2026)'),
     dict(n=362, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
