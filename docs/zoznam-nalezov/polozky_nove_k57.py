@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 363: obrázky agenta k oknu detailu príspevku na počítači (23. 11. 2026) a text príspevku v okne (365 až 368 a 373, 24. 11. 2026).
+"""Nové nálezy od čísla 363: obrázky agenta k oknu detailu príspevku na počítači (23. 11. 2026) a text príspevku v okne (365 až 368, 24. 11. 2026; nález 373 je od 25. 11. 2026 hotový a jeho text je v `hotove_k40.py`).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova.
@@ -10,7 +10,7 @@ Nález 364 je od dávky K58 (PR #326) hotový.
 
 Nálezy 365 až 367 vznikli z návrhu majiteľa k textu príspevku a oknu detailu na počítači (24. 11. 2026; rozhodnutia R71 až R73)
 a vyriešila ich jedna dávka K58 (`karty/K58.md`, PR #326, hotové; ich text je v `hotove_k40.py`); nález 368 zistil agent pri kontrole krokov K58 a vzhľad jeho opravy schválil majiteľ (R74); opraví ho agent po K58.
-Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent. Nálezy 371 a 372 ohlásil majiteľ po ručnom teste K58 (24. 11. 2026).
+Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent; podľa R79 ide K44 v dvoch kolách: 369 je opravený v kole 3a (vetva 205) a 370 patrí do kola 3b. Nálezy 371 a 372 ohlásil majiteľ po ručnom teste K58 (24. 11. 2026).
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -43,13 +43,21 @@ NEW_ITEMS_K57 = [
               '(`FeedPostComments.tsx`) je posúvateľný box s `overflow-y-auto` (preto je jeho `overflow-x` vypočítané `auto`) a s '
               'odsadením `pr-1`; blok fotky `feed-mobile-detail-photo` (`FeedPostMobileDetailContent.tsx`) je roztiahnutý na celú '
               'šírku záporným okrajom `-mx-4` a jeho pravý okraj leží o 12 px za pravým okrajom boxu (pri šírke okna 390 px: blok 0 '
-              'až 386 px, box 16 až 374 px; `scrollWidth` − `clientWidth` = 12 px). Fotka navyše vpravo nesiaha až na okraj obrazovky '
-              '(386 z 390 px, chýbajú 4 px). Príspevok len s textom a panel komentárov nad fotkou (`FeedPhotoCommentsSheet.tsx`) '
+              'až 386 px, box 16 až 374 px; `scrollWidth` − `clientWidth` = 12 px). Viditeľná fotka je orezaná '
+              'posuvným boxom na 16 až 374 px, teda je 16 px od okrajov obrazovky z oboch strán; presah sa prejaví len tým, že sa box '
+              'dá posúvať vodorovne. Príspevok len s textom a panel komentárov nad fotkou (`FeedPhotoCommentsSheet.tsx`) '
               'vodorovne nepretekajú (0 px). Meranie bolo v statickom vykreslení (HTML skutočných komponentov s reálnymi štýlmi), nie '
               'na iPhone.',
-         note='JASNÉ (príčina nameraná). Súčasť dávky K44, ktorú píše agent (R76): zakázať vodorovné posúvanie boxu so zoznamom '
-              '(`overflow-x-hidden`) a zarovnať blok fotky na celú šírku obrazovky vrátane pravého okraja; test, že box vodorovne '
-              'nepreteká. Odhad: nízky · S.',
+         note='JASNÉ (príčina nameraná). OPRAVENÉ vo vetve 205 (kolo 3a podľa R79; píše agent podľa R76, PR otvára majiteľ): '
+              '`FeedPostMobileDetailContent.tsx` (233 → 237 riadkov) dáva bloku fotky `-mr-1` namiesto `-mx-4` (ruší práve '
+              'odsadenie `pr-1` posuvného boxu, takže blok sedí presne v boxe) a `FeedPostComments.tsx` dáva posuvnému boxu '
+              '`overflow-x-hidden` ako poistku. Viditeľná šírka fotky ostala rovnaká (16 px od okrajov obrazovky z oboch '
+              'strán); fotka od okraja po okraj by bola samostatná vzhľadová zmena (R49), ktorú majiteľ nežiadal, preto ju '
+              'agent neurobil. Overenie: v Chromiu je vodorovný presah 0 px pri šírkach 360, 390 a 430 px (predtým 12 px); nový '
+              'súbor testov `FeedPostMobileDetailContent.vodorovne.test.tsx` (3 testy) a test `overflow-x-hidden` v '
+              '`FeedPostComments.vlaknoAOddelovace.test.tsx`; zásahy M1 a P7 zachytené. Po zlúčení sa presunie do '
+              '`hotove_k40.py`; po nasadení krátky ručný test majiteľa na iPhone (detail príspevku s fotkou sa nedá posúvať do '
+              'strán). Odhad: nízky · S.',
          dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
     dict(n=370, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='detail príspevku na mobile: pole na komentár sa na iPhone hýbe pri krátkom vlastnom príspevku len s textom (príčina '
@@ -71,7 +79,7 @@ NEW_ITEMS_K57 = [
               'samostatný krok: zamknúť posúvanie stránky pod detailom príspevku a pod fotoprehliadačom a pri aktívnom poli na '
               'komentár nastaviť výšku obrazovky podľa viditeľnej plochy (rovnako ako v chate); je to najlepšia oprava (návrh agenta, '
               'nie dôkaz). Po nasadení ručný test majiteľa na iPhone (krátky vlastný príspevok len s textom, s klávesnicou aj bez '
-              'nej). Odhad: stredný · M.',
+              'nej). Podľa R79 ide až v kole 3b, po ručnom teste majiteľa po kole 3a (vetva 205). Odhad: stredný · M.',
          dec='ROZHODNUTIE R76', src='majiteľ (24. 11. 2026), meranie agenta v kópii `main`'),
     dict(n=371, bucket=P, imp=S_, eff=EM, pkg='Zdieľanie a obrázky',
          kratko='prezdieľaná ponuka alebo portfólio bez fotky: keď vlastník dodatočne pridá fotku, na Nástenke sa to neobnoví a stále '
@@ -108,28 +116,4 @@ NEW_ITEMS_K57 = [
               's fotkou je pružný; obrázok jeho schváleného vzhľadu ukazuje blok pod fotkou, pri presune nad fotku sa upraví) a so '
               'skupinou 8 v 261 (tagy na vlastný riadok pod textom), preto sa navrhujú jedným návrhom. Odhad: stredný · M.',
          dec=None, src='ručný test majiteľa po K58 (24. 11. 2026), čítanie kódu agentom'),
-    dict(n=373, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
-         kratko='počty riadkov „Viac“ v detaile príspevku sú po K58 vysoké: s fotkou, ponukou a portfóliom majú byť 5 riadkov, pri '
-                'prezdieľanom príspevku len s textom na počítači 10 (text zdieľajúceho) a 5 (pôvodný text)',
-         what='Zistil majiteľ pri ručnom teste K58 (24. 11. 2026) po nasadení: desať riadkov pred „Viac“ v otvorenom detaile je veľa. '
-              'Stav po K58 (z kódu): voľný príspevok s fotkou v okne na počítači 10 riadkov (`DETAIL_CAPTION_LINES`), obrazovka '
-              'detailu na mobile vždy 10 (`MOBILE_DETAIL_CAPTION_LINES`), text zdieľajúceho nad ponukou, portfóliom a repostom s '
-              'fotkou v dvojstĺpcovom okne 5 (`SPLIT_SHARED_CAPTION_LINES`), pôvodný text reposta 3 a v okne len s textom (R73) '
-              'voľný príspevok aj oba texty reposta celé, bez „Viac“. Majiteľ chcel: pri otvorenom detaile s fotkou, portfóliom a '
-              'ponukou „Viac“ od 6. riadku (5 riadkov) a pri prezdieľanom príspevku len s textom na počítači text zdieľajúceho 10 '
-              'riadkov a pôvodný text 5. Na miesta, ktoré nespomenul, odpovedal v R77: mobilný detail 5 riadkov pri fotke, ponuke, '
-              'portfóliu a náhľade zdieľaného obsahu a 10 pri príspevku len s textom; repost s fotkou v okne na počítači bez zmeny '
-              '(5 a 3); voľný príspevok len s textom v okne na počítači bez zmeny (celý); karta na Nástenke a prehliadač fotky bez '
-              'zmeny (3).',
-         note='V RIEŠENÍ: opravuje ho agent vo vetve 204 (z `main` `328355ee`; PR otvára majiteľ), nie kolega (je to malá zmena a '
-              'majiteľ ju zadal agentovi). Zmena: nová konštanta `DETAIL_MEDIA_CAPTION_LINES` = 5 vo `FeedPostCaption.tsx`; '
-              '`FeedPostCardCaption.tsx` dá textu voľného príspevku v ľavom stĺpci dvojstĺpcového okna 5 riadkov; '
-              '`FeedPostSharedBlock.tsx` dá textu zdieľajúceho v okne len s textom 10 riadkov (predtým celý); '
-              '`SharedContentPreviewCard.tsx` dá pôvodnému textu v okne len s textom 5 riadkov (predtým celý); '
-              '`FeedPostMobileDetailContent.tsx` dá textu 5 riadkov pri fotke alebo náhľade zdieľaného obsahu a inak 10 (predtým '
-              'vždy 10); ostatné súbory len komentáre. Bez zmeny ostáva jednostĺpcové okno pod 1 024 px (10 riadkov), karta, '
-              'prehliadač fotky a text zdieľajúceho s fotkou v okne (5). Žiadne nové texty ani preklady, `FeedPostCard.tsx` sa '
-              'nemenil. Dopad na E2E: žiadny (špecy nepoužívajú `data-testid` textu príspevku ani prepínač a ich texty sú '
-              'krátke). Po zlúčení sa presunie do `hotove_k40.py`. Odhad: nízky · S.',
-         dec='ROZHODNUTIE R77', src='ručný test majiteľa po K58 (24. 11. 2026)'),
 ]

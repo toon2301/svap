@@ -124,7 +124,14 @@ NEW_ITEMS_K14 = [
                'ťuk má aspoň 44 px. Návrh (neoverený): tlačidlo s priehľadnou plochou a vnútornou tenkou čiarou, globálne pravidlo '
                '`button` sa nemení. JASNÉ: jeden malý súbor pod 500 riadkov a test; nesúvisí s delením `FeedPostComments.tsx`, takže môže '
                'ísť aj pred ním. Podľa R78 (24. 11. 2026) ho robí agent v jednej vetve s K44, lebo K44 mení ten istý súbor '
-               '(`FeedPhotoCommentsSheet.tsx`: pole na komentár, zamknutie stránky a výška pri klávesnici); dávka K33 zaniká. Po nasadení krátky ručný test majiteľa na mobile. Odhad: nízky · S.',
+               '(`FeedPhotoCommentsSheet.tsx`: pole na komentár, zamknutie stránky a výška pri klávesnici); dávka K33 zaniká. '
+               'OPRAVENÉ vo vetve 205 (kolo 3a podľa R79; PR otvára majiteľ): `FeedPhotoCommentsSheet.tsx` (126 → 129 riadkov) '
+               'má úchytku s `min-h-0` (globálne `button { min-height: 36px }` ju už nenatiahne), `relative` a neviditeľnú '
+               'dotykovú plochu `after:` (asi 96×44 px, začína na okraji panela a siaha pod úchytku); farba, hover a správanie '
+               '(ťuk aj potiahnutie nadol) ostali. Overenie: v Chromiu je úchytka 40×6 px, dotyková plocha asi 96×44 px a nadpis '
+               '„Komentáre“ je hneď pod úchytkou; nový súbor testov `FeedPhotoCommentsSheet.uchytka.test.tsx` (8 testov); zásahy '
+               'S1 až S4 zachytené. Po zlúčení sa presunie do `hotove_k40.py`; po nasadení krátky ručný test majiteľa na mobile '
+               '(úchytka je tenká čiarka, ťuk na ňu aj potiahnutie nadol panel zavrie). Odhad: nízky · S.',
          dec='ROZHODNUTIE R55', src='majiteľ (17. 11. 2026) a kontrola agenta čítaním kódu'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
