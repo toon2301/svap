@@ -112,7 +112,7 @@ export default function FeedPostCardHeader({
           onClick={() => openUserProfile(post.author, { beforeNavigate: closeOverlayOnLeave })}
           disabled={!canOpenUserProfile(post.author)}
           data-testid="feed-post-author-name"
-          className="block max-w-full truncate text-left text-sm font-semibold text-gray-900 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default disabled:no-underline dark:text-white"
+          className="block max-w-full truncate text-left text-sm font-semibold text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-default dark:text-white"
         >
           {authorName}
         </button>
