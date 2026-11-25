@@ -111,5 +111,5 @@ DONE_SINCE_K59 = [
 
 # Zlúčené PR, v ktorých nález nie je hotový celý (len časť otvoreného nálezu); `hotove_k40.py` ich pripája do `DONE_PR_TABLE_CASTOCNE_K40`.
 DONE_PR_TABLE_CASTOCNE_K59 = [
-    ('#332', 'K59', '362 (časť: preklik z avatara a mena pôvodného autora v karte na Nástenke a v okne detailu na počítači; ostáva obrazovka detailu na iPhone)'),
+    ('#332', 'K59', '362 (časť: preklik z avatara a mena pôvodného autora v karte na Nástenke a v okne detailu na počítači; obrazovku detailu na iPhone dopĺňa vetva 210, PR #335)'),
 ]

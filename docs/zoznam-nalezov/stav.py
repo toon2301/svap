@@ -7,7 +7,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='25. 11. 2026',
-    kod='`main` `029e65c1` (po PR #333: vetva 208, kolo 3c redizajnu komentárov; kód je od PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty riadkov „Viac“, nález 373); PR #334 je karta K60 (vetva 209, čaká na zlúčenie), PR #333 je vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR #327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge `3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
+    kod='`main` `d8c39be4` (po PR #334: karta K60, len nový súbor karty; kód je od PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty riadkov „Viac“, nález 373); PR #335 je vetva 210 (zoznam a oprava 362, čaká na zlúčenie), PR #334 je karta K60 (vetva 209), PR #333 je vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR #327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge `3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -18,13 +18,38 @@ from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
     ('25. 11. 2026',
-      'Vetva 210 (z `main` `029e65c1`, teda po PR #333; len zoznam, bez kódu; PR vetvy 210 ešte nie je otvorený). (1) '
-      'Zlúčené od vetvy 208: PR #332 (K59, kolega; 25. 11. 2026 o 16:46 UTC, merge `8cced7e5`; štyri commity, 11 '
-      'súborov, +1 070 a −22 riadkov) a PR #333 (vetva 208, kolo 3c; 25. 11. 2026 o 18:56 UTC, merge `029e65c1`; 11 '
-      'commitov, 29 súborov, +2 762 a −58 riadkov; kontrola CodeRabbitu a Codexu je v záznamoch „Doplnok vetvy 208“). '
-      'PR #334 (vetva 209, karta K60) čaká na zlúčenie. (2) KONTROLA AGENTA K59 (po zlúčení; z GitHubu a v kópii `main` '
-      'mimo repozitára): CI zelené, CodeRabbit bez inline pripomienok (riziko „Minimal“; názov PR „K59“ je len kód), '
-      'Codex bez pripomienok; zmenené súbory presne podľa karty (`FeedPostCardHeader.tsx` 211, '
+      'Doplnok vetvy 210 (po kontrole CodeRabbitu na PR #335 a s opravou nálezu 362; `main` je `d8c39be4` po PR #334). '
+      'Vetva 210 už nie je len zoznam: majiteľ po otvorení PR #335 (25. 11. 2026 o 19:37 UTC) dal pokyn pridať do nej '
+      'aj opravu zvyšku nálezu 362. (1) Kontrola agenta z GitHubu: CI (`checks`, `backend-postgres`) zelené na hlave '
+      '`03bffd6b`; CodeRabbit (prvá kontrola o 19:49 UTC) jedna pripomienka stupňa Minor, oprávnená: súhrn nálezu 261 '
+      '(`polozky_nove_nastenka.py`) a veta v zázname vetvy 210 uvádzali, že ostávajú len skupiny 6 a 8, no podrobný '
+      'text 261 ponecháva otvorený automatický posun na prvú odpoveď po rozbalení (pôvodné prianie skupiny 7); súhrn aj '
+      'veta sú doplnené (stav „redizajn komentárov (K44) je hotový“ ostáva, zodpovedá R52 a R75) a `ZOZNAM.md` je '
+      'prebudovaný. Na vlákno na GitHube odpovedá a zatvára ho majiteľ. (2) OPRAVA NÁLEZU 362 (zvyšok: obrazovka '
+      'detailu na iPhone; commit `082bd00a`, píše agent): `FeedPostMobileDetail.tsx` (376 → 385 riadkov) zostavuje '
+      '`openSharedOwner` (`openUserProfile` s vlastníkom zo `shared_content.owner` a `beforeNavigate: onClose`) a cez '
+      'novú voliteľnú vlastnosť v `FeedPostMobileDetailContent.tsx` (237 → 245 riadkov) ho podáva karte ako '
+      '`onOpenOwner`; kartu z K59 ani iné súbory som nemenil; nový súbor testov '
+      '`FeedPostMobileDetail.vlastnikZdielania.test.tsx` (13 testov, pred opravou padalo 10); zásahy do kódu 6 zo 7 '
+      'zachytených, prežil ekvivalentný (vlastník z vlastnosti `post` namiesto stavu `currentPost`; vlastníka '
+      'zdieľaného obsahu úprava príspevku nemení); `tsc` a ESLint čisté, celý Jest 696 sád a 10 168 testov bez pádu. '
+      'Nález 362 ostáva otvorený do ručného testu majiteľa na iPhone (štyri druhy zdieľaného obsahu v obrazovke '
+      'detailu). (3) PR #334 (karta K60) je zlúčený (25. 11. 2026 o 19:36 UTC, merge `d8c39be4`); vetva 210 si `main` '
+      'zlúčila bez konfliktu. (4) Upravené: nález 362 (opravené v kóde, čaká na zlúčenie a ručný test), súhrn 261, '
+      'manuál ručných testov (preklik v obrazovke detailu na iPhone namiesto známej odchýlky), fronta, README, hlavička '
+      'stavu a tabuľka PR (K59: 362 časť). (5) Odporúčanie ďalšej kontroly (R81): pripomienka sama je len text v '
+      'zozname (netreba), no PR #335 už obsahuje nový kód, ktorý CodeRabbit ešte nekontroloval (zmena správania v '
+      'obrazovke detailu na iPhone, dva súbory a nový súbor testov), preto odporúčam jednu ďalšiu kontrolu po tomto '
+      'pushi a zlúčiť až po nej. Dopad na E2E: žiadny.'),
+    ('25. 11. 2026',
+      'Vetva 210 (z `main` `029e65c1`, teda po PR #333; zoznam; kód opravy 362 pribudol až po otvorení PR, pozri '
+      '„Doplnok vetvy 210“; PR vetvy 210 je #335, otvoril ho majiteľ 25. 11. 2026 o 19:37 UTC). (1) Zlúčené od vetvy '
+      '208: PR #332 (K59, kolega; 25. 11. 2026 o 16:46 UTC, merge `8cced7e5`; štyri commity, 11 súborov, +1 070 a −22 '
+      'riadkov) a PR #333 (vetva 208, kolo 3c; 25. 11. 2026 o 18:56 UTC, merge `029e65c1`; 11 commitov, 29 súborov, +2 '
+      '762 a −58 riadkov; kontrola CodeRabbitu a Codexu je v záznamoch „Doplnok vetvy 208“). PR #334 (vetva 209, karta '
+      'K60) je zlúčený (25. 11. 2026 o 19:36 UTC, merge `d8c39be4`). (2) KONTROLA AGENTA K59 (po zlúčení; z GitHubu a v '
+      'kópii `main` mimo repozitára): CI zelené, CodeRabbit bez inline pripomienok (riziko „Minimal“; názov PR „K59“ je '
+      'len kód), Codex bez pripomienok; zmenené súbory presne podľa karty (`FeedPostCardHeader.tsx` 211, '
       '`SharedContentPreviewCard.tsx` 439 → 476, `sharedContentCard.ts` 66 → 75, `FeedPostSharedBlock.tsx` 199 → 215, '
       '`FeedPostCard.tsx` 492 → 493; nič nad 500 riadkov; `FeedPostMobileDetail.tsx` sa nezmenil); štyri nové súbory '
       'testov so slovenskými názvami (73 testov) a jeden upravený existujúci (`SharedContentPreviewCard.test.tsx`, 587 '
@@ -42,19 +67,20 @@ ZMENY = [
       'novú vlastnosť do `SharedContentPreviewCard`, súbory 376 a 237 riadkov, odhad nízky · S). Súbory kola 3c sú '
       'zlúčené, takže oprava nič nebrzdí; kto ju urobí, určí majiteľ. (4) RUČNÝ TEST MAJITEĽA vetvy 208 (25. 11. 2026, '
       'iPhone po nasadení): bez nových nálezov; nálezy **370, 375, 376 a 377 sú HOTOVÉ** (text v `hotove_k59.py`), '
-      'redizajn komentárov (K44) je celý hotový a nález 261 ostáva len so skupinami 6 a 8. Skrytá diagnostika ostáva v '
-      'kóde, kým ju agent po pokyne majiteľa neodstráni. (5) Nečíslované nálezy kolegu: okrem zvyšku 362 som v textoch '
-      'jeho commitov nenašiel nič, čo spĺňa filter (dôkaz a dopad); tri zistenia sú v `poznamky.md` (zvyšné '
-      'podčiarkovanie v iných komponentoch, nepresné tvrdenie karty o dialógu zdieľania, prístupný názov tlačidla); '
-      'jeho správu majiteľovi, ak obsahuje ďalšie, agent nedostal. (6) K60 (karta pre kolegu, pripravená 25. 11. 2026 '
-      'na pokyn majiteľa; vetva 209, PR #334): tri mapovania bez zmeny kódu: A starý spôsob detailu príspevku na mobile '
-      '(360, 13, 70; súvis s 46), B prezdieľaná ponuka alebo portfólio bez fotky (371; backendová časť 91), C text '
-      'zdieľajúceho nad ponukou alebo portfóliom (358); kolega na nej pracuje; fronta má 360, 13, 70, 371 a 358 s '
-      'dávkou K60 (361 a 362 z nej odišli). (7) Upravené: nálezy 361, 370, 375, 376 a 377 (hotové), 362 (užší rozsah), '
-      '261, 13, 70, 358, 360 a 371 (fronta K60); rozhodnutia R52, R75, R79 a R80; fronta, README, hlavička stavu, '
-      'poradie prác (vlna 2), manuál ručných testov (dve odrážky: „overené ručným testom“), `poznamky.md` (päť '
-      'poznámok) a nový súbor `hotove_k59.py`. (8) Prehľad: nálezy 1–377, zatvorené 14, hotové 160, PRED 50, PO 133; '
-      'čakajúcich rozhodnutí 9 z 81. Dopad na E2E: žiadny zásah do `frontend/e2e/**`.'),
+      'redizajn komentárov (K44) je hotový a nález 261 ostáva so skupinami 6 a 8 a s automatickým posunom na prvú '
+      'odpoveď po rozbalení (pôvodné prianie skupiny 7, nie je v R52). Skrytá diagnostika ostáva v kóde, kým ju agent '
+      'po pokyne majiteľa neodstráni. (5) Nečíslované nálezy kolegu: okrem zvyšku 362 som v textoch jeho commitov '
+      'nenašiel nič, čo spĺňa filter (dôkaz a dopad); tri zistenia sú v `poznamky.md` (zvyšné podčiarkovanie v iných '
+      'komponentoch, nepresné tvrdenie karty o dialógu zdieľania, prístupný názov tlačidla); jeho správu majiteľovi, ak '
+      'obsahuje ďalšie, agent nedostal. (6) K60 (karta pre kolegu, pripravená 25. 11. 2026 na pokyn majiteľa; vetva '
+      '209, PR #334): tri mapovania bez zmeny kódu: A starý spôsob detailu príspevku na mobile (360, 13, 70; súvis s '
+      '46), B prezdieľaná ponuka alebo portfólio bez fotky (371; backendová časť 91), C text zdieľajúceho nad ponukou '
+      'alebo portfóliom (358); kolega na nej pracuje; fronta má 360, 13, 70, 371 a 358 s dávkou K60 (361 a 362 z nej '
+      'odišli). (7) Upravené: nálezy 361, 370, 375, 376 a 377 (hotové), 362 (užší rozsah), 261, 13, 70, 358, 360 a 371 '
+      '(fronta K60); rozhodnutia R52, R75, R79 a R80; fronta, README, hlavička stavu, poradie prác (vlna 2), manuál '
+      'ručných testov (dve odrážky: „overené ručným testom“), `poznamky.md` (päť poznámok) a nový súbor '
+      '`hotove_k59.py`. (8) Prehľad: nálezy 1–377, zatvorené 14, hotové 160, PRED 50, PO 133; čakajúcich rozhodnutí 9 z '
+      '81. Dopad na E2E: žiadny zásah do `frontend/e2e/**`.'),
     ('25. 11. 2026',
       'Doplnok 2 vetvy 208 (po druhej kontrole CodeRabbitu na PR #333; `main` ostáva `8cced7e5`). (1) Kontrola agenta z '
       'GitHubu: druhú kontrolu CodeRabbitu spustil majiteľ, dokončila sa o 18:44 UTC na hlave `4d407253` (prírastková '
