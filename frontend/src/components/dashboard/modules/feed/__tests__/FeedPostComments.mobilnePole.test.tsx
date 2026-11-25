@@ -303,6 +303,30 @@ describe('odoslanie odpovede', () => {
     });
   });
 
+  it('vysoká odpoveď: rezerva nad ňou sa zmenší, aby sa zmestila celá (zoznam pri klávesnici je nízky)', async () => {
+    // Zoznam 400 px, odpoveď 380 px: s pevnou rezervou 72 px by spodných 52 px ostalo pod okrajom.
+    nastavRozmery({ top: 0, bottom: 400 }, { top: 600, bottom: 980 });
+    mockedCreate.mockResolvedValue(odpoved(9, 'Moja odpoveď', 1));
+    await vykresli();
+
+    await odpovedzNaPrvy();
+
+    await waitFor(() => expect(scrollTo).toHaveBeenCalled());
+    // Voľné miesto okolo odpovede je 400 − 380 = 20 px, z toho 8 px odstup od okraja zostáva na rezervu 12 px.
+    expect(scrollTo).toHaveBeenCalledWith({ top: 600 - 12, behavior: 'auto' });
+  });
+
+  it('odpoveď vyššia než zoznam sa zarovná k jeho vrchu bez rezervy', async () => {
+    nastavRozmery({ top: 0, bottom: 300 }, { top: 600, bottom: 1000 });
+    mockedCreate.mockResolvedValue(odpoved(9, 'Moja odpoveď', 1));
+    await vykresli();
+
+    await odpovedzNaPrvy();
+
+    await waitFor(() => expect(scrollTo).toHaveBeenCalled());
+    expect(scrollTo).toHaveBeenCalledWith({ top: 600, behavior: 'auto' });
+  });
+
   it('odpoveď, ktorá je celá vo viditeľnej ploche, zoznam nehýbe', async () => {
     nastavRozmery({ top: 0, bottom: 300 }, { top: 100, bottom: 160 });
     mockedCreate.mockResolvedValue(odpoved(9, 'Moja odpoveď', 1));
