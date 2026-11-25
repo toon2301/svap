@@ -49,6 +49,11 @@ type UseFeedCommentMutationsOptions = {
   /** Požadované doscrollovanie po commite z `useFeedCommentsScroll`; píše doň len vlastný nový komentár. */
   scrollToTopRef: RefObject<ScrollBehavior | null>;
   setExpandedReplies: Dispatch<SetStateAction<Set<number>>>;
+  /**
+   * Mobil (R75 bod 4): po odoslaní odpovede sa sem poznačí id novej odpovede a zoznam sa k nej doscrolluje
+   * (`useFeedReplyScroll`). Bez vlastnosti (počítač) sa nič nepoznačí a odpoveď ostáva tam, kde bola.
+   */
+  scrollToReplyRef?: RefObject<number | null>;
 };
 
 export function useFeedCommentMutations({
@@ -64,6 +69,7 @@ export function useFeedCommentMutations({
   setComments,
   scrollToTopRef,
   setExpandedReplies,
+  scrollToReplyRef,
 }: UseFeedCommentMutationsOptions) {
   const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
@@ -147,6 +153,7 @@ export function useFeedCommentMutations({
       // Zneplatní prebiehajúci load() – rovnako ako pri bežnom komentári.
       loadSeqRef.current += 1;
       markSeen([created]);
+      if (scrollToReplyRef) scrollToReplyRef.current = created.id;
       setComments((current) =>
         current.map((comment) =>
           comment.id === parentId

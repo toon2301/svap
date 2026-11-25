@@ -120,6 +120,7 @@ export default function FeedPhotoCommentsSheet({
           fillHeight
           showTimestamp
           compactComposer
+          mobileReplyField
           onCountChange={onCountChange}
           onTotalChange={onTotalChange}
         />

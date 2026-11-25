@@ -299,6 +299,7 @@ export default function FeedPostMobileDetail({
           fillHeight
           showTimestamp
           compactComposer
+          mobileReplyField
           listHeader={listHeader}
           onCommentsReady={handleCommentsReady}
           onCountChange={(delta) =>
