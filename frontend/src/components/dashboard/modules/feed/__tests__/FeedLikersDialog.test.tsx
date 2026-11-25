@@ -1,9 +1,10 @@
 /**
  * Pokrytie zoznamu ľudí, čo dali lajk.
  *
- * Overuje sa: klik na počet otvorí dialóg so správnym zdrojom (príspevok vs.
- * komentár), klik na osobu naviguje na profil, blokovaný sa v zozname
- * nezobrazí (backend ho neposiela) a nulový počet nie je interaktívny.
+ * Overuje sa: klik na počet (pri príspevku) alebo na bublinku s lajkom (pri
+ * komentári, od R52) otvorí dialóg so správnym zdrojom, klik na osobu naviguje
+ * na profil, blokovaný sa v zozname nezobrazí (backend ho neposiela) a nulový
+ * počet nie je interaktívny.
  */
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
@@ -145,13 +146,14 @@ function comment(likes: number): FeedPostComment {
   } as unknown as FeedPostComment;
 }
 
-it('opens the dialog from a comment like count', async () => {
+it('opens the dialog from the comment like bubble', async () => {
   mockedCommentLikers.mockResolvedValue(page([liker(1, 'Jana')]));
 
   render(<FeedCommentLikeButton postId={5} comment={comment(2)} />);
 
+  // Od R52 otvára zoznam bublinka vpravo v riadku akcií, nie číslo pri srdiečku.
   await act(async () => {
-    screen.getByTestId('feed-comment-like-count-7').click();
+    screen.getByTestId('feed-comment-like-bubble-7').click();
   });
 
   expect(await screen.findByTestId('feed-likers-dialog')).toBeInTheDocument();
@@ -162,10 +164,13 @@ it('opens the dialog from a comment like count', async () => {
 it('leaves a zero count non-interactive', () => {
   render(<FeedCommentLikeButton postId={5} comment={comment(0)} />);
 
-  // Pri nule sa počet vôbec nevykreslí, takže nie je čo otvoriť ani prázdny
-  // dialóg zobraziť.
+  // Pri nule sa počet ani bublinka vôbec nevykreslia, takže nie je čo otvoriť
+  // ani prázdny dialóg zobraziť.
   expect(
     screen.queryByTestId('feed-comment-like-count-7'),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByTestId('feed-comment-like-bubble-7'),
   ).not.toBeInTheDocument();
   expect(screen.queryByTestId('feed-likers-dialog')).not.toBeInTheDocument();
 });
@@ -190,13 +195,13 @@ describe('lajk komentára – srdiečko vs. číslo', () => {
     expect(mockedCommentLikers).not.toHaveBeenCalled();
   });
 
-  it('opens the list from the count without toggling the like', async () => {
+  it('opens the list from the bubble without toggling the like', async () => {
     const { likeFeedPostComment } = jest.requireMock('@/lib/feedApi');
     mockedCommentLikers.mockResolvedValue(page([liker(1, 'Jana')]));
 
     render(<FeedCommentLikeButton postId={5} comment={comment(2)} />);
 
-    await userEvent.click(screen.getByTestId('feed-comment-like-count-7'));
+    await userEvent.click(screen.getByTestId('feed-comment-like-bubble-7'));
 
     expect(await screen.findByTestId('feed-likers-dialog')).toBeInTheDocument();
     expect(likeFeedPostComment).not.toHaveBeenCalled();
@@ -217,8 +222,9 @@ describe('lajk komentára – srdiečko vs. číslo', () => {
     // ako jeden zliaty prvok.
     expect(heart.className).toContain('text-purple-600');
     expect(count.className).not.toContain('text-purple-600');
-    // Číslo sa pri hoveri podčiarkne, čím sa hlási ako samostatný cieľ kliku.
-    expect(count.className).toContain('hover:underline');
+    // Číslo je od R52 len text, nie tlačidlo: nepodčiarkuje sa pri hoveri a nič neotvára.
+    expect(count.tagName).toBe('SPAN');
+    expect(count.className).not.toContain('hover:underline');
     // A medzi nimi je skutočná medzera.
     expect(count.parentElement?.className).toContain('gap-');
   });

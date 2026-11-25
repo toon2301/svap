@@ -89,7 +89,7 @@ export default function FeedRepliesAutoLoader({
   });
 
   return (
-    <div className="ml-4 pl-3">
+    <div className="ml-11">
       {observerMissing && !loading ? (
         <button
           type="button"
@@ -108,9 +108,9 @@ export default function FeedRepliesAutoLoader({
           aria-hidden="true"
         >
           {[0, 1].map((key) => (
-            <li key={key} className="flex animate-pulse items-start gap-2.5">
-              <div className="h-6 w-6 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
-              <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-1.5 dark:bg-gray-800/60">
+            <li key={key} className="flex animate-pulse items-start gap-2">
+              <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
+              <div className="flex-1 space-y-1.5 pt-1">
                 <div className="h-2 w-20 rounded bg-gray-200 dark:bg-gray-700" />
                 <div className="h-2.5 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
               </div>

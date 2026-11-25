@@ -324,8 +324,9 @@ export default function FeedPostComments({
           // svetlým aj tmavým variantom v globals.css) – tú istú má composer,
           // zdieľací dialóg aj zoznam lajkujúcich. V dvojstĺpcovom okne
           // detailu je toto JEDINÉ scrollovateľné miesto, takže by tu
-          // predvolený systémový scrollbar bil do očí najviac.
-          className={`subtle-scrollbar overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
+          // predvolený systémový scrollbar bil do očí najviac. `overflow-x-hidden`: zoznam sa nesmie posúvať vodorovne
+          // (nález 369); `overflow-y: auto` samo robí `overflow-x` vypočítaným `auto`.
+          className={`subtle-scrollbar overflow-y-auto overflow-x-hidden overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 ${
             fillHeight ? fill.scroll : 'max-h-[min(26rem,60dvh)]'
           }`}
         >
@@ -346,43 +347,63 @@ export default function FeedPostComments({
               {t('feed.commentsEmpty', 'Zatiaľ žiadne komentáre.')}
             </p>
           ) : (
-            <ul className="space-y-3">
-              {comments.map((comment) => (
+            <ul className="space-y-4">
+              {comments.map((comment, index) => (
                 <li key={comment.id}>
-                  {renderComment(comment)}
-
-                  {/* Odpovede – jedna úroveň, odsadené a menšie. Žiadna
-                      @menovka: kontext dáva samotné vnorenie. Predvolene
-                      zbalené, nech dlhé vlákno neprevalcuje zoznam. */}
-                  {expandedReplies.has(comment.id) && comment.replies?.length ? (
-                    <ul
-                      data-testid={`feed-comment-replies-${comment.id}`}
-                      className="mt-2 space-y-2 border-l-2 border-gray-200 pl-3 ml-4 dark:border-gray-700"
-                    >
-                      {comment.replies.map((reply) => (
-                        <li key={reply.id}>{renderComment(reply, true)}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  {/* Staršie odpovede sa dopĺňajú samy pri scrollovaní –
-                      žiadne tlačidlo. Sentinel patrí TOMUTO vláknu, takže
-                      viac rozbalených naraz sa navzájom nespúšťa. */}
-                  {expandedReplies.has(comment.id) &&
-                  (comment.replies?.length ?? 0) <
-                    (comment.replies_count ?? 0) ? (
-                    <FeedRepliesAutoLoader
-                      enabled={loadingRepliesFor !== comment.id}
-                      paused={repliesPaused}
-                      loading={loadingRepliesFor === comment.id}
-                      root={scrollRef}
-                      onLoadMore={() => void loadMoreReplies(comment.id)}
-                      testId={`feed-comment-replies-sentinel-${comment.id}`}
+                  {/* Jemný oddeľovač medzi komentármi najvyššej úrovne (R52): začína pri texte, nie pri avatare, a pred
+                      prvým komentárom nie je. */}
+                  {index > 0 ? (
+                    <div
+                      aria-hidden="true"
+                      data-testid="feed-comment-divider"
+                      className="mb-3 ml-11 border-t border-gray-200/70 dark:border-white/10"
                     />
                   ) : null}
 
+                  {/* Komentár s odpoveďami tvorí vlákno: zvislá čiara z avatara komentára vedie popri odpovediach. Pole na
+                      odpoveď je pod vláknom, aby čiara popri ňom nepokračovala. */}
+                  <div className="relative">
+                    {renderComment(comment)}
+
+                    {/* Odpovede – jedna úroveň, odsadené o šírku avatara a menšie, bez bubliny. Žiadna @menovka: kontext
+                        dáva samotné vnorenie. Predvolene zbalené, nech dlhé vlákno neprevalcuje zoznam. */}
+                    {expandedReplies.has(comment.id) && comment.replies?.length ? (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          data-testid={`feed-comment-thread-line-${comment.id}`}
+                          className="pointer-events-none absolute bottom-6 left-[17px] top-9 w-0.5 rounded-full bg-gray-200 dark:bg-white/[0.14]"
+                        />
+                        <ul
+                          data-testid={`feed-comment-replies-${comment.id}`}
+                          className="ml-11 mt-1 space-y-2"
+                        >
+                          {comment.replies.map((reply) => (
+                            <li key={reply.id}>{renderComment(reply, true)}</li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
+
+                    {/* Staršie odpovede sa dopĺňajú samy pri scrollovaní –
+                        žiadne tlačidlo. Sentinel patrí TOMUTO vláknu, takže
+                        viac rozbalených naraz sa navzájom nespúšťa. */}
+                    {expandedReplies.has(comment.id) &&
+                    (comment.replies?.length ?? 0) <
+                      (comment.replies_count ?? 0) ? (
+                      <FeedRepliesAutoLoader
+                        enabled={loadingRepliesFor !== comment.id}
+                        paused={repliesPaused}
+                        loading={loadingRepliesFor === comment.id}
+                        root={scrollRef}
+                        onLoadMore={() => void loadMoreReplies(comment.id)}
+                        testId={`feed-comment-replies-sentinel-${comment.id}`}
+                      />
+                    ) : null}
+                  </div>
+
                   {replyingTo === comment.id ? (
-                    <div className="ml-4 pl-3">
+                    <div className="ml-11">
                       <FeedCommentReplyComposer
                         value={replyText}
                         onChange={setReplyText}
