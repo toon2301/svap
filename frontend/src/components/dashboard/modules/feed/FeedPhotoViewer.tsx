@@ -153,6 +153,9 @@ export default function FeedPhotoViewer({
         // celé (`object-contain`), nič sa neoreže.
         fixedFrame
         containerStyle={feedKeyboardBoxStyle(keyboardBox)}
+        // Pripnutá vrstva končí nad plávajúcimi lištami iOS; pozadie na celú plochu zakryje Nástenku, ktorá by pod nimi
+        // presvitala (nález 377).
+        fullBleedBackdrop={keyboardBox !== null}
         // Podklad je tu plocha na prepínanie vrstvy, nie na zatváranie;
         // zatvára sa výhradne cez „X" v hlavičke (a Escape).
         dismissOnBackdropClick={false}

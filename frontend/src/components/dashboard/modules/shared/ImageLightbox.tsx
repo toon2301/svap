@@ -92,6 +92,14 @@ type ImageLightboxProps = {
    * komentár v paneli stálo tesne nad klávesnicou. Bez vlastnosti je prehliadač presne ako doteraz.
    */
   containerStyle?: CSSProperties;
+  /**
+   * Čierne pozadie na celú plochu stránky, oddelené od koreňového prvku (nález 377).
+   *
+   * Pri pripnutí koreňa na viditeľnú plochu (`containerStyle`) nie je pod priesvitnými lištami iOS nad klávesnicou nič, čo by
+   * zakrylo stránku pod prehliadačom. Zapnuté, koreň je priehľadný a pozadie kreslí jeho prvý potomok `fixed inset-0`, ktorý
+   * pripnutie nesleduje; klik naň sa prebubláva ku koreňu ako predtým. Bez vlastnosti je prehliadač presne ako doteraz.
+   */
+  fullBleedBackdrop?: boolean;
 };
 
 const SWIPE_MIN_DISTANCE = 50;
@@ -120,6 +128,7 @@ export function ImageLightbox({
   hideCloseButton = false,
   fixedFrame = false,
   containerStyle,
+  fullBleedBackdrop = false,
 }: ImageLightboxProps) {
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -215,9 +224,9 @@ export function ImageLightbox({
     <div
       ref={containerRef}
       tabIndex={-1}
-      className={`fixed inset-0 z-[112] flex items-center justify-center bg-black/95 focus:outline-none ${
-        fixedFrame ? 'p-0' : 'p-4'
-      }`}
+      className={`fixed inset-0 z-[112] flex items-center justify-center ${
+        fullBleedBackdrop ? '' : 'bg-black/95 '
+      }focus:outline-none ${fixedFrame ? 'p-0' : 'p-4'}`}
       role="dialog"
       aria-modal="true"
       aria-label={labels.dialog}
@@ -225,6 +234,14 @@ export function ImageLightbox({
       style={containerStyle}
       onClick={dismissOnBackdropClick ? onClose : undefined}
     >
+      {fullBleedBackdrop ? (
+        // `-z-10`: pod ostatnými potomkami koreňa (ten tvorí vlastný kontext vrstiev), nad jeho priehľadným pozadím.
+        <div
+          aria-hidden="true"
+          data-testid={`${testId}-backdrop`}
+          className="fixed inset-0 -z-10 bg-black/95"
+        />
+      ) : null}
       {hideCloseButton ? null : (
       <button
         type="button"
