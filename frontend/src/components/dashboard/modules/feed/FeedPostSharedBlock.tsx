@@ -22,6 +22,10 @@
  * dáva v ľavom stĺpci `gap-3` namiesto `space-y-3`: repost s fotkou rozpúšťa obal karty a rám (`display: contents`), na
  * ktorých by sa vonkajšie okraje stratili. Mimo ľavého stĺpca ostáva všetko ako predtým.
  *
+ * PROFIL PÔVODNÉHO AUTORA (nález 362): avatar a meno nad náhľadom otvoria jeho profil (`openUserProfile` s vlastníkom z feed API,
+ * `shared_content.owner`); v okne detailu sa pred odchodom zatvorí okno (`closeOverlayOnLeave` z karty, rovnako ako pri
+ * hlavičke). Pri nedostupnom zdroji backend vlastníka neposiela, takže sa riadok nepreklikáva.
+ *
  * REPOST TEXTOVÉHO PRÍSPEVKU V OKNE (`useFeedDetailTextOnly`, R73 a R77): nič tu nesúperí o miesto, preto má text zdieľajúceho
  * desať riadkov (`DETAIL_CAPTION_LINES`; predtým bol celý) a pôvodný text päť (`SharedContentPreviewCard`); „Viac" je od
  * 11. a od 6. riadku.
@@ -33,6 +37,7 @@ import FeedPostCaption, {
 } from './FeedPostCaption';
 import { useFeedDetailSplit } from './FeedDetailSplitContext';
 import { useFeedDetailTextOnly } from './FeedDetailTextOnlyContext';
+import { openUserProfile } from './feedProfileNavigation';
 import SharedContentPreviewCard from './SharedContentPreviewCard';
 import { sharedContentCardFromPost } from './sharedContentCard';
 import type { FeedPost, FeedTaggedUser } from '@/lib/feedApi';
@@ -51,6 +56,8 @@ type FeedPostSharedBlockProps = {
   isSelfShare: boolean;
   handleOpenSharedSource: (() => void) | undefined;
   handleOpenSharedPostPreview: (() => void) | undefined;
+  /** Preklik VON z karty (profil pôvodného autora): v okne detailu zavrie okno; bez vlastnosti sa nič nezatvára. */
+  closeOverlayOnLeave?: () => void;
   sharedPhotoPostId: number | null;
   setSharedPhotoOpen: (open: boolean) => void;
   taggedUsers: FeedTaggedUser[];
@@ -73,6 +80,7 @@ export default function FeedPostSharedBlock({
   isSelfShare,
   handleOpenSharedSource,
   handleOpenSharedPostPreview,
+  closeOverlayOnLeave,
   sharedPhotoPostId,
   setSharedPhotoOpen,
   taggedUsers,
@@ -85,6 +93,13 @@ export default function FeedPostSharedBlock({
   // vtedy, keď nesie zdieľaný obsah.
   const textOnly = useFeedDetailTextOnly();
   if (!(isShared || taggedUsers.length)) return null;
+
+  // Preklik na profil pôvodného autora zo zdieľaného obsahu: vlastník je z feed API (`shared_content.owner`, pri nedostupnom
+  // zdroji `null`), pred odchodom sa zatvorí okno detailu.
+  const sharedOwner = post.shared_content?.owner ?? null;
+  const handleOpenSharedOwner = sharedOwner
+    ? () => openUserProfile(sharedOwner, { beforeNavigate: closeOverlayOnLeave })
+    : undefined;
 
   // Text autora zdieľania – v okne ide nad náhľad, na karte pod neho.
   const sharedCaptionNode =
@@ -140,6 +155,7 @@ export default function FeedPostSharedBlock({
         <SharedContentPreviewCard
           data={sharedContentCardFromPost(post)}
           hideOwner={isSelfShare}
+          onOpenOwner={handleOpenSharedOwner}
           onOpenSource={handleOpenSharedSource}
           onOpenPostPreview={handleOpenSharedPostPreview}
           // Fotka vnútri repostu patrí PÔVODNÉMU príspevku – otvára jeho

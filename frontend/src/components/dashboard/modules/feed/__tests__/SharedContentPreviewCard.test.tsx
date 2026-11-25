@@ -163,14 +163,18 @@ function offerPost(shared: SharedOverrides = {}, post: SharedOverrides = {}): Fe
 /**
  * Karta bez toho, čím sa kontext líšiť SMIE.
  *
- * Jediný povolený rozdiel je `disabled` na klikacom ráme: v dialógu sa nikam
- * neodchádza, takže karta tam cieľ kliku nemá. Všetko ostatné – rám, náhľad,
- * štítok, cena aj riadok vlastníka – musí sedieť znak po znaku.
+ * Povolené rozdiely sú dva. `disabled` na klikacom ráme: v dialógu sa nikam
+ * neodchádza, takže karta tam cieľ kliku nemá. A obal riadka vlastníka (K59,
+ * nález 362): v zozname a v okne detailu je to tlačidlo s prekliknutím na
+ * profil, tam, kde karta nemá cieľ kliku (dialóg zdieľania), obyčajný `div`.
+ * Obal sa preto zahodí a porovnáva sa jeho obsah (avatar a meno). Všetko
+ * ostatné – rám, náhľad, štítok, cena – musí sedieť znak po znaku.
  */
 function cardMarkup(scope: HTMLElement): string {
-  return within(scope)
-    .getByTestId('feed-shared-card')
-    .outerHTML.replace(/ disabled=""/g, '');
+  const card = within(scope).getByTestId('feed-shared-card').cloneNode(true) as HTMLElement;
+  const ownerRow = card.querySelector('[data-testid="feed-shared-card-owner"]');
+  ownerRow?.replaceWith(...Array.from(ownerRow.childNodes));
+  return card.outerHTML.replace(/ disabled=""/g, '');
 }
 
 beforeEach(() => {

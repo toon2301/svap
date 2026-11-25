@@ -16,6 +16,13 @@ import { sameOriginFeedImageUrl } from './feedImageUrl';
 export type SharedContentCardOwner = {
   displayName: string;
   avatarUrl?: string | null;
+  /**
+   * Id a adresa profilu vlastníka zo `shared_content.owner` (feed API ich posiela len pri živom zdroji): podľa nich sa
+   * dá z riadka vlastníka prekliknúť na jeho profil. Bez nich (nedostupný zdroj, náhľad v dialógu zdieľania) sa
+   * riadok nepreklikáva.
+   */
+  id?: number;
+  slug?: string | null;
 };
 
 export type SharedContentCard = {
@@ -59,6 +66,8 @@ export function sharedContentCardFromPost(post: FeedPost): SharedContentCard | n
       ? {
           displayName: shared.owner_display_name,
           avatarUrl: shared.owner?.avatar_url ?? null,
+          id: shared.owner?.id,
+          slug: shared.owner?.slug,
         }
       : null,
     unavailable: post.shared_content_unavailable === true,

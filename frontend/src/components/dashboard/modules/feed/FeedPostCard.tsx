@@ -415,6 +415,7 @@ export default function FeedPostCard({
         isSelfShare={isSelfShare}
         handleOpenSharedSource={handleOpenSharedSource}
         handleOpenSharedPostPreview={handleOpenSharedPostPreview}
+        closeOverlayOnLeave={closeOverlayOnLeave}
         sharedPhotoPostId={sharedPhotoPostId}
         setSharedPhotoOpen={setSharedPhotoOpen}
         taggedUsers={taggedUsers}
