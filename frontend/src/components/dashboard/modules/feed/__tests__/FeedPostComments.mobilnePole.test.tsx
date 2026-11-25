@@ -235,6 +235,26 @@ describe('ťuk na „Odpovedať“ prepne spodné pole', () => {
     expect(pole()).toHaveFocus();
   });
 
+  it('dĺžku kontroluje text aktuálneho režimu: dlhá odpoveď ukáže počítadlo, dlhý koncept komentára pri odpovedi nie', async () => {
+    await vykresli();
+    // Koncept komentára je dlhší než limit: počítadlo je pri komentári, pri odpovedi s krátkym textom nie.
+    fireEvent.change(pole(), { target: { value: 'a'.repeat(501) } });
+    expect(screen.getByTestId('feed-comment-counter')).toHaveTextContent('501/500');
+
+    await userEvent.click(screen.getByTestId('feed-comment-reply-1'));
+    expect(screen.queryByTestId('feed-comment-counter')).toBeNull();
+
+    // Dlhá odpoveď: počítadlo a zakázaná ikona odoslania.
+    fireEvent.change(pole(), { target: { value: 'b'.repeat(501) } });
+    expect(screen.getByTestId('feed-comment-counter')).toHaveTextContent('501/500');
+    expect(screen.getByTestId('feed-comment-send')).toBeDisabled();
+
+    // Krížik vráti pole na dlhý koncept komentára, ktorý má počítadlo ako predtým.
+    await userEvent.click(screen.getByTestId('feed-reply-cancel'));
+    expect(screen.getByTestId('feed-comment-counter')).toHaveTextContent('501/500');
+    expect(pole()).toHaveValue('a'.repeat(501));
+  });
+
   it('ikona odoslania je v režime odpovede zakázaná, kým je pole prázdne', async () => {
     await vykresli();
 
