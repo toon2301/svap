@@ -33,6 +33,7 @@ import {
 import { useModalFocusTrap } from '../profile/useModalFocusTrap';
 import LightboxPhoto from './LightboxPhoto';
 import { isTopOverlayLayer, pushOverlayLayer } from './overlayLayers';
+import { useLightboxTouchPanLock } from './useLightboxTouchPanLock';
 
 export type ImageLightboxLabels = {
   /** Názov dialógu pre čítačky obrazovky. */
@@ -100,6 +101,12 @@ type ImageLightboxProps = {
    * pripnutie nesleduje; klik naň sa prebubláva ku koreňu ako predtým. Bez vlastnosti je prehliadač presne ako doteraz.
    */
   fullBleedBackdrop?: boolean;
+  /**
+   * Ťah prstom vo vrstve posúva len posuvné prvky (nález 376): všade inde a na hraniciach posuvného prvku sa predvolená akcia
+   * ťahu zruší, takže sa nehýbe fotka, panel ani viditeľná plocha. Pozri `useLightboxTouchPanLock`. Bez vlastnosti je
+   * prehliadač presne ako doteraz.
+   */
+  lockTouchPan?: boolean;
 };
 
 const SWIPE_MIN_DISTANCE = 50;
@@ -129,6 +136,7 @@ export function ImageLightbox({
   fixedFrame = false,
   containerStyle,
   fullBleedBackdrop = false,
+  lockTouchPan = false,
 }: ImageLightboxProps) {
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -142,6 +150,12 @@ export function ImageLightbox({
   // ostatné dialógy appky, takže sa klávesnica po zatvorení vráti na fotku,
   // z ktorej sa prehliadač otvoril.
   useModalFocusTrap(open, containerRef);
+
+  // Koreň sa vykreslí až po `mounted`, preto sa zámok ťahu viaže na jeho prvú dostupnosť (nález 376).
+  useLightboxTouchPanLock(
+    containerRef,
+    lockTouchPan && mounted && portalNode !== null && open && Boolean(activeSrc),
+  );
 
   const goToPrevious = useCallback(() => {
     if (!hasMultiple) return;
