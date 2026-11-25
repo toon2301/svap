@@ -17,34 +17,43 @@ import { useSyncExternalStore } from 'react';
 export const KEYBOARD_DIAGNOSTICS_STORAGE_KEY = 'svaply-kbd-diagnostics';
 export const KEYBOARD_DIAGNOSTICS_EVENT = 'svaply-kbd-diagnostics-change';
 
-/** Príznak v pamäti: poistka pre prípad, že `localStorage` nejde použiť (súkromné okno, zablokované údaje). */
-let memoryFlag = false;
+/**
+ * Poistka v pamäti pre prípad, že `localStorage` nejde použiť (súkromné okno, zablokované údaje).
+ *
+ * `null` znamená, že platí úložisko. Hodnota sa nastaví len vtedy, keď zápis alebo odstránenie príznaku v úložisku zlyhalo, a
+ * platí, kým sa nasledujúca zmena do úložiska úspešne nezapíše. Bez nej by čítanie po zlyhanom `removeItem` dostalo zo
+ * zastaraného úložiska „1“ a diagnostika by sa nedala vypnúť; po zlyhanom `setItem` (úložisko sa číta, no nezapisuje) by sa
+ * zasa nedala zapnúť (pripomienka CodeRabbitu na PR #333).
+ */
+let memoryOverride: boolean | null = null;
 
-function readStored(): boolean | null {
+/** Príznak z úložiska; keď sa úložisko nedá čítať, je diagnostika vypnutá (zapnúť ju vtedy dá len poistka v pamäti). */
+function readStored(): boolean {
   try {
     return window.localStorage.getItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY) === '1';
   } catch {
-    return null;
+    return false;
   }
 }
 
 /** Je diagnostika zapnutá? */
 export function readKeyboardDiagnosticsFlag(): boolean {
   if (typeof window === 'undefined') return false;
-  const stored = readStored();
-  return stored === null ? memoryFlag : stored;
+  return memoryOverride ?? readStored();
 }
 
 /** Prepne diagnostiku, dá o tom vedieť otvoreným prekryvom a vráti novú hodnotu. */
 export function toggleKeyboardDiagnostics(): boolean {
   const next = !readKeyboardDiagnosticsFlag();
-  memoryFlag = next;
+  let stored = true;
   try {
     if (next) window.localStorage.setItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY, '1');
     else window.localStorage.removeItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY);
   } catch {
-    // Úložisko je zablokované: príznak ostane len v pamäti.
+    // Úložisko je zablokované: príznak platí len v pamäti, kým sa zmena do úložiska nepodarí.
+    stored = false;
   }
+  memoryOverride = stored ? null : next;
   window.dispatchEvent(new Event(KEYBOARD_DIAGNOSTICS_EVENT));
   return next;
 }

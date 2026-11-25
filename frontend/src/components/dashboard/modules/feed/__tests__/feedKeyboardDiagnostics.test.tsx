@@ -32,6 +32,9 @@ function obdlznik(top: number, bottom: number): DOMRect {
 afterEach(() => {
   jest.restoreAllMocks();
   if (readKeyboardDiagnosticsFlag()) toggleKeyboardDiagnostics();
+  // Poistka v pamäti po zlyhanom zápise sa zahodí až úspešným zápisom: zapnúť a znova vypnúť (úložisko už funguje).
+  toggleKeyboardDiagnostics();
+  toggleKeyboardDiagnostics();
   window.localStorage.clear();
   document.body.innerHTML = '';
   if (povodnaPlocha) Object.defineProperty(window, 'visualViewport', povodnaPlocha);
@@ -114,6 +117,56 @@ describe('príznak diagnostiky', () => {
     expect(readKeyboardDiagnosticsFlag()).toBe(true);
     expect(toggleKeyboardDiagnostics()).toBe(false);
     expect(readKeyboardDiagnosticsFlag()).toBe(false);
+  });
+
+  // Pripomienka CodeRabbitu na PR #333: po zlyhanom zápise do úložiska nesmie čítanie vrátiť zastaranú hodnotu z úložiska.
+  it('keď `removeItem` zlyhá a v úložisku je „1“, diagnostika sa aj tak vypne', () => {
+    expect(toggleKeyboardDiagnostics()).toBe(true);
+    expect(window.localStorage.getItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY)).toBe('1');
+    jest.spyOn(Storage.prototype, 'removeItem').mockImplementationOnce(() => {
+      throw new Error('zablokované');
+    });
+
+    expect(toggleKeyboardDiagnostics()).toBe(false);
+
+    // Úložisko stále drží „1“, no platí hodnota v pamäti: diagnostika je vypnutá.
+    expect(window.localStorage.getItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY)).toBe('1');
+    expect(readKeyboardDiagnosticsFlag()).toBe(false);
+
+    // Ďalšie prepnutie sa už do úložiska zapíše a znova platí úložisko.
+    expect(toggleKeyboardDiagnostics()).toBe(true);
+    expect(readKeyboardDiagnosticsFlag()).toBe(true);
+    expect(toggleKeyboardDiagnostics()).toBe(false);
+    expect(window.localStorage.getItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY)).toBeNull();
+    expect(readKeyboardDiagnosticsFlag()).toBe(false);
+  });
+
+  it('keď `setItem` zlyhá (úložisko sa číta, no nezapisuje), diagnostika sa zapne aspoň v pamäti', () => {
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new Error('zablokované');
+    });
+
+    expect(toggleKeyboardDiagnostics()).toBe(true);
+
+    expect(window.localStorage.getItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY)).toBeNull();
+    expect(readKeyboardDiagnosticsFlag()).toBe(true);
+
+    // Vypnutie sa do úložiska podarí (kľúč tam nie je), takže znova platí úložisko.
+    expect(toggleKeyboardDiagnostics()).toBe(false);
+    expect(readKeyboardDiagnosticsFlag()).toBe(false);
+  });
+
+  it('po úspešnom zápise sa znova číta úložisko, takže zmena z iného okna platí', () => {
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new Error('zablokované');
+    });
+    toggleKeyboardDiagnostics();
+    toggleKeyboardDiagnostics();
+    expect(readKeyboardDiagnosticsFlag()).toBe(false);
+
+    window.localStorage.setItem(KEYBOARD_DIAGNOSTICS_STORAGE_KEY, '1');
+
+    expect(readKeyboardDiagnosticsFlag()).toBe(true);
   });
 });
 
