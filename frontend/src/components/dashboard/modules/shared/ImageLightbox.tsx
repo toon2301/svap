@@ -33,6 +33,7 @@ import {
 import { useModalFocusTrap } from '../profile/useModalFocusTrap';
 import LightboxPhoto from './LightboxPhoto';
 import { isTopOverlayLayer, pushOverlayLayer } from './overlayLayers';
+import { useLightboxTouchPanLock } from './useLightboxTouchPanLock';
 
 export type ImageLightboxLabels = {
   /** Názov dialógu pre čítačky obrazovky. */
@@ -92,6 +93,20 @@ type ImageLightboxProps = {
    * komentár v paneli stálo tesne nad klávesnicou. Bez vlastnosti je prehliadač presne ako doteraz.
    */
   containerStyle?: CSSProperties;
+  /**
+   * Čierne pozadie na celú plochu stránky, oddelené od koreňového prvku (nález 377).
+   *
+   * Pri pripnutí koreňa na viditeľnú plochu (`containerStyle`) nie je pod priesvitnými lištami iOS nad klávesnicou nič, čo by
+   * zakrylo stránku pod prehliadačom. Zapnuté, koreň je priehľadný a pozadie kreslí jeho prvý potomok `fixed inset-0`, ktorý
+   * pripnutie nesleduje; klik naň sa prebubláva ku koreňu ako predtým. Bez vlastnosti je prehliadač presne ako doteraz.
+   */
+  fullBleedBackdrop?: boolean;
+  /**
+   * Ťah prstom vo vrstve posúva len posuvné prvky (nález 376): všade inde a na hraniciach posuvného prvku sa predvolená akcia
+   * ťahu zruší, takže sa nehýbe fotka, panel ani viditeľná plocha. Pozri `useLightboxTouchPanLock`. Bez vlastnosti je
+   * prehliadač presne ako doteraz.
+   */
+  lockTouchPan?: boolean;
 };
 
 const SWIPE_MIN_DISTANCE = 50;
@@ -120,6 +135,8 @@ export function ImageLightbox({
   hideCloseButton = false,
   fixedFrame = false,
   containerStyle,
+  fullBleedBackdrop = false,
+  lockTouchPan = false,
 }: ImageLightboxProps) {
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -133,6 +150,12 @@ export function ImageLightbox({
   // ostatné dialógy appky, takže sa klávesnica po zatvorení vráti na fotku,
   // z ktorej sa prehliadač otvoril.
   useModalFocusTrap(open, containerRef);
+
+  // Koreň sa vykreslí až po `mounted`, preto sa zámok ťahu viaže na jeho prvú dostupnosť (nález 376).
+  useLightboxTouchPanLock(
+    containerRef,
+    lockTouchPan && mounted && portalNode !== null && open && Boolean(activeSrc),
+  );
 
   const goToPrevious = useCallback(() => {
     if (!hasMultiple) return;
@@ -215,9 +238,9 @@ export function ImageLightbox({
     <div
       ref={containerRef}
       tabIndex={-1}
-      className={`fixed inset-0 z-[112] flex items-center justify-center bg-black/95 focus:outline-none ${
-        fixedFrame ? 'p-0' : 'p-4'
-      }`}
+      className={`fixed inset-0 z-[112] flex items-center justify-center ${
+        fullBleedBackdrop ? '' : 'bg-black/95 '
+      }focus:outline-none ${fixedFrame ? 'p-0' : 'p-4'}`}
       role="dialog"
       aria-modal="true"
       aria-label={labels.dialog}
@@ -225,6 +248,14 @@ export function ImageLightbox({
       style={containerStyle}
       onClick={dismissOnBackdropClick ? onClose : undefined}
     >
+      {fullBleedBackdrop ? (
+        // `-z-10`: pod ostatnými potomkami koreňa (ten tvorí vlastný kontext vrstiev), nad jeho priehľadným pozadím.
+        <div
+          aria-hidden="true"
+          data-testid={`${testId}-backdrop`}
+          className="fixed inset-0 -z-10 bg-black/95"
+        />
+      ) : null}
       {hideCloseButton ? null : (
       <button
         type="button"

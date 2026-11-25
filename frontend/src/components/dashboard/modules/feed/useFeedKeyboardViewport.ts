@@ -15,6 +15,10 @@
  *   by vrstvu na chvíľu natiahlo pod ňu; krátke zavlnenie fokusu (ťuk na krížik, prepnutie cieľa) ju tiež nechá na mieste.
  * - Pri priblížení prstami (`scale` > 1) sa nepripína: viditeľná plocha je vtedy len výrez, nie plocha nad klávesnicou.
  * - Bez `window.visualViewport` (staré prehliadače, jsdom) sa nič nepripína a vrstva ostáva `inset-0`.
+ * - Kým je vrstva pripnutá, plocha sa znova meria každých `KEYBOARD_POLL_INTERVAL_MS` aj bez udalostí: iOS po otvorení
+ *   klávesnice doladí viditeľnú plochu ešte neskôr (plávajúce lišty Safari sa usadia až po nej) a nemusí poslať ďalšie `resize`
+ *   ani `scroll`. Nález 375 ukázal vrstvu zaseknutú na výške 293 pt, kým viditeľná plocha mala asi 392 pt: pole stálo vysoko nad
+ *   klávesnicou. Nezmenená hodnota prekreslenie nespúšťa, takže pravidelné meranie nič nestojí.
  */
 
 import { useEffect, useState, type CSSProperties } from 'react';
@@ -28,6 +32,9 @@ export type FeedKeyboardBox = {
 
 /** Ako dlho po strate fokusu poľa ostane vrstva pripnutá (ms). */
 export const KEYBOARD_RELEASE_DELAY_MS = 300;
+
+/** Ako často sa pripnutá vrstva znova zmeria aj bez udalostí z `visualViewport` (ms). */
+export const KEYBOARD_POLL_INTERVAL_MS = 150;
 
 /** Pri väčšom priblížení sa vrstva nepripína. */
 const MAX_PINNED_SCALE = 1.01;
@@ -88,9 +95,14 @@ export function useFeedKeyboardViewport(active: boolean): FeedKeyboardBox | null
     update();
     viewport.addEventListener('resize', update);
     viewport.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    // Poistka pre zastaranú hodnotu: pozri hlavičku súboru (nález 375).
+    const timer = window.setInterval(update, KEYBOARD_POLL_INTERVAL_MS);
     return () => {
       viewport.removeEventListener('resize', update);
       viewport.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      window.clearInterval(timer);
     };
   }, [held]);
 

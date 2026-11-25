@@ -34,6 +34,7 @@ import {
   useFeedKeyboardViewport,
 } from './useFeedKeyboardViewport';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
+import FeedKeyboardDiagnostics from './FeedKeyboardDiagnostics';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPhotoCommentsSheet from './FeedPhotoCommentsSheet';
 import FeedPhotoViewerChrome from './FeedPhotoViewerChrome';
@@ -153,6 +154,12 @@ export default function FeedPhotoViewer({
         // celé (`object-contain`), nič sa neoreže.
         fixedFrame
         containerStyle={feedKeyboardBoxStyle(keyboardBox)}
+        // Pripnutá vrstva končí nad plávajúcimi lištami iOS; pozadie na celú plochu zakryje Nástenku, ktorá by pod nimi
+        // presvitala (nález 377).
+        fullBleedBackdrop={keyboardBox !== null}
+        // Kým je panel komentárov otvorený, ťah prstom posúva len zoznam komentárov, nie fotku ani viditeľnú plochu
+        // (nález 376).
+        lockTouchPan={commentsOpen}
         // Podklad je tu plocha na prepínanie vrstvy, nie na zatváranie;
         // zatvára sa výhradne cez „X" v hlavičke (a Escape).
         dismissOnBackdropClick={false}
@@ -197,6 +204,13 @@ export default function FeedPhotoViewer({
             />
           </>
         }
+      />
+
+      {/* Skrytá diagnostika (nálezy 375 až 377): bez zapnutia nevykreslí nič. */}
+      <FeedKeyboardDiagnostics
+        label="panel"
+        layerTestId="feed-photo-viewer"
+        panelTestId="feed-photo-comments-sheet"
       />
 
       <FeedLikersDialog

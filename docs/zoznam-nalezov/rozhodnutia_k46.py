@@ -244,8 +244,8 @@ DECISIONS_K46 = [
                  'plochu nad klávesnicou a poistkou proti gumovému efektu, bod (6) sa nedotkol. RUČNÝ TEST MAJITEĽA (25. 11. 2026, '
                  'iPhone) neprešiel na 100 %: majiteľ nahlásil tri chyby, všetky v paneli komentárov nad otvorenou fotkou (pole je '
                  'pri klávesnici príliš vysoko: 375; hýbe sa fotka za panelom: 376; pod panelom je vidieť Nástenku: 377), v '
-                 'detaile príspevku sa podľa neho neprejavila žiadna. Bod (5) sa teda v paneli nad fotkou nepodaril; oprava ide v '
-                 'kole 3c (R79).',
+                 'detaile príspevku sa podľa neho neprejavila žiadna. Bod (5) sa teda v paneli nad fotkou nepodaril; oprava je urobená '
+                 'v kole 3c (R79; vetva 208, čaká na zlúčenie (PR #333) a ručný test majiteľa na iPhone).',
          datum='24. 11. 2026'),
     dict(id='R76', tema='Redizajn komentárov (K44): kód píše agent, nie kolega (výnimka z R67)',
          otazka='R67 (23. 11. 2026) určilo, že kód redizajnu píše kolega z presnej karty agenta a agent kontroluje; možnosť, že kód '
@@ -336,8 +336,9 @@ DECISIONS_K46 = [
                  'kola 3b“ vo vetve 206: PR #330, zlúčené 25. 11. 2026 o 14:28 UTC; CodeRabbit dvakrát (päť pripomienok stupňa '
                  'Minor, všetky opravené vo vetve), CI zelené. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone) neprešiel na 100 %: v '
                  'detaile príspevku je všetko v poriadku, v paneli komentárov nad otvorenou fotkou sú tri chyby (nálezy 375, 376 a '
-                 '377). KOLO 3c (nové): oprava 375 až 377 vo vetve 208 (píše agent, R76) čaká na pokyn majiteľa a súbežne s ním '
-                 'ide karta K59 kolegu (R80). Nález 370 sa zatvorí po úspešnom teste panela.',
+                 '377). KOLO 3c: po zlúčení vetvy 207 (PR #331, 25. 11. 2026) dal majiteľ pokyn pustiť sa do práce; oprava 375 až 377 je '
+                 'urobená vo vetve 208 (píše agent, R76) a čaká na zlúčenie (PR #333) a ručný test majiteľa na iPhone; súbežne s ňou ide karta K59 '
+                 'kolegu (R80). Nález 370 sa zatvorí po úspešnom teste panela.',
          datum='25. 11. 2026'),
     dict(id='R80', tema='Súbežná práca agenta a kolegu: výnimka z pravidla „v kóde pracuje len jeden“ pre kolo 3c agenta a kartu K59 '
                  'kolegu',
@@ -363,12 +364,32 @@ DECISIONS_K46 = [
          kedy='Rozhodnuté 25. 11. 2026 (pokyn majiteľa).',
          odpoved='Majiteľ 25. 11. 2026 (po ručnom teste kola 3b): pripraviť kolegovi prácu, ktorá sa neprekrýva s prácou agenta, a '
                  'agent si má aj teraz naplánovať ďalší krok; „ak rozumieš, pusti sa do práce“. Platí: (a) K59 (nálezy 361 a 362; '
-                 '`karty/K59.md`) je pripravená (otázka R78 (b) o K59 je tým splnená) a majiteľ ju odovzdal kolegovi; (b) agent má '
-                 'naplánované kolo 3c (oprava 375 až 377, vetva 208) a kód nezačína, kým majiteľ nedá pokyn; (c) implementačné '
+                 '`karty/K59.md`) je pripravená (otázka R78 (b) o K59 je tým splnená) a majiteľ ju odovzdal kolegovi; (b) agent mal '
+                 'naplánované kolo 3c (oprava 375 až 377, vetva 208) a kód nezačal, kým majiteľ nedal pokyn; ten dal po zlúčení vetvy 207 '
+                 '(PR #331) a kolo 3c je urobené (čaká na zlúčenie (PR #333) a ručný test); (c) implementačné '
                  'súbory oboch prác sa neprekrývajú (zoznam v odporúčaní a v karte), čo je podmienka súbežnej práce; spoločný je '
                  'len manuál ručných testov (každý upravuje iné odrážky) a zoznam píše len agent (podrobnosti v odporúčaní; '
                  'doplnené 25. 11. 2026 po kontrole CodeRabbitu na PR #331); (d) výnimka platí len pre túto dvojicu prác: majiteľ '
                  '25. 11. 2026 po odovzdaní K59 potvrdil, že súbežná práca bola výnimka len na teraz a ďalej neplatí; po tejto '
                  'dvojici prác pracuje v kóde opäť len jeden, kým majiteľ nepovie inak.',
+         datum='25. 11. 2026'),
+    dict(id='R81', tema='Po každej kontrole CodeRabbitu s pripomienkami agent odporučí, či treba ďalšiu kontrolu',
+         otazka='CodeRabbit sa spúšťa na poslednom commite PR a plán dovoľuje jednu kontrolu za hodinu (README, krok „PR a '
+                 'boty“). Majiteľ sa po kontrole vetvy 207 (PR #331, 25. 11. 2026) pýtal, či treba ďalšiu kontrolu, a požiadal, '
+                 'aby mu agent po každej kontrole s nálezmi povedal, či ďalšia kontrola treba, podľa náročnosti chyby. Podľa čoho '
+                 'sa to rozhodne?',
+         odporucanie='Po každej kontrole CodeRabbitu s pripomienkami agent v správe napíše riadok „Ďalšia kontrola: netreba“, '
+                     '„odporúčam“ alebo „treba“ a dôvod jednou vetou. NETREBA: pripomienky stupňa Minor alebo nit len v dokumentácii, '
+                     'komentároch alebo texte, bez zmeny správania, a CI je zelené. ODPORÚČAM: oprava v logike kódu alebo testu, '
+                     'pripomienka stupňa Major alebo oprava vo viacerých súboroch (jedna ďalšia kontrola, zlúči sa až po nej). TREBA: '
+                     'bezpečnosť, dáta, backend a migrácie, zmena rozhrania alebo správania, stupeň Critical. Kontrolu spúšťa majiteľ '
+                     'komentárom `@coderabbitai full review` (limit je jedna za hodinu); odporúčanie agenta je rada, rozhoduje '
+                     'majiteľ. Pravidlo sa zapisuje do README (krok „PR a boty“); do `AGENTS.md` ho agent dá, len ak majiteľ povie.',
+         kedy='Rozhodnuté 25. 11. 2026 (pokyn majiteľa).',
+         odpoved='Majiteľ 25. 11. 2026: „Ocenil by som keby si mi za každým keď sa nájdu nejaké nálezy na rabbit odporucoval že či '
+                 'treba ďalšiu kontrolu podľa náročnosti chyby dobre?“ Stupnicu (netreba, odporúčam, treba) navrhol agent v '
+                 'odpovedi a majiteľ na ňu odpovedal „Okej“ (v správe, v ktorej dal pokyn na kolo 3c). Platí: (a) agent napíše '
+                 'riadok „Ďalšia kontrola“ po každom kole pripomienok CodeRabbitu; (b) stupnica je v odporúčaní a v README (krok '
+                 '„PR a boty“), ak chce majiteľ iné hranice, upraví ich; (c) ďalšie kontroly spúšťa len majiteľ.',
          datum='25. 11. 2026'),
 ]
