@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nové nálezy od čísla 363: obrázky agenta k oknu detailu príspevku na počítači (23. 11. 2026) a text príspevku v okne (365 až 368, 24. 11. 2026; nález 373 je od 25. 11. 2026 hotový a jeho text je v `hotove_k40.py`; nálezy 375 až 377 sú z ručného testu kola 3b, 25. 11. 2026; opravené sú v kóde vo vetve 208, kolo 3c, no čakajú na PR a ručný test majiteľa).
+"""Nové nálezy od čísla 363: obrázky agenta k oknu detailu príspevku na počítači (23. 11. 2026) a text príspevku v okne (365 až 368, 24. 11. 2026; nález 373 je od 25. 11. 2026 hotový a jeho text je v `hotove_k40.py`; nálezy 375 až 377 sú z ručného testu kola 3b, 25. 11. 2026; opravené sú v kóde vo vetve 208, kolo 3c, no čakajú na zlúčenie (PR #333) a ručný test majiteľa).
 
 Samostatný súbor kvôli limitu 500 riadkov; `polozky_nove.py` ich pripája do `NEW_ITEMS`. Pravidlá sú rovnaké ako inde: otvorený nález sa
 po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla sa nikdy nepoužívajú znova.
@@ -10,7 +10,7 @@ Nález 364 je od dávky K58 (PR #326) hotový.
 
 Nálezy 365 až 367 vznikli z návrhu majiteľa k textu príspevku a oknu detailu na počítači (24. 11. 2026; rozhodnutia R71 až R73)
 a vyriešila ich jedna dávka K58 (`karty/K58.md`, PR #326, hotové; ich text je v `hotove_k40.py`); nález 368 zistil agent pri kontrole krokov K58 a vzhľad jeho opravy schválil majiteľ (R74); opraví ho agent po K58.
-Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent; podľa R79 ide K44 v dvoch kolách: 369 je od kola 3a (vetva 205, PR #329) hotový (jeho text je v `hotove_k40.py`) a 370 je opravený v kole 3b (vetva 206, PR #330), no ručný test majiteľa 25. 11. 2026 ukázal tri chyby v paneli nad fotkou (375 až 377); tie opravuje kolo 3c (vetva 208, čaká na PR a ručný test) a 370 ostáva otvorený, kým prejde ručný test panela. Nález 374 zistil agent 25. 11. 2026 pri kole 3b. Nálezy 371 a 372 ohlásil majiteľ po ručnom teste K58 (24. 11. 2026).
+Nálezy 369 a 370 ohlásil majiteľ 24. 11. 2026 pri schvaľovaní poľa na komentár a odpoveď na mobile (R75); oba patria do dávky K44, ktorú podľa R76 píše agent; podľa R79 ide K44 v dvoch kolách: 369 je od kola 3a (vetva 205, PR #329) hotový (jeho text je v `hotove_k40.py`) a 370 je opravený v kole 3b (vetva 206, PR #330), no ručný test majiteľa 25. 11. 2026 ukázal tri chyby v paneli nad fotkou (375 až 377); tie opravuje kolo 3c (vetva 208, čaká na zlúčenie (PR #333) a ručný test) a 370 ostáva otvorený, kým prejde ručný test panela. Nález 374 zistil agent 25. 11. 2026 pri kole 3b. Nálezy 371 a 372 ohlásil majiteľ po ručnom teste K58 (24. 11. 2026).
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -50,7 +50,7 @@ NEW_ITEMS_K57 = [
               '`useMobileViewportHeight`: `DashboardLayout.tsx` a `useConversationComposerController.ts`). Rozlišovací test pre '
               'majiteľa: keď sa pole pohne a detail potom zatvorí, je Nástenka pod ním posunutá inde než pred otvorením? Ak áno, ide '
               'o (1).',
-         note='V RIEŠENÍ (kolo 3b podľa R79 je zlúčené: vetva 206, PR #330, 25. 11. 2026 o 14:28 UTC; zvyšok je urobený v kole 3c: vetva 208, čaká na PR a ručný test). '
+         note='V RIEŠENÍ (kolo 3b podľa R79 je zlúčené: vetva 206, PR #330, 25. 11. 2026 o 14:28 UTC; zvyšok je urobený v kole 3c: vetva 208, čaká na zlúčenie (PR #333) a ručný test). '
               'RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone, po nasadení): podľa správy majiteľa sa v bežnom detaile príspevku nič '
               'z hlásených javov neprejavilo; v paneli komentárov nad otvorenou fotkou sú tri chyby (nálezy 375, 376 a 377), '
               'takže bod (5) z R75 sa v paneli nepodaril. Nález 370 preto ostáva otvorený a zatvorí sa, keď po kole 3c prejde '
@@ -144,7 +144,7 @@ NEW_ITEMS_K57 = [
               'klávesnice sa mení aj spodná lišta Safari (veľká lišta so záložkami sa zmenší na lištu s adresou) a v detaile '
               'príspevku mohla byť už zmenšená. Prečo sa to v detaile príspevku neprejavilo (rovnaký hák), nie je jasné a '
               'neskúmalo sa.',
-         note='OPRAVENÉ V KÓDE, ČAKÁ NA PR A RUČNÝ TEST NA IPHONE (kolo 3c podľa R79; vetva 208, commit `6d8e9496`, 25. 11. '
+         note='OPRAVENÉ V KÓDE, PR #333 ČAKÁ NA ZLÚČENIE A RUČNÝ TEST NA IPHONE (kolo 3c podľa R79; vetva 208, commit `6d8e9496`, 25. 11. '
               '2026; píše agent podľa R76). Skutočný iPhone sa tu overiť nedá (agent má len Chromium a atrapu '
               '`visualViewport`), preto oprava nezávisí od jedinej hodnoty z `visualViewport`: `useFeedKeyboardViewport.ts` (98 '
               '→ 110 riadkov) znova meria viditeľnú plochu každých 150 ms (`KEYBOARD_POLL_INTERVAL_MS`), kým je vrstva pripnutá '
@@ -157,12 +157,14 @@ NEW_ITEMS_K57 = [
               'časovač zanikne po uvoľnení, po odmontovaní aj bez `visualViewport`). NEOVERENÉ: že príčinou na iPhone bola '
               'práve zastaraná výška (hypotéza). Ak pole po kole 3c stále stojí vysoko, ukážu skutočné čísla z iPhonu skrytá '
               'diagnostika (commit `79a34b6c`, nové súbory `feedKeyboardDiagnostics.ts` (149 riadkov), '
-              '`FeedKeyboardDiagnostics.tsx` (85) a `useFeedLongPress.ts` (59), 40 testov): malý nedotknuteľný prekryv s '
+              '`FeedKeyboardDiagnostics.tsx` (85) a `useFeedLongPress.ts` (59), 43 testov): malý nedotknuteľný prekryv s '
               'číslami (`visualViewport`: výška, posun, strana a mierka; poloha vrstvy, panela a poľa; počet udalostí `resize` '
               'a `scroll`), ktorý sa zapína a vypína dlhým podržaním nadpisu „Komentáre“ v paneli nad fotkou (1,5 s) a pamätá '
               'sa v `localStorage` zariadenia, takže ostatným používateľom sa nezobrazí; ukazuje sa v paneli vľavo („KBD '
               'panel“) a v detaile príspevku vpravo („KBD detail“), aby sa dali porovnať. Odchýlka od plánu: plán počítal so '
-              'zapnutím parametrom v adrese. Po overení opravy sa diagnostika odstráni (samostatná malá vetva po pokyne '
+              'zapnutím parametrom v adrese. Po kontrole CodeRabbitu na PR #333 je opravený príznak diagnostiky pri '
+              'zablokovanom úložisku (`memoryOverride`, commit `c8581d1b`, tri nové testy). Po overení opravy sa diagnostika '
+              'odstráni (samostatná malá vetva po pokyne '
               'majiteľa). Odhad: stredný · M.',
          dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa a dve fotky), meranie agenta z fotiek'),
     dict(n=376, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
@@ -183,7 +185,7 @@ NEW_ITEMS_K57 = [
               'posúva vrstvu za ňou cez `top` až po udalosti, teda s oneskorením, a vrstva (s fotkou, panelom aj poľom) sa pred '
               'očami kýve. Bez klávesnice sa viditeľná plocha posúvať nedá, čo sedí s odpoveďou majiteľa; hypotéza o zmene '
               'výšky plochy lištami Safari bez klávesnice je tým oslabená.',
-         note='OPRAVENÉ V KÓDE, ČAKÁ NA PR A RUČNÝ TEST NA IPHONE (kolo 3c; vetva 208, commit `11423f8d`, 25. 11. 2026). Nový '
+         note='OPRAVENÉ V KÓDE, PR #333 ČAKÁ NA ZLÚČENIE A RUČNÝ TEST NA IPHONE (kolo 3c; vetva 208, commit `11423f8d`, 25. 11. 2026). Nový '
               'hook `useLightboxTouchPanLock.ts` (85 riadkov) zapína na vrstve `ImageLightbox` nepasívnu obsluhu `touchmove` '
               '(`{ passive: false }`; vlastnosť `lockTouchPan`, ktorú `FeedPhotoViewer` zapína len kým je panel komentárov '
               'otvorený) a jej predvolenú akciu (posun viditeľnej plochy a gumový efekt) zruší vždy, keď sa ťah nedeje v prvku, '
@@ -200,7 +202,12 @@ NEW_ITEMS_K57 = [
               'vrstvy zastaví posun viditeľnej plochy pri otvorenej klávesnici aj v skutočnosti (hypotéza o oneskorenom '
               'nasledovaní posunu; odpoveď majiteľa 25. 11. 2026: hýbe sa len pri otvorenej klávesnici). Ak sa fotka stále '
               'hýbe, ukáže skrytá diagnostika (pozri 375), či sa mení posun viditeľnej plochy a o koľko. Zostáva neznáme, či sa '
-              'hýbe len fotka, alebo aj panel a pole (z kódu sa hýbe celá vrstva). Odhad: stredný · M.',
+              'hýbe len fotka, alebo aj panel a pole (z kódu sa hýbe celá vrstva). ZNÁME OBMEDZENIE (kontrola CodeRabbitu na PR #333): zrušenie prvého `touchmove` '
+              'platí pre celý dotyk (špecifikácia Touch Events), takže keď dotyk na okraji zoznamu začne opačným smerom, zoznam '
+              'sa po zmene smeru bez zdvihnutia prsta nemusí posunúť až do zdvihnutia prsta. Ako to rieši Safari na iPhone, sa '
+              'z kódu určiť nedá, preto je to samostatný krok manuálu (zmena smeru v jednom ťahu na okraji dlhého zoznamu) a '
+              'kód sa nemení; nezrušenie prvého pohybu by totiž mohlo pustiť ťah na viditeľnú plochu, čo má zámok práve '
+              'zabrániť. Ak test ukáže problém, ťah sa zruší až po prekročení malého prahu pohybu. Odhad: stredný · M.',
          dec='ROZHODNUTIE R79', src='ručný test majiteľa po kole 3b (25. 11. 2026; správa a odpovede), čítanie kódu agentom'),
     dict(n=377, bucket=P, imp=S_, eff=ES, pkg='Vzhľad Nástenky',
          kratko='panel komentárov nad fotkou na iPhone: pri otvorenej klávesnici je v oblasti líšt nad klávesnicou (lišta so '
@@ -217,7 +224,7 @@ NEW_ITEMS_K57 = [
               'fotky): `useFeedKeyboardViewport.ts` pripne celú vrstvu aj s jej čiernym pozadím (`bg-black/95`) na '
               '`visualViewport`, čiže na plochu nad všetkými lištami iOS; lišty sú priesvitné a ležia nad stránkou, ktorá pod '
               'nimi pokračuje. Požiadavka majiteľa: Nástenka nemá byť pod panelom vidieť.',
-         note='OPRAVENÉ V KÓDE, ČAKÁ NA PR A RUČNÝ TEST NA IPHONE (kolo 3c; vetva 208, commit `aabdd808`, 25. 11. 2026). '
+         note='OPRAVENÉ V KÓDE, PR #333 ČAKÁ NA ZLÚČENIE A RUČNÝ TEST NA IPHONE (kolo 3c; vetva 208, commit `aabdd808`, 25. 11. 2026). '
               '`ImageLightbox.tsx` má novú voliteľnú vlastnosť `fullBleedBackdrop`: keď je zapnutá, koreň vrstvy (pripnutý na '
               'viditeľnú plochu) nemá vlastné pozadie a jeho prvé dieťa je samostatný prvok `fixed inset-0 -z-10 bg-black/95` '
               '(`aria-hidden`, `data-testid` s príponou `-backdrop`), ktorý pokrýva celú plochu stránky aj pod priesvitnými '

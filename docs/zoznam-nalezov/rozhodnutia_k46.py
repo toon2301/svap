@@ -245,7 +245,7 @@ DECISIONS_K46 = [
                  'iPhone) neprešiel na 100 %: majiteľ nahlásil tri chyby, všetky v paneli komentárov nad otvorenou fotkou (pole je '
                  'pri klávesnici príliš vysoko: 375; hýbe sa fotka za panelom: 376; pod panelom je vidieť Nástenku: 377), v '
                  'detaile príspevku sa podľa neho neprejavila žiadna. Bod (5) sa teda v paneli nad fotkou nepodaril; oprava je urobená '
-                 'v kole 3c (R79; vetva 208, čaká na PR a ručný test majiteľa na iPhone).',
+                 'v kole 3c (R79; vetva 208, čaká na zlúčenie (PR #333) a ručný test majiteľa na iPhone).',
          datum='24. 11. 2026'),
     dict(id='R76', tema='Redizajn komentárov (K44): kód píše agent, nie kolega (výnimka z R67)',
          otazka='R67 (23. 11. 2026) určilo, že kód redizajnu píše kolega z presnej karty agenta a agent kontroluje; možnosť, že kód '
@@ -337,7 +337,7 @@ DECISIONS_K46 = [
                  'Minor, všetky opravené vo vetve), CI zelené. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone) neprešiel na 100 %: v '
                  'detaile príspevku je všetko v poriadku, v paneli komentárov nad otvorenou fotkou sú tri chyby (nálezy 375, 376 a '
                  '377). KOLO 3c: po zlúčení vetvy 207 (PR #331, 25. 11. 2026) dal majiteľ pokyn pustiť sa do práce; oprava 375 až 377 je '
-                 'urobená vo vetve 208 (píše agent, R76) a čaká na PR a ručný test majiteľa na iPhone; súbežne s ňou ide karta K59 '
+                 'urobená vo vetve 208 (píše agent, R76) a čaká na zlúčenie (PR #333) a ručný test majiteľa na iPhone; súbežne s ňou ide karta K59 '
                  'kolegu (R80). Nález 370 sa zatvorí po úspešnom teste panela.',
          datum='25. 11. 2026'),
     dict(id='R80', tema='Súbežná práca agenta a kolegu: výnimka z pravidla „v kóde pracuje len jeden“ pre kolo 3c agenta a kartu K59 '
@@ -366,7 +366,7 @@ DECISIONS_K46 = [
                  'agent si má aj teraz naplánovať ďalší krok; „ak rozumieš, pusti sa do práce“. Platí: (a) K59 (nálezy 361 a 362; '
                  '`karty/K59.md`) je pripravená (otázka R78 (b) o K59 je tým splnená) a majiteľ ju odovzdal kolegovi; (b) agent mal '
                  'naplánované kolo 3c (oprava 375 až 377, vetva 208) a kód nezačal, kým majiteľ nedal pokyn; ten dal po zlúčení vetvy 207 '
-                 '(PR #331) a kolo 3c je urobené (čaká na PR a ručný test); (c) implementačné '
+                 '(PR #331) a kolo 3c je urobené (čaká na zlúčenie (PR #333) a ručný test); (c) implementačné '
                  'súbory oboch prác sa neprekrývajú (zoznam v odporúčaní a v karte), čo je podmienka súbežnej práce; spoločný je '
                  'len manuál ručných testov (každý upravuje iné odrážky) a zoznam píše len agent (podrobnosti v odporúčaní; '
                  'doplnené 25. 11. 2026 po kontrole CodeRabbitu na PR #331); (d) výnimka platí len pre túto dvojicu prác: majiteľ '
