@@ -118,9 +118,13 @@ describe('zmena viditeľnej plochy bez udalosti (iOS po otvorení klávesnice)',
     render(<Pocitana />);
     const pred = prekreslenia.mock.calls.length;
 
-    act(() => jest.advanceTimersByTime(KEYBOARD_POLL_INTERVAL_MS * 40));
+    // Každý interval je vlastný `act`: v jednom by React aktualizácie z celého bloku spojil do jedného prekreslenia a test by
+    // neodlíšil „stav ostal rovnaký“ od „každé meranie uložilo nový objekt“ (pripomienka CodeRabbitu na PR #333).
+    for (let i = 0; i < 40; i += 1) {
+      act(() => jest.advanceTimersByTime(KEYBOARD_POLL_INTERVAL_MS));
+    }
 
-    // React smie jedno prekreslenie navyše zahodiť, nie jedno za každé z dvadsiatich meraní.
+    // React smie jedno prekreslenie navyše zahodiť, nie jedno za každé zo štyridsiatich meraní.
     expect(prekreslenia.mock.calls.length - pred).toBeLessThanOrEqual(1);
     expect(screen.getByTestId('vrstva')).toHaveStyle({ height: '508px' });
   });
