@@ -195,7 +195,8 @@ DECISIONS_DALSIE = [
                   'nemení bez tohto schváleného vzhľadu v karte (R49). ZMENENÉ 24. 11. 2026 (R75): pole na komentár a odpoveď sa na mobile '
                    'mení (jedno pole dole, krížik, riadok „Odpovedáš: Meno“); ostatné z R52 platí. REALIZOVANÉ 25. 11. 2026 (vetva 205, kolo 3a podľa R79, PR #329; ručný test majiteľa prešiel na 100 %): plochý vzhľad '
                    'komentárov a odpovedí, bublinka s lajkom, čiara z avatara a oddeľovač podľa schválených obrázkov; pole na komentár '
-                   'a odpoveď na mobile (R75) je urobené vo vetve 206 (kolo 3b).',
+                   'a odpoveď na mobile (R75) je zlúčené v kole 3b (vetva 206, PR #330); ručný test majiteľa ukázal v paneli nad '
+                   'fotkou chyby 375 až 377 (kolo 3c).',
          datum='17. 11. 2026'),
     dict(id='R53', tema='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch, okno len s textom užšie (nález 344)',
          otazka='Dnes sú dva stĺpce (hlavička, text, fotka a akcie vľavo, komentáre vpravo) len pri príspevku s fotkou; zdieľaná ponuka '
