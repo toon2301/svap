@@ -471,3 +471,8 @@ NEW_ITEMS.extend(NEW_ITEMS_K53)
 from polozky_nove_k57 import NEW_ITEMS_K57  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K57)
+
+# Nálezy od 378 (kandidáti z mapovania K60) sú v `polozky_nove_k60.py`.
+from polozky_nove_k60 import NEW_ITEMS_K60  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_K60)
