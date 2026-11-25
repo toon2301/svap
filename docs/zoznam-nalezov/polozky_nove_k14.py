@@ -8,6 +8,7 @@ po oprave odstráni odtiaľto a zapíše do `hotove_k40.DONE_SINCE_K40`; čísla
 upozornení nie sú napojené na server) je spolu s nálezom majiteľa v 321.
 Nález 333 (delenie veľkých súborov Nástenky) je od dávky K55 hotový; jeho text je v `hotove_k40.py`.
 Nález 344 (okno detailu príspevku na počítači) je od dávky K57 (PR #323) hotový; jeho text je tiež v `hotove_k40.py`.
+Nález 343 (úchytka panela komentárov nad fotkou) je od vetvy 205 (PR #329) hotový; jeho text je tiež v `hotove_k40.py`.
 """
 
 from konstanty import A, EL, EM, ES, H, N, P, S_, V  # noqa: F401
@@ -109,30 +110,6 @@ NEW_ITEMS_K14 = [
                'prepínač sa neprepne a ukáže sa preložená chyba, po pripojení a obnovení ostane pôvodná hodnota), ktorý majiteľ zatiaľ '
                'nepotvrdil; nález sa zatvorí po jeho potvrdení. Dopad na E2E: žiadny.',
          dec=None, src='ručný test majiteľa po K14 a mapovanie agenta (8. 11. 2026)'),
-    dict(n=343, bucket=P, imp=N, eff=ES, pkg='Vzhľad Nástenky',
-         kratko='úchytka panela komentárov nad fotkou na mobile je kvôli globálnemu `button { min-height: 36px }` sivý ovál 40×36 px '
-                'namiesto tenkej úchytky; oprava podľa R55',
-         what='Majiteľ pri návrhu vzhľadu komentárov (17. 11. 2026, snímka z mobilného zobrazenia): sivý kruh hore v paneli komentárov nad '
-               'fotkou nie je kurzor z nástrojov prehliadača, ale úchytka panela (potiahnutie nadol alebo ťuk panel zatvorí; '
-               '`feed/FeedPhotoCommentsSheet.tsx`, 126 riadkov). Agent overil čítaním kódu: úchytka je `button` s triedami '
-               '`mx-auto block h-1.5 w-10 rounded-full`, teda 6 px vysoké tlačidlo, no globálne pravidlo `button { min-height: 36px }` '
-               'v `frontend/src/app/globals.css` (riadok 263) ho natiahne na 36 px, takže vznikne sivý ovál 40×36 px, ktorý odtláča '
-               'nadpis „Komentáre“ nižšie. Platí na všetkých zariadeniach (pravidlo nemá podmienku). Jednoduché hľadanie podobný '
-               'prípad (tenké tlačidlo s pevnou výškou pod 36 px) inde nenašlo; ostatné úchytky v aplikácii sú `div`.',
-         note='ROZHODNUTÉ (R55, majiteľ 17. 11. 2026, podľa odporúčania agenta): tenká úchytka 40×6 px (možnosť A, obrázok '
-               '`navrhy/mobil-uchytka.png`), nie šípka ani bez úchytky; ťuk aj potiahnutie nadol fungujú ďalej a neviditeľná plocha na '
-               'ťuk má aspoň 44 px. Návrh (neoverený): tlačidlo s priehľadnou plochou a vnútornou tenkou čiarou, globálne pravidlo '
-               '`button` sa nemení. JASNÉ: jeden malý súbor pod 500 riadkov a test; nesúvisí s delením `FeedPostComments.tsx`, takže môže '
-               'ísť aj pred ním. Podľa R78 (24. 11. 2026) ho robí agent v jednej vetve s K44, lebo K44 mení ten istý súbor '
-               '(`FeedPhotoCommentsSheet.tsx`: pole na komentár, zamknutie stránky a výška pri klávesnici); dávka K33 zaniká. '
-               'OPRAVENÉ vo vetve 205 (kolo 3a podľa R79; PR otvára majiteľ): `FeedPhotoCommentsSheet.tsx` (126 → 129 riadkov) '
-               'má úchytku s `min-h-0` (globálne `button { min-height: 36px }` ju už nenatiahne), `relative` a neviditeľnú '
-               'dotykovú plochu `after:` (asi 96×44 px, začína na okraji panela a siaha pod úchytku); farba, hover a správanie '
-               '(ťuk aj potiahnutie nadol) ostali. Overenie: v Chromiu je úchytka 40×6 px, dotyková plocha asi 96×44 px a nadpis '
-               '„Komentáre“ je hneď pod úchytkou; nový súbor testov `FeedPhotoCommentsSheet.uchytka.test.tsx` (8 testov); zásahy '
-               'S1 až S4 zachytené. Po zlúčení sa presunie do `hotove_k40.py`; po nasadení krátky ručný test majiteľa na mobile '
-               '(úchytka je tenká čiarka, ťuk na ňu aj potiahnutie nadol panel zavrie). Odhad: nízky · S.',
-         dec='ROZHODNUTIE R55', src='majiteľ (17. 11. 2026) a kontrola agenta čítaním kódu'),
     dict(n=347, bucket=P, imp=N, eff=ES, pkg='Súkromie a krajina',
          kratko='ponuky účtov `is_staff` a `is_superuser` sú cez priame id dostupné a dajú sa lajkovať, hoci ich vyhľadávanie ani '
                 'vytvorenie žiadosti nepustí; treba rozhodnúť, či je to zámer',

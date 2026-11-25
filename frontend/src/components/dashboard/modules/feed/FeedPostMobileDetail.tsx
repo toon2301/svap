@@ -47,6 +47,11 @@ import { useFeedDialog } from './useFeedDialog';
 import { usePendingFeedImages } from './usePendingFeedImages';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
+import {
+  feedKeyboardBoxStyle,
+  useFeedKeyboardViewport,
+} from './useFeedKeyboardViewport';
+import { useFeedOverscrollLock } from './useFeedOverscrollLock';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPostComments from './FeedPostComments';
@@ -105,6 +110,8 @@ export default function FeedPostMobileDetail({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sharedPhotoOpen, setSharedPhotoOpen] = useState(false);
+  /** Pole na komentár dole má fokus (otvorená klávesnica). */
+  const [commentFieldFocused, setCommentFieldFocused] = useState(false);
   /** Kotva „Komentáre" – sem sa doscrolluje pri otvorení, ak sa má. */
   const commentsAnchorRef = useRef<HTMLDivElement | null>(null);
   const autoScrolledRef = useRef(false);
@@ -131,6 +138,11 @@ export default function FeedPostMobileDetail({
     if (typeof document === 'undefined') return;
     setPortalNode(document.getElementById('app-root') ?? document.body);
   }, []);
+
+  // Nález 370 (R75 bod 5): pole na komentár má stáť pevne. Pri otvorenej klávesnici sa obrazovka pripne na viditeľnú plochu nad
+  // ňou (pole stojí tesne nad klávesnicou, hlavička hore) a kým je obrazovka otvorená, stránka pod ňou sa nesmie „odpružiť“.
+  const keyboardBox = useFeedKeyboardViewport(commentFieldFocused);
+  useFeedOverscrollLock(portalNode !== null);
 
   // Karta je vlastníkom príspevku – jej čerstvejšia verzia má prednosť pred
   // lokálnou (rovnaký prop-sync ako v samotnej karte).
@@ -276,6 +288,7 @@ export default function FeedPostMobileDetail({
       aria-modal="true"
       aria-label={t('feed.postDetail', 'Detail príspevku')}
       data-testid="feed-mobile-detail"
+      style={feedKeyboardBoxStyle(keyboardBox)}
       className="fixed inset-0 z-[111] flex flex-col bg-white focus:outline-none dark:bg-[#0f0f10]"
     >
       <FeedPostMobileDetailHeader
@@ -299,6 +312,8 @@ export default function FeedPostMobileDetail({
           fillHeight
           showTimestamp
           compactComposer
+          mobileReplyField
+          onFieldFocusChange={setCommentFieldFocused}
           listHeader={listHeader}
           onCommentsReady={handleCommentsReady}
           onCountChange={(delta) =>

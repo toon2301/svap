@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené od PR #297 (19. 11. 2026): `DONE_SINCE_K40` (342 a 351 v K43, 341 v K31, 333 v K55, 344 a 363 v K57 a 357, 364, 365, 366 a 367 v K58 a 373 vo vetve 204, PR #328).
+"""Nálezy opravené od PR #297 (19. 11. 2026): `DONE_SINCE_K40` (342 a 351 v K43, 341 v K31, 333 v K55, 344 a 363 v K57 a 357, 364, 365, 366 a 367 v K58, 373 vo vetve 204 (PR #328) a 343 a 369 vo vetve 205 (PR #329)).
 
 Samostatný súbor kvôli limitu 500 riadkov (`hotove_k20.py` má 481 riadkov); `hotove.py` ich pripája do `DONE_SINCE`. Opravený
 nález sa odstráni z `NEW_ITEMS` a pridá sa sem: dict(n=…, vetva='K43', pr='#298', zlucene=True, text='HOTOVÉ …').
@@ -413,6 +413,42 @@ DONE_SINCE_K40 = [
               '„204“ poznamenal, že je len číslo vetvy), Codex bez veľkých pripomienok, žiadne recenzie ani vlákna. RUČNÝ TEST '
               'MAJITEĽA po nasadení: zatiaľ nepotvrdil (kroky sú v odrážke o počte riadkov textu v manuáli ručných testov). '
               'Dopad na E2E: žiadny (špecy nepoužívajú `data-testid` textu príspevku ani prepínač a ich texty sú krátke).'),
+    dict(n=343, vetva='205', pr='#329', zlucene=True,
+         text='HOTOVÉ (vetva 205, PR #329, zlúčené 25. 11. 2026 o 08:50 UTC, merge `6c1099d6`; tri commity: kód a testy '
+              '`2cc2f631`, zápis do zoznamu `322e0010` a manuál ručných testov `c3763725`; spolu s ostatnými prácami kola 3a 23 '
+              'súborov, +1 216 a −185 riadkov: 7 produkčných súborov, 5 súborov testov (4 nové a 1 upravený) a 11 súborov '
+              'dokumentácie; kolo 3a redizajnu komentárov podľa R79, písal ho agent podľa R76 a R78, nie kolega). PRIANIE (R55, '
+              'majiteľ 17. 11. 2026, obrázok `navrhy/mobil-uchytka.png`): tenká úchytka panela komentárov nad fotkou 40×6 px '
+              'namiesto sivého ovála 40×36 px; ťuk aj potiahnutie nadol fungujú ďalej a neviditeľná plocha na ťuk má aspoň 44 '
+              'px. PRÍČINA: globálne `button { min-height: 36px }` natiahlo 6 px vysoké tlačidlo na 36 px. OPRAVA: '
+              '`FeedPhotoCommentsSheet.tsx` (126 → 129 riadkov) má úchytku s `min-h-0` (globálne pravidlo ju už nenatiahne), '
+              '`relative` a neviditeľnú dotykovú plochu `after:` (asi 96×44 px, začína na okraji panela a siaha pod úchytku); '
+              'farba, hover a správanie ostali. OVERENIE (podľa výsledku): v Chromiu je úchytka 40×6 px, dotyková plocha asi '
+              '96×44 px a nadpis „Komentáre“ je hneď pod ňou; nový súbor testov `FeedPhotoCommentsSheet.uchytka.test.tsx` (8 '
+              'testov); zásahy S1 až S4 zachytené (kolo 3a spolu: `tsc` a ESLint čisté, celý Jest 673 sád a 9 925 testov, '
+              'zásahy do kódu 36 z 36). KONTROLA AGENTA (25. 11. 2026, z GitHubu): CI (`checks`, `backend-postgres`) zelené, '
+              'CodeRabbit bez pripomienok (riziko zlúčenia „Minimal“; jedine k názvu PR „205“ poznamenal, že je len číslo '
+              'vetvy), Codex bez veľkých pripomienok, žiadne recenzie ani vlákna. RUČNÝ TEST MAJITEĽA (25. 11. 2026 po '
+              'nasadení): všetky odrážky manuálu prešli (100 %). Dopad na E2E: žiadny.'),
+    dict(n=369, vetva='205', pr='#329', zlucene=True,
+         text='HOTOVÉ (vetva 205, PR #329, zlúčené 25. 11. 2026 o 08:50 UTC, merge `6c1099d6`; tri commity: kód a testy '
+              '`2cc2f631`, zápis do zoznamu `322e0010` a manuál ručných testov `c3763725`; spolu s ostatnými prácami kola 3a 23 '
+              'súborov, +1 216 a −185 riadkov: 7 produkčných súborov, 5 súborov testov (4 nové a 1 upravený) a 11 súborov '
+              'dokumentácie; kolo 3a redizajnu komentárov podľa R79, písal ho agent podľa R76 a R78, nie kolega). PRIANIE '
+              '(majiteľ 24. 11. 2026): obsah detailu príspevku s fotkou na mobile sa dá posúvať zo strany na stranu, vodorovne '
+              'má byť pevný. PRÍČINA (nameraná v Chromiu, presah 12 px pri šírkach 360, 390 aj 430 px): zoznam komentárov '
+              '`feed-comments-scroll` je posuvný box s odsadením `pr-1`, kým blok fotky `feed-mobile-detail-photo` mal `-mx-4`, '
+              'takže bol o 12 px širší než box. OPRAVA: `FeedPostMobileDetailContent.tsx` (233 → 237 riadkov) dáva bloku fotky '
+              '`-mr-1` namiesto `-mx-4` (ruší práve odsadenie `pr-1`, takže blok sedí presne v boxe) a `FeedPostComments.tsx` '
+              'dáva posuvnému boxu `overflow-x-hidden` ako poistku; viditeľná šírka fotky ostala rovnaká (16 px od okrajov '
+              'obrazovky z oboch strán), fotka od okraja po okraj by bola samostatná vzhľadová zmena (R49), ktorú majiteľ '
+              'nežiadal. OVERENIE (podľa výsledku): v Chromiu je vodorovný presah 0 px pri šírkach 360, 390 aj 430 px; nový '
+              'súbor testov `FeedPostMobileDetailContent.vodorovne.test.tsx` (3 testy) a test `overflow-x-hidden` v '
+              '`FeedPostComments.vlaknoAOddelovace.test.tsx`; zásahy M1 a P7 zachytené (kolo 3a spolu: `tsc` a ESLint čisté, '
+              'celý Jest 673 sád a 9 925 testov, zásahy do kódu 36 z 36). KONTROLA AGENTA (25. 11. 2026, z GitHubu): CI '
+              '(`checks`, `backend-postgres`) zelené, CodeRabbit bez pripomienok (riziko zlúčenia „Minimal“; jedine k názvu PR '
+              '„205“ poznamenal, že je len číslo vetvy), Codex bez veľkých pripomienok, žiadne recenzie ani vlákna. RUČNÝ TEST '
+              'MAJITEĽA (25. 11. 2026 po nasadení): všetky odrážky manuálu prešli (100 %). Dopad na E2E: žiadny.'),
 ]
 
 # Zlúčené PR, v ktorých nie je hotový celý nález (len časť otvoreného nálezu alebo nález nemá číslo); `hotove.py` ich pripája do

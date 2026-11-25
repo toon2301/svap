@@ -19,6 +19,10 @@
  * jemný text s čiarkou. Avatar vrcholového komentára má 36 px, avatar odpovede 28 px. Tlačidlá majú `min-h-0`: globálne
  * `button { min-height: 36px }` by ich inak natiahlo a komentár by bol vyšší, než ukazuje schválený návrh. Vodorovné odsadenie
  * odpovedí a zvislú čiaru z avatara kreslí rodič (`FeedPostComments.tsx`).
+ *
+ * MOBIL (R75, kolo 3b): s `onReply` ťuk na „Odpovedať“ neotvára pole pod komentárom, ale prepne jediné pole dole na odpoveď
+ * (`FeedCommentMobileComposer`) a text odpovede nemaže; „Odpovedať“ komentára, na ktorý sa odpovedá (`isReplyTarget`), je
+ * fialové. Bez `onReply` (počítač) sa správa ako doteraz.
  */
 
 import type { Dispatch, SetStateAction } from 'react';
@@ -53,11 +57,18 @@ type FeedCommentItemProps = {
   setReplyText: (value: string) => void;
   toggleReplies: (commentId: number) => void;
   setPendingDelete: (comment: FeedPostComment | null) => void;
+  /** Mobil: ťuk na „Odpovedať“ prepne pole dole na odpoveď tomuto komentáru (namiesto poľa pod komentárom). */
+  onReply?: (comment: FeedPostComment) => void;
+  /** Mobil: na tento komentár sa práve odpovedá, jeho „Odpovedať“ je fialové. */
+  isReplyTarget?: boolean;
 };
 
 /** Spoločný vzhľad malých textových tlačidiel v riadku akcií („Upraviť", „Odpovedať"). */
-const ROW_BUTTON =
-  'min-h-0 rounded-full px-1.5 py-1 text-xs font-medium text-gray-500 underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-purple-300';
+const ROW_BUTTON_BASE =
+  'min-h-0 rounded-full px-1.5 py-1 text-xs font-medium underline-offset-2 transition-colors hover:bg-black/5 hover:text-purple-700 hover:underline dark:hover:bg-white/10 dark:hover:text-purple-300';
+const ROW_BUTTON = `${ROW_BUTTON_BASE} text-gray-500 dark:text-gray-400`;
+/** „Odpovedať“ komentára, na ktorý sa práve odpovedá (mobil, R75): fialové namiesto sivého. */
+const ROW_BUTTON_ACTIVE = `${ROW_BUTTON_BASE} text-purple-600 dark:text-purple-300`;
 
 export default function FeedCommentItem({
   comment,
@@ -77,6 +88,8 @@ export default function FeedCommentItem({
   setReplyText,
   toggleReplies,
   setPendingDelete,
+  onReply,
+  isReplyTarget = false,
 }: FeedCommentItemProps) {
   return (
     <div
@@ -186,13 +199,18 @@ export default function FeedCommentItem({
             <button
               type="button"
               onClick={() => {
+                if (onReply) {
+                  onReply(comment);
+                  return;
+                }
                 setReplyingTo((current) =>
                   current === comment.id ? null : comment.id,
                 );
                 setReplyText('');
               }}
               data-testid={`feed-comment-reply-${comment.id}`}
-              className={ROW_BUTTON}
+              aria-pressed={onReply ? isReplyTarget : undefined}
+              className={isReplyTarget ? ROW_BUTTON_ACTIVE : ROW_BUTTON}
             >
               {t('feed.reply', 'Odpovedať')}
             </button>

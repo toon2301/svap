@@ -193,9 +193,9 @@ DECISIONS_DALSIE = [
                   '`pc-komentare.png` (pravý stĺpec okna). Zoznam lajkujúcich pri komentároch a odpovediach už funguje (číslo vedľa '
                   'srdiečka), nová je bublinka. Implementácia v jednej dávke až po delení `FeedPostComments.tsx` (R47); kolega vzhľad '
                   'nemení bez tohto schváleného vzhľadu v karte (R49). ZMENENÉ 24. 11. 2026 (R75): pole na komentár a odpoveď sa na mobile '
-                   'mení (jedno pole dole, krížik, riadok „Odpovedáš: Meno“); ostatné z R52 platí. REALIZOVANÉ 25. 11. 2026 (vetva 205, kolo 3a '
-                   'podľa R79; čaká na PR): plochý vzhľad komentárov a odpovedí, bublinka s lajkom, čiara z avatara a oddeľovač podľa '
-                   'schválených obrázkov; pole na komentár a odpoveď na mobile (R75) ostáva na kolo 3b.',
+                   'mení (jedno pole dole, krížik, riadok „Odpovedáš: Meno“); ostatné z R52 platí. REALIZOVANÉ 25. 11. 2026 (vetva 205, kolo 3a podľa R79, PR #329; ručný test majiteľa prešiel na 100 %): plochý vzhľad '
+                   'komentárov a odpovedí, bublinka s lajkom, čiara z avatara a oddeľovač podľa schválených obrázkov; pole na komentár '
+                   'a odpoveď na mobile (R75) je urobené vo vetve 206 (kolo 3b).',
          datum='17. 11. 2026'),
     dict(id='R53', tema='Okno detailu príspevku na počítači: zdieľaná ponuka a portfólio v dvoch stĺpcoch, okno len s textom užšie (nález 344)',
          otazka='Dnes sú dva stĺpce (hlavička, text, fotka a akcie vľavo, komentáre vpravo) len pri príspevku s fotkou; zdieľaná ponuka '
@@ -228,7 +228,7 @@ DECISIONS_DALSIE = [
                  '40×6 px, ako sa pôvodne mala zobrazovať. (b) Šípka nadol (staršie prianie z nálezu 261). (c) Bez úchytky.',
          odporucanie='(a): obvyklý znak „potiahni nadol“; ťuk aj potiahnutie fungujú ďalej a neviditeľná plocha na ťuk má aspoň 44 px.',
          kedy='Rozhodnuté 17. 11. 2026.',
-         odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (a): tenká úchytka 40×6 px (`mobil-uchytka.png`). Ide ako nález 343.',
+         odpoved='Majiteľ 17. 11. 2026: podľa odporúčania agenta, teda (a): tenká úchytka 40×6 px (`mobil-uchytka.png`). Ide ako nález 343 (hotový: PR #329, 25. 11. 2026).',
          datum='17. 11. 2026'),
     dict(id='R56', tema='Zoznam lajkujúcich, keď sú všetci lajkujúci skrytí (súkromné, blokované alebo neaktívne účty)',
          otazka='Číslo pri srdiečku zahŕňa aj skrytých lajkujúcich, takže zoznam môže byť prázdny, hoci číslo je väčšie ako nula; dnes sa '

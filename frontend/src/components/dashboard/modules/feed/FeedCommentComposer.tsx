@@ -16,6 +16,9 @@
 
 import type { RefObject } from 'react';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
+import FeedCommentMobileComposer, {
+  type FeedCommentMobileComposerProps,
+} from './FeedCommentMobileComposer';
 import { FEED_COMMENT_MAX_LENGTH } from '@/lib/feedApi';
 
 type FeedCommentComposerProps = {
@@ -30,6 +33,11 @@ type FeedCommentComposerProps = {
   isMobile: boolean;
   submitting: boolean;
   insertEmoji: (emoji: string) => void;
+  /**
+   * Mobil (R75): jediné pole na komentár aj odpoveď (`FeedCommentMobileComposer`). Vtedy sa ostatné vlastnosti nepoužijú
+   * a vykreslí sa len ono; bez vlastnosti sa pole správa ako doteraz.
+   */
+  mobileField?: FeedCommentMobileComposerProps;
 };
 
 export default function FeedCommentComposer({
@@ -44,7 +52,10 @@ export default function FeedCommentComposer({
   isMobile,
   submitting,
   insertEmoji,
+  mobileField,
 }: FeedCommentComposerProps) {
+  if (mobileField) return <FeedCommentMobileComposer {...mobileField} />;
+
   return (
     <div className="mt-3">
       {/* Kompaktný variant: jeden riadok a ikona odoslania priamo v poli.

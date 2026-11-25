@@ -4542,6 +4542,8 @@
     "reply": "Antworten",
     "replySubmit": "Antworten",
     "replyPlaceholder": "Antwort schreiben...",
+    "replyingTo": "Du antwortest:",
+    "replyCancel": "Antwort abbrechen",
     "editPost": "Beitrag bearbeiten",
     "captionMore": "Mehr",
     "captionRegion": "Beitragstext",

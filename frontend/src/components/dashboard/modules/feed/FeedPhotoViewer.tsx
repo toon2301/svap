@@ -29,6 +29,10 @@ import { emitFeedPostDeleted } from './feedPostDeletedEvents';
 import { feedViewableSources } from './feedImageSources';
 import { useFeedPostLike } from './useFeedPostLike';
 import { useFeedPostCommentsCount } from './useFeedPostCommentsCount';
+import {
+  feedKeyboardBoxStyle,
+  useFeedKeyboardViewport,
+} from './useFeedKeyboardViewport';
 import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedLikersDialog from './FeedLikersDialog';
 import FeedPhotoCommentsSheet from './FeedPhotoCommentsSheet';
@@ -80,6 +84,11 @@ export default function FeedPhotoViewer({
   /** Ťuk na fotku skryje celú vrstvu; ďalší ju vráti. */
   const [chromeHidden, setChromeHidden] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  /** Pole na komentár v paneli má fokus (otvorená klávesnica). */
+  const [commentFieldFocused, setCommentFieldFocused] = useState(false);
+  // Pri otvorenej klávesnici sa celá vrstva pripne na viditeľnú plochu nad ňou, takže pole stojí tesne nad klávesnicou a
+  // hlavička ostáva hore (R75 bod 5, nález 370). Zatvorený panel nepripína nič.
+  const keyboardBox = useFeedKeyboardViewport(commentsOpen && commentFieldFocused);
   const [likersOpen, setLikersOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -143,6 +152,7 @@ export default function FeedPhotoViewer({
         // Pevný rámec: vysoká aj široká fotka sa vykreslia v tom istom ráme,
         // celé (`object-contain`), nič sa neoreže.
         fixedFrame
+        containerStyle={feedKeyboardBoxStyle(keyboardBox)}
         // Podklad je tu plocha na prepínanie vrstvy, nie na zatváranie;
         // zatvára sa výhradne cez „X" v hlavičke (a Escape).
         dismissOnBackdropClick={false}
@@ -183,6 +193,7 @@ export default function FeedPhotoViewer({
                 changeCommentsCount(delta)
               }
               onTotalChange={publishCommentsCount}
+              onFieldFocusChange={setCommentFieldFocused}
             />
           </>
         }

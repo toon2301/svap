@@ -24,6 +24,8 @@ import { useFeedCommentsLoader } from './useFeedCommentsLoader';
 import { useFeedCommentsScroll } from './useFeedCommentsScroll';
 import { useFeedCommentsSeek } from './useFeedCommentsSeek';
 import { useFeedCommentMutations } from './useFeedCommentMutations';
+import { useFeedMobileReplyField } from './useFeedMobileReplyField';
+import { useFeedReplyScroll } from './useFeedReplyScroll';
 import { openUserProfile } from './feedProfileNavigation';
 import { useFeedPostOverlay } from '../../contexts/FeedPostOverlayContext';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
@@ -59,6 +61,8 @@ export default function FeedPostComments({
   draft,
   showTimestamp = false,
   compactComposer = false,
+  mobileReplyField = false,
+  onFieldFocusChange,
   listHeader,
   onCommentsReady,
   highlightCommentId,
@@ -229,6 +233,9 @@ export default function FeedPostComments({
         : t('feed.newCommentsMany', 'nových komentárov')
   }`;
 
+  // Mobil (R75 bod 4): po odoslaní odpovede sa zoznam doscrolluje k novej odpovedi; na počítači sa nič nepoznačí.
+  const { scrollToReplyRef } = useFeedReplyScroll({ scrollRef, comments, expandedReplies });
+
   // Mutácie komentárov (pridanie, úprava, odpoveď, zmazanie s potvrdením): krok 7 delenia, viď hook.
   const {
     pendingDelete,
@@ -259,6 +266,19 @@ export default function FeedPostComments({
     setComments,
     scrollToTopRef,
     setExpandedReplies,
+    scrollToReplyRef: mobileReplyField ? scrollToReplyRef : undefined,
+  });
+
+  // Mobil (R75): jedno pole dole slúži na komentár aj odpoveď; mimo mobilu je `null` a všetko ostáva ako doteraz.
+  const mobileField = useFeedMobileReplyField({
+    enabled: mobileReplyField,
+    reply: { replyingTo, setReplyingTo, replyText, setReplyText, replySubmitting, handleSubmitReply },
+    field: { text, setText, canSubmit, tooLong, handleSubmit },
+    comments,
+    loading,
+    textareaRef,
+    onFocusChange: onFieldFocusChange,
+    t,
   });
 
   const toggleReplies = (commentId: number) => {
@@ -294,6 +314,8 @@ export default function FeedPostComments({
       setReplyText={setReplyText}
       toggleReplies={toggleReplies}
       setPendingDelete={setPendingDelete}
+      onReply={mobileField?.onReply}
+      isReplyTarget={Boolean(mobileField) && replyingTo === comment.id}
     />
   );
 
@@ -402,7 +424,7 @@ export default function FeedPostComments({
                     ) : null}
                   </div>
 
-                  {replyingTo === comment.id ? (
+                  {replyingTo === comment.id && !mobileField ? (
                     <div className="ml-11">
                       <FeedCommentReplyComposer
                         value={replyText}
@@ -451,6 +473,7 @@ export default function FeedPostComments({
         isMobile={isMobile}
         submitting={submitting}
         insertEmoji={insertEmoji}
+        mobileField={mobileField?.composer}
       />
 
       <FeedDestructiveConfirm

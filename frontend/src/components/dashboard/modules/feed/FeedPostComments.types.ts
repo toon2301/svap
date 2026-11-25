@@ -71,6 +71,22 @@ export type FeedPostCommentsProps = {
    */
   compactComposer?: boolean;
   /**
+   * Jedno pole dole slúži na nový komentár aj na odpoveď (R75, len mobil).
+   *
+   * Zapínajú to len mobilné plochy, ktoré majú pole pevne dole mimo zoznamu: mobilný detail príspevku a panel nad
+   * fotkou. Ťuk na „Odpovedať“ potom neotvorí pole pod komentárom, ale prepne to isté pole dole na odpoveď (riadok
+   * „Odpovedáš: Meno“, krížik, rozpísaný komentár sa nestratí) a po odoslaní sa zoznam posunie na novú odpoveď.
+   * Bez vlastnosti (počítač, karta) ostáva pole na odpoveď pod komentárom ako doteraz.
+   */
+  mobileReplyField?: boolean;
+  /**
+   * Pole dole získalo alebo stratilo fokus (len s `mobileReplyField`).
+   *
+   * Obrazovka podľa toho pri otvorenej klávesnici prispôsobí výšku viditeľnej ploche, aby pole stálo tesne nad ňou a
+   * nedalo sa odscrollovať (R75 bod 5, nález 370). Pri odmontovaní poľa sa zavolá s `false`.
+   */
+  onFieldFocusChange?: (focused: boolean) => void;
+  /**
    * Obsah vložený NAD zoznam, do tej istej scrollovateľnej plochy.
    *
    * Mobilná obrazovka detailu tým dosiahne, že text, fotka aj riadok akcií

@@ -4542,6 +4542,8 @@
     "reply": "Válasz",
     "replySubmit": "Válasz",
     "replyPlaceholder": "Írj választ...",
+    "replyingTo": "Válasz neki:",
+    "replyCancel": "Válasz elvetése",
     "editPost": "Bejegyzés szerkesztése",
     "captionMore": "Több",
     "captionRegion": "Bejegyzés szövege",

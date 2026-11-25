@@ -237,7 +237,12 @@ DECISIONS_K46 = [
                  'a ostávajú; nesmú sa pokaziť. Staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená na spodok) '
                  'R75 nerieši (pole ostáva jednoriadkové ako dnes); ostáva v skupine 6. Zodpovedá otázku R59 o poli pri odpovedi a mení '
                  'R52 len v bode „pole na komentár zatiaľ ostáva ako dnes“. Rieši nález 261 (skupina 7, K44) a súvisí s nálezmi 369 a '
-                 '370.',
+                 '370. '
+                 'REALIZOVANÉ 25. 11. 2026 (vetva 206, kolo 3b podľa R79; čaká na PR): body (1) až (4) urobené podľa schválených '
+                 'obrázkov (jedno pole `FeedCommentMobileComposer`, riadok „Odpovedáš: Meno“, krížik, fialové „Odpovedať“, dva '
+                 'oddelené texty, posun na novú odpoveď), bod (5) pripnutím vrstvy na viditeľnú plochu nad klávesnicou a poistkou '
+                 'proti gumovému efektu, bod (6) sa nedotkol. Skutočné správanie klávesnice na iPhone potvrdí až ručný test '
+                 'majiteľa.',
          datum='24. 11. 2026'),
     dict(id='R76', tema='Redizajn komentárov (K44): kód píše agent, nie kolega (výnimka z R67)',
          otazka='R67 (23. 11. 2026) určilo, že kód redizajnu píše kolega z presnej karty agenta a agent kontroluje; možnosť, že kód '
@@ -299,8 +304,8 @@ DECISIONS_K46 = [
          kedy='Rozhodnuté 24. 11. 2026.',
          odpoved='Majiteľ 24. 11. 2026: „áno 343 urob v mojej vetve a K59 nemusíš ešte chystať“. Platí: (a) nález 343 (úchytka 40×6 px '
                  'podľa R55 a obrázka `navrhy/mobil-uchytka.png`) robí agent vo vetve K44 ako samostatný krok; dávka K33 zaniká; (b) K59 '
-                 '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie. Nález 343 je urobený vo vetve 205 (kolo 3a '
-                 'podľa R79; čaká na PR).',
+                 '(361 a 362) sa zatiaľ nepripravuje a kolegovi sa zatiaľ nezadáva nič ďalšie. Nález 343 je hotový: urobený vo vetve 205 (kolo 3a podľa R79), '
+                 'PR #329, zlúčené 25. 11. 2026.',
          datum='24. 11. 2026'),
     dict(id='R79', tema='Redizajn komentárov (K44) ide v dvoch kolách: 3a plochý vzhľad s nálezmi 343 a 369 (vetva 205), 3b pole na '
                  'komentár a odpoveď na mobile s nálezom 370 až po ručnom teste kola 3a',
@@ -321,6 +326,9 @@ DECISIONS_K46 = [
                  'px, R55 a R78) a nález 369 (vodorovné posúvanie detailu s fotkou); (b) kolo 3b: pole na komentár a odpoveď na '
                  'mobile podľa R75 a nález 370 sa začnú až po ručnom teste majiteľa po kole 3a (nález 370 si vyžaduje test na '
                  'iPhone); (c) ďalšie kolá, tagy (372, 359, 368 a skupina 8 v 261; najprv návrh vzhľadu, R49) a nález 371, sa '
-                 'nezačínajú, kým majiteľ nedá pokyn.',
+                 'nezačínajú, kým majiteľ nedá pokyn. '
+                 'KOLO 3a je hotové: PR #329, zlúčené 25. 11. 2026, ručný test majiteľa prešiel na 100 %, CodeRabbit bez nálezov. '
+                 'KOLO 3b (pole na komentár a odpoveď na mobile podľa R75 a nález 370) urobené 25. 11. 2026 po pokyne majiteľa '
+                 '„Pusť sa do kola 3b“ vo vetve 206; čaká na PR a na ručný test na iPhone.',
          datum='25. 11. 2026'),
 ]

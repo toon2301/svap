@@ -180,8 +180,8 @@ NEW_ITEMS_NASTENKA = [
          dec=None, src=ZDROJ),
     dict(n=261, bucket=P, imp=S_, eff=EL, pkg='Vzhľad Nástenky',
          kratko='Nástenka: tri nezačaté skupiny úprav z pôvodného backlogu zdieľania (mobilné doladenia, komentáre, '
-                'tagy); vzhľad komentárov (R52) a pole na komentár a odpoveď na mobile (R75) sú schválené, redizajn komentárov (K44) píše agent (R76) v dvoch kolách (R79): plochý vzhľad je urobený vo vetve 205 '
-                '(čaká na PR), pole na mobile je kolo 3b',
+                'tagy); vzhľad komentárov (R52) a pole na komentár a odpoveď na mobile (R75) sú schválené, redizajn komentárov (K44) píše agent (R76) v dvoch kolách (R79): plochý vzhľad je hotový (PR #329), '
+                'pole na mobile je urobené vo vetve 206 (čaká na PR)',
          what='Z pôvodného backlogu zdieľania o ôsmich skupinách ostávajú tri nezačaté. Skupina 6, mobilné '
               'doladenia: komentárová textarea vyššia a väčšia (neprilepená na spodok); „Viac“ vo fotoprehliadači '
               'inline len keď je text orezaný (rieši K58, R71); veľmi dlhé popisky zmenšiť fontom namiesto orezania a zrušiť „Menej“ '
@@ -224,7 +224,7 @@ NEW_ITEMS_NASTENKA = [
               'prepnutí na iný komentár text odpovede ostane a pole stojí vždy dole, pri klávesnici tesne nad ňou (otázka R59 o poli pri '
               'odpovedi je tým zodpovedaná). Staršie prianie skupiny 6 (komentárová textarea vyššia a väčšia, neprilepená na spodok) R75 '
               'nerieši (pole ostáva jednoriadkové ako dnes); ostáva v skupine 6. Kód redizajnu komentárov (K44: plochý vzhľad, pole na '
-              'mobile a nálezy 369 a 370) píše podľa R76 sám agent. R79 (25. 11. 2026): redizajn komentárov ide v dvoch kolách. STAV 25. 11. 2026: kolo 3a je urobené vo vetve 205 (čaká na PR): plochý vzhľad komentárov podľa R52 na počítači, na mobile aj v paneli nad fotkou (`FeedCommentItem.tsx`, `FeedCommentLikeButton.tsx`, `FeedPostComments.tsx` a obe kostry načítania), spolu s nálezmi 343 a 369. Kolo 3b (pole na komentár a odpoveď na mobile podľa R75 a nález 370) začne až po ručnom teste majiteľa po kole 3a. Nerobilo sa a ostáva otvorené: automatický posun na prvú odpoveď po rozbalení (pôvodné prianie skupiny 7; nie je v R52). Skupiny 6 a 8 sa nemenili. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
+              'mobile a nálezy 369 a 370) píše podľa R76 sám agent. R79 (25. 11. 2026): redizajn komentárov ide v dvoch kolách. STAV 25. 11. 2026: kolo 3a je HOTOVÉ (PR #329, zlúčené 25. 11. 2026; ručný test majiteľa prešiel na 100 %): plochý vzhľad komentárov podľa R52 na počítači, na mobile aj v paneli nad fotkou (`FeedCommentItem.tsx`, `FeedCommentLikeButton.tsx`, `FeedPostComments.tsx` a obe kostry načítania), spolu s nálezmi 343 a 369. Kolo 3b je urobené vo vetve 206 (čaká na PR): jedno pole na komentár aj odpoveď na mobile podľa R75 (mobilný detail a panel nad fotkou) a oprava nálezu 370 (pripnutie vrstvy na viditeľnú plochu pri klávesnici a poistka proti gumovému efektu; čaká na ručný test na iPhone). Nerobilo sa a ostáva otvorené: automatický posun na prvú odpoveď po rozbalení (pôvodné prianie skupiny 7; nie je v R52). Skupiny 6 a 8 sa nemenili. Majiteľ v komentároch objavil aj vzhľadové chyby, ktoré zámerne '
               'nenahlásil, lebo ich redizajn zmení; agent ich nezapisuje a po redizajne navrhuje, aby majiteľ overil, ktoré ostali, a tie '
               'nahlásil.',
          dec='ROZHODNUTIE R23', src='zoznam majiteľa (príloha D; PDF z 6. 11. 2026, stav k 29. 9. 2026)'),
