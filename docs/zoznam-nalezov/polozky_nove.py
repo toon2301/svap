@@ -476,3 +476,8 @@ NEW_ITEMS.extend(NEW_ITEMS_K57)
 from polozky_nove_k60 import NEW_ITEMS_K60  # noqa: E402
 
 NEW_ITEMS.extend(NEW_ITEMS_K60)
+
+# Nálezy zapísané skriptom `zapis.py novy` sú v `zaznamy_nove_NN.py` (nahrávajú sa cez `zaznamy.py`).
+from zaznamy import NEW_ITEMS_ZAZNAMY  # noqa: E402
+
+NEW_ITEMS.extend(NEW_ITEMS_ZAZNAMY)

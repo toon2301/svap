@@ -72,3 +72,8 @@ CLOSED_SINCE = [
                '(`swaply/animated_image_metadata.py`), no slúži len ako vývojová záloha (R30, rozhodnuté (a)); kód z K12 ostáva, kým '
                'ostáva endpoint.'),
 ]
+
+# Nálezy zatvorené skriptom `zapis.py zatvor` sú v `zaznamy_zatvorene_NN.py` (nahrávajú sa cez `zaznamy.py`).
+from zaznamy import CLOSED_SINCE_ZAZNAMY  # noqa: E402
+
+CLOSED_SINCE.extend(CLOSED_SINCE_ZAZNAMY)

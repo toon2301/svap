@@ -802,6 +802,12 @@ ZMENY = [
 # `hotove.py`; tu sa len sprístupňujú pod pôvodnými názvami, aby ostatné moduly ostali nezmenené.
 from hotove import DONE_PR_TABLE, DONE_PR_TABLE_CASTOCNE, DONE_SINCE, SERIA_UPOZORNENIA  # noqa: F401
 
+# Hotové položky zapísané skriptom `zapis.py hotove` sú v `zaznamy_hotove_NN.py` (nahrávajú sa cez `zaznamy.py`).
+from zaznamy import DONE_PR_TABLE_CASTOCNE_ZAZNAMY, DONE_SINCE_ZAZNAMY  # noqa: E402
+
+DONE_SINCE.extend(DONE_SINCE_ZAZNAMY)
+DONE_PR_TABLE_CASTOCNE.extend(DONE_PR_TABLE_CASTOCNE_ZAZNAMY)
+
 # Odporúčané poradie práce (vlny). `polozky` sú ID, ktoré text vlny spomína: kontrola v `model.py` zlyhá, ak nejaké z nich
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
@@ -950,3 +956,8 @@ DECISIONS.extend(DECISIONS_DALSIE)
 from rozhodnutia_k46 import DECISIONS_K46  # noqa: E402
 
 DECISIONS.extend(DECISIONS_K46)
+
+# Rozhodnutia zapísané skriptom `zapis.py rozhodnutie` sú v `zaznamy_rozhodnutia_NN.py` (nahrávajú sa cez `zaznamy.py`).
+from zaznamy import DECISIONS_ZAZNAMY  # noqa: E402
+
+DECISIONS.extend(DECISIONS_ZAZNAMY)
