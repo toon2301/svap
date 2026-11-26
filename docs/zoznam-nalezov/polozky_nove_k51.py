@@ -55,48 +55,4 @@ NEW_ITEMS_K51 = [
               'profil) agent podľa R49 najprv potvrdí s majiteľom v návrhu; bez schváleného vzhľadu sa kód '
               'nemení. Odhad: nízky · S.',
          dec=None, src='ručný test majiteľa po K51 (22. 11. 2026) a snímka z počítača'),
-    dict(n=360, bucket=P, imp=S_, eff=EL, pkg='Navigácia a Späť',
-         kratko='mobil: po kliknutí na upozornenie k príspevku alebo na príspevok na Nástenke sa niekedy neotvorí '
-                'dnešná obrazovka detailu, ale starý spôsob (stránka príspevku); starý spôsob sa má odstrániť aj z kódu',
-         what='Ručný test majiteľa po K51 (22. 11. 2026), len mobil, dve snímky z mobilu. NOVÝ spôsob je samostatná '
-              'obrazovka detailu (hlavička s krížikom a menu „…“, komentáre pod príspevkom, pole na komentár pri '
-              'spodku bez spodnej lišty). STARÝ spôsob je príspevok otvorený ako stránka vnútri aplikácie (hore ikona '
-              'profilu, dole spodná lišta, komentáre priamo pod príspevkom; pole na komentár je čiastočne zakryté '
-              'spodnou lištou). Po kliknutí na upozornenie k príspevku alebo na príspevok na Nástenke sa niekedy '
-              'otvorí starý spôsob namiesto nového. Požiadavka majiteľa: vždy nový spôsob a starý úplne odstrániť '
-              'aj z kódu, aby sa už nepletol do budúcna. Pozorovanie agenta z čítania kódu (nie je to mapovanie): existuje '
-              'samostatná stránka príspevku (`FeedPostDetailModule`, adresa príspevku), na ktorú vedie napríklad '
-              'preklik z repostnutého príspevku na pôvodný príspevok (`feedSharedContentNavigation.ts`); či je to '
-              'starý spôsob z tohto nálezu a ktoré cesty ho otvárajú, zistí mapovanie.',
-         note='JASNÉ (rozhodnutia majiteľa 1 až 4 sú hotové, R82; ide až po oprave B (K61) a jej ručnom teste, píše agent, '
-              'potom Codex upraví dva špecy, R84; mapovanie K60 hotové: kolega, `karty/K60_vysledok.md`, PR #336; agent ho '
-              'overil čítaním kódu a sondami `tsc` a Jest v kópii mimo repozitára, `karty/K60_overenie_agenta.md`). ZISTENIE: '
-              'starý spôsob (`FeedPostDetailModule`, modul `feed-post-detail`) sa na mobile otvára DETERMINISTICKY pri každom '
-              'upozornení na príspevok (šesť typov), priamom odkaze, F5, kroku v histórii a po ťuku na text pôvodného príspevku '
-              'v novej obrazovke pri reposte (`feedSharedContentNavigation.ts:66-69`); ostatné cesty z Nástenky idú na novú '
-              'obrazovku, takže „niekedy“ znamená rôznu cestu, nie náhodnosť. Nová obrazovka NEMÁ cieľový komentár '
-              '(`highlightCommentId`), preto sa starý spôsob nedá zrušiť len presmerovaním. PLÁN (každý krok samostatný commit, '
-              'spolu L, asi 5 commitov a 2 PR): (1) `highlightCommentId` do `FeedPostMobileDetail.tsx` a nový súbor testov (S); '
-              '(2) nový hostiteľ `FeedPostMobileDetailHost.tsx` (načíta príspevok, nedostupný 404, 403 a 410, zmazanie, '
-              'pristátie po zdieľaní, história rovnako ako okno na počítači) a jeho výber podľa `useIsMobile` v '
-              '`DashboardContentView.tsx:404-409` (M až L); (3a) upozornenie na mobile otvára okno '
-              '(`useNotificationNavigation.ts:74` bez `!isMobile`), (3b) priamy odkaz, F5 a krok v histórii: '
-              '`feedPostEntryDecision.ts` vráti pre mobil `overlay`, úprava `usePathModuleEffects.ts`, '
-              '`usePopstateModuleSync.ts:37` a `dashboardRoutes.ts:177` (`initialRoute: home`) (S až M); (4) E2E (Codex); (5) '
-              'zrušenie starého spôsobu: zmazať `FeedPostDetailModule.tsx` (140 r.) a jeho dva súbory testov, najprv preniesť '
-              '13 scenárov cieľového komentára do nových testov. OPRAVA PLÁNU KOLEGU (agent, sondy): '
-              '`DashboardModuleContent.tsx` musí ponechať vlastnosť `effectiveFeedPostId` v type, lebo '
-              '`DashboardContent.tsx:577` (711 r., nemení sa, TECH-01) ju podáva (inak `tsc` hlási TS2322); testov na úpravu je '
-              '10 súborov (sondy rozbijú 26 a 16 testov), štyri z nich v zozname kolegu chýbali; čísla riadkov v '
-              '`FeedPostMobileDetail.tsx` sa po PR #335 posunuli o +9. RIZIKÁ (len iPhone): plynulý posun na cieľový komentár '
-              'sa môže biť s jednorazovým posunom obrazovky ku komentárom; história pri troch pôvodoch (upozornenia, odkaz, '
-              'preklik z reposta). DOPAD NA E2E: `feed-post-detail.spec.ts` (mobilný test r.59-76) a '
-              '`notification-click.spec.ts` (3 mobilné testy r.112-141): upraví Codex. ROZHODNUTIA MAJITEĽA (26. 11. 2026, R82; '
-              'súhlas s odporúčaním agenta): (1) po zatvorení pri upozornení sa vrátiť na stránku, na ktorej používateľ bol, '
-              'ako na počítači, (2) 46 sa nerobí spolu, (3) nepoužitý kód `initialFeedPostId` a `effectiveFeedPostId` v '
-              '`DashboardContent.tsx` ostáva do delenia (TECH-01), (4) po F5 sa otvorí Nástenka s obrazovkou. Vzhľad sa nemení '
-              '(obrazovka je schválená), R49 sa netýka. Ručne po oprave: päť testov na iPhone (upozornenie na komentár aj '
-              'starší než prvá stránka, upozornenia bez komentára bez spodnej lišty, odkaz a F5, zmazaný príspevok, repost). '
-              'Odhad: veľký · L.',
-         dec=None, src='ručný test majiteľa po K51 (22. 11. 2026) a dve snímky z mobilu'),
 ]
