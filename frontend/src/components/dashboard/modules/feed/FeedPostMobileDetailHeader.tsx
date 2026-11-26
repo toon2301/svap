@@ -26,8 +26,13 @@ import { formatRelativeTime } from './feedRelativeTime';
 
 type FeedPostMobileDetailHeaderProps = {
   currentPost: FeedPost;
-  /** Zatvorenie obrazovky (tlačidlo „X" a preklik na profil autora). */
+  /** Zatvorenie obrazovky (tlačidlo „X"). */
   onClose: () => void;
+  /**
+   * Zatvorenie PRED prekliknutím na profil autora; bez vlastnosti sa použije `onClose`. Hostiteľ obrazovky ním zatvára bez kroku
+   * späť v histórii (krok späť by navigáciu vzápätí zrušil), pozri `FeedPostMobileDetail`.
+   */
+  onLeave?: () => void;
   t: (key: string, fallback?: string) => string;
   locale: string;
   /** Stav menu „…" drží obrazovka (hlavička ho len číta a prepína). */
@@ -43,6 +48,7 @@ type FeedPostMobileDetailHeaderProps = {
 export default function FeedPostMobileDetailHeader({
   currentPost,
   onClose,
+  onLeave,
   t,
   locale,
   menuOpen,
@@ -55,7 +61,7 @@ export default function FeedPostMobileDetailHeader({
   const author = currentPost.author;
   const authorName = author?.display_name || '';
   const openAuthorProfile = () =>
-    openUserProfile(author, { beforeNavigate: onClose });
+    openUserProfile(author, { beforeNavigate: onLeave ?? onClose });
 
   // PEVNÁ hlavička – nescrolluje s obsahom.
   return (

@@ -73,6 +73,12 @@ type FeedPostMobileDetailProps = {
    */
   highlightCommentId?: number | null;
   /**
+   * Zatvorenie PRED odchodom na iné miesto (profil autora alebo pôvodného autora, zdroj zdieľaného obsahu); bez vlastnosti sa
+   * použije `onClose`. Hostiteľ obrazovky (okno otvorené z upozornenia alebo z adresy) ním zatvára `keepHistory`: bežné
+   * zatvorenie vráti záznam v histórii krokom späť a ten by navigáciu vzápätí zrušil (nález 360).
+   */
+  onLeave?: () => void;
+  /**
    * Autor príspevok upravil.
    *
    * Karta pod obrazovkou si novú verziu prevezme, takže po zatvorení ukazuje
@@ -90,6 +96,7 @@ export default function FeedPostMobileDetail({
   post,
   onClose,
   highlightCommentId = null,
+  onLeave,
   onPostUpdated,
   onDeleted,
   onShared,
@@ -179,18 +186,20 @@ export default function FeedPostMobileDetail({
   const isSelfShare =
     currentPost.shared_content?.owner?.id != null &&
     currentPost.shared_content.owner.id === currentPost.author?.id;
+  // Odchod na iné miesto zatvára obrazovku `onLeave` (hostiteľ: bez kroku späť v histórii), inak bežným zatvorením.
+  const leave = onLeave ?? onClose;
   const openSharedSource = buildSharedSourceHandler(currentPost, {
     router,
     // Preklik vedie preč – obrazovka nesmie ostať visieť nad cieľom, na ktorý
     // sa používateľ práve dostal.
-    beforeNavigate: onClose,
+    beforeNavigate: leave,
   });
   // Profil pôvodného autora zo zdieľaného obsahu (nález 362): vlastník je z feed
   // API (`shared_content.owner`, pri nedostupnom zdroji `null`) a obrazovka sa
   // pred odchodom zatvorí rovnako ako pri prekliku na zdroj.
   const sharedOwner = currentPost.shared_content?.owner ?? null;
   const openSharedOwner = sharedOwner
-    ? () => openUserProfile(sharedOwner, { beforeNavigate: onClose })
+    ? () => openUserProfile(sharedOwner, { beforeNavigate: leave })
     : undefined;
 
   /**
@@ -317,6 +326,7 @@ export default function FeedPostMobileDetail({
       <FeedPostMobileDetailHeader
         currentPost={currentPost}
         onClose={onClose}
+        onLeave={onLeave}
         t={t}
         locale={locale}
         menuOpen={menuOpen}
