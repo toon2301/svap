@@ -1,10 +1,10 @@
 /**
- * Priamy vstup na `/dashboard/feed/<id>` – pôvodná celoobrazovková stránka.
+ * Stránka `/dashboard/feed/<id>` (odkaz, F5, upozornenie).
  *
- * Okno detailu je vrstva NAD bežiacou appkou; pri priamom otvorení odkazu
- * (nová záložka, obnovenie stránky, mobil) žiadna appka pod ním nebeží, takže
- * musí ostať fungovať pôvodná stránka. Tento test drží tú vetvu nažive – aby
- * ju prechod na okno ticho nevyradil.
+ * Adresa príspevku je Nástenka a nad ňou detail príspevku: okno na počítači, obrazovka na mobile (nález 360). Stránka preto
+ * dashboardu nepodáva ani modul detailu, ani číslo príspevku: obe si dashboard prečíta z adresy (`usePathModuleEffects`).
+ * Strážny test tabuľky trás (`dashboardRoutes.test.tsx`) drží stránku zhodnú s tabuľkou; tento test drží, že sa na stránku
+ * nevráti starý modul `feed-post-detail` ani číslo príspevku v props.
  */
 
 import { render, screen } from '@testing-library/react';
@@ -25,23 +25,10 @@ beforeEach(() => {
   dashboardProps.mockReset();
 });
 
-it('opens the full-page detail module for a direct link', async () => {
-  // Stránka je od Next 15 `async` (serverový) komponent s `params` ako sľubom: vykreslíme až jej hotový element.
-  render(await FeedPostPage({ params: Promise.resolve({ postId: '7' }) }));
+it('priamy odkaz na príspevok ukáže dashboard na Nástenke, bez modulu detailu a bez čísla príspevku', () => {
+  render(<FeedPostPage />);
 
   expect(screen.getByTestId('dashboard')).toBeInTheDocument();
-  expect(dashboardProps).toHaveBeenCalledWith(
-    expect.objectContaining({
-      initialRoute: 'feed-post-detail',
-      initialFeedPostId: 7,
-    }),
-  );
-});
-
-it('passes no id when the URL carries junk', async () => {
-  render(await FeedPostPage({ params: Promise.resolve({ postId: 'abc' }) }));
-
-  expect(dashboardProps).toHaveBeenCalledWith(
-    expect.objectContaining({ initialFeedPostId: null }),
-  );
+  expect(dashboardProps).toHaveBeenCalledTimes(1);
+  expect(dashboardProps.mock.calls[0][0]).toEqual({ initialRoute: 'home' });
 });

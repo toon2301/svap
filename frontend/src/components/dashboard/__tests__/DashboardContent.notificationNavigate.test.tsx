@@ -65,6 +65,18 @@ jest.mock('../modules/feed/FeedPostDetailOverlay', () => ({
   ),
 }));
 
+// Na mobile ten istý cieľ ukazuje obrazovka detailu (`FeedPostMobileDetailHost`), nie okno pre počítač.
+jest.mock('../modules/feed/FeedPostMobileDetailHost', () => ({
+  __esModule: true,
+  default: (props: { postId: number; highlightCommentId: number | null; onClose: () => void }) => (
+    <div
+      data-testid="feed-mobile-host"
+      data-post-id={props.postId}
+      data-comment-id={props.highlightCommentId ?? ''}
+    />
+  ),
+}));
+
 /** Router, ktorý ako Next skutočne zmení adresu (zvýraznenie karty ju číta priamo). */
 function navigateTo(url: string, mode: 'push' | 'replace') {
   window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', url);
@@ -293,13 +305,20 @@ describe('príspevok z upozornenia', () => {
     expect(layoutProps().isSearchOpen).toBe(false);
   });
 
-  it('na mobile ostáva celoobrazovková stránka: okno sa neotvorí, naviguje sa', async () => {
+  it('na mobile sa otvorí obrazovka detailu (nie okno pre počítač) a nenaviguje sa', async () => {
     await renderDashboard({ mobile: true });
+    act(() => layoutProps().onSidebarNotificationsClick?.());
 
     clickNotification('/dashboard/feed/42?comment=7');
 
+    const screenHost = screen.getByTestId('feed-mobile-host');
+    expect(screenHost).toHaveAttribute('data-post-id', '42');
+    expect(screenHost).toHaveAttribute('data-comment-id', '7');
     expect(screen.queryByTestId('feed-overlay')).toBeNull();
-    expect(mockRouter.push).toHaveBeenCalledWith('/dashboard/feed/42?comment=7');
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    expect(layoutProps().isNotificationsPanelOpen).toBe(false);
+    expect(activeModule()).toBe('home');
+    expect(window.location.pathname).toBe('/dashboard/feed/42');
   });
 });
 

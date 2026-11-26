@@ -97,7 +97,7 @@ describe('prepínanie medzi sekciami', () => {
 });
 
 describe('mimo Nastavení sa nedeje nič', () => {
-  it.each(['home', 'profile', 'user-profile', 'feed-post-detail', 'messages'])(
+  it.each(['home', 'profile', 'user-profile', 'messages'])(
     'modul %s si scroll drží',
     (moduleId) => {
       const main = mountMain(1500);

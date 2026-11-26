@@ -336,21 +336,21 @@ describe('modul podľa adresy', () => {
     expect(localStorage.getItem('activeModule')).toBe('home');
   });
 
-  it('mobil: krok na adresu príspevku otvorí celostránkový detail', async () => {
+  it('mobil: krok na adresu príspevku zobrazí Nástenku (obrazovku detailu otvára iný efekt)', async () => {
     await renderDashboard(true);
 
     await popTo('/dashboard/feed/7');
 
-    expect(activeModule()).toBe('feed-post-detail');
+    expect(activeModule()).toBe('home');
   });
 
-  it('mobil: do localStorage sa zapíše detail príspevku', async () => {
+  it('mobil: do localStorage sa zapíše Nástenka, nie celostránkový detail príspevku', async () => {
     await renderDashboard(true);
     localStorage.clear();
 
     await popTo('/dashboard/feed/7');
 
-    expect(localStorage.getItem('activeModule')).toBe('feed-post-detail');
+    expect(localStorage.getItem('activeModule')).toBe('home');
   });
 
   it('modul sa berie z adresy v okne, nie zo stavu udalosti', async () => {

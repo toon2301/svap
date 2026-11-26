@@ -1,7 +1,7 @@
 /**
  * Modul a ID, ktoré dashboard odvodí zo samotnej adresy (`usePathname`):
  * recenzie ponuky, detail a tvorba položky portfólia a detail príspevku
- * (na desktope okno nad Nástenkou, na mobile celá stránka).
+ * (na počítači okno nad Nástenkou, na mobile obrazovka detailu nad Nástenkou).
  *
  * Adresa sa mení po mounte (klientská navigácia bez reloadu), takže testy
  * najprv namountujú dashboard a potom prepíšu cestu z routera. Priamy vstup
@@ -225,10 +225,9 @@ const PORTFOLIO_CREATE: Entry = {
   props: { initialProfileSlug: 'jana', initialProfileTab: 'portfolio' },
 };
 const FEED_7: Entry = {
-  route: 'feed-post-detail',
+  route: 'home',
   pathname: '/dashboard/feed/7',
   search: '',
-  props: { initialFeedPostId: 7 },
 };
 
 let mountedEntry: Entry = HOME;
@@ -580,7 +579,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
     await renderDashboard(false, FEED_7, 'home');
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
     expect(isOverlayOpen()).toBe(true);
     expect(overlayProps().postId).toBe(7);
     expect(overlayProps().highlightCommentId).toBeNull();
@@ -640,7 +638,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
     await navigateTo(view, '/dashboard/feed/7');
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
     expect(isOverlayOpen()).toBe(true);
     expect(overlayProps().postId).toBe(7);
   });
@@ -735,7 +732,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
 
     expect(mockModuleRenders).not.toContain('feed-post-detail');
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
     expect(mockRouter.push).not.toHaveBeenCalled();
     expect(mockRouter.replace).not.toHaveBeenCalled();
   });
@@ -772,54 +768,86 @@ describe('detail príspevku podľa adresy: desktop', () => {
     await navigateTo(view, pathname);
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBeNull();
     expect(isOverlayOpen()).toBe(false);
   });
 });
 
 describe('detail príspevku podľa adresy: mobil', () => {
-  it('priamy vstup ostáva celoobrazovkovou stránkou bez okna', async () => {
+  it('priamy vstup ukáže Nástenku a nad ňou obrazovku detailu, nie okno pre počítač', async () => {
     const pushState = jest.spyOn(window.history, 'pushState');
 
-    await renderDashboard(true, FEED_7);
+    await renderDashboard(true, FEED_7, 'home');
 
-    expect(activeModule()).toBe('feed-post-detail');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
+    expect(activeModule()).toBe('home');
+    expect(isMobileHostOpen()).toBe(true);
     expect(isOverlayOpen()).toBe(false);
+    expect(mockMobileHostProps?.postId).toBe(7);
+    expect(mockMobileHostProps?.highlightCommentId).toBeNull();
     expect(currentUrl()).toBe('/dashboard/feed/7');
     expect(pushState).not.toHaveBeenCalled();
+    expect(isFeedOverlayHistoryBusy()).toBe(false);
   });
 
-  it('preklik na príspevok z inej obrazovky ukáže celoobrazovkovú stránku', async () => {
+  it('komentár zo skutočnej adresy sa pošle obrazovke a adresa ostane', async () => {
+    await renderDashboard(true, { ...FEED_7, search: 'comment=3' }, 'home');
+
+    expect(mockMobileHostProps?.postId).toBe(7);
+    expect(mockMobileHostProps?.highlightCommentId).toBe(3);
+    expect(currentUrl()).toBe('/dashboard/feed/7?comment=3');
+  });
+
+  it('priamy vstup obrazovku len prevezme: história sa nerozrastie', async () => {
+    const lengthBefore = window.history.length;
+
+    await renderDashboard(true, FEED_7, 'home');
+
+    expect(window.history.length).toBe(lengthBefore);
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('zatvorenie obrazovky vráti adresu Nástenky bez kroku späť', async () => {
+    await renderDashboard(true, FEED_7, 'home');
+    const back = jest.spyOn(window.history, 'back');
+    const lengthBefore = window.history.length;
+
+    act(() => mockMobileHostProps?.onClose());
+    await settle();
+
+    expect(isMobileHostOpen()).toBe(false);
+    expect(currentUrl()).toBe('/dashboard');
+    expect(back).not.toHaveBeenCalled();
+    expect(window.history.length).toBe(lengthBefore);
+    expect(activeModule()).toBe('home');
+  });
+
+  it('preklik na príspevok z inej obrazovky otvorí Nástenku s obrazovkou detailu', async () => {
     const view = await renderDashboard(true, SETTINGS);
+    expect(isMobileHostOpen()).toBe(false);
 
     await navigateTo(view, '/dashboard/feed/7');
 
-    expect(activeModule()).toBe('feed-post-detail');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
+    expect(activeModule()).toBe('home');
+    expect(isMobileHostOpen()).toBe(true);
     expect(isOverlayOpen()).toBe(false);
+    expect(mockMobileHostProps?.postId).toBe(7);
   });
 
-  it('krok v histórii na adresu príspevku ostáva celostránkový detail bez okna', async () => {
+  it('krok v histórii na adresu príspevku otvorí obrazovku detailu a nikdy nevykreslí celostránkový detail', async () => {
     const view = await renderDashboard(true);
     await navigateTo(view, '/dashboard/feed/7');
+    expect(isMobileHostOpen()).toBe(true);
+    mockModuleRenders = [];
 
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     await settle();
 
-    expect(activeModule()).toBe('feed-post-detail');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
+    expect(mockModuleRenders).not.toContain('feed-post-detail');
+    expect(activeModule()).toBe('home');
+    expect(isMobileHostOpen()).toBe(true);
     expect(isOverlayOpen()).toBe(false);
-  });
-
-  it('príspevok z props stránky má prednosť pred príspevkom z adresy', async () => {
-    const view = await renderDashboard(true, FEED_7);
-
-    await navigateTo(view, '/dashboard/feed/9');
-
-    expect(routerProps().feedPostIdForDetail).toBe(7);
   });
 
   it('adresa, ktorá nie je adresou príspevku, nič neotvorí', async () => {
@@ -828,7 +856,7 @@ describe('detail príspevku podľa adresy: mobil', () => {
     await navigateTo(view, '/dashboard/feed/abc');
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBeNull();
+    expect(isMobileHostOpen()).toBe(false);
     expect(isOverlayOpen()).toBe(false);
   });
 });

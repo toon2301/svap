@@ -224,7 +224,6 @@ describe('bodkové overenie: adresy sa po refaktore nezmenili', () => {
     // Trasy s parametrom sa ako sekcia skladať nedajú.
     expect(dashboardSectionPath('user-profile')).toBeNull();
     expect(dashboardSectionPath('portfolio-detail')).toBeNull();
-    expect(dashboardSectionPath('feed-post-detail')).toBeNull();
   });
 
   it('handleRightItemClick: sekcie Nastavení a sledované ponuky', () => {

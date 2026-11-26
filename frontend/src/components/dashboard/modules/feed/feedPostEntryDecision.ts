@@ -3,26 +3,24 @@
 /**
  * Čo má appka spraviť, keď adresa ukazuje na príspevok?
  *
- * Rozhodnutie má prekvapivo veľa vstupov (dve rôzne oneskorenia adresy, mobil
- * vs. desktop, už otvorené okno), takže žije mimo dashboardu – tam by bolo
- * len ďalším neprehľadným efektom a nedalo by sa naň napísať test.
+ * Rozhodnutie má prekvapivo veľa vstupov (dve rôzne oneskorenia adresy, už
+ * otvorené okno), takže žije mimo dashboardu – tam by bolo len ďalším
+ * neprehľadným efektom a nedalo by sa naň napísať test.
  *
- * Pravidlo: na DESKTOPE vedie cesta príspevku vždy k Nástenke na pozadí a
- * OKNU nad ňou – rovnakému, aké sa otvára klikom vo feede. Platí to aj pre
- * chladný vstup (odkaz, F5), kde predtým appka ukazovala samostatnú stránku.
- * Na mobile ostáva celoobrazovková stránka.
+ * Pravidlo: cesta príspevku vedie vždy k Nástenke na pozadí a DETAILU nad
+ * ňou – rovnakému, aký sa otvára klikom vo feede alebo upozornením. Platí to
+ * aj pre chladný vstup (odkaz, F5), kde predtým appka ukazovala samostatnú
+ * stránku. Na počítači je detail okno, na mobile obrazovka; ktorú podobu
+ * nakresliť, vyberá až `FeedPostDetailSwitch` podľa šírky okna, takže
+ * rozhodnutie od šírky okna nezávisí (nález 360).
  */
 
 import { parseFeedPostTargetUrl, type FeedPostRouteTarget } from './feedPostRouting';
 
 export type FeedPostEntryDecision =
-  /** Ešte nevieme rozhodnúť – nechaj obrazovku tak, ako je. */
-  | { kind: 'wait' }
   /** Adresa príspevku sa netýka (alebo je už vybavená). */
   | { kind: 'none' }
-  /** Mobil: pôvodná celoobrazovková stránka. */
-  | { kind: 'full-page' }
-  /** Desktop: Nástenka na pozadí a okno s príspevkom nad ňou. */
+  /** Nástenka na pozadí a detail príspevku nad ňou (okno na počítači, obrazovka na mobile). */
   | { kind: 'overlay'; target: FeedPostRouteTarget };
 
 export type FeedPostEntryInput = {
@@ -34,9 +32,6 @@ export type FeedPostEntryInput = {
   historyBusy: boolean;
   /** Skutočná adresa v prehliadači (`location.pathname + search`). */
   liveUrl: string | null;
-  /** Vieme už, či je viewport mobilný? */
-  viewportResolved: boolean;
-  isMobile: boolean;
 };
 
 export function decideFeedPostEntry({
@@ -44,8 +39,6 @@ export function decideFeedPostEntry({
   overlayOpen,
   historyBusy,
   liveUrl,
-  viewportResolved,
-  isMobile,
 }: FeedPostEntryInput): FeedPostEntryDecision {
   if (pathPostId == null) return { kind: 'none' };
   // Okno už príspevok zobrazuje – niet čo otvárať.
@@ -60,10 +53,6 @@ export function decideFeedPostEntry({
   if (historyBusy) return { kind: 'none' };
   const target = liveUrl ? parseFeedPostTargetUrl(liveUrl) : null;
   if (!target) return { kind: 'none' };
-
-  // Okno je desktopová náhrada stránky; kým to nevieme isto, nerobíme nič.
-  if (!viewportResolved) return { kind: 'wait' };
-  if (isMobile) return { kind: 'full-page' };
 
   return { kind: 'overlay', target };
 }

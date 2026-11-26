@@ -63,7 +63,11 @@ export type DashboardModuleContentProps = {
   handleProfileSkillsClick: () => void;
   handleSkillsModeToggle: () => void;
   effectiveOfferIdForReviews: number | null;
-  effectiveFeedPostId: number | null;
+  /**
+   * Nepoužíva sa: príspevok z adresy otvára dashboard ako detail nad Nástenkou (`usePathModuleEffects`), nie ako modul
+   * (nález 360). Posiela ho ešte `DashboardContent` (TECH-01), preto ostáva v type; zmizne pri jeho rozdelení.
+   */
+  effectiveFeedPostId?: number | null;
   effectivePortfolioItemId: number | null;
   effectivePortfolioOwnerIdentifier: string | null;
   effectivePortfolioCreateOwnerIdentifier: string | null;
@@ -116,7 +120,6 @@ export default function DashboardModuleContent({
   handleProfileSkillsClick,
   handleSkillsModeToggle,
   effectiveOfferIdForReviews,
-  effectiveFeedPostId,
   effectivePortfolioItemId,
   effectivePortfolioOwnerIdentifier,
   effectivePortfolioCreateOwnerIdentifier,
@@ -178,7 +181,6 @@ export default function DashboardModuleContent({
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       onSkillsModeToggle={handleSkillsModeToggle}
       offerIdForReviews={effectiveOfferIdForReviews}
-      feedPostIdForDetail={effectiveFeedPostId}
       portfolioItemIdForDetail={
         effectivePortfolioItemId != null && Number.isFinite(effectivePortfolioItemId)
           ? effectivePortfolioItemId

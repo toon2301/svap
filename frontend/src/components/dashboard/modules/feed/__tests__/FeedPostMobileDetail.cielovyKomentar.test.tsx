@@ -6,7 +6,7 @@
  * nepoznala, takže jej zrušenie nebolo možné. Obrazovka teraz dostáva voliteľnú vlastnosť `highlightCommentId` a podáva ju
  * zoznamu komentárov (`FeedPostComments`), ktorý hľadá a zvýrazňuje cieľ.
  *
- * Scenáre sú prenesené z testov starého modulu (`FeedPostDetailModule.test.tsx`, ktorý sa pri jeho zrušení maže): posun a
+ * Scenáre sú prenesené z testov starého modulu (`FeedPostDetailModule.test.tsx`, ktorý sa so zrušením modulu zmazal): posun a
  * dočasné zvýraznenie, hľadanie mimo prvej stránky, strop stránok, zastavenie pri konci vlákna a pri zlyhaní, jediné
  * zvýraznenie, druhá a ďalšia upozornenie a okno nad pollovacím stropom. Navyše sa overuje, že cieľový komentár má prednosť
  * pred štartovacou polohou pri komentároch (ten istý plynulý posun by sa s ním bil). Testy idú cez verejné rozhranie

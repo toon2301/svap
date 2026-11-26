@@ -6,7 +6,8 @@ import { getDashboardUserIdentifierFromTarget } from '../components/dashboardTar
 import type { SearchUserResult } from '../modules/search/types';
 
 type PopstateModuleSyncInput = {
-  isMobile: boolean;
+  /** Nepoužíva sa: adresa príspevku je na mobile aj na počítači Nástenka s detailom (nález 360); posiela ho ešte `DashboardContent` (TECH-01). */
+  isMobile?: boolean;
   setActiveModule: (module: string) => void;
   setIsRightSidebarOpen: (open: boolean) => void;
   setActiveRightItem: (item: string) => void;
@@ -18,7 +19,6 @@ type PopstateModuleSyncInput = {
 
 /** Tlačidlo späť a dopredu v prehliadači: modul a zobrazený používateľ sa zosúladia s adresou. */
 export function usePopstateModuleSync({
-  isMobile,
   setActiveModule,
   setIsRightSidebarOpen,
   setActiveRightItem,
@@ -31,10 +31,9 @@ export function usePopstateModuleSync({
     const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
       const p = window.location.pathname || '';
-      // To iste mapovanie ako pri mounte (`useDashboardMountRoute`).
-      const pathModule = dashboardModuleFromPath(p);
-      // Na desktope adresa príspevku znamená Nástenku s oknom (otvára ho efekt priameho vstupu), nie celú stránku.
-      const moduleId = pathModule === 'feed-post-detail' && !isMobile ? 'home' : pathModule;
+      // To iste mapovanie ako pri mounte (`useDashboardMountRoute`); adresa príspevku znamená Nástenku
+      // (detail nad ňou otvára efekt priameho vstupu).
+      const moduleId = dashboardModuleFromPath(p);
       if (moduleId !== null) {
         setActiveModule(moduleId);
         try {
@@ -65,5 +64,5 @@ export function usePopstateModuleSync({
 
     window.addEventListener('popstate', syncModuleFromPath);
     return () => window.removeEventListener('popstate', syncModuleFromPath);
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary, isMobile]);
+  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary]);
 }

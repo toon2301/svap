@@ -42,7 +42,7 @@ export type FeedPostCardProps = {
   onPostUpdated?: (post: FeedPost) => void;
   /** V okne drží počet komentárov okno (má ich pod sebou), nie karta. */
   commentsCount?: number;
-  /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
+  /** V appke sa nepoužíva (komentáre rozbalené rovno v karte mal zrušený modul detailu príspevku); ostáva len pre testy. */
   initialCommentsOpen?: boolean;
   /** Komentár z notifikácie – sekcia naň doscrolluje a zvýrazní ho. */
   highlightCommentId?: number | null;
