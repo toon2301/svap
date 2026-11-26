@@ -59,31 +59,66 @@ Git navyše obsahuje oba Jest súbory `FeedKeyboardDiagnostics.test.tsx`
 a `feedKeyboardDiagnostics.test.tsx`, ktoré sa na Windows nedajú odlíšiť.
 Aj čerstvý checkout preto vykazuje miestnu zmenu prvého z nich; hash jeho
 obsahu presne zodpovedá druhému súboru z HEAD. Nejde o úpravu aplikácie
-Codexom a súbor nebude zahrnutý do commitu. Aplikácia sa neopravuje ani sa
+Codexom a súbor nie je zahrnutý do commitu. Aplikácia sa neopravuje ani sa
 nevypína kontrola veľkosti písmen; E2E typy prešli samostatne. Toto nie je
 živý pád aplikácie ani dôkaz jej nefunkčnosti na Linuxe/Railway.
 
-### Živý beh a pravidlo porovnania — zatiaľ čaká na potvrdenie
+### Živý beh a pravidlo porovnania — 26. 11. 2026
 
-**Živý beh ešte neprebehol: žiadny PASS/FAIL/SKIP na Railway sa nepripisuje.**
-Navrhnuté okno majiteľovi: **26. 11. 2026, 13:45–14:00 Bratislava**, nasadený
-main `1c5d0cdd`, bez zlučovania, nasadzovania a zmien testovacieho účtu.
-Spustenie až po jeho výslovnom potvrdení a opätovnom overení mainu.
+Majiteľ potvrdil okno **13:45–14:00 Bratislava**, nasadený main `1c5d0cdd`,
+bez zlučovania, nasadzovania a zmien testovacieho účtu. Fetch tesne pred
+štartom potvrdil rovnaký main. Testované boli špecy z commitu **`6c2810ac`**.
 
-Plánovaný cielený výber z `frontend`:
+Cielený výber z `frontend` zodpovedal tomuto príkazu:
 
 ```powershell
 npm run test:e2e:docker -- e2e/feed-post-detail.spec.ts e2e/notification-click.spec.ts --project=webkit-mobile --workers=1 --retries=0
 ```
 
-Pri splnených dátach sa očakáva 5 aktívnych mobilných scenárov a 5 pôvodných
-projektových SKIP desktopových scenárov. Ide iba o plán, nie o výsledok;
-prípadné dátové SKIP sa uvedú jednotlivo. Desktopové projekty sa v tejto
-dávke nespúšťajú, keďže ich správanie ani spoločná logika sa nemenili.
-Pri behu z oddelenej vetvy sa pôvodný env smie pripojiť iba read-only;
-nekopíruje sa do worktree. Výpis musí obsahovať len súčty, statické názvy
-testov, pevné dôvody SKIP a bezpečné bloky `[E2E-EVIDENCE]`, nie surové
-chyby, reporty, texty stránky alebo odpovede servera.
+**Overený výsledok: `webkit-mobile` 5 PASS / 0 FAIL / 5 SKIP.**
+
+| Špec (`webkit-mobile`) | Prešlo | Zlyhalo | Preskočené |
+| --- | ---: | ---: | ---: |
+| `feed-post-detail.spec.ts` | 2 | 0 | 1 |
+| `notification-click.spec.ts` | 3 | 0 | 4 |
+| **Spolu** | **5** | **0** | **5** |
+
+Beh **12:55:15.786–12:55:43.070 UTC** (13:55 Bratislava), proces
+**27,284 s**, Playwright report **24,467 s**. Každý variant mal retry **0**,
+workers **1**. Všetky aktívne scenáre prešli, **žiadny dátový SKIP**.
+Desktopové projekty sa nespúšťali; ich správanie ani spoločná logika sa
+nemenili. Päť ponechaných SKIP v mobilnom projekte má jednotlivé dôvody:
+
+| Preskočený existujúci scenár | Dôvod |
+| --- | --- |
+| `feed-post-detail`: „comments open as an overlay above the feed and close by the button, by Back and by Escape“ | Len desktopový overlay |
+| `notification-click`: „meno autora komentára v detaile otvorenom z upozornenia zavrie okno a otvorí profil“ | Len desktopový panel a overlay |
+| `notification-click`: „a read \"like\" notification opens the post overlay and Back closes it without touching <main>“ | Len desktopový panel a overlay |
+| `notification-click`: rovnaký pôvodný scenár pre „comment“ | Len desktopový panel a overlay |
+| `notification-click`: rovnaký pôvodný scenár pre „reply“ | Len desktopový panel a overlay |
+
+Spustenie z oddelenej vetvy zachovalo pôvodnú konfiguráciu a voľby testov.
+Zdrojový priečinok bol v Dockeri read-only, pôvodný env bol pripojený iba
+na čítanie mimo neho a načítaný cez `node --env-file`; nebol kopírovaný
+do worktree. Relácia bola v dočasnej pamäti kontajnera. `--reporter=json`
+a `--output=/tmp/detail-mobil-results` držali surové údaje mimo výpisov
+a Gitu. Do výpisu sa dostal len whitelistovaný súhrn; žiadne osobné údaje,
+hodnoty cookies, tokeny, texty stránky ani odpovede servera. Pri PASS/SKIP
+sa `[E2E-EVIDENCE]` nevytvára, preto tu nie je blok pádu.
+
+**Technická história pre úplnosť:** dva pokusy skončili Docker exit **125**
+ešte pred prihlásením/testmi: pripojenie súboru do read-only zdrojového
+priečinka sa nedalo vytvoriť. Zmena pripojenia do `/run` prebehla iba
+v jednorazovej miestnej obsluhe mimo Gitu. Prvý následne dokončený beh
+skončil exit **0** za **32,271 s**, ale jeho report sa nepodarilo prevziať;
+z tohto procesu sa nevymýšľajú súčty. Overená príčina zberu: global setup
+tlačí bezpečný `[E2E-SESSION]` riadok mimo JSON reportera. Po oddelení
+privátneho JSON súboru v `/tmp` od diagnostického stdout nasledoval vyššie
+uvedený vykázateľný beh **5/0/5**; prítomnosť diagnostického riadka mimo
+reportu sa pri ňom potvrdila. Asercie, kód špecov ani retry sa medzi behmi
+nemenili. Nejde o opakovanie na zamaskovanie pádu; žiadny vykázaný test
+nezlyhal. Kontajnery tohto behu sa ukončili a okno bolo majiteľovi výslovne
+uvoľnené, ďalšie požiadavky proti Railway sa nespúšťajú.
 
 Porovnanie podľa kľúča špec + názov + projekt berie do úvahy premenovanie
 **4 existujúcich mobilných prípadov**, nie pridanie nových testov:
@@ -97,11 +132,14 @@ Porovnanie podľa kľúča špec + názov + projekt berie do úvahy premenovanie
   k príspevku / Odpoveď na komentár“ otvorí mobilnú vrstvu a Späť zachová
   <main> upozornení“, v tom istom poradí troch typov.
 
-Cielený beh nebude nový celý prijatý beh: základ **427 / 2 / 303** ani
-historické výsledky nižšie sa ním neprepisujú. Nový pád sa vyšetruje podľa
-pravidla porovnania (3 samostatné diagnostické opakovania v dohodnutom
-okne, nie retry na zelený výsledok); pri chybe aplikácie sa pošle opis
-pre Claudea podľa `AGENTS.md`, bez zásahu do aplikácie.
+Cielený beh nie je nový celý prijatý beh: základ **427 / 2 / 303** ani
+historické výsledky nižšie sa ním neprepisujú. Po vyššie uvedenom mapovaní
+premenených kľúčov nie je nový pád ani nový dátový SKIP. Tri diagnostické
+opakovania pádu preto neboli potrebné a nevzniká hlásenie chyby aplikácie
+pre Claudea z tohto živého behu. Samostatný Windows problém typov opísaný
+vyššie ostáva mimo rozsahu a nebol opravovaný. Voliteľné doscrollovanie
+konkrétneho komentára, F5 a zmena šírky počas otvorenia neboli nové
+scenáre tejto dávky; desktop a syntetické diagnostické stránky sa nemenili.
 
 ## Historická dávka — 20. 11. 2026: E2E regresie komentárov 345 a 346
 
