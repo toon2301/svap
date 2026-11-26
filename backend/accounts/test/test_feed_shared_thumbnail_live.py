@@ -453,3 +453,57 @@ class ZivyNahladPocetDopytovTests(ZivyNahladZakladTests):
 
         self.assertGreater(prispevkov_vela, prispevkov_malo)
         self.assertEqual(dopyty_vela, dopyty_malo)
+
+
+class ZivyNahladZapisKlucaTests(ZivyNahladZakladTests):
+    """Zdieľanie už nezapisuje kľúč náhľadu do príspevku: číta sa zo živého zdroja (rozhodnutie majiteľa R83 iii)."""
+
+    def test_nove_zdielanie_nezapise_kluc_nahladu_do_prispevku(self):
+        """Pri ponuke, portfóliu aj reposte má nové zdieľanie náhľad, no stĺpec `shared_thumbnail_key` ostane prázdny."""
+        ponuka = self.ponuka()
+        self.foto_ponuky(ponuka, "media/offers/bez-zapisu.webp")
+        polozka = self.polozka()
+        self.foto_portfolia(polozka, "media/portfolio/bez-zapisu.webp", titulna=True)
+        povodny = self.povodny_prispevok()
+        self.foto_prispevku(povodny, "media/feed/bez-zapisu")
+
+        for telo in (
+            {"post_type": "shared_offer", "shared_offer_id": ponuka.id},
+            {
+                "post_type": "shared_portfolio_item",
+                "shared_portfolio_item_id": polozka.id,
+            },
+            {"post_type": "shared_feed_post", "shared_feed_post_id": povodny.id},
+        ):
+            with self.subTest(typ=telo["post_type"]):
+                zdielanie = self.zdielaj(**telo)
+                self.assertIsNotNone(zdielanie["shared_content"]["thumbnail_url"])
+                self.assertEqual(
+                    FeedPost.objects.get(pk=zdielanie["id"]).shared_thumbnail_key, ""
+                )
+
+    def test_zdielanie_osireleho_zdielania_nepreberie_kluc_nahladu(self):
+        """Zdieľanie osirelého zdieľania (pôvodný príspevok je zmazaný) prevezme snímok textu, ale nie starý kľúč náhľadu."""
+        povodny = self.povodny_prispevok()
+        medziclanok = FeedPost.objects.create(
+            author=self.zdielajuci,
+            post_type=FeedPost.PostType.SHARED_FEED_POST,
+            shared_feed_post=povodny,
+        )
+        # Stará hodnota zo záznamu vytvoreného pred touto opravou: stĺpec ostáva, nič ho už nečíta.
+        FeedPost.objects.filter(pk=medziclanok.pk).update(
+            shared_thumbnail_key="media/feed/stary-kluc.webp"
+        )
+        povodny.delete()
+        medziclanok.refresh_from_db()
+        self.assertIsNone(medziclanok.shared_feed_post_id)
+
+        zdielanie = FeedPost.objects.create(
+            author=self.divak,
+            post_type=FeedPost.PostType.SHARED_FEED_POST,
+            shared_feed_post=medziclanok,
+        )
+
+        self.assertIsNone(zdielanie.shared_feed_post_id)
+        self.assertEqual(zdielanie.shared_post_caption, "Pôvodný text")
+        self.assertEqual(zdielanie.shared_thumbnail_key, "")

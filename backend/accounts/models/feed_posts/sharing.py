@@ -23,7 +23,6 @@ SHARED_SNAPSHOT_FIELDS = (
     "shared_owner_display_name",
     "shared_title",
     "shared_category",
-    "shared_thumbnail_key",
     "shared_post_caption",
 )
 
@@ -200,7 +199,6 @@ class FeedPostSharingMixin:
 
         self.shared_title = source.shared_title
         self.shared_category = source.shared_category
-        self.shared_thumbnail_key = source.shared_thumbnail_key
         self.shared_post_caption = source.shared_post_caption
 
     def _snapshot_from_feed_post(self, post, *, overwrite: bool) -> None:
@@ -214,27 +212,14 @@ class FeedPostSharingMixin:
             self.shared_post_caption = self._truncate_for_field(
                 post.caption, "shared_post_caption"
             )
-        if overwrite or not self.shared_thumbnail_key:
-            # Náhľad = PRVÁ schválená fotka (od Fázy 4.4 ich môže byť až 5);
-            # pending/rejected sa navonok nezobrazuje. Import je lokálny –
-            # images.py importuje post.py, takže na module-level by vznikol cyklus.
-            from .images import FeedPostImage
-
-            first_approved = (
-                post.images.filter(status=FeedPostImage.Status.APPROVED)
-                .order_by("order", "id")
-                .first()
-            )
-            self.shared_thumbnail_key = (
-                first_approved.thumbnail_key if first_approved is not None else ""
-            )
 
     def _snapshot_from_offer(self, offer, *, overwrite: bool) -> None:
         """Over viditeľnosť ponuky a odvoď z nej snapshot.
 
         ``overwrite=False`` pri vzniku (rešpektuj hodnoty zadané volajúcim),
         ``True`` pri zmene zdroja – tam MUSIA staré hodnoty zaniknúť, inak by
-        príspevok ukazoval názov/náhľad pôvodnej ponuky pri novom FK.
+        príspevok ukazoval názov pôvodnej ponuky pri novom FK. Náhľad sa do
+        snapshotu nekopíruje: číta sa zo živého zdroja (``accounts.shared_thumbnail``).
         """
         self._apply_shared_owner(
             offer.user, is_hidden=offer.is_hidden, overwrite=overwrite
@@ -243,16 +228,6 @@ class FeedPostSharingMixin:
             self.shared_title = offer.subcategory or offer.category
         if overwrite or not self.shared_category:
             self.shared_category = offer.category
-        if overwrite or not self.shared_thumbnail_key:
-            first_image = (
-                offer.images.filter(status="approved")
-                .exclude(approved_key="")
-                .order_by("order", "id")
-                .first()
-            )
-            self.shared_thumbnail_key = (
-                first_image.approved_key if first_image is not None else ""
-            )
 
     def _snapshot_from_portfolio_item(self, item, *, overwrite: bool) -> None:
         """Ako ``_snapshot_from_offer``; PortfolioItem nemá ``is_hidden``, takže
@@ -262,19 +237,6 @@ class FeedPostSharingMixin:
             self.shared_title = item.title
         if overwrite or not self.shared_category:
             self.shared_category = item.category
-        if overwrite or not self.shared_thumbnail_key:
-            cover = item.cover_image
-            if cover is not None and cover.thumbnail_key:
-                self.shared_thumbnail_key = cover.thumbnail_key
-            else:
-                first_image = (
-                    item.images.exclude(thumbnail_key="")
-                    .order_by("order", "id")
-                    .first()
-                )
-                self.shared_thumbnail_key = (
-                    first_image.thumbnail_key if first_image is not None else ""
-                )
 
     def _revalidate_changed_shared_source(self, update_fields) -> list[str]:
         """Pri UPDATE prehoď validáciu znova, ak sa zmenil zdroj zdieľania.
