@@ -1,7 +1,6 @@
 import { expect, test, type Page } from './support/diagnostic-test';
 
 import {
-  bottomNav,
   expectSameMain,
   gotoDashboardHome,
   historyLength,
@@ -12,7 +11,7 @@ import {
 } from './support/dashboard';
 import { FEED_HOME_PATHS } from './support/feed';
 
-// Detail príspevku z Nástenky: mobil = vrstva v stave (adresa sa nemení) alebo celá stránka, desktop = overlay. Iba čítanie.
+// Detail príspevku: mobil = vrstva nad pôvodnou stránkou (z karty bez zmeny adresy), desktop = overlay. Iba čítanie.
 
 /** Komentáre k jednej z prvých kariet (nie k úplne hornej, aby `main` mal čo scrollovať). */
 async function commentsButton(page: Page) {
@@ -56,7 +55,7 @@ test.describe('mobil', () => {
       .toBe(scroll);
   });
 
-  test('the full detail page opens straight from its address and Domov returns to the feed', async ({ page }) => {
+  test('priamy odkaz otvorí mobilnú vrstvu detailu a X vráti na Nástenku', async ({ page }) => {
     const postId = await page.evaluate(async () => {
       const response = await fetch('/api/auth/feed/posts/', { credentials: 'include' });
       const data = await response.json();
@@ -66,10 +65,12 @@ test.describe('mobil', () => {
     expect(postId, 'Príprava: účet nemá žiadny príspevok na Nástenke.').not.toBeNull();
 
     await page.goto(`/dashboard/feed/${postId}`);
-    await expect(page.getByTestId('feed-post-detail')).toBeVisible();
+    const detail = page.getByTestId('feed-mobile-detail');
+    await expect(detail).toBeVisible();
     expect(pathOf(page)).toBe(`/dashboard/feed/${postId}`);
 
-    await bottomNav(page, 'Domov').tap();
+    await page.getByTestId('feed-mobile-detail-close').tap();
+    await expect(detail).toBeHidden();
     await expect.poll(() => FEED_HOME_PATHS.has(pathOf(page))).toBe(true);
     await expect(page.getByTestId('feed-list')).toBeVisible();
   });

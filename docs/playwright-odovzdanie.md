@@ -1,4 +1,4 @@
-# Playwright: odovzdanie (stav k 20. 11. 2026)
+# Playwright: odovzdanie (stav k 26. 11. 2026)
 
 Táto strana je pre agenta, ktorý má na starosti Playwright (Codex). Pravidlá spolupráce sú v `AGENTS.md`. Po každom prijatom behu (pozri nižšie) agent aktualizuje tabuľku stavu a zoznam známych pádov. Zmeny dáva do jednej vetvy naraz, nie po každom behu zvlášť.
 
@@ -9,7 +9,139 @@ zmeny danej úlohy vo vlastnej oblasti; nikdy nie pre env, reláciu, reportové
 artefakty alebo cudzie zmeny. PR, zlučovanie do mainu a nasadenie zostávajú
 majiteľovi. Ak nevznikli zmeny, nevytvára sa prázdny commit.
 
-## Aktuálna dávka — 20. 11. 2026: E2E regresie komentárov 345 a 346
+## Aktuálna dávka — 26. 11. 2026: mobilný detail príspevku po oprave A
+
+Vetva **`e2e/detail-prispevku-mobil`** z čerstvého vzdialeného mainu
+**`1c5d0cdd`** (PR #340), overeného fetchom pred začatím. Hlavný miestny
+priečinok obsahuje rozpracované zmeny majiteľa, preto sa pracuje v oddelenom
+worktree. Do commitu patria iba oba zadané špecy a toto odovzdanie.
+
+- `feed-post-detail.spec.ts`: priamy odkaz čaká na hotový `feed-mobile-detail`,
+  nie na zrušený `feed-post-detail` ani načítavaciu kostru. Po kontrole adresy
+  sa vrstva zatvorí cez `feed-mobile-detail-close`; vyžaduje sa jej skrytie,
+  návrat do `FEED_HOME_PATHS` a viditeľný `feed-list`. Spodné menu sa pod
+  otvorenou vrstvou nestláča. Pôvodná API príprava sa nemení.
+- `notification-click.spec.ts`: tri mobilné varianty naďalej klikajú iba
+  **prečítané** upozornenia. Pred ťuknutím sa uloží identita `<main>`
+  Upozornení, hotový detail je `feed-mobile-detail` a pôvodné overenie
+  adresy vrátane `?comment=` zostáva. Rovnaký `<main>` sa overuje pri
+  otvorení aj po `page.goBack()`; návrat musí mať `/dashboard/notifications`,
+  viditeľný nadpis Upozornenia a skrytý detail.
+- Desktopové časti oboch súborov, prvý mobilný test otvorenia z karty,
+  spoločné pomocníky, syntetické diagnostické stránky, ostatné špecy,
+  timeouty, tolerancie, retry a všetky SKIP podmienky sa nemenia.
+- Voliteľná kontrola doscrollovania na konkrétny komentár sa nepridáva:
+  doterajší dátový strážca overuje živý príspevok, nie existenciu historického
+  komentára alebo odpovede. Bez potvrdených dát by išlo o ďalšiu podmienku
+  mimo tejto opravy; nevznikol nový SKIP ani kontrola krátkeho zvýraznenia.
+
+### Lokálne overenie — nie živý PASS
+
+| Kontrola | Výsledok |
+| --- | --- |
+| Knižnice podľa aktuálneho `package-lock.json` | `npm ci --ignore-scripts`, exit 0; súbory závislostí sa nezmenili |
+| Striktný TypeScript celej E2E oblasti | **0 chýb** |
+| ESLint oboch zadaných špecov a kontrola diffu | **0 chýb / 0 upozornení** |
+| Porovnanie s mainom | desktopové sekcie, prvý mobilný scenár a SKIP podmienky nezmenené |
+| Izolovaný `--list` bez siete, env a prihlásenia | **10 variantov / 2 špecy**, iba `webkit-mobile`; nie výsledok vykonaných testov |
+| Zdieľaná logika / Jest | nemenila sa; nový Jest scenár nie je potrebný |
+
+Playwright **1.63.0**, oficiálny Docker obraz zhodnej verzie. Miestny Node
+je **24.16.0**, Node v tomto obraze **24.20.0**; `npm ci` upozornil na
+projektové `engines: 22.x`, inštalácia aj E2E typy však skončili exit 0.
+Verzia Node, obraz, konfigurácia a závislosti sa touto úlohou nemenili.
+
+**Vedľajší existujúci problém Windows mainu pre Claudea:** doplnkové
+`tsc --noEmit --incremental false` celej aplikácie skončilo **4 chybami**
+TS1149/TS1261/TS1192. Import komponentu `FeedKeyboardDiagnostics.tsx` sa
+na Windows stretáva s modulom `feedKeyboardDiagnostics.ts`.
+Git navyše obsahuje oba Jest súbory `FeedKeyboardDiagnostics.test.tsx`
+a `feedKeyboardDiagnostics.test.tsx`, ktoré sa na Windows nedajú odlíšiť.
+Aj čerstvý checkout preto vykazuje miestnu zmenu prvého z nich; hash jeho
+obsahu presne zodpovedá druhému súboru z HEAD. Nejde o úpravu aplikácie
+Codexom a súbor nie je zahrnutý do commitu. Aplikácia sa neopravuje ani sa
+nevypína kontrola veľkosti písmen; E2E typy prešli samostatne. Toto nie je
+živý pád aplikácie ani dôkaz jej nefunkčnosti na Linuxe/Railway.
+
+### Živý beh a pravidlo porovnania — 26. 11. 2026
+
+Majiteľ potvrdil okno **13:45–14:00 Bratislava**, nasadený main `1c5d0cdd`,
+bez zlučovania, nasadzovania a zmien testovacieho účtu. Fetch tesne pred
+štartom potvrdil rovnaký main. Testované boli špecy z commitu **`6c2810ac`**.
+
+Cielený výber z `frontend` zodpovedal tomuto príkazu:
+
+```powershell
+npm run test:e2e:docker -- e2e/feed-post-detail.spec.ts e2e/notification-click.spec.ts --project=webkit-mobile --workers=1 --retries=0
+```
+
+**Overený výsledok: `webkit-mobile` 5 PASS / 0 FAIL / 5 SKIP.**
+
+| Špec (`webkit-mobile`) | Prešlo | Zlyhalo | Preskočené |
+| --- | ---: | ---: | ---: |
+| `feed-post-detail.spec.ts` | 2 | 0 | 1 |
+| `notification-click.spec.ts` | 3 | 0 | 4 |
+| **Spolu** | **5** | **0** | **5** |
+
+Beh **12:55:15.786–12:55:43.070 UTC** (13:55 Bratislava), proces
+**27,284 s**, Playwright report **24,467 s**. Každý variant mal retry **0**,
+workers **1**. Všetky aktívne scenáre prešli, **žiadny dátový SKIP**.
+Desktopové projekty sa nespúšťali; ich správanie ani spoločná logika sa
+nemenili. Päť ponechaných SKIP v mobilnom projekte má jednotlivé dôvody:
+
+| Preskočený existujúci scenár | Dôvod |
+| --- | --- |
+| `feed-post-detail`: „comments open as an overlay above the feed and close by the button, by Back and by Escape“ | Len desktopový overlay |
+| `notification-click`: „meno autora komentára v detaile otvorenom z upozornenia zavrie okno a otvorí profil“ | Len desktopový panel a overlay |
+| `notification-click`: „a read \"like\" notification opens the post overlay and Back closes it without touching <main>“ | Len desktopový panel a overlay |
+| `notification-click`: rovnaký pôvodný scenár pre „comment“ | Len desktopový panel a overlay |
+| `notification-click`: rovnaký pôvodný scenár pre „reply“ | Len desktopový panel a overlay |
+
+Spustenie z oddelenej vetvy zachovalo pôvodnú konfiguráciu a voľby testov.
+Zdrojový priečinok bol v Dockeri read-only, pôvodný env bol pripojený iba
+na čítanie mimo neho a načítaný cez `node --env-file`; nebol kopírovaný
+do worktree. Relácia bola v dočasnej pamäti kontajnera. `--reporter=json`
+a `--output=/tmp/detail-mobil-results` držali surové údaje mimo výpisov
+a Gitu. Do výpisu sa dostal len whitelistovaný súhrn; žiadne osobné údaje,
+hodnoty cookies, tokeny, texty stránky ani odpovede servera. Pri PASS/SKIP
+sa `[E2E-EVIDENCE]` nevytvára, preto tu nie je blok pádu.
+
+**Technická história pre úplnosť:** dva pokusy skončili Docker exit **125**
+ešte pred prihlásením/testmi: pripojenie súboru do read-only zdrojového
+priečinka sa nedalo vytvoriť. Zmena pripojenia do `/run` prebehla iba
+v jednorazovej miestnej obsluhe mimo Gitu. Prvý následne dokončený beh
+skončil exit **0** za **32,271 s**, ale jeho report sa nepodarilo prevziať;
+z tohto procesu sa nevymýšľajú súčty. Overená príčina zberu: global setup
+tlačí bezpečný `[E2E-SESSION]` riadok mimo JSON reportera. Po oddelení
+privátneho JSON súboru v `/tmp` od diagnostického stdout nasledoval vyššie
+uvedený vykázateľný beh **5/0/5**; prítomnosť diagnostického riadka mimo
+reportu sa pri ňom potvrdila. Asercie, kód špecov ani retry sa medzi behmi
+nemenili. Nejde o opakovanie na zamaskovanie pádu; žiadny vykázaný test
+nezlyhal. Kontajnery tohto behu sa ukončili a okno bolo majiteľovi výslovne
+uvoľnené, ďalšie požiadavky proti Railway sa nespúšťajú.
+
+Porovnanie podľa kľúča špec + názov + projekt berie do úvahy premenovanie
+**4 existujúcich mobilných prípadov**, nie pridanie nových testov:
+
+- `feed-post-detail.spec.ts`: pôvodný „the full detail page opens straight
+  from its address and Domov returns to the feed“ → „priamy odkaz otvorí
+  mobilnú vrstvu detailu a X vráti na Nástenku“.
+- `notification-click.spec.ts`: pôvodný vzor „a read \"like/comment/reply\"
+  notification opens the post page and Back returns to the list with a fresh
+  <main>“ → vzor „prečítané upozornenie „Páči sa mi tvoj príspevok / Komentár
+  k príspevku / Odpoveď na komentár“ otvorí mobilnú vrstvu a Späť zachová
+  <main> upozornení“, v tom istom poradí troch typov.
+
+Cielený beh nie je nový celý prijatý beh: základ **427 / 2 / 303** ani
+historické výsledky nižšie sa ním neprepisujú. Po vyššie uvedenom mapovaní
+premenených kľúčov nie je nový pád ani nový dátový SKIP. Tri diagnostické
+opakovania pádu preto neboli potrebné a nevzniká hlásenie chyby aplikácie
+pre Claudea z tohto živého behu. Samostatný Windows problém typov opísaný
+vyššie ostáva mimo rozsahu a nebol opravovaný. Voliteľné doscrollovanie
+konkrétneho komentára, F5 a zmena šírky počas otvorenia neboli nové
+scenáre tejto dávky; desktop a syntetické diagnostické stránky sa nemenili.
+
+## Historická dávka — 20. 11. 2026: E2E regresie komentárov 345 a 346
 
 Vetva **`e2e/komentare-345-346`** z čerstvého main **`1c454330`** (PR #300;
 aplikácia obsahuje aj K37 až K43). Fetch bol pred dokončením zopakovaný,
