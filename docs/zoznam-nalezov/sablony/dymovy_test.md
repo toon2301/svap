@@ -68,6 +68,10 @@ Po každom zlúčení dávky, pred zlúčením ďalšej. Na iPhone s nainštalov
    - Upozornenie na zmazaný príspevok (iPhone aj počítač): ukáže sa hláška, že príspevok už nie je dostupný, a nezostane prázdna obrazovka ani zaseknuté načítavanie.
    - Zdieľaný príspevok (iPhone): v obrazovke detailu ťuk na meno alebo avatar pôvodného autora otvorí jeho profil a ťuk na text pôvodného príspevku jeho zdroj; obrazovka sa pred odchodom zavrie.
    - Počítač: upozornenie otvorí okno detailu nad Nástenkou ako doteraz; rozpísaný komentár v okne ostane aj po zúžení okna prehliadača pod 1 024 px a späť (okno ostane, neprepne sa na obrazovku).
+11. **Len po dávke so stránkou výsledkov vyhľadávania (`/search`) na počítači** (nález 380): ľavé menu tejto stránky funguje ako inde.
+   - Upozornenia: na stránke kompletných výsledkov (vyhľadávanie, „Zobraziť všetko“) otvorí ľavé menu Upozornenia ten istý panel ako na Nástenke; druhý klik, Escape a klik na výsledky ho zavrú.
+   - Striedanie panelov: Vyhľadávanie a Upozornenia sa v jednom stĺpci striedajú a dopyt napísaný vo vyhľadávaní ostane.
+   - Správy a Štatistiky otvoria dashboard na svojej sekcii; klik na upozornenie v paneli otvorí jeho cieľ (príspevok v okne nad Nástenkou) a upozornenie na zhodu so sledovaním ponuky otvorí profil so zvýraznením ponuky.
 
 **Výsledok** jedným riadkom agentovi: „prešlo“ alebo „neprešlo: krok N, čo sa stalo, približný čas“. Pri zlyhaní push pošli aj počty z riadku `message_push_delivery_summary` (bez ID), alebo napíš, že riadok v logu chýba.
 Kým test neprejde, ďalšia dávka sa nezlučuje. Pri HNEĎ chybe po nasadení platí postup v `README.md`, časť „Postup od K15“.
