@@ -487,3 +487,14 @@ describe('stránka výsledkov: skutočný zoznam upozornení v paneli', () => {
     expect(jePanelUpozorneniOtvoreny()).toBe(false);
   });
 });
+
+describe('stránka výsledkov: Správy a Štatistiky v ľavom menu', () => {
+  it.each([
+    ['messages', '/dashboard/messages'],
+    ['statistics', '/dashboard/statistics'],
+  ])('%s prejde na svoju adresu v dashboarde (jedna navigácia)', (id, url) => {
+    renderLayout();
+    fireEvent.click(navButton(id));
+    expect(mockPush.mock.calls).toEqual([[url]]);
+  });
+});

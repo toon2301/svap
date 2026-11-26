@@ -40,6 +40,8 @@ export function SearchLayout({ children }: SearchLayoutProps) {
       if (itemId === 'home') url = '/dashboard';
       else if (itemId === 'favorites') url = '/dashboard/favorites';
       else if (itemId === 'requests') url = '/dashboard/requests';
+      else if (itemId === 'messages') url = '/dashboard/messages';
+      else if (itemId === 'statistics') url = '/dashboard/statistics';
       else if (itemId === 'watches') url = '/dashboard/watches';
       else if (itemId === 'profile') {
         const identifier = user?.slug || (user ? String(user.id) : '');
