@@ -1,6 +1,7 @@
 /**
  * Efekty podľa adresy: adresa zapne modul (recenzie ponuky, detail a tvorba portfólia) a priamy
- * vstup na príspevok otvorí na desktope okno nad Nástenkou, na mobile celú stránku.
+ * vstup na príspevok otvorí detail nad Nástenkou (okno na počítači, obrazovka na mobile; podobu
+ * vyberá `FeedPostDetailSwitch`, hook šírku okna nepozná).
  *
  * Hook má štyri efekty v pevnom poradí: recenzie ponuky, detail portfólia, priamy vstup na príspevok
  * a tvorba portfólia. O vstupe na príspevok rozhoduje `decideFeedPostEntry` a históriu okna rieši
@@ -41,9 +42,7 @@ type Mounted = RenderHookResult<void, HookInput>;
 const spy = (name: string) => jest.fn((...args: unknown[]) => record(name, ...args));
 
 type Decision =
-  | { kind: 'wait' }
   | { kind: 'none' }
-  | { kind: 'full-page' }
   | { kind: 'overlay'; target: FeedPostOverlayTarget }
   | { kind: string };
 
@@ -61,8 +60,6 @@ const makeBase = (): HookInput => ({
   feedOverlayTarget: null,
   setFeedOverlayTarget: spy('setFeedOverlayTarget'),
   setActiveModule: spy('setActiveModule'),
-  isMobile: false,
-  isViewportResolved: true,
 });
 
 /** Nové vstupy sú vždy úplné: predvolené hodnoty plus `overrides`. */
@@ -84,8 +81,6 @@ const decideInput = (overrides: Record<string, unknown> = {}) => ({
   overlayOpen: false,
   historyBusy: false,
   liveUrl: '/dashboard',
-  viewportResolved: true,
-  isMobile: false,
   ...overrides,
 });
 
@@ -99,7 +94,6 @@ const FEED_RUN = (overrides: Record<string, unknown> = {}) => [
 const REVIEWS = entry('setActiveModule', 'offer-reviews');
 const DETAIL = entry('setActiveModule', 'portfolio-detail');
 const CREATE = entry('setActiveModule', 'portfolio-create');
-const FULL_PAGE = entry('setActiveModule', 'feed-post-detail');
 const HOME = entry('setActiveModule', 'home');
 const ADOPT = entry('adoptFeedOverlayHistory');
 
@@ -250,8 +244,6 @@ describe('priamy vstup na príspevok: čo sa pošle rozhodnutiu', () => {
     ['história okna nebeží', {}, '/dashboard', false, { historyBusy: false }],
     ['skutočná adresa s dotazom', {}, '/dashboard/feed/7?comment=12', false, { liveUrl: '/dashboard/feed/7?comment=12' }],
     ['skutočná adresa bez hashu', {}, '/dashboard/feed/7#komentare', false, { liveUrl: '/dashboard/feed/7' }],
-    ['viewport ešte nie je vyhodnotený', { isViewportResolved: false }, '/dashboard', false, { viewportResolved: false }],
-    ['mobil', { isMobile: true }, '/dashboard', false, { isMobile: true }],
   ] as Array<[string, Partial<HookInput>, string, boolean, Record<string, unknown>]>)(
     '%s',
     (_label, overrides, url, busy, expected) => {
@@ -273,7 +265,7 @@ describe('priamy vstup na príspevok: čo sa pošle rozhodnutiu', () => {
 });
 
 describe('priamy vstup na príspevok: čo sa podľa rozhodnutia spraví', () => {
-  it.each([[{ kind: 'wait' }], [{ kind: 'none' }], [{ kind: 'neznáme' }]] as Array<[Decision]>)(
+  it.each([[{ kind: 'none' }], [{ kind: 'neznáme' }]] as Array<[Decision]>)(
     'rozhodnutie %j nič nenastaví',
     (given) => {
       decision = given;
@@ -286,16 +278,6 @@ describe('priamy vstup na príspevok: čo sa podľa rozhodnutia spraví', () => 
       expect(mockAdoptFeedOverlayHistory).not.toHaveBeenCalled();
     },
   );
-
-  it('celá stránka príspevku: len zapne modul príspevku', () => {
-    decision = { kind: 'full-page' };
-
-    mountHook({ feedPostIdFromPath: 7, isMobile: true });
-
-    expect(calls).toEqual([...FEED_RUN({ pathPostId: 7, isMobile: true }), FULL_PAGE]);
-    expect(base.setFeedOverlayTarget).not.toHaveBeenCalled();
-    expect(mockAdoptFeedOverlayHistory).not.toHaveBeenCalled();
-  });
 
   it('okno nad Nástenkou: Nástenka, prevzatie histórie, potom cieľ okna (v tomto poradí)', () => {
     decision = { kind: 'overlay', target: TARGET };
@@ -365,7 +347,7 @@ describe('kedy sa ktorý efekt spustí znova', () => {
   const CREATE_RUN = 'create';
 
   const mountEverythingActive = (): Mounted => {
-    decision = { kind: 'full-page' };
+    decision = { kind: 'none' };
     return mountHook({
       offerIdFromReviewsPath: 5,
       portfolioItemIdFromPath: 7,
@@ -411,8 +393,9 @@ describe('kedy sa ktorý efekt spustí znova', () => {
     ['feedOverlayTarget', [FEED_RUN_NAME]],
     ['setFeedOverlayTarget', [FEED_RUN_NAME]],
     ['setActiveModule', [REVIEWS_RUN, DETAIL_RUN, FEED_RUN_NAME, CREATE_RUN]],
-    ['isMobile', [FEED_RUN_NAME]],
-    ['isViewportResolved', [FEED_RUN_NAME]],
+    // Šírku okna hook nepoužíva (podobu detailu vyberá `FeedPostDetailSwitch`): jej zmena nič nespúšťa.
+    ['isMobile', []],
+    ['isViewportResolved', []],
   ] as Array<[keyof HookInput, string[]]>)('zmena vstupu %s spustí znova: %j', (key, expected) => {
     const mounted = mountEverythingActive();
     calls = [];

@@ -16,8 +16,13 @@ type PathModuleEffectsInput = {
   feedOverlayTarget: FeedPostOverlayTarget | null;
   setFeedOverlayTarget: (target: FeedPostOverlayTarget | null) => void;
   setActiveModule: (module: string) => void;
-  isMobile: boolean;
-  isViewportResolved: boolean;
+  /**
+   * Nepoužíva sa: priamy vstup na príspevok otvorí detail rovnako na mobile aj na počítači a podobu vyberá
+   * `FeedPostDetailSwitch` podľa šírky okna (nález 360). Posiela ich ešte `DashboardContent` (TECH-01), preto
+   * ostávajú v type; zmiznú pri jeho rozdelení.
+   */
+  isMobile?: boolean;
+  isViewportResolved?: boolean;
 };
 
 /** Efekty podľa adresy: recenzie ponuky, detail a tvorba portfólia a priamy vstup na príspevok. */
@@ -29,8 +34,6 @@ export function usePathModuleEffects({
   feedOverlayTarget,
   setFeedOverlayTarget,
   setActiveModule,
-  isMobile,
-  isViewportResolved,
 }: PathModuleEffectsInput) {
   useEffect(() => {
     if (offerIdFromReviewsPath != null) {
@@ -46,9 +49,9 @@ export function usePathModuleEffects({
 
   useEffect(() => {
     // Priamy vstup na /dashboard/feed/<id> (odkaz, F5, aj preklik na zdielany
-    // prispevok): na desktope ma appka vzdy ukazat Nastenku a NAD nou to iste
-    // okno, ake sa otvara klikom vo feede. Samotne rozhodovanie (aj s oboma
-    // oneskoreniami adresy) je vo `feedPostEntryDecision`.
+    // prispevok): appka ma vzdy ukazat Nastenku a NAD nou ten isty detail, aky
+    // sa otvara klikom vo feede (na pocitaci okno, na mobile obrazovka). Samotne
+    // rozhodovanie (aj s oboma oneskoreniami adresy) je vo `feedPostEntryDecision`.
     const decision = decideFeedPostEntry({
       pathPostId: feedPostIdFromPath,
       overlayOpen: feedOverlayTarget !== null,
@@ -57,14 +60,8 @@ export function usePathModuleEffects({
         typeof window === 'undefined'
           ? null
           : window.location.pathname + window.location.search,
-      viewportResolved: isViewportResolved,
-      isMobile,
     });
 
-    if (decision.kind === 'full-page') {
-      setActiveModule('feed-post-detail');
-      return;
-    }
     if (decision.kind !== 'overlay') return;
 
     // Predvoleny modul ako pozadie: pri priamom vstupe neexistuje ziadny
@@ -79,8 +76,6 @@ export function usePathModuleEffects({
     setActiveModule,
     feedOverlayTarget,
     setFeedOverlayTarget,
-    isMobile,
-    isViewportResolved,
   ]);
 
   useEffect(() => {

@@ -48,7 +48,6 @@ const spy = (name: string) => jest.fn((...args: unknown[]) => record(name, ...ar
 let base: HookInput;
 
 const makeBase = (): HookInput => ({
-  isMobile: false,
   setActiveModule: spy('setActiveModule'),
   setIsRightSidebarOpen: spy('setIsRightSidebarOpen'),
   setActiveRightItem: spy('setActiveRightItem'),
@@ -209,7 +208,7 @@ describe('poslucháč popstate', () => {
 
   it.each(INPUT_KEYS)('zmena vstupu %s poslucháča zaregistruje nanovo', (key) => {
     const mounted = mountHook();
-    update(mounted, key === 'isMobile' ? { isMobile: true } : ({ [key]: spy('nová') } as Partial<HookInput>));
+    update(mounted, { [key]: spy('nová') } as Partial<HookInput>);
     expect(calls).toEqual([UNLISTEN, LISTEN]);
     expect(removed[removed.length - 1]).not.toBe(added[added.length - 1]);
   });
@@ -324,13 +323,13 @@ describe('príspevok v adrese', () => {
     expect(localStorage.getItem('activeModule')).toBe('home');
   });
 
-  it('na mobile je adresa príspevku celá stránka príspevku', () => {
+  it('na mobile je adresa príspevku tiež Nástenka (obrazovku detailu otvára iný efekt)', () => {
     mountHook({ isMobile: true });
 
     pressBack('/dashboard/feed/7');
 
-    expect(calls).toEqual(PLAIN('feed-post-detail'));
-    expect(localStorage.getItem('activeModule')).toBe('feed-post-detail');
+    expect(calls).toEqual(PLAIN('home'));
+    expect(localStorage.getItem('activeModule')).toBe('home');
   });
 
   it.each([[true], [false]])('mapovanie ostatných adries nezávisí od mobilu (isMobile: %p)', (isMobile) => {
@@ -341,14 +340,14 @@ describe('príspevok v adrese', () => {
     expect(calls).toEqual(PLAIN('search'));
   });
 
-  it('po zmene z desktopu na mobil sa adresa príspevku vyhodnotí inak', () => {
+  it('po zmene z desktopu na mobil sa adresa príspevku vyhodnotí rovnako', () => {
     const mounted = mountHook({ isMobile: false });
     update(mounted, { isMobile: true });
     calls = [];
 
     pressBack('/dashboard/feed/7');
 
-    expect(calls).toEqual(PLAIN('feed-post-detail'));
+    expect(calls).toEqual(PLAIN('home'));
   });
 
   it('adresa príspevku so zlým tvarom modul nenastaví', () => {
