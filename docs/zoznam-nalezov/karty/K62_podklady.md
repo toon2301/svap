@@ -6,22 +6,22 @@ Pripravil agent 26. 11. 2026 ako podklad ku karte `karty/K62.md`. Je to **protot
 
 | Kontrola | Výsledok |
 | --- | --- |
-| Nový súbor testov `SearchLayout.upozornenia.test.tsx` na pôvodnom `SearchLayout.tsx` | **16 z 23 padá** (medzi nimi otvorenie panela upozornení, označenie položky menu, zatvorenie klávesom Escape a klikom mimo, preklik z panela a obe položky Správy a Štatistiky); 7 prechádza (pravidlá, ktoré sa nesmú pokaziť) |
-| Ten istý súbor po oprave | **23 z 23 prechádza** |
+| Nový súbor testov `SearchLayout.upozornenia.test.tsx` na pôvodnom `SearchLayout.tsx` | **19 z 28 padá** (medzi nimi otvorenie panela upozornení, označenie položky menu, zatvorenie klávesom Escape a klikom mimo, preklik z panela, upozornenie na zhodu so sledovaním ponuky a obe položky Správy a Štatistiky); 9 prechádza (pravidlá, ktoré sa nesmú pokaziť) |
+| Ten istý súbor po oprave | **28 z 28 prechádza** |
 | Existujúce `SearchLayout.navigation.test.tsx`, `SearchLayout.scroll.test.tsx` a `SearchLayout.viewportHeight.test.tsx` po oprave | **52 z 52 prechádza**, bez zmeny týchto súborov |
-| Celé `components/search` a `app/search` po oprave | 22 sád, 345 testov, 0 pádov |
+| Celé `components/search` a `app/search` po oprave | 22 sád, 350 testov, 0 pádov |
 | `tsc --noEmit` celej aplikácie | 0 chýb |
 | ESLint na `SearchLayout.tsx` | 0 chýb; jedno staré upozornenie (nepoužitý parameter `_summary`, riadok 84 pôvodného súboru), ktoré nesúvisí s dávkou |
-| Zásahy do kódu (14, každý je jedna výmena textu v prototype) | **14 zo 14 zachytených** (menu bez obsluhy Upozornení; menu stále označuje Vyhľadávanie; upozornenia nezavrú vyhľadávanie; vyhľadávanie nezavrie upozornenia; mousedown na Upozorneniach v menu zatvorí panel; klik mimo a Escape len pre vyhľadávanie; preklik bez kontroly adresy; panel po prekliku ostane otvorený; Správy nezapojené; Štatistiky nezapojené; odznak nepotvrdený; vyhľadávanie sa pri upozorneniach neskryje; mriežka len pre vyhľadávanie; panel bez `onNavigate`) |
+| Zásahy do kódu (21, každý je jedna výmena textu v prototype) | **21 z 21 zachytených** (menu bez obsluhy Upozornení; menu stále označuje Vyhľadávanie; upozornenia nezavrú vyhľadávanie; vyhľadávanie nezavrie upozornenia; mousedown na Upozorneniach v menu zatvorí panel; klik mimo a Escape len pre vyhľadávanie; preklik bez kontroly adresy; panel po prekliku ostane otvorený; Správy nezapojené; Štatistiky nezapojené; odznak nepotvrdený; vyhľadávanie sa pri upozorneniach neskryje; mriežka len pre vyhľadávanie; panel bez `onNavigate`; poslucháč udalosti `goToUserProfile` sa pri zatvorení panela neodoberie; poslucháč beží aj pri zatvorenom paneli; udalosť bez identifikátora zavrie panel; zvýraznenie ponuky sa neodovzdá; panel sa po udalosti nezavrie; zvýraznenie sa neoverí; identifikátor sa neorezáva) |
 
-Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 riadkov. Prototyp nemení nič v `frontend/src/components/dashboard/**`.
+Veľkosť: `SearchLayout.tsx` 181 → 236 riadkov, vzorový súbor testov 395 riadkov. Prototyp nemení nič v `frontend/src/components/dashboard/**`.
 
 ## Diff `SearchLayout.tsx` (prototyp)
 
 ```diff
 --- a/frontend/src/components/search/SearchLayout.tsx
 +++ b/frontend/src/components/search/SearchLayout.tsx
-@@ -5,6 +5,7 @@
+@@ -5,11 +5,13 @@
  import { useAuth } from '@/contexts/AuthContext';
  import Sidebar from '@/components/dashboard/Sidebar';
  import SearchModule from '@/components/dashboard/modules/SearchModule';
@@ -29,7 +29,13 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
  import { RequestsNotificationsProvider } from '@/components/dashboard/contexts/RequestsNotificationsContext';
  import {
    openUserProfileFromSearch,
-@@ -23,6 +24,8 @@
+   profileIdentifierFor,
+ } from '@/components/dashboard/modules/profile/openUserProfileFromSearch';
++import { parseDashboardHighlightId } from '@/components/dashboard/components/dashboardTargetUrl';
+ import { useDashboardWindowScrollReset } from '@/components/dashboard/hooks/useDashboardWindowScrollReset';
+ import { VIEWPORT_HEIGHT_CLASSES } from '@/components/dashboard/viewportHeightClasses';
+ import { useSearchScrollRestoration } from './useSearchScrollRestoration';
+@@ -23,6 +25,8 @@
    const router = useRouter();
    const { logout: authLogout, user } = useAuth();
    const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
@@ -38,7 +44,7 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
    const mainRef = useRef<HTMLElement>(null);
    useSearchScrollRestoration(mainRef, user?.id);
    useDashboardWindowScrollReset('search');
-@@ -35,6 +38,8 @@
+@@ -35,6 +39,8 @@
        if (itemId === 'home') url = '/dashboard';
        else if (itemId === 'favorites') url = '/dashboard/favorites';
        else if (itemId === 'requests') url = '/dashboard/requests';
@@ -47,7 +53,7 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
        else if (itemId === 'watches') url = '/dashboard/watches';
        else if (itemId === 'profile') {
          const identifier = user?.slug || (user ? String(user.id) : '');
-@@ -46,8 +51,27 @@
+@@ -46,8 +52,47 @@
      [router, user],
    );
  
@@ -74,10 +80,30 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
 +    },
 +    [router],
 +  );
++
++  /**
++   * Upozornenie na zhodu so sledovaním ponuky (`offer_watch_match`) neotvára cieľ cez `onNavigate`, ale oknovou udalosťou
++   * `goToUserProfile`, ktorú počúva len dashboard. Kým je panel upozornení otvorený, prevedieme ju na rovnaké otvorenie
++   * profilu ako pri výsledkoch vyhľadávania (adresa so zvýraznením ponuky, označenie pôvodu) a panel zavrieme.
++   */
++  useEffect(() => {
++    if (!isNotificationsPanelOpen) return;
++    const handleGoToUserProfile = (event: Event) => {
++      const detail = (event as CustomEvent<{ identifier?: string; highlightId?: number | string | null }>).detail;
++      const identifier = (detail?.identifier || '').trim();
++      if (!identifier) return;
++      setIsNotificationsPanelOpen(false);
++      openUserProfileFromSearch(router, identifier, {
++        highlightSkillId: parseDashboardHighlightId(detail?.highlightId),
++      });
++    };
++    window.addEventListener('goToUserProfile', handleGoToUserProfile);
++    return () => window.removeEventListener('goToUserProfile', handleGoToUserProfile);
++  }, [isNotificationsPanelOpen, router]);
  
    /** End the current session before navigating back to the public home page. */
    const handleLogout = useCallback(() => {
-@@ -73,14 +97,17 @@
+@@ -73,14 +118,17 @@
      [router],
    );
  
@@ -98,7 +124,7 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
  
      /** Ignore panel/filter interactions but dismiss the search overlay on outside clicks. */
      const handleClickOutside = (event: MouseEvent) => {
-@@ -97,7 +124,7 @@
+@@ -97,7 +145,7 @@
        const leftSidebar = document.querySelector('[data-sidebar="left"]');
        if (leftSidebar?.contains(target)) {
          const el = target as HTMLElement;
@@ -107,7 +133,7 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
            return;
          }
          handleCloseSearchPanel();
-@@ -125,23 +152,24 @@
+@@ -125,23 +173,24 @@
        document.removeEventListener('mousedown', handleClickOutside);
        document.removeEventListener('keydown', handleKeyDown);
      };
@@ -137,7 +163,7 @@ Veľkosť: `SearchLayout.tsx` 181 → 215 riadkov, vzorový súbor testov 337 ri
              />
            </div>
  
-@@ -150,19 +178,25 @@
+@@ -150,19 +199,25 @@
              ref={searchPanelRef}
              className={[
                'hidden lg:flex h-screen flex-col overflow-hidden bg-[var(--background)] transition-opacity duration-200',
@@ -249,10 +275,18 @@ jest.mock('@/components/dashboard/modules/notifications/NotificationsFeed', () =
         <button onClick={() => props.onNavigate?.('/login')}>Cudzia adresa</button>
         <button onClick={() => props.onNavigate?.('//dashboard/requests')}>Adresa s dvoma lomkami</button>
         <button onClick={() => props.onNavigate?.('https://example.com/dashboard/requests')}>Adresa na iný web</button>
+        <button onClick={() => poslatUdalostProfilu({ identifier: 'test', highlightId: 7 })}>Zhoda so sledovaním ponuky</button>
+        <button onClick={() => poslatUdalostProfilu({ identifier: 'test', highlightId: 'abc' })}>Zhoda s neplatným zvýraznením</button>
+        <button onClick={() => poslatUdalostProfilu({ identifier: '  ', highlightId: 7 })}>Zhoda bez identifikátora</button>
       </div>
     );
   },
 }));
+
+/** Upozornenie na zhodu so sledovaním ponuky neodovzdá cieľ cez `onNavigate`, ale oknovou udalosťou ako skutočné `NotificationItem`. */
+function poslatUdalostProfilu(detail: { identifier: string; highlightId: number | string }) {
+  window.dispatchEvent(new CustomEvent('goToUserProfile', { detail }));
+}
 
 function renderLayout() {
   const view = render(
@@ -494,6 +528,56 @@ describe('stránka výsledkov: preklik z panela upozornení', () => {
   });
 });
 
+describe('stránka výsledkov: upozornenie na zhodu so sledovaním ponuky (udalosť goToUserProfile)', () => {
+  it('otvorí profil so zvýraznením ponuky a zavrie panel', () => {
+    renderLayout();
+    fireEvent.click(navButton('notifications'));
+
+    fireEvent.click(screen.getByText('Zhoda so sledovaním ponuky'));
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/test?highlight=7');
+    expect(jePanelUpozorneniOtvoreny()).toBe(false);
+  });
+
+  it('s neplatným zvýraznením otvorí profil bez neho', () => {
+    renderLayout();
+    fireEvent.click(navButton('notifications'));
+
+    fireEvent.click(screen.getByText('Zhoda s neplatným zvýraznením'));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/test');
+  });
+
+  it('bez identifikátora sa ignoruje: bez navigácie a panel ostane otvorený', () => {
+    renderLayout();
+    fireEvent.click(navButton('notifications'));
+
+    fireEvent.click(screen.getByText('Zhoda bez identifikátora'));
+
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(jePanelUpozorneniOtvoreny()).toBe(true);
+  });
+
+  it('kým je panel zatvorený, udalosť na stránke výsledkov nič nerobí', () => {
+    renderLayout();
+
+    act(() => poslatUdalostProfilu({ identifier: 'test', highlightId: 7 }));
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('po zatvorení panela sa poslucháč odobral', () => {
+    renderLayout();
+    fireEvent.click(navButton('notifications'));
+    fireEvent.click(navButton('notifications'));
+
+    act(() => poslatUdalostProfilu({ identifier: 'test', highlightId: 7 }));
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
 describe('stránka výsledkov: ďalšie položky menu, ktoré nič nerobili', () => {
   it.each([
     ['messages', '/dashboard/messages'],
@@ -522,5 +606,6 @@ describe('stránka výsledkov: ďalšie položky menu, ktoré nič nerobili', ()
 
 - **Prečo `SearchModule` ostáva namontovaný:** pôvodný kód ho drží v DOM aj zatvorený (`isActive` len prepína), takže napísaný dopyt a filtre prežijú zatvorenie panela. `DashboardLayout` ho pri upozorneniach odmontuje (`{isNotificationsPanelOpen ? notificationsOverlay : searchOverlay}`), no v `SearchLayout` by to zmenilo existujúce správanie, ktoré stráži test `SearchLayout.navigation.test.tsx`.
 - **Prečo mousedown na tlačidle Upozornenia v menu panel nezatvára:** zatvorenie rieši ťuk (prepínač). Keby ho zatvoril aj mousedown, ťuk by ho hneď znova otvoril (to isté už robí `DashboardLayout.tsx:213-216`).
-- **Čo prototyp nerieši a kolega over v reálnom prehliadači:** vzhľad stĺpca s `NotificationsFeed` (šírka 280 px, od `xl` 384 px; rovnaká trieda mriežky ako pri vyhľadávaní), načítanie zoznamu upozornení a označenie odznaku v živej aplikácii (testy používajú atrapy), a preklik na príspevok (nová plná navigácia na `/dashboard/feed/<id>` otvorí príspevok v okne nad Nástenkou).
+- **Čo prototyp nerieši a kolega over v reálnom prehliadači:** profil z upozornenia na zhodu so sledovaním ponuky (so zvýraznením ponuky), vzhľad stĺpca s `NotificationsFeed` (šírka 280 px, od `xl` 384 px; rovnaká trieda mriežky ako pri vyhľadávaní), načítanie zoznamu upozornení a označenie odznaku v živej aplikácii (testy používajú atrapy), a preklik na príspevok (nová plná navigácia na `/dashboard/feed/<id>` otvorí príspevok v okne nad Nástenkou).
 - **Mimo dávky:** mobil (na `/search` sa ľavé menu nezobrazuje, `hidden lg:block`), obsah panela upozornení a odznak počtu.
+- **Prečo udalosť `goToUserProfile` a prečo `openUserProfileFromSearch` (pripomienka CodeRabbitu k PR #342, overená v kóde):** `NotificationItem.tsx` (r. 330 až 339) pri upozornení `offer_watch_match` neodovzdá cieľ cez `onNavigate`, ale zavolá `dispatchOfferWatchNotificationNavigation` (okenná udalosť `goToUserProfile` s `{ identifier, highlightId }`, súbor `offerWatchNotificationNavigation.ts`), označí upozornenie ako prečítané a skončí; v dashboarde udalosť počúva `useProfileWindowEvents.ts` (hook sa používa len v `DashboardContent.tsx`), na `/search` ju nepočúva nikto, takže by klik nerobil nič (upozornenie by sa len označilo ako prečítané). Prototyp ju zachytáva v `SearchLayout`, kým je panel upozornení otvorený, a otvára profil tým istým pomocníkom ako výsledky vyhľadávania (`openUserProfileFromSearch`: adresa `/dashboard/users/<identifier>?highlight=<id>`, označenie pôvodu pre appkovú šípku a zapamätanie polohy výsledkov), takže sa profil správa rovnako ako po ťuku na výsledok. Ostatné typy upozornení idú cez `onNavigate`.
