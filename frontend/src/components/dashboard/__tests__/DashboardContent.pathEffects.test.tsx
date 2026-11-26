@@ -71,6 +71,15 @@ jest.mock('../modules/feed/FeedPostDetailOverlay', () => ({
     return <div data-testid="feed-overlay" data-post-id={props.postId} />;
   },
 }));
+// Na mobile ten istý cieľ ukazuje obrazovka detailu (`FeedPostMobileDetailHost`), nie okno pre počítač.
+let mockMobileHostProps: OverlayMockProps | null = null;
+jest.mock('../modules/feed/FeedPostMobileDetailHost', () => ({
+  __esModule: true,
+  default: function MockFeedPostMobileDetailHost(props: OverlayMockProps) {
+    mockMobileHostProps = props;
+    return <div data-testid="feed-mobile-host" data-post-id={props.postId} />;
+  },
+}));
 
 jest.mock('../onboarding/DesktopOnboardingContext', () => ({
   ...jest.requireActual('../onboarding/DesktopOnboardingContext'),
@@ -140,6 +149,7 @@ const activeModule = () => routerProps().activeModule;
 const overlayApi = () => mockOverlayApi as OverlayApi;
 const overlayProps = () => mockOverlayProps as OverlayMockProps;
 const isOverlayOpen = () => document.querySelector('[data-testid="feed-overlay"]') !== null;
+const isMobileHostOpen = () => document.querySelector('[data-testid="feed-mobile-host"]') !== null;
 const currentUrl = () => window.location.pathname + window.location.search;
 
 const DESKTOP_WIDTH = 1280;
@@ -282,6 +292,7 @@ beforeEach(() => {
   mockRouterProps = null;
   mockOverlayApi = null;
   mockOverlayProps = null;
+  mockMobileHostProps = null;
   mockOverlayRenders = 0;
   mockModuleRenders = [];
   mountedEntry = HOME;
@@ -681,6 +692,9 @@ describe('detail príspevku podľa adresy: desktop', () => {
 
     expect(isOverlayOpen()).toBe(true);
     expect(overlayProps().postId).toBe(7);
+    // Podoba detailu sa určí pri otvorení: zmena šírky ju nevymení za obrazovku (pripomienka k PR 339, rozpísaný komentár).
+    expect(isMobileHostOpen()).toBe(false);
+    expect(mockMobileHostProps).toBeNull();
     expect(activeModule()).toBe('home');
     expect(mockModuleRenders).not.toContain('feed-post-detail');
   });
