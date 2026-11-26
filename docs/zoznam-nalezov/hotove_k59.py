@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Nálezy opravené v K59 (PR #332) a v kole 3c redizajnu komentárov (vetva 208, PR #333): `DONE_SINCE_K59` (361 v K59; 370 a 375 až 377 v kole 3c).
+"""Nálezy opravené v K59 (PR #332) a v kole 3c redizajnu komentárov (vetva 208, PR #333): `DONE_SINCE_K59` (361 v K59; 370 a 375 až 377 v kole 3c; 362 vo vetve 210; 371, 91 a 378 v K61, PR #338; 360, 13 a 70 v oprave A, PR #340).
 
-Samostatný súbor kvôli limitu 500 riadkov (`hotove_k40.py` má takmer 490 riadkov); `hotove_k40.py` ich pripája do `DONE_SINCE_K40` a odtiaľ idú do `DONE_SINCE`. Opravený nález sa odstráni z `NEW_ITEMS` a pridá sa sem: dict(n=…, vetva='K59', pr='#332', zlucene=True, text='HOTOVÉ …'). Nález 362 je v K59 hotový len sčasti, preto ostáva otvorený (jeho zvyšok je obrazovka detailu na iPhone) a v tabuľke PR má čiastočný riadok.
+Samostatný súbor kvôli limitu 500 riadkov (`hotove_k40.py` má takmer 490 riadkov); `hotove_k40.py` ich pripája do `DONE_SINCE_K40` a odtiaľ idú do `DONE_SINCE`. Opravený nález sa odstráni z `NEW_ITEMS` a pridá sa sem: dict(n=…, vetva='K59', pr='#332', zlucene=True, text='HOTOVÉ …'). Nález 362 bol v K59 hotový len sčasti (zvyšok, obrazovku detailu na iPhone, dokončila vetva 210, PR #335), preto má K59 v tabuľke PR čiastočný riadok; rovnako majú čiastočný riadok PR #339 a #341, ktoré tvoria len časť opravy A (nález 360).
 """
 
 DONE_SINCE_K59 = [
@@ -133,9 +133,146 @@ DONE_SINCE_K59 = [
               'opravená); kód opravy (`082bd00a`) nekontroloval, lebo limit jednej kontroly za hodinu druhú do zlúčenia '
               'nepovolil. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone po nasadení opravy): prešiel, bez nových nálezov. Dopad na '
               'E2E: žiadny (`feed-shared-card-owner` E2E nepoužíva).'),
+    dict(n=371, vetva='K61', pr='#338', zlucene=True,
+         text='HOTOVÉ (K61, PR #338, zlúčené 26. 11. 2026 o 08:06 UTC, merge `50ef3a74`; štyri commity: kód a testy `670cddf9` '
+              '(nálezy 371, 91 a 378), koniec zápisu kľúča do príspevku `29d8fc64` (R83 iii), manuál ručných testov `61586884` a '
+              'oprava pripomienky CodeRabbitu `bb526335`; 9 súborov, +907 a −65 riadkov: 5 produkčných súborov backendu (z toho nový '
+              '`accounts/shared_thumbnail.py`), 3 súbory testov (dva nové a upravený `test_feed_api.py`) a manuál ručných testov; '
+              'kolega ju urobil podľa karty `karty/K61.md`, ktorú pripravil agent na pokyn majiteľa; len backend, bez migrácie, '
+              'frontendu a E2E). HLÁSENIE (majiteľ pri ručnom teste K58, 24. 11. 2026): prezdieľaná ponuka alebo portfólio, ktorému '
+              'zdroj dodatočne dostal fotku, sa na Nástenke neobnoví a stále ukazuje „bez fotky“. PRÍČINA (mapovanie K60 a sondy '
+              'agenta): kľúč náhľadu sa kopíroval do príspevku (`shared_thumbnail_key`) len pri vzniku zdieľania a nikdy sa '
+              'neobnovil, kým názov, kategória, cena a vlastník sa čítali zo živého zdroja. OPRAVA (rozhodnutia majiteľa R83 (i) až '
+              '(iv)): kľúč náhľadu sa berie zo ŽIVÉHO zdroja pri každom čítaní (`live_shared_thumbnail_key`: ponuka prvá schválená '
+              'fotka podľa `approved_key`; portfólio titulná fotka, ak je schválená, inak prvá schválená; repost prvá schválená fotka '
+              'pôvodného príspevku; poradie `order`, `id`) a serializér (`feed_serializers.py`, 408 → 418 riadkov) aj endpoint '
+              'náhľadu (`views/feed_image_files.py`, 111 → 134) ho používajú len pri živom a viditeľnom zdroji; tvar JSON, frontend a '
+              'model sa nemenia; do adresy pribudol odtlačok `?v=` (12 znakov sha256 kľúča, `shared_thumbnail_version`), lebo '
+              'prehliadač náhľad cachuje hodinu; zdieľanie už kľúč do príspevku nezapisuje (`sharing.py`, 407 → 369; stĺpec, migrácie '
+              'a staré hodnoty ostávajú); `views/feed_post_queries.py` (252 → 258) dopĺňa `select_related` titulnej fotky portfólia a '
+              'prefetch fotiek troch zdrojov, takže zoznam feedu robí 4 dopyty pred a 7 po, rovnako pri 8 aj pri 20 príspevkoch '
+              '(meranie kolegu v kópii, SQLite). Oprava sa týka aj starých zdieľaní, bez migrácie. PRIPOMIENKA CODERABBITU (26. 11. '
+              '2026 o 07:31 UTC, stupeň Minor, „Quick win“; vlákno k `views/feed_image_files.py` r. 114): endpoint `?v=` nečítal a '
+              'vždy poslal aktuálnu fotku s `Cache-Control: private, max-age=3600`, takže po zmene fotky A → B → A mohol prehliadač '
+              'hodinu ukazovať fotku B pod adresou s odtlačkom A; kolega ju overil nezávislým testom proti nezmenenému kódu (platí, '
+              'podmienky sú úzke) a opravil v `bb526335`: endpoint porovná `?v=` s odtlačkom aktuálneho kľúča, pri zhode ostáva '
+              'hodinová cache a pri inom odtlačku (starý, cudzí, prázdny aj chýbajúci) príde aktuálna fotka s `no-store`; zvolil to '
+              'pred 404 (stránka s oneskoreným JSON by ukázala rozbitý obrázok) aj pred presmerovaním (hlavička `Location` by za '
+              'proxy frontendu mohla smerovať na host backendu bez cookie, nález 274). OVERENIE (podľa commitov kolegu): nový súbor '
+              '`test_feed_shared_thumbnail_live.py` (509 riadkov, 20 testov: 18 pre živý náhľad a 2 pre koniec zápisu kľúča) a '
+              '`test_feed_shared_thumbnail_cache.py` (253 riadkov, 7 testov), popisy po slovensky, zdieľanie cez skutočné API a '
+              'súbory v dočasnom úložisku; pred opravou padalo 10 z 18, oba z 2 a 3 zo 7 (18 podprípadov); zásahy do kódu 15 z 15, 4 '
+              'zo 4 a 11 z 12 zachytených (prežil ekvivalentný: bez hlavičky `X-Content-Type-Options` vo view, lebo '
+              '`SecurityMiddleware` pridá rovnakú ku každej odpovedi) a ekvivalentný návrat poľa do `SHARED_SNAPSHOT_FIELDS`; celá '
+              'backendová sada: SQLite 2 634 prešlo, 24 preskočených, 0 neprešlo, PostgreSQL 16 2 656 prešlo, 2 preskočené, 0 '
+              'neprešlo; `manage.py check` bez chýb. KONTROLA AGENTA (26. 11. 2026, po zlúčení; z GitHubu a v repozitári na `main` '
+              '`8afe1fd6`): CI (`checks`, `backend-postgres`) zelené na hlave `bb526335`; Codex prešiel commit `61586884` bez '
+              'pripomienok (nenašiel žiadne závažné problémy); CodeRabbit mal jedinú pripomienku (opravenú) a jeho kontrolu hlavy '
+              '`bb526335` limit jednej kontroly za hodinu preskočil, takže opravu `bb526335` žiadny bot nekontroloval; agent preto '
+              'prečítal `shared_thumbnail.py` (74 riadkov) a `feed_post_shared_thumbnail_view` a našiel ich v poriadku (kontroly '
+              'viditeľnosti pred živým kľúčom ostali, prázdny kľúč dá 404, odtlačok sa porovnáva s kľúčom, ktorý sa posiela); tri '
+              'súbory testov K61 (`test_feed_shared_thumbnail_live.py`, `test_feed_shared_thumbnail_cache.py` a `test_feed_api.py`) '
+              'na `main` prešli, 94 testov (SQLite); zmenené sú len súbory z karty, model (`post.py`), migrácie a frontend ostali bez '
+              'zmeny. RUČNÝ TEST MAJITEĽA (26. 11. 2026, po nasadení): prešiel na 100 %, bez nových nálezov (správa majiteľa z 08:53 '
+              'UTC). Dopad na E2E: žiadny (špecy nečítajú `shared_content.thumbnail_url`).'),
+    dict(n=91, vetva='K61', pr='#338', zlucene=True,
+         text='HOTOVÉ (K61, PR #338, zlúčené 26. 11. 2026 o 08:06 UTC, merge `50ef3a74`; commit kódu a testov `670cddf9`; '
+              'podrobnosti, overenie a kontrola PR sú pri nálezu 371). DOVTEDY ČIASTOČNE HOTOVÉ: frontendová časť (záložný obrázok '
+              'pri zlyhanom náhľade) je od K7 (PR #235, zlúčené 7. 11. 2026, commit `0c89587f`); ostávala obnova zastaraného snímku '
+              'na backende a ručný test (zdieľaná ponuka, ktorej sa potom zmaže fotka). PRÍČINA (mapovanie K60): zastaraný kľúč '
+              'náhľadu ostal v príspevku, takže po zmazaní alebo výmene fotky zdroja viedla adresa náhľadu na neexistujúci súbor '
+              '(404). OPRAVA: kľúč sa z príspevku už nezapisuje ani nečíta, odvodzuje sa zo živého zdroja (pozri 371), takže po '
+              'zmazaní fotky dá `thumbnail_url` `null` (karta ukáže náhradu „Bez fotografie“ alebo „Bez titulnej fotky“, pri reposte '
+              'fotku vynechá) a po zmazaní prvej fotky sa ukáže ďalšia schválená; frontendová náhrada z K7 ostáva ako poistka. '
+              'OVERENIE: `test_zmazana_foto_zdroja_da_null_namiesto_zastaranej_adresy` a '
+              '`test_po_zmazani_prvej_fotky_sa_ukaze_dalsia_schvalena` (pred opravou padali so zastaranou adresou, po nej '
+              'prechádzajú). RUČNÝ TEST MAJITEĽA (26. 11. 2026, po nasadení): prešiel na 100 %, vrátane zmazania fotky vlastníkom '
+              '(odrážka manuálu K61). Dopad na E2E: žiadny.'),
+    dict(n=378, vetva='K61', pr='#338', zlucene=True,
+         text='HOTOVÉ (K61, PR #338, zlúčené 26. 11. 2026 o 08:06 UTC, merge `50ef3a74`; commit kódu a testov `670cddf9`; '
+              'podrobnosti, overenie a kontrola PR sú pri nálezu 371). HLÁSENIE (mapovanie K60, kolega, PR #336; agent overil '
+              'nezávislou sondou cez API 25. 11. 2026): fotka ponuky prepnutá zo schválenej na zamietnutú sa po zdieľaní naďalej '
+              'posielala cudzím (aj anonymovi) cez náhľad prezdieľaného príspevku (odpoveď 200 s `thumbnail_url`), lebo endpoint '
+              'kontroloval len viditeľnosť príspevku a zdroja, nie stav fotky. OPRAVA: náhľad sa odvodzuje len zo SCHVÁLENEJ fotky '
+              '(portfólio: titulná len ak je schválená, inak prvá schválená; repost: zamietnutá fotka pôvodného príspevku sa '
+              'neposiela), takže `thumbnail_url` je `null` a endpoint dá 404; osobitná oprava nebola potrebná. OVERENIE: '
+              '`test_zamietnuta_foto_sa_neposiela_ani_v_json_ani_cez_endpoint`, '
+              '`test_portfolio_zamietnuta_titulna_foto_ustupi_prvej_schvalenej` a '
+              '`test_repost_zamietnuta_foto_povodneho_prispevku_sa_neposiela` (pred opravou padali, po nej prechádzajú); zásahy do '
+              'kódu „bez kontroly stavu fotky“ a „titulná fotka bez kontroly stavu“ testy zachytia. RUČNÝ TEST MAJITEĽA: zamietnutú '
+              'fotku ponuky možno vyrobiť len v administrácii, preto ju manuál K61 nepokrýva; jeho ostatné odrážky (doplnenie, '
+              'zmazanie a výmena fotky vlastníkom) prešli 26. 11. 2026 na 100 %. Dopad na E2E: žiadny.'),
+    dict(n=360, vetva='213', pr='#340', zlucene=True,
+         text='HOTOVÉ (oprava A: vetva 212 (PR #339, zlúčené 26. 11. 2026 o 10:48 UTC, merge `74f8bdcf`) a vetva 213 (PR #340, '
+              'zlúčené 26. 11. 2026 o 12:07 UTC, merge `1c5d0cdd`), E2E upravil Codex (PR #341, zlúčené o 13:14 UTC, merge '
+              '`8afe1fd6`); opravu písal agent podľa plánu v tomto nálezu a rozhodnutí majiteľa R82, mapovanie K60 urobil kolega; '
+              'spolu s nálezmi 13 a 70). PR #339: 11 súborov, +1 974 a −8 riadkov (5 produkčných súborov, z toho dva nové, a 6 '
+              'súborov testov, z toho 5 nových); PR #340: 30 súborov, +271 a −1 104 riadkov (zrušený `FeedPostDetailModule.tsx` a '
+              'jeho test). HLÁSENIE (majiteľ po K51, 22. 11. 2026, len mobil): po kliknutí na upozornenie k príspevku alebo na '
+              'príspevok na Nástenke sa niekedy otvoril starý spôsob (príspevok ako stránka s ikonou profilu hore, spodnou lištou a '
+              'čiastočne zakrytým poľom na komentár) namiesto novej obrazovky detailu; majiteľ chcel vždy nový spôsob a starý úplne '
+              'odstrániť aj z kódu. PRÍČINA (mapovanie K60): starý spôsob (`FeedPostDetailModule`, modul `feed-post-detail`) sa na '
+              'mobile otváral deterministicky pri každom upozornení na príspevok (šesť typov), priamom odkaze, F5, kroku v histórii a '
+              'po ťuku na text pôvodného príspevku v novej obrazovke pri reposte; „niekedy“ znamenalo rôznu cestu, nie náhodnosť; '
+              'nová obrazovka nemala cieľový komentár, preto sa starý spôsob nedal zrušiť len presmerovaním. OPRAVA (plán v piatich '
+              'krokoch, rozhodnutia majiteľa 1 až 4, R82): (1) `FeedPostMobileDetail.tsx` dostal `highlightCommentId` (doscroll, '
+              'zvýraznenie a donačítanie stránok ako v okne na počítači) a `onLeave` (odchod na profil alebo zdroj obrazovku zatvorí '
+              'bez kroku späť); (2) nový `FeedPostMobileDetailHost.tsx` (190 riadkov: číslované načítanie príspevku, zmazaný alebo '
+              'nedostupný príspevok 404, 403 a 410 sa spracuje spoločne ako v okne, „Skúsiť znova“, zmazanie z inej vrstvy a '
+              'pristátie po zdieľaní) a nový `FeedPostDetailSwitch.tsx` (podobu určí raz pri otvorení: počítač okno, mobil obrazovka; '
+              'šírku číta on, takže `DashboardContentView.tsx` ostal bez stavu); (3a) `useNotificationNavigation.ts` otvára cieľ okna '
+              'aj na mobile; (3b) `feedPostEntryDecision.ts` už nemá vstupy na šírku okna (len `none` alebo `overlay`), '
+              '`usePathModuleEffects.ts` a `usePopstateModuleSync.ts` berú adresu príspevku ako Nástenku v oboch šírkach, takže '
+              'priamy odkaz, F5 a krok v histórii otvoria Nástenku s obrazovkou; (5) zrušený `FeedPostDetailModule.tsx` (140 riadkov) '
+              'aj jeho prípad v `ModuleRouter.tsx` a stránka `/dashboard/feed/<id>` ukazuje dashboard na Nástenke. Vzhľad sa nemení '
+              '(obrazovka je schválená, R49 sa netýka). Nepoužité voliteľné vstupy ostali, kým sa nerozdelí `DashboardContent.tsx` '
+              '(711 riadkov, TECH-01; rozhodnutie majiteľa 3): `isMobile` a `isViewportResolved` v hookoch, `initialFeedPostId` a '
+              '`effectiveFeedPostId`. Krok (4), E2E, urobil Codex v PR #341 (`feed-post-detail.spec.ts` a '
+              '`notification-click.spec.ts`; živé overenie 26. 11. 2026 na `main` `1c5d0cdd`: `webkit-mobile` 5 prešlo, 0 zlyhalo, 5 '
+              'preskočených). OVERENIE (podľa commitov): nové súbory testov so slovenskými názvami '
+              '`FeedPostMobileDetail.cielovyKomentar` (15 testov, 13 scenárov prenesených zo zrušeného '
+              '`FeedPostDetailModule.test.tsx`), `FeedPostMobileDetail.odchod` (9), `FeedPostMobileDetailHost` (17), '
+              '`FeedPostDetailSwitch` (12) a `DashboardContent.feedOverlayMobil` (13); zámerne zmenené očakávania pre mobil v '
+              '`useNotificationNavigation`, `feedPostEntryDecision`, `usePathModuleEffects`, `usePopstateModuleSync` a v troch '
+              'súboroch `DashboardContent.*` (z toho `pathEffects` nad 500 riadkov, R27); zásahy do kódu všetky zachytené (26 pri '
+              'hostiteľovi a výbere podoby, 5 pri upozorneniach, 6 pri adrese a histórii, 4 pri zrušení modulu a 5 pri oprave po '
+              'pripomienke; pri cieľovom komentári zlyhá pôvodný kód v 14 z 15 testov); `tsc` a ESLint bez chýb; dashboard a '
+              'aplikácia 623 súborov a 9 049 testov prešlo po kroku 5 a 624 súborov a 9 076 testov po oprave pripomienky k PR #339. '
+              'KONTROLA PR: PR #339: Codex (P2, 09:38 UTC) aj CodeRabbit (Major, 09:46 UTC) upozornili na to isté: keď sa pri '
+              'otvorenom detaile prekročí hranica 1 024 px (napríklad otočenie tabletu), výmena okna za obrazovku (alebo naopak) '
+              'odmountuje podobu, v ktorej používateľ píše komentár, a rozpísaný text aj načítaný príspevok sa stratia; pripomienka '
+              'bola oprávnená a opravil som ju v `b3e027fa`: podoba sa určí raz pri otvorení a drží sa do zatvorenia (okno si '
+              'rozloženie pri zmene šírky prispôsobuje samo a obrazovka zaberá celú plochu), návrh botov držať koncept nad prepínačom '
+              'a podávať ho obom podobám som nezvolil, lebo zasahuje okno, obrazovku aj hostiteľa a zachoval by zbytočnú výmenu; '
+              'CodeRabbit potom na hlave dal „success“ a CI (`checks`, `backend-postgres`) bolo zelené. PR #340: CodeRabbit (Major, '
+              '„Quick win“, 11:51 UTC) upozornil, že dva mobilné špecy E2E čakajú zrušený prvok `feed-post-detail`; je to vopred '
+              'nahlásený dopad („Dopad na E2E“ v commitoch aj v správe majiteľovi) a upravil ho Codex v PR #341; CI zelené. RUČNÝ '
+              'TEST MAJITEĽA (26. 11. 2026, po nasadení vetvy 213 aj úpravy špecov): vetva 213 prešla bez nálezov súvisiacich s '
+              'opravou; popri nej našiel majiteľ nález 380 (panel upozornení sa na stránke výsledkov vyhľadávania nedá otvoriť), '
+              'ktorý s opravou A nesúvisí. Dopad na E2E: vybavený (PR #341).'),
+    dict(n=13, vetva='213', pr='#340', zlucene=True,
+         text='HOTOVÉ (spolu s 360: vetva 213, PR #340, zlúčené 26. 11. 2026 o 12:07 UTC, merge `1c5d0cdd`; krok 5 plánu, commit '
+              '`678e8cf7`; podrobnosti, overenie a kontrola PR sú pri nálezu 360). PÔVODNE: v iPhone PWA nie je prehliadačové Späť a '
+              'plnostránkový detail príspevku (vstup z upozornenia alebo odkazu) nemal v hornej lište šípku späť (`MobileTopBar.tsx`: '
+              '`BACK_NAV_MODULES` nemal `feed-post-detail`, spodná lišta sa pri ňom neskrývala), takže používateľ uviazol. OPRAVA: '
+              'samostatná stránka detailu (modul `feed-post-detail`) je zrušená; príspevok sa otvára ako obrazovka s krížikom X nad '
+              'pôvodnou stránkou, bez spodnej lišty, a krok Späť ju zatvorí; samostatná úprava hornej lišty nebola potrebná '
+              '(`MobileTopBar.tsx` sa nemenil). RUČNÝ TEST MAJITEĽA (26. 11. 2026, po nasadení vetvy 213): prešiel bez nálezov '
+              'súvisiacich s opravou. Dopad na E2E: pozri 360.'),
+    dict(n=70, vetva='213', pr='#340', zlucene=True,
+         text='HOTOVÉ (spolu s 360: vetva 213, PR #340, zlúčené 26. 11. 2026 o 12:07 UTC, merge `1c5d0cdd`; kroky 3a, 3b a 5 plánu, '
+              'commity `aa195422`, `a867d488` a `678e8cf7`; podrobnosti, overenie a kontrola PR sú pri nálezu 360). PÔVODNE (zoznam '
+              'majiteľa, príloha D): niektoré upozornenia stále viedli na staršiu z dvoch obrazoviek detailu príspevku na mobile. '
+              'OPRAVA: všetky cesty, ktoré otvárali starý spôsob (šesť typov upozornení na príspevok, priamy odkaz, F5, krok v '
+              'histórii a ťuk na text pôvodného príspevku v obrazovke pri reposte; úplná tabuľka je v `karty/K60_vysledok.md`, '
+              'skupina A, bod a), teraz otvárajú obrazovku detailu a starý komponent je zrušený (`FeedPostDetailModule.tsx`, jeho '
+              'prípad v `ModuleRouter.tsx` a jeho súbor testov). RUČNÝ TEST MAJITEĽA (26. 11. 2026, po nasadení vetvy 213): prešiel '
+              'bez nálezov súvisiacich s opravou. Dopad na E2E: pozri 360.'),
 ]
 
 # Zlúčené PR, v ktorých nález nie je hotový celý (len časť otvoreného nálezu); `hotove_k40.py` ich pripája do `DONE_PR_TABLE_CASTOCNE_K40`.
 DONE_PR_TABLE_CASTOCNE_K59 = [
     ('#332', 'K59', '362 (časť: preklik z avatara a mena pôvodného autora v karte na Nástenke a v okne detailu na počítači; obrazovku detailu na iPhone dokončila vetva 210, PR #335)'),
+    ('#339', '212', '360 (časť: kroky 1 a 2 opravy A: cieľový komentár a odchod bez kroku späť v obrazovke detailu na mobile, hostiteľ `FeedPostMobileDetailHost.tsx` a výber podoby `FeedPostDetailSwitch.tsx`; zapojenie upozornení a adresy a zrušenie starého spôsobu dokončila vetva 213, PR #340; po pripomienkach Codexu a CodeRabbitu sa podoba určuje raz pri otvorení)'),
+    ('#341', 'e2e/detail-prispevku-mobil', '360 (časť: krok 4 opravy A od Codexu: úprava špecov `feed-post-detail.spec.ts` a `notification-click.spec.ts` pre mobilnú obrazovku detailu; živé overenie 26. 11. 2026 na `main` `1c5d0cdd`: `webkit-mobile` 5 prešlo, 0 zlyhalo, 5 preskočených; odovzdanie nesie aj nález 381)'),
 ]

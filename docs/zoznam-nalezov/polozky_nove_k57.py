@@ -34,48 +34,6 @@ NEW_ITEMS_K57 = [
               'dá pokyn: podmienka `flexible` v `FeedPostSharedBlock.tsx` bude po oprave len `fillHeight && isShared`, takže blok s '
               'označenými bez zdieľaného obsahu bude mať prirodzenú výšku aj pri príspevku s fotkou. Odhad: nízky · S.',
          dec='ROZHODNUTIE R74', src='agent (24. 11. 2026), meranie v kópii `main`'),
-    dict(n=371, bucket=P, imp=S_, eff=EM, pkg='Zdieľanie a obrázky',
-         kratko='prezdieľaná ponuka alebo portfólio bez fotky: keď vlastník dodatočne pridá fotku, na Nástenke sa to neobnoví a stále '
-                'ukazuje „bez fotky“',
-         what='Zistil majiteľ pri ručnom teste K58 (24. 11. 2026): používateľ prezdieľa ponuku alebo portfólio iného používateľa, '
-              'ktoré nemá fotku; vlastník ponuky alebo portfólia potom fotku doplní, no na Nástenke sa prezdieľaný príspevok nezmení '
-              'a stále ukazuje, že je bez fotky. Agent prečítal kód (bez spúšťania): backend pri zdieľaní skopíruje kľúč náhľadu '
-              'zdroja do príspevku (`shared_thumbnail_key`; `accounts/models/feed_posts/sharing.py`, `_snapshot_from_offer` a '
-              '`_snapshot_from_portfolio_item`; pri zdroji bez schválenej fotky je kľúč prázdny) a serializér '
-              '(`accounts/feed_serializers.py`) pošle `thumbnail_url` len keď je kľúč neprázdny. Názov, kategória, vlastník a pri '
-              'ponuke aj cena sa berú naživo zo zdroja, náhľad je teda jediný údaj, ktorý sa neobnovuje. Kľúč sa dopĺňa len pri '
-              'uložení zdieľaného príspevku (`overwrite=False` dopĺňa len prázdny kľúč), nie keď zdroj dostane fotku, a frontend '
-              'ukáže náhradu „bez fotky“ podľa prázdneho `thumbnail_url`. Neoverené: či sa to deje aj pri zdieľanom príspevku (tam '
-              '`_snapshot_from_feed_post` robí to isté) a čo sa stane s uloženým kľúčom, keď vlastník fotku zmaže.',
-         note='JASNÉ (karta `karty/K61.md` je pripravená pre kolegu, 26. 11. 2026; rozhodnutia majiteľa (i) až (iv) sú hotové, '
-              'R83; ide ako prvá, R84; mapovanie K60 hotové: kolega, `karty/K60_vysledok.md`, PR #336; agent ho overil čítaním '
-              'kódu a nezávislými sondami cez skutočné API, `karty/K60_overenie_agenta.md`). REPRODUKOVANÉ (sondy): ponuka, '
-              'portfólio aj repost, ktorým zdroj po zdieľaní dostal fotku, majú `thumbnail_url` `null` (endpoint náhľadu 404, '
-              'na Nástenke „Bez fotografie“), nové zdieľanie už fotku má; po zmazaní alebo výmene fotky zdroja ostane adresa '
-              'zastaraná (404; to je backendová časť nálezu 91). PRÍČINA: kľúč náhľadu sa zapisuje len pri vzniku zdieľania a '
-              'pri zmene zdroja (`sharing.py:203-277` a `_revalidate_changed_shared_source`), nikdy pri zmene fotky; čítajú ho '
-              'serializér (`feed_serializers.py:361-363`) a endpoint (`views/feed_image_files.py:99-111`); názov, kategória, '
-              'cena a vlastník sa berú naživo, náhľad je jediný uložený údaj. ODPORÚČANÁ OPRAVA (možnosť 1, náhľad naživo zo '
-              'zdroja; zhodne kolega aj agent): serializér aj endpoint odvodia fotku zo živého a viditeľného zdroja (ako dnes '
-              'len pri živom a viditeľnom zdroji) a kontrolujú jej stav (tým sa uzavrie aj 378); `_annotated_queryset` už má '
-              '`select_related` na zdroje, pribudnú len prefetch dopyty na ich fotky (konštantný počet, bez N+1); tvar JSON ani '
-              'frontend sa nemenia; opraví hneď aj staré zdieľania (bez migrácie) aj zastarané kľúče (91). SPRESNENIE AGENTA: '
-              'do adresy náhľadu pridať krátky odtlačok kľúča (`?v=`), lebo prehliadač odpoveď cachuje `private, max-age=3600` '
-              'na tej istej adrese. NEODPORÚČANÉ: obnova kľúča signálmi (viac miest, zmazaný kľúč, staré príspevky aj tak '
-              'potrebujú jednorazovú opravu). Súbory (všetko pod 500 r.): `feed_serializers.py` 408, '
-              '`views/feed_image_files.py` 111, `views/feed_post_queries.py` 252; testy: nový súbor '
-              '`accounts/test/test_feed_shared_thumbnail_live.py` (pred opravou padá: doplnená fotka sa neprejaví, zmazaná dá '
-              'zastaranú adresu, zamietnutá sa posiela) a malá úprava `test_feed_api.py:734, 770, 840` (súbor má 1 211 r.). '
-              'ROZHODNUTIA MAJITEĽA (26. 11. 2026, R83; súhlas s odporúčaním agenta): (i) karta nasleduje fotku zdroja ako '
-              'názov a cena, (ii) len schválené fotky ako dnes a bez fotky „Bez fotografie“ (vzhľad sa nemení, R49 sa netýka), '
-              '(iii) po oprave sa prestane zapisovať `shared_thumbnail_key` (stĺpec ostáva, čistenie neskôr), (iv) verzia v '
-              'adrese náhľadu (`?v=`). PROTOTYP A OVERENIE (agent, 26. 11. 2026, kópia `main` `7fd08bc8` mimo repozitára; '
-              '`karty/K61_podklady.md`): nový súbor testov má 14 testov a pred opravou padá 9, 10 zásahov do kódu z 10 '
-              'zachytených, celá backendová sada (2 610 testov) bez pádu a zoznam feedu robí 4 dopyty pred a 7 po (konštantne '
-              'pri 8 aj 20 príspevkoch). 260 ide osobitne (súkromie). Ručne po oprave: ponuka bez fotky, zdieľať iným účtom, '
-              'vlastník doplní fotku (Nástenka ju ukáže); vlastník fotku zmaže (náhrada „Bez fotografie“, nie rozbitý obrázok). '
-              'Dopad na E2E: žiadny. Odhad: stredný · M.',
-         dec=None, src='ručný test majiteľa po K58 (24. 11. 2026), čítanie kódu agentom'),
     dict(n=372, bucket=P, imp=S_, eff=EM, pkg='Vzhľad Nástenky',
          kratko='označení používatelia: v detaile príspevku na mobile a vo fotoprehliadači sa nezobrazujú; pri príspevku s fotkou sú '
                 'pod fotkou, majiteľ ich chce nad fotkou (mobil aj počítač)',
