@@ -2,7 +2,6 @@ import { expect, test, type Locator, type Page } from './support/diagnostic-test
 
 import {
   bottomNav,
-  expectNewMain,
   expectSameMain,
   gotoDashboardHome,
   mainInstance,
@@ -16,6 +15,7 @@ import { findNotificationCommentAuthor, openCommentAuthorProfileFromOverlay } fr
 
 // Klik na upozornenie vedie na príspevok, Späť sa vráti. Klikajú sa VÝLUČNE prečítané upozornenia –
 // klik na neprečítané by do produkcie zapísal „prečítané". Bez takého upozornenia sa test preskočí.
+// Na mobile sa detail otvorí vo vrstve nad Upozorneniami; po Späť zostáva ten istý <main>.
 // Upozornenie môže ostať aj po zmazaní príspevku (adresu skladá backend z uloženého ID bez kontroly) –
 // aplikácia takýto cieľ správne odmietne, preto sa pred klikom cez API overí, že príspevok existuje.
 
@@ -109,8 +109,8 @@ test.describe('mobil', () => {
     await gotoDashboardHome(page);
   });
 
-  for (const { name, type, title, commentTarget } of FEED_NOTIFICATIONS) {
-    test(`a read "${name}" notification opens the post page and Back returns to the list with a fresh <main>`, async ({
+  for (const { type, title, commentTarget } of FEED_NOTIFICATIONS) {
+    test(`prečítané upozornenie „${title}“ otvorí mobilnú vrstvu a Späť zachová <main> upozornení`, async ({
       page,
     }) => {
       const heading = page.getByRole('heading', { level: 1, name: 'Upozornenia' }).first();
@@ -122,20 +122,23 @@ test.describe('mobil', () => {
       await expect(heading).toBeVisible();
 
       const item = await liveReadNotificationOrSkip(page, type, title);
+      const notificationsMain = await mainInstance(page);
       await item.tap();
       await expect.poll(() => pathOf(page).startsWith('/dashboard/feed/'), { message: 'Klik nešiel na príspevok' }).toBe(
         true,
       );
       expectPostTarget(page, commentTarget);
-      await expect(page.getByTestId('feed-post-detail')).toBeVisible();
+      const detail = page.getByTestId('feed-mobile-detail');
+      await expect(detail).toBeVisible();
+      await expectSameMain(page, notificationsMain, 'otvorenie mobilného detailu z upozornení');
 
-      const detailMain = await mainInstance(page);
       await page.goBack();
       await expect.poll(() => pathOf(page), { message: 'Späť: nevrátilo na upozornenia' }).toBe(
         '/dashboard/notifications',
       );
       await expect(heading).toBeVisible();
-      await expectNewMain(page, detailMain, 'Späť na upozornenia');
+      await expect(detail).toBeHidden();
+      await expectSameMain(page, notificationsMain, 'Späť na upozornenia');
     });
   }
 });
