@@ -16,7 +16,13 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import FeedPost, FeedPostImage, OfferedSkill, UserBlock
+from accounts.models import (
+    FeedPost,
+    FeedPostImage,
+    OfferedSkill,
+    OfferedSkillImage,
+    UserBlock,
+)
 from accounts.services.feed_tagging import REASON_TAG_BLOCKED
 from portfolio.models import PortfolioItem
 
@@ -724,16 +730,15 @@ class FeedSharedContentSerializationTests(APITestCase):
         kategória, ani URL náhľadu (endpoint ju aj tak 404-uje).
         """
         offer = _offer(self.owner, subcategory="Programovanie")
+        # Schválená fotka ponuky: náhľad sa odvodzuje zo živého zdroja (upload flow tu netestujeme).
+        OfferedSkillImage.objects.create(
+            skill=offer, approved_key="media/offers/1/thumb.webp"
+        )
         post = FeedPost.objects.create(
             author=self.sharer,
             post_type=FeedPost.PostType.SHARED_OFFER,
             shared_offer=offer,
         )
-        # Snapshot náhľadu z času zdieľania (upload flow tu netestujeme).
-        FeedPost.objects.filter(pk=post.pk).update(
-            shared_thumbnail_key="media/offers/1/thumb.webp"
-        )
-        post.refresh_from_db()
 
         # Kým je zdroj viditeľný: živé polia + funkčná URL náhľadu.
         live = self._shared_payload(post)["shared_content"]
@@ -760,16 +765,16 @@ class FeedSharedContentSerializationTests(APITestCase):
         self.assertNotIn("tajna-kategoria", str(hidden))
 
     def test_private_owner_switches_every_field_to_snapshot(self):
+        """Sprivátnený vlastník: názov aj náhľad idú zo snapshotu, nič aktuálne neunikne."""
         offer = _offer(self.owner, subcategory="Programovanie")
+        OfferedSkillImage.objects.create(
+            skill=offer, approved_key="media/offers/1/thumb.webp"
+        )
         post = FeedPost.objects.create(
             author=self.sharer,
             post_type=FeedPost.PostType.SHARED_OFFER,
             shared_offer=offer,
         )
-        FeedPost.objects.filter(pk=post.pk).update(
-            shared_thumbnail_key="media/offers/1/thumb.webp"
-        )
-        post.refresh_from_db()
 
         offer.subcategory = "Tajna Grafika"
         offer.save(update_fields=["subcategory"])
@@ -830,17 +835,16 @@ class FeedImageFileApiTests(APITestCase):
         return reverse("accounts:feed_post_shared_thumbnail", args=[post.id])
 
     def _shared_post(self, offer):
-        post = FeedPost.objects.create(
+        """Zdieľanie ponuky so schválenou fotkou (náhľad sa odvodzuje zo živého zdroja)."""
+        # Upload flow tu netestujeme, stačí riadok fotky s kľúčom.
+        OfferedSkillImage.objects.create(
+            skill=offer, approved_key="media/offers/1/thumb.webp"
+        )
+        return FeedPost.objects.create(
             author=self.author,
             post_type=FeedPost.PostType.SHARED_OFFER,
             shared_offer=offer,
         )
-        # Snapshot kľúč simulujeme priamo (upload flow tu netestujeme).
-        FeedPost.objects.filter(pk=post.pk).update(
-            shared_thumbnail_key="media/offers/1/thumb.webp"
-        )
-        post.refresh_from_db()
-        return post
 
     def test_shared_thumbnail_404_when_source_hidden(self):
         """NÁLEZ 1: keď JSON hlási nedostupné, nesmie ísť von ani obrázok."""

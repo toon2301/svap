@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import FeedPost, FeedPostImage
+from ..shared_thumbnail import live_shared_thumbnail_key
 from .feed_posts import visible_feed_posts
 
 logger = logging.getLogger(__name__)
@@ -97,15 +98,17 @@ def feed_post_image_file_view(request, post_id: int, image_id: int):
 @permission_classes([AllowAny])
 @api_rate_limit
 def feed_post_shared_thumbnail_view(request, post_id: int):
-    """Snapshot náhľad zdieľaného obsahu.
+    """Náhľad zdieľaného obsahu zo ŽIVÉHO zdroja (prvá schválená fotka zdroja).
 
     Keď JSON hlási ``shared_content_unavailable``, nesmie ísť von ani obrázok –
     inak by sa skrytím ponuky / sprivátnením profilu obsah schoval len naoko
-    a uložený zdrojový obrázok by sa dal ďalej sťahovať.
+    a zdrojový obrázok by sa dal ďalej sťahovať. Súbor sa hľadá pri každej
+    požiadavke (``live_shared_thumbnail_key``), takže zmazaná alebo zamietnutá
+    fotka zdroja sa neposiela; zdroj bez schválenej fotky dá 404.
     """
     post = _visible_post_or_404(request, post_id)
     if post.post_type == FeedPost.PostType.FREE_POST:
         raise Http404
     if not post.is_shared_content_currently_visible:
         raise Http404
-    return _stream_key(post.shared_thumbnail_key)
+    return _stream_key(live_shared_thumbnail_key(post))
