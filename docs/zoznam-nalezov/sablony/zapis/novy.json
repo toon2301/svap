@@ -1,0 +1,17 @@
+{
+  "_poznamka": "UKÁŽKA pre príkaz novy: polia s podčiarkovníkom na začiatku skript ignoruje. skupina: H, P alebo A; dopad: V, S alebo N; zlozitost: S, M alebo L; balik musí existovať v tej skupine; číslo nálezu pridelí skript. Voliteľné: rozhodnutie (napr. R85) a fronta.",
+  "skupina": "P",
+  "dopad": "S",
+  "zlozitost": "S",
+  "balik": "Vzhľad Nástenky",
+  "kratko": "krátky názov do časti V skratke (jedna veta)",
+  "co": "Čo sa deje a kde (súbor:riadok), ako sa to prejavilo (ručný test majiteľa, test, log) a dôkaz.",
+  "poznamka": "Dôležitosť, príčina, návrh opravy a čo je neoverené. Začni slovom JASNÉ alebo NEJASNÉ, ak je to zrejmé; odhad zložitosti na konci.",
+  "zdroj": "ručný test majiteľa po K64 (27. 11. 2026)",
+  "fronta": {
+    "davka": "K65",
+    "co": "Krátky popis práce do fronty (čo má agent urobiť).",
+    "preco": "JASNÉ (prečo je v tomto poradí; kto čo overil; čo čaká).",
+    "poradie": 1
+  }
+}

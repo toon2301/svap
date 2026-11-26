@@ -1,0 +1,16 @@
+{
+  "_poznamka": "UKÁŽKA pre príkaz hotove: n musí byť otvorený nález (ukážku treba upraviť na aktuálne otvorené číslo). text začína slovom HOTOVÉ. zlucene: false, kým PR nie je zlúčené. rucny_test: caka, ak dávka vyžaduje ručný test majiteľa; vynechaj, ak nie. cast_pr: voliteľné riadky tabuľky PR pre PR, v ktorom nález nie je hotový celý.",
+  "n": 358,
+  "vetva": "K64",
+  "pr": "#345",
+  "zlucene": false,
+  "rucny_test": "caka",
+  "text": "HOTOVÉ (K64, PR #345, čaká na zlúčenie; commit `abcd1234`). HLÁSENIE: čo bolo zle a kto to zistil. PRÍČINA: súbor:riadok. OPRAVA: čo sa zmenilo. OVERENIE: nové testy (názvy po slovensky), zásahy do kódu, tsc, ESLint, celý Jest. Dopad na E2E: žiadny.",
+  "cast_pr": [
+    {
+      "pr": "#345",
+      "vetva": "K64",
+      "text": "358 (časť: čo z nálezu tento PR urobil a čo ostáva)"
+    }
+  ]
+}

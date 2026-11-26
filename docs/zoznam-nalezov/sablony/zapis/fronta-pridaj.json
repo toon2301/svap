@@ -1,0 +1,15 @@
+{
+  "_poznamka": "UKÁŽKA pre príkaz fronta pridaj: n je otvorený nález (text). preco začína slovom JASNÉ alebo NEJASNÉ. Voliteľné: poradie (od 1; bez neho na koniec), caka (dvojica [majiteľ alebo Codex, čo presne]) a po (zoznam ID, ktoré musia byť vo fronte skôr alebo hotové).",
+  "n": "358",
+  "davka": "K65",
+  "co": "Krátky popis práce do fronty.",
+  "preco": "NEJASNÉ (najprv mapovanie; čaká na ručné overenie majiteľom).",
+  "poradie": 2,
+  "caka": [
+    "majiteľ",
+    "overiť na produkcii zdieľanie ponuky s textom"
+  ],
+  "po": [
+    "380"
+  ]
+}
