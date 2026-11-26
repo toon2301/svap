@@ -400,7 +400,7 @@ describe('sada props pre podriadené komponenty', () => {
 
     expectExactProps(mockRouterProps, [
       'accountType', 'activeModule', 'activeRightItem', 'closeOwnProfileEdit', 'conversationIdForMessages',
-      'customCategories', 'feedPostIdForDetail', 'handleRightSidebarToggle', 'highlightedSkillId',
+      'customCategories', 'handleRightSidebarToggle', 'highlightedSkillId',
       'initialProfileTab', 'isInSubcategories', 'isRightSidebarOpen', 'mobileAccountSettingsView',
       'offerIdForReviews', 'onCreatePortfolio', 'onDeleteOwnProfileOffer', 'onEditOwnProfileOffer',
       'onEditProfileClick', 'onManageOfferWatches', 'onMobileAccountSettingsViewChange',
@@ -512,7 +512,6 @@ describe('sada props pre podriadené komponenty', () => {
       highlightedSkillId: null,
       ownProfileTab: 'offers',
       offerIdForReviews: null,
-      feedPostIdForDetail: null,
       portfolioItemIdForDetail: null,
       portfolioOwnerIdentifier: null,
       portfolioCreateOwnerIdentifier: null,

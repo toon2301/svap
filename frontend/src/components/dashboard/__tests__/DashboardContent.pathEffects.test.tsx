@@ -225,10 +225,9 @@ const PORTFOLIO_CREATE: Entry = {
   props: { initialProfileSlug: 'jana', initialProfileTab: 'portfolio' },
 };
 const FEED_7: Entry = {
-  route: 'feed-post-detail',
+  route: 'home',
   pathname: '/dashboard/feed/7',
   search: '',
-  props: { initialFeedPostId: 7 },
 };
 
 let mountedEntry: Entry = HOME;
@@ -580,7 +579,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
     await renderDashboard(false, FEED_7, 'home');
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
     expect(isOverlayOpen()).toBe(true);
     expect(overlayProps().postId).toBe(7);
     expect(overlayProps().highlightCommentId).toBeNull();
@@ -640,7 +638,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
     await navigateTo(view, '/dashboard/feed/7');
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
     expect(isOverlayOpen()).toBe(true);
     expect(overlayProps().postId).toBe(7);
   });
@@ -733,7 +730,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
 
     expect(mockModuleRenders).not.toContain('feed-post-detail');
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBe(7);
     expect(mockRouter.push).not.toHaveBeenCalled();
     expect(mockRouter.replace).not.toHaveBeenCalled();
   });
@@ -770,7 +766,6 @@ describe('detail príspevku podľa adresy: desktop', () => {
     await navigateTo(view, pathname);
 
     expect(activeModule()).toBe('home');
-    expect(routerProps().feedPostIdForDetail).toBeNull();
     expect(isOverlayOpen()).toBe(false);
   });
 });

@@ -318,8 +318,8 @@ describe('dopytovanie na pozadí pre zmiznutý príspevok', () => {
   it('stops polling instead of asking every 8 seconds forever', async () => {
     jest.useFakeTimers();
     try {
-      // Komentáre rozbalené PRIAMO V KARTE – tak ich vykresľuje mobilný
-      // permalink (`FeedPostDetailModule`). Zoznam tam ostáva namountovaný aj
+      // Komentáre rozbalené PRIAMO V KARTE – tak ich vykresľoval mobilný
+      // permalink (zrušený modul `FeedPostDetailModule`). Zoznam tam ostáva namountovaný aj
       // po zistení, že príspevok zmizol: karta zatvára svoje vlastné vrstvy,
       // ale rozbalené komentáre v sebe nie, a stránka pod nimi žiadny zoznam
       // nemá, ktorý by kartu odstránil.

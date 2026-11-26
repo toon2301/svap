@@ -61,8 +61,7 @@ function describeSameRoute(a: DashboardRouteProps, b: DashboardRouteProps): bool
     (a.initialProfileTab ?? null) === (b.initialProfileTab ?? null) &&
     (a.initialRightItem ?? null) === (b.initialRightItem ?? null) &&
     (a.initialOfferId ?? null) === (b.initialOfferId ?? null) &&
-    (a.initialPortfolioItemId ?? null) === (b.initialPortfolioItemId ?? null) &&
-    (a.initialFeedPostId ?? null) === (b.initialFeedPostId ?? null)
+    (a.initialPortfolioItemId ?? null) === (b.initialPortfolioItemId ?? null)
   );
 }
 
@@ -90,8 +89,7 @@ function sameProps(a: DashboardRouteProps, b: DashboardRouteProps): boolean {
     a.initialProfileSlug === b.initialProfileSlug &&
     a.initialRightItem === b.initialRightItem &&
     a.initialOfferId === b.initialOfferId &&
-    a.initialPortfolioItemId === b.initialPortfolioItemId &&
-    a.initialFeedPostId === b.initialFeedPostId
+    a.initialPortfolioItemId === b.initialPortfolioItemId
   );
 }
 

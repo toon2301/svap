@@ -32,6 +32,10 @@ export type DashboardRouteProps = {
   initialRightItem?: string | null;
   initialOfferId?: number | null;
   initialPortfolioItemId?: number | null;
+  /**
+   * Nepoužíva sa: číslo príspevku z adresy číta dashboard sám (`usePathModuleEffects`), stránka ho nepodáva (nález 360).
+   * Ostáva v type, pretože ho ešte rozbaľuje `DashboardContent` (TECH-01); zmizne pri jeho rozdelení.
+   */
   initialFeedPostId?: number | null;
 };
 
@@ -173,10 +177,8 @@ export const DASHBOARD_ROUTES: readonly DashboardRoute[] = [
     pattern: /^\/dashboard\/feed\/(\d+)\/?$/,
     example: '/dashboard/feed/7',
     build: ([postId]) => `/dashboard/feed/${postId}`,
-    props: ([postId]) => ({
-      initialRoute: 'feed-post-detail',
-      initialFeedPostId: positiveInteger(postId),
-    }),
+    // Adresa príspevku je Nástenka; detail nad ňou otvára `usePathModuleEffects` a číslo príspevku si číta z adresy.
+    props: () => ({ initialRoute: 'home' }),
   },
   {
     page: 'offers/[offerId]/reviews',

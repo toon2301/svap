@@ -158,7 +158,6 @@ const PASS_THROUGH: Array<[string, string]> = [
   ['onSkillsSearchClick', 'navigation.handleSkillsSearchClick'],
   ['onSkillsModeToggle', 'handleSkillsModeToggle'],
   ['offerIdForReviews', 'effectiveOfferIdForReviews'],
-  ['feedPostIdForDetail', 'effectiveFeedPostId'],
   ['portfolioOwnerIdentifier', 'effectivePortfolioOwnerIdentifier'],
   ['portfolioCreateOwnerIdentifier', 'effectivePortfolioCreateOwnerIdentifier'],
   ['onCreatePortfolio', 'handleCreatePortfolio'],
@@ -190,11 +189,11 @@ describe('štruktúra', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('ModuleRouter dostane presne dohodnutú sadu 57 props', () => {
+  it('ModuleRouter dostane presne dohodnutú sadu 56 props', () => {
     render(<DashboardModuleContent {...makeProps()} />);
 
     expect(Object.keys(lastRouterProps()).sort()).toEqual(ROUTER_KEYS);
-    expect(ROUTER_KEYS).toHaveLength(57);
+    expect(ROUTER_KEYS).toHaveLength(56);
   });
 
   it('pri novom renderi dostane ModuleRouter znova úplnú sadu', () => {
@@ -207,9 +206,9 @@ describe('štruktúra', () => {
 });
 
 describe('podávanie hodnôt do ModuleRouteru', () => {
-  it('na zozname je 53 priamo podávaných props a každý má vlastný vstup', () => {
-    expect(PASS_THROUGH).toHaveLength(53);
-    expect(new Set(PASS_THROUGH.map(([prop]) => prop)).size).toBe(53);
+  it('na zozname je 52 priamo podávaných props a každý má vlastný vstup', () => {
+    expect(PASS_THROUGH).toHaveLength(52);
+    expect(new Set(PASS_THROUGH.map(([prop]) => prop)).size).toBe(52);
   });
 
   it.each(VARIANTS)('každý priamo podávaný prop je hodnota svojho vstupu, rovnaká identita (variant %s)', (variant) => {

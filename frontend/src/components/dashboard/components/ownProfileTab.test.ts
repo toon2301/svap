@@ -84,7 +84,7 @@ describe('profil používateľa (user-profile)', () => {
 });
 
 describe('ostatné stránky', () => {
-  it.each([undefined, 'home', 'messages', 'feed-post-detail'])('%p: vždy ponuky', (route) => {
+  it.each([undefined, 'home', 'messages'])('%p: vždy ponuky', (route) => {
     expect(resolveInitialOwnProfileTab(route, 'posts', me, 'jana-novak-1', 7)).toBe('offers');
   });
 });

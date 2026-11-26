@@ -61,7 +61,7 @@ const EXPECTED_MODULES: Array<[string, string | null]> = [
   ['/dashboard/users/jana/account', 'profile'],
   ['/dashboard/users/jana/language', 'profile'],
   ['/dashboard/users/jana/privacy', 'profile'],
-  ['/dashboard/feed/7', 'feed-post-detail'],
+  ['/dashboard/feed/7', 'home'],
   ['/dashboard/offers/3/reviews', 'offer-reviews'],
   // Adresy mimo dashboardu a neznáme podstránky ostávajú na stránke.
   ['/dashboard/skills/describe', null],
@@ -120,7 +120,7 @@ const OWN_PAGES: Array<[string, string, string, DashboardRouteProps]> = [
   ['settings/watches', '/dashboard/settings/watches', '', { initialRoute: 'settings', initialRightItem: 'offer-watches' }],
   ['favorites', '/dashboard/favorites', '', { initialRoute: 'favorites' }],
   ['watches', '/dashboard/watches', '', { initialRoute: 'watches' }],
-  ['feed/[postId]', '/dashboard/feed/7', '?comment=3', { initialRoute: 'feed-post-detail', initialFeedPostId: 7 }],
+  ['feed/[postId]', '/dashboard/feed/7', '?comment=3', { initialRoute: 'home' }],
   ['offers/[id]/reviews', '/dashboard/offers/3/reviews', '?review_id=5', { initialRoute: 'offer-reviews', initialOfferId: 3 }],
   ['users/[slug]', '/dashboard/users/jana', '', usersPage('jana')],
   ['users/[slug] + highlight', '/dashboard/users/jana', '?offer=12#karta', usersPage('jana', { initialHighlightedSkillId: 12 })],

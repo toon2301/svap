@@ -31,7 +31,6 @@ import ViewedUserProfileGate from './modules/search/ViewedUserProfileGate';
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
 import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
-import FeedPostDetailModule from './modules/feed/FeedPostDetailModule';
 import OfferWatchSettingsDesktop from './modules/offer-watch/settings/OfferWatchSettingsDesktop';
 import OfferWatchResultsDesktop from './modules/offer-watch/results/OfferWatchResultsDesktop';
 import OfferWatchResultsMobileUnavailable from './modules/offer-watch/results/OfferWatchResultsMobileUnavailable';
@@ -83,8 +82,6 @@ interface ModuleRouterProps {
   onSkillsModeToggle?: () => void;
   /** ID karty (ponuky) pre view recenzií. */
   offerIdForReviews?: number | null;
-  /** ID príspevku pre permalink detail (/dashboard/feed/[postId]). */
-  feedPostIdForDetail?: number | null;
   portfolioItemIdForDetail?: number | null;
   portfolioOwnerIdentifier?: string | null;
   portfolioCreateOwnerIdentifier?: string | null;
@@ -146,7 +143,6 @@ function ModuleRouterContent({
   onSkillsSearchClick,
   onSkillsModeToggle,
   offerIdForReviews,
-  feedPostIdForDetail,
   portfolioItemIdForDetail,
   portfolioOwnerIdentifier,
   portfolioCreateOwnerIdentifier,
@@ -268,13 +264,6 @@ function ModuleRouterContent({
     case 'home':
       return (
         <HomeModule onOpenComposerPage={() => setActiveModule('feed-post-create')} />
-      );
-    case 'feed-post-detail':
-      return (
-        <FeedPostDetailModule
-          postId={feedPostIdForDetail ?? null}
-          onNavigateToFeed={() => setActiveModule('home')}
-        />
       );
     case 'statistics':
       return (

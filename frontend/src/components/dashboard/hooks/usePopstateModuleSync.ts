@@ -31,10 +31,9 @@ export function usePopstateModuleSync({
     const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
       const p = window.location.pathname || '';
-      // To iste mapovanie ako pri mounte (`useDashboardMountRoute`).
-      const pathModule = dashboardModuleFromPath(p);
-      // Adresa príspevku znamená Nástenku s detailom nad ňou (otvára ho efekt priameho vstupu), nie celú stránku.
-      const moduleId = pathModule === 'feed-post-detail' ? 'home' : pathModule;
+      // To iste mapovanie ako pri mounte (`useDashboardMountRoute`); adresa príspevku znamená Nástenku
+      // (detail nad ňou otvára efekt priameho vstupu).
+      const moduleId = dashboardModuleFromPath(p);
       if (moduleId !== null) {
         setActiveModule(moduleId);
         try {
