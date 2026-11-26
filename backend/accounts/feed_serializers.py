@@ -13,6 +13,10 @@ from django.urls import reverse
 from rest_framework import serializers
 
 from accounts.models import FeedPost, FeedPostComment, FeedPostImage
+from accounts.shared_thumbnail import (
+    live_shared_thumbnail_key,
+    shared_thumbnail_version,
+)
 
 User = get_user_model()
 
@@ -358,9 +362,15 @@ class FeedPostSerializer(AuthorOnlyEditedFlagMixin, serializers.ModelSerializer)
             # Náhľad patrí k živému zdroju – proxy endpoint ho pri nedostupnom
             # obsahu aj tak 404-uje, takže URL mimo tejto vetvy by len sľubovala
             # obrázok, ktorý nikdy nepríde (rozbitý <img> namiesto placeholderu).
-            if obj.shared_thumbnail_key:
+            # Kľúč súboru sa odvodzuje zo ŽIVÉHO zdroja (fotka doplnená, zmazaná či
+            # zamietnutá po zdieľaní sa prejaví hneď); odtlačok v adrese mení URL
+            # po výmene fotky, lebo prehliadač náhľad cachuje hodinu.
+            thumbnail_key = live_shared_thumbnail_key(obj)
+            if thumbnail_key:
                 path = reverse("accounts:feed_post_shared_thumbnail", args=[obj.id])
-                payload["thumbnail_url"] = self._absolute(path)
+                payload["thumbnail_url"] = self._absolute(
+                    f"{path}?v={shared_thumbnail_version(thumbnail_key)}"
+                )
         return payload
 
     def get_shared_content_unavailable(self, obj):

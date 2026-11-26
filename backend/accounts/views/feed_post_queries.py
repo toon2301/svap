@@ -180,8 +180,14 @@ def _annotated_queryset():
             "shared_portfolio_item",
             "shared_feed_post",
             "shared_owner",
+            # Titulná fotka portfólia pre živý náhľad zdieľania (accounts/shared_thumbnail.py).
+            "shared_portfolio_item__cover_image",
         )
         .prefetch_related(
+            # Fotky zdrojov zdieľania pre živý náhľad: tri dopyty na stránku, nie na príspevok.
+            "shared_offer__images",
+            "shared_portfolio_item__images",
+            "shared_feed_post__images",
             Prefetch(
                 "tags",
                 queryset=FeedPostTag.objects.select_related("tagged_user").order_by(

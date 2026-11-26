@@ -19,9 +19,15 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import FeedPost, FeedPostImage
+from ..shared_thumbnail import live_shared_thumbnail_key, shared_thumbnail_version
 from .feed_posts import visible_feed_posts
 
 logger = logging.getLogger(__name__)
+
+# Hlavičky cache obrázkov: hodinu smie obrázok držať prehliadač (súkromná cache), ale len pod adresou,
+# ktorá súbor jednoznačne určuje; inak sa neukladá vôbec.
+_CACHE_NA_HODINU = "private, max-age=3600"
+_BEZ_CACHE = "no-store"
 
 
 def _visible_post_or_404(request, post_id: int) -> FeedPost:
@@ -43,8 +49,13 @@ def _visible_post_or_404(request, post_id: int) -> FeedPost:
     return post
 
 
-def _stream_key(key: str):
-    """FileResponse zo storage kľúča – zhodné hlavičky ako portfólio proxy."""
+def _stream_key(key: str, *, cache_control: str = _CACHE_NA_HODINU):
+    """FileResponse zo storage kľúča – zhodné hlavičky ako portfólio proxy.
+
+    ``cache_control`` je hlavička cache odpovede. Predvolená hodina platí pre adresy,
+    ktoré súbor jednoznačne určujú (fotka príspevku podľa ID riadku); náhľad
+    zdieľania ju pri nezhodnom odtlačku prepíše na ``no-store``.
+    """
     if not key:
         return Response(status=status.HTTP_404_NOT_FOUND)
     try:
@@ -60,7 +71,7 @@ def _stream_key(key: str):
     if content_type is None and key.lower().endswith(".webp"):
         content_type = "image/webp"
     response = FileResponse(stored_file, content_type=content_type or "application/octet-stream")
-    response["Cache-Control"] = "private, max-age=3600"
+    response["Cache-Control"] = cache_control
     response["X-Content-Type-Options"] = "nosniff"
     return response
 
@@ -97,15 +108,27 @@ def feed_post_image_file_view(request, post_id: int, image_id: int):
 @permission_classes([AllowAny])
 @api_rate_limit
 def feed_post_shared_thumbnail_view(request, post_id: int):
-    """Snapshot náhľad zdieľaného obsahu.
+    """Náhľad zdieľaného obsahu zo ŽIVÉHO zdroja (prvá schválená fotka zdroja).
 
     Keď JSON hlási ``shared_content_unavailable``, nesmie ísť von ani obrázok –
     inak by sa skrytím ponuky / sprivátnením profilu obsah schoval len naoko
-    a uložený zdrojový obrázok by sa dal ďalej sťahovať.
+    a zdrojový obrázok by sa dal ďalej sťahovať. Súbor sa hľadá pri každej
+    požiadavke (``live_shared_thumbnail_key``), takže zmazaná alebo zamietnutá
+    fotka zdroja sa neposiela; zdroj bez schválenej fotky dá 404.
+
+    Adresa nesie odtlačok súboru (``?v=``, ``shared_thumbnail_version``). Hodinovú
+    cache dostane len odpoveď, ktorej odtlačok sedí so súborom, ktorý sa posiela.
+    Pri inom odtlačku (starý, cudzí, prázdny alebo žiadny) príde aktuálna fotka s
+    ``no-store``: inak by sa nová fotka uložila pod starú adresu a po návrate na
+    pôvodnú fotku by prehliadač hodinu ukazoval nesprávnu.
     """
     post = _visible_post_or_404(request, post_id)
     if post.post_type == FeedPost.PostType.FREE_POST:
         raise Http404
     if not post.is_shared_content_currently_visible:
         raise Http404
-    return _stream_key(post.shared_thumbnail_key)
+    key = live_shared_thumbnail_key(post)
+    odtlacok_sedi = request.query_params.get("v") == shared_thumbnail_version(key)
+    return _stream_key(
+        key, cache_control=_CACHE_NA_HODINU if odtlacok_sedi else _BEZ_CACHE
+    )
