@@ -13,7 +13,11 @@ ORIG_OPEN = {
     8: (A, N, ES, 'Navigácia – drobnosti', 'Kozmetika: prázdne zvýraznenie ľavého menu na jednej obrazovke.', None),
     13: (P, S_, ES, 'Navigácia a Späť',
          'V iPhone PWA nie je prehliadačové Späť. Bez šípky v hornej lište plnostránkového detailu príspevku '
-         '(vstup z upozornenia alebo odkazu) používateľ uviazne.', None),
+         '(vstup z upozornenia alebo odkazu) používateľ uviazne. '
+         'ZMAPOVANÉ (K60, kolega, PR #336; overil agent 25. 11. 2026): príčina je `MobileTopBar.tsx:35-45` '
+         '(`BACK_NAV_MODULES` nemá `feed-post-detail`) a spodná lišta sa pri ňom neskrýva (`DashboardLayout.tsx:310-325`); '
+         'po zrušení starého spôsobu (360, krok 5) modul neexistuje a nová obrazovka má krížik, takže 13 odpadne bez '
+         'samostatnej úpravy.', None),
     14: (P, S_, EM, 'Navigácia a Späť',
          'Šípka v konverzácii pridáva záznam do histórie namiesto kroku späť. Nález 160 to vyriešil len pre '
          'konverzáciu otvorenú z profilu, ostatné vstupy ostávajú.', None),
@@ -37,7 +41,10 @@ ORIG_OPEN = {
          '`feed/__tests__/SharedContentPreviewCard.imageError.test.tsx`. OSTÁVA: obnova zastaraného snímku na backende (väčšia vec, od '
          'začiatku určená na neskôr, preto sa nález presúva do PO NASADENÍ) a manuálny test majiteľa (zdieľaná ponuka, ktorej sa potom '
          'zmaže fotka), ktorý sa 7. 11. 2026 nedal urobiť kvôli nálezu 274 (ten je opravený v K9, PR #238, takže sa test už dá urobiť). '
-         'Rovnaké chýbajúce `onError` mali ďalšie miesta (nález 279; K10 ich doplnil, ostáva viditeľná náhrada a lightboxy v 291).', None),
+         'Rovnaké chýbajúce `onError` mali ďalšie miesta (nález 279; K10 ich doplnil, ostáva viditeľná náhrada a lightboxy v 291). '
+         'ZMAPOVANÉ (K60, súvis s 371; overil agent sondou 25. 11. 2026): zastaraný kľúč náhľadu zanikne, keď sa náhľad '
+         'bude odvodzovať zo živého zdroja (oprava 371, možnosť 1); frontendová náhrada z K7 ostane ako poistka. Zatvorí '
+         'sa spolu s 371.', None),
     92: (P, S_, EM, 'Zdieľanie a obrázky',
          'iPhone: okná zdieľania sa otvárajú orezané hore (hypotéza `90vh` vs `dvh`, neoverené). Je to prvé, '
          'čo používateľ vidí pri zdieľaní; treba overiť na zariadení. Rovnaký vzor je v 36 (lightboxy).', None),
@@ -51,10 +58,17 @@ ORIG_OPEN = {
           'na novom serveri, kde bude latencia iná.', None),
     # P2 – väčšie balíky
     46: (A, S_, EL, 'Funkcie – väčšie balíky',
-         'Mobil: detail príspevku nemá vlastnú adresu, F5 ho zavrie. Rozhodnuté odložiť (je to funkcia).', None),
+         'Mobil: detail príspevku nemá vlastnú adresu, F5 ho zavrie. Rozhodnuté odložiť (je to funkcia). '
+         'ZMAPOVANÉ (K60, súvis s 360; overil agent 25. 11. 2026): hostiteľ obrazovky pre mobil a stav `feedOverlayTarget` '
+         'z plánu 360 sú presne stroj, ktorý 46 potrebuje (karta by namiesto `setMobileDetailOpen` volala '
+         '`postOverlay.open({ postId })` a dostala by adresu aj F5), takže po 360 bude 46 malá zmena, nie nový komponent; '
+         'opačne to neplatí. E2E `feed-post-detail.spec.ts:33-57` dnes tvrdí, že vrstva z karty nemení adresu ani históriu '
+         '(platí, kým je 46 odložené). Odporúčanie kolegu aj agenta: 46 sa nerobí spolu s 360.', None),
     70: (A, S_, EL, 'Funkcie – väčšie balíky',
          'Podľa zoznamu majiteľa (príloha D) niektoré upozornenia stále vedú na staršiu z týchto dvoch obrazoviek. Postup: najprv '
-         'zmapovať všetky vstupné body, ktoré naň ešte vedú, presmerovať ich a ak sa dá, starý komponent úplne zrušiť. Súvisí s 13 a 46.', None),
+         'zmapovať všetky vstupné body, ktoré naň ešte vedú, presmerovať ich a ak sa dá, starý komponent úplne zrušiť. Súvisí s 13 a 46. '
+         'ZMAPOVANÉ (K60, kolega, PR #336; overil agent 25. 11. 2026): úplná tabuľka ciest, ktoré otvárajú starý spôsob na '
+         'mobile, je v `karty/K60_vysledok.md` (skupina A, bod a); uzavrie sa krokmi 3a, 3b a 5 plánu v nálezu 360.', None),
     74: (P, S_, EL, 'Upozornenia na zmazaný obsah',
          'Rozšíriť kontrolu existencie cieľa (oprava 111) na všetky typy upozornení: portfólio, príspevky, '
          'komentáre, pozvánky do skupiny (dnes mŕtve tlačidlo bez hlášky). Backend aj frontend naraz.',

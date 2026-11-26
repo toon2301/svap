@@ -48,7 +48,7 @@ RIADKY = [
               'pri 24 že surový setter zálohu nemaže (hook má `clearHighlighting()`).',
          ids=['24', '21', '22', '23', '26', '30', '83', '89', '96']),
     dict(pdf='Legacy mobilný detail príspevku cez upozornenia',
-         stav='Doplnené do existujúceho nálezu o dvoch obrazovkách detailu príspevku.',
+         stav='Doplnené do existujúceho nálezu o dvoch obrazovkách detailu príspevku; zmapované v K60 (PR #336), plán je v nálezoch 360, 13 a 70.',
          ids=['70', '13', '46']),
     dict(pdf='Pomalé cudzie portfólio na desktope',
          stav='Nový nález, nezmapované (najprv zmerať).',

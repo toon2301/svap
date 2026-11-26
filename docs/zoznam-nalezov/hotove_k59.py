@@ -107,9 +107,35 @@ DONE_SINCE_K59 = [
               'a `FeedPhotoViewer.pozadie.test.tsx` (4). Prečo sa detail príspevku správal inak, nie je vysvetlené (po oprave '
               'to nie je potrebné). RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone po nasadení): bez nových nálezov. Dopad na E2E: '
               'žiadny.'),
+    dict(n=362, vetva='210', pr='#335', zlucene=True,
+         text='HOTOVÉ (vetva 210, PR #335, zlúčené 25. 11. 2026 o 20:51 UTC, merge `2384db22`; commit kódu `082bd00a`; opravu '
+              'písal agent na pokyn majiteľa; v PR boli navyše zápis do zoznamu a oprava pripomienky CodeRabbitu k nálezu 261). '
+              'HISTÓRIA: K59 (PR #332, zlúčené 25. 11. 2026 o 16:46 UTC, merge `8cced7e5`, commit `211e025c`; urobil kolega '
+              'podľa karty `karty/K59.md`) napojila avatar a meno pôvodného autora na jeho profil v karte na Nástenke (počítač '
+              'aj mobil) a v okne detailu na počítači (okno sa najprv zavrie); obrazovka detailu na iPhone ostala bez prekliku: '
+              'kolega sa tam zastavil, lebo obsah nad komentármi kreslí `FeedPostMobileDetailContent.tsx` bez `onClose` a '
+              '`FeedPostMobileDetail.tsx` bol podľa karty v zozname súborov kola 3c (R80). RUČNÝ TEST MAJITEĽA (25. 11. 2026, '
+              'iPhone po nasadení K59): v obrazovke detailu sa pri prezdieľanom textovom príspevku, príspevku s fotkou, '
+              'zdieľanej ponuke aj portfóliu po ťuknutí na meno alebo avatar pôvodného autora nič nestalo (očakávanie: detail '
+              'sa zatvorí a otvorí sa profil). OPRAVA: `FeedPostMobileDetail.tsx` (376 → 385 riadkov) zostavuje '
+              '`openSharedOwner` (`openUserProfile` s vlastníkom zo `shared_content.owner` a `beforeNavigate: onClose`; '
+              '`undefined` bez vlastníka) a cez novú voliteľnú vlastnosť `openSharedOwner` v `FeedPostMobileDetailContent.tsx` '
+              '(237 → 245 riadkov) ho podáva karte ako `onOpenOwner`; kartu z K59 ani iné súbory som nemenil, takže sa '
+              'obrazovka pred odchodom na profil zatvorí rovnako ako pri prekliku na zdroj, tlačidlo sa kreslí len pri '
+              'dostupnom zdroji a vlastníkovi s id alebo adresou profilu a pri zdieľaní vlastného obsahu sa riadok nekreslí. '
+              'OVERENIE (podľa výsledku): nový súbor testov `FeedPostMobileDetail.vlastnikZdielania.test.tsx` (13 testov, pred '
+              'opravou padalo 10 z 13): štyri druhy zdieľaného obsahu (meno aj avatar: najprv zatvorenie, potom profil), '
+              'preklik bez otvorenia zdroja a fotoprehliadača, profil podľa id bez adresy, vlastné zdieľanie, nedostupný zdroj '
+              'a vlastník bez id aj adresy bez prekliku; zásahy do kódu 6 zo 7 zachytených, prežil ekvivalentný (vlastník z '
+              'vlastnosti `post` namiesto stavu `currentPost`: úprava príspevku vlastníka zdieľaného obsahu nemení); `tsc` a '
+              'ESLint čisté, celý Jest 696 sád a 10 168 testov bez pádu; CI (`checks`, `backend-postgres`) zelené. KONTROLA '
+              'CODERABBITU: pozrel len zápis do zoznamu (hlava `03bffd6b`, jedna pripomienka stupňa Minor k súhrnu nálezu 261, '
+              'opravená); kód opravy (`082bd00a`) nekontroloval, lebo limit jednej kontroly za hodinu druhú do zlúčenia '
+              'nepovolil. RUČNÝ TEST MAJITEĽA (25. 11. 2026, iPhone po nasadení opravy): prešiel, bez nových nálezov. Dopad na '
+              'E2E: žiadny (`feed-shared-card-owner` E2E nepoužíva).'),
 ]
 
 # Zlúčené PR, v ktorých nález nie je hotový celý (len časť otvoreného nálezu); `hotove_k40.py` ich pripája do `DONE_PR_TABLE_CASTOCNE_K40`.
 DONE_PR_TABLE_CASTOCNE_K59 = [
-    ('#332', 'K59', '362 (časť: preklik z avatara a mena pôvodného autora v karte na Nástenke a v okne detailu na počítači; obrazovku detailu na iPhone dopĺňa vetva 210, PR #335)'),
+    ('#332', 'K59', '362 (časť: preklik z avatara a mena pôvodného autora v karte na Nástenke a v okne detailu na počítači; obrazovku detailu na iPhone dokončila vetva 210, PR #335)'),
 ]
