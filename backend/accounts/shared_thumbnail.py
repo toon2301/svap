@@ -67,6 +67,8 @@ def shared_thumbnail_version(key: str) -> str:
     """Krátky odtlačok kľúča do adresy náhľadu (`?v=`).
 
     Prehliadač odpoveď náhľadu cachuje hodinu (`Cache-Control: private, max-age=3600`) na tej istej adrese; po výmene
-    fotky sa odtlačok zmení, takže sa adresa zmení a prehliadač nepoužije starú fotku z cache.
+    fotky sa odtlačok zmení, takže sa adresa zmení a prehliadač nepoužije starú fotku z cache. Endpoint náhľadu
+    odtlačok z adresy porovná s odtlačkom aktuálneho kľúča: hodinovú cache dostane len zhodná adresa, ostatné `no-store`,
+    aby sa nová fotka neuložila pod starý odtlačok.
     """
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
