@@ -71,6 +71,15 @@ jest.mock('../modules/feed/FeedPostDetailOverlay', () => ({
     return <div data-testid="feed-overlay" data-post-id={props.postId} />;
   },
 }));
+// Na mobile ten istý cieľ ukazuje obrazovka detailu (`FeedPostMobileDetailHost`), nie okno pre počítač.
+let mockMobileHostProps: OverlayMockProps | null = null;
+jest.mock('../modules/feed/FeedPostMobileDetailHost', () => ({
+  __esModule: true,
+  default: function MockFeedPostMobileDetailHost(props: OverlayMockProps) {
+    mockMobileHostProps = props;
+    return <div data-testid="feed-mobile-host" data-post-id={props.postId} />;
+  },
+}));
 
 jest.mock('../onboarding/DesktopOnboardingContext', () => ({
   ...jest.requireActual('../onboarding/DesktopOnboardingContext'),
@@ -140,6 +149,7 @@ const activeModule = () => routerProps().activeModule;
 const overlayApi = () => mockOverlayApi as OverlayApi;
 const overlayProps = () => mockOverlayProps as OverlayMockProps;
 const isOverlayOpen = () => document.querySelector('[data-testid="feed-overlay"]') !== null;
+const isMobileHostOpen = () => document.querySelector('[data-testid="feed-mobile-host"]') !== null;
 const currentUrl = () => window.location.pathname + window.location.search;
 
 const DESKTOP_WIDTH = 1280;
@@ -282,6 +292,7 @@ beforeEach(() => {
   mockRouterProps = null;
   mockOverlayApi = null;
   mockOverlayProps = null;
+  mockMobileHostProps = null;
   mockOverlayRenders = 0;
   mockModuleRenders = [];
   mountedEntry = HOME;
@@ -671,7 +682,7 @@ describe('detail príspevku podľa adresy: desktop', () => {
     expect(mockOverlayRenders - rendersBefore).toBeLessThan(5);
   });
 
-  it('okno otvorené priamym vstupom ostáva, aj keď sa viewport zmení na mobil', async () => {
+  it('detail otvorený priamym vstupom ostáva, aj keď sa viewport zmení na mobil: okno vymení obrazovka', async () => {
     await renderDashboard(false, FEED_7, 'home');
     expect(isOverlayOpen()).toBe(true);
     mockModuleRenders = [];
@@ -679,8 +690,9 @@ describe('detail príspevku podľa adresy: desktop', () => {
     flipViewport(true);
     await settle();
 
-    expect(isOverlayOpen()).toBe(true);
-    expect(overlayProps().postId).toBe(7);
+    expect(isOverlayOpen()).toBe(false);
+    expect(isMobileHostOpen()).toBe(true);
+    expect(mockMobileHostProps?.postId).toBe(7);
     expect(activeModule()).toBe('home');
     expect(mockModuleRenders).not.toContain('feed-post-detail');
   });

@@ -16,7 +16,7 @@ import type { DashboardNavigationProps } from '../hooks/useDashboardNavigation';
 import type { DashboardUserProfileProps } from '../hooks/useDashboardUserProfile';
 import type { UseSkillsModalsResult } from '../hooks/useSkillsModals';
 import type { AccountSettingsMobileView } from '../modules/AccountSettingsModule';
-import FeedPostDetailOverlay from '../modules/feed/FeedPostDetailOverlay';
+import FeedPostDetailSwitch from '../modules/feed/FeedPostDetailSwitch';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
@@ -400,9 +400,10 @@ export default function DashboardContentView({
         isDeleting={isDeletingOwnProfileOffer}
       />
       {/* Okno lezi NAD celou appkou a mountuje sa az pri otvoreni, takze
-          zavretim sa vrati presne povodny stav pod nim. */}
+          zavretim sa vrati presne povodny stav pod nim. Na pocitaci je to
+          okno, na mobile obrazovka detailu (nalez 360). */}
       {feedOverlayTarget ? (
-        <FeedPostDetailOverlay
+        <FeedPostDetailSwitch
           postId={feedOverlayTarget.postId}
           highlightCommentId={feedOverlayTarget.highlightCommentId ?? null}
           onClose={() => handleFeedOverlayTargetChange(null)}
