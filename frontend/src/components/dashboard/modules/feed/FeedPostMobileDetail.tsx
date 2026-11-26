@@ -68,6 +68,11 @@ type FeedPostMobileDetailProps = {
   post: FeedPost;
   onClose: () => void;
   /**
+   * Komentár z upozornenia (`?comment=<id>`; nález 360): zoznam komentárov naň doscrolluje, krátko ho zvýrazní a podľa potreby
+   * donačíta ďalšie stránky, rovnako ako okno detailu na počítači. Bez neho sa obrazovka správa ako dosiaľ.
+   */
+  highlightCommentId?: number | null;
+  /**
    * Autor príspevok upravil.
    *
    * Karta pod obrazovkou si novú verziu prevezme, takže po zatvorení ukazuje
@@ -84,6 +89,7 @@ type FeedPostMobileDetailProps = {
 export default function FeedPostMobileDetail({
   post,
   onClose,
+  highlightCommentId = null,
   onPostUpdated,
   onDeleted,
   onShared,
@@ -211,6 +217,13 @@ export default function FeedPostMobileDetail({
       // už používateľovi pohľad nestrhnú.
       autoScrolledRef.current = true;
 
+      // Komentár z upozornenia má prednosť (nález 360): naň zoznam posúva sám (`useFeedCommentsSeek`) a druhý plynulý posun
+      // ku kotve „Komentáre“ by sa s ním bil o pozíciu.
+      if (highlightCommentId) {
+        setAutoScrollDecision(false);
+        return;
+      }
+
       const scroll = shouldAutoScrollToComments({
         hasPhoto,
         hasSharedPreview,
@@ -236,7 +249,7 @@ export default function FeedPostMobileDetail({
         scroller.scrollTop = target;
       }
     },
-    [hasPhoto, hasSharedPreview, post.comments_count],
+    [hasPhoto, hasSharedPreview, highlightCommentId, post.comments_count],
   );
 
   const handleDelete = useCallback(async () => {
@@ -325,6 +338,7 @@ export default function FeedPostMobileDetail({
           mobileReplyField
           onFieldFocusChange={setCommentFieldFocused}
           listHeader={listHeader}
+          highlightCommentId={highlightCommentId}
           onCommentsReady={handleCommentsReady}
           onCountChange={(delta) =>
             changeCommentsCount(delta)
