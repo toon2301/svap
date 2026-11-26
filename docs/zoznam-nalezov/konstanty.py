@@ -22,3 +22,14 @@ EL = 'L'
 
 NAZOV_SKUPINY = {H: 'HNEĎ', P: 'PRED NASADENÍM', A: 'PO NASADENÍ'}
 NAZOV_DOPADU = {V: 'vysoký', S_: 'stredný', N: 'nízky'}
+
+# Ručný test dávky (pole `rucny_test` pri hotových položkách `DONE_SINCE`): dávka sa neuzatvára pred úspešným ručným testom,
+# ak je požadovaný. Bez poľa ručný test nie je požadovaný (alebo sa nesledoval).
+RUCNY_CAKA = 'caka'
+RUCNY_PRESIEL = 'prešiel'
+RUCNY_NEPRESIEL = 'neprešiel'
+RUCNY_STAVY = (RUCNY_CAKA, RUCNY_PRESIEL, RUCNY_NEPRESIEL)
+RUCNY_NEUZAVRETE = (RUCNY_CAKA, RUCNY_NEPRESIEL)
+
+# Na koho môže záznam fronty čakať (pole `caka` = (kto, čo presne)) a tvar na zobrazenie.
+KTO_CAKA = {'majiteľ': 'majiteľa', 'Codex': 'Codexa'}

@@ -44,8 +44,8 @@ def hlavna(argumenty=None):
 
     VYSTUP.write_text(text, encoding='utf-8', newline='\n')
     print('Zapísané %s (%d riadkov).' % (VYSTUP.name, text.count('\n')))
-    print('Nálezy spolu %d: HNEĎ %d, PRED %d, PO %d; hotové %d (+%d čaká na zlúčenie).'
-          % (p.spolu, p.nalezy['H'], p.nalezy['P'], p.nalezy['A'], p.hotove, p.caka_na_zlucenie))
+    print('Nálezy spolu %d: HNEĎ %d, PRED %d, PO %d; hotové %d (+%d čaká na zlúčenie, +%d čaká na ručný test).'
+          % (p.spolu, p.nalezy['H'], p.nalezy['P'], p.nalezy['A'], p.hotove, p.caka_na_zlucenie, p.caka_na_rucny_test))
     return 0
 
 

@@ -5,7 +5,10 @@ Poradie je návrh agenta (malé, lokálne zmeny s nízkym rizikom, ktoré nemeni
 kolega robiť aj nálezy PRED NASADENÍM a HNEĎ (predtým len PO NASADENÍ), preto fronta smie obsahovať ktorýkoľvek otvorený nález. Súbor sa
 upravuje len pri zmene poradia alebo keď je nález hotový:
 - keď je nález hotový, záznam sa odstráni odtiaľto a nález sa presunie do `hotove_k40.DONE_SINCE_K40` (nálezy opravené od PR #297, 19. 11. 2026; z 13. 11. 2026 do PR #295 sú v `hotove_k20.DONE_SINCE_K20`, staršie v `hotove_dalsie.py` a `hotove.py`);
-- stav riešenia je voliteľný: ak sa zapíše, vyplnia sa spolu `kto`, `stav` (`STAV_ROZROBENE` alebo `STAV_CAKA`) a `od` (dátum).
+- stav riešenia je voliteľný: ak sa zapíše, vyplnia sa spolu `kto`, `stav` (`STAV_ROZROBENE` alebo `STAV_CAKA`) a `od` (dátum);
+- voliteľné `caka=('majiteľ', 'čo presne treba')` (alebo `'Codex'`): položku nemožno vziať, kým sa to nezmení; voliteľné `po=['380']`:
+  položka závisí od iných nálezov (musia byť vo fronte skôr alebo hotové). Agent berie prvú VOĽNÚ položku, pravidlá sú vo `fronta_pravidla.py`
+  a postup je v `POSTUP.md`; polia pridáva a odoberá skript `zapis.py fronta`.
 
 Od 5. 11. 2026 sa polia `kto`, `stav` a `od` pri práci kolegu nevyplňujú: v kóde pracuje vždy len jeden a začiatok aj koniec práce
 hlási majiteľ (postup je v `README.md`, časť „Postup s kolegom“). Záznam bez týchto polí sa v zozname zobrazí ako „nesleduje sa“,
