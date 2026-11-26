@@ -2,12 +2,14 @@
  * Výber podoby detailu príspevku podľa šírky okna prehliadača (nález 360, krok 2 zrušenia starého spôsobu detailu príspevku).
  *
  * Cieľ okna (upozornenie, adresa príspevku) je jeden; na počítači ho ukazuje okno (`FeedPostDetailOverlay`), na mobile
- * obrazovka (`FeedPostMobileDetailHost`). Obe podoby sú tu atrapy, ktoré zachytia vlastnosti, a šírku okna určuje atrapa
- * hooku `useIsMobileState`, takže sa overuje len výber: ktorá podoba sa nakreslí, čo dostane, a že sa pred vyriešením šírky
- * nenakreslí ani jedna (inak by na mobile na okamih vzniklo okno pre počítač s vlastným načítaním príspevku).
+ * obrazovka (`FeedPostMobileDetailHost`). Obe podoby sú tu atrapy, ktoré zachytia vlastnosti a majú vlastný stav ako pole na
+ * rozpísaný komentár, a šírku okna určuje atrapa hooku `useIsMobileState`, takže sa overuje len výber: ktorá podoba sa
+ * nakreslí, čo dostane, že sa pred vyriešením šírky nenakreslí ani jedna (inak by na mobile na okamih vzniklo okno pre
+ * počítač s vlastným načítaním príspevku) a že sa podoba určí raz, pri otvorení: zmena šírky pri otvorenom detaile ju
+ * nevymení, takže rozpísaný komentár neprepadne (pripomienka k PR 339).
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import FeedPostDetailSwitch from '../FeedPostDetailSwitch';
 
@@ -21,18 +23,32 @@ jest.mock('@/hooks', () => ({
 
 let mockOknoProps: CielProps | null = null;
 let mockObrazovkaProps: CielProps | null = null;
+// Atrapy majú pole na komentár so stavom v sebe, ako skutočné podoby (text žije v ich stave): po výmene podoby by pole
+// vzniklo nanovo a bolo by prázdne.
 jest.mock('../FeedPostDetailOverlay', () => ({
   __esModule: true,
   default: function MockFeedPostDetailOverlay(props: CielProps) {
+    const { useState } = jest.requireActual('react') as typeof import('react');
+    const [koncept, setKoncept] = useState('');
     mockOknoProps = props;
-    return <div data-testid="feed-overlay" />;
+    return (
+      <div data-testid="feed-overlay">
+        <input data-testid="feed-overlay-koncept" value={koncept} onChange={(e) => setKoncept(e.target.value)} />
+      </div>
+    );
   },
 }));
 jest.mock('../FeedPostMobileDetailHost', () => ({
   __esModule: true,
   default: function MockFeedPostMobileDetailHost(props: CielProps) {
+    const { useState } = jest.requireActual('react') as typeof import('react');
+    const [koncept, setKoncept] = useState('');
     mockObrazovkaProps = props;
-    return <div data-testid="feed-mobile-host" />;
+    return (
+      <div data-testid="feed-mobile-host">
+        <input data-testid="feed-mobile-host-koncept" value={koncept} onChange={(e) => setKoncept(e.target.value)} />
+      </div>
+    );
   },
 }));
 
@@ -131,20 +147,19 @@ describe('výber podoby detailu príspevku: šírka okna ešte nie je vyriešen�
 });
 
 describe('výber podoby detailu príspevku: zmena šírky pri otvorenom detaile', () => {
-  it('z počítača na mobil okno vymení obrazovka s tým istým príspevkom a komentárom', () => {
+  it('z počítača na mobil okno ostáva a obrazovka nevznikne', () => {
     const { prekresli } = vykresli(12);
     expect(jeOknoOtvorene()).toBe(true);
 
     mockViewport = { isMobile: true, isResolved: true };
     prekresli();
 
-    expect(jeOknoOtvorene()).toBe(false);
-    expect(jeObrazovkaOtvorena()).toBe(true);
-    expect(mockObrazovkaProps?.postId).toBe(7);
-    expect(mockObrazovkaProps?.highlightCommentId).toBe(12);
+    expect(jeOknoOtvorene()).toBe(true);
+    expect(jeObrazovkaOtvorena()).toBe(false);
+    expect(mockObrazovkaProps).toBeNull();
   });
 
-  it('z mobilu na počítač obrazovku vymení okno', () => {
+  it('z mobilu na počítač obrazovka ostáva a okno nevznikne', () => {
     mockViewport = { isMobile: true, isResolved: true };
     const { prekresli } = vykresli(12);
     expect(jeObrazovkaOtvorena()).toBe(true);
@@ -152,9 +167,53 @@ describe('výber podoby detailu príspevku: zmena šírky pri otvorenom detaile'
     mockViewport = { isMobile: false, isResolved: true };
     prekresli();
 
-    expect(jeObrazovkaOtvorena()).toBe(false);
+    expect(jeObrazovkaOtvorena()).toBe(true);
+    expect(jeOknoOtvorene()).toBe(false);
+    expect(mockOknoProps).toBeNull();
+  });
+
+  it('rozpísaný komentár v okne prežije prechod na mobil a späť, je to stále tá istá inštancia', () => {
+    const { prekresli } = vykresli();
+    const pole = screen.getByTestId('feed-overlay-koncept');
+    fireEvent.change(pole, { target: { value: 'Rozpísaný komentár' } });
+
+    mockViewport = { isMobile: true, isResolved: true };
+    prekresli();
+    expect(screen.getByTestId('feed-overlay-koncept')).toBe(pole);
+    expect(pole).toHaveValue('Rozpísaný komentár');
+
+    mockViewport = { isMobile: false, isResolved: true };
+    prekresli();
+    expect(screen.getByTestId('feed-overlay-koncept')).toBe(pole);
+    expect(pole).toHaveValue('Rozpísaný komentár');
+  });
+
+  it('rozpísaný komentár v obrazovke prežije prechod na počítač a späť, je to stále tá istá inštancia', () => {
+    mockViewport = { isMobile: true, isResolved: true };
+    const { prekresli } = vykresli();
+    const pole = screen.getByTestId('feed-mobile-host-koncept');
+    fireEvent.change(pole, { target: { value: 'Rozpísaný komentár' } });
+
+    mockViewport = { isMobile: false, isResolved: true };
+    prekresli();
+    expect(screen.getByTestId('feed-mobile-host-koncept')).toBe(pole);
+    expect(pole).toHaveValue('Rozpísaný komentár');
+
+    mockViewport = { isMobile: true, isResolved: true };
+    prekresli();
+    expect(screen.getByTestId('feed-mobile-host-koncept')).toBe(pole);
+    expect(pole).toHaveValue('Rozpísaný komentár');
+  });
+
+  it('po zatvorení a novom otvorení sa podoba určí znova podľa vtedajšej šírky', () => {
+    const prve = vykresli();
     expect(jeOknoOtvorene()).toBe(true);
-    expect(mockOknoProps?.postId).toBe(7);
-    expect(mockOknoProps?.highlightCommentId).toBe(12);
+    prve.unmount();
+
+    mockViewport = { isMobile: true, isResolved: true };
+    vykresli();
+
+    expect(jeObrazovkaOtvorena()).toBe(true);
+    expect(jeOknoOtvorene()).toBe(false);
   });
 });

@@ -679,7 +679,7 @@ describe('detail príspevku podľa adresy: desktop', () => {
     expect(mockOverlayRenders - rendersBefore).toBeLessThan(5);
   });
 
-  it('detail otvorený priamym vstupom ostáva, aj keď sa viewport zmení na mobil: okno vymení obrazovka', async () => {
+  it('okno otvorené priamym vstupom ostáva, aj keď sa viewport zmení na mobil', async () => {
     await renderDashboard(false, FEED_7, 'home');
     expect(isOverlayOpen()).toBe(true);
     mockModuleRenders = [];
@@ -687,9 +687,11 @@ describe('detail príspevku podľa adresy: desktop', () => {
     flipViewport(true);
     await settle();
 
-    expect(isOverlayOpen()).toBe(false);
-    expect(isMobileHostOpen()).toBe(true);
-    expect(mockMobileHostProps?.postId).toBe(7);
+    expect(isOverlayOpen()).toBe(true);
+    expect(overlayProps().postId).toBe(7);
+    // Podoba detailu sa určí pri otvorení: zmena šírky ju nevymení za obrazovku (pripomienka k PR 339, rozpísaný komentár).
+    expect(isMobileHostOpen()).toBe(false);
+    expect(mockMobileHostProps).toBeNull();
     expect(activeModule()).toBe('home');
     expect(mockModuleRenders).not.toContain('feed-post-detail');
   });
