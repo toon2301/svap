@@ -393,6 +393,9 @@ def _udrzba(d, m):
     d.w()
     d.w('Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:')
     d.w()
+    d.w('- **Skúšobný postup pre dvoch agentov** (`POSTUP.md`; pripravený 26. 11. 2026, začne platiť po K62 a K63, keď to majiteľ potvrdí): '
+        'zápisy robí skript `python docs/zoznam-nalezov/zapis.py` (zmení len potrebné miesta, hneď spustí `build.py` a pri chybe všetko vráti); '
+        'dovtedy a pri veciach, ktoré skript nevie, platia body nižšie.')
     d.w('- **Po každom novom nálezi alebo oprave** sa dokument aktualizuje v tej istej vetve, v ktorej sa zmena robí: nález = nový riadok, '
         'oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.')
     d.w(f'- **Čísla:** nový nález dostane ďalšie voľné číslo ({m.posledne_cislo + 1}); čísla sa nikdy nemenia ani nepoužívajú znova. '

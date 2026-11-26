@@ -4,6 +4,10 @@ Hlavný zoznam nálezov projektu Svaply je v súbore [`ZOZNAM.md`](ZOZNAM.md). S
 neupravuje ručne. Generátor pri každom spustení overí úplnosť (čísla nálezov a ID z registra sú práve raz, súčty sedia), takže zoznam
 nemôže ticho prestať sedieť.
 
+**Skúšobný postup pre dvoch agentov** (pripravené 26. 11. 2026, zatiaľ neplatí; začne po K62 a K63, keď to potvrdí majiteľ): [`POSTUP.md`](POSTUP.md).
+Zápisy do zoznamu v ňom robí skript `python docs/zoznam-nalezov/zapis.py` (nahrádza ručné upravovanie dátových súborov z časti „Ako
+aktualizovať“; vzory vstupov sú v `sablony/zapis/`, testy v `testy/`). Dovtedy platí všetko nižšie.
+
 ## Súbory
 
 | Súbor | Obsah |
@@ -31,6 +35,10 @@ nemôže ticho prestať sedieť.
 | `priloha_nastenka.py` | Príloha D: mapovanie zoznamu majiteľa na tento zoznam (jeden riadok na jeho položku). Generátor overí odkazy v nej. |
 | `navrhy/` | Schválené návrhy vzhľadu (R49, R51 až R56 a R68 až R75): obrázky pre karty kolegu, mobil `mobil-*.png` a počítač `pc-*.png` (obrázky s príponou `-schvalene.png` sú schválený vzhľad, ten z K57 `pc-okno-text-uzke-schvalene.png` platí len do R73); texty a mená na nich sú zástupné, bez osobných údajov. |
 | `konstanty.py`, `model.py`, `vystup.py`, `priloha_hosting.py`, `build.py` | Generátor (len štandardná knižnica Pythonu). |
+| `POSTUP.md` | Skúšobný postup pre dvoch rovnocenných agentov (štart, cyklus dávky, pravidlá zaradenia a poradia, ručné testy). |
+| `zapis.py`, `zapis_*.py`, `fronta_pravidla.py` | Pomocný skript na zápis do zoznamu (`stav`, `novy`, `hotove`, `zlucene`, `rucny-test`, `zatvor`, `rozhodnutie`, `fronta`, `zmena`) a jeho moduly. |
+| `zaznamy.py`, `zaznamy_nove_NN.py`, `zaznamy_hotove_NN.py`, `zaznamy_rozhodnutia_NN.py`, `zaznamy_zatvorene_NN.py` | Záznamy, ktoré zapisuje skript (nové nálezy, hotové, rozhodnutia, zatvorené); `zaznamy.py` ich načíta a pripojí k pôvodným zoznamom. Súbor sa po 350 riadkoch rozdelí na ďalší. |
+| `sablony/zapis/`, `testy/` | Vzorové vstupy skriptu (JSON) a jeho testy (`python -m pytest docs/zoznam-nalezov/testy -q`). |
 
 ## Ako aktualizovať
 

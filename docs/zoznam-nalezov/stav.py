@@ -18,6 +18,28 @@ from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
     ('26. 11. 2026',
+      'Vetva 215 (z `main` `38971af9`; pomocný skript, testy a postup, dáta nálezov sa nemenia). (1) POMOCNÝ SKRIPT '
+      '`zapis.py` (príkazy `stav`, `novy`, `hotove`, `zlucene`, `rucny-test`, `zatvor`, `rozhodnutie`, `fronta` s podpríkazmi '
+      '`pridaj`, `odstran`, `presun`, `caka`, `volne` a `po`, a `zmena`; moduly `zapis_zdroj.py`, `zapis_data.py`, '
+      '`zapis_format.py`, `zapis_operacie.py`, `zapis_transakcia.py`, `zapis_stav.py` a `fronta_pravidla.py`, každý pod 500 '
+      'riadkov): zmení presne tie miesta v zdrojoch, ktoré treba (nález zo zdroja, z fronty a z vĺn), zapíše všetko naraz, '
+      'hneď spustí `build.py` v čerstvom interpretri a pri chybe vráti všetky súbory vrátane `ZOZNAM.md`; má suchý beh '
+      '`--na-sucho`, návratové kódy 0 až 3 a vzorové vstupy v `sablony/zapis/`. Nové záznamy zapisuje do '
+      '`zaznamy_nove_NN.py`, `zaznamy_hotove_NN.py`, `zaznamy_rozhodnutia_NN.py` a `zaznamy_zatvorene_NN.py` (nový súbor po '
+      '350 riadkoch; načíta ich `zaznamy.py`). (2) MODEL A VÝSTUP: pri hotových položkách pole `rucny_test` (`caka`, '
+      '`prešiel`, `neprešiel`; kým je `caka` alebo `neprešiel`, položka má v časti 7 značku, v počtoch je osobitne „čaká na '
+      'ručný test“ a súčet sedí), vo fronte polia `caka` (čaká na majiteľa alebo Codexa) a `po` (závislosti: musia byť hotové '
+      'alebo skôr vo fronte); „prvá voľná“ položka fronty sa v častiach 1 a 2 počíta bez čakajúcich a závislých. (3) TESTY '
+      '(`testy/`, 656 testov v asi dvoch minútach, na kópii skutočných dát): úpravy zdrojov, formát a prenos nebezpečných '
+      'znakov (apostrof, obrátená lomka, zvislítko, úvodzovky, emoji), každý z 180 otvorených nálezov sa dá uzavrieť `hotove` '
+      'aj `zatvor` bez poškodenia zdrojov, vzorka cez celý zápis, striedanie dvoch agentov, rotácia súborov, nezmyselné typy '
+      'hodnôt v každom poli, vrátenie zmien pri chybe aj pri prerušení; 52 zámerných chýb v skripte a modeli testy zachytili. '
+      'Testy našli skutočnú chybu: jedna z vĺn poradia má `polozky` zložené súčtom zoznamov, takže nález 180 by sa z nej '
+      'neodstránil. (4) POSTUP `POSTUP.md` pre dvoch rovnocenných agentov podľa odpovede majiteľa z 26. 11. 2026 (štart, '
+      'cyklus dávky, zaradenie HNEĎ, PRED a PO, poradie fronty, ručné testy, kedy sa pýtať majiteľa, dvojkolová skúška), '
+      'odkaz v `AGENTS.md` a v `README.md`; ZATIAĽ NEPLATÍ: K62 a K63 sa dokončia podľa pôvodného systému, ich výsledky sa '
+      'zapíšu až po nich (už novým skriptom; ID z registra OW-11 = nález 380 sa zatvára ručne) a skúšku začne majiteľ.'),
+    ('26. 11. 2026',
       'Vetva 214 (z `main` `8afe1fd6`, po PR #341; len zoznam a karta K62, bez kódu). (1) ZLÚČENÉ 26. 11. 2026 (UTC): PR #337 '
       '(vetva 211: karta K61 a rozhodnutia R82 až R84; 06:39), PR #338 (K61: oprava B, nálezy 371, 91 a 378; 08:06, merge '
       '`50ef3a74`), PR #339 (vetva 212: kroky 1 a 2 opravy A; 10:48, merge `74f8bdcf`), PR #340 (vetva 213: kroky 3a, 3b a 5 '

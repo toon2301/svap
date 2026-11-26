@@ -26,6 +26,12 @@ Tento súbor platí pre každého agenta, ktorý v repozitári pracuje. Kód, ko
 - Do oblasti toho druhého nezasahuj. Ak niečo treba zmeniť tam, napíš to majiteľovi vo vlastnej správe a majiteľ to odovzdá druhému agentovi.
 - Ak zmena aplikácie vyžaduje úpravu E2E testu, Claude to uvedie v popise vetvy pod nadpisom „Dopad na E2E“ a test upraví Codex.
 
+## Zoznam nálezov: skúšobný postup (po K62 a K63)
+
+- Súbor `docs/zoznam-nalezov/POSTUP.md` opisuje postup, v ktorom agent a kolega spravujú zoznam rovnocenne a striedavo (vždy len jeden, ďalší začína po zlúčení vetvy do `main`; zápisy robí skript `docs/zoznam-nalezov/zapis.py`). **Platí až od chvíle, keď majiteľ po zápise K62 a K63 potvrdí začiatok skúšky;** dovtedy platia tabuľka vyššie a `docs/zoznam-nalezov/README.md`.
+- Počas skúšky platí namiesto vety „čísla nálezov prideľuje len Claude“ pravidlo z `POSTUP.md`: číslo pridelí skript a smie ho zapísať ktorýkoľvek z agentov, ktorý práve pracuje. Vetva každej dávky sa volá `K<n>` (aj pre agenta, aj pre kolegu; číslo je ďalšie voľné zo `stav`). Codex ostáva pri E2E: zmenu E2E testu po zmene aplikácie určuje popis vetvy pod nadpisom „Dopad na E2E“.
+- Vzájomná kontrola práce agentov nie je povinná, robí sa len na výslovnú žiadosť majiteľa. Pri zmene vzhľadu alebo nejasnom požadovanom správaní rozhoduje majiteľ.
+
 ## Vetvy a zlučovanie
 
 - Každá úloha má vlastnú vetvu z čerstvého `main`. Claude používa čísla (`155`, `156`…), Codex používa `e2e/<krátky-názov>`.
