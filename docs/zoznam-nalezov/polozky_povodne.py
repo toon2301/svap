@@ -63,7 +63,8 @@ ORIG_OPEN = {
          'z plánu 360 sú presne stroj, ktorý 46 potrebuje (karta by namiesto `setMobileDetailOpen` volala '
          '`postOverlay.open({ postId })` a dostala by adresu aj F5), takže po 360 bude 46 malá zmena, nie nový komponent; '
          'opačne to neplatí. E2E `feed-post-detail.spec.ts:33-57` dnes tvrdí, že vrstva z karty nemení adresu ani históriu '
-         '(platí, kým je 46 odložené). Odporúčanie kolegu aj agenta: 46 sa nerobí spolu s 360.', None),
+         '(platí, kým je 46 odložené). Odporúčanie kolegu aj agenta: 46 sa nerobí spolu s 360. '
+         'Rozhodnutie majiteľa (26. 11. 2026, R82): 46 sa nerobí spolu s 360.', None),
     70: (A, S_, EL, 'Funkcie – väčšie balíky',
          'Podľa zoznamu majiteľa (príloha D) niektoré upozornenia stále vedú na staršiu z týchto dvoch obrazoviek. Postup: najprv '
          'zmapovať všetky vstupné body, ktoré naň ešte vedú, presmerovať ich a ak sa dá, starý komponent úplne zrušiť. Súvisí s 13 a 46. '
