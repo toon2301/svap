@@ -68,9 +68,10 @@ NEW_ITEMS_K51 = [
               'samostatná stránka príspevku (`FeedPostDetailModule`, adresa príspevku), na ktorú vedie napríklad '
               'preklik z repostnutého príspevku na pôvodný príspevok (`feedSharedContentNavigation.ts`); či je to '
               'starý spôsob z tohto nálezu a ktoré cesty ho otvárajú, zistí mapovanie.',
-         note='JASNÉ po rozhodnutiach majiteľa (mapovanie K60 hotové: kolega, `karty/K60_vysledok.md`, PR #336; agent ho overil '
-              'čítaním kódu a sondami `tsc` a Jest v kópii mimo repozitára, `karty/K60_overenie_agenta.md`). ZISTENIE: starý '
-              'spôsob (`FeedPostDetailModule`, modul `feed-post-detail`) sa na mobile otvára DETERMINISTICKY pri každom '
+         note='JASNÉ (rozhodnutia majiteľa 1 až 4 sú hotové, R82; ide až po oprave B (K61) a jej ručnom teste, píše agent, '
+              'potom Codex upraví dva špecy, R84; mapovanie K60 hotové: kolega, `karty/K60_vysledok.md`, PR #336; agent ho '
+              'overil čítaním kódu a sondami `tsc` a Jest v kópii mimo repozitára, `karty/K60_overenie_agenta.md`). ZISTENIE: '
+              'starý spôsob (`FeedPostDetailModule`, modul `feed-post-detail`) sa na mobile otvára DETERMINISTICKY pri každom '
               'upozornení na príspevok (šesť typov), priamom odkaze, F5, kroku v histórii a po ťuku na text pôvodného príspevku '
               'v novej obrazovke pri reposte (`feedSharedContentNavigation.ts:66-69`); ostatné cesty z Nástenky idú na novú '
               'obrazovku, takže „niekedy“ znamená rôznu cestu, nie náhodnosť. Nová obrazovka NEMÁ cieľový komentár '
@@ -90,12 +91,12 @@ NEW_ITEMS_K51 = [
               '`FeedPostMobileDetail.tsx` sa po PR #335 posunuli o +9. RIZIKÁ (len iPhone): plynulý posun na cieľový komentár '
               'sa môže biť s jednorazovým posunom obrazovky ku komentárom; história pri troch pôvodoch (upozornenia, odkaz, '
               'preklik z reposta). DOPAD NA E2E: `feed-post-detail.spec.ts` (mobilný test r.59-76) a '
-              '`notification-click.spec.ts` (3 mobilné testy r.112-141): upraví Codex. ROZHODNUTIA MAJITEĽA pred krokom 3: (1) '
-              'kam sa vrátiť po zatvorení pri upozornení (odporúčam stránku, na ktorej používateľ bol, ako na počítači), (2) či '
-              'sa 46 robí spolu (odporúčam nie), (3) nepoužitý kód `initialFeedPostId` a `effectiveFeedPostId` v '
-              '`DashboardContent.tsx` ostáva do delenia (TECH-01), (4) po F5 Nástenka s obrazovkou (odporúčam). Vzhľad sa '
-              'nemení (obrazovka je schválená), R49 sa netýka. Ručne po oprave: päť testov na iPhone (upozornenie na komentár '
-              'aj starší než prvá stránka, upozornenia bez komentára bez spodnej lišty, odkaz a F5, zmazaný príspevok, repost). '
+              '`notification-click.spec.ts` (3 mobilné testy r.112-141): upraví Codex. ROZHODNUTIA MAJITEĽA (26. 11. 2026, R82; '
+              'súhlas s odporúčaním agenta): (1) po zatvorení pri upozornení sa vrátiť na stránku, na ktorej používateľ bol, '
+              'ako na počítači, (2) 46 sa nerobí spolu, (3) nepoužitý kód `initialFeedPostId` a `effectiveFeedPostId` v '
+              '`DashboardContent.tsx` ostáva do delenia (TECH-01), (4) po F5 sa otvorí Nástenka s obrazovkou. Vzhľad sa nemení '
+              '(obrazovka je schválená), R49 sa netýka. Ručne po oprave: päť testov na iPhone (upozornenie na komentár aj '
+              'starší než prvá stránka, upozornenia bez komentára bez spodnej lišty, odkaz a F5, zmazaný príspevok, repost). '
               'Odhad: veľký · L.',
          dec=None, src='ručný test majiteľa po K51 (22. 11. 2026) a dve snímky z mobilu'),
 ]

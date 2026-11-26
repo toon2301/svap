@@ -15,8 +15,8 @@ NEW_ITEMS_K60 = [
               'zdroja, nie stav fotky, a uložený kľúč (`sharing.py:246-255`) sa po zdieľaní nikdy neobnovuje. Keď sa schválená '
               'fotka ponuky prepne na zamietnutú, zdroj už nemá schválenú fotku, no náhľad sa cudzím (aj anonymovi) naďalej '
               'posiela (odpoveď 200, `thumbnail_url` zadaná), kým sa nezmaže zdieľanie alebo fotka.',
-         note='JASNÉ: rieši sa spolu s 371 (možnosť 1, náhľad naživo zo zdroja s kontrolou stavu fotky), osobitná oprava '
-              'netreba. ÚZKE: v dnešnom kóde žiadna cesta schválenú fotku automaticky nezamietne '
+         note='JASNÉ: rieši ho karta K61 spolu s 371 (možnosť 1, náhľad naživo zo zdroja s kontrolou stavu fotky), osobitná '
+              'oprava netreba. ÚZKE: v dnešnom kóde žiadna cesta schválenú fotku automaticky nezamietne '
               '(`feed_image_processing.py:62-79` sa pri schválenej fotke hneď vráti, fotky ponúk nemajú kód, ktorý by stav '
               'nastavil na zamietnutý, nahlásenie stav nemení), stav sa dá zmeniť len ručne v administrácii '
               '(`OfferedSkillImageAdmin`), preto stredná dôležitosť. Test (nový súbor pri oprave 371): zamietnutá fotka dá '

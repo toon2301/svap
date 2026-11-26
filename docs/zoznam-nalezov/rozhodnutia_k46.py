@@ -395,4 +395,49 @@ DECISIONS_K46 = [
                  'riadok „Ďalšia kontrola“ po každom kole pripomienok CodeRabbitu; (b) stupnica je v odporúčaní a v README (krok '
                  '„PR a boty“), ak chce majiteľ iné hranice, upraví ich; (c) ďalšie kontroly spúšťa len majiteľ.',
          datum='25. 11. 2026'),
+    dict(id='R82', tema='Oprava starého spôsobu detailu príspevku na mobile (nálezy 360, 13 a 70): štyri rozhodnutia k plánu z mapovania K60',
+         otazka='Mapovanie K60 (kolega, `karty/K60_vysledok.md`, PR #336; overenie agenta `karty/K60_overenie_agenta.md`) navrhlo '
+                'plán v piatich krokoch na zrušenie starého spôsobu detailu príspevku na mobile (nález 360; odpadnú 13 a 70). '
+                'Pred krokom 3 treba rozhodnúť: (1) kam sa vrátiť po zatvorení obrazovky pri upozornení; (2) či sa nález 46 '
+                '(adresa pre obrazovku z karty) robí spolu; (3) čo s nepoužitým kódom `initialFeedPostId` a `effectiveFeedPostId` '
+                'v `DashboardContent.tsx` (711 riadkov, TECH-01, súbor sa nemení); (4) čo sa otvorí po F5 na adrese príspevku.',
+         odporucanie='(1) Vrátiť na stránku, na ktorej používateľ bol, ako na počítači. (2) Nie: 46 ostáva odložené (po 360 bude '
+                     'malá zmena, nie nový komponent). (3) Nepoužitý kód ostane do delenia súboru (TECH-01) a len sa nahlási. '
+                     '(4) Po F5 sa otvorí Nástenka s obrazovkou, ako dnes na počítači (krátky prvý vykreslený stav Nástenky je '
+                     'jediný rozdiel).',
+         kedy='Rozhodnuté 26. 11. 2026 (pokyn majiteľa).',
+         odpoved='Majiteľ 26. 11. 2026: súhlas so všetkými odporúčaniami agenta (tento záznam o štyroch rozhodnutiach k oprave A '
+                 'a R83 o štyroch rozhodnutiach k oprave B). Platí: (1) po zatvorení obrazovky pri upozornení sa vráti stránka, na '
+                 'ktorej používateľ bol; (2) 46 sa nerobí spolu s 360; (3) nepoužitý kód v `DashboardContent.tsx` ostáva do '
+                 'delenia súboru; (4) po F5 sa otvorí Nástenka s obrazovkou. Oprava A (nálezy 360, 13 a 70) ide až po oprave B '
+                 'a jej ručnom teste a píše ju agent (R84); úprava dvoch špecov E2E (`feed-post-detail.spec.ts`, '
+                 '`notification-click.spec.ts`) patrí Codexovi a ide po oprave A.',
+         datum='26. 11. 2026'),
+    dict(id='R83', tema='Oprava náhľadu prezdieľanej ponuky, portfólia a príspevku (nálezy 371, 91 a 378): náhľad naživo zo zdroja, štyri rozhodnutia',
+         otazka='Mapovanie K60 odporúčalo možnosť 1: náhľad zdieľaného obsahu sa odvodí zo ŽIVÉHO zdroja, rovnako ako názov, '
+                'kategória, cena a vlastník (namiesto kľúča súboru skopírovaného do príspevku pri zdieľaní). Pred opravou treba '
+                'rozhodnúť: (i) či karta nasleduje fotku zdroja ako názov a cenu; (ii) ktoré fotky sa ukážu; (iii) či sa po oprave '
+                'prestane zapisovať `shared_thumbnail_key`; (iv) či sa do adresy náhľadu pridá odtlačok fotky (odpoveď sa '
+                'cachuje hodinu).',
+         odporucanie='(i) Áno: jedno správanie pre všetky polia. (ii) Len schválené fotky ako dnes, inak „Bez fotografie“ '
+                     '(portfólio „Bez titulnej fotky“); vzhľad sa nemení, R49 sa netýka. (iii) Áno: stĺpec v modeli ostáva, jeho '
+                     'čistenie neskôr. (iv) Áno: krátky odtlačok kľúča v adrese (`?v=`). Spôsob opravy je dávka K61 (`karty/K61.md`).',
+         kedy='Rozhodnuté 26. 11. 2026 (pokyn majiteľa).',
+         odpoved='Majiteľ 26. 11. 2026: súhlas so všetkými odporúčaniami agenta (spolu s R82). Platí: (i) náhľad nasleduje fotku '
+                 'zdroja; (ii) len schválené fotky, inak „Bez fotografie“; (iii) po oprave sa `shared_thumbnail_key` prestane '
+                 'zapisovať (stĺpec ostáva); (iv) adresa náhľadu nesie odtlačok fotky. Prácu robí kolega ako dávku K61 (R84).',
+         datum='26. 11. 2026'),
+    dict(id='R84', tema='Poradie prác po mapovaní K60 a návrat k pravidlu „v kóde pracuje len jeden“: najprv oprava B (kolega), potom oprava A (agent), nakoniec E2E (Codex)',
+         otazka='R80 povolilo súbežnú prácu agenta a kolegu len na 25. 11. 2026 (bod d: po tej dvojici prác pracuje v kóde opäť len '
+                'jeden). Agent v správe po overení K60 ponúkol možnosť, že kolega robí opravu B (backend) súbežne s opravou A '
+                '(frontend), keďže si nezasahujú do súborov. Smú pracovať súbežne, alebo idú práce po jednej, a v akom poradí?',
+         odporucanie='Po jednej (platí R80 d). Poradie: (1) kolega K61 (oprava B: nálezy 371, 91 a 378; `karty/K61.md`), (2) po jej '
+                     'zlúčení a ručnom teste agent opravu A (nálezy 360, 13 a 70), (3) po oprave A Codex upraví dva špecy E2E. '
+                     'V kóde pracuje vždy len jeden; agent medzitým píše len zoznam a karty.',
+         kedy='Rozhodnuté 26. 11. 2026 (pokyn majiteľa).',
+         odpoved='Majiteľ 26. 11. 2026: už nechce, aby agent a kolega pracovali naraz; súbežná práca bola len výnimka z 25. 11. 2026 '
+                 '(R80). Poradie: najprv kolega opraví B, potom, keď bude všetko v poriadku, ide agent na A a nakoniec Codex; '
+                 '„vraciame sa do systému práce“. Majiteľ zároveň požiadal agenta, aby pripravil prácu pre kolegu (karta K61). '
+                 'Pravidlo „v kóde pracuje len jeden“ platí bez výnimky, kým majiteľ nepovie inak.',
+         datum='26. 11. 2026'),
 ]
