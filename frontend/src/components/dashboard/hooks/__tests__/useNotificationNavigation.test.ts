@@ -37,7 +37,6 @@ let base: HookInput;
 
 const makeBase = (): HookInput => ({
   router: { push: spy('router.push'), replace: spy('router.replace') },
-  isMobile: false,
   highlighting: { setHighlightedSkillId: spy('setHighlightedSkillId') },
   handleFeedOverlayTargetChange: spy('handleFeedOverlayTargetChange'),
   setActiveModule: spy('setActiveModule'),
@@ -223,10 +222,15 @@ describe('príspevok z notifikácie (/dashboard/feed/<id>)', () => {
     expect(sessionStorage.length).toBe(0);
   });
 
-  it('mobil: okno sa neotvorí, naviguje sa na celoobrazovkovú stránku', () => {
+  it('mobil: cieľ okna sa otvorí rovnako ako na desktope (obrazovka detailu) a nenaviguje sa', () => {
     run('/dashboard/feed/42?comment=7', { isMobile: true });
-    expect(calls).toEqual([CLEAR_INTENT, ...FINISH('/dashboard/feed/42?comment=7')]);
-    expect(base.handleFeedOverlayTargetChange).not.toHaveBeenCalled();
+    expect(calls).toEqual([
+      entry('setIsNotificationsPanelOpen', false),
+      entry('setIsSearchOpen', false),
+      entry('setIsMobileMenuOpen', false),
+      entry('handleFeedOverlayTargetChange', { postId: 42, highlightCommentId: 7 }),
+    ]);
+    expect(base.router.push).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -642,9 +646,10 @@ describe('navigácia cez replace (návrat z recenzií bez ďalšieho záznamu v 
     expect(base.router.push).not.toHaveBeenCalled();
   });
 
-  it('príspevok na mobile ide cez replace', () => {
+  it('príspevok na mobile otvorí obrazovku nad appkou a nenaviguje ani cez replace', () => {
     runReplace('/dashboard/feed/42', { isMobile: true });
-    expect(base.router.replace).toHaveBeenCalledWith('/dashboard/feed/42');
+    expect(base.handleFeedOverlayTargetChange).toHaveBeenCalledTimes(1);
+    expect(base.router.replace).not.toHaveBeenCalled();
     expect(base.router.push).not.toHaveBeenCalled();
   });
 
@@ -717,7 +722,6 @@ describe('úložisko prehliadača nie je dostupné', () => {
 describe('identita handlera', () => {
   const INPUT_KEYS: Array<keyof HookInput> = [
     'router',
-    'isMobile',
     'highlighting',
     'handleFeedOverlayTargetChange',
     'setActiveModule',
@@ -736,7 +740,6 @@ describe('identita handlera', () => {
     if (key === 'router') {
       return { router: { push: spy('router#2.push'), replace: spy('router#2.replace') } };
     }
-    if (key === 'isMobile') return { isMobile: !base.isMobile };
     if (key === 'highlighting') {
       return { highlighting: { setHighlightedSkillId: spy('highlighting#2.setHighlightedSkillId') } };
     }
@@ -762,11 +765,14 @@ describe('identita handlera', () => {
     expect(mounted.result.current.handleNotificationNavigate).not.toBe(first);
   });
 
-  it('po zmene isMobile nový handler zvolí inú cestu pre príspevok', () => {
+  it('isMobile hook nepoužíva: po jeho zmene ostáva handler ten istý a príspevok otvorí okno', () => {
     const mounted = mountHook({ isMobile: false });
+    const first = mounted.result.current.handleNotificationNavigate;
     update(mounted, { isMobile: true });
+    expect(mounted.result.current.handleNotificationNavigate).toBe(first);
     navigate(mounted, '/dashboard/feed/42');
-    expect(calls).toEqual([CLEAR_INTENT, ...FINISH('/dashboard/feed/42')]);
+    expect(base.handleFeedOverlayTargetChange).toHaveBeenCalledTimes(1);
+    expect(base.router.push).not.toHaveBeenCalled();
   });
 
   it('po zmene routeru nový handler naviguje cez nový router', () => {

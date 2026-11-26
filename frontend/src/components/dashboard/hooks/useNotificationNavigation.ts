@@ -28,7 +28,11 @@ export type NotificationNavigateOptions = {
 
 type NotificationNavigationInput = {
   router: { push: (href: string) => void; replace: (href: string) => void };
-  isMobile: boolean;
+  /**
+   * Nepoužíva sa: príspevok z upozornenia sa otvára rovnako na mobile (obrazovka detailu) aj na počítači (okno), nález 360.
+   * Posiela ho ešte `DashboardContent` (TECH-01), preto ostáva v type; zmizne pri jeho rozdelení.
+   */
+  isMobile?: boolean;
   highlighting: Pick<DashboardHighlightingProps, 'setHighlightedSkillId'>;
   handleFeedOverlayTargetChange: (target: FeedPostOverlayTarget) => void;
   setActiveModule: (module: string) => void;
@@ -46,7 +50,6 @@ type NotificationNavigationInput = {
 /** Prechod na cieľovú adresu z notifikácie (modul, profil, zvýraznenie, panely, router). */
 export function useNotificationNavigation({
   router,
-  isMobile,
   highlighting,
   handleFeedOverlayTargetChange,
   setActiveModule,
@@ -67,11 +70,11 @@ export function useNotificationNavigation({
       }
 
       // Feedove notifikacie (lajk, komentar, odpoved, oznacenie, zdielanie)
-      // vedu na `/dashboard/feed/<id>`. Na DESKTOPE ich otvori okno nad
-      // appkou - pouzivatel tak nepride o to, kde prave bol. Mobil ostava
-      // pri celoobrazovkovej stranke.
+      // vedu na `/dashboard/feed/<id>`. Otvori ich okno nad appkou (na
+      // pocitaci okno, na mobile obrazovka detailu) - pouzivatel tak nepride
+      // o to, kde prave bol.
       const feedTarget = parseFeedPostTargetUrl(targetUrl);
-      if (feedTarget && !isMobile) {
+      if (feedTarget) {
         setIsNotificationsPanelOpen(false);
         setIsSearchOpen(false);
         setIsMobileMenuOpen(false);
@@ -155,7 +158,6 @@ export function useNotificationNavigation({
       setViewedUserSummary,
       highlighting,
       handleFeedOverlayTargetChange,
-      isMobile,
     ],
   );
 

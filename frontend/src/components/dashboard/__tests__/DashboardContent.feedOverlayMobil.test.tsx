@@ -156,6 +156,12 @@ async function renderDashboard(isMobile: boolean) {
   await settle();
 }
 
+/** Klik na upozornenie – tak, ako ho volá panel aj celoobrazovková stránka upozornení. */
+async function clickNotification(targetUrl: string) {
+  act(() => routerProps().onNotificationNavigate?.(targetUrl));
+  await settle();
+}
+
 async function openOverlay(target: Parameters<OverlayApi['open']>[0]) {
   act(() => overlayApi().open(target));
   await settle();
@@ -163,6 +169,9 @@ async function openOverlay(target: Parameters<OverlayApi['open']>[0]) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Smerovač ako Next skutočne mení adresu: po zatvorení obrazovky sa modul zosúladí s adresou, na ktorú sa vrátil krok späť.
+  mockRouter.push.mockImplementation((url: string) => window.history.pushState(null, '', url));
+  mockRouter.replace.mockImplementation((url: string) => window.history.replaceState(null, '', url));
   __resetAuthBootstrapSnapshotForTests();
   resetFeedOverlayHistory();
   localStorage.clear();
@@ -278,5 +287,76 @@ describe('cieľ okna detailu príspevku podľa šírky obrazovky', () => {
     expect(obrazovkaProps().highlightCommentId).toBe(3);
     expect(currentUrl()).toBe('/dashboard/feed/8?comment=3');
     expect(window.history.length).toBe(dlzka);
+  });
+});
+
+describe('upozornenie na príspevok na mobile (krok 3a opravy A)', () => {
+  it('otvorí obrazovku detailu s číslom príspevku a komentárom, bez navigácie a bez zmeny modulu', async () => {
+    await renderDashboard(true);
+
+    await clickNotification('/dashboard/feed/42?comment=7');
+
+    expect(jeObrazovkaOtvorena()).toBe(true);
+    expect(jeOknoOtvorene()).toBe(false);
+    expect(obrazovkaProps().postId).toBe(42);
+    expect(obrazovkaProps().highlightCommentId).toBe(7);
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+    expect(routerProps().activeModule).toBe('home');
+    expect(currentUrl()).toBe('/dashboard/feed/42?comment=7');
+  });
+
+  it('bez komentára dostane obrazovka null', async () => {
+    await renderDashboard(true);
+
+    await clickNotification('/dashboard/feed/42');
+
+    expect(obrazovkaProps().postId).toBe(42);
+    expect(obrazovkaProps().highlightCommentId).toBeNull();
+  });
+
+  it('otvorená z iného modulu ostáva pod obrazovkou ten istý modul a po zatvorení sa naň vráti', async () => {
+    await renderDashboard(true);
+    await clickNotification('/dashboard/favorites');
+    expect(routerProps().activeModule).toBe('favorites');
+    mockRouter.push.mockClear();
+
+    await clickNotification('/dashboard/feed/42');
+    expect(jeObrazovkaOtvorena()).toBe(true);
+    expect(routerProps().activeModule).toBe('favorites');
+    expect(mockRouter.push).not.toHaveBeenCalled();
+
+    act(() => obrazovkaProps().onClose());
+    await settle();
+    await waitFor(() => expect(currentUrl()).toBe('/dashboard/favorites'));
+
+    expect(jeObrazovkaOtvorena()).toBe(false);
+    expect(routerProps().activeModule).toBe('favorites');
+  });
+
+  it('druhé upozornenie na iný príspevok pri otvorenej obrazovke ju prepne a nepridá ďalší záznam v histórii', async () => {
+    await renderDashboard(true);
+    await clickNotification('/dashboard/feed/42?comment=7');
+    const dlzka = window.history.length;
+
+    await clickNotification('/dashboard/feed/43');
+
+    expect(obrazovkaProps().postId).toBe(43);
+    expect(obrazovkaProps().highlightCommentId).toBeNull();
+    expect(currentUrl()).toBe('/dashboard/feed/43');
+    expect(window.history.length).toBe(dlzka);
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it('na počítači otvorí okno a nie obrazovku, rovnakým spôsobom', async () => {
+    await renderDashboard(false);
+
+    await clickNotification('/dashboard/feed/42?comment=7');
+
+    expect(jeOknoOtvorene()).toBe(true);
+    expect(jeObrazovkaOtvorena()).toBe(false);
+    expect(mockOknoProps?.postId).toBe(42);
+    expect(mockOknoProps?.highlightCommentId).toBe(7);
+    expect(mockRouter.push).not.toHaveBeenCalled();
   });
 });
