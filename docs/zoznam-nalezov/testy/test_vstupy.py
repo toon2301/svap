@@ -255,6 +255,7 @@ def test_fronta_prikazy_odmietnu_neznamy_nalez_a_neplatne_hodnoty(kopia):
     _zlyha(kopia, ['fronta', 'volne', '99999'], 'nie je vo fronte')
     _zlyha(kopia, ['fronta', 'po', '99999', '--po', n], 'nie je vo fronte')
     _zlyha(kopia, ['fronta', 'po', n, '--po', 'ZZZ'], "`po` odkazuje na neznáme ID 'ZZZ'")
+    _zlyha(kopia, ['fronta', 'po', n, '--po', '0%s' % _Z['fronta'][1]], "`po` odkazuje na neznáme ID '0")  # nekanonický tvar čísla
     _zlyha(kopia, ['fronta', 'po', n, '--po', n], 'závisí samo od seba')
 
 

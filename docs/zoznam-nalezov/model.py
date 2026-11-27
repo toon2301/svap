@@ -204,6 +204,14 @@ def _id_otvorenych(riadky):
     return ids
 
 
+def _je_cislo_nalezu(text):
+    """Má text kanonický tvar čísla nálezu: ASCII číslice bez úvodnej nuly (`'380'`; nie `'0380'`, `'٣٨٠'` ani `'²'`)?
+
+    Otvorené ID sa porovnávajú ako texty, takže `'0380'` by sa tvárilo ako existujúce, no nikdy by neblokovalo otvorený nález 380.
+    """
+    return text.isascii() and text.isdigit() and text[0] != '0'
+
+
 def _chyby_fronty(id_otvorenych, posledne_cislo=None, id_registra=(), zaznamy=None):
     """Overí frontu prác: ID sú otvorené nálezy (z ktorejkoľvek skupiny) bez opakovania, stav je vyplnený celý alebo vôbec,
     `caka` má tvar (kto, čo) a `po` odkazuje na existujúce nálezy, ktoré sú buď hotové, alebo skôr vo fronte."""
@@ -230,8 +238,15 @@ def _chyby_fronty(id_otvorenych, posledne_cislo=None, id_registra=(), zaznamy=No
             if not (isinstance(caka, (tuple, list)) and len(caka) == 2 and caka[0] in KTO_CAKA
                     and isinstance(caka[1], str) and caka[1].strip()):
                 chyby.append('fronta: %s: `caka` musí byť dvojica (kto, čo presne) s kto z %s a neprázdnym textom' % (n, sorted(KTO_CAKA)))
-        for zavislost in z.get('po', ()):
-            existuje = ((zavislost.isdigit() and posledne_cislo is not None and 1 <= int(zavislost) <= posledne_cislo)
+        po = z.get('po', ())
+        if not isinstance(po, (list, tuple)):
+            chyby.append('fronta: %s: `po` musí byť zoznam ID (textov)' % n)
+            po = ()
+        for zavislost in po:
+            if not isinstance(zavislost, str):
+                chyby.append('fronta: %s: `po` musí obsahovať ID ako text, nie %r' % (n, zavislost))
+                continue
+            existuje = ((_je_cislo_nalezu(zavislost) and posledne_cislo is not None and int(zavislost) <= posledne_cislo)
                         or zavislost in id_registra)
             if zavislost == n:
                 chyby.append('fronta: %s závisí samo od seba (`po`)' % n)

@@ -143,6 +143,25 @@ def test_zavislost_na_inej_polozke_musi_existovat_a_nesmie_byt_sama_sebou():
     assert 'samo od seba' in model._chyby_fronty({'1'}, 10, (), [_zaznam('1', po=['1'])])[0]
 
 
+@pytest.mark.parametrize('zavislost', ['0380', '00380', '٣٨٠', '²', ' 380', '380 ', '+380', '3.8', '-1', '0', '', 'OW-1x'])
+def test_nekanonicke_id_v_po_sa_odmietne_ako_neznamy_namiesto_ticheho_neblokovania(zavislost):
+    chyby = model._chyby_fronty({'380', '1'}, 381, ('OW-11',), [_zaznam('1', po=[zavislost])])
+    assert len(chyby) == 1 and 'neznáme ID' in chyby[0]
+
+
+def test_po_ktore_nie_je_zoznam_textov_je_chyba_a_nepadne():
+    for po in ('380', 380, None, [380], [None], [['380']]):
+        chyby = model._chyby_fronty({'380', '1'}, 381, (), [_zaznam('1', po=po)])
+        assert chyby and all('`po` musí' in c for c in chyby), (po, chyby)
+
+
+def test_kanonicke_cislo_v_po_blokuje_otvoreny_nalez_aj_pri_poradi_skor_vo_fronte():
+    fronta_prac = [_zaznam('380'), _zaznam('1', po=['380'])]
+    assert model._chyby_fronty({'380', '1'}, 381, (), fronta_prac) == []
+    assert dovod_blokovania(fronta_prac[1], {'380', '1'}) == 'čaká na dokončenie: 380'
+    assert prva_volna(fronta_prac, {'380', '1'})['n'] == '380'
+
+
 def test_otvorena_zavislost_musi_byt_vo_fronte_skor_a_hotova_je_vzdy_v_poriadku():
     otvorene = {'1', '2'}
     skor = [_zaznam('2'), _zaznam('1', po=['2'])]
