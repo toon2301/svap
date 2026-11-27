@@ -7,7 +7,8 @@ prepíše `ZOZNAM.md` a pri akejkoľvek chybe všetko vráti. Príkazy: `stav` (
 `rozhodnutie`. Dlhé texty sa dávajú v JSON súbore (`--json subor.json`, alebo `-` zo štandardného vstupu); príklady sú v
 `sablony/zapis/`. Pred ostrým zápisom sa dá použiť `--na-sucho` (pracuje v dočasnej kópii). Postup je v `POSTUP.md`.
 
-Návratový kód: 0 v poriadku, 1 model po zápise neprešiel kontrolou (zmeny sú vrátené), 2 neplatný vstup alebo stav, 3 neočakávaná chyba.
+Návratový kód: 0 v poriadku, 1 model po zápise neprešiel kontrolou (zmeny sú vrátené), 2 neplatný vstup alebo stav, 3 neočakávaná
+chyba alebo zmeny sa nepodarilo vrátiť (výpis povie, ktoré súbory a kde je záloha).
 """
 import argparse
 import atexit
@@ -21,8 +22,11 @@ from pathlib import Path
 PRIECINOK = Path(__file__).resolve().parent
 sys.path.insert(0, str(PRIECINOK))
 # Staré `.pyc` v `__pycache__` sa ignorujú: zdroj zmenený v tej istej sekunde a s rovnakou veľkosťou by sa inak načítal zo starého `.pyc`.
-sys.pycache_prefix = tempfile.mkdtemp(prefix='zapis-pyc-')
-atexit.register(shutil.rmtree, sys.pycache_prefix, ignore_errors=True)
+try:
+    sys.pycache_prefix = tempfile.mkdtemp(prefix='zapis-pyc-')
+    atexit.register(shutil.rmtree, sys.pycache_prefix, ignore_errors=True)
+except OSError:  # bez dočasného priečinka sa aspoň nezapisujú nové `.pyc`
+    sys.dont_write_bytecode = True
 
 import zapis_data  # noqa: E402
 import zapis_operacie as op  # noqa: E402
@@ -141,9 +145,9 @@ def hlavna(argumenty=None):
         return 0
     koren = None
     priecinok = PRIECINOK
-    if args.na_sucho:
-        koren, priecinok = zapis_transakcia.kopia_na_sucho(PRIECINOK)
     try:
+        if args.na_sucho:
+            koren, priecinok = zapis_transakcia.kopia_na_sucho(PRIECINOK)
         ds = zapis_data.Dataset(priecinok)
         spravy = _vykonaj_prikaz(args, ds, ctx)
         if not ds.zmeny():  # napr. poradie alebo závislosti, ktoré už takto zapísané sú
@@ -153,6 +157,9 @@ def hlavna(argumenty=None):
     except (ChybaVstupu, ChybaZdroja) as chyba:
         print('CHYBA vstupu: %s' % chyba)
         return 2
+    except zapis_transakcia.ChybaObnovy as chyba:
+        print(chyba)
+        return 3
     except zapis_transakcia.ChybaKontroly as chyba:
         print('Zmena nie je platná, nič sa nezapísalo:\n%s' % chyba)
         return 1

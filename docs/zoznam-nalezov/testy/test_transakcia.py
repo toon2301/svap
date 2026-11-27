@@ -5,6 +5,8 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -24,15 +26,27 @@ def _pokaz_frontu(ds):
     ds.nastav('fronta.py', Zdroj(pokazene, 'fronta.py'))
 
 
+def _zmen_tri_subory(kopia):
+    """`Dataset` s tromi zmenenými súbormi (len komentár na konci, model ho prijme)."""
+    ds = zapis_data.Dataset(kopia.priecinok)
+    for nazov in ('fronta.py', 'konstanty.py', 'stav.py'):
+        ds.nastav(nazov, Zdroj(ds.zdroj(nazov).text + '\n# zmena\n', nazov))
+    return ds
+
+
+def _neobnovene(pred, po):
+    return sorted(n for n in pred if po.get(n) != pred[n])
+
+
 def test_zmena_ktoru_model_odmietne_sa_vrati_aj_s_novym_suborom(kopia):
     ds = zapis_data.Dataset(kopia.priecinok)
     _pokaz_frontu(ds)
-    ds.vytvor('zaznamy_hotove_02.py', PRAZDNE_HOTOVE)
+    ds.vytvor('zaznamy_hotove_99.py', PRAZDNE_HOTOVE)
     pred = kopia.snimka()
     with pytest.raises(tr.ChybaKontroly, match='JASNÉ'):
         tr.vykonaj(ds)
     assert kopia.snimka() == pred
-    assert not (kopia.priecinok / 'zaznamy_hotove_02.py').exists()
+    assert not (kopia.priecinok / 'zaznamy_hotove_99.py').exists()
     assert kopia.build_check()[0] == 0
 
 
@@ -53,9 +67,7 @@ def test_zoznam_nalezov_sa_obnovi_aj_ked_ho_generator_stihol_prepisat(kopia, mon
 
 
 def test_prerusenie_pocas_zapisu_vrati_aj_uz_zapisane_subory(kopia, monkeypatch):
-    ds = zapis_data.Dataset(kopia.priecinok)
-    for nazov in ('fronta.py', 'konstanty.py', 'stav.py'):
-        ds.nastav(nazov, Zdroj(ds.zdroj(nazov).text + '\n# zmena\n', nazov))
+    ds = _zmen_tri_subory(kopia)
     pred = kopia.snimka()
     povodny_zapis, volania = tr._zapis, []
 
@@ -70,6 +82,103 @@ def test_prerusenie_pocas_zapisu_vrati_aj_uz_zapisane_subory(kopia, monkeypatch)
         tr.vykonaj(ds)
     monkeypatch.setattr(tr, '_zapis', povodny_zapis)
     assert kopia.snimka() == pred
+
+
+def test_prerusenie_po_skrateni_suboru_vrati_povodny_obsah_aj_tohto_suboru(kopia, monkeypatch):
+    ds = _zmen_tri_subory(kopia)
+    pred = kopia.snimka()
+    povodny_zapis, volania = tr._zapis, []
+
+    def trhajuci(cesta, text):
+        volania.append(cesta)
+        if len(volania) == 2:  # súbor sa už začal prepisovať (je skrátený) a zápis padne: dnes by ostal poškodený
+            cesta.write_text(text[:20], encoding='utf-8')
+            raise KeyboardInterrupt
+        povodny_zapis(cesta, text)
+
+    monkeypatch.setattr(tr, '_zapis', trhajuci)
+    with pytest.raises(KeyboardInterrupt):
+        tr.vykonaj(ds)
+    monkeypatch.setattr(tr, '_zapis', povodny_zapis)
+    assert kopia.snimka() == pred
+
+
+def test_zapis_cez_docasny_subor_pri_chybe_necha_povodny_subor_a_nezanecha_docasny(kopia, monkeypatch):
+    cesta = kopia.priecinok / 'fronta.py'
+    pred = cesta.read_bytes()
+
+    def zle_nahradenie(zdroj, ciel):
+        raise OSError('disk plný')
+
+    monkeypatch.setattr(tr.os, 'replace', zle_nahradenie)
+    with pytest.raises(OSError, match='disk plný'):
+        tr._zapis(cesta, 'NOVÝ OBSAH')
+    assert cesta.read_bytes() == pred
+    assert not list(kopia.priecinok.glob('*.tmp'))
+
+
+def test_uspesny_zapis_nezanecha_docasne_subory(kopia):
+    ds = zapis_data.Dataset(kopia.priecinok)
+    op.zmena(ds, op.nacitaj_kontext(), {'datum': '27. 11. 2026', 'text': 'Bez zvyškov.'})
+    tr.vykonaj(ds)
+    assert not list(kopia.priecinok.glob('*.tmp'))
+
+
+def test_chyba_obnovy_nezastavi_obnovu_ostatnych_suborov_a_povie_ktore_zlyhali(kopia, monkeypatch):
+    ds = _zmen_tri_subory(kopia)
+    pred = kopia.snimka()
+    monkeypatch.setattr(tr, 'spusti_build', lambda *a, **kw: (1, 'build zlyhal'))
+    povodny_zapis, volania = tr._zapis, []
+
+    def obnova_zlyha(cesta, text):
+        volania.append(cesta)
+        if len(volania) == 4:  # tri zápisy a prvý pokus o obnovu
+            raise OSError('disk plný')
+        povodny_zapis(cesta, text)
+
+    monkeypatch.setattr(tr, '_zapis', obnova_zlyha)
+    with pytest.raises(tr.ChybaObnovy) as vynimka:
+        tr.vykonaj(ds)
+    monkeypatch.setattr(tr, '_zapis', povodny_zapis)
+    sprava = str(vynimka.value)
+    neobnovene = _neobnovene(pred, kopia.snimka())
+    assert len(neobnovene) == 1, 'ostatné súbory sa mali obnoviť aj po chybe pri prvom'
+    assert neobnovene[0] in sprava and 'disk plný' in sprava and 'build zlyhal' in sprava and 'NEPODARILO SA VRÁTIŤ' in sprava
+    zaloha = Path(re.search(r'uložený v (\S+)\.', sprava).group(1))
+    try:
+        assert (zaloha / neobnovene[0]).read_bytes() == pred[neobnovene[0]]
+    finally:
+        shutil.rmtree(zaloha, ignore_errors=True)
+
+
+def test_chyba_pri_obnove_zoznamu_nezastavi_obnovu_ostatnych_suborov(kopia, monkeypatch):
+    ds = _zmen_tri_subory(kopia)
+    pred = kopia.snimka()
+
+    def pokazeny_build(priecinok, argumenty=()):
+        (priecinok / 'ZOZNAM.md').write_text('POŠKODENÝ VÝSTUP', encoding='utf-8')
+        return 1, 'generátor zlyhal'
+
+    monkeypatch.setattr(tr, 'spusti_build', pokazeny_build)
+    povodny_zapis = tr._zapis
+
+    def zoznam_nejde_obnovit(cesta, text):
+        if cesta.name == 'ZOZNAM.md':
+            raise OSError('zoznam je zamknutý')
+        povodny_zapis(cesta, text)
+
+    monkeypatch.setattr(tr, '_zapis', zoznam_nejde_obnovit)
+    with pytest.raises(tr.ChybaObnovy) as vynimka:
+        tr.vykonaj(ds)
+    monkeypatch.setattr(tr, '_zapis', povodny_zapis)
+    assert _neobnovene(pred, kopia.snimka()) == ['ZOZNAM.md']
+    sprava = str(vynimka.value)
+    assert 'ZOZNAM.md' in sprava and 'zoznam je zamknutý' in sprava
+    zaloha = Path(re.search(r'uložený v (\S+)\.', sprava).group(1))
+    try:
+        assert (zaloha / 'ZOZNAM.md').read_bytes() == pred['ZOZNAM.md']
+    finally:
+        shutil.rmtree(zaloha, ignore_errors=True)
 
 
 def test_operacia_ktora_nic_nezmenila_je_chyba_kontroly(kopia):
@@ -88,34 +197,37 @@ def test_uspesny_zapis_zapise_zmenene_subory_a_znovu_vygeneruje_zoznam(kopia):
     assert kopia.build_check()[0] == 0
 
 
-def test_kontrola_modelu_nevidi_stare_pyc_subory_ani_ked_zdroj_ma_rovnaky_cas_aj_velkost(kopia):
+def _zastarane_pyc_s_novym_datumom(kopia):
+    """Vytvorí `.pyc` a potom zmení dátum hlavičky v `stav.py` na iný text rovnakej dĺžky, pri rovnakom čase úpravy (staré `.pyc`
+    by sa tak zdalo platné). Vráti (nový dátum, prostredie bez zákazu zápisu `.pyc`)."""
     env = {k: v for k, v in os.environ.items() if k != 'PYTHONDONTWRITEBYTECODE'}
     beh = subprocess.run([sys.executable, 'build.py'], cwd=str(kopia.priecinok), env=env, capture_output=True, text=True)
     assert beh.returncode == 0 and (kopia.priecinok / '__pycache__').is_dir()
     stav_py = kopia.priecinok / 'stav.py'
     povodny = stav_py.stat()
     text = stav_py.read_text(encoding='utf-8')
-    nova = text.replace("datum='26. 11. 2026'", "datum='27. 11. 2026'", 1)
+    najdene = re.search(r"STAV = dict\(\s*datum='([^']+)'", text)
+    stary = najdene.group(1)
+    novy = stary[:-1] + ('1' if stary[-1] != '1' else '2')
+    nova = text[:najdene.start(1)] + novy + text[najdene.end(1):]
     assert nova != text and len(nova.encode()) == len(text.encode())
     stav_py.write_text(nova, encoding='utf-8')
-    os.utime(stav_py, ns=(povodny.st_atime_ns, povodny.st_mtime_ns))  # rovnaký čas úpravy a rovnaká veľkosť ako v starom `.pyc`
+    os.utime(stav_py, ns=(povodny.st_atime_ns, povodny.st_mtime_ns))
+    return novy, env
+
+
+def test_kontrola_modelu_nevidi_stare_pyc_subory_ani_ked_zdroj_ma_rovnaky_cas_aj_velkost(kopia):
+    novy, _env = _zastarane_pyc_s_novym_datumom(kopia)
     kod, vystup = tr.spusti_build(kopia.priecinok)
     assert kod == 0, vystup
-    assert '27. 11. 2026' in kopia.text('ZOZNAM.md')
+    assert novy in kopia.text('ZOZNAM.md')
 
 
 def test_skript_cita_aktualne_data_aj_ked_stare_pyc_vyzera_platne(kopia):
-    env = {k: v for k, v in os.environ.items() if k != 'PYTHONDONTWRITEBYTECODE'}
-    beh = subprocess.run([sys.executable, 'build.py'], cwd=str(kopia.priecinok), env=env, capture_output=True, text=True)
-    assert beh.returncode == 0 and (kopia.priecinok / '__pycache__').is_dir()
-    stav_py = kopia.priecinok / 'stav.py'
-    povodny = stav_py.stat()
-    text = stav_py.read_text(encoding='utf-8')
-    stav_py.write_text(text.replace("datum='26. 11. 2026'", "datum='27. 11. 2026'", 1), encoding='utf-8')
-    os.utime(stav_py, ns=(povodny.st_atime_ns, povodny.st_mtime_ns))
+    novy, env = _zastarane_pyc_s_novym_datumom(kopia)
     beh = subprocess.run([sys.executable, 'zapis.py', 'stav'], cwd=str(kopia.priecinok), env=env, capture_output=True, text=True, encoding='utf-8')
     assert beh.returncode == 0, beh.stdout + beh.stderr
-    assert 'Hlavička zoznamu: 27. 11. 2026' in beh.stdout
+    assert 'Hlavička zoznamu: %s' % novy in beh.stdout
 
 
 def test_suchy_beh_ma_vlastnu_kopiu_s_registrom_bez_obrazkov_a_testov(kopia):
@@ -131,6 +243,48 @@ def test_suchy_beh_ma_vlastnu_kopiu_s_registrom_bez_obrazkov_a_testov(kopia):
     assert not koren.exists()
 
 
+def test_suchy_beh_pri_zlyhani_kopirovania_zmaze_docasny_koren(kopia, monkeypatch):
+    def docasne():
+        return {p.name for p in Path(tempfile.gettempdir()).glob('zapis-na-sucho-*')}
+
+    pred = docasne()
+
+    def zlyhaj(*argumenty, **kw):
+        raise OSError('disk plný')
+
+    monkeypatch.setattr(tr.shutil, 'copytree', zlyhaj)
+    with pytest.raises(OSError, match='disk plný'):
+        tr.kopia_na_sucho(kopia.priecinok)
+    assert docasne() == pred
+
+
+def test_hlavna_vrati_kod_3_ked_zlyha_priprava_suchehu_behu(kopia, monkeypatch, capsys):
+    monkeypatch.setattr(sys, 'pycache_prefix', None, raising=False)  # import `zapis` nastavuje vlastnú predponu cache
+    import zapis
+
+    def zlyhaj(priecinok):
+        raise OSError('disk plný')
+
+    monkeypatch.setattr(zapis.zapis_transakcia, 'kopia_na_sucho', zlyhaj)
+    vstup = kopia.json('z.json', {'datum': '27. 11. 2026', 'text': 'x'})
+    assert zapis.hlavna(['--na-sucho', 'zmena', '--json', str(vstup)]) == 3
+    assert 'NEOČAKÁVANÁ CHYBA' in capsys.readouterr().out
+
+
+def test_hlavna_pri_chybe_obnovy_vypise_popis_a_vrati_kod_3(kopia, monkeypatch, capsys):
+    monkeypatch.setattr(sys, 'pycache_prefix', None, raising=False)
+    import zapis
+
+    def zlyhaj(ds):
+        raise tr.ChybaObnovy('NEPODARILO SA VRÁTIŤ ZMENY (skúška).')
+
+    monkeypatch.setattr(zapis.zapis_transakcia, 'vykonaj', zlyhaj)
+    vstup = kopia.json('z.json', {'datum': '27. 11. 2026', 'text': 'x'})
+    assert zapis.hlavna(['zmena', '--json', str(vstup)]) == 3
+    vystup = capsys.readouterr().out
+    assert 'NEPODARILO SA VRÁTIŤ ZMENY' in vystup and 'nič sa nezapísalo' not in vystup
+
+
 def test_zapisane_subory_maju_lf_a_utf8_bez_bom(kopia):
     u = kopia.udaje()
     n = next(n for n in u['otvorene'] if str(n) not in u['fronta'])
@@ -139,7 +293,7 @@ def test_zapisane_subory_maju_lf_a_utf8_bez_bom(kopia):
     for prikaz, vstup in vstupy:
         kod, vystup = kopia.zapis(prikaz, '--json', kopia.json(prikaz + '.json', vstup))
         assert kod == 0, vystup
-    for nazov in ('zaznamy_hotove_01.py', 'stav.py', 'polozky_povodne.py', 'ZOZNAM.md'):
+    for nazov in (kopia.posledny_zaznamovy('zaznamy_hotove'), 'stav.py', 'polozky_povodne.py', 'ZOZNAM.md'):
         data = (kopia.priecinok / nazov).read_bytes()
         assert b'\r' not in data and not data.startswith(b'\xef\xbb\xbf'), nazov
         data.decode('utf-8')

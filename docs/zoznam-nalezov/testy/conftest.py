@@ -93,6 +93,15 @@ class Kopia:
         assert navrat == 0, vystup
         return json.loads(vystup)
 
+    def zaznamovy(self, predpona):
+        """Súbor záznamov (`zaznamy_hotove_NN.py`, …), do ktorého skript zapíše ĎALŠÍ záznam; po naplnení súboru je to nový `…_NN.py`."""
+        import zapis_data
+        return zapis_data.Dataset(self.priecinok).najnovsi_zaznamovy(predpona)
+
+    def posledny_zaznamovy(self, predpona):
+        """Najnovší EXISTUJÚCI súbor záznamov danej predpony v kópii."""
+        return sorted(p.name for p in self.priecinok.glob('%s_[0-9][0-9].py' % predpona))[-1]
+
     def text(self, nazov):
         return (self.priecinok / nazov).read_text(encoding='utf-8')
 
