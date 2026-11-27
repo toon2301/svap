@@ -59,9 +59,10 @@ def test_stav_ukaze_polozky_cakajuce_na_zlucenie_a_na_rucny_test(kopia):
 def test_novy_nalez_dostane_dalsie_cislo_a_zoznam_sa_zostavi(kopia):
     u = kopia.udaje()
     pred = build(kopia)
+    cielovy = kopia.zaznamovy('zaznamy_nove')  # súbor, do ktorého skript zapíše ďalší záznam (po rotácii nie vždy `_01`)
     vystup = ok(kopia, 'novy', '--json', kopia.json('n.json', novy_vstup(u, co='jedinečný popis nálezu 7q')))
     assert '=> Pridelené číslo nálezu: %d' % (u['posledne'] + 1) in vystup
-    assert 'Zmenené súbory: zaznamy_nove_01.py.' in vystup
+    assert 'Zmenené súbory: %s.' % cielovy in vystup
     po = suhrn(vystup)
     assert (po['spolu'], po['pred']) == (pred['spolu'] + 1, pred['pred'] + 1)
     assert kopia.build_check()[0] == 0
@@ -157,8 +158,9 @@ def test_hotove_odstrani_nalez_aj_z_fronty_a_zo_vln(kopia):
 
 def test_hotove_s_cakajucim_rucnym_testom_vypise_pokyn_co_po_zlucenii(kopia):
     n = volny_nalez(kopia.udaje())
+    cielovy = kopia.zaznamovy('zaznamy_hotove')
     vystup = ok(kopia, 'hotove', '--json', kopia.json('h.json', hotove_vstup(n)))
-    assert 'zapísaný ako hotový do zaznamy_hotove_01.py (čaká na ručný test)' in vystup
+    assert 'zapísaný ako hotový do %s (čaká na ručný test)' % cielovy in vystup
     assert 'zapis.py zlucene --vetva K64' in vystup
     assert suhrn(vystup)['caka_zlucenie'] == 1
 
@@ -344,8 +346,9 @@ def test_zatvorenie_nalezu_rozhodnutim_ho_presunie_medzi_zatvorene(kopia):
     nove = 'R%d' % (len(u['rozhodnutia']) + 1)
     ok(kopia, 'rozhodnutie', '--json', kopia.json('r.json', rozhodnutie_vstup(odpoved='Majiteľ: nález sa neopravuje.', datum='27. 11. 2026')))
     vstup = {'n': n, 'rozhodnutie': nove, 'datum': '27. 11. 2026', 'text': 'ZATVORENÉ rozhodnutím %s: zámer.' % nove}
+    cielovy = kopia.zaznamovy('zaznamy_zatvorene')
     vystup = ok(kopia, 'zatvor', '--json', kopia.json('z.json', vstup))
-    assert 'zapísaný ako zatvorený rozhodnutím %s do zaznamy_zatvorene_01.py' % nove in vystup
+    assert 'zapísaný ako zatvorený rozhodnutím %s do %s' % (nove, cielovy) in vystup
     assert n not in kopia.udaje()['otvorene']
     zatvorene = kopia.vyhodnot('[d["n"] for d in zatvorene_dalsie.CLOSED_SINCE]', moduly='zatvorene_dalsie')
     assert n in zatvorene

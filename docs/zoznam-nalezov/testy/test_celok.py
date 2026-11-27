@@ -44,6 +44,11 @@ def _kontext(k0):
     return k
 
 
+def _cielovy_zaznamovy(predpona):
+    """Súbor záznamov, do ktorého skript zapíše ďalší záznam (po naplnení súboru aj nový `…_NN.py`), takže testy nepredpokladajú `_01`."""
+    return zapis_data.Dataset(ZDROJ).najnovsi_zaznamovy(predpona)
+
+
 # ---------------------------------------------------------------- pomôcky na porovnanie zdrojov
 def _cisla_prvkov(text):
     """Hodnoty `n` všetkých `dict(n=…)` v zoznamoch na úrovni modulu (v poradí) a kľúče slovníka `ORIG_OPEN`."""
@@ -142,14 +147,14 @@ def test_otvorene_nalezy_su_najdene_v_zdrojoch_a_pocet_zodpoveda_skupinam():
 def test_otvoreny_nalez_sa_da_presunut_do_hotovych_bez_poskodenia_zdrojov(kontext0, n):
     ds = zapis_data.Dataset(ZDROJ)
     op.hotove(ds, _kontext(kontext0), {'n': n, 'vetva': 'K64', 'zlucene': False, 'rucny_test': 'caka', 'text': 'HOTOVÉ test.'})
-    _over_uzavretie(ds.zmeny(), n, 'zaznamy_hotove_01.py')
+    _over_uzavretie(ds.zmeny(), n, _cielovy_zaznamovy('zaznamy_hotove'))
 
 
 @pytest.mark.parametrize('n', OTVORENE, ids=['n%d' % n for n in OTVORENE])
 def test_otvoreny_nalez_sa_da_zatvorit_rozhodnutim_bez_poskodenia_zdrojov(kontext0, n):
     ds = zapis_data.Dataset(ZDROJ)
     op.zatvor(ds, _kontext(kontext0), {'n': n, 'rozhodnutie': ODPOVEDANE[-1], 'datum': '27. 11. 2026', 'text': 'ZATVORENÉ test.'})
-    _over_uzavretie(ds.zmeny(), n, 'zaznamy_zatvorene_01.py')
+    _over_uzavretie(ds.zmeny(), n, _cielovy_zaznamovy('zaznamy_zatvorene'))
 
 
 class _PridajOdpoved(ast.NodeTransformer):
@@ -325,8 +330,15 @@ def test_kazda_sablona_ma_prikaz_a_ziadny_prikaz_nema_sablonu_navyse():
 
 
 # ---------------------------------------------------------------- rotácia súborov záznamov
+def _dalsi_subor(nazov):
+    """Názov nasledujúceho súboru záznamov: `zaznamy_nove_03.py` -> `zaznamy_nove_04.py`."""
+    return '%s%02d.py' % (nazov[:-5], int(nazov[-5:-3]) + 1)
+
+
 def test_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho_a_vsetky_sa_nacitaju(kopia):
-    riadkov = len(kopia.text('zaznamy_nove_01.py').splitlines())
+    najnovsi = kopia.posledny_zaznamovy('zaznamy_nove')
+    dalsi = _dalsi_subor(najnovsi)
+    riadkov = len(kopia.text(najnovsi).splitlines())
     env = {'ZAPIS_ROTACIA_RIADKOV': str(riadkov + 15)}
     u = kopia.udaje()
     vstup = {'skupina': 'P', 'dopad': 'S', 'zlozitost': 'S', 'balik': u['baliky']['P'][0], 'kratko': 'k', 'co': 'Čo.', 'poznamka': 'JASNÉ.', 'zdroj': 'z'}
@@ -335,12 +347,12 @@ def test_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho_a_vsetky_sa_nac
         kod, vystup = kopia.zapis('novy', '--json', kopia.json('n%d.json' % i, dict(vstup, co='Nález %d.' % i)), env=env)
         assert kod == 0, vystup
         vytvorene.append(u['posledne'] + 1 + i)
-        if (kopia.priecinok / 'zaznamy_nove_02.py').exists():
+        if (kopia.priecinok / dalsi).exists():
             break
     else:
-        pytest.fail('druhý súbor záznamov nevznikol')
-    assert len(vytvorene) >= 2 and kopia.text('zaznamy_nove_02.py').count('dict(n=') == 1
-    assert len(kopia.text('zaznamy_nove_01.py').splitlines()) > riadkov + 15
+        pytest.fail('nasledujúci súbor záznamov nevznikol')
+    assert len(vytvorene) >= 2 and kopia.text(dalsi).count('dict(n=') == 1
+    assert len(kopia.text(najnovsi).splitlines()) > riadkov + 15
     assert set(vytvorene) <= set(kopia.udaje()['otvorene']) and kopia.build_check()[0] == 0
 
     # nález zo staršieho aj z nového súboru sa dá uzavrieť
@@ -352,14 +364,16 @@ def test_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho_a_vsetky_sa_nac
 
 
 def test_hotove_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho(kopia):
-    riadkov = len(kopia.text('zaznamy_hotove_01.py').splitlines())
+    najnovsi = kopia.posledny_zaznamovy('zaznamy_hotove')
+    dalsi = _dalsi_subor(najnovsi)
+    riadkov = len(kopia.text(najnovsi).splitlines())
     env = {'ZAPIS_ROTACIA_RIADKOV': str(riadkov + 3)}
     u = kopia.udaje()
     volne = [n for n in u['otvorene'] if str(n) not in u['fronta']][:4]
     for n in volne:
         kod, vystup = kopia.zapis('hotove', '--json', kopia.json('h.json', {'n': n, 'vetva': 'K64', 'zlucene': False, 'text': 'HOTOVÉ.'}), env=env)
         assert kod == 0, vystup
-    assert (kopia.priecinok / 'zaznamy_hotove_02.py').exists()
+    assert (kopia.priecinok / dalsi).exists()
     kod, vystup = kopia.zapis('zlucene', '--vetva', 'K64', '--pr', '#350', env=env)  # označí položky v oboch súboroch
     assert kod == 0 and suhrn(vystup)['caka_zlucenie'] == 0
     assert all(d['zlucene'] for d in kopia.vyhodnot('[d for d in stav.DONE_SINCE if d["vetva"] == "K64"]'))
