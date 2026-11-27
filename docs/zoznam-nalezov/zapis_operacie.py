@@ -25,7 +25,8 @@ def nacitaj_kontext():
     m = model.zostav_model()
     return SimpleNamespace(
         model=model, m=m, posledne_cislo=m.posledne_cislo, otvorene_id=set(m.otvorene_id),
-        n_rozhodnuti=len(stav.DECISIONS), rozhodnutia_s_odpovedou={d['id'] for d in stav.DECISIONS if d.get('odpoved')},
+        n_rozhodnuti=len(stav.DECISIONS), rozhodnutia={d['id'] for d in stav.DECISIONS},
+        rozhodnutia_s_odpovedou={d['id'] for d in stav.DECISIONS if d.get('odpoved')},
         fronta=[dict(z) for z in fronta.FRONTA], hotove=[dict(d) for d in stav.DONE_SINCE],
         id_registra=model.id_z_registra(), baliky=model.PORADIE_BALIKOV)
 
@@ -146,7 +147,8 @@ def zatvor(ds, ctx, v):
     n = v['n']
     _over_otvoreny_cislo(ctx, n)
     if not isinstance(v['rozhodnutie'], str) or v['rozhodnutie'] not in ctx.rozhodnutia_s_odpovedou:
-        raise ChybaVstupu('rozhodnutie %r neexistuje alebo nemá odpoveď; najprv ho zapíš príkazom rozhodnutie' % (v['rozhodnutie'],))
+        raise ChybaVstupu('rozhodnutie %r neexistuje alebo nemá odpoveď; najprv ho zapíš príkazom rozhodnutie (odpoveď na existujúce '
+                          'rozhodnutie s poľom id, alebo nové rozhodnutie s odpoveďou)' % (v['rozhodnutie'],))
     text = _text(v, 'text')
     _prefix(text, 'ZATVORENÉ', 'text')
     spravy = _odstran_nalez_vsade(ds, n)
@@ -399,8 +401,31 @@ def zmena(ds, ctx, v):
     return ['Denník zmien: nový záznam z %s%s.' % (datum, ' a nový stav kódu v hlavičke' if 'kod' in v else '')]
 
 
+def _odpoved_na_rozhodnutie(ds, ctx, v):
+    """Odpoveď majiteľa na EXISTUJÚCE rozhodnutie `R<n>`: doplní `odpoved` a `datum` do jeho záznamu, nové číslo nevznikne."""
+    over_kluce(v, ['id', 'odpoved', 'datum'])
+    identifikator = v['id']
+    if not isinstance(identifikator, str) or identifikator not in ctx.rozhodnutia:
+        raise ChybaVstupu('rozhodnutie %r neexistuje (R1 až R%d)' % (identifikator, ctx.n_rozhodnuti))
+    if identifikator in ctx.rozhodnutia_s_odpovedou:
+        raise ChybaVstupu('rozhodnutie %s už má odpoveď; zapísaná odpoveď sa týmto príkazom neprepisuje' % identifikator)
+    odpoved, datum = _text(v, 'odpoved'), _kratky(v, 'datum', 40)
+    najdene = ds.najdi_dict(data.VZORY_ROZHODNUTIA, 'id', identifikator)
+    if najdene is None:
+        raise ChybaVstupu('záznam rozhodnutia %s sa v zdrojoch nenašiel' % identifikator)
+    nazov, zdroj, _uzol, _index, volanie = najdene
+    zdroj = zdroj.nastav_kw(volanie, 'odpoved', fmt.literal(odpoved, 16))
+    zdroj = zdroj.nastav_kw(zdroj.najdi_dict_volanie('id', identifikator)[2], 'datum', fmt.retazec(datum))
+    ds.nastav(nazov, zdroj)
+    ctx.rozhodnutia_s_odpovedou.add(identifikator)
+    return ['Rozhodnutie %s: odpoveď zapísaná do %s (dátum %s).' % (identifikator, nazov, datum)]
+
+
 def rozhodnutie(ds, ctx, v):
-    """Zapíše rozhodnutie majiteľa (alebo otázku, ak nemá odpoveď) s ďalším voľným číslom R<n>."""
+    """Zapíše rozhodnutie majiteľa (alebo otázku, ak nemá odpoveď) s ďalším voľným číslom R<n>; s poľom `id` zapíše odpoveď na
+    už existujúce rozhodnutie (bez nového čísla)."""
+    if 'id' in v:
+        return _odpoved_na_rozhodnutie(ds, ctx, v)
     over_kluce(v, ['tema', 'otazka', 'odporucanie', 'kedy'], ['odpoved', 'datum'])
     if bool(v.get('odpoved')) != bool(v.get('datum')):
         raise ChybaVstupu('odpoved a datum sa vypĺňajú spolu')
@@ -410,6 +435,7 @@ def rozhodnutie(ds, ctx, v):
     text = fmt.rozhodnutie(identifikator, _text(v, 'tema'), _text(v, 'otazka'), _text(v, 'odporucanie'), _text(v, 'kedy'), odpoved, datum)
     nazov = ds.pridaj_zaznam('zaznamy_rozhodnutia', text)
     ctx.n_rozhodnuti += 1
+    ctx.rozhodnutia.add(identifikator)
     if odpoved:
         ctx.rozhodnutia_s_odpovedou.add(identifikator)
     ctx.pridelene_rozhodnutie = identifikator

@@ -128,3 +128,22 @@ def test_nalez_vo_fronte_nemozno_pridat_znova_ani_po_odstraneni_a_vrateni_v_jedn
     op.fronta_pridaj(ds, ctx, {'n': n, 'davka': 'K1', 'co': 'c', 'preco': 'JASNÉ p', 'poradie': 1})
     with pytest.raises(op.ChybaVstupu, match='už vo fronte je'):
         op.fronta_pridaj(ds, ctx, {'n': n, 'davka': 'K1', 'co': 'c', 'preco': 'JASNÉ p'})
+
+
+def test_otazka_odpoved_a_zatvorenie_nalezu_v_jednom_zapise_vidia_zmeny_predosleho_kroku(kopia):
+    u = kopia.udaje()
+    ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
+    op.novy(ds, ctx, _novy(u))
+    nova = ctx.pridelene
+    op.rozhodnutie(ds, ctx, {'tema': 't', 'otazka': 'o?', 'odporucanie': 'od', 'kedy': 'k'})
+    r = ctx.pridelene_rozhodnutie
+    zatvor = {'n': nova, 'rozhodnutie': r, 'datum': '1. 12. 2026', 'text': 'ZATVORENÉ po odpovedi.'}
+    with pytest.raises(op.ChybaVstupu, match='neexistuje alebo nemá odpoveď'):
+        op.zatvor(ds, ctx, zatvor)  # kým otázka nemá odpoveď
+    op.rozhodnutie(ds, ctx, {'id': r, 'odpoved': 'Majiteľ: áno.', 'datum': '1. 12. 2026'})
+    with pytest.raises(op.ChybaVstupu, match='už má odpoveď'):
+        op.rozhodnutie(ds, ctx, {'id': r, 'odpoved': 'Majiteľ: nie.', 'datum': '2. 12. 2026'})  # odpoveď sa neprepisuje
+    op.zatvor(ds, ctx, zatvor)
+    tr.vykonaj(ds)
+    nove = kopia.udaje()
+    assert nova not in nove['otvorene'] and r in nove['rozhodnutia_s_odpovedou'] and nove['rozhodnutia'][-1] == r

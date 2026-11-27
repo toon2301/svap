@@ -39,6 +39,7 @@ def _kontext(k0):
     k.otvorene_id = set(k0.otvorene_id)
     k.fronta = [dict(z) for z in k0.fronta]
     k.hotove = [dict(d) for d in k0.hotove]
+    k.rozhodnutia = set(k0.rozhodnutia)
     k.rozhodnutia_s_odpovedou = set(k0.rozhodnutia_s_odpovedou)
     return k
 
@@ -149,6 +150,34 @@ def test_otvoreny_nalez_sa_da_zatvorit_rozhodnutim_bez_poskodenia_zdrojov(kontex
     ds = zapis_data.Dataset(ZDROJ)
     op.zatvor(ds, _kontext(kontext0), {'n': n, 'rozhodnutie': ODPOVEDANE[-1], 'datum': '27. 11. 2026', 'text': 'ZATVORENÉ test.'})
     _over_uzavretie(ds.zmeny(), n, 'zaznamy_zatvorene_01.py')
+
+
+class _PridajOdpoved(ast.NodeTransformer):
+    """Doplní do `dict(id='<id>', …)` kľúče `odpoved` a `datum` (ostatné ostane nedotknuté)."""
+
+    def __init__(self, identifikator, odpoved, datum):
+        self.identifikator, self.odpoved, self.datum = identifikator, odpoved, datum
+
+    def visit_Call(self, uzol):
+        if isinstance(uzol.func, ast.Name) and uzol.func.id == 'dict' and any(
+                k.arg == 'id' and isinstance(k.value, ast.Constant) and k.value.value == self.identifikator for k in uzol.keywords):
+            uzol.keywords += [ast.keyword(arg='odpoved', value=ast.Constant(self.odpoved)), ast.keyword(arg='datum', value=ast.Constant(self.datum))]
+        return self.generic_visit(uzol)
+
+
+NEZODPOVEDANE = [d['id'] for d in stav.DECISIONS if not d.get('odpoved')]
+
+
+@pytest.mark.parametrize('identifikator', NEZODPOVEDANE)
+def test_kazde_nezodpovedane_rozhodnutie_sa_da_zodpovedat_bez_poskodenia_zdrojov(kontext0, identifikator):
+    ds = zapis_data.Dataset(ZDROJ)
+    op.rozhodnutie(ds, _kontext(kontext0), {'id': identifikator, 'odpoved': "Majiteľ: súhlas, it's | ok.", 'datum': '27. 11. 2026'})
+    zmeny = ds.zmeny()
+    assert len(zmeny) == 1, 'odpoveď má zmeniť jediný súbor'
+    stary, novy = next(iter(zmeny.values()))
+    ocakavany = _PridajOdpoved(identifikator, "Majiteľ: súhlas, it's | ok.", '27. 11. 2026').visit(ast.parse(stary))
+    assert ast.dump(ocakavany) == ast.dump(ast.parse(novy))
+    assert novy.count('\n') >= stary.count('\n') + 2
 
 
 # ---------------------------------------------------------------- vzorka cez celý zápis s kontrolou modelu
@@ -280,8 +309,11 @@ def test_vzorove_vstupy_su_platne_pre_prikaz_na_ktory_su_urcene(kopia, nazov):
         vstup['n'] = volny  # vzor ukazuje číslo, ktoré sa časom uzavrie: dosadí sa otvorený nález
     if nazov == 'fronta-pridaj.json':
         vstup['n'] = str(volny)
+    if nazov == 'rozhodnutie-odpoved.json':
+        vstup['id'] = next(r for r in u['rozhodnutia'] if r not in u['rozhodnutia_s_odpovedou'])  # vzor ukazuje budúce číslo R<n>
     prikaz = {'novy.json': ['novy'], 'hotove.json': ['hotove'], 'zatvor.json': ['zatvor'], 'zmena.json': ['zmena'],
-              'rozhodnutie.json': ['rozhodnutie'], 'fronta-pridaj.json': ['fronta', 'pridaj']}[nazov]
+              'rozhodnutie.json': ['rozhodnutie'], 'rozhodnutie-odpoved.json': ['rozhodnutie'],
+              'fronta-pridaj.json': ['fronta', 'pridaj']}[nazov]
     pred = kopia.snimka()
     kod, vystup = kopia.zapis('--na-sucho', *prikaz, '--json', kopia.json('v.json', vstup))
     assert kod == 0, vystup
@@ -289,7 +321,7 @@ def test_vzorove_vstupy_su_platne_pre_prikaz_na_ktory_su_urcene(kopia, nazov):
 
 
 def test_kazda_sablona_ma_prikaz_a_ziadny_prikaz_nema_sablonu_navyse():
-    assert sorted(p.stem for p in SABLONY.glob('*.json')) == ['fronta-pridaj', 'hotove', 'novy', 'rozhodnutie', 'zatvor', 'zmena']
+    assert sorted(p.stem for p in SABLONY.glob('*.json')) == ['fronta-pridaj', 'hotove', 'novy', 'rozhodnutie', 'rozhodnutie-odpoved', 'zatvor', 'zmena']
 
 
 # ---------------------------------------------------------------- rotácia súborov záznamov

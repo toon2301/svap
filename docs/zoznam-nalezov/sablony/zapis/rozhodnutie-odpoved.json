@@ -1,0 +1,6 @@
+{
+  "_poznamka": "UKÁŽKA pre príkaz rozhodnutie v režime odpovede: id je EXISTUJÚCE rozhodnutie bez odpovede (napr. otázka, ktorú agent zapísal skôr). Číslo sa nemení, do záznamu sa len doplní odpoved a datum. Bez id sa zakladá nové rozhodnutie (vzor rozhodnutie.json).",
+  "id": "R85",
+  "odpoved": "Majiteľ 27. 11. 2026: čo odpovedal.",
+  "datum": "27. 11. 2026"
+}

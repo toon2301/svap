@@ -113,6 +113,7 @@ class Dataset:
 # Vzory súborov, v ktorých sa hľadajú otvorené nálezy a hotové položky.
 VZORY_OTVORENE_NOVE = ['polozky_nove*.py', 'zaznamy_nove_[0-9][0-9].py']
 VZORY_HOTOVE = ['hotove*.py', 'zaznamy_hotove_[0-9][0-9].py']
+VZORY_ROZHODNUTIA = ['stav.py', 'rozhodnutia_*.py', 'zaznamy_rozhodnutia_[0-9][0-9].py']  # R1 až R12 sú v `stav.py`
 
 
 def odstran_otvoreny_nalez(ds, n):

@@ -298,6 +298,46 @@ def test_rozhodnutie_s_odpovedou_je_hned_zodpovedane(kopia):
     assert nove in kopia.udaje()['rozhodnutia_s_odpovedou']
 
 
+def test_odpoved_na_zapisanu_otazku_nevytvori_nove_cislo_a_doplni_len_odpoved_a_datum(kopia):
+    ok(kopia, 'rozhodnutie', '--json', kopia.json('r.json', rozhodnutie_vstup()))
+    pred = kopia.udaje()
+    nove = pred['rozhodnutia'][-1]
+    assert nove not in pred['rozhodnutia_s_odpovedou'] and '%s (Skúšobná téma)' % nove in ok(kopia, 'stav')
+    odpoved = "Majiteľ: áno, it's ok | a"
+    vystup = ok(kopia, 'rozhodnutie', '--json', kopia.json('o.json', {'id': nove, 'odpoved': odpoved, 'datum': '27. 11. 2026'}))
+    assert 'odpoveď zapísaná' in vystup and 'Pridelené rozhodnutie' not in vystup
+    po = kopia.udaje()
+    assert po['rozhodnutia'] == pred['rozhodnutia'] and nove in po['rozhodnutia_s_odpovedou']
+    zaznam = kopia.vyhodnot("[d for d in stav.DECISIONS if d['id'] == '%s'][0]" % nove)
+    assert (zaznam['odpoved'], zaznam['datum'], zaznam['tema']) == (odpoved, '27. 11. 2026', 'Skúšobná téma')
+    assert '%s (Skúšobná téma)' % nove not in ok(kopia, 'stav') and kopia.build_check()[0] == 0
+
+
+def test_odpoved_na_stare_rozhodnutie_zo_stav_py_prida_len_dva_kluce_a_zvysok_ostane(kopia):
+    u = kopia.udaje()
+    stare = next(r for r in u['rozhodnutia'] if r not in u['rozhodnutia_s_odpovedou'])
+    pred = kopia.vyhodnot("[d for d in stav.DECISIONS if d['id'] == '%s'][0]" % stare)
+    riadkov = kopia.text('stav.py').count('\n')
+    ok(kopia, 'rozhodnutie', '--json', kopia.json('o.json', {'id': stare, 'odpoved': 'Majiteľ: súhlas.', 'datum': '27. 11. 2026'}))
+    po = kopia.vyhodnot("[d for d in stav.DECISIONS if d['id'] == '%s'][0]" % stare)
+    assert po == dict(pred, odpoved='Majiteľ: súhlas.', datum='27. 11. 2026')
+    assert kopia.text('stav.py').count('\n') == riadkov + 2
+    assert stare in kopia.udaje()['rozhodnutia_s_odpovedou'] and kopia.build_check()[0] == 0
+
+
+def test_rozhodnutie_zodpovedane_dodatocne_sa_da_pouzit_pri_zatvoreni_nalezu(kopia):
+    u = kopia.udaje()
+    n = volny_nalez(u)
+    ok(kopia, 'rozhodnutie', '--json', kopia.json('r.json', rozhodnutie_vstup()))
+    nove = kopia.udaje()['rozhodnutia'][-1]
+    zatvor = kopia.json('z.json', {'n': n, 'rozhodnutie': nove, 'datum': '27. 11. 2026', 'text': 'ZATVORENÉ rozhodnutím %s.' % nove})
+    kod, vystup = kopia.zapis('zatvor', '--json', zatvor)
+    assert kod == 2 and 'odpoveď na existujúce rozhodnutie' in vystup  # kým otázka nemá odpoveď
+    ok(kopia, 'rozhodnutie', '--json', kopia.json('o.json', {'id': nove, 'odpoved': 'Majiteľ: zatvoriť.', 'datum': '27. 11. 2026'}))
+    ok(kopia, 'zatvor', '--json', zatvor)
+    assert n not in kopia.udaje()['otvorene']
+
+
 def test_zatvorenie_nalezu_rozhodnutim_ho_presunie_medzi_zatvorene(kopia):
     u = kopia.udaje()
     n = volny_nalez(u)

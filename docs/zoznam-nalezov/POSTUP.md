@@ -36,7 +36,8 @@ Postup vznikol z odpovede majiteľa z 26. 11. 2026 (body 1 až 5 s doplneniami).
    - zlúčenie predošlej vetvy: `zapis.py zlucene --vetva K<n-1> --pr '#…' --merge <hash> --cas '…'`;
    - výsledok ručného testu z majiteľovej správy: `zapis.py rucny-test --vetva K<n-1> --vysledok prešiel|neprešiel --datum '…'`;
    - nové nálezy z ručného testu a z kontroly: `zapis.py novy --json …` (filter v časti 6); pri `neprešiel` ide oprava ako prvá;
-   - odpovede majiteľa na rozhodnutia: `zapis.py rozhodnutie` (odpoveď), prípadne `zatvor`.
+   - odpovede majiteľa na rozhodnutia: `zapis.py rozhodnutie --json` s poľom `id` existujúceho rozhodnutia (vzor
+     `sablony/zapis/rozhodnutie-odpoved.json`): doplní `odpoved` a `datum` k `R<n>`, nové číslo nevznikne; potom prípadne `zatvor`.
 4. **Potom si vezmi ďalšiu dostupnú dávku:** prvú **voľnú** položku fronty (nie slepo prvú): položka s „čaká na majiteľa“, „čaká na Codexa“
    alebo „čaká na dokončenie“ sa preskakuje. Dávku tvoria voľné položky s rovnakým označením `davka`.
 5. Ak nie je voľná žiadna položka, nezačínaj prácu: napíš majiteľovi, na čo všetko fronta čaká.
@@ -73,13 +74,13 @@ v súbore JSON (`--json subor.json`, alebo `-` zo štandardného vstupu); vzory 
 | `zlucene --vetva K<n> [--pr … --merge … --cas …]` | Označí hotové položky vetvy ako zlúčené a pripíše údaje o zlúčení. |
 | `rucny-test --vetva K<n> --vysledok prešiel\|neprešiel --datum …` | Zapíše výsledok ručného testu; pri `neprešiel` ostáva dávka neuzavretá. |
 | `zatvor --json` | Zatvorí nález rozhodnutím majiteľa (rozhodnutie musí mať odpoveď). |
-| `rozhodnutie --json` | Nové rozhodnutie `R<n>`, s odpoveďou alebo ako otázka majiteľovi. |
+| `rozhodnutie --json` | Bez `id`: nové rozhodnutie `R<n>`, s odpoveďou alebo ako otázka majiteľovi. S `id`: odpoveď na už zapísané rozhodnutie (doplní `odpoved` a `datum`, číslo sa nemení, zapísanú odpoveď neprepíše). |
 | `fronta pridaj\|odstran\|presun\|caka\|volne\|po` | Úprava poradia: pridanie, odstránenie, presun (`--na`), čakanie na majiteľa alebo Codexa (`--kto`, `--text`), voľné, závislosti (`--po`). |
 | `zmena --json` | Dátum a stav kódu v hlavičke a nový záznam v denníku zmien (najnovší hore). |
 
 `--na-sucho` (pred príkazom) vyskúša zmenu v dočasnej kópii a nič nezapíše. Návratový kód: **0** v poriadku (aj „Bez zmeny“), **1** model
 po zápise neprešiel kontrolou (všetko je vrátené, výpis ukáže prečo), **2** neplatný vstup alebo stav (nič sa nezapísalo), **3** neočakávaná
-chyba (nič sa nezapísalo; nahlás ju majiteľovi). Ak skript niečo nevie (napr. zatvorenie ID z registra `OW-…`, ktoré sa robí ručne podľa
+chyba (nič sa nezapísalo; nahlás ju majiteľovi) alebo sa zmeny nepodarilo vrátiť (výpis povie, ktoré súbory a kde je záloha; obnov ich z gitu). Ak skript niečo nevie (napr. zatvorenie ID z registra `OW-…`, ktoré sa robí ručne podľa
 `README.md`, časť „Ako aktualizovať“), upraví sa ručne a `build.py` skontroluje výsledok.
 
 Testy skriptu: `python -m pytest docs/zoznam-nalezov/testy -q` (potrebujú `pytest`, trvajú asi 2 minúty, bežia na kópii skutočných dát a nie sú v CI). Spusti ich pri
@@ -129,8 +130,12 @@ ručný test, majiteľ ho urobil a **prešiel** (`rucny-test --vysledok prešiel
   zozname, E2E alebo refaktore chránenom testami. Vyžadovaný test označ pri `hotove` poľom `rucny_test: "caka"`; kým je `caka` alebo
   `neprešiel`, položka je v zozname označená a v počtoch vedená osobitne („čaká na ručný test“).
 - **`neprešiel`:** dávka ostáva neuzavretá. Čo test odhalil, sa zapíše ako nové nálezy (`novy`; číslo uveď v poznámke k výsledku) a ide ako
-  prvé na rad (`fronta … --na 1`); po oprave sa test zopakuje.
+  prvé na rad (`fronta … --na 1`); po oprave sa test zopakuje (opravnú dávku zlučuje majiteľ podľa výnimky nižšie).
 - Ďalší agent smie začať po **zlúčení** predošlej vetvy (časť 2), no majiteľ zlúči jeho PR až po úspešnom ručnom teste predošlej dávky.
+  **Výnimka: opravná dávka.** PR, ktorý opravuje nálezy z neprešlého ručného testu, sa zlučuje aj pred opakovaním testu: test sa dá
+  zopakovať až po nasadení opravy, takže inak by sa postup zablokoval. Po nasadení opravy majiteľ test zopakuje a až potom sa zapíše
+  `prešiel` pre pôvodnú aj pre opravnú dávku (`rucny-test --vetva … --vysledok prešiel` pre každú). Ak test neprejde znova, platí to isté
+  znova. Pre dávky, ktoré s neprešlým testom nesúvisia, zákaz zlúčenia pred úspešným testom platí.
 
 ## 9. Kedy sa zastav a pýtaj majiteľa
 

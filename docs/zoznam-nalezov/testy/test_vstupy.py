@@ -149,6 +149,17 @@ PRIPADY_ROZHODNUTIE = [
     ('otázka nie je text', _rozhodnutie(otazka=[1]), 'pole otazka musí byť text'),
 ]
 
+PRIPADY_ODPOVED = [
+    ('neexistujúce rozhodnutie', {'id': 'R99999', 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neexistuje (R1 až R'),
+    ('id nie je text', {'id': 5, 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neexistuje (R1 až R'),
+    ('rozhodnutie už má odpoveď', {'id': _Z['zodpovedane'][0], 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'už má odpoveď'),
+    ('chýba dátum', {'id': _Z['nezodpovedane'][0], 'odpoved': 'áno'}, 'chýbajú polia: datum'),
+    ('chýba odpoveď', {'id': _Z['nezodpovedane'][0], 'datum': '1. 1. 2027'}, 'chýbajú polia: odpoved'),
+    ('okrem odpovede aj téma', {'id': _Z['nezodpovedane'][0], 'tema': 'x', 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neznáme polia: tema'),
+    ('prázdna odpoveď', {'id': _Z['nezodpovedane'][0], 'odpoved': '  ', 'datum': '1. 1. 2027'}, 'pole odpoved je prázdne'),
+    ('dlhý dátum', {'id': _Z['nezodpovedane'][0], 'odpoved': 'áno', 'datum': 'd' * 41}, 'najviac 40'),
+]
+
 PRIPADY_ZMENA = [
     ('chýba text', {'datum': '1. 1. 2027'}, 'chýbajú polia: text'),
     ('kod nie je text', {'datum': '1. 1. 2027', 'text': 'x', 'kod': 5}, 'pole kod musí byť text'),
@@ -192,6 +203,11 @@ def test_zatvor_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ROZHODNUTIE))
 def test_rozhodnutie_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    _zlyha(kopia, ['rozhodnutie', '--json', kopia.json('v.json', vstup)], ocakavane)
+
+
+@pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ODPOVED))
+def test_odpoved_na_rozhodnutie_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
     _zlyha(kopia, ['rozhodnutie', '--json', kopia.json('v.json', vstup)], ocakavane)
 
 
@@ -337,6 +353,7 @@ def _kontext(k0):
     k.otvorene_id = set(k0.otvorene_id)
     k.fronta = [dict(z) for z in k0.fronta]
     k.hotove = [dict(d) for d in k0.hotove]
+    k.rozhodnutia = set(k0.rozhodnutia)
     k.rozhodnutia_s_odpovedou = set(k0.rozhodnutia_s_odpovedou)
     return k
 
@@ -376,9 +393,10 @@ def test_hotove_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kon
 @pytest.mark.parametrize('funkcia, vstup', [
     (op.zatvor, _zatvor()),
     (op.rozhodnutie, _rozhodnutie(odpoved='áno', datum='1. 1. 2027')),
+    (op.rozhodnutie, {'id': _Z['nezodpovedane'][0], 'odpoved': 'áno', 'datum': '1. 1. 2027'}),
     (op.zmena, {'datum': '1. 1. 2027', 'text': 'x', 'kod': 'y'}),
     (op.fronta_pridaj, _pridaj(po=['380'], caka=['Codex', 'x'])),
-], ids=['zatvor', 'rozhodnutie', 'zmena', 'fronta_pridaj'])
+], ids=['zatvor', 'rozhodnutie', 'odpoved_na_rozhodnutie', 'zmena', 'fronta_pridaj'])
 def test_ostatne_prikazy_s_nezmyselnymi_hodnotami_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0, funkcia, vstup):
     for v in _kazde_pole(vstup):
         _vyskusaj(funkcia, kontext0, v)
