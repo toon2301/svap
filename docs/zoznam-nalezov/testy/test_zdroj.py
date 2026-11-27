@@ -335,3 +335,51 @@ def test_pripojenie_kusku_k_hodnote_ktora_nie_je_retazec_vyhodi_chybu():
     z = Zdroj('X = [dict(n=1, text=5)]\n')
     with pytest.raises(ChybaZdroja, match='nie je reťazec'):
         z.pridaj_kusok_retazca(Zdroj.kw(z.priradenie('X').elts[0], 'text').value, 'a')
+
+
+# ---------------------------------------------------------------- nálezy bota (PR 345): komentáre a úvodzovky
+def test_vlozenie_na_koniec_ignoruje_ciarku_v_komentari_za_poslednym_prvkom():
+    z = Zdroj('X = [\n    dict(n=1)  # poznámka, pokračovanie\n]\n')
+    novy = z.vloz_na_koniec_zoznamu(z.priradenie('X'), '    dict(n=2),\n')
+    assert novy.text == 'X = [\n    dict(n=1),  # poznámka, pokračovanie\n    dict(n=2),\n]\n'
+    assert _cisla(novy, 'X') == [1, 2]
+
+
+def test_vlozenie_na_koniec_dopise_ciarku_aj_ked_komentar_je_na_dalsom_riadku():
+    z = Zdroj('X = [\n    dict(n=1)\n    # komentár, s čiarkou\n]\n')
+    novy = z.vloz_na_koniec_zoznamu(z.priradenie('X'), '    dict(n=2),\n')
+    assert novy.text == 'X = [\n    dict(n=1),\n    # komentár, s čiarkou\n    dict(n=2),\n]\n'
+
+
+def test_vlozenie_na_koniec_nepridava_druhu_ciarku_ked_oddelovac_uz_je_a_komentar_ma_dalsiu():
+    z = Zdroj('X = [\n    dict(n=1),  # a, b\n]\n')
+    novy = z.vloz_na_koniec_zoznamu(z.priradenie('X'), '    dict(n=2),\n')
+    assert novy.text == 'X = [\n    dict(n=1),  # a, b\n    dict(n=2),\n]\n'
+
+
+def test_pripojenie_kusku_k_viacriadkovemu_retazcu_v_dvojitych_uvodzovkach():
+    text = 'X = [\n    dict(n=1,\n         text="prvá časť it\'s "\n              "druhá časť"),\n]\n'
+    z = Zdroj(text)
+    uzol = Zdroj.kw(z.priradenie('X').elts[0], 'text').value
+    novy = z.pridaj_kusok_retazca(uzol, 'ZLÚČENÉ.')
+    assert novy.text == text.replace('"druhá časť"),', '"druhá časť"\n              \' ZLÚČENÉ.\'),')
+    assert _hodnota(novy) == "prvá časť it's druhá časť ZLÚČENÉ."
+
+
+def test_pripojenie_kusku_zachova_odsadenie_tabulatormi_a_nehlada_uvodzovku_v_texte():
+    text = "X = [\n\tdict(n=1,\n\t     text='a'\n\t\t\t\"b ' c\"),\n]\n"
+    z = Zdroj(text)
+    uzol = Zdroj.kw(z.priradenie('X').elts[0], 'text').value
+    novy = z.pridaj_kusok_retazca(uzol, 'd')
+    assert novy.text.splitlines()[-2] == "\t\t\t' d'),"
+    assert _hodnota(novy) == "ab ' c d"
+
+
+def test_pripojenie_kusku_k_jednoriadkovemu_retazcu_odsadi_podla_znakov_nie_bajtov():
+    text = "X = [\n    dict(a='ľščťž', text='HOTOVÉ.'),\n]\n"
+    z = Zdroj(text)
+    uzol = Zdroj.kw(z.priradenie('X').elts[0], 'text').value
+    novy = z.pridaj_kusok_retazca(uzol, 'ZLÚČENÉ.')
+    prvy_riadok = text.splitlines()[1]
+    odsadenie = len(novy.text.splitlines()[2]) - len(novy.text.splitlines()[2].lstrip(' '))
+    assert odsadenie == prvy_riadok.index("'HOTOVÉ.'")

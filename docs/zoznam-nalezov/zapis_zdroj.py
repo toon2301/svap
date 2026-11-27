@@ -9,6 +9,7 @@ chybu skôr, než sa zapíše na disk). Ak má miesto neočakávaný tvar, vyhod
 poškodil dáta.
 """
 import ast
+import re
 
 
 class ChybaZdroja(Exception):
@@ -179,7 +180,7 @@ class Zdroj:
         cast = self
         if uzol_zoznamu.elts:
             posledny_koniec = self.rozsah(uzol_zoznamu.elts[-1])[1]
-            medzi = b[posledny_koniec:zatvorka]
+            medzi = re.sub(rb'#[^\n]*', b'', b[posledny_koniec:zatvorka])  # čiarka v komentári nie je oddeľovač
             if b',' not in medzi:
                 cast = self._nahrad(posledny_koniec, posledny_koniec, ',')
                 zatvorka += 1
@@ -230,11 +231,11 @@ class Zdroj:
             raise ChybaZdroja('%s: hodnota nie je reťazec' % self.nazov)
         od, do = self.rozsah(uzol_retazca)
         prvy_riadok = self._zaciatok_riadku(od)
-        if uzol_retazca.end_lineno > uzol_retazca.lineno:
+        if uzol_retazca.end_lineno > uzol_retazca.lineno:  # odsadenie druhého riadka literálu, nech v ňom začína akýkoľvek druh úvodzoviek
             druhy = self._poz(uzol_retazca.lineno + 1, 0)
-            odsadenie = self._b[druhy:self._b.find(b"'", druhy)].decode('utf-8')
-            if odsadenie.strip():
-                raise ChybaZdroja('%s: nečakané odsadenie pokračovania reťazca' % self.nazov)
+            koniec_riadka = self._b.find(b'\n', druhy)
+            riadok = self._b[druhy:koniec_riadka if koniec_riadka >= 0 else len(self._b)]
+            odsadenie = riadok[:len(riadok) - len(riadok.lstrip(b' \t'))].decode('utf-8')
         else:
-            odsadenie = ' ' * (od - prvy_riadok)
+            odsadenie = ' ' * len(self._b[prvy_riadok:od].decode('utf-8'))  # počet znakov, nie bajtov
         return self._nahrad(do, do, "\n%s'%s'" % (odsadenie, ' ' + kusok))
