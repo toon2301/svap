@@ -36,6 +36,17 @@ from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
     ('28. 11. 2026',
+      'Vetva 215, štvrté kolo pripomienok na PR #345 (Codex, jedno vlákno P1, oprávnené; len docstringy, správanie kódu sa '
+      'nemení). Pravidlá projektu (`.cursor/rules/svaply.mdc`, časť „Dokumentácia Python kódu“) žiadajú zmysluplný docstring '
+      'pri každej novej alebo upravenej funkcii, metóde a triede (cieľ 80 %). Meranie cez AST ukázalo, že nové a upravené '
+      'Python súbory vetvy mali docstring len pri 166 zo 434 (38 %): výrobné moduly skriptu 83 zo 101, pomôcky a testy 33 z '
+      '283. Dopísaných je 268 docstringov (18 vo výrobných moduloch `zapis*.py`, 14 v pomôckach testov a 236 v testoch), '
+      'pokrytie týchto súborov je teraz 434 zo 434. Docstringy opisujú, čo test overuje a prečo (nie len názov testu); pri '
+      'regresných testoch k nálezom botov to uvádzajú. Vkladanie robil jednorazový skript, ktorý pre každý súbor dokázal, že '
+      'AST bez docstringov je pred zmenou a po nej rovnaké (zmenili sa len docstringy, nič sa neodstránilo). Pokrytie '
+      'docstringami sa v repozitári aj naďalej nemeria (nález 242); stráženie v CI alebo testom nechávam na rozhodnutie '
+      'majiteľa.'),
+    ('28. 11. 2026',
       'Vetva 215, tretie kolo pripomienok CodeRabbitu na PR #345 (jedno vlákno, Minor, oprávnené; len hlavička zoznamu). '
       'Hlavička stavu kódu uvádzala, že vetva 214 čaká na PR, hoci PR #342 je zlúčený (merge `e591c4ac`) a denník zmien ho už '
       'uvádza; zároveň ukazovala starý `main` `8afe1fd6`. Opravené príkazom `zapis.py zmena` s poľom `kod`: `main` `6b1419d5` '
