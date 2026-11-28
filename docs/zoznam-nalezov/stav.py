@@ -6,8 +6,26 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='26. 11. 2026',
-    kod='`main` `8afe1fd6` (po PR #341: úprava dvoch špecov E2E a živé overenie od Codexu, len E2E a dokumenty; kód je od PR #340 (merge `1c5d0cdd`: oprava A, nálezy 360, 13 a 70), PR #339 (merge `74f8bdcf`: obrazovka detailu pre mobil, hostiteľ a výber podoby), PR #338 (merge `50ef3a74`: K61, nálezy 371, 91 a 378), PR #335 (merge `2384db22`: nález 362, obrazovka detailu na iPhone), PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty riadkov „Viac“, nález 373); vetva 214 (zápis K61, opravy A a E2E do zoznamu, nálezy 380 a 381 a karta K62; len zoznam) čaká na PR, PR #341 je vetva e2e/detail-prispevku-mobil (Codex), PR #340 je vetva 213, PR #339 je vetva 212, PR #338 je K61, PR #337 je vetva 211 (karta K61 a rozhodnutia R82 až R84), PR #336 je vetva K60 (kolegov výsledok mapovania K60, overenie agenta a zápis do zoznamu), PR #335 je vetva 210 (zoznam a oprava 362), PR #334 je karta K60 (vetva 209), PR #333 je vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR #327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge `3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
+    datum='28. 11. 2026',
+    kod='`main` `6b1419d5` (po PR #344: K63, mapovanie lajkujúcich a prekladov, len dokumenty; kód je od PR #343 (merge '
+        '`38971af9`: K62, nález 380: panel upozornení a Správy so Štatistikami na stránke výsledkov vyhľadávania), PR #340 '
+        '(merge `1c5d0cdd`: oprava A, nálezy 360, 13 a 70), PR #339 (merge `74f8bdcf`: obrazovka detailu pre mobil, hostiteľ a '
+        'výber podoby), PR #338 (merge `50ef3a74`: K61, nálezy 371, 91 a 378), PR #335 (merge `2384db22`: nález 362, obrazovka '
+        'detailu na iPhone), PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, '
+        'nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) '
+        'a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty '
+        'riadkov „Viac“, nález 373); vetva 215 (pomocný skript zapis.py, postup pre dvoch agentov a testy; len zoznam a '
+        'nástroje, kód aplikácie sa nemení) čaká na PR, PR #344 je K63 (merge `6b1419d5`), PR #343 je K62, PR #342 je vetva 214 '
+        '(zápis K61, opravy A a E2E do zoznamu, nálezy 380 a 381 a karta K62; len zoznam; merge `e591c4ac`), PR #341 je vetva '
+        'e2e/detail-prispevku-mobil (Codex; merge `8afe1fd6`), PR #340 je vetva 213, PR #339 je vetva 212, PR #338 je K61, PR '
+        '#337 je vetva 211 (karta K61 a rozhodnutia R82 až R84), PR #336 je vetva K60 (kolegov výsledok mapovania K60, overenie '
+        'agenta a zápis do zoznamu), PR #335 je vetva 210 (zoznam a oprava 362), PR #334 je karta K60 (vetva 209), PR #333 je '
+        'vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR '
+        '#327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge '
+        '`3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR '
+        '#318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR '
+        '#312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je '
+        'K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -17,6 +35,75 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
+    ('28. 11. 2026',
+      'Vetva 215, štvrté kolo pripomienok na PR #345 (Codex, jedno vlákno P1, oprávnené; len docstringy, správanie kódu sa '
+      'nemení). Pravidlá projektu (`.cursor/rules/svaply.mdc`, časť „Dokumentácia Python kódu“) žiadajú zmysluplný docstring '
+      'pri každej novej alebo upravenej funkcii, metóde a triede (cieľ 80 %). Meranie cez AST ukázalo, že nové a upravené '
+      'Python súbory vetvy mali docstring len pri 166 zo 434 (38 %): výrobné moduly skriptu 83 zo 101, pomôcky a testy 33 z '
+      '283. Dopísaných je 268 docstringov (18 vo výrobných moduloch `zapis*.py`, 14 v pomôckach testov a 236 v testoch), '
+      'pokrytie týchto súborov je teraz 434 zo 434. Docstringy opisujú, čo test overuje a prečo (nie len názov testu); pri '
+      'regresných testoch k nálezom botov to uvádzajú. Vkladanie robil jednorazový skript, ktorý pre každý súbor dokázal, že '
+      'AST bez docstringov je pred zmenou a po nej rovnaké (zmenili sa len docstringy, nič sa neodstránilo). Pokrytie '
+      'docstringami sa v repozitári aj naďalej nemeria (nález 242); stráženie v CI alebo testom nechávam na rozhodnutie '
+      'majiteľa.'),
+    ('28. 11. 2026',
+      'Vetva 215, tretie kolo pripomienok CodeRabbitu na PR #345 (jedno vlákno, Minor, oprávnené; len hlavička zoznamu). '
+      'Hlavička stavu kódu uvádzala, že vetva 214 čaká na PR, hoci PR #342 je zlúčený (merge `e591c4ac`) a denník zmien ho už '
+      'uvádza; zároveň ukazovala starý `main` `8afe1fd6`. Opravené príkazom `zapis.py zmena` s poľom `kod`: `main` `6b1419d5` '
+      '(po PR #344, K63), PR #343 (K62, nález 380) medzi zlúčenými zmenami kódu, PR #342, #343 a #344 pri zozname PR a vetva '
+      '215 ako tá, ktorá čaká na PR. Výsledky K62 a K63 (nález 380, zistenia K63) sa zapíšu až pri plánovanej aktualizácii '
+      'zoznamu po zlúčení tejto vetvy.'),
+    ('28. 11. 2026',
+      'Vetva 215, druhé kolo pripomienok CodeRabbitu na PR #345 (po zápise z 27. 11. 2026; len skript a testy, dáta nálezov '
+      'sa nemenia). Tri nové vlákna (všetky Minor), každé som overil na kóde a všetky boli oprávnené: (1) CHYBA V SKRIPTE: '
+      'príkaz `rozhodnutie` skúmal `\'id\' in v` pred kontrolou typu, takže pri vstupe `5`, `null`, `true`, `0` alebo `1.5` '
+      'hodil `TypeError` a skončil kódom 3 s výpisom namiesto kódu 2 s vysvetlením; opravené a test „JSON, ktorý nie je '
+      'objekt“ beží teraz pre všetkých šesť príkazov s JSON vstupom (predtým len pre `novy`, preto chyba unikla). (2) a (3) '
+      'KREHKÉ TESTY: test vzoru odpovede a test odpovede na rozhodnutie zo `stav.py` hľadali v živých dátach nezodpovedané '
+      'rozhodnutie a `test_vstupy.py` ho bral pri zbere testov; keď majiteľ odpovie na všetky (R1 až R12 čakajú dlho), testy '
+      'by zlyhali alebo by sa nedali ani načítať. Testy si teraz zapíšu vlastnú otázku, alebo v kópii zmenia už zodpovedané '
+      'rozhodnutie zo `stav.py` na nezodpovedané; overené simuláciou, v ktorej sú všetky rozhodnutia zodpovedané. Celkom 750 '
+      'testov (všetky prešli).'),
+    ('27. 11. 2026',
+      'Vetva 215, kolo pripomienok botov na PR #345 (po zlúčení PR #344, K63, do vetvy; len skript, testy a postup, dáta '
+      'nálezov sa nemenia). Codex (P2) a CodeRabbit (3 Major, 7 Minor) mali dokopy 11 vlákien; každé som overil reprodukciou '
+      'na kóde a všetky boli oprávnené. (1) ZÁPIS A OBNOVA (`zapis_transakcia.py`, `zapis.py`): súbor sa eviduje na obnovu '
+      'pred zápisom a zapisuje sa cez dočasný súbor a `os.replace` (skrátený súbor pri chybe disku už nezostane); obnova '
+      'každého súboru ide osobitne a nový `ChybaObnovy` povie, ktoré súbory sa nevrátili, pôvodnú chybu a kde je záloha (kód '
+      '3); príprava suchého behu je pod obsluhou chýb a dočasný koreň sa pri zlyhaní zmaže. (2) ÚPRAVY ZDROJOV '
+      '(`zapis_zdroj.py`): čiarka v komentári za posledným prvkom nie je oddeľovač; odsadenie pokračovania reťazca sa berie z '
+      'medzier riadka (nie hľadaním apostrofu, takže funguje aj pri dvojitých úvodzovkách). (3) MODEL (`model.py`): `po` '
+      'uznáva len kanonické číslo (`0380`, arabsko-indické číslice a `²` sa odmietnu ako neznáme ID; `²` dokonca hodilo '
+      '`ValueError`), `po`, ktoré nie je zoznam textov, je chyba dát. (4) ROZHODNUTIA: príkaz `rozhodnutie` s poľom `id` '
+      'zapíše odpoveď na existujúce `R<n>` bez nového čísla (vzor `sablony/zapis/rozhodnutie-odpoved.json`); zatvorenie '
+      'rozhodnutím už neradí vytvárať duplicitu. (5) POSTUP.md: výnimka pre opravnú dávku po neprešlom ručnom teste (pôvodné '
+      'pravidlo by zablokovalo opravu, lebo test sa dá zopakovať až po jej nasadení), odpoveď na rozhodnutie a kód 3. (6) '
+      'TESTY: 707 testov (51 nových); testy už nezávisia od dátumu hlavičky v živom `stav.py` ani od toho, že záznamy sú v '
+      'prvom súbore (overené simuláciou s prvými súbormi dlhými 400 riadkov); 11 ďalších zámerných chýb zachytených (spolu '
+      '63). Návrh názvu PR: „Zoznam: pomocný skript zapis.py, postup pre dvoch agentov a testy“ (CodeRabbit označil názov '
+      '„215“ za nepopisný).'),
+    ('26. 11. 2026',
+      'Vetva 215 (z `main` `38971af9`; pomocný skript, testy a postup, dáta nálezov sa nemenia). (1) POMOCNÝ SKRIPT '
+      '`zapis.py` (príkazy `stav`, `novy`, `hotove`, `zlucene`, `rucny-test`, `zatvor`, `rozhodnutie`, `fronta` s podpríkazmi '
+      '`pridaj`, `odstran`, `presun`, `caka`, `volne` a `po`, a `zmena`; moduly `zapis_zdroj.py`, `zapis_data.py`, '
+      '`zapis_format.py`, `zapis_operacie.py`, `zapis_transakcia.py`, `zapis_stav.py` a `fronta_pravidla.py`, každý pod 500 '
+      'riadkov): zmení presne tie miesta v zdrojoch, ktoré treba (nález zo zdroja, z fronty a z vĺn), zapíše všetko naraz, '
+      'hneď spustí `build.py` v čerstvom interpretri a pri chybe vráti všetky súbory vrátane `ZOZNAM.md`; má suchý beh '
+      '`--na-sucho`, návratové kódy 0 až 3 a vzorové vstupy v `sablony/zapis/`. Nové záznamy zapisuje do '
+      '`zaznamy_nove_NN.py`, `zaznamy_hotove_NN.py`, `zaznamy_rozhodnutia_NN.py` a `zaznamy_zatvorene_NN.py` (nový súbor po '
+      '350 riadkoch; načíta ich `zaznamy.py`). (2) MODEL A VÝSTUP: pri hotových položkách pole `rucny_test` (`caka`, '
+      '`prešiel`, `neprešiel`; kým je `caka` alebo `neprešiel`, položka má v časti 7 značku, v počtoch je osobitne „čaká na '
+      'ručný test“ a súčet sedí), vo fronte polia `caka` (čaká na majiteľa alebo Codexa) a `po` (závislosti: musia byť hotové '
+      'alebo skôr vo fronte); „prvá voľná“ položka fronty sa v častiach 1 a 2 počíta bez čakajúcich a závislých. (3) TESTY '
+      '(`testy/`, 656 testov v asi dvoch minútach, na kópii skutočných dát): úpravy zdrojov, formát a prenos nebezpečných '
+      'znakov (apostrof, obrátená lomka, zvislítko, úvodzovky, emoji), každý z 180 otvorených nálezov sa dá uzavrieť `hotove` '
+      'aj `zatvor` bez poškodenia zdrojov, vzorka cez celý zápis, striedanie dvoch agentov, rotácia súborov, nezmyselné typy '
+      'hodnôt v každom poli, vrátenie zmien pri chybe aj pri prerušení; 52 zámerných chýb v skripte a modeli testy zachytili. '
+      'Testy našli skutočnú chybu: jedna z vĺn poradia má `polozky` zložené súčtom zoznamov, takže nález 180 by sa z nej '
+      'neodstránil. (4) POSTUP `POSTUP.md` pre dvoch rovnocenných agentov podľa odpovede majiteľa z 26. 11. 2026 (štart, '
+      'cyklus dávky, zaradenie HNEĎ, PRED a PO, poradie fronty, ručné testy, kedy sa pýtať majiteľa, dvojkolová skúška), '
+      'odkaz v `AGENTS.md` a v `README.md`; ZATIAĽ NEPLATÍ: K62 a K63 sa dokončia podľa pôvodného systému, ich výsledky sa '
+      'zapíšu až po nich (už novým skriptom; ID z registra OW-11 = nález 380 sa zatvára ručne) a skúšku začne majiteľ.'),
     ('26. 11. 2026',
       'Vetva 214 (z `main` `8afe1fd6`, po PR #341; len zoznam a karta K62, bez kódu). (1) ZLÚČENÉ 26. 11. 2026 (UTC): PR #337 '
       '(vetva 211: karta K61 a rozhodnutia R82 až R84; 06:39), PR #338 (K61: oprava B, nálezy 371, 91 a 378; 08:06, merge '
@@ -802,6 +889,12 @@ ZMENY = [
 # `hotove.py`; tu sa len sprístupňujú pod pôvodnými názvami, aby ostatné moduly ostali nezmenené.
 from hotove import DONE_PR_TABLE, DONE_PR_TABLE_CASTOCNE, DONE_SINCE, SERIA_UPOZORNENIA  # noqa: F401
 
+# Hotové položky zapísané skriptom `zapis.py hotove` sú v `zaznamy_hotove_NN.py` (nahrávajú sa cez `zaznamy.py`).
+from zaznamy import DONE_PR_TABLE_CASTOCNE_ZAZNAMY, DONE_SINCE_ZAZNAMY  # noqa: E402
+
+DONE_SINCE.extend(DONE_SINCE_ZAZNAMY)
+DONE_PR_TABLE_CASTOCNE.extend(DONE_PR_TABLE_CASTOCNE_ZAZNAMY)
+
 # Odporúčané poradie práce (vlny). `polozky` sú ID, ktoré text vlny spomína: kontrola v `model.py` zlyhá, ak nejaké z nich
 # už nie je otvorené, aby text vlny nezostal zastaraný.
 PORADIE = [
@@ -950,3 +1043,8 @@ DECISIONS.extend(DECISIONS_DALSIE)
 from rozhodnutia_k46 import DECISIONS_K46  # noqa: E402
 
 DECISIONS.extend(DECISIONS_K46)
+
+# Rozhodnutia zapísané skriptom `zapis.py rozhodnutie` sú v `zaznamy_rozhodnutia_NN.py` (nahrávajú sa cez `zaznamy.py`).
+from zaznamy import DECISIONS_ZAZNAMY  # noqa: E402
+
+DECISIONS.extend(DECISIONS_ZAZNAMY)

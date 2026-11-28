@@ -18,7 +18,7 @@ import priloha_nastenka
 import register
 import stav
 import zatvorene_dalsie
-from konstanty import A, EL, EM, ES, H, N, P, S_, V
+from konstanty import A, EL, EM, ES, H, KTO_CAKA, N, P, RUCNY_NEUZAVRETE, RUCNY_STAVY, S_, V
 
 PRIECINOK = Path(__file__).resolve().parent
 REGISTER_CESTA = PRIECINOK.parent / 'testing' / 'findings-register.md'
@@ -171,6 +171,21 @@ def _chyby_hodnot():
     return chyby
 
 
+def _chyby_hotovych():
+    """Overí povolené hodnoty poľa `rucny_test` pri hotových položkách (bez poľa ručný test nie je požadovaný)."""
+    chyby = []
+    for d in stav.DONE_SINCE:
+        if d.get('rucny_test') is not None and d['rucny_test'] not in RUCNY_STAVY:
+            chyby.append('hotový nález %s: neznámy stav ručného testu %r (povolené: %s)' % (d['n'], d['rucny_test'], ', '.join(RUCNY_STAVY)))
+    return chyby
+
+
+def _text_hotoveho(d):
+    """Text hotovej položky do časti 7; pri neuzavretom ručnom teste dostane na začiatku viditeľnú značku."""
+    znacky = {'caka': 'ČAKÁ NA RUČNÝ TEST. ', 'neprešiel': 'RUČNÝ TEST NEPREŠIEL. '}
+    return (znacky.get(d.get('rucny_test'), '') if d.get('zlucene') else '') + d['text']
+
+
 def _chyby_poradia(otvorene_id):
     """Overí, že vlny v `stav.PORADIE` spomínajú len položky, ktoré sú ešte otvorené (inak je text zastaraný)."""
     chyby = []
@@ -189,11 +204,20 @@ def _id_otvorenych(riadky):
     return ids
 
 
-def _chyby_fronty(id_otvorenych):
-    """Overí frontu prác pre kolegu: ID sú otvorené nálezy (z ktorejkoľvek skupiny) bez opakovania a stav je vyplnený celý alebo vôbec."""
+def _je_cislo_nalezu(text):
+    """Má text kanonický tvar čísla nálezu: ASCII číslice bez úvodnej nuly (`'380'`; nie `'0380'`, `'٣٨٠'` ani `'²'`)?
+
+    Otvorené ID sa porovnávajú ako texty, takže `'0380'` by sa tvárilo ako existujúce, no nikdy by neblokovalo otvorený nález 380.
+    """
+    return text.isascii() and text.isdigit() and text[0] != '0'
+
+
+def _chyby_fronty(id_otvorenych, posledne_cislo=None, id_registra=(), zaznamy=None):
+    """Overí frontu prác: ID sú otvorené nálezy (z ktorejkoľvek skupiny) bez opakovania, stav je vyplnený celý alebo vôbec,
+    `caka` má tvar (kto, čo) a `po` odkazuje na existujúce nálezy, ktoré sú buď hotové, alebo skôr vo fronte."""
     chyby = []
     videne = set()
-    for z in fronta.FRONTA:
+    for z in (fronta.FRONTA if zaznamy is None else zaznamy):
         n = z.get('n')
         if n in videne:
             chyby.append('fronta: %s je v poradí viackrát' % n)
@@ -209,6 +233,27 @@ def _chyby_fronty(id_otvorenych):
             chyby.append('fronta: %s má vyplnené len %s; stav sa vypĺňa celý (kto, stav, od)' % (n, ', '.join(vyplnene)))
         if z.get('stav') and z['stav'] not in fronta.STAVY:
             chyby.append('fronta: %s má neznámy stav %r' % (n, z['stav']))
+        caka = z.get('caka')
+        if caka is not None:
+            if not (isinstance(caka, (tuple, list)) and len(caka) == 2 and caka[0] in KTO_CAKA
+                    and isinstance(caka[1], str) and caka[1].strip()):
+                chyby.append('fronta: %s: `caka` musí byť dvojica (kto, čo presne) s kto z %s a neprázdnym textom' % (n, sorted(KTO_CAKA)))
+        po = z.get('po', ())
+        if not isinstance(po, (list, tuple)):
+            chyby.append('fronta: %s: `po` musí byť zoznam ID (textov)' % n)
+            po = ()
+        for zavislost in po:
+            if not isinstance(zavislost, str):
+                chyby.append('fronta: %s: `po` musí obsahovať ID ako text, nie %r' % (n, zavislost))
+                continue
+            existuje = ((_je_cislo_nalezu(zavislost) and posledne_cislo is not None and int(zavislost) <= posledne_cislo)
+                        or zavislost in id_registra)
+            if zavislost == n:
+                chyby.append('fronta: %s závisí samo od seba (`po`)' % n)
+            elif not existuje:
+                chyby.append('fronta: %s: `po` odkazuje na neznáme ID %r' % (n, zavislost))
+            elif zavislost in id_otvorenych and zavislost not in videne:
+                chyby.append('fronta: %s: závislosť %s je ešte otvorená, ale nie je vo fronte skôr; zaraď ju pred %s' % (n, zavislost, n))
     return chyby
 
 
@@ -253,6 +298,12 @@ def _pocet_nalezov(riadky_skupiny):
     return sum(1 for _b, _k, d in riadky_skupiny if d['id'].isdigit())
 
 
+def _posledne_cislo():
+    """Posledné pridelené číslo nálezu: pôvodné + otvorené nové + hotové a zatvorené po vydaní."""
+    return (POSLEDNY_POVODNY + len(polozky_nove.NEW_ITEMS) + sum(1 for d in stav.DONE_SINCE if d['n'] > POSLEDNY_POVODNY)
+            + sum(1 for d in zatvorene_dalsie.CLOSED_SINCE if d['n'] > POSLEDNY_POVODNY))
+
+
 def _zoskup(riadky, skupina):
     """Zoradí riadky skupiny podľa balíka (poradie z `PORADIE_BALIKOV`) a v balíku podľa čísla/ID."""
     podla_balika = defaultdict(list)
@@ -268,7 +319,7 @@ def zostav_model():
     """
     povodny = nacitaj_povodny()
     id_registra = id_z_registra()
-    chyby = _chyby_cisel(povodny) + _chyby_hodnot() + _chyby_zatvorenych()
+    chyby = _chyby_cisel(povodny) + _chyby_hodnot() + _chyby_zatvorenych() + _chyby_hotovych()
     chyby_registra, registrove_otvorene = _chyby_registra(id_registra)
     chyby += chyby_registra
 
@@ -290,17 +341,19 @@ def zostav_model():
     otvorene_id = {d['id'] for sk in riadky.values() for _b, _k, d in sk}
     otvorene_id |= set(registrove_otvorene)
     chyby += _chyby_poradia(otvorene_id)
-    chyby += _chyby_fronty(_id_otvorenych(riadky))
+    chyby += _chyby_fronty(_id_otvorenych(riadky), _posledne_cislo(), id_registra)
     if chyby:
         raise ValueError('\n'.join(' - ' + c for c in chyby))
 
     hotove = dict(povodny['hotove'])
-    hotove.update({d['n']: d['text'] for d in stav.DONE_SINCE})
+    hotove.update({d['n']: _text_hotoveho(d) for d in stav.DONE_SINCE})
     cakaju = [d for d in stav.DONE_SINCE if not d.get('zlucene')]
+    cakaju_test = [d for d in stav.DONE_SINCE if d.get('zlucene') and d.get('rucny_test') in RUCNY_NEUZAVRETE]
     zatvorene_vsetky = dict(povodny['zatvorene'])
     zatvorene_vsetky.update({d['n']: d['text'] for d in zatvorene_dalsie.CLOSED_SINCE})
     pocty = SimpleNamespace(
-        hotove=len(hotove) - len(cakaju), caka_na_zlucenie=len(cakaju), zatvorene=len(zatvorene_vsetky),
+        hotove=len(hotove) - len(cakaju) - len(cakaju_test), caka_na_zlucenie=len(cakaju), caka_na_rucny_test=len(cakaju_test),
+        zatvorene=len(zatvorene_vsetky),
         zatvorene_povodne=len(povodny['zatvorene']), info=len(povodny['info']),
         nalezy={sk: _pocet_nalezov(riadky[sk]) for sk in riadky},
         uloh={sk: sum(1 for t in polozky_nove.NTASKS if t['bucket'] == sk) for sk in riadky},
@@ -310,9 +363,9 @@ def zostav_model():
         povodne_otvorene=len(povodny['otvorene']),
         povodne_otvorene_dnes={sk: sum(1 for v in polozky_povodne.ORIG_OPEN.values() if v[0] == sk) for sk in riadky},
     )
-    pocty.spolu = pocty.hotove + pocty.caka_na_zlucenie + pocty.zatvorene + pocty.info + sum(pocty.nalezy.values())
-    posledne_cislo = (POSLEDNY_POVODNY + len(polozky_nove.NEW_ITEMS) + sum(1 for d in stav.DONE_SINCE if d['n'] > POSLEDNY_POVODNY)
-                      + sum(1 for d in zatvorene_dalsie.CLOSED_SINCE if d['n'] > POSLEDNY_POVODNY))
+    pocty.spolu = (pocty.hotove + pocty.caka_na_zlucenie + pocty.caka_na_rucny_test + pocty.zatvorene + pocty.info
+                   + sum(pocty.nalezy.values()))
+    posledne_cislo = _posledne_cislo()
     if pocty.spolu != posledne_cislo:
         raise ValueError('súčet skupín %d sa nerovná poslednému číslu nálezu %d' % (pocty.spolu, posledne_cislo))
     chyby_prilohy = _chyby_prilohy_d(posledne_cislo, id_registra)

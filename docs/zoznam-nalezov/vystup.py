@@ -11,6 +11,7 @@ import fronta
 import polozky_nove
 import register
 import stav
+from fronta_pravidla import dovod_blokovania, prva_volna
 from konstanty import A, H, NAZOV_DOPADU, NAZOV_SKUPINY, P
 from priloha_hosting import priloha_c
 from priloha_nastenka import priloha_d
@@ -99,18 +100,24 @@ def _hned(m):
     return sorted(riadky, key=lambda r: (not r['id'].isdigit(), int(r['id']) if r['id'].isdigit() else 0, r['id']))
 
 
-def _stav_fronty(zaznam):
-    """Text stavu záznamu fronty: „nesleduje sa“ (stav nie je zapísaný) alebo napr. „rozrobené: kolega od 3. 11. 2026“.
+def _stav_fronty(zaznam, otvorene_id=frozenset()):
+    """Text stavu záznamu fronty: „čaká na majiteľa: …“ alebo „čaká na dokončenie: N“ (položku nemožno vziať), „nesleduje sa“
+    (stav nie je zapísaný) alebo napr. „rozrobené: K64 od 3. 11. 2026“.
 
-    Záznam bez stavu sa nikdy nepodáva ako „voľný“: kým kolega pracuje, zoznam o tom nevie (aktualizuje sa po každej práci).
+    Záznam bez stavu sa nikdy nepodáva ako „voľný“: zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená,
+    že nález je voľný. Voľnú položku určuje `fronta_pravidla.prva_volna`.
     """
+    dovod = dovod_blokovania(zaznam, otvorene_id)
+    if dovod:
+        return dovod
     if not zaznam.get('kto'):
         return 'nesleduje sa'
     return f'{zaznam["stav"]}: {zaznam["kto"]} od {zaznam["od"]}'
 
 
-def _fronta_v_skratke():
-    """Riadok pre „V skratke“: koľko nálezov je vo fronte pre kolegu, v akých dávkach, ktorý je prvý v poradí a zapísaný stav (ak nejaký je).
+def _fronta_v_skratke(m):
+    """Riadok pre „V skratke“: koľko nálezov je vo fronte prác, v akých dávkach, ktorý je prvý VOĽNÝ (nečaká na majiteľa ani na
+    dokončenie iného nálezu), koľko ich čaká a zapísaný stav (ak nejaký je).
 
     Volá sa len pre neprázdnu frontu: pri prázdnej sa tento riadok ani podčasť v časti 2 nezapisujú (viď `_v_skratke` a `_fronta`).
     """
@@ -119,14 +126,17 @@ def _fronta_v_skratke():
     caka = sum(1 for z in zaznamy if z.get('stav') == fronta.STAV_CAKA)
     davky = list(dict.fromkeys(z['davka'] for z in zaznamy if z.get('davka')))
     davky_text = f' v dávkach {", ".join(davky)}' if davky else ''
-    prvy = f'prvý v poradí: č. {zaznamy[0]["n"]}'
+    volna = prva_volna(zaznamy, m.otvorene_id)
+    prvy = f'prvý voľný v poradí: č. {volna["n"]}' if volna else 'žiadna položka nie je voľná'
+    blokovane = sum(1 for z in zaznamy if dovod_blokovania(z, m.otvorene_id))
+    davky_text += f', z toho čaká {blokovane}' if blokovane else ''
     if rozrobene or caka:
         stav_text = f' (zapísané: rozrobené {rozrobene}, čaká na zlúčenie {caka})'
         poznamka = ''
     else:
         stav_text = ''
         poznamka = ' Stav riešenia sa nesleduje: v kóde pracuje vždy len jeden a zoznam sa aktualizuje po každej práci.'
-    return f'- **Poradie prác pre kolegu** (časť 2): v poradí {len(zaznamy)} nálezov{davky_text}{stav_text}; {prvy}.{poznamka}'
+    return f'- **Poradie prác** (časť 2): v poradí {len(zaznamy)} nálezov{davky_text}{stav_text}; {prvy}.{poznamka}'
 
 
 def _skupiny_nalezov(m):
@@ -141,22 +151,23 @@ def _skupiny_nalezov(m):
 
 
 def _fronta(d, m):
-    """Zapíše podčasť časti 2 „Poradie prác pre kolegu“: dávka, skupina, poradie, prečo je nález v dávke a jeho stav (nič, ak je fronta prázdna)."""
+    """Zapíše podčasť časti 2 „Poradie prác“: dávka, skupina, poradie, prečo je nález v dávke a jeho stav (nič, ak je fronta prázdna)."""
     if not fronta.FRONTA:
         return
-    d.w('### Poradie prác pre kolegu (dávky a stav)')
+    d.w('### Poradie prác (dávky a stav)')
     d.w()
     d.w('Poradie navrhol agent (malé, lokálne zmeny s nízkym rizikom, ktoré nemenia súbory nad 500 riadkov); schvaľuje majiteľ. '
         + fronta.SCHVALENE + ' Nálezy zo skupín HNEĎ a PRED NASADENÍM majú prednosť pred nálezmi PO NASADENÍ. Pred opravou treba overiť, '
         'že nález ešte platí. Úplný popis každého nálezu je v tabuľkách v častiach 3 až 5. Hotový nález sa z poradia odstráni a presunie '
-        'do časti 7; v kóde pracuje vždy len jeden (kolega po dávkach vo vetvách K1, K2…, striedavo s agentom). Stav riešenia sa nesleduje: '
-        'zoznam sa aktualizuje po každej práci, takže „nesleduje sa“ neznamená, že nález je voľný. Značka na začiatku stĺpca „Prečo v tejto '
+        'do časti 7; v kóde pracuje vždy len jeden (kolega a agent striedavo po dávkach vo vetvách K1, K2…). Stav „čaká na majiteľa“ alebo '
+        '„čaká na dokončenie“ znamená, že položku nemožno vziať, kým sa to nezmení (voľnú položku určuje poradie a tieto stavy; postup je v '
+        '`POSTUP.md`); „nesleduje sa“ neznamená, že nález je voľný. Značka na začiatku stĺpca „Prečo v tejto '
         'dávke“: JASNÉ = kolega len overí, že nález platí, a opraví; NEJASNÉ = kolega najprv mapuje a vráti zistenie, kód nemení, kým majiteľ '
         'nepovie (postup od K15 je v `README.md`).')
     d.w()
     skupina = _skupiny_nalezov(m)
     d.tabulka(['Poradie', 'Dávka', 'Č.', 'Skupina', 'Čo', 'Prečo v tejto dávke', 'Stav'],
-              [[i, z.get('davka', ''), z['n'], skupina.get(z['n'], ''), z['co'], z['preco'], _stav_fronty(z)]
+              [[i, z.get('davka', ''), z['n'], skupina.get(z['n'], ''), z['co'], z['preco'], _stav_fronty(z, m.otvorene_id)]
                for i, z in enumerate(fronta.FRONTA, 1)])
 
 
@@ -181,13 +192,15 @@ def _uvod(d, m):
 def _v_skratke(d, m):
     """Zapíše časť „V skratke“: počty, skupina HNEĎ, rozhodnutia a hosting (všetko dopočítané z dát)."""
     p = m.pocty
-    cakaju = f' (z toho {p.caka_na_zlucenie} čaká na zlúčenie)' if p.caka_na_zlucenie else ''
+    cakaju_casti = ([f'{p.caka_na_zlucenie} čaká na zlúčenie'] if p.caka_na_zlucenie else []) \
+        + ([f'{p.caka_na_rucny_test} čaká na ručný test'] if p.caka_na_rucny_test else [])
+    cakaju = f' (z toho {", ".join(cakaju_casti)})' if cakaju_casti else ''
     hned = _hned(m)
     cakajuce = [x for x in stav.DECISIONS if not x.get('odpoved')]
     hosting = next(x for x in stav.DECISIONS if x['id'] == 'R1')
     d.w('## V skratke')
     d.w()
-    d.w(f'- Nálezy 1–{m.posledne_cislo}: hotové {p.hotove + p.caka_na_zlucenie}{cakaju}, zatvorené {p.zatvorene}, informačné {p.info}; '
+    d.w(f'- Nálezy 1–{m.posledne_cislo}: hotové {p.hotove + p.caka_na_zlucenie + p.caka_na_rucny_test}{cakaju}, zatvorené {p.zatvorene}, informačné {p.info}; '
         f'otvorené: **HNEĎ {p.nalezy[H]}**, **PRED NASADENÍM {p.nalezy[P]}**, **PO NASADENÍ {p.nalezy[A]}**.')
     dnes = p.povodne_otvorene_dnes
     d.w(f'- Z pôvodných {p.povodne_otvorene} otvorených položiek je dnes otvorených {sum(dnes.values())} '
@@ -200,7 +213,7 @@ def _v_skratke(d, m):
         'Odporúčané poradie je v časti 2.')
     d.w(f'- **Po nasadení** (časť 5): {p.nalezy[A]} nálezov a {p.registrove[A]} ID z registra (upratovanie, mikrovýkon, kozmetika, väčšie funkcie).')
     if fronta.FRONTA:
-        d.w(_fronta_v_skratke())
+        d.w(_fronta_v_skratke(m))
     d.w(f'- **Rozhodnutia** (časť 6): čaká {len(cakajuce)} z {len(stav.DECISIONS)}; každé má v stĺpci „Kedy“ uvedené, od akej práce je potrebné.')
     if hosting.get('odpoved'):
         d.w(f'- **Hosting**: rozhodnuté (R1): {hosting["odpoved"]}')
@@ -251,6 +264,8 @@ def _prehlad(d, m):
     riadky = [['Hotové (zlúčené do `main`)', p.hotove, 'tabuľka v časti 7']]
     if p.caka_na_zlucenie:
         riadky.append(['Opravené, čaká na zlúčenie', p.caka_na_zlucenie, 'tabuľka v časti 7'])
+    if p.caka_na_rucny_test:
+        riadky.append(['Zlúčené, čaká na ručný test (alebo ručný test neprešiel)', p.caka_na_rucny_test, 'tabuľka v časti 7'])
     riadky += [['Zatvorené rozhodnutím', p.zatvorene, 'časť 8'], ['Informačné bez akcie', p.info, 'časť 8'],
                ['**HNEĎ**', p.nalezy[H], f'časť 3 ({hned})'], ['**PRED NASADENÍM**', p.nalezy[P], 'časť 4'],
                ['**PO NASADENÍ**', p.nalezy[A], 'časť 5'],
@@ -320,8 +335,9 @@ def _hotove(d, m):
     p = m.pocty
     d.w('## ' + TITULY['7'])
     d.w()
-    d.w(f'{p.hotove + p.caka_na_zlucenie} položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo označené ako čakajúce na '
-        'zlúčenie); či ich používateľ overil manuálne, zoznam neeviduje.')
+    d.w(f'{p.hotove + p.caka_na_zlucenie + p.caka_na_rucny_test} položiek. Pri položkách 159–172 a novších platí: opravené a zlúčené (alebo '
+        'označené ako čakajúce na zlúčenie). Ručný test sa eviduje len pri položkách s poľom `rucny_test` (od nového postupu): kým má stav '
+        '„caka“ alebo „neprešiel“, text začína značkou a položka nie je uzavretá; pri starších položkách ho zoznam neeviduje.')
     d.w()
     podla_pr = defaultdict(list)
     for x in stav.DONE_SINCE:
@@ -377,6 +393,9 @@ def _udrzba(d, m):
     d.w()
     d.w('Tento dokument je jediný hlavný zoznam nálezov. Postup pri udržiavaní:')
     d.w()
+    d.w('- **Skúšobný postup pre dvoch agentov** (`POSTUP.md`; pripravený 26. 11. 2026, začne platiť po K62 a K63, keď to majiteľ potvrdí): '
+        'zápisy robí skript `python docs/zoznam-nalezov/zapis.py` (zmení len potrebné miesta, hneď spustí `build.py` a pri chybe všetko vráti); '
+        'dovtedy a pri veciach, ktoré skript nevie, platia body nižšie.')
     d.w('- **Po každom novom nálezi alebo oprave** sa dokument aktualizuje v tej istej vetve, v ktorej sa zmena robí: nález = nový riadok, '
         'oprava = presun do časti 7. Zoznam tak vždy zodpovedá kódu na vetve.')
     d.w(f'- **Čísla:** nový nález dostane ďalšie voľné číslo ({m.posledne_cislo + 1}); čísla sa nikdy nemenia ani nepoužívajú znova. '
@@ -432,7 +451,7 @@ def _prilohy_ab(d, m):
     d.w(f'- pôvodný zoznam má presne čísla 1–172 raz ({len(povodne["hotove"])} + {p.zatvorene_povodne} + {p.info} + {p.povodne_otvorene} = 172); '
         'všetky pôvodne otvorené sú buď roztriedené, zapísané ako opravené, alebo zatvorené rozhodnutím;')
     d.w(f'- nové nálezy majú súvislé čísla 173–{m.posledne_cislo};')
-    d.w(f'- súčet skupín {p.hotove} + {p.caka_na_zlucenie} + {p.zatvorene} + {p.info} + {p.nalezy[H]} + {p.nalezy[P]} + {p.nalezy[A]} = **{p.spolu}**;')
+    d.w(f'- súčet skupín {p.hotove} + {p.caka_na_zlucenie} + {p.caka_na_rucny_test} + {p.zatvorene} + {p.info} + {p.nalezy[H]} + {p.nalezy[P]} + {p.nalezy[A]} = **{p.spolu}**;')
     d.w(f'- všetkých {p.register_spolu} ID z registra je zaradených práve v jednej skupine (otvorené / čaká živé overenie / zatvorené / pokryté '
         'nálezom); žiadne nechýba a žiadne nie je dvakrát;')
     d.w(f'- úlohy N1–N{len(polozky_nove.NTASKS)} a rozhodnutia R1–R{len(stav.DECISIONS)} majú súvislé čísla; vlny v časti 2 spomínajú len otvorené položky.')

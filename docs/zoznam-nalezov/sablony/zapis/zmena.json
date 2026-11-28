@@ -1,0 +1,6 @@
+{
+  "_poznamka": "UKÁŽKA pre príkaz zmena: datum a text (denník zmien, najnovší hore); kod je voliteľný nový stav kódu v hlavičke zoznamu (krátko: main a hash po poslednom zlúčenom PR).",
+  "datum": "27. 11. 2026",
+  "kod": "`main` `abcd1234` (po PR #345: K64, nález 358)",
+  "text": "Vetva K64 (z `main` `38971af9`): čo sa urobilo v tomto kroku, ktoré nálezy sú hotové, ktoré pribudli, čo čaká na majiteľa a na ručný test."
+}

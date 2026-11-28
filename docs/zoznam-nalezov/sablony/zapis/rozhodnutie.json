@@ -1,0 +1,9 @@
+{
+  "_poznamka": "UKÁŽKA pre príkaz rozhodnutie (nové rozhodnutie): číslo R<n> pridelí skript. odpoved a datum sa vypĺňajú spolu (bez nich je to otázka pre majiteľa). Odpoveď na už zapísanú otázku má vzor rozhodnutie-odpoved.json (pole id).",
+  "tema": "Krátka téma rozhodnutia",
+  "otazka": "Čo presne má majiteľ rozhodnúť a aké sú možnosti.",
+  "odporucanie": "Odporúčanie agenta a dôvod.",
+  "kedy": "Od akej práce je rozhodnutie potrebné.",
+  "odpoved": "Majiteľ 27. 11. 2026: čo odpovedal.",
+  "datum": "27. 11. 2026"
+}
