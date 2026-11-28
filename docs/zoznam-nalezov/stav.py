@@ -6,7 +6,7 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
-    datum='27. 11. 2026',
+    datum='28. 11. 2026',
     kod='`main` `8afe1fd6` (po PR #341: úprava dvoch špecov E2E a živé overenie od Codexu, len E2E a dokumenty; kód je od PR #340 (merge `1c5d0cdd`: oprava A, nálezy 360, 13 a 70), PR #339 (merge `74f8bdcf`: obrazovka detailu pre mobil, hostiteľ a výber podoby), PR #338 (merge `50ef3a74`: K61, nálezy 371, 91 a 378), PR #335 (merge `2384db22`: nález 362, obrazovka detailu na iPhone), PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty riadkov „Viac“, nález 373); vetva 214 (zápis K61, opravy A a E2E do zoznamu, nálezy 380 a 381 a karta K62; len zoznam) čaká na PR, PR #341 je vetva e2e/detail-prispevku-mobil (Codex), PR #340 je vetva 213, PR #339 je vetva 212, PR #338 je K61, PR #337 je vetva 211 (karta K61 a rozhodnutia R82 až R84), PR #336 je vetva K60 (kolegov výsledok mapovania K60, overenie agenta a zápis do zoznamu), PR #335 je vetva 210 (zoznam a oprava 362), PR #334 je karta K60 (vetva 209), PR #333 je vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR #327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge `3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
@@ -17,6 +17,17 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
+    ('28. 11. 2026',
+      'Vetva 215, druhé kolo pripomienok CodeRabbitu na PR #345 (po zápise z 27. 11. 2026; len skript a testy, dáta nálezov '
+      'sa nemenia). Tri nové vlákna (všetky Minor), každé som overil na kóde a všetky boli oprávnené: (1) CHYBA V SKRIPTE: '
+      'príkaz `rozhodnutie` skúmal `\'id\' in v` pred kontrolou typu, takže pri vstupe `5`, `null`, `true`, `0` alebo `1.5` '
+      'hodil `TypeError` a skončil kódom 3 s výpisom namiesto kódu 2 s vysvetlením; opravené a test „JSON, ktorý nie je '
+      'objekt“ beží teraz pre všetkých šesť príkazov s JSON vstupom (predtým len pre `novy`, preto chyba unikla). (2) a (3) '
+      'KREHKÉ TESTY: test vzoru odpovede a test odpovede na rozhodnutie zo `stav.py` hľadali v živých dátach nezodpovedané '
+      'rozhodnutie a `test_vstupy.py` ho bral pri zbere testov; keď majiteľ odpovie na všetky (R1 až R12 čakajú dlho), testy '
+      'by zlyhali alebo by sa nedali ani načítať. Testy si teraz zapíšu vlastnú otázku, alebo v kópii zmenia už zodpovedané '
+      'rozhodnutie zo `stav.py` na nezodpovedané; overené simuláciou, v ktorej sú všetky rozhodnutia zodpovedané. Celkom 750 '
+      'testov (všetky prešli).'),
     ('27. 11. 2026',
       'Vetva 215, kolo pripomienok botov na PR #345 (po zlúčení PR #344, K63, do vetvy; len skript, testy a postup, dáta '
       'nálezov sa nemenia). Codex (P2) a CodeRabbit (3 Major, 7 Minor) mali dokopy 11 vlákien; každé som overil reprodukciou '
