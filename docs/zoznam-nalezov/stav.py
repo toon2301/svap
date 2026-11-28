@@ -7,7 +7,25 @@ Tento súbor sa upravuje pri každej zmene stavu (nový nález, oprava, odpoveď
 # Hlavička dokumentu: kedy sa naposledy menil a z akého stavu `main` sa vychádzalo.
 STAV = dict(
     datum='28. 11. 2026',
-    kod='`main` `8afe1fd6` (po PR #341: úprava dvoch špecov E2E a živé overenie od Codexu, len E2E a dokumenty; kód je od PR #340 (merge `1c5d0cdd`: oprava A, nálezy 360, 13 a 70), PR #339 (merge `74f8bdcf`: obrazovka detailu pre mobil, hostiteľ a výber podoby), PR #338 (merge `50ef3a74`: K61, nálezy 371, 91 a 378), PR #335 (merge `2384db22`: nález 362, obrazovka detailu na iPhone), PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty riadkov „Viac“, nález 373); vetva 214 (zápis K61, opravy A a E2E do zoznamu, nálezy 380 a 381 a karta K62; len zoznam) čaká na PR, PR #341 je vetva e2e/detail-prispevku-mobil (Codex), PR #340 je vetva 213, PR #339 je vetva 212, PR #338 je K61, PR #337 je vetva 211 (karta K61 a rozhodnutia R82 až R84), PR #336 je vetva K60 (kolegov výsledok mapovania K60, overenie agenta a zápis do zoznamu), PR #335 je vetva 210 (zoznam a oprava 362), PR #334 je karta K60 (vetva 209), PR #333 je vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR #327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge `3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR #318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR #312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je K48, PR #305 zoznam 192)',
+    kod='`main` `6b1419d5` (po PR #344: K63, mapovanie lajkujúcich a prekladov, len dokumenty; kód je od PR #343 (merge '
+        '`38971af9`: K62, nález 380: panel upozornení a Správy so Štatistikami na stránke výsledkov vyhľadávania), PR #340 '
+        '(merge `1c5d0cdd`: oprava A, nálezy 360, 13 a 70), PR #339 (merge `74f8bdcf`: obrazovka detailu pre mobil, hostiteľ a '
+        'výber podoby), PR #338 (merge `50ef3a74`: K61, nálezy 371, 91 a 378), PR #335 (merge `2384db22`: nález 362, obrazovka '
+        'detailu na iPhone), PR #333 (merge `029e65c1`: kolo 3c, nálezy 370 a 375 až 377), PR #332 (merge `8cced7e5`: K59, '
+        'nález 361 a časť 362) a PR #330 (merge `a358303a`: kolo 3b redizajnu komentárov, pole na komentár a odpoveď na mobile) '
+        'a PR #329 (merge `6c1099d6`: kolo 3a redizajnu komentárov, nálezy 343 a 369) a PR #328 (merge `f0d4e355`: počty '
+        'riadkov „Viac“, nález 373); vetva 215 (pomocný skript zapis.py, postup pre dvoch agentov a testy; len zoznam a '
+        'nástroje, kód aplikácie sa nemení) čaká na PR, PR #344 je K63 (merge `6b1419d5`), PR #343 je K62, PR #342 je vetva 214 '
+        '(zápis K61, opravy A a E2E do zoznamu, nálezy 380 a 381 a karta K62; len zoznam; merge `e591c4ac`), PR #341 je vetva '
+        'e2e/detail-prispevku-mobil (Codex; merge `8afe1fd6`), PR #340 je vetva 213, PR #339 je vetva 212, PR #338 je K61, PR '
+        '#337 je vetva 211 (karta K61 a rozhodnutia R82 až R84), PR #336 je vetva K60 (kolegov výsledok mapovania K60, overenie '
+        'agenta a zápis do zoznamu), PR #335 je vetva 210 (zoznam a oprava 362), PR #334 je karta K60 (vetva 209), PR #333 je '
+        'vetva 208, PR #332 je K59, PR #331 je vetva 207, PR #330 je vetva 206, PR #329 je vetva 205, PR #328 je vetva 204, PR '
+        '#327 je zoznam 203, PR #326 je K58, PR #325 je zoznam 202 s kartou K58, PR #324 je zoznam 201, PR #323 je K57 (merge '
+        '`3d0b74ce`), PR #322 je zoznam 200 a karta K57, PR #321 je K56, PR #320 je zoznam 199 a karta K56, PR #319 je K55, PR '
+        '#318 karta K55 (vetva 198), PR #317 je K54, PR #316 zoznam 197, PR #315 je K53, PR #314 zoznam 196, PR #313 je K52, PR '
+        '#312 zoznam 195, PR #311 je K51, PR #310 zoznam 194, PR #309 je K50, PR #308 zoznam 193, PR #307 je K49, PR #306 je '
+        'K48, PR #305 zoznam 192)',
     register='21. 10. 2026 + PR #193',
 )
 
@@ -17,6 +35,13 @@ from zmeny_starsie_2 import ZMENY_STARSIE_2  # noqa: E402
 from zmeny_starsie_3 import ZMENY_STARSIE_3  # noqa: E402
 
 ZMENY = [
+    ('28. 11. 2026',
+      'Vetva 215, tretie kolo pripomienok CodeRabbitu na PR #345 (jedno vlákno, Minor, oprávnené; len hlavička zoznamu). '
+      'Hlavička stavu kódu uvádzala, že vetva 214 čaká na PR, hoci PR #342 je zlúčený (merge `e591c4ac`) a denník zmien ho už '
+      'uvádza; zároveň ukazovala starý `main` `8afe1fd6`. Opravené príkazom `zapis.py zmena` s poľom `kod`: `main` `6b1419d5` '
+      '(po PR #344, K63), PR #343 (K62, nález 380) medzi zlúčenými zmenami kódu, PR #342, #343 a #344 pri zozname PR a vetva '
+      '215 ako tá, ktorá čaká na PR. Výsledky K62 a K63 (nález 380, zistenia K63) sa zapíšu až pri plánovanej aktualizácii '
+      'zoznamu po zlúčení tejto vetvy.'),
     ('28. 11. 2026',
       'Vetva 215, druhé kolo pripomienok CodeRabbitu na PR #345 (po zápise z 27. 11. 2026; len skript a testy, dáta nálezov '
       'sa nemenia). Tri nové vlákna (všetky Minor), každé som overil na kóde a všetky boli oprávnené: (1) CHYBA V SKRIPTE: '
