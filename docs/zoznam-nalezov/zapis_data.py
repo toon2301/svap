@@ -37,6 +37,8 @@ class Dataset:
     """Zdrojové súbory zoznamu v pamäti s evidenciou, čo sa zmenilo (alebo vzniklo)."""
 
     def __init__(self, priecinok):
+        """Pripraví prázdnu evidenciu pre priečinok zoznamu: `_zdroje` drží aktuálne zdroje súborov, `_povodne` ich pôvodný
+        text z disku (`None` pri novo založenom súbore); súbory sa čítajú až pri prvom použití."""
         self.priecinok = Path(priecinok)
         self._zdroje = {}
         self._povodne = {}

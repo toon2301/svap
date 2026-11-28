@@ -20,6 +20,8 @@ class Zdroj:
     """Nemenný zdrojový text modulu s operáciami na literáloch (každá operácia vráti nový `Zdroj`)."""
 
     def __init__(self, text, nazov='<zdroj>'):
+        """Rozparsuje `text` (neplatný Python je `ChybaZdroja`) a zapamätá si ho v bajtoch UTF-8 spolu so začiatkami riadkov,
+        aby sa polohy z `ast` dali previesť na bajtové."""
         self.nazov = nazov
         self._b = text.encode('utf-8')
         try:
@@ -31,9 +33,11 @@ class Zdroj:
     # ---------------------------------------------------------------- základ
     @property
     def text(self):
+        """Aktuálny zdrojový text."""
         return self._b.decode('utf-8')
 
     def _poz(self, riadok, stlpec):
+        """Bajtová poloha zo súradníc `ast` (riadok od 1, stĺpec v bajtoch)."""
         return self._zaciatky[riadok - 1] + stlpec
 
     def rozsah(self, uzol):
@@ -41,10 +45,12 @@ class Zdroj:
         return (self._poz(uzol.lineno, uzol.col_offset), self._poz(uzol.end_lineno, uzol.end_col_offset))
 
     def _nahrad(self, od, do, nahrada=''):
+        """Nový `Zdroj`, v ktorom je bajtový úsek [od, do) nahradený textom `nahrada`; výsledok sa znova rozparsuje."""
         nove = self._b[:od] + nahrada.encode('utf-8') + self._b[do:]
         return Zdroj(nove.decode('utf-8'), self.nazov)
 
     def _zaciatok_riadku(self, poz):
+        """Bajtová poloha začiatku riadka, na ktorom leží poloha `poz`."""
         return self._b.rfind(b'\n', 0, poz) + 1
 
     def _na_zaciatku_riadku(self, poz):
@@ -90,6 +96,7 @@ class Zdroj:
 
     @staticmethod
     def je_dict_volanie(uzol):
+        """Je uzol volanie `dict(...)` (tvar prvkov v dátových súboroch)?"""
         return isinstance(uzol, ast.Call) and isinstance(uzol.func, ast.Name) and uzol.func.id == 'dict'
 
     def najdi_dict_volanie(self, kluc, hodnota, zoznam=None):

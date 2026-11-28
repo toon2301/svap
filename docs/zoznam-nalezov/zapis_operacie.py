@@ -45,10 +45,12 @@ def over_kluce(v, povinne, volitelne=()):
 
 
 def _text(v, pole):
+    """Text poľa `pole` zo vstupu `v` po `normalizuj`: zjednotené medzery, neprázdny, v rámci stropu pre jedno pole."""
     return normalizuj(v[pole], pole)
 
 
 def _kratky(v, pole, najviac=200):
+    """Ako `_text`, ale navyše odmietne text dlhší ako `najviac` znakov (stručné polia: vetva, PR, dátum, zdroj, krátky popis)."""
     t = normalizuj(v[pole], pole)
     if len(t) > najviac:
         raise ChybaVstupu('pole %s má %d znakov (najviac %d)' % (pole, len(t), najviac))
@@ -66,6 +68,8 @@ def normalizuj_volitelne(text, pole, najviac):
 
 
 def _prefix(text, prefix, pole):
+    """Odmietne `text`, ktorý nezačína predpísaným slovom `prefix` (`HOTOVÉ` pri príkaze `hotove`, `ZATVORENÉ` pri príkaze
+    `zatvor`)."""
     if not text.startswith(prefix):
         raise ChybaVstupu('pole %s musí začínať slovom %s' % (pole, prefix))
 
@@ -165,6 +169,8 @@ def _zapamataj_uzavretie(ctx, n):
 
 
 def _over_otvoreny_cislo(ctx, n):
+    """Overí, že `n` je celé číslo otvoreného nálezu (nie `bool`; hotový, zatvorený ani neexistujúci nález je
+    `ChybaVstupu`); ID z registra sa zatvárajú ručne."""
     if isinstance(n, bool) or not isinstance(n, int):
         raise ChybaVstupu('pole n musí byť celé číslo nálezu (register ID sa zatvára ručne)')
     if str(n) not in ctx.otvorene_id:
@@ -282,6 +288,8 @@ def _priprav_frontu(ctx, v, otvorene_navyse=(), posledne_cislo=None):
 
 
 def _skontroluj_frontu(ctx, zaznamy, otvorene, posledne_cislo=None):
+    """Spustí pravidlá fronty z modelu nad navrhovaným poradím `zaznamy`; pri porušení vyhodí `ChybaVstupu`
+    so zoznamom chýb (nič sa pritom ešte nezapísalo)."""
     chyby = ctx.model._chyby_fronty(otvorene, posledne_cislo or ctx.posledne_cislo, ctx.id_registra, zaznamy)
     if chyby:
         raise ChybaVstupu('poradie fronty by porušilo pravidlá:\n - ' + '\n - '.join(chyby))
@@ -300,11 +308,13 @@ def _vloz_do_fronty(ds, ctx, text, poradie, zaznam):
 
 
 def fronta_pridaj(ds, ctx, v):
+    """Pridá nový záznam do fronty prác (poradie, `caka` a `po` overí model) a vráti správy pre agenta."""
     text, poradie, zaznam, spravy = _priprav_frontu(ctx, v)
     return _vloz_do_fronty(ds, ctx, text, poradie, zaznam) + spravy
 
 
 def _zaznam_fronty(ds, n):
+    """Nájde záznam `n` vo `fronta.py`: vráti (zdroj, (uzol zoznamu, index, volanie)); ak tam nie je, vyhodí `ChybaVstupu`."""
     zdroj = ds.zdroj('fronta.py')
     najdene = zdroj.najdi_dict_volanie('n', str(n), zoznam='FRONTA')
     if najdene is None:
@@ -313,6 +323,7 @@ def _zaznam_fronty(ds, n):
 
 
 def fronta_odstran(ds, ctx, n):
+    """Odstráni záznam `n` z fronty aj z kontextu (nález ostáva otvorený) a vráti správu pre agenta."""
     _zaznam_fronty(ds, n)
     data.odstran_z_fronty(ds, n)
     ctx.fronta = [z for z in ctx.fronta if z['n'] != str(n)]

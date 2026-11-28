@@ -62,6 +62,8 @@ def kus_na_pripojenie(text):
 
 
 def _volba(hodnota, povolene, pole):
+    """Prevedie hodnotu poľa `pole` zo vstupu podľa mapy `povolene` na názov používaný v dátových súboroch; neznáma hodnota
+    je `ChybaVstupu` s výpisom povolených hodnôt."""
     if not isinstance(hodnota, str) or hodnota not in povolene:
         raise ChybaVstupu('pole %s: %r nie je povolené (povolené: %s)' % (pole, hodnota, ', '.join(sorted(povolene))))
     return povolene[hodnota]

@@ -83,6 +83,8 @@ def _uloz_zalohu(zlyhali):
 
 
 def _sprava_obnovy(chyba, zlyhali, zaloha):
+    """Zloží text pre `ChybaObnovy`: pôvodná chyba, neobnovené súbory s dôvodmi, kde je záloha ich pôvodného obsahu
+    a ako ich vrátiť z gitu."""
     riadky = ['NEPODARILO SA VRÁTIŤ ZMENY (pôvodná chyba: %s: %s).' % (type(chyba).__name__, str(chyba)[:500]),
               'Neobnovené súbory: ' + '; '.join('%s (%s: %s)' % (nazov, type(c).__name__, c) for nazov, _stary, c in zlyhali) + '.',
               ('Pôvodný obsah neobnovených súborov je uložený v %s.' % zaloha) if zaloha else

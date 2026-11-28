@@ -57,6 +57,8 @@ def _nacitaj_json(cesta):
 
 
 def _parser():
+    """Zostaví parser príkazového riadka: prepínač `--na-sucho` a príkazy `stav`, `novy`, `hotove`, `zatvor`, `zmena`,
+    `rozhodnutie`, `zlucene`, `rucny-test` a `fronta` (s podpríkazmi pridaj, odstran, presun, caka, volne, po)."""
     p = argparse.ArgumentParser(prog='zapis.py', description='Zápis do zoznamu nálezov (pozri POSTUP.md).')
     p.add_argument('--na-sucho', action='store_true', help='nič nezapíše na disk: vyskúša zmenu v dočasnej kópii a vypíše výsledok')
     pod = p.add_subparsers(dest='prikaz', required=True)
