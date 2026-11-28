@@ -42,6 +42,7 @@ def _dosad_otazku(kopia, vstup):
 
 
 def _novy(**zmeny):
+    """Platný vstup príkazu `novy` pre skupinu P (prvý balík podľa skutočných dát); `zmeny` prepíšu jednotlivé polia."""
     v = {'skupina': 'P', 'dopad': 'S', 'zlozitost': 'M', 'balik': _Z['baliky']['P'][0], 'kratko': 'krátko', 'co': 'Čo.',
          'poznamka': 'JASNÉ.', 'zdroj': 'test'}
     v.update(zmeny)
@@ -49,38 +50,46 @@ def _novy(**zmeny):
 
 
 def _hotove(**zmeny):
+    """Platný vstup príkazu `hotove` pre prvý otvorený nález (vetva K64, PR #345, čaká na zlúčenie); `zmeny` prepíšu polia."""
     v = {'n': _Z['otvorene'][0], 'vetva': 'K64', 'pr': '#345', 'zlucene': False, 'rucny_test': 'caka', 'text': 'HOTOVÉ test.'}
     v.update(zmeny)
     return v
 
 
 def _zatvor(**zmeny):
+    """Platný vstup príkazu `zatvor` (prvý otvorený nález a posledné zodpovedané rozhodnutie); `zmeny` prepíšu polia."""
     v = {'n': _Z['otvorene'][0], 'rozhodnutie': _Z['zodpovedane'][-1], 'datum': '27. 11. 2026', 'text': 'ZATVORENÉ test.'}
     v.update(zmeny)
     return v
 
 
 def _volny_mimo_fronty(vynechaj=()):
+    """Číslo (ako text) prvého otvoreného nálezu, ktorý nie je vo fronte ani medzi vynechanými (`vynechaj`)."""
     return str(next(n for n in _Z['otvorene'] if str(n) not in _Z['fronta'] and str(n) not in vynechaj))
 
 
 def _pridaj(**zmeny):
+    """Platný vstup príkazu `fronta pridaj` pre nález mimo fronty (dávka K65); `zmeny` prepíšu jednotlivé polia."""
     v = {'n': _volny_mimo_fronty(), 'davka': 'K65', 'co': 'Práca.', 'preco': 'JASNÉ prečo.'}
     v.update(zmeny)
     return v
 
 
 def _rozhodnutie(**zmeny):
+    """Platný vstup príkazu `rozhodnutie` bez odpovede (téma, otázka, odporúčanie, kedy); `zmeny` prepíšu polia."""
     v = {'tema': 'téma', 'otazka': 'otázka?', 'odporucanie': 'odporúčam', 'kedy': 'kedy'}
     v.update(zmeny)
     return v
 
 
 def _bez(vstup, *kluce):
+    """Kópia vstupu bez zadaných kľúčov (na vyskúšanie chýbajúceho povinného poľa)."""
     return {k: v for k, v in vstup.items() if k not in kluce}
 
 
 def _zlyha(kopia, argumenty, ocakavane, kod=2):
+    """Spustí `zapis.py` s `argumentmi` a overí, že skončí návratovým kódom `kod` a vysvetlením s textom `ocakavane`,
+    bez `Traceback` a bez zmeny súborov."""
     pred = kopia.snimka()
     navrat, vystup = kopia.zapis(*argumenty)
     assert navrat == kod, vystup
@@ -194,52 +203,70 @@ PRIPADY_PRIDAJ = [
 
 
 def _parametre(pripady):
+    """Prevedie prípady (popis, vstup, očakávaný text chyby) na parametre pytestu; popis slúži ako identifikátor."""
     return [pytest.param(vstup, ocakavane, id=popis) for popis, vstup, ocakavane in pripady]
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_NOVY))
 def test_novy_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """`novy` odmietne neplatný vstup (chýbajúce alebo neznáme polia, nepovolené voľby, zlé typy, chyby vo `fronta`):
+    kód 2, vysvetlenie a žiadna zmena súborov."""
     _zlyha(kopia, ['novy', '--json', kopia.json('v.json', vstup)], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_HOTOVE))
 def test_hotove_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """`hotove` odmietne neplatný vstup (číslo nálezu, text bez „HOTOVÉ“, typ `zlucene`, `rucny_test`, `cast_pr`, dĺžky polí):
+    kód 2, vysvetlenie a žiadna zmena súborov."""
     _zlyha(kopia, ['hotove', '--json', kopia.json('v.json', vstup)], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ZATVOR))
 def test_zatvor_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """`zatvor` odmietne neplatný vstup (nález nie je otvorený, rozhodnutie neexistuje alebo nemá odpoveď, text bez „ZATVORENÉ“,
+    prázdny dátum): kód 2, vysvetlenie a žiadna zmena súborov."""
     _zlyha(kopia, ['zatvor', '--json', kopia.json('v.json', _dosad_otazku(kopia, vstup))], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ROZHODNUTIE))
 def test_rozhodnutie_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """`rozhodnutie` odmietne neplatný vstup (chýbajúce pole, odpoveď bez dátumu a opačne, neznáme pole, netextová otázka):
+    kód 2, vysvetlenie a žiadna zmena súborov."""
     _zlyha(kopia, ['rozhodnutie', '--json', kopia.json('v.json', vstup)], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ODPOVED))
 def test_odpoved_na_rozhodnutie_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """Odpoveď na existujúce rozhodnutie (pole `id`) odmietne neexistujúce `id`, už zodpovedané rozhodnutie, chýbajúce alebo
+    cudzie
+    polia, prázdnu odpoveď a príliš dlhý dátum: kód 2 a žiadna zmena súborov."""
     _zlyha(kopia, ['rozhodnutie', '--json', kopia.json('v.json', _dosad_otazku(kopia, vstup))], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ZMENA))
 def test_zmena_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """`zmena` odmietne neplatný vstup (chýba text, `kod` nie je text, prázdny alebo príliš dlhý dátum): kód 2 a žiadna zmena
+    súborov."""
     _zlyha(kopia, ['zmena', '--json', kopia.json('v.json', vstup)], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_PRIDAJ))
 def test_fronta_pridaj_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
+    """`fronta pridaj` odmietne neplatný vstup (nález už vo fronte, hotový alebo neexistujúci, `preco` bez JASNÉ alebo NEJASNÉ,
+    zlé poradie, závislosti, `caka`): kód 2 a žiadna zmena súborov."""
     _zlyha(kopia, ['fronta', 'pridaj', '--json', kopia.json('v.json', vstup)], ocakavane)
 
 
 # ---------------------------------------------------------------- argumenty príkazového riadka
 def test_zlucenie_a_rucny_test_bez_zodpovedajucej_polozky_su_chyba(kopia):
+    """`zlucene` bez hotovej položky vetvy a `rucny-test` bez zlúčenej položky sú chyba s vysvetlením."""
     _zlyha(kopia, ['zlucene', '--vetva', 'K99'], 'nemá žiadnu hotovú položku, ktorá čaká na zlúčenie')
     _zlyha(kopia, ['rucny-test', '--vetva', 'K99', '--vysledok', 'prešiel', '--datum', '1. 1. 2027'],
            'nemá zlúčenú položku, ktorá čaká na ručný test')
 
 
 def test_zlucenie_s_neplatnymi_doplnkami_je_chyba(kopia):
+    """`zlucene` odmietne príliš dlhé `--pr`, prázdny `--cas` a riadiace znaky v `--merge`."""
     n = int(_volny_mimo_fronty())
     kod, vystup = kopia.zapis('hotove', '--json', kopia.json('h.json', _hotove(n=n)))
     assert kod == 0, vystup
@@ -249,6 +276,7 @@ def test_zlucenie_s_neplatnymi_doplnkami_je_chyba(kopia):
 
 
 def test_ruzny_test_s_neplatnym_vysledkom_odmietne_uz_argparse(kopia):
+    """`rucny-test` s výsledkom mimo „prešiel“ a „neprešiel“ odmietne už `argparse` (kód 2)."""
     kod, vystup = kopia.zapis('rucny-test', '--vetva', 'K64', '--vysledok', 'asi', '--datum', '1. 1. 2027')
     assert kod == 2 and 'invalid choice' in vystup
 
@@ -256,6 +284,7 @@ def test_ruzny_test_s_neplatnym_vysledkom_odmietne_uz_argparse(kopia):
 @pytest.mark.parametrize('argumenty', [[], ['neznamy'], ['novy'], ['fronta'], ['fronta', 'presun', '1'], ['zlucene'],
                                        ['fronta', 'presun', '1', '--na', 'x']])
 def test_chybajuce_alebo_neplatne_argumenty_dostanu_navod_a_kod_2(kopia, argumenty):
+    """Chýbajúce alebo neplatné argumenty príkazového riadka dostanú návod („usage“) a kód 2; nič sa nezmení."""
     pred = kopia.snimka()
     kod, vystup = kopia.zapis(*argumenty)
     assert kod == 2 and 'usage:' in vystup
@@ -263,12 +292,15 @@ def test_chybajuce_alebo_neplatne_argumenty_dostanu_navod_a_kod_2(kopia, argumen
 
 
 def test_napoveda_funguje_pre_skript_aj_podprikazy(kopia):
+    """`--help` funguje pre skript aj pre podpríkazy (kód 0 a „usage“)."""
     for argumenty in (['--help'], ['novy', '--help'], ['fronta', '--help'], ['fronta', 'caka', '--help'], ['rucny-test', '--help']):
         kod, vystup = kopia.zapis(*argumenty)
         assert kod == 0 and 'usage:' in vystup, argumenty
 
 
 def test_fronta_prikazy_odmietnu_neznamy_nalez_a_neplatne_hodnoty(kopia):
+    """Príkazy `fronta` odmietnu neznámy nález, poradie mimo rozsah, neplatné „kto“, prázdny text, `volne` bez čakania a neplatné
+    alebo samoodkazujúce závislosti (aj číslo v nekanonickom tvare)."""
     n = _Z['fronta'][0]
     pocet = len(_Z['fronta'])
     _zlyha(kopia, ['fronta', 'odstran', '99999'], '99999 nie je vo fronte')
@@ -287,6 +319,7 @@ def test_fronta_prikazy_odmietnu_neznamy_nalez_a_neplatne_hodnoty(kopia):
 
 
 def test_poradie_fronty_nesmie_porusit_zavislosti(kopia):
+    """Presun alebo závislosť, ktorá by dala závislosť za závislú položku, je odmietnutá („nie je vo fronte skôr“)."""
     prva, _druha, tretia = _Z['fronta'][:3]
     kod, vystup = kopia.zapis('fronta', 'po', tretia, '--po', prva)
     assert kod == 0, vystup
@@ -296,6 +329,8 @@ def test_poradie_fronty_nesmie_porusit_zavislosti(kopia):
 
 
 def test_odstranenie_zavislosti_z_fronty_zlyha_a_vrati_vsetko(kopia):
+    """Odstránenie záznamu, na ktorý iná položka čaká a ktorý je ešte otvorený, zlyhá až v kontrole modelu (kód 1) a všetko sa
+    vráti."""
     prva, druha = _Z['fronta'][:2]
     kod, vystup = kopia.zapis('fronta', 'po', druha, '--po', prva)
     assert kod == 0, vystup
@@ -307,6 +342,8 @@ def test_odstranenie_zavislosti_z_fronty_zlyha_a_vrati_vsetko(kopia):
 
 # ---------------------------------------------------------------- JSON súbor
 def test_neexistujuci_a_poskodeny_json_su_chyba_vstupu(kopia):
+    """Neexistujúci, poškodený a binárny JSON aj priečinok namiesto súboru sú chyba vstupu („vstupný JSON sa nepodarilo
+    načítať“)."""
     _zlyha(kopia, ['novy', '--json', str(kopia.koren / 'neexistuje.json')], 'vstupný JSON sa nepodarilo načítať')
     (kopia.koren / 'zly.json').write_text('{"skupina": ', encoding='utf-8')
     _zlyha(kopia, ['novy', '--json', str(kopia.koren / 'zly.json')], 'vstupný JSON sa nepodarilo načítať')
@@ -319,17 +356,21 @@ def test_neexistujuci_a_poskodeny_json_su_chyba_vstupu(kopia):
 @pytest.mark.parametrize('prikaz', [['novy'], ['hotove'], ['zatvor'], ['zmena'], ['rozhodnutie'], ['fronta', 'pridaj']],
                          ids=['novy', 'hotove', 'zatvor', 'zmena', 'rozhodnutie', 'fronta_pridaj'])
 def test_json_ktory_nie_je_objekt_je_chyba_vstupu_pre_kazdy_prikaz(kopia, prikaz, obsah):
+    """JSON, ktorý nie je objekt (zoznam, text, číslo, `null`, `true`), je pri každom príkaze s `--json` chyba „vstup musí byť
+    JSON objekt“ (kód 2), nie neočakávaná výnimka (nález bota, PR 345)."""
     (kopia.koren / 'v.json').write_text(obsah, encoding='utf-8')
     _zlyha(kopia, [*prikaz, '--json', str(kopia.koren / 'v.json')], 'vstup musí byť JSON objekt')
 
 
 def test_hodnota_null_je_ako_vynechane_pole(kopia):
+    """Hodnota `null` pri voliteľnom poli je ako vynechané pole; pri povinnom poli je to chyba „chýbajú polia“."""
     kod, vystup = kopia.zapis('--na-sucho', 'novy', '--json', kopia.json('v.json', _novy(rozhodnutie=None, fronta=None)))
     assert kod == 0, vystup
     _zlyha(kopia, ['novy', '--json', kopia.json('w.json', _novy(co=None))], 'chýbajú polia: co')
 
 
 def test_skript_odmietne_pracu_nad_datami_so_syntaktickou_chybou(kopia):
+    """Dátový súbor so syntaktickou chybou skript odmietne s vysvetlením (kód 2, bez `Traceback`) a nič nezmení."""
     stav_py = kopia.priecinok / 'stav.py'
     stav_py.write_text(stav_py.read_text(encoding='utf-8') + '\nNEPLATNE = (\n', encoding='utf-8')
     pred = kopia.snimka()
@@ -339,6 +380,8 @@ def test_skript_odmietne_pracu_nad_datami_so_syntaktickou_chybou(kopia):
 
 
 def test_skript_odmietne_pracu_nad_datami_ktore_model_neprijme(kopia):
+    """Dáta, ktoré model neprijme (pokazená fronta), skript odmietne hneď na začiatku („Dáta zoznamu sú už teraz neplatné“, kód 2)
+    a nič nezmení."""
     import re
     fronta_py = kopia.priecinok / 'fronta.py'
     text = fronta_py.read_text(encoding='utf-8')
@@ -358,10 +401,14 @@ TEXTY = ['', ' ', 'abc', "'", '\\', '"', '🙂', 'x' * 30000, '\x00', '\n', "it'
 
 @pytest.fixture(scope='module')
 def kontext0():
+    """Fixture: kontext zo skutočných dát načítaný raz na modul; operácie ho nemenia (každý pokus dostane kópiu cez
+    `_kontext`)."""
     return op.nacitaj_kontext()
 
 
 def _kontext(k0):
+    """Kópia meniteľných častí kontextu (`otvorene_id`, `fronta`, `hotove`, rozhodnutia), aby pokusy neovplyvňovali jeden
+    druhý."""
     k = copy.copy(k0)
     k.otvorene_id = set(k0.otvorene_id)
     k.fronta = [dict(z) for z in k0.fronta]
@@ -380,12 +427,15 @@ def _vyskusaj(funkcia, k0, *argumenty):
 
 
 def _kazde_pole(vstup):
+    """Generuje kópie vstupu, v ktorých je postupne každé pole nahradené každou nezmyselnou hodnotou z `ODDNE`."""
     for pole in vstup:
         for hodnota in ODDNE:
             yield dict(vstup, **{pole: hodnota})
 
 
 def test_novy_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0):
+    """Nezmyselné hodnoty (číslo, `bool`, zoznam, slovník, prázdny alebo obrovský text, riadiaci znak) v každom poli `novy` aj vo
+    vnorenej `fronta` skončia len `ChybaVstupu` alebo `ChybaZdroja`, nikdy inou výnimkou."""
     fronta_vstup = {'davka': 'K65', 'co': 'x', 'preco': 'JASNÉ y', 'poradie': 1, 'po': ['380'], 'caka': ['majiteľ', 'x']}
     vstup = _novy(rozhodnutie='R84', fronta=fronta_vstup)
     for v in _kazde_pole(vstup):
@@ -395,6 +445,7 @@ def test_novy_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(konte
 
 
 def test_hotove_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0):
+    """Nezmyselné hodnoty v každom poli `hotove` aj v položke `cast_pr` skončia len `ChybaVstupu` alebo `ChybaZdroja`."""
     cast = {'pr': '#1', 'vetva': 'K1', 'text': 't'}
     vstup = _hotove(cast_pr=[cast])
     for v in _kazde_pole(vstup):
@@ -410,11 +461,16 @@ def test_hotove_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kon
     (op.fronta_pridaj, _pridaj(po=['380'], caka=['Codex', 'x'])),
 ], ids=['zatvor', 'rozhodnutie', 'zmena', 'fronta_pridaj'])
 def test_ostatne_prikazy_s_nezmyselnymi_hodnotami_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0, funkcia, vstup):
+    """Nezmyselné hodnoty v každom poli príkazov `zatvor`, `rozhodnutie`, `zmena` a `fronta pridaj` skončia len `ChybaVstupu`
+    alebo `ChybaZdroja`."""
     for v in _kazde_pole(vstup):
         _vyskusaj(funkcia, kontext0, v)
 
 
 def test_odpoved_na_rozhodnutie_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0):
+    """Nezmyselné hodnoty v poliach odpovede na rozhodnutie (`id`, `odpoved`, `datum`) skončia len `ChybaVstupu` alebo
+    `ChybaZdroja`;
+    otázka sa pred každým pokusom zapíše v pamäti."""
     otazka = _rozhodnutie()
     vstup = {'id': 'R%d' % (kontext0.n_rozhodnuti + 1), 'odpoved': 'áno', 'datum': '1. 1. 2027'}  # vlastná otázka sa zapíše v pamäti
     for v in _kazde_pole(vstup):
@@ -427,6 +483,8 @@ def test_odpoved_na_rozhodnutie_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetre
 
 
 def test_prikazy_s_neobycajnymi_textami_z_prikazoveho_riadka_nikdy_neskoncia_neosetrenou_vynimkou(kontext0):
+    """Príkazy s argumentmi z príkazového riadka (`fronta`, `zlucene`, `rucny-test`) s neobyčajnými textami (prázdny, apostrof,
+    lomka, emoji, obrovský text, riadiaci znak) a nezmyselnými číslami skončia len `ChybaVstupu` alebo `ChybaZdroja`."""
     n = _Z['fronta'][0]
     for text in TEXTY:
         _vyskusaj(op.fronta_odstran, kontext0, text)

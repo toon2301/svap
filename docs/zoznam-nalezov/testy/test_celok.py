@@ -32,10 +32,14 @@ ZDROJE_NALEZOV = {n: _nazov_zdroja(n) for n in OTVORENE}
 
 @pytest.fixture(scope='module')
 def kontext0():
+    """Fixture: kontext zo skutočných dát načítaný raz na modul; operácie ho nemenia (každý pokus dostane kópiu cez
+    `_kontext`)."""
     return op.nacitaj_kontext()
 
 
 def _kontext(k0):
+    """Kópia meniteľných častí kontextu (`otvorene_id`, `fronta`, `hotove`, rozhodnutia), aby pokusy neovplyvňovali jeden
+    druhý."""
     k = copy.copy(k0)
     k.otvorene_id = set(k0.otvorene_id)
     k.fronta = [dict(z) for z in k0.fronta]
@@ -96,9 +100,11 @@ class _BezPoloziek(ast.NodeTransformer):
     """Odstráni ID zo zoznamov v `polozky=…` (ostatné ostane nedotknuté)."""
 
     def __init__(self, identifikator):
+        """Zapamätá ID, ktoré sa má odstrániť zo zoznamov `polozky`."""
         self.identifikator = identifikator
 
     def visit_keyword(self, uzol):
+        """V kľúčovom slove `polozky` (aj v častiach súčtu zoznamov) vyhodí z každého zoznamu hľadané ID; ostatné kľúče nechá."""
         if uzol.arg == 'polozky':
             for zoznam in (u for u in ast.walk(uzol.value) if isinstance(u, ast.List)):  # aj časti súčtu `[…] + […]`
                 zoznam.elts = [e for e in zoznam.elts if not (isinstance(e, ast.Constant) and e.value == self.identifikator)]
@@ -134,11 +140,14 @@ def _over_uzavretie(zmeny, n, zaznamovy_subor):
 
 # ---------------------------------------------------------------- každý otvorený nález
 def test_vychodzi_stav_kopie_je_platny(kopia):
+    """Východiskový stav kópie dát prejde kontrolou `build.py --check`."""
     kod, vystup = kopia.build_check()
     assert kod == 0, vystup
 
 
 def test_otvorene_nalezy_su_najdene_v_zdrojoch_a_pocet_zodpoveda_skupinam():
+    """Každý otvorený nález sa nájde v niektorom zo zdrojov nálezov (`polozky_povodne`, `polozky_nove*`, `zaznamy_nove_NN`)
+    a ich počet sa zhoduje so súčtom nálezov v skupinách."""
     assert len(OTVORENE) == sum(M.pocty.nalezy.values())
     assert set(ZDROJE_NALEZOV.values()) <= {'polozky_povodne.py'} | {f.name for f in ZDROJ.glob('polozky_nove*.py')} | {
         f.name for f in ZDROJ.glob('zaznamy_nove_[0-9][0-9].py')}
@@ -146,6 +155,8 @@ def test_otvorene_nalezy_su_najdene_v_zdrojoch_a_pocet_zodpoveda_skupinam():
 
 @pytest.mark.parametrize('n', OTVORENE, ids=['n%d' % n for n in OTVORENE])
 def test_otvoreny_nalez_sa_da_presunut_do_hotovych_bez_poskodenia_zdrojov(kontext0, n):
+    """Každý otvorený nález (jeden test na nález) sa dá presunúť do hotových tak, že zo zdroja zmizne presne jeho prvok,
+    zo fronty a vĺn presne jeho ID a pribudne jeden záznam."""
     ds = zapis_data.Dataset(ZDROJ)
     op.hotove(ds, _kontext(kontext0), {'n': n, 'vetva': 'K64', 'zlucene': False, 'rucny_test': 'caka', 'text': 'HOTOVÉ test.'})
     _over_uzavretie(ds.zmeny(), n, _cielovy_zaznamovy('zaznamy_hotove'))
@@ -153,6 +164,8 @@ def test_otvoreny_nalez_sa_da_presunut_do_hotovych_bez_poskodenia_zdrojov(kontex
 
 @pytest.mark.parametrize('n', OTVORENE, ids=['n%d' % n for n in OTVORENE])
 def test_otvoreny_nalez_sa_da_zatvorit_rozhodnutim_bez_poskodenia_zdrojov(kontext0, n):
+    """Každý otvorený nález (jeden test na nález) sa dá zatvoriť rozhodnutím tak, že zo zdroja zmizne presne jeho prvok,
+    zo fronty a vĺn presne jeho ID a pribudne jeden záznam zatvoreného."""
     ds = zapis_data.Dataset(ZDROJ)
     op.zatvor(ds, _kontext(kontext0), {'n': n, 'rozhodnutie': ODPOVEDANE[-1], 'datum': '27. 11. 2026', 'text': 'ZATVORENÉ test.'})
     _over_uzavretie(ds.zmeny(), n, _cielovy_zaznamovy('zaznamy_zatvorene'))
@@ -162,9 +175,11 @@ class _PridajOdpoved(ast.NodeTransformer):
     """Doplní do `dict(id='<id>', …)` kľúče `odpoved` a `datum` (ostatné ostane nedotknuté)."""
 
     def __init__(self, identifikator, odpoved, datum):
+        """Zapamätá `id` rozhodnutia a odpoveď s dátumom, ktoré sa majú doplniť."""
         self.identifikator, self.odpoved, self.datum = identifikator, odpoved, datum
 
     def visit_Call(self, uzol):
+        """Do volania `dict(id=<id>, …)` pridá kľúče `odpoved` a `datum`; ostatné volania nechá."""
         if isinstance(uzol.func, ast.Name) and uzol.func.id == 'dict' and any(
                 k.arg == 'id' and isinstance(k.value, ast.Constant) and k.value.value == self.identifikator for k in uzol.keywords):
             uzol.keywords += [ast.keyword(arg='odpoved', value=ast.Constant(self.odpoved)), ast.keyword(arg='datum', value=ast.Constant(self.datum))]
@@ -176,6 +191,8 @@ NEZODPOVEDANE = [d['id'] for d in stav.DECISIONS if not d.get('odpoved')]
 
 @pytest.mark.parametrize('identifikator', NEZODPOVEDANE)
 def test_kazde_nezodpovedane_rozhodnutie_sa_da_zodpovedat_bez_poskodenia_zdrojov(kontext0, identifikator):
+    """Každé rozhodnutie bez odpovede (jeden test na rozhodnutie) sa dá zodpovedať tak, že sa zmení jediný súbor
+    a pribudnú presne kľúče `odpoved` a `datum`."""
     ds = zapis_data.Dataset(ZDROJ)
     op.rozhodnutie(ds, _kontext(kontext0), {'id': identifikator, 'odpoved': "Majiteľ: súhlas, it's | ok.", 'datum': '27. 11. 2026'})
     zmeny = ds.zmeny()
@@ -196,6 +213,8 @@ def _vzorka():
 
 
 def test_vzorka_nalezov_zo_vsetkych_zdrojov_prejde_celym_zapisom_s_kontrolou_modelu(kopia):
+    """Vzorka (prvý a posledný nález z každého zdroja) prejde striedavo príkazmi `hotove` a `zatvor` s kontrolou modelu:
+    počty skupín a hotových sedia a nálezy už nie sú otvorené."""
     vzorka = _vzorka()
     zaklad = suhrn(kopia.spusti('build.py')[1])
     for i, n in enumerate(vzorka):
@@ -215,6 +234,7 @@ def test_vzorka_nalezov_zo_vsetkych_zdrojov_prejde_celym_zapisom_s_kontrolou_mod
 
 
 def test_ten_isty_nalez_sa_neda_uzavriet_dvakrat(kopia):
+    """Ten istý nález sa po `hotove` nedá uzavrieť druhýkrát ani ďalším `hotove`, ani `zatvor` (kód 2, nič sa nezmení)."""
     n = OTVORENE[0]
     vstup = kopia.json('h.json', {'n': n, 'vetva': 'K64', 'zlucene': True, 'text': 'HOTOVÉ raz.'})
     assert kopia.zapis('hotove', '--json', vstup)[0] == 0
@@ -228,6 +248,9 @@ def test_ten_isty_nalez_sa_neda_uzavriet_dvakrat(kopia):
 
 # ---------------------------------------------------------------- striedanie dvoch agentov
 def test_dvaja_agenti_striedavo_prejdu_celym_cyklom_dvoch_davok(kopia):
+    """Dvaja agenti striedavo prejdú dvoma dávkami: A zapíše nález z mapovania a dokončí prvú položku, B vybaví zlúčenie,
+    majiteľ zapíše neúspešný ručný test, B zaradí nález z testu a opraví ďalší; po úspešnom teste sú obe dávky uzavreté
+    a `stav` v každom kroku hovorí, čo čaká."""
     u = kopia.udaje()
     prva, druha = u['fronta'][:2]
 
@@ -299,7 +322,9 @@ def test_kazdy_agent_vidi_to_co_zapisal_druhy_aj_po_dalsich_zapisoch(kopia):
 
 # ---------------------------------------------------------------- vzorové vstupy
 def _nacitaj_sablonu(nazov):
+    """Načíta vzorový vstup `nazov` zo `sablony/zapis` bez kľúčov začínajúcich podčiarkovníkom (poznámok)."""
     def bez_poznamok(h):
+        """Rekurzívne vyhodí zo slovníkov kľúče začínajúce podčiarkovníkom."""
         if isinstance(h, dict):
             return {k: bez_poznamok(v) for k, v in h.items() if not k.startswith('_')}
         return [bez_poznamok(v) for v in h] if isinstance(h, list) else h
@@ -308,6 +333,8 @@ def _nacitaj_sablonu(nazov):
 
 @pytest.mark.parametrize('nazov', sorted(p.name for p in SABLONY.glob('*.json')))
 def test_vzorove_vstupy_su_platne_pre_prikaz_na_ktory_su_urcene(kopia, nazov):
+    """Každý vzorový vstup (`sablony/zapis/*.json`) je po dosadení čísla otvoreného nálezu alebo nezodpovedaného rozhodnutia
+    platný pre svoj príkaz: suchý beh skončí kódom 0 a nič nezmení."""
     nezodpovedane = otazka_pre_majitela(kopia) if nazov == 'rozhodnutie-odpoved.json' else None  # vlastná otázka, nie z živých dát
     u = kopia.udaje()
     volny = next(n for n in u['otvorene'] if str(n) not in u['fronta'])
@@ -328,6 +355,7 @@ def test_vzorove_vstupy_su_platne_pre_prikaz_na_ktory_su_urcene(kopia, nazov):
 
 
 def test_kazda_sablona_ma_prikaz_a_ziadny_prikaz_nema_sablonu_navyse():
+    """Zoznam vzorových vstupov je presne taký, aký sa čaká: každý príkaz s JSON vstupom má šablónu a žiadna nie je navyše."""
     assert sorted(p.stem for p in SABLONY.glob('*.json')) == ['fronta-pridaj', 'hotove', 'novy', 'rozhodnutie', 'rozhodnutie-odpoved', 'zatvor', 'zmena']
 
 
@@ -338,6 +366,8 @@ def _dalsi_subor(nazov):
 
 
 def test_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho_a_vsetky_sa_nacitaju(kopia):
+    """Po naplnení súboru nových nálezov (nízky limit cez `ZAPIS_ROTACIA_RIADKOV`) sa ďalšie zapisujú do nasledujúceho
+    `zaznamy_nove_NN.py`; všetky sa načítajú a nález zo starého aj z nového súboru sa dá uzavrieť."""
     najnovsi = kopia.posledny_zaznamovy('zaznamy_nove')
     dalsi = _dalsi_subor(najnovsi)
     riadkov = len(kopia.text(najnovsi).splitlines())
@@ -366,6 +396,8 @@ def test_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho_a_vsetky_sa_nac
 
 
 def test_hotove_zaznamy_sa_po_naplneni_suboru_zapisuju_do_nasledujuceho(kopia):
+    """Po naplnení súboru hotových (nízky limit rotácie) sa ďalšie `hotove` zapisujú do nasledujúceho súboru
+    a `zlucene` označí položky v oboch súboroch."""
     najnovsi = kopia.posledny_zaznamovy('zaznamy_hotove')
     dalsi = _dalsi_subor(najnovsi)
     riadkov = len(kopia.text(najnovsi).splitlines())

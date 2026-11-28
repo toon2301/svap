@@ -8,18 +8,21 @@ NEBEZPECNY_TEXT = "Apostrof ' a obrátená lomka \\ a zvislítko | a úvodzovky 
 
 
 def build(k):
+    """Spustí `build.py` v kópii, overí úspech a vráti súhrnné čísla zo záverečného riadka (`suhrn`)."""
     kod, vystup = k.spusti('build.py')
     assert kod == 0, vystup
     return suhrn(vystup)
 
 
 def ok(k, *argumenty, **kw):
+    """Spustí `zapis.py` v kópii, overí návratový kód 0 a vráti jeho výstup."""
     kod, vystup = k.zapis(*argumenty, **kw)
     assert kod == 0, vystup
     return vystup
 
 
 def novy_vstup(u, skupina='P', **zmeny):
+    """Platný vstup príkazu `novy` (balík je prvý z danej skupiny podľa údajov `u`); `zmeny` prepíšu jednotlivé polia."""
     vstup = {'skupina': skupina, 'dopad': 'S', 'zlozitost': 'M', 'balik': u['baliky'][skupina][0],
              'kratko': 'krátky názov', 'co': 'Čo sa deje a kde.', 'poznamka': 'JASNÉ poznámka.', 'zdroj': 'ručný test majiteľa'}
     vstup.update(zmeny)
@@ -27,6 +30,8 @@ def novy_vstup(u, skupina='P', **zmeny):
 
 
 def hotove_vstup(n, **zmeny):
+    """Platný vstup príkazu `hotove` pre nález `n` (vetva K64, PR #345, čaká na zlúčenie, ručný test čaká);
+    `zmeny` prepíšu jednotlivé polia."""
     vstup = {'n': n, 'vetva': 'K64', 'pr': '#345', 'zlucene': False, 'rucny_test': 'caka',
              'text': 'HOTOVÉ (K64, PR #345, čaká na zlúčenie). Oprava a overenie.'}
     vstup.update(zmeny)
@@ -42,6 +47,7 @@ def volny_nalez(u):
 
 
 def nalez_vo_fronte_a_vlne(u):
+    """Otvorený nález, ktorý je vo fronte aj vo vlne poradia; ak taký v dátach nie je, test sa preskočí."""
     for n in u['otvorene']:
         if str(n) in u['fronta'] and str(n) in u['vo_vlnach']:
             return n
@@ -49,18 +55,21 @@ def nalez_vo_fronte_a_vlne(u):
 
 
 def nalez_mimo_fronty(u, kolko=1):
+    """`kolko` otvorených nálezov (čísla ako `int`), ktoré nie sú vo fronte."""
     najdene = [n for n in u['otvorene'] if str(n) not in u['fronta']][:kolko]
     assert len(najdene) == kolko
     return najdene
 
 
 def rozhodnutie_vstup(**zmeny):
+    """Platný vstup príkazu `rozhodnutie` bez odpovede (nová otázka pre majiteľa); `zmeny` prepíšu jednotlivé polia."""
     vstup = {'tema': 'Skúšobná téma', 'otazka': 'Čo presne rozhodnúť?', 'odporucanie': 'Odporúčam áno.', 'kedy': 'pred ďalšou dávkou'}
     vstup.update(zmeny)
     return vstup
 
 
 def pridaj_vstup(n, **zmeny):
+    """Platný vstup príkazu `fronta pridaj` pre nález `n` (dávka K65); `zmeny` prepíšu jednotlivé polia."""
     vstup = {'n': str(n), 'davka': 'K65', 'co': 'Skúšobná práca.', 'preco': 'JASNÉ (skúška).'}
     vstup.update(zmeny)
     return vstup

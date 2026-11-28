@@ -58,6 +58,8 @@ class Kopia:
     """Kópia priečinka zoznamu v dočasnom adresári s pomôckami na spúšťanie skriptov a čítanie súborov."""
 
     def __init__(self, koren):
+        """Skopíruje priečinok zoznamu (bez `__pycache__`, `testy` a obrázkov z `navrhy`) a register do dočasného koreňa `koren`,
+        aby test nikdy nemenil repozitár."""
         self.koren = Path(koren)
         self.priecinok = self.koren / 'docs' / 'zoznam-nalezov'
         shutil.copytree(ZDROJ, self.priecinok, ignore=shutil.ignore_patterns(*NEKOPIRUJ))
@@ -65,6 +67,8 @@ class Kopia:
         shutil.copy2(REGISTER, self.koren / 'docs' / 'testing' / REGISTER.name)
 
     def _proces(self, argumenty, vstup=None, env=None):
+        """Spustí Python v kópii (`-B`, bajtkód mimo repozitára, výstup v UTF-8); vráti (návratový kód, spojený očistený
+        výstup)."""
         beh = subprocess.run([sys.executable, '-B', '-X', 'pycache_prefix=' + str(self.koren / 'pyc'), *map(str, argumenty)],
                              cwd=str(self.priecinok), input=vstup, capture_output=True, text=True, encoding='utf-8',
                              env={**os.environ, **PROSTREDIE, **(env or {})})
@@ -75,9 +79,11 @@ class Kopia:
         return self._proces([skript, *argumenty], vstup, env)
 
     def zapis(self, *argumenty, vstup=None, env=None):
+        """Spustí `zapis.py` v kópii s danými argumentmi (a vstupom na štandardný vstup); vráti (kód, výstup)."""
         return self.spusti('zapis.py', *argumenty, vstup=vstup, env=env)
 
     def build_check(self):
+        """Spustí `build.py --check` v kópii: overí model a že `ZOZNAM.md` zodpovedá dátam; vráti (kód, výstup)."""
         return self.spusti('build.py', '--check')
 
     def vyhodnot(self, vyraz, moduly='model, stav, fronta'):
@@ -103,6 +109,7 @@ class Kopia:
         return sorted(p.name for p in self.priecinok.glob('%s_[0-9][0-9].py' % predpona))[-1]
 
     def text(self, nazov):
+        """Aktuálny text súboru `nazov` z priečinka kópie."""
         return (self.priecinok / nazov).read_text(encoding='utf-8')
 
     def snimka(self):
@@ -119,4 +126,5 @@ class Kopia:
 
 @pytest.fixture
 def kopia(tmp_path):
+    """Fixture: čerstvá kópia skutočných dát zoznamu pre jeden test (v `tmp_path`, po teste sa zahodí)."""
     return Kopia(tmp_path)

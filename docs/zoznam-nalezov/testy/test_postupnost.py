@@ -9,6 +9,7 @@ import zapis_transakcia as tr
 
 
 def _novy(u, **zmeny):
+    """Platný vstup príkazu `novy` pre skupinu P (prvý balík podľa údajov `u`); `zmeny` prepíšu jednotlivé polia."""
     v = {'skupina': 'P', 'dopad': 'S', 'zlozitost': 'S', 'balik': u['baliky']['P'][0], 'kratko': 'k', 'co': 'Čo.', 'poznamka': 'JASNÉ.',
          'zdroj': 'test'}
     v.update(zmeny)
@@ -16,10 +17,13 @@ def _novy(u, **zmeny):
 
 
 def _vo_fronte(kopia, n):
+    """Záznam nálezu `n` z `fronta.FRONTA` v kópii (ako slovník)."""
     return kopia.vyhodnot('[z for z in fronta.FRONTA if z["n"] == "%s"][0]' % n)
 
 
 def test_novy_nalez_a_hned_zmeny_jeho_miesta_a_cakania_vo_fronte_v_jednom_zapise(kopia):
+    """Nový nález s miestom vo fronte sa v tom istom zápise dá presunúť a doplniť o čakanie a závislosť; po zápise sú poradie
+    aj obe polia v dátach a `build.py --check` prejde."""
     u = kopia.udaje()
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
     op.novy(ds, ctx, _novy(u, fronta={'davka': 'K65', 'co': 'Nová práca.', 'preco': 'JASNÉ (nový nález).', 'poradie': 1}))
@@ -39,6 +43,8 @@ def test_novy_nalez_a_hned_zmeny_jeho_miesta_a_cakania_vo_fronte_v_jednom_zapise
 
 
 def test_nalez_zapisany_a_hned_opraveny_v_jednom_zapise_skonci_v_hotovych(kopia):
+    """Nález zapísaný a hneď označený za hotový v jednom zápise skončí v hotových: nie je otvorený ani vo fronte a číslo
+    sa pridelilo len raz."""
     u = kopia.udaje()
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
     op.novy(ds, ctx, _novy(u, fronta={'davka': 'K65', 'co': 'Nová práca.', 'preco': 'JASNÉ (nový nález).'}))
@@ -51,6 +57,7 @@ def test_nalez_zapisany_a_hned_opraveny_v_jednom_zapise_skonci_v_hotovych(kopia)
 
 
 def test_nalez_zapisany_a_hned_zatvoreny_v_jednom_zapise_skonci_medzi_zatvorenymi(kopia):
+    """Nález zapísaný a hneď zatvorený rozhodnutím s odpoveďou v jednom zápise skončí medzi zatvorenými."""
     u = kopia.udaje()
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
     op.novy(ds, ctx, _novy(u))
@@ -63,6 +70,8 @@ def test_nalez_zapisany_a_hned_zatvoreny_v_jednom_zapise_skonci_medzi_zatvorenym
 
 
 def test_hotove_zlucenie_a_rucny_test_v_jednom_zapise_vidia_zmeny_predosleho_kroku(kopia):
+    """Hotové, zlúčenie a dva výsledky ručného testu (neprešiel, potom prešiel) v jednom zápise: každý krok vidí zmenu
+    predošlého, uzavretá dávka sa už neotvorí a text zachová históriu."""
     u = kopia.udaje()
     n = next(n for n in u['otvorene'] if str(n) not in u['fronta'])
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
@@ -79,6 +88,7 @@ def test_hotove_zlucenie_a_rucny_test_v_jednom_zapise_vidia_zmeny_predosleho_kro
 
 
 def test_odstranenie_a_pridanie_do_fronty_v_jednom_zapise_nezmeni_cudzie_zaznamy(kopia):
+    """Odstránenie, pridanie a presun záznamov fronty v jednom zápise nezmenia cudzie záznamy; poradie vyjde podľa očakávania."""
     u = kopia.udaje()
     n = next(n for n in u['otvorene'] if str(n) not in u['fronta'])
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
@@ -92,6 +102,8 @@ def test_odstranenie_a_pridanie_do_fronty_v_jednom_zapise_nezmeni_cudzie_zaznamy
 
 
 def test_dva_nove_nalezy_a_dve_rozhodnutia_v_jednom_zapise_dostanu_po_sebe_iduce_cisla(kopia):
+    """Dva nové nálezy a dve rozhodnutia v jednom zápise dostanú po sebe idúce čísla (kontext sa po každom kroku posunie)
+    a zapíšu sa v tomto poradí."""
     u = kopia.udaje()
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
     op.novy(ds, ctx, _novy(u))
@@ -110,6 +122,7 @@ def test_dva_nove_nalezy_a_dve_rozhodnutia_v_jednom_zapise_dostanu_po_sebe_iduce
 
 
 def test_ten_isty_nalez_sa_neda_uzavriet_dvakrat_v_jednom_zapise(kopia):
+    """Ten istý nález sa v jednom zápise nedá uzavrieť dvakrát: druhé `hotove` je `ChybaVstupu` „nie je otvorený“."""
     u = kopia.udaje()
     n = next(n for n in u['otvorene'] if str(n) not in u['fronta'])
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
@@ -119,6 +132,8 @@ def test_ten_isty_nalez_sa_neda_uzavriet_dvakrat_v_jednom_zapise(kopia):
 
 
 def test_nalez_vo_fronte_nemozno_pridat_znova_ani_po_odstraneni_a_vrateni_v_jednom_zapise(kopia):
+    """Nález, ktorý je vo fronte, sa nedá pridať znova; po odstránení ho možno vrátiť a potom ho znova pridať nejde
+    (stav sa sleduje v rámci jedného zápisu)."""
     u = kopia.udaje()
     n = u['fronta'][0]
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
@@ -131,6 +146,8 @@ def test_nalez_vo_fronte_nemozno_pridat_znova_ani_po_odstraneni_a_vrateni_v_jedn
 
 
 def test_otazka_odpoved_a_zatvorenie_nalezu_v_jednom_zapise_vidia_zmeny_predosleho_kroku(kopia):
+    """Otázka, odpoveď na ňu a zatvorenie nálezu v jednom zápise: kým otázka nemá odpoveď, `zatvor` zlyhá; odpoveď sa zapíše raz
+    a neprepíše sa; potom `zatvor` prejde a rozhodnutie je s odpoveďou."""
     u = kopia.udaje()
     ds, ctx = zapis_data.Dataset(kopia.priecinok), op.nacitaj_kontext()
     op.novy(ds, ctx, _novy(u))
