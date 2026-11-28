@@ -14,6 +14,7 @@ import stav
 import zapis_data
 import zapis_operacie as op
 from conftest import ZDROJ, suhrn
+from pomocky import otazka_pre_majitela
 
 SABLONY = ZDROJ / 'sablony' / 'zapis'
 M = model.zostav_model()
@@ -307,6 +308,7 @@ def _nacitaj_sablonu(nazov):
 
 @pytest.mark.parametrize('nazov', sorted(p.name for p in SABLONY.glob('*.json')))
 def test_vzorove_vstupy_su_platne_pre_prikaz_na_ktory_su_urcene(kopia, nazov):
+    nezodpovedane = otazka_pre_majitela(kopia) if nazov == 'rozhodnutie-odpoved.json' else None  # vlastná otázka, nie z živých dát
     u = kopia.udaje()
     volny = next(n for n in u['otvorene'] if str(n) not in u['fronta'])
     vstup = _nacitaj_sablonu(nazov)
@@ -315,7 +317,7 @@ def test_vzorove_vstupy_su_platne_pre_prikaz_na_ktory_su_urcene(kopia, nazov):
     if nazov == 'fronta-pridaj.json':
         vstup['n'] = str(volny)
     if nazov == 'rozhodnutie-odpoved.json':
-        vstup['id'] = next(r for r in u['rozhodnutia'] if r not in u['rozhodnutia_s_odpovedou'])  # vzor ukazuje budúce číslo R<n>
+        vstup['id'] = nezodpovedane  # vzor ukazuje budúce číslo R<n>
     prikaz = {'novy.json': ['novy'], 'hotove.json': ['hotove'], 'zatvor.json': ['zatvor'], 'zmena.json': ['zmena'],
               'rozhodnutie.json': ['rozhodnutie'], 'rozhodnutie-odpoved.json': ['rozhodnutie'],
               'fronta-pridaj.json': ['fronta', 'pridaj']}[nazov]

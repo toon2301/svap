@@ -7,8 +7,8 @@ a celé scenáre v `test_celok.py` a `test_postupnost.py`.
 import pytest
 
 from conftest import suhrn
-from pomocky import (NEBEZPECNY_TEXT, build, hotove_vstup, nalez_mimo_fronty, nalez_vo_fronte_a_vlne, novy_vstup, ok,
-                     pridaj_vstup, rozhodnutie_vstup, volny_nalez)
+from pomocky import (NEBEZPECNY_TEXT, build, hotove_vstup, nalez_mimo_fronty, nalez_vo_fronte_a_vlne, nezodpovedane_rozhodnutie_v_stav_py,
+                     novy_vstup, ok, pridaj_vstup, rozhodnutie_vstup, volny_nalez)
 
 
 # ---------------------------------------------------------------- stav
@@ -316,8 +316,8 @@ def test_odpoved_na_zapisanu_otazku_nevytvori_nove_cislo_a_doplni_len_odpoved_a_
 
 
 def test_odpoved_na_stare_rozhodnutie_zo_stav_py_prida_len_dva_kluce_a_zvysok_ostane(kopia):
-    u = kopia.udaje()
-    stare = next(r for r in u['rozhodnutia'] if r not in u['rozhodnutia_s_odpovedou'])
+    stare = nezodpovedane_rozhodnutie_v_stav_py(kopia)
+    assert stare not in kopia.udaje()['rozhodnutia_s_odpovedou']
     pred = kopia.vyhodnot("[d for d in stav.DECISIONS if d['id'] == '%s'][0]" % stare)
     riadkov = kopia.text('stav.py').count('\n')
     ok(kopia, 'rozhodnutie', '--json', kopia.json('o.json', {'id': stare, 'odpoved': 'Majiteľ: súhlas.', 'datum': '27. 11. 2026'}))

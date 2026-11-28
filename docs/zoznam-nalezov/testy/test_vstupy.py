@@ -14,6 +14,7 @@ import stav
 import zapis_data
 import zapis_operacie as op
 from conftest import ZDROJ
+from pomocky import otazka_pre_majitela
 from zapis_format import ChybaVstupu
 from zapis_zdroj import ChybaZdroja
 
@@ -28,6 +29,16 @@ def _zakladne_udaje():
 
 
 _Z = _zakladne_udaje()
+NEZODPOVEDANE = '<id nezodpovedaného rozhodnutia>'  # zástupný text: test zapíše vlastnú otázku a dosadí jej `R<n>` (`_dosad_otazku`)
+
+
+def _dosad_otazku(kopia, vstup):
+    """Ak vstup obsahuje zástupný text, zapíše do kópie vlastnú nezodpovedanú otázku a dosadí jej `R<n>`; testy tak nezávisia od toho,
+    či majiteľ v živých dátach nejaké rozhodnutie ešte nezodpovedal."""
+    if NEZODPOVEDANE not in vstup.values():
+        return vstup
+    identifikator = otazka_pre_majitela(kopia)
+    return {k: (identifikator if v == NEZODPOVEDANE else v) for k, v in vstup.items()}
 
 
 def _novy(**zmeny):
@@ -134,7 +145,7 @@ PRIPADY_ZATVOR = [
     ('chýba dátum', _bez(_zatvor(), 'datum'), 'chýbajú polia: datum'),
     ('n nie je otvorený', _zatvor(n=_Z['hotove'][0]), 'nie je otvorený'),
     ('neznáme rozhodnutie', _zatvor(rozhodnutie='R99999'), 'neexistuje alebo nemá odpoveď'),
-    ('rozhodnutie bez odpovede', _zatvor(rozhodnutie=_Z['nezodpovedane'][0]), 'neexistuje alebo nemá odpoveď'),
+    ('rozhodnutie bez odpovede', _zatvor(rozhodnutie=NEZODPOVEDANE), 'neexistuje alebo nemá odpoveď'),
     ('rozhodnutie nie je text', _zatvor(rozhodnutie=['R1']), 'neexistuje alebo nemá odpoveď'),
     ('text bez ZATVORENÉ', _zatvor(text='Zatvorené.'), 'musí začínať slovom ZATVORENÉ'),
     ('prázdny dátum', _zatvor(datum=' '), 'pole datum je prázdne'),
@@ -153,11 +164,11 @@ PRIPADY_ODPOVED = [
     ('neexistujúce rozhodnutie', {'id': 'R99999', 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neexistuje (R1 až R'),
     ('id nie je text', {'id': 5, 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neexistuje (R1 až R'),
     ('rozhodnutie už má odpoveď', {'id': _Z['zodpovedane'][0], 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'už má odpoveď'),
-    ('chýba dátum', {'id': _Z['nezodpovedane'][0], 'odpoved': 'áno'}, 'chýbajú polia: datum'),
-    ('chýba odpoveď', {'id': _Z['nezodpovedane'][0], 'datum': '1. 1. 2027'}, 'chýbajú polia: odpoved'),
-    ('okrem odpovede aj téma', {'id': _Z['nezodpovedane'][0], 'tema': 'x', 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neznáme polia: tema'),
-    ('prázdna odpoveď', {'id': _Z['nezodpovedane'][0], 'odpoved': '  ', 'datum': '1. 1. 2027'}, 'pole odpoved je prázdne'),
-    ('dlhý dátum', {'id': _Z['nezodpovedane'][0], 'odpoved': 'áno', 'datum': 'd' * 41}, 'najviac 40'),
+    ('chýba dátum', {'id': NEZODPOVEDANE, 'odpoved': 'áno'}, 'chýbajú polia: datum'),
+    ('chýba odpoveď', {'id': NEZODPOVEDANE, 'datum': '1. 1. 2027'}, 'chýbajú polia: odpoved'),
+    ('okrem odpovede aj téma', {'id': NEZODPOVEDANE, 'tema': 'x', 'odpoved': 'áno', 'datum': '1. 1. 2027'}, 'neznáme polia: tema'),
+    ('prázdna odpoveď', {'id': NEZODPOVEDANE, 'odpoved': '  ', 'datum': '1. 1. 2027'}, 'pole odpoved je prázdne'),
+    ('dlhý dátum', {'id': NEZODPOVEDANE, 'odpoved': 'áno', 'datum': 'd' * 41}, 'najviac 40'),
 ]
 
 PRIPADY_ZMENA = [
@@ -198,7 +209,7 @@ def test_hotove_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ZATVOR))
 def test_zatvor_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
-    _zlyha(kopia, ['zatvor', '--json', kopia.json('v.json', vstup)], ocakavane)
+    _zlyha(kopia, ['zatvor', '--json', kopia.json('v.json', _dosad_otazku(kopia, vstup))], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ROZHODNUTIE))
@@ -208,7 +219,7 @@ def test_rozhodnutie_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ODPOVED))
 def test_odpoved_na_rozhodnutie_odmietne_neplatny_vstup(kopia, vstup, ocakavane):
-    _zlyha(kopia, ['rozhodnutie', '--json', kopia.json('v.json', vstup)], ocakavane)
+    _zlyha(kopia, ['rozhodnutie', '--json', kopia.json('v.json', _dosad_otazku(kopia, vstup))], ocakavane)
 
 
 @pytest.mark.parametrize('vstup, ocakavane', _parametre(PRIPADY_ZMENA))
@@ -395,13 +406,24 @@ def test_hotove_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kon
 @pytest.mark.parametrize('funkcia, vstup', [
     (op.zatvor, _zatvor()),
     (op.rozhodnutie, _rozhodnutie(odpoved='áno', datum='1. 1. 2027')),
-    (op.rozhodnutie, {'id': _Z['nezodpovedane'][0], 'odpoved': 'áno', 'datum': '1. 1. 2027'}),
     (op.zmena, {'datum': '1. 1. 2027', 'text': 'x', 'kod': 'y'}),
     (op.fronta_pridaj, _pridaj(po=['380'], caka=['Codex', 'x'])),
-], ids=['zatvor', 'rozhodnutie', 'odpoved_na_rozhodnutie', 'zmena', 'fronta_pridaj'])
+], ids=['zatvor', 'rozhodnutie', 'zmena', 'fronta_pridaj'])
 def test_ostatne_prikazy_s_nezmyselnymi_hodnotami_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0, funkcia, vstup):
     for v in _kazde_pole(vstup):
         _vyskusaj(funkcia, kontext0, v)
+
+
+def test_odpoved_na_rozhodnutie_nezmyselne_hodnoty_poli_nikdy_neskoncia_neosetrenou_vynimkou(kontext0):
+    otazka = _rozhodnutie()
+    vstup = {'id': 'R%d' % (kontext0.n_rozhodnuti + 1), 'odpoved': 'áno', 'datum': '1. 1. 2027'}  # vlastná otázka sa zapíše v pamäti
+    for v in _kazde_pole(vstup):
+        ds, ctx = zapis_data.Dataset(ZDROJ), _kontext(kontext0)
+        op.rozhodnutie(ds, ctx, otazka)
+        try:
+            op.rozhodnutie(ds, ctx, v)
+        except (ChybaVstupu, ChybaZdroja):
+            pass
 
 
 def test_prikazy_s_neobycajnymi_textami_z_prikazoveho_riadka_nikdy_neskoncia_neosetrenou_vynimkou(kontext0):

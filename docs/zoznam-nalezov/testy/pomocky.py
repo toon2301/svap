@@ -64,3 +64,24 @@ def pridaj_vstup(n, **zmeny):
     vstup = {'n': str(n), 'davka': 'K65', 'co': 'Skúšobná práca.', 'preco': 'JASNÉ (skúška).'}
     vstup.update(zmeny)
     return vstup
+
+
+def otazka_pre_majitela(kopia):
+    """Zapíše do kópie vlastnú nezodpovedanú otázku (`rozhodnutie` bez odpovede) a vráti jej `R<n>`: testy tak nezávisia od toho,
+    ktoré rozhodnutia majiteľ v živých dátach zatiaľ nezodpovedal."""
+    ok(kopia, 'rozhodnutie', '--json', kopia.json('otazka.json', rozhodnutie_vstup()))
+    return kopia.udaje()['rozhodnutia'][-1]
+
+
+def nezodpovedane_rozhodnutie_v_stav_py(kopia):
+    """Zmení v kópii JEDNO už zodpovedané rozhodnutie zapísané priamo v `stav.py` (R1 až R12) na nezodpovedané (odstráni mu `odpoved`
+    a `datum`) a vráti jeho `R<n>`: test odpovede na takto uložené rozhodnutie nezávisí od aktuálnych odpovedí majiteľa."""
+    from zapis_zdroj import Zdroj
+    cesta = kopia.priecinok / 'stav.py'
+    zdroj = Zdroj(cesta.read_text(encoding='utf-8'), 'stav.py')
+    identifikator = next(Zdroj.hodnota_kw(p, 'id') for p in zdroj.priradenie('DECISIONS').elts
+                         if Zdroj.kw(p, 'odpoved') is not None and Zdroj.kw(p, 'datum') is not None)
+    for kluc in ('odpoved', 'datum'):
+        zdroj = zdroj.odstran_kw(zdroj.najdi_dict_volanie('id', identifikator, zoznam='DECISIONS')[2], kluc)
+    cesta.write_text(zdroj.text, encoding='utf-8', newline='\n')
+    return identifikator
