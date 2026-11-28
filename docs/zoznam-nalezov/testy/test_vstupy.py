@@ -304,10 +304,12 @@ def test_neexistujuci_a_poskodeny_json_su_chyba_vstupu(kopia):
     _zlyha(kopia, ['novy', '--json', str(kopia.koren)], 'vstupný JSON sa nepodarilo načítať')  # priečinok namiesto súboru
 
 
-@pytest.mark.parametrize('obsah', ['[]', '"text"', '5', 'null', 'true'])
-def test_json_ktory_nie_je_objekt_je_chyba_vstupu(kopia, obsah):
+@pytest.mark.parametrize('obsah', ['[]', '"text"', '"id"', '5', 'null', 'true', '0', '1.5'])
+@pytest.mark.parametrize('prikaz', [['novy'], ['hotove'], ['zatvor'], ['zmena'], ['rozhodnutie'], ['fronta', 'pridaj']],
+                         ids=['novy', 'hotove', 'zatvor', 'zmena', 'rozhodnutie', 'fronta_pridaj'])
+def test_json_ktory_nie_je_objekt_je_chyba_vstupu_pre_kazdy_prikaz(kopia, prikaz, obsah):
     (kopia.koren / 'v.json').write_text(obsah, encoding='utf-8')
-    _zlyha(kopia, ['novy', '--json', str(kopia.koren / 'v.json')], 'vstup musí byť JSON objekt')
+    _zlyha(kopia, [*prikaz, '--json', str(kopia.koren / 'v.json')], 'vstup musí byť JSON objekt')
 
 
 def test_hodnota_null_je_ako_vynechane_pole(kopia):

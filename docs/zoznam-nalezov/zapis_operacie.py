@@ -424,7 +424,7 @@ def _odpoved_na_rozhodnutie(ds, ctx, v):
 def rozhodnutie(ds, ctx, v):
     """Zapíše rozhodnutie majiteľa (alebo otázku, ak nemá odpoveď) s ďalším voľným číslom R<n>; s poľom `id` zapíše odpoveď na
     už existujúce rozhodnutie (bez nového čísla)."""
-    if 'id' in v:
+    if isinstance(v, dict) and 'id' in v:  # iný ako objektový vstup odmietne `over_kluce` nižšie (kód 2), nepadne
         return _odpoved_na_rozhodnutie(ds, ctx, v)
     over_kluce(v, ['tema', 'otazka', 'odporucanie', 'kedy'], ['odpoved', 'datum'])
     if bool(v.get('odpoved')) != bool(v.get('datum')):
